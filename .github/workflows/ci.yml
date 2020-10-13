@@ -13,8 +13,14 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11
+      - name: Cache Gradle packages
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
+          restore-keys: ${{ runner.os }}-gradle
       - name: Build with Gradle
-        run: sh gradlew build
+        run: ./gradlew build
       - name: Upload application jar file for Docker build job
         if: ${{ github.ref == 'refs/heads/dev' }}
         uses: actions/upload-artifact@v2
@@ -28,16 +34,12 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/dev' }}
     steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
       - name: Download application jar file
         uses: actions/download-artifact@v2
         with:
           name: haitaton-hanke-service-jar
-      - name: List files
-        shell: bash
-        run: |
-          ls -ltra
-      - name: Check out the repo
-        uses: actions/checkout@v2
       - name: List files after checkout
         shell: bash
         run: |
