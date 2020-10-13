@@ -1,6 +1,6 @@
 name: CI
 
-on: [push]
+on: [ push ]
 
 jobs:
   build:
@@ -18,13 +18,13 @@ jobs:
       - name: Upload application jar file for Docker build job
         if: ${{ github.ref == 'refs/heads/dev' }}
         uses: actions/upload-artifact@v2
-          with:
-            name: haitaton-hanke-service-jar
-            path: build/libs/haitaton-hanke-service-*.jar
-            retention-days: 1
+        with:
+          name: haitaton-hanke-service-jar
+          path: build/libs/haitaton-hanke-service-*.jar
+          retention-days: 1
   push_to_github_packages:
     name: Build and push Docker image to GitHub Packages
-    needs: [build]
+    needs: [ build ]
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/dev' }}
     steps:
