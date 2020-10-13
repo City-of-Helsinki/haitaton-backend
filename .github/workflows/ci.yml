@@ -24,7 +24,7 @@ jobs:
           retention-days: 1
   push_to_github_packages:
     name: Build and push Docker image to GitHub Packages
-    needs: [ build ]
+    needs: build
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/dev' }}
     steps:
@@ -32,8 +32,16 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: haitaton-hanke-service-jar
+      - name: List files
+        shell: bash
+        run: |
+          ls -ltra
       - name: Check out the repo
         uses: actions/checkout@v2
+      - name: List files after checkout
+        shell: bash
+        run: |
+          ls -ltra
       - name: Build and push to GitHub Packages
         uses: docker/build-push-action@v1
         with:
