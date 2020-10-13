@@ -16,7 +16,9 @@ jobs:
         run: sh gradlew build
   push_to_github_packages:
     name: Push Docker image to GitHub Packages
+    needs: [build]
     runs-on: ubuntu-latest
+    if: ${{ github.ref == 'refs/heads/dev' }}
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
