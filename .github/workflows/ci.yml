@@ -20,7 +20,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Build with Gradle
-        run: sh gradlew build
+        run: ./gradlew build
       - name: Upload application jar file for Docker build job
         if: ${{ github.ref == 'refs/heads/dev' }}
         uses: actions/upload-artifact@v2
