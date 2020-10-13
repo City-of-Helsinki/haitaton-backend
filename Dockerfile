@@ -1,4 +1,4 @@
-FROM openjdk:11-jdk
+FROM registry.access.redhat.com/openjdk/openjdk-11-rhel7
 EXPOSE 8080
 VOLUME /tmp
 ADD "haitaton-hanke-service-*.jar" haitaton-hanke-service.jar
