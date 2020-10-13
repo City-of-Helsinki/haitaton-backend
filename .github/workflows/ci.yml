@@ -24,7 +24,7 @@ jobs:
           retention-days: 1
   push_to_github_packages:
     name: Build and push Docker image to GitHub Packages
-    needs: [ build ]
+    needs: build
     runs-on: ubuntu-latest
     if: ${{ github.ref == 'refs/heads/dev' }}
     steps:
