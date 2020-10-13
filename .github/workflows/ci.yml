@@ -13,7 +13,7 @@ jobs:
         with:
           java-version: 11
       - name: Build with Gradle
-        run: ./gradlew build
+        run: sh gradlew build
   push_to_github_packages:
     name: Push Docker image to GitHub Packages
     runs-on: ubuntu-latest
