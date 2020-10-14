@@ -58,19 +58,15 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: registry.redhat.io
-#          username: ${{ secrets.OSCR_USERNAME }}
-#          password: ${{ secrets.OSCR_TOKEN }}
-          username: 6815300|teemu.hiltunen
-          passowrd: NjgxNTMwMHx0ZWVtdS5oaWx0dW5lbjpleUpoYkdjaU9pSlNVelV4TWlKOS5leUp6ZFdJaU9pSTNaV1kyWWpJeVlqbG1OMkUwWkdJeE9EZzJZVE00TldSak9UZGtaR05sTUNKOS5sMmU3VzBpLVhUa3JxZDhrQmlsaU05ZUhzTGVSd1JqOFlPQ05OMTNUaUpNbGpqNTNPNll5RE9FT2g0VEZSUkRGNFI0Q1JHcWdVbVdFYnJfWTc4NlNZb0hpRkM5OVJhQmpVUlFGQnJaZC0ybVltajZQR083MF9VVTZadVV0Uy1DWFhIVkp4Uk44RjVlT0taQzdpN1pCakdFZXJhMzRwQmRCZ2FubzhnR2IxdjF2NHVlaFc2WTQ2dW8yTFlJdHNhSElsN3pFNGpYUC01Yzk4WkJCTTB1RkJYZ3A1ZlVfa3J1Q2lQZE83Wm9wTktQWW5zOHBmU0lhSmNYRklnbEwzd1NwV3NwcGVuUUNoOVotbHRTRXBXYnJ3WHRURVIwY0xNS0VBQU1YLXFySVNLRWpPbEJUTzBHeExrSk16ZUNvRU4zYXZjenM5YmxRU2cteDcyWGFSamcyaEEtWkNWaHJEYmFWblhxMUcyeHN3dTBCV2JxSktNSU4zS1FCbHNkaE1DUTZ3TDJhdXVYWDh6UkN1WXh0RlVpbE8zZ1VSeDRzd2FJVHRuRERLYXJpMHVycVNhOWRHTjJ3Rm9XMWY4Y2NsWEx6OVFSQl9kc0VkWVJndGZYN1k1OTFqV0tfZmJaRzhSa1J0MVB1RFM4MEg4TjFfekdQQkllYTZNOHFZaW1ySVpzTFcxX19FZGNaUElUdnJjdm9kSmhpbU9TV0h3eTd2djU2MlNwRnBBMWdoVThXT0NYTGJITjZKQXBZbnNYSW9INGlzTHJkTm45M09DTHRCbElvNUhxemF4WEJTRTNDdmg2OVdEOFNPR0tnYjNiUUdYMnJNUTFrRzFKYW1QbUMwVmtvSnhlMFlUMVdZMWNBUE5wUlE0RFViam9qbWJ4d08tRWZVYTVadGtGVU9RSQ==
+          username: ${{ secrets.OSCR_USERNAME }}
+          password: ${{ secrets.OSCR_TOKEN }}
       -
         name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
-#          username: ${{ github.repository_owner }}
-#          password: ${{ secrets.CR_PAT }}
-          username: ${{ github.actor }}
-          password: 47d11a9da0d14ff1c595a01911942e821ba85036
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
       -
         uses: docker/build-push-action@v2
         with:
