@@ -14,7 +14,6 @@ version = "0.0.1-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_11
 
 repositories {
-	jcenter()
 	mavenCentral()
 }
 
@@ -25,15 +24,19 @@ sourceSets {
 	}
 }
 
-//configurations["integrationTestRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
+val integrationTestImplementation: Configuration by configurations.getting {
+	extendsFrom(configurations.testImplementation.get())
+}
 
-//idea {
-//	module {
-//		testSourceDirs =
-//				testSourceDirs + sourceSets["integrationTest"].withConvention(KotlinSourceSet::class) { kotlin.srcDirs }
-//		testResourceDirs = testResourceDirs + sourceSets["integrationTest"].resources.srcDirs
-//	}
-//}
+configurations["integrationTestRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
+
+idea {
+	module {
+		testSourceDirs =
+				testSourceDirs + sourceSets["integrationTest"].withConvention(KotlinSourceSet::class) { kotlin.srcDirs }
+		testResourceDirs = testResourceDirs + sourceSets["integrationTest"].resources.srcDirs
+	}
+}
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
