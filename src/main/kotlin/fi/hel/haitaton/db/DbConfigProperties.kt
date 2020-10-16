@@ -6,12 +6,12 @@ import org.springframework.stereotype.Component
 @Component
 class DbConfigProperties {
 
-    @Value("\${spring.datasource.url}")
+    @Value("\${app.datasource.url}")
     lateinit var appDatasourceUrl: String
 
-    @Value("\${spring.datasource.username}")
+    @Value("\${app.datasource.username}")
     lateinit var appDatasourceUsername: String
 
-    @Value("\${spring.datasource.password}")
+    @Value("\${app.datasource.password}")
     lateinit var appDatasourcePassword: String
 }
