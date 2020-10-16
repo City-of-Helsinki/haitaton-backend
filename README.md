@@ -37,6 +37,18 @@ After the application has started, the services should be available at URLs:
 
 At least Firefox seems to be able to show the REST JSON results in a nice way directly.
 
+## PostgreSQL + PostGis locally
+The repository includes support for local development with a docker-postgres
+ without the need to install postgres locally. 
+
+To run the postgres in localhost
+>   cd scripts/postgres-docker
+> ./build-postgres-docker.sh 
+
+You can change the port and data folder to your liking in configure-database
+.sh and build-postgres-docker.sh. Note that you will also need to change
+ settings in application.properties accordingly.
+
 ## History
 
 Project was initialized with [spring initializr](https://start.spring.io/), and the result added
