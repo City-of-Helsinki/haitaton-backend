@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.sql.Connection
 import java.sql.DriverManager
+import java.util.ArrayList
 
 
 @Component
@@ -33,8 +34,7 @@ class DbController {
 
         logger.info {
             "Connected to database: " +
-                    "${dbConfigProperties.appDatasourceUrl}"
-        }
+                "${dbConfigProperties.appDatasourceUrl}" }
         return listTables(con).toString()
     }
 
