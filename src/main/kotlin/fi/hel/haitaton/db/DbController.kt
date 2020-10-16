@@ -2,7 +2,6 @@ package fi.hel.haitaton.db
 
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.stereotype.Component
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -14,7 +13,6 @@ import java.util.ArrayList
 private val logger = KotlinLogging.logger { }
 
 @Component
-@EnableAutoConfiguration
 @RestController
 @RequestMapping("/api")
 
