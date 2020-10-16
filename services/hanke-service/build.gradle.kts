@@ -16,7 +16,6 @@ val springDocVersion = "1.4.8"
 
 repositories {
 	mavenCentral()
-	jcenter()
 }
 
 sourceSets {
@@ -42,7 +41,6 @@ idea {
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
-	implementation("org.springframework.boot:spring-boot-starter-data-jdbc")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("io.github.microutils:kotlin-logging:1.12.0")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
