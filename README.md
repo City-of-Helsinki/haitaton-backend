@@ -25,8 +25,6 @@ Manual build
 * services/hanke-service
     * Haitaton 2.0 Hanke service
 
-## How to compile, build and run
-
 See README.md in each individual module. It is not meant to be built *everything* from the root but build each service on its own.
 But, it is still possible to build everything by running
 ```
