@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.sql.Connection
 import java.sql.DriverManager
+import java.util.ArrayList
 
 private val logger = KotlinLogging.logger { }
 
@@ -22,7 +23,7 @@ class DbController {
     lateinit var dbConfigProperties: DbConfigProperties
 
     @GetMapping("/tablenames")
-    fun getAllTables(): Boolean {
+    fun getAllTables(): String {
 
         val dbUrl: String = dbConfigProperties.appDatasourceUrl + "?" +
             "user=" + dbConfigProperties.appDatasourceUsername +
@@ -30,14 +31,21 @@ class DbController {
 
         val con = DriverManager.getConnection(dbUrl)
 
-        logger.info { "Connected to database: " +
-                "${dbConfigProperties.appDatasourceUrl}" }
-        return listTables(con)
+        logger.info {
+            "Connected to database: " +
+                "${dbConfigProperties.appDatasourceUrl}"
+        }
+        return listTables(con).toString()
     }
 
-    fun listTables(connection: Connection): Boolean {
+    fun listTables(connection: Connection): ArrayList<String> {
+        var listOfTableNames: ArrayList<String> = arrayListOf()
         val sql = "select * from pg_tables where schemaname='public';"
-        val response = connection.createStatement().execute(sql)
-        return response
+        val response = connection.createStatement().executeQuery(sql)
+        while (response.next()) {
+            listOfTableNames.add("${response.getString("tablename")}")
+        }
+        logger.info { "query response:" + "$listOfTableNames" }
+        return listOfTableNames
     }
 }
