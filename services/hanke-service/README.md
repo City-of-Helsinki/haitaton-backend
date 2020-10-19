@@ -12,7 +12,7 @@ TODO: document versions (once we settle with them).
 
 Using IDEA:
 * IntelliJ IDEA
-   * it contains its own JDK, kotlinc, gradle, etc.
+   * it contains its own JDK, gradle, etc.
 * OpenJDK (version 11+) - for running things after they have been built
 
 Manual build
