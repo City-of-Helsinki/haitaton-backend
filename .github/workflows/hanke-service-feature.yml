@@ -9,7 +9,7 @@ on:
     branches:
       - HAI*
     paths:
-      - $PATH/**
+      - services/hanke-service/**
 
 jobs:
   build:
