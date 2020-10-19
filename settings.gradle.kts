@@ -1,1 +1,3 @@
-rootProject.name = "haitaton-hanke-service"
+rootProject.name = "haitaton-backend"
+
+include("services:hanke-service")

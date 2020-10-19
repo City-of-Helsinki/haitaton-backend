@@ -1,6 +1,16 @@
-name: CI
+name: hanke-service-dev
 
-on: [ push ]
+env:
+  PATH: 'services/hanke-service'
+  GRADLE_MODULE: 'services:hanke-service'
+  ARTIFACT: 'haitaton-hanke-service'
+
+on:
+  push:
+    branches:
+      - 'dev'
+    paths:
+      - "$PATH/**"
 
 jobs:
   build:
@@ -20,19 +30,20 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Build with Gradle
-        run: ./gradlew build
+        run: ./gradlew :GRADLE_MODULE:build
       - name: Upload application jar file for Docker build job
-        if: ${{ github.ref == 'refs/heads/dev' }}
         uses: actions/upload-artifact@v2
         with:
-          name: haitaton-hanke-service-jar
-          path: build/libs/haitaton-hanke-service-*.jar
+          name: $ARTIFACT-jar
+          path: ./$PATH/build/libs/$ARTIFACT-*.jar
           retention-days: 1
   docker_build_and_push:
     name: Build and push Docker image to GitHub container registry
     needs: build
     runs-on: ubuntu-latest
-    if: ${{ github.ref == 'refs/heads/dev' }}
+    defaults:
+      run:
+        working-directory: $PATH
     steps:
       -
         name: Check out the repo
@@ -41,7 +52,7 @@ jobs:
         name: Download application jar file
         uses: actions/download-artifact@v2
         with:
-          name: haitaton-hanke-service-jar
+          name: $ARTIFACT-jar
       -
         name: List files after checkout
         shell: bash
@@ -74,5 +85,5 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/city-of-helsinki/haitaton/haitaton-hanke-service:latest
-            ghcr.io/city-of-helsinki/haitaton/haitaton-hanke-service:dev
+            ghcr.io/city-of-helsinki/haitaton/$ARTIFACT:latest
+            ghcr.io/city-of-helsinki/haitaton/$ARTIFACT:dev
