@@ -17,7 +17,6 @@ Using Idea:
 
 Manual build
 * OpenJDK (version 11+)
-* Kotlin compiler
 * Gradle
 
 

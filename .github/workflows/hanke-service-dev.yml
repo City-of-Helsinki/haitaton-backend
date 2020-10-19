@@ -8,9 +8,9 @@ env:
 on:
   push:
     branches:
-      - 'dev'
+      - dev
     paths:
-      - "$PATH/**"
+      - $PATH/**
 
 jobs:
   build:
