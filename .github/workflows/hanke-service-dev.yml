@@ -72,7 +72,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ./${{ env.MODULE_PATH }}
-          file: ./Dockerfile
+          file: ./${{ env.MODULE_PATH }}/Dockerfile
           push: true
           tags: |
             ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:latest
