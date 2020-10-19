@@ -28,7 +28,7 @@ most of this stuff with default settings as soon as it sees the relevant gradle 
 However, there are some steps left (runtime stuff?)..\
 Also, do check what are the manual steps needed to do the same?
 
-Starting the application/services can be done afterwards with command line at project's root directory:
+Starting the application/services can be done afterwards with command line at haitaton-backend root directory:
 > ./gradlew :services:hanke-service:bootRun
 
 After the application has started, the services should be available at URLs:
