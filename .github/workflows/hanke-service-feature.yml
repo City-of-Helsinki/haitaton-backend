@@ -1,15 +1,14 @@
 name: hanke-service-feature
 
 env:
-  PATH: 'services/hanke-service'
-  GRADLE_MODULE: 'services:hanke-service'
+  GRADLE_MODULE: services:hanke-service
 
 on:
   push:
     branches:
-      - "HAI*"
+      - HAI*
     paths:
-      - "$PATH/**"
+      - services/hanke-service/**
 
 jobs:
   build:
@@ -29,4 +28,4 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Build with Gradle
-        run: ./gradlew :GRADLE_MODULE:build
+        run: ./gradlew :$GRADLE_MODULE:build
