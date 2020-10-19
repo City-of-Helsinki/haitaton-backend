@@ -1,5 +1,5 @@
 # Haitaton 2.0
-Haitaton 2.0 project API for "hanke" data.
+Haitaton 2.0 backend project.
 
 ## Requirements
 
@@ -20,24 +20,16 @@ Manual build
 * Kotlin compiler
 * Gradle
 
+## Modules
+
+* services/hanke-service
+    * Haitaton 2.0 Hanke service
 
 ## How to compile, build and run
 
-TODO... Seems IntelliJ Idea will basically automatically fetch dependencies, compile, and build
-most of this stuff with default settings as soon as it sees the relevant gradle stuff and correct module setting.\
-However, there are some steps left (runtime stuff?)..\
-Also, do check what are the manual steps needed to do the same?
-
-Starting the application/services can be done afterwards with command line at project's root directory:
-> gradlew bootRun
-
-After the application has started, the services should be available at URLs:
-> http://localhost:8080/ \
-> http://localhost:8080/api/hello/
-
-At least Firefox seems to be able to show the REST JSON results in a nice way directly.
-
-## History
-
-Project was initialized with [spring initializr](https://start.spring.io/), and the result added
-on top of the pre-created project stub at Github (which contained only the license and short readme.md).
+See README.md in each individual module. It is not meant to be built *everything* from the root but build each service on its own.
+But, it is still possible to build everything by running
+```
+$ ./gradlew build
+```
+in root directory.
