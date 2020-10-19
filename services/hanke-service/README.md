@@ -2,7 +2,6 @@
 Haitaton 2.0 project API for "hanke" data.
 
 ## Requirements
-
 TODO: IntelliJ IDEA, with the initialized project dependencies, has things built-in or fetches almost
 everything automatically, except separate OpenJDK (for manual running). But would be nice to test
 and document what is needed for a fully manual command line build from these sources. (And needed for

@@ -1,9 +1,9 @@
 name: hanke-service-dev
 
 env:
-  GRADLE_MODULE: 'services:hanke-service'
-  MODULE_PATH: 'services/hanke-service'
-  ARTIFACT: 'haitaton-hanke-service'
+  GRADLE_MODULE: services:hanke-service
+  MODULE_PATH: services/hanke-service
+  ARTIFACT: haitaton-hanke-service
 
 on:
   push:
@@ -30,7 +30,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Build with Gradle
-        run: ./gradlew :GRADLE_MODULE:build
+        run: ./gradlew :$GRADLE_MODULE:build
       - name: Upload application jar file for Docker build job
         uses: actions/upload-artifact@v2
         with:
