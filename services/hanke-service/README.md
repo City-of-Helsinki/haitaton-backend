@@ -19,7 +19,6 @@ Manual build
 * Gradle
 
 ## How to compile, build and run
-
 TODO... Seems IntelliJ IDEA will basically automatically fetch dependencies, compile, and build
 most of this stuff with default settings as soon as it sees the relevant gradle stuff and correct module setting.\
 However, there are some steps left (runtime stuff?)..\
