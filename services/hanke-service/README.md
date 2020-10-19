@@ -36,6 +36,5 @@ After the application has started, the services should be available at URLs:
 At least Firefox seems to be able to show the REST JSON results in a nice way directly.
 
 ## History
-
 Project was initialized with [spring initializr](https://start.spring.io/), and the result added
 on top of the pre-created project stub at Github (which contained only the license and short readme.md).
