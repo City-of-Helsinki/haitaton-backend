@@ -10,15 +10,14 @@ CI, too).
 
 TODO: document versions (once we settle with them).
 
-Using Idea:
-* IntelliJ Idea
+Using IDEA:
+* IntelliJ IDEA
    * it contains its own JDK, kotlinc, gradle, etc.
 * OpenJDK (version 11+) - for running things after they have been built
 
 Manual build
 * OpenJDK (version 11+)
 * Gradle
-
 
 ## How to compile, build and run
 
