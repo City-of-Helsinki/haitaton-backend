@@ -27,7 +27,9 @@ However, there are some steps left (runtime stuff?)..\
 Also, do check what are the manual steps needed to do the same?
 
 Starting the application/services can be done afterwards with command line at haitaton-backend root directory:
-> ./gradlew :services:hanke-service:bootRun
+```
+$ ./gradlew :services:hanke-service:bootRun
+```
 
 After the application has started, the services should be available at URLs:
 > http://localhost:8080/ \

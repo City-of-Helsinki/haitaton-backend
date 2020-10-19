@@ -1,8 +1,8 @@
 name: hanke-service-dev
 
 env:
-  MODULE_PATH: 'services/hanke-service'
   GRADLE_MODULE: 'services:hanke-service'
+  MODULE_PATH: 'services/hanke-service'
   ARTIFACT: 'haitaton-hanke-service'
 
 on:
@@ -10,7 +10,7 @@ on:
     branches:
       - dev
     paths:
-      - $MODULE_PATH/**
+      - services/hanke-service/**
 
 jobs:
   build:
