@@ -7,9 +7,9 @@ env:
 on:
   push:
     branches:
-      - "HAI*"
+      - HAI*
     paths:
-      - "$PATH/**"
+      - $PATH/**
 
 jobs:
   build:
