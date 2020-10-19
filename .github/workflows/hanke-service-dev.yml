@@ -1,7 +1,7 @@
 name: hanke-service-dev
 
 env:
-  PATH: 'services/hanke-service'
+  MODULE_PATH: 'services/hanke-service'
   GRADLE_MODULE: 'services:hanke-service'
   ARTIFACT: 'haitaton-hanke-service'
 
@@ -10,7 +10,7 @@ on:
     branches:
       - dev
     paths:
-      - $PATH/**
+      - $MODULE_PATH/**
 
 jobs:
   build:
@@ -35,7 +35,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: $ARTIFACT-jar
-          path: ./$PATH/build/libs/$ARTIFACT-*.jar
+          path: ./$MODULE_PATH/build/libs/$ARTIFACT-*.jar
           retention-days: 1
   docker_build_and_push:
     name: Build and push Docker image to GitHub container registry

@@ -1,15 +1,15 @@
 name: hanke-service-feature
 
 env:
-  PATH: 'services/hanke-service'
-  GRADLE_MODULE: 'services:hanke-service'
+  MODULE_PATH: services/hanke-service
+  GRADLE_MODULE: services:hanke-service
 
 on:
   push:
     branches:
       - HAI*
     paths:
-      - services/hanke-service/**
+      - $MODULE_PATH/**
 
 jobs:
   build:
