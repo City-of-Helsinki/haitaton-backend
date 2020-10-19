@@ -3,7 +3,7 @@ name: hanke-service-dev
 env:
   GRADLE_MODULE: services:hanke-service
   MODULE_PATH: services/hanke-service
-  ARTIFACT: haitaton-hanke-service
+  ARTIFACT_NAME: haitaton-hanke-service
 
 on:
   push:
@@ -30,60 +30,51 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Build with Gradle
-        run: ./gradlew :$GRADLE_MODULE:build
+        run: ./gradlew :${{ env.GRADLE_MODULE }}:build
       - name: Upload application jar file for Docker build job
         uses: actions/upload-artifact@v2
         with:
-          name: $ARTIFACT-jar
-          path: ./$MODULE_PATH/build/libs/$ARTIFACT-*.jar
+          name: ${{ env.ARTIFACT_NAME }}-jar
+          path: ./${{ env.MODULE_PATH }}/build/libs/${{ env.ARTIFACT_NAME }}-*.jar
           retention-days: 1
   docker_build_and_push:
     name: Build and push Docker image to GitHub container registry
     needs: build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: $PATH
     steps:
-      -
-        name: Check out the repo
+      - name: Check out the repo
         uses: actions/checkout@v2
-      -
-        name: Download application jar file
+      - name: Download application jar file
         uses: actions/download-artifact@v2
         with:
-          name: $ARTIFACT-jar
-      -
-        name: List files after checkout
+          name: ${{ env.ARTIFACT_NAME }}-jar
+      - name: List files after checkout
         shell: bash
         run: |
           ls -ltra
-      -
-        name: Set up QEMU
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
-      -
-        name: Set up Docker Buildx
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
-      -
-        name: Login to OpenShift Container Registry
+      - name: Login to OpenShift Container Registry
         uses: docker/login-action@v1
         with:
           registry: registry.redhat.io
           username: ${{ secrets.RHSA_USERNAME }}
           password: ${{ secrets.RHSA_TOKEN }}
-      -
-        name: Login to GitHub Container Registry
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: ${{ secrets.CR_OWNER }}
           password: ${{ secrets.CR_PAT }}
-      -
+      - name: Build and push
         uses: docker/build-push-action@v2
         with:
           context: .
           file: ./Dockerfile
           push: true
           tags: |
-            ghcr.io/city-of-helsinki/haitaton/$ARTIFACT:latest
-            ghcr.io/city-of-helsinki/haitaton/$ARTIFACT:dev
+            ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:latest
+            ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:dev
+        working-directory: ${{ env.MODULE_PATH }}
