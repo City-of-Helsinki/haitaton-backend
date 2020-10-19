@@ -34,16 +34,13 @@ jobs:
       - name: Upload application jar file for Docker build job
         uses: actions/upload-artifact@v2
         with:
-          name: $ARTIFACT-jar
+          name: ${{ env.ARTIFACT_NAME }}-jar
           path: ./${{ env.MODULE_PATH }}/build/libs/${{ env.ARTIFACT_NAME }}-*.jar
           retention-days: 1
   docker_build_and_push:
     name: Build and push Docker image to GitHub container registry
     needs: build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: $PATH
     steps:
       - name: Check out the repo
         uses: actions/checkout@v2
@@ -71,7 +68,8 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.CR_OWNER }}
           password: ${{ secrets.CR_PAT }}
-      - uses: docker/build-push-action@v2
+      - name: Build and push
+        uses: docker/build-push-action@v2
         with:
           context: .
           file: ./Dockerfile
@@ -79,3 +77,4 @@ jobs:
           tags: |
             ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:latest
             ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:dev
+        working-directory: ${{ env.MODULE_PATH }}
