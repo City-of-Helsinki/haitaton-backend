@@ -49,9 +49,9 @@ dependencies {
 	}
 }
 
-tasks.withType<Test> {
-	useJUnitPlatform()
-}
+//tasks.withType<Test> {
+//	useJUnitPlatform()
+//}
 
 tasks.withType<KotlinCompile> {
 	kotlinOptions {
@@ -60,3 +60,19 @@ tasks.withType<KotlinCompile> {
 	}
 }
 
+tasks {
+	test {
+		useJUnitPlatform()
+		systemProperty("spring.profiles.active", "test")
+	}
+
+	create("integrationTest", Test::class) {
+		useJUnitPlatform()
+		group = "verification"
+		systemProperty("spring.profiles.active", "integrationTest")
+		testClassesDirs = sourceSets["integrationTest"].output.classesDirs
+		classpath = sourceSets["integrationTest"].runtimeClasspath
+		shouldRunAfter("test")
+		outputs.upToDateWhen { false }
+	}
+}
