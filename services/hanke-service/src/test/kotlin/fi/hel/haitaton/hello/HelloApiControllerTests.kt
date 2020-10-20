@@ -1,4 +1,4 @@
-package fi.hel.haitaton
+package fi.hel.haitaton.hello
 
 import org.assertj.core.api.Assertions.*
 import org.junit.jupiter.api.*
@@ -50,7 +50,7 @@ class HelloApiControllerTests {
         response = controllerUnderTest.hello()
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.body).isNotNull
-        assertThat(response.body).isExactlyInstanceOf(Class.forName("fi.hel.haitaton.HelloResponse"))
+        assertThat(response.body).isExactlyInstanceOf(Class.forName("fi.hel.haitaton.hello.HelloResponse"))
         responsePayload = response.body as HelloResponse
         assertThat(responsePayload.count).isEqualTo(1)
         assertThat(responsePayload.message).contains("Hello")
@@ -59,7 +59,7 @@ class HelloApiControllerTests {
         response = controllerUnderTest.hello()
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.body).isNotNull
-        assertThat(response.body).isExactlyInstanceOf(Class.forName("fi.hel.haitaton.HelloResponse"))
+        assertThat(response.body).isExactlyInstanceOf(Class.forName("fi.hel.haitaton.hello.HelloResponse"))
         responsePayload = response.body as HelloResponse
         assertThat(responsePayload.count).isEqualTo(2)
         assertThat(responsePayload.message).contains("again")

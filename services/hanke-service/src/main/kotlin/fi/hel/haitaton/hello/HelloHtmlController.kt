@@ -1,4 +1,4 @@
-package fi.hel.haitaton
+package fi.hel.haitaton.hello
 
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Controller
