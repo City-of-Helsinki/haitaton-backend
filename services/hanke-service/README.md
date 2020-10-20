@@ -39,6 +39,13 @@ Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON):
 
 At least Firefox seems to be able to show the REST JSON results in a nice way directly.
 
+## Setting up build process
+
+...
+Note that task 'integrationTest' is not run automatically as part of the Gradle build-task.
+It has been added to the .github/xxx.yml file to be part of CI process.
+
+
 ## History
 Project was initialized with [spring initializr](https://start.spring.io/), and the result added
 on top of the pre-created project stub at Github (which contained only the license and short readme.md).

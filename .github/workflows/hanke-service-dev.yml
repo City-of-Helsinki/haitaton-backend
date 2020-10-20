@@ -30,7 +30,7 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle') }}
           restore-keys: ${{ runner.os }}-gradle
       - name: Build with Gradle
-        run: ./gradlew :${{ env.GRADLE_MODULE }}:build
+        run: ./gradlew :${{ env.GRADLE_MODULE }}:build integrationTest
       - name: Upload application jar file for Docker build job
         uses: actions/upload-artifact@v2
         with:
