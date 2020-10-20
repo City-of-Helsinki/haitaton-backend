@@ -33,6 +33,10 @@ After the application has started, the services should be available at URLs:
 > http://localhost:8080/ \
 > http://localhost:8080/api/hello/
 
+Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON):
+> http://localhost:8080/swagger-ui.html \
+> http://localhost:8080/v3/api-docs
+
 At least Firefox seems to be able to show the REST JSON results in a nice way directly.
 
 ## History
