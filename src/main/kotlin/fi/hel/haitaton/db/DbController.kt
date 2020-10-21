@@ -10,7 +10,6 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.util.ArrayList
 
-
 @Component
 @RestController
 @RequestMapping("/api")
