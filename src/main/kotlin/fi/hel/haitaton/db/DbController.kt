@@ -10,13 +10,14 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.util.ArrayList
 
-private val logger = KotlinLogging.logger { }
 
 @Component
 @RestController
 @RequestMapping("/api")
 
 class DbController {
+    private val logger = KotlinLogging.logger { }
+
     @Autowired
     lateinit var dbConfigProperties: DbConfigProperties
 
