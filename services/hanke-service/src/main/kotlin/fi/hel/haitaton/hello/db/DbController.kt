@@ -41,7 +41,7 @@ class DbController {
         val sql = "select * from pg_tables where schemaname='public';"
         val response = connection.createStatement().executeQuery(sql)
         while (response.next()) {
-            listOfTableNames.add("${response.getString("tablename")}")
+            listOfTableNames.add(response.getString("tablename"))
         }
         logger.info { "query response:" + "$listOfTableNames" }
         return listOfTableNames
