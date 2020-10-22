@@ -44,6 +44,7 @@ dependencies {
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+	implementation("io.github.microutils:kotlin-logging:1.12.0")
 	runtimeOnly("org.postgresql:postgresql")
 	runtimeOnly("org.springdoc:springdoc-openapi-ui:$springDocVersion")
 	testImplementation("org.springframework.boot:spring-boot-starter-test") {
