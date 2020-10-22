@@ -10,7 +10,6 @@ import java.sql.Connection
 import java.sql.DriverManager
 import java.util.ArrayList
 
-
 @Component
 @RestController
 @RequestMapping("/api")
@@ -25,14 +24,15 @@ class DbController {
     fun getAllTables(): String {
 
         val dbUrl: String = dbConfigProperties.appDatasourceUrl + "?" +
-                "user=" + dbConfigProperties.appDatasourceUsername +
-                "&password=" + dbConfigProperties.appDatasourcePassword
+            "user=" + dbConfigProperties.appDatasourceUsername +
+            "&password=" + dbConfigProperties.appDatasourcePassword
 
         val con = DriverManager.getConnection(dbUrl)
 
         logger.info {
             "Connected to database: " +
-                "${dbConfigProperties.appDatasourceUrl}" }
+                "${dbConfigProperties.appDatasourceUrl}"
+        }
         return listTables(con).toString()
     }
 
