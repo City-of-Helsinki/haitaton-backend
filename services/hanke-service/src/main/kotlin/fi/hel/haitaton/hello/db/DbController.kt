@@ -17,7 +17,7 @@ import java.util.ArrayList
 class DbController {
     private val logger = KotlinLogging.logger { }
 
-    @Autowired
+    @Autowired(required = false)
     lateinit var dbConfigProperties: DbConfigProperties
 
     @GetMapping("/tablenames")
