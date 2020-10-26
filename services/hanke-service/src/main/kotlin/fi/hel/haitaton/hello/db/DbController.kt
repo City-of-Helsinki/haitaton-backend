@@ -23,17 +23,21 @@ class DbController {
     @GetMapping("/tablenames")
     fun getAllTables(): String {
 
-        val dbUrl: String = dbConfigProperties.appDatasourceUrl + "?" +
-            "user=" + dbConfigProperties.appDatasourceUsername +
-            "&password=" + dbConfigProperties.appDatasourcePassword
+        val dbUrl = "${dbConfigProperties.appDatasourceUrl}?user=" +
+            "${dbConfigProperties.appDatasourceUsername}&password" +
+            "=${dbConfigProperties.appDatasourcePassword}"
 
         val con = DriverManager.getConnection(dbUrl)
 
-        logger.info {
-            "Connected to database: " +
-                "${dbConfigProperties.appDatasourceUrl}"
+        try {
+            logger.info {
+                "Connected to database: " +
+                    "${dbConfigProperties.appDatasourceUrl}"
+            }
+            return listTables(con).toString()
+        } finally {
+            con.close()
         }
-        return listTables(con).toString()
     }
 
     fun listTables(connection: Connection): ArrayList<String> {
