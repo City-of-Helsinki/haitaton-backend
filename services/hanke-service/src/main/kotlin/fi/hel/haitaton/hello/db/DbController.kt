@@ -27,16 +27,20 @@ class DbController {
             "${dbConfigProperties.appDatasourceUsername}&password" +
             "=${dbConfigProperties.appDatasourcePassword}"
 
-        val con = DriverManager.getConnection(dbUrl)
-
         try {
-            logger.info {
-                "Connected to database: " +
-                    "${dbConfigProperties.appDatasourceUrl}"
+            val con = DriverManager.getConnection(dbUrl)
+            try {
+                val tables = listTables(con).toString()
+                logger.info {
+                    "Connected to database: " +
+                        "${dbConfigProperties.appDatasourceUrl}"
+                }
+                return tables
+            } finally {
+                con?.close()
             }
-            return listTables(con).toString()
-        } finally {
-            con.close()
+        } catch (e: Exception) {
+            throw e
         }
     }
 
