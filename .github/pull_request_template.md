@@ -2,7 +2,7 @@
 
 Please include definition of what was done. 
 
-###Fixes # (issue)
+### Jira Issue: 
 
 ## Type of change
 
@@ -13,8 +13,11 @@ Please delete options that are not relevant.
 - [ ] Other
 
 # Instructions for testing
-
-Please describe how this change or new feature can be tested.
+## Prequisites for testing
+Add here information if something is needed for testing this feature, e.g
+. downloading libraries or additional software.
+## Steps for testing
+Please describe tests how this change or new feature can be tested.
 
 # Checklist:
 
