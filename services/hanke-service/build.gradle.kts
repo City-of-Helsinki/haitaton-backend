@@ -50,6 +50,8 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test") {
 		exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
 	}
+	// Spring Boot Management
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
 }
 
 //tasks.withType<Test> {
