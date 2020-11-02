@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hello
+package fi.hel.haitaton.hanke.hello
 
 import org.hamcrest.Matchers.stringContainsInOrder
 import org.junit.jupiter.api.Test

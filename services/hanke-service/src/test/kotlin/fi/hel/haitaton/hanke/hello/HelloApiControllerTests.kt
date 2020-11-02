@@ -1,6 +1,6 @@
-package fi.hel.haitaton.hello
+package fi.hel.haitaton.hanke.hello
 
-import org.assertj.core.api.Assertions.*
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.*
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.springframework.http.HttpStatus
@@ -43,14 +43,14 @@ class HelloApiControllerTests {
 
     @Test
     fun `Test that the two first responses are as expected`() {
-        var response : ResponseEntity<Any>
-        var responsePayload : HelloResponse
+        var response: ResponseEntity<Any>
+        var responsePayload: HelloResponse
 
         // First call:
         response = controllerUnderTest.hello()
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.body).isNotNull
-        assertThat(response.body).isExactlyInstanceOf(Class.forName("fi.hel.haitaton.hello.HelloResponse"))
+        assertThat(response.body).isExactlyInstanceOf(HelloResponse::class.java)
         responsePayload = response.body as HelloResponse
         assertThat(responsePayload.count).isEqualTo(1)
         assertThat(responsePayload.message).contains("Hello")
@@ -59,7 +59,7 @@ class HelloApiControllerTests {
         response = controllerUnderTest.hello()
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.body).isNotNull
-        assertThat(response.body).isExactlyInstanceOf(Class.forName("fi.hel.haitaton.hello.HelloResponse"))
+        assertThat(response.body).isExactlyInstanceOf(HelloResponse::class.java)
         responsePayload = response.body as HelloResponse
         assertThat(responsePayload.count).isEqualTo(2)
         assertThat(responsePayload.message).contains("again")
