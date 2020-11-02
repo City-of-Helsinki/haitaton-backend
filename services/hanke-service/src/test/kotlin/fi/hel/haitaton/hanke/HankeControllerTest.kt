@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.controllers
+package fi.hel.haitaton.hanke
 
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach
@@ -20,11 +20,10 @@ internal class HankeControllerTest {
 
     @Test
     fun `test that the getHankebyId returns ok`() {
-        var response: ResponseEntity<Any>
         //todo: mock with data when implementation further
 
         // Dummy call:
-        response = HankeController().getHankeById("koira")
+        val response: ResponseEntity<Hanke> = HankeController().getHankeById("koira")
         Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         Assertions.assertThat(response.body).isNotNull
 
