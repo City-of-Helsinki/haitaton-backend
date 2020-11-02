@@ -51,6 +51,29 @@ To run the postgres in localhost
 You can change the port and data folder to your liking in configure-database
 .sh and build-postgres-docker.sh. Note that you will also need to change
  settings in application.properties accordingly.
+
+## Info
+There is a Spring Boot Actuator endpoint for general info:
+> http://localhost:8081/actuator/info
+```
+{
+    "java-name": "Java Platform API Specification",
+    "java-version": "11",
+    "java-vendor": "Oracle Corporation",
+    "build": {
+        "artifact": "hanke-service",
+        "name": "hanke-service",
+        "time": "2020-11-02T07:00:31.071Z",
+        "version": "0.0.1-SNAPSHOT",
+        "group": "fi.hel.haitaton"
+    }
+}
+```
+
+## Probes
+There are following Spring Boot Actuator probes (https://docs.spring.io/spring-boot/docs/2.3.4.RELEASE/reference/html/production-ready-features.html#production-ready-kubernetes-probes) for Kubernetes (these must be configured in Kuberneters/OpenShift):
+> http://localhost:8081/actuator/health/readiness \
+> http://localhost:8081/actuator/health/liveness
  
 ## Setting up build process
 
