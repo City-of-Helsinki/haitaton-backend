@@ -1,12 +1,9 @@
 package fi.hel.haitaton.controllers
 
 import fi.hel.haitaton.data.Hanke
-import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.ZonedDateTime
-
-import java.util.*
 
 @RestController
 @RequestMapping("/hankkeet")
