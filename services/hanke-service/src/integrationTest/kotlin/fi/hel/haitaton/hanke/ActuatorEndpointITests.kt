@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hello
+package fi.hel.haitaton.hanke
 
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
