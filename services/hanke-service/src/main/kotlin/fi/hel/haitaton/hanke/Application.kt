@@ -1,11 +1,11 @@
-package fi.hel.haitaton.hello
+package fi.hel.haitaton.hanke
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
 @SpringBootApplication
-class HelloApplication
+class Application
 
 fun main(args: Array<String>) {
-	runApplication<HelloApplication>(*args)
+    runApplication<Application>(*args)
 }
