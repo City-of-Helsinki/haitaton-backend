@@ -20,8 +20,8 @@ internal class HankeControllerTest {
 
     @Test
     fun `test that the getHankebyId returns ok`() {
-        var response : ResponseEntity<Any>
-       //todo: mock with data when implementation further
+        var response: ResponseEntity<Any>
+        //todo: mock with data when implementation further
 
         // Dummy call:
         response = HankeController().getHankeById("koira")

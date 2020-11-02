@@ -9,5 +9,5 @@ import org.springframework.context.annotation.ComponentScan
 class HelloApplication
 
 fun main(args: Array<String>) {
-	runApplication<HelloApplication>(*args)
+    runApplication<HelloApplication>(*args)
 }

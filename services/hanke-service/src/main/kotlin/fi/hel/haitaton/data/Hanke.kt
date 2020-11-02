@@ -1,6 +1,7 @@
 package fi.hel.haitaton.data
 
-import java.util.*
+import java.time.ZonedDateTime
 
-data class Hanke(val hankeId: String, val name: String, val implStartDate:Date, val implEndDate:Date, val owner: String, val phase: Int )
+
+data class Hanke(var hankeId: String, val name: String, val implStartDate: ZonedDateTime, val implEndDate: ZonedDateTime, val owner: String, val phase: Int)
 
