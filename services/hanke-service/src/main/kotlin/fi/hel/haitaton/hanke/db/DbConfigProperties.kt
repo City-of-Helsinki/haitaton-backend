@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hello.db
+package fi.hel.haitaton.hanke.db
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
