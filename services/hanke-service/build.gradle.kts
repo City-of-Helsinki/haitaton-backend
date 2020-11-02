@@ -45,7 +45,6 @@ dependencies {
 	implementation("io.github.microutils:kotlin-logging:1.12.0")
 	implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-    implementation("org.junit.jupiter:junit-jupiter:5.4.2")
     runtimeOnly("org.postgresql:postgresql")
 	runtimeOnly("org.springdoc:springdoc-openapi-ui:$springDocVersion")
 	testImplementation("org.springframework.boot:spring-boot-starter-test") {
