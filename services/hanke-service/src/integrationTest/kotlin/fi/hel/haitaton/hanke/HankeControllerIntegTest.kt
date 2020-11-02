@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hello
+package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test

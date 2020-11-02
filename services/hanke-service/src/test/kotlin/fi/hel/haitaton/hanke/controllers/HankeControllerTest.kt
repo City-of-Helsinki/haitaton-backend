@@ -1,4 +1,4 @@
-package fi.hel.haitaton.controllers
+package fi.hel.haitaton.hanke.controllers
 
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.AfterEach

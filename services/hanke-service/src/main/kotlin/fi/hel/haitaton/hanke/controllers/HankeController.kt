@@ -1,6 +1,6 @@
-package fi.hel.haitaton.controllers
+package fi.hel.haitaton.hanke.controllers
 
-import fi.hel.haitaton.data.Hanke
+import fi.hel.haitaton.hanke.Hanke
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.ZonedDateTime
