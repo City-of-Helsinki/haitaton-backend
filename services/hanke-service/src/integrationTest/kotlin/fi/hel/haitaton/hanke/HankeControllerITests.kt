@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hello
+package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test
@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @SpringBootTest
 @AutoConfigureMockMvc
 @EnableAutoConfiguration
-class HankeControllerIntegTest(@Autowired val mockMvc: MockMvc) {
+class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `When hankeId not given then Bad Request`() {
