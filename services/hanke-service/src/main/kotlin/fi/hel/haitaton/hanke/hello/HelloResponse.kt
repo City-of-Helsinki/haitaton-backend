@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hello
+package fi.hel.haitaton.hanke.hello
 
 /**
  * A simple REST response payload for the HelloApiController.
