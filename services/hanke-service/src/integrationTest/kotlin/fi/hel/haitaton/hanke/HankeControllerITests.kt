@@ -1,17 +1,26 @@
 package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.BDDMockito.given
+import org.mockito.Mock
+import org.mockito.Mockito
+import org.mockito.MockitoAnnotations
+import org.mockito.Spy
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.ZonedDateTime
+
 
 /**
  * Testing the Hnake Controller through a full REST request.
@@ -24,6 +33,26 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @EnableAutoConfiguration
 class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
+    val mockedHankeId = "GHSFG123"
+
+    @MockBean
+    private val mockHankeService: HankeService = Mockito.mock(HankeService::class.java)
+
+
+    /*  @BeforeEach
+      fun setUp() {
+          Mockito.`when`(mockHankeService.loadHanke(mockedHankeId))
+                  .thenReturn(Hanke(mockedHankeId, true, "Mannerheimintien remontti remonttinen", ZonedDateTime.now(), ZonedDateTime.now(), "Risto", 1))
+      }
+  */
+
+    @BeforeEach
+    fun setup() {
+        //    Mockito.reset(mockHankeService)
+        //   MockitoAnnotations.initMocks(this);
+
+    }
+
     @Test
     fun `When hankeId not given then Bad Request`() {
 
@@ -32,11 +61,20 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     }
 
+
     //TODO: needs mocking when we have actual logic for returning the particular Hanke
     @Test
     fun `When hankeId is given then return Hanke with it (GET)`() {
 
-        mockMvc.perform(get("/hankkeet?hankeId=jotain").accept(MediaType.APPLICATION_JSON))
+        //     given(hankeService.loadHanke(mockedHankeId)).willReturn(Hanke(mockedHankeId, true, "Hämeentien perusparannus ja katuvalot"
+        //           , ZonedDateTime.now(), ZonedDateTime.now(), "Risto", 1));
+
+
+        Mockito.`when`(mockHankeService.loadHanke(mockedHankeId))
+                .thenReturn(Hanke(mockedHankeId, true, "Hämeentien perusparannus ja katuvalot"
+                        , ZonedDateTime.now(), ZonedDateTime.now(), "Risto", 1))
+
+        mockMvc.perform(get("/hankkeet?hankeId=" + mockedHankeId).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
     }
@@ -46,7 +84,6 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         data class RestDataHanke(var hankeId: String, val name: String, val implStartDate: String, val implEndDate: String, val owner: String, val phase: Int)
 
         val hankeName = "Mannerheimintien remontti remonttinen"
-        //make Hanke for request (timestamps are Strings for now)
         val hankeToBeAdded = RestDataHanke("kissa", hankeName, "20201212", "20201212", "Risto", 1)
 
         val objectMapper = ObjectMapper()

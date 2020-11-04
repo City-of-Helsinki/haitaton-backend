@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke
 import java.time.ZonedDateTime
 
 /**
- * When creating, only owner is mandatory.
+ * When creating Hanke, only owner is mandatory.
  */
 data class Hanke(
         var hankeId: String?,
