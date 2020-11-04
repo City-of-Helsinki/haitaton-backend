@@ -8,8 +8,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -35,7 +34,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     //TODO: needs mocking when we have actual logic for returning the particular Hanke
     @Test
-    fun `When hankeId is given then return Hanke with it`() {
+    fun `When hankeId is given then return Hanke with it (GET)`() {
 
         mockMvc.perform(get("/hankkeet?hankeId=jotain").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
@@ -43,7 +42,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     }
 
     @Test
-    fun `Add Hanke and return it with newly created hankeId`() {
+    fun `Add Hanke and return it with newly created hankeId (POST)`() {
         data class RestDataHanke(var hankeId: String, val name: String, val implStartDate: String, val implEndDate: String, val owner: String, val phase: Int)
 
         val hankeName = "Mannerheimintien remontti remonttinen"
@@ -58,6 +57,23 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.name").value(hankeName))
+    }
+
+    @Test
+    fun `Update Hanke with partial data and return it (PUT)`() {
+
+        //initializing only part of the data for Hanke
+        var name = "kissahanke"
+        val hankeToBeAdded = Hanke(hankeId = null, name = name, isYKTHanke = false, startDate = null, endDate = null, owner = "Tiina", phase = null)
+
+        val objectMapper = ObjectMapper()
+        val hankeJSON = objectMapper.writeValueAsString(hankeToBeAdded)
+
+        mockMvc.perform(put("/hankkeet/hankeId=idHankkeelle123").contentType(MediaType.APPLICATION_JSON).content(hankeJSON)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk)
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value(name))
     }
 
 }

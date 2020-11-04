@@ -20,12 +20,27 @@ internal class HankeControllerTest {
 
     @Test
     fun `test that the getHankebyId returns ok`() {
-        //todo: mock with data when implementation further
-
+        //TODO: mock with data when implementation further
         // Dummy call:
         val response: ResponseEntity<Hanke> = HankeController().getHankeById("koira")
+
         Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         Assertions.assertThat(response.body).isNotNull
+        Assertions.assertThat(response.body?.name).isNotEmpty()
+    }
 
+    @Test
+    fun `test that the putHanke can be called with partial hanke data`() {
+        //TODO: mock with data when implementation further
+        // Dummy call:
+
+        var partialHanke = Hanke(hankeId = "id123", name="hankkeen nimi", isYKTHanke = false, startDate = null, endDate = null, owner="Tiina", phase = null)
+        val response: ResponseEntity<Any> = HankeController().createPartialHanke(partialHanke,"id123")
+
+        Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        Assertions.assertThat(response.body).isNotNull
+        var responseHanke = response as? ResponseEntity<Hanke>
+        Assertions.assertThat(responseHanke?.body).isNotNull
+        Assertions.assertThat(responseHanke?.body?.name).isEqualTo("hankkeen nimi")
     }
 }
