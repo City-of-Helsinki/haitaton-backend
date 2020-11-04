@@ -1,18 +1,13 @@
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-plugins {
-	id("org.springframework.boot") version "2.3.4.RELEASE"
-	id("io.spring.dependency-management") version "1.0.10.RELEASE"
-	kotlin("jvm") version "1.3.72"
-	kotlin("plugin.spring") version "1.3.72"
-	idea
-}
-
 group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_11
 val springDocVersion = "1.4.8"
+val geoJsonJacksonVersion = "1.14"
+val mockkVersion = "1.10.2"
+val assertkVersion = "0.23"
 
 repositories {
 	mavenCentral()
@@ -43,17 +38,28 @@ springBoot {
 	buildInfo()
 }
 
+plugins {
+	id("org.springframework.boot") version "2.3.4.RELEASE"
+	id("io.spring.dependency-management") version "1.0.10.RELEASE"
+	kotlin("jvm") version "1.4.10"
+	kotlin("plugin.spring") version "1.4.10"
+	idea
+}
+
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 	implementation("io.github.microutils:kotlin-logging:1.12.0")
-	implementation("org.jetbrains.kotlin:kotlin-reflect")
+	//implementation("org.jetbrains.kotlin:kotlin-reflect")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
+	implementation("de.grundid.opendatalab:geojson-jackson:$geoJsonJacksonVersion")
     runtimeOnly("org.postgresql:postgresql")
 	runtimeOnly("org.springdoc:springdoc-openapi-ui:$springDocVersion")
 	testImplementation("org.springframework.boot:spring-boot-starter-test") {
 		exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
 	}
+	testImplementation("io.mockk:mockk:$mockkVersion")
+	testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 }
