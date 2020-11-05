@@ -1,18 +1,12 @@
 package fi.hel.haitaton.hanke
 
-import mu.KotlinLogging
-import org.geojson.FeatureCollection
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.time.ZonedDateTime
 
-private val logger = KotlinLogging.logger { }
-
 @RestController
 @RequestMapping("/hankkeet")
-class HankeController(@Autowired private val service: HankeService) {
+class HankeController {
 
     //TODO: get service for saving new Hanke
 
@@ -55,27 +49,6 @@ class HankeController(@Autowired private val service: HankeService) {
             // TODO call service to save
             ResponseEntity.ok(hanke)
         }
-    }
-
-    @PostMapping("/{hankeId}/geometriat")
-    fun createGeometria(@PathVariable("hankeId") hankeId: String, @RequestBody hankeGeometria: FeatureCollection?): ResponseEntity<Any> {
-        if (hankeGeometria == null) {
-            return ResponseEntity.badRequest().body(HankeError("HAI1011", "Invalid Hanke {hankeId} geometry", mapOf(Pair("hankeId", hankeId))))
-        }
-        try {
-            service.saveGeometria(hankeId, hankeGeometria)
-        } catch (e: HankeNotFoundException) {
-            logger.error(e) {
-                "HAI1001 - Hanke $hankeId not found"
-            }
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError("HAI1001", "Hanke {hankeId} not found", mapOf(Pair("hankeId", hankeId))))
-        } catch (e: Exception) {
-            logger.error(e) {
-                "HAI1012 - Internal error while saving Hanke $hankeId geometry"
-            }
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError("HAI1012", "Internal error while saving Hanke {hankeId} geometry", mapOf(Pair("hankeId", hankeId))))
-        }
-        return ResponseEntity.noContent().build()
     }
 
     //temporary object creator for getting started TODO: Real implementation for returning hanke from backend

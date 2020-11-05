@@ -16,8 +16,7 @@ data class Hanke(
 
 data class HankeError(
         val errorCode: String,
-        val errorMessage: String,
-        val errorParams: Map<String, String>
+        val errorMessage: String
 )
 
 class HankeNotFoundException(message: String): RuntimeException(message)
