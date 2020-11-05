@@ -1,18 +1,15 @@
 package fi.hel.haitaton.hanke
 
+
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.BDDMockito.given
-import org.mockito.Mock
-import org.mockito.Mockito
-import org.mockito.MockitoAnnotations
-import org.mockito.Spy
+import org.mockito.*
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.boot.test.mock.mockito.SpyBean
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
@@ -35,22 +32,15 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     val mockedHankeId = "GHSFG123"
 
-    @MockBean
-    private val mockHankeService: HankeService = Mockito.mock(HankeService::class.java)
+    @Spy
+    lateinit var hankeController: HankeController
 
-
-    /*  @BeforeEach
-      fun setUp() {
-          Mockito.`when`(mockHankeService.loadHanke(mockedHankeId))
-                  .thenReturn(Hanke(mockedHankeId, true, "Mannerheimintien remontti remonttinen", ZonedDateTime.now(), ZonedDateTime.now(), "Risto", 1))
-      }
-  */
+    @SpyBean
+    lateinit var hankeService: HankeService  //faking this calls
 
     @BeforeEach
-    fun setup() {
-        //    Mockito.reset(mockHankeService)
-        //   MockitoAnnotations.initMocks(this);
-
+    fun setUp() {
+        MockitoAnnotations.initMocks(this);
     }
 
     @Test
@@ -61,52 +51,55 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     }
 
-
-    //TODO: needs mocking when we have actual logic for returning the particular Hanke
     @Test
     fun `When hankeId is given then return Hanke with it (GET)`() {
 
-        //     given(hankeService.loadHanke(mockedHankeId)).willReturn(Hanke(mockedHankeId, true, "Hämeentien perusparannus ja katuvalot"
-        //           , ZonedDateTime.now(), ZonedDateTime.now(), "Risto", 1));
-
-
-        Mockito.`when`(mockHankeService.loadHanke(mockedHankeId))
+        //faking the service call
+        Mockito.`when`(hankeService.loadHanke(mockedHankeId))
                 .thenReturn(Hanke(mockedHankeId, true, "Hämeentien perusparannus ja katuvalot"
                         , ZonedDateTime.now(), ZonedDateTime.now(), "Risto", 1))
 
         mockMvc.perform(get("/hankkeet?hankeId=" + mockedHankeId).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.name")
+                        .value("Hämeentien perusparannus ja katuvalot"))
+
     }
 
     @Test
-    fun `Add Hanke and return it with newly created hankeId (POST)`() {
-        data class RestDataHanke(var hankeId: String, val name: String, val implStartDate: String, val implEndDate: String, val owner: String, val phase: Int)
+    fun `Add Hanke and return it newly created hankeId (POST)`() {
 
         val hankeName = "Mannerheimintien remontti remonttinen"
-        val hankeToBeAdded = RestDataHanke("kissa", hankeName, "20201212", "20201212", "Risto", 1)
+        var hankeToBeAdded = Hanke(hankeId = "", name = hankeName, isYKTHanke = false, startDate = null, endDate = null, owner = "Tiina", phase = null)
+
+        //faking the service call
+        Mockito.`when`(hankeService.save(hankeToBeAdded))
+                .thenReturn(hankeToBeAdded)
 
         val objectMapper = ObjectMapper()
         val hankeJSON = objectMapper.writeValueAsString(hankeToBeAdded)
 
-        mockMvc.perform(post("/hankkeet").contentType(MediaType.APPLICATION_JSON).content(hankeJSON)
+        mockMvc.perform(post("/hankkeet")
+                .contentType(MediaType.APPLICATION_JSON).content(hankeJSON)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value(hankeName))
+        //TODO: Should we make sure that the hankeId is returned?
     }
 
     @Test
     fun `Update Hanke with partial data and return it (PUT)`() {
 
-        //initializing only part of the data for Hanke
         var name = "kissahanke"
+        //initializing only part of the data for Hanke
         val hankeToBeAdded = Hanke(hankeId = null, name = name, isYKTHanke = false, startDate = null, endDate = null, owner = "Tiina", phase = null)
 
         val objectMapper = ObjectMapper()
         val hankeJSON = objectMapper.writeValueAsString(hankeToBeAdded)
 
-        mockMvc.perform(put("/hankkeet/hankeId=idHankkeelle123").contentType(MediaType.APPLICATION_JSON).content(hankeJSON)
+        mockMvc.perform(put("/hankkeet/hankeId=idHankkeelle123")
+                .contentType(MediaType.APPLICATION_JSON).content(hankeJSON)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))

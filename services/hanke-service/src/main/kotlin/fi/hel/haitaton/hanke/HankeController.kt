@@ -3,14 +3,14 @@ package fi.hel.haitaton.hanke
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
-import java.time.ZonedDateTime
 
 @RestController
 @RequestMapping("/hankkeet")
-class HankeController(@Autowired
-                      private var hankeService: HankeService) {
+open class HankeController() {
 
     //TODO: get service for saving new Hanke
+    @Autowired
+    open var hankeService: HankeService = HankeService()
 
     /**
      * Get one hanke with hankeId.
@@ -52,7 +52,7 @@ class HankeController(@Autowired
             var createdHanke = hankeService.save(hanke)
             var id = createdHanke?.hankeId
 
-            if (createdHanke == null || id != null) {
+            if (createdHanke == null || id == null) {
                 //ResponseEntity.status(500) //TODO: Error handling for saving failed
                 ResponseEntity.unprocessableEntity().body("saving failed")  //just returning something
             } else {
