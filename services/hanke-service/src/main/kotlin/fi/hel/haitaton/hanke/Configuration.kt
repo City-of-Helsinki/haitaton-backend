@@ -7,12 +7,12 @@ import org.springframework.context.annotation.Configuration
 class Configuration {
 
     @Bean
-    fun hankeDao(): HankeDao {
+    fun hankeGeometriaDao(): HankeDao {
         return HankeDaoImpl()
     }
 
     @Bean
-    fun hankeService(dao: HankeDao): HankeService {
-        return HankeServiceImpl(dao)
+    fun hankeGeometriaService(dao: HankeDao): HankeGeometriaService {
+        return HankeGeometriaServiceImpl(dao)
     }
 }

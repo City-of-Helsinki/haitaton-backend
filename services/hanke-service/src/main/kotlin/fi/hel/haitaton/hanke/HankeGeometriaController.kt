@@ -11,7 +11,7 @@ private val logger = KotlinLogging.logger { }
 
 @RestController
 @RequestMapping("/hankkeet")
-class HankeGeometriaController(@Autowired private val service: HankeService) {
+class HankeGeometriaController(@Autowired private val service: HankeGeometriaService) {
 
     @PostMapping("/{hankeId}/geometriat")
     fun createGeometria(@PathVariable("hankeId") hankeId: String, @RequestBody hankeGeometria: FeatureCollection?): ResponseEntity<Any> {

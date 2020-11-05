@@ -5,7 +5,10 @@ import org.geojson.FeatureCollection
 
 private val logger = KotlinLogging.logger { }
 
-class HankeServiceImpl(private val dao: HankeDao): HankeService {
+/*
+TODO merge this into HankeService
+ */
+class HankeGeometriaServiceImpl(private val dao: HankeDao): HankeGeometriaService {
     override fun saveGeometria(hankeId: String, hankeGeometria: FeatureCollection) {
         logger.info {
             "Saving Geometria for Hanke $hankeId: ${hankeGeometria.toJsonString()}"

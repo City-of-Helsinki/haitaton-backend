@@ -12,7 +12,7 @@ import org.springframework.http.HttpStatus
 
 internal class HankeGeometriaControllerTest {
 
-    private val service = mockk<HankeService>()
+    private val service = mockk<HankeGeometriaService>()
 
     private val controller = HankeGeometriaController(service)
 
