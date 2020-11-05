@@ -1,0 +1,12 @@
+FROM gradle:jdk11-openj9 as builder
+USER root
+WORKDIR /builder
+ADD . /builder
+RUN gradle build --no-daemon
+
+FROM registry.redhat.io/openjdk/openjdk-11-rhel7
+WORKDIR /app
+VOLUME /tmp
+EXPOSE 8080 8081
+COPY --from=builder /builder/build/libs/* /app/
+CMD ["java", "-jar", "hanke-service-0.0.1-SNAPSHOT.jar" ]

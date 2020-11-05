@@ -52,6 +52,41 @@ You can change the port and data folder to your liking in configure-database
 .sh and build-postgres-docker.sh. Note that you will also need to change
  settings in application.properties accordingly.
 
+## Dockercompose
+You can also run the whole haitaton stack with docker compose. 
+
+### Prerequisites
+
+- Install [docker-compose](https://docs.docker.com/compose/install/)  according
+ to your operating system instructions. 
+- Create a directory for the project 
+``` mkdir haitaton ```
+- Pull both the frontend and backend project such that they are under the
+ directory you just created, ie.
+ ``` 
+  ├── haitaton
+  │   ├── haitaton-backend
+  │   └── haitaton-ui
+```
+- Login Login to RedHat customer portal
+```
+docker login registry.redhat.io 
+``` 
+(If you do not have an account, you can create it at https://access.redhat
+.com/)
+- If you want to run all the services you can type
+```
+  docker-compose up
+
+``` 
+..or if you just want backend and db, you can do 
+```
+  docker-compose up db haitaton-hanke
+```
+..or if you just want frontend, you can do 
+```
+  docker-compose up haitaton-ui
+```
 ## Info
 There is a Spring Boot Actuator endpoint for general info:
 > http://localhost:8081/actuator/info
