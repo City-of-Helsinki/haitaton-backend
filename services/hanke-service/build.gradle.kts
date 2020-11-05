@@ -59,6 +59,7 @@ dependencies {
 		exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
 	}
 	testImplementation("io.mockk:mockk:$mockkVersion")
+	testImplementation("com.ninja-squad:springmockk:2.0.3")
 	testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")

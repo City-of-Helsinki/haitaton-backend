@@ -8,7 +8,7 @@ private val logger = KotlinLogging.logger { }
 /*
 TODO merge this into HankeService
  */
-class HankeGeometriaServiceImpl(private val dao: HankeDao): HankeGeometriaService {
+class HankeGeometriaServiceImpl(private val dao: HankeDao) : HankeGeometriaService {
     override fun saveGeometria(hankeId: String, hankeGeometria: FeatureCollection) {
         logger.info {
             "Saving Geometria for Hanke $hankeId: ${hankeGeometria.toJsonString()}"

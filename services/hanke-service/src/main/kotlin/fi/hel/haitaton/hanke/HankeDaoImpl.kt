@@ -5,7 +5,7 @@ import org.geojson.FeatureCollection
 class HankeDaoImpl : HankeDao {
     override fun findHankeByHankeId(hankeId: String): HankeEntity? {
         // TODO proper implementation
-        return if (hankeId == "INVALID") null else HankeEntity()
+        return HankeEntity()
     }
 
     override fun saveHankeGeometria(hankeEntity: HankeEntity, hankeGeometria: FeatureCollection) {
