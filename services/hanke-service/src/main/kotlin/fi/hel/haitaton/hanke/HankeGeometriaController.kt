@@ -41,8 +41,24 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriaSer
 
     @GetMapping("/{hankeId}/geometriat")
     fun getGeometria(@PathVariable("hankeId") hankeId: String): ResponseEntity<Any> {
-        // TODO
-        return ResponseEntity.ok().build()
+        return try {
+            val geometry = service.loadGeometria(hankeId)
+            if (geometry == null) {
+                ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError("HAI1015", "Hanke geometry not found"))
+            } else {
+                ResponseEntity.ok(geometry)
+            }
+        } catch (e: HankeNotFoundException) {
+            logger.error(e) {
+                "HAI1001 - Hanke not found"
+            }
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError("HAI1001", "Hanke not found"))
+        } catch (e: Exception) {
+            logger.error(e) {
+                "HAI1012 - Internal error while loading Hanke geometry"
+            }
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError("HAI1014", "Internal error while loading Hanke $hankeId geometry"))
+        }
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)

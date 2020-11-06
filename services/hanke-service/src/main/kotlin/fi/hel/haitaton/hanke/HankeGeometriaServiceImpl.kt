@@ -20,4 +20,9 @@ class HankeGeometriaServiceImpl(private val dao: HankeDao) : HankeGeometriaServi
             "Saved Geometria for Hanke $hankeId"
         }
     }
+
+    override fun loadGeometria(hankeId: String): FeatureCollection? {
+        val hanke = dao.findHankeByHankeId(hankeId) ?: throw HankeNotFoundException(hankeId)
+        return dao.loadHankeGeometria(hanke)
+    }
 }

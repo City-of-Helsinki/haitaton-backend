@@ -135,8 +135,41 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
     @Test
     fun `get Geometria OK`() {
         val hankeId = "1234567"
+        val featureCollection = objectMapper.readValue(Files.readString(Paths.get("src/test/resources/featureCollection.json")), FeatureCollection::class.java)
+        every { hankeGeometriaService.loadGeometria(hankeId) } returns featureCollection
         mockMvc.perform(get("/hankkeet/$hankeId/geometriat")
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
+        verify { hankeGeometriaService.loadGeometria(hankeId) }
+    }
+
+    @Test
+    fun `get Geometria for missing Hanke`() {
+        val hankeId = "1234567"
+        every { hankeGeometriaService.loadGeometria(hankeId) } throws HankeNotFoundException(hankeId)
+        mockMvc.perform(get("/hankkeet/$hankeId/geometriat")
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound)
+        verify { hankeGeometriaService.loadGeometria(hankeId) }
+    }
+
+    @Test
+    fun `get Geometria for missing geometry`() {
+        val hankeId = "1234567"
+        every { hankeGeometriaService.loadGeometria(hankeId) } returns null
+        mockMvc.perform(get("/hankkeet/$hankeId/geometriat")
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound)
+        verify { hankeGeometriaService.loadGeometria(hankeId) }
+    }
+
+    @Test
+    fun `get Geometria with internal error`() {
+        val hankeId = "1234567"
+        every { hankeGeometriaService.loadGeometria(hankeId) } throws RuntimeException()
+        mockMvc.perform(get("/hankkeet/$hankeId/geometriat")
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError)
+        verify { hankeGeometriaService.loadGeometria(hankeId) }
     }
 }
