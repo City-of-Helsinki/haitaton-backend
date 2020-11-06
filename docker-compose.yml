@@ -2,22 +2,18 @@ version: "3"
 services:
   db:
     build:
-      context: ${BUILD_ROOT}haitaton-backend/scripts/docker-postgres
+      context: ${BUILD_ROOT}/haitaton-backend/scripts/docker-postgres
       dockerfile: Dockerfile
     image: "postgis/postgis"
     container_name: "haitaton-db"
-    environment:
-      - POSTGRES_USER=haitaton_user
-      - POSTGRES_PASSWORD=haitaton
-      - POSTGRES_DB=haitaton
     ports:
       - "5432:5432"
     volumes:
-      - ~/haitaton-data:/var/lib/postgresql/data
+      - ${DB_VOLUME}:/var/lib/postgresql/data
 
   haitaton-hanke:
     build:
-      context: ${BUILD_ROOT}haitaton-backend/services/hanke-service
+      context: ${BUILD_ROOT}/haitaton-backend/services/hanke-service
       dockerfile: Dockerfile-local
     image: "services/hanke-service"
     container_name: "haitaton-hanke"
@@ -33,7 +29,7 @@ services:
 
   haitaton-ui:
     build:
-      context: ${BUILD_ROOT}haitaton-ui
+      context: ${BUILD_ROOT}/haitaton-ui
       dockerfile: Dockerfile-local
     image: "haitaton-ui"
     container_name: "haitaton-ui"
