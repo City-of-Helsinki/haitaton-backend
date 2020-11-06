@@ -2,7 +2,7 @@ version: "3"
 services:
   db:
     build:
-      context: ${DOCKER_ROOT}haitaton-backend/scripts/docker-postgres
+      context: ${BUILD_ROOT}haitaton-backend/scripts/docker-postgres
       dockerfile: Dockerfile
     image: "postgis/postgis"
     container_name: "haitaton-db"
@@ -17,7 +17,7 @@ services:
 
   haitaton-hanke:
     build:
-      context: ${DOCKER_ROOT}haitaton-backend/services/hanke-service
+      context: ${BUILD_ROOT}haitaton-backend/services/hanke-service
       dockerfile: Dockerfile-local
     image: "services/hanke-service"
     container_name: "haitaton-hanke"
@@ -33,9 +33,9 @@ services:
 
   haitaton-ui:
     build:
-      context: ${DOCKER_ROOT}haitaton-ui
+      context: ${BUILD_ROOT}haitaton-ui
       dockerfile: Dockerfile-local
     image: "haitaton-ui"
-    container_name: "frontend"
+    container_name: "haitaton-ui"
     ports:
       - "8000:8000"
