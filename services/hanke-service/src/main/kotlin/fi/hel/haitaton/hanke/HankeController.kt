@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -21,15 +22,15 @@ open class HankeController() {
      *
      */
     @GetMapping
-    fun getHankeById(@RequestParam(name = "hankeId") hankeId: String?): ResponseEntity<Hanke> {
-        return if (hankeId == null) {
-            ResponseEntity.badRequest().build() //TODO, error handling
+    fun getHankeById(@RequestParam(name = "hankeId") hankeId: String?): ResponseEntity<Any> {
+        if (hankeId == null) {
+            return ResponseEntity.badRequest().build() //TODO, error handling
         } else {
-            val hanke = loadHanke(hankeId)
+            val hanke = hankeService.loadHanke(hankeId)
             if (hanke == null) {
-                ResponseEntity.notFound().build() //TODO, error handling
+               return ResponseEntity.notFound().build()//TODO, error handling
             } else {
-                ResponseEntity.ok(hanke)
+               return  ResponseEntity.ok(hanke)
             }
         }
     }
@@ -73,10 +74,5 @@ open class HankeController() {
         }
     }
 
-    //returning hanke from backend
-    private fun loadHanke(hankeId: String): Hanke? {
-        return hankeService.loadHanke(hankeId)
-
-    }
 
 }

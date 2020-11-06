@@ -42,11 +42,11 @@ class HankeControllerTest {
     @Test
     fun `test that the getHankebyId returns ok`() {
         //  mockHankeService
-        val response: ResponseEntity<Hanke> = hankeController.getHankeById(mockedHankeId)
+        val response: ResponseEntity<Any> = hankeController.getHankeById(mockedHankeId)
 
         Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         Assertions.assertThat(response.body).isNotNull
-        Assertions.assertThat(response.body?.name).isNotEmpty()
+        Assertions.assertThat((response.body as Hanke).name).isNotEmpty()
     }
 
     @Test
