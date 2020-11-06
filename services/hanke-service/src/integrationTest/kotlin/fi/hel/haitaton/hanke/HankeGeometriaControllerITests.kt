@@ -88,6 +88,34 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
     }
 
     @Test
+    fun `create Geometria without Geometria features`() {
+        val featureCollection = objectMapper.readValue(Files.readString(Paths.get("src/test/resources/featureCollection.json")), FeatureCollection::class.java)
+        featureCollection.features = null
+        val hankeId = "1234567"
+        mockMvc.perform(post("/hankkeet/$hankeId/geometriat")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(featureCollection.toJsonString())
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1011"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage").value("Invalid geometry"))
+    }
+
+    @Test
+    fun `create Geometria without Geometria crs`() {
+        val featureCollection = objectMapper.readValue(Files.readString(Paths.get("src/test/resources/featureCollection.json")), FeatureCollection::class.java)
+        featureCollection.crs = null
+        val hankeId = "1234567"
+        mockMvc.perform(post("/hankkeet/$hankeId/geometriat")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(featureCollection.toJsonString())
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1011"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage").value("Invalid geometry"))
+    }
+
+    @Test
     fun `create Geometria with invalid coordinate system`() {
         val featureCollection = objectMapper.readValue(Files.readString(Paths.get("src/test/resources/featureCollection.json")), FeatureCollection::class.java)
         featureCollection.crs.properties["name"] = "urn:ogc:def:crs:EPSG::0000"
@@ -97,6 +125,9 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
                 .content(featureCollection.toJsonString())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1011"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1013"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage").value("Invalid coordinate system"))
+
+        verify(exactly = 0) { hankeGeometriaService.saveGeometria(hankeId, any()) }
     }
 }

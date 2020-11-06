@@ -7,6 +7,7 @@ java.sourceCompatibility = JavaVersion.VERSION_11
 val springDocVersion = "1.4.8"
 val geoJsonJacksonVersion = "1.14"
 val mockkVersion = "1.10.2"
+val springmockkVersion = "2.0.3"
 val assertkVersion = "0.23"
 
 repositories {
@@ -59,7 +60,7 @@ dependencies {
 		exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
 	}
 	testImplementation("io.mockk:mockk:$mockkVersion")
-	testImplementation("com.ninja-squad:springmockk:2.0.3")
+	testImplementation("com.ninja-squad:springmockk:$springmockkVersion")
 	testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")

@@ -8,8 +8,8 @@ import kotlin.reflect.KClass
 @Retention(AnnotationRetention.RUNTIME)
 @Constraint(validatedBy = [FeatureCollectionValidator::class])
 @MustBeDocumented
-annotation class EPSG3879(
-        val message: String = "{haitaton.hanke.geometria.notEPSG3879}",
+annotation class ValidFeatureCollection(
+        val message: String = "",
         val groups: Array<KClass<*>> = [],
         val payload: Array<KClass<out Payload>> = []
 )
