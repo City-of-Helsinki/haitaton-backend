@@ -39,6 +39,12 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriaSer
         }
     }
 
+    @GetMapping("/{hankeId}/geometriat")
+    fun getGeometria(@PathVariable("hankeId") hankeId: String): ResponseEntity<Any> {
+        // TODO
+        return ResponseEntity.ok().build()
+    }
+
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ConstraintViolationException::class)
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {

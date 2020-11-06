@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
@@ -129,5 +130,13 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage").value("Invalid coordinate system"))
 
         verify(exactly = 0) { hankeGeometriaService.saveGeometria(hankeId, any()) }
+    }
+
+    @Test
+    fun `get Geometria OK`() {
+        val hankeId = "1234567"
+        mockMvc.perform(get("/hankkeet/$hankeId/geometriat")
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk)
     }
 }
