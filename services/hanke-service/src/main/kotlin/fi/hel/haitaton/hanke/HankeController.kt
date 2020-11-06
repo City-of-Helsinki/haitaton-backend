@@ -10,7 +10,7 @@ open class HankeController() {
 
     //TODO: get service for saving new Hanke
     @Autowired
-    open var hankeService: HankeService = HankeService()
+    var hankeService: HankeService = HankeServiceImpl()
 
     /**
      * Get one hanke with hankeId.

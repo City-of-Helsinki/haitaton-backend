@@ -6,10 +6,10 @@ import org.junit.jupiter.api.BeforeEach
 
 import org.junit.jupiter.api.Test
 import org.mockito.InjectMocks
-import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.MockitoAnnotations
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.mock.mockito.MockBean
 
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -23,7 +23,7 @@ class HankeControllerTest {
     @InjectMocks
     lateinit var hankeController: HankeController
 
-    @Mock
+    @MockBean
     lateinit var hankeService: HankeService
 
     @BeforeEach
