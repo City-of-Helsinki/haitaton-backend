@@ -3,26 +3,21 @@ package fi.hel.haitaton.hanke.hello
 import org.hamcrest.Matchers.stringContainsInOrder
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 
 /**
  * Testing the Hello API through a full REST request.
  *
  * This class should test only the weblayer (both HTTP server and context to be auto-mocked).
  */
-@SpringBootTest
-@AutoConfigureMockMvc
-@EnableAutoConfiguration
-class HelloApiControllerITests(@Autowired val mockMvc : MockMvc) {
+@WebMvcTest
+@Import(fi.hel.haitaton.hanke.Configuration::class)
+class HelloApiControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `Hello response at web layer`() {
