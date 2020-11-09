@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import java.time.ZonedDateTime
 import javax.validation.ConstraintViolation
 
@@ -8,21 +9,36 @@ Domain classes
  */
 
 data class Hanke(
-        var hankeId: String,
-        val name: String,
-        val implStartDate: ZonedDateTime,
-        val implEndDate: ZonedDateTime,
+        var hankeId: String?,
+        var isYKTHanke: Boolean?,
+        var name: String?,
+        var startDate: ZonedDateTime?,
+        var endDate: ZonedDateTime?,
         val owner: String,
-        val phase: Int)
+        var phase: Int?)
 
-data class HankeError(
-        val errorCode: String,
-        val errorMessage: String
-) {
-    constructor(violation: ConstraintViolation<*>) : this(
-            violation.message.split(":")[0],
-            violation.message.split(":")[1]
-    )
+@JsonSerialize(using = HankeErrorSerializer::class)
+enum class HankeError(
+        val errorMessage: String) {
+    HAI1001("Hanke not found"),
+    HAI1011("Invalid Hanke geometry"),
+    HAI1012("Internal error while saving Hanke geometry"),
+    HAI1013("Invalid coordinate system"),
+    HAI1014("Internal error while loading Hanke geometry"),
+    HAI1015("Hanke geometry not found");
+
+    val errorCode: String
+        get() = name
+
+    companion object {
+        fun valueOf(violation: ConstraintViolation<*>): HankeError {
+            return valueOf(violation.message.split(":")[0])
+        }
+    }
+
+    override fun toString(): String {
+        return "$name - $errorMessage"
+    }
 }
 
-class HankeNotFoundException(message: String): RuntimeException(message)
+class HankeNotFoundException(val hankeId: String? = null) : RuntimeException(HankeError.HAI1001.errorMessage)

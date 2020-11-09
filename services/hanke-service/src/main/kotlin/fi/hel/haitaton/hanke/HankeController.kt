@@ -53,7 +53,7 @@ class HankeController {
 
     //temporary object creator for getting started TODO: Real implementation for returning hanke from backend
     private fun loadHanke(hankeId: String): Hanke? {
-        return Hanke(hankeId, "Mannerheimintien remontti remonttinen", ZonedDateTime.now(), ZonedDateTime.now(), "Risto", 1)
+        return Hanke(hankeId, true, "Mannerheimintien remontti remonttinen", ZonedDateTime.now(), ZonedDateTime.now(), "Risto", 1)
     }
 
     //to get new id for hankeId, TODO: this needs real implementation

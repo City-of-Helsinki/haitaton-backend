@@ -21,21 +21,21 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriaSer
     @PostMapping("/{hankeId}/geometriat")
     fun createGeometria(@PathVariable("hankeId") hankeId: String, @ValidFeatureCollection @RequestBody hankeGeometria: FeatureCollection?): ResponseEntity<Any> {
         if (hankeGeometria == null) {
-            return ResponseEntity.badRequest().body(HankeError("HAI1011", "Invalid Hanke geometry"))
+            return ResponseEntity.badRequest().body(HankeError.HAI1011)
         }
         return try {
             service.saveGeometria(hankeId, hankeGeometria)
             ResponseEntity.noContent().build()
         } catch (e: HankeNotFoundException) {
-            logger.error(e) {
-                "HAI1001 - Hanke not found"
+            logger.error {
+                e.message
             }
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError("HAI1001", "Hanke not found"))
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
         } catch (e: Exception) {
             logger.error(e) {
-                "HAI1012 - Internal error while saving Hanke geometry"
+                HankeError.HAI1012.toString()
             }
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError("HAI1012", "Internal error while saving Hanke $hankeId geometry"))
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1012)
         }
     }
 
@@ -44,20 +44,20 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriaSer
         return try {
             val geometry = service.loadGeometria(hankeId)
             if (geometry == null) {
-                ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError("HAI1015", "Hanke geometry not found"))
+                ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1015)
             } else {
                 ResponseEntity.ok(geometry)
             }
         } catch (e: HankeNotFoundException) {
-            logger.error(e) {
-                "HAI1001 - Hanke not found"
+            logger.error {
+                e.message
             }
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError("HAI1001", "Hanke not found"))
+            ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
         } catch (e: Exception) {
             logger.error(e) {
-                "HAI1014 - Internal error while loading Hanke geometry"
+                HankeError.HAI1014.toString()
             }
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError("HAI1014", "Internal error while loading Hanke $hankeId geometry"))
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1014)
         }
     }
 
@@ -65,12 +65,12 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriaSer
     @ExceptionHandler(ConstraintViolationException::class)
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
         val violation = ex.constraintViolations.firstOrNull { constraintViolation ->
-            constraintViolation.message.startsWith("HAI") && constraintViolation.message.contains(':')
+            constraintViolation.message.matches("HAI\\d{4}".toRegex())
         }
         return if (violation != null) {
-            HankeError(violation)
+            HankeError.valueOf(violation)
         } else {
-            HankeError("HAI1011", "Invalid Hanke geometry")
+            HankeError.HAI1011
         }
     }
 }
