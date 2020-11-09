@@ -2,18 +2,20 @@ package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.module.kotlin.readValue
 import org.geojson.FeatureCollection
+import java.time.Instant
+import java.time.ZonedDateTime
 
 class HankeDaoImpl : HankeDao {
     override fun findHankeByHankeId(hankeId: String): HankeEntity? {
         // TODO proper implementation
-        return HankeEntity()
+        return HankeEntity("1234567")
     }
 
-    override fun saveHankeGeometria(hankeEntity: HankeEntity, hankeGeometria: FeatureCollection) {
+    override fun saveHankeGeometria(hankeEntity: HankeEntity, hankeGeometriat: HankeGeometriat) {
         // TODO
     }
 
-    override fun loadHankeGeometria(hanke: HankeEntity): FeatureCollection? {
+    override fun loadHankeGeometria(hanke: HankeEntity): HankeGeometriat? {
         // TODO
         val content = """
             {
@@ -51,6 +53,6 @@ class HankeDaoImpl : HankeDao {
               ]
             }
         """.trimIndent()
-        return OBJECT_MAPPER.readValue<FeatureCollection>(content)
+        return HankeGeometriat(hanke.id, OBJECT_MAPPER.readValue(content), 0, ZonedDateTime.now(TZ_UTC), ZonedDateTime.now(TZ_UTC))
     }
 }

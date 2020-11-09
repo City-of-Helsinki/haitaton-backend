@@ -4,6 +4,5 @@ package fi.hel.haitaton.hanke
 Hibernate/JPA Entity classes
  */
 
-class HankeEntity {
-
+data class HankeEntity(val id: String) {
 }

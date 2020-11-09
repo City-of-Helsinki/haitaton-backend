@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
 
-internal class FeatureCollectionValidatorTest {
+internal class HankeGeometriatValidatorTest {
 
     @Test
     fun isValid() {
