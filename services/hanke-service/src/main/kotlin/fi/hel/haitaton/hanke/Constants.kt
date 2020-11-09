@@ -4,4 +4,4 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 const val COORDINATE_SYSTEM_URN = "urn:ogc:def:crs:EPSG::3879"
 
-val objectMapper = jacksonObjectMapper()
+val OBJECT_MAPPER = jacksonObjectMapper()

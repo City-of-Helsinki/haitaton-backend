@@ -51,6 +51,6 @@ class HankeDaoImpl : HankeDao {
               ]
             }
         """.trimIndent()
-        return objectMapper.readValue<FeatureCollection>(content)
+        return OBJECT_MAPPER.readValue<FeatureCollection>(content)
     }
 }

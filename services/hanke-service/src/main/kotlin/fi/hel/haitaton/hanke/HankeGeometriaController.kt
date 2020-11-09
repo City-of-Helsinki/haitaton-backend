@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.HankeError.Companion.codePattern
+import fi.hel.haitaton.hanke.HankeError.Companion.CODE_PATTERN
 import fi.hel.haitaton.hanke.validation.ValidFeatureCollection
 import mu.KotlinLogging
 import org.geojson.FeatureCollection
@@ -66,7 +66,7 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriaSer
     @ExceptionHandler(ConstraintViolationException::class)
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
         val violation = ex.constraintViolations.firstOrNull { constraintViolation ->
-            constraintViolation.message.matches(codePattern)
+            constraintViolation.message.matches(CODE_PATTERN)
         }
         return if (violation != null) {
             HankeError.valueOf(violation)

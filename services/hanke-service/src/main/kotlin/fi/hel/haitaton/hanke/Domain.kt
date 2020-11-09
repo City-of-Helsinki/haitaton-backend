@@ -35,7 +35,7 @@ enum class HankeError(
             return valueOf(violation.message.split(":")[0])
         }
 
-        val codePattern = "HAI\\d{4}".toRegex()
+        val CODE_PATTERN = "HAI\\d{4}".toRegex()
     }
 
     override fun toString(): String {
