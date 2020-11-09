@@ -10,7 +10,7 @@ import java.time.ZonedDateTime
 open class HankeController() {
 
     //TODO: get service for saving new Hanke
-    @Autowired
+    //@Autowired
     var hankeService: HankeService = HankeServiceImpl()
 
     /**
