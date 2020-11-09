@@ -1,8 +1,6 @@
 package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import org.geojson.FeatureCollection
-import java.time.Instant
 import java.time.ZonedDateTime
 
 class HankeDaoImpl : HankeDao {

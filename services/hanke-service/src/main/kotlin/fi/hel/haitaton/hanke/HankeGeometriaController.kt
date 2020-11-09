@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
-import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.*
 import javax.validation.ConstraintViolationException
 
@@ -63,7 +62,7 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriaSer
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
-    @ExceptionHandler(ConstraintViolationException::class, MethodArgumentNotValidException::class)
+    @ExceptionHandler(ConstraintViolationException::class)
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
         val violation = ex.constraintViolations.firstOrNull { constraintViolation ->
             constraintViolation.message.matches(CODE_PATTERN)

@@ -5,7 +5,6 @@ import io.mockk.every
 import io.mockk.just
 import io.mockk.runs
 import io.mockk.verify
-import mu.KotlinLogging
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -19,10 +18,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-
-private val logger = KotlinLogging.logger { }
 
 @WebMvcTest
 @Import(Configuration::class)
@@ -33,7 +28,6 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `create Geometria OK`() {
-        println(ZonedDateTime.now().format(DateTimeFormatter.ISO_ZONED_DATE_TIME))
         val content = Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json"))
         val hankeId = "1234567"
         every { hankeGeometriaService.saveGeometria(hankeId, any()) } just runs
