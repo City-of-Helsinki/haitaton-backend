@@ -150,6 +150,7 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
         mockMvc.perform(get("/hankkeet/$hankeId/geometriat")
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1001"))
         verify { hankeGeometriaService.loadGeometria(hankeId) }
     }
 
@@ -160,6 +161,7 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
         mockMvc.perform(get("/hankkeet/$hankeId/geometriat")
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1015"))
         verify { hankeGeometriaService.loadGeometria(hankeId) }
     }
 
@@ -170,6 +172,7 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
         mockMvc.perform(get("/hankkeet/$hankeId/geometriat")
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isInternalServerError)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1014"))
         verify { hankeGeometriaService.loadGeometria(hankeId) }
     }
 }

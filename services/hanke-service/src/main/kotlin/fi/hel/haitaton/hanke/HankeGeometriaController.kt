@@ -55,7 +55,7 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriaSer
             ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError("HAI1001", "Hanke not found"))
         } catch (e: Exception) {
             logger.error(e) {
-                "HAI1012 - Internal error while loading Hanke geometry"
+                "HAI1014 - Internal error while loading Hanke geometry"
             }
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError("HAI1014", "Internal error while loading Hanke $hankeId geometry"))
         }
