@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus
+
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -11,6 +11,7 @@ open class HankeController() {
 
     //TODO: get service for saving new Hanke
     @Autowired
+
     var hankeService: HankeService = HankeServiceImpl()
 
     /**
@@ -28,9 +29,10 @@ open class HankeController() {
         } else {
             val hanke = hankeService.loadHanke(hankeId)
             if (hanke == null) {
-               return ResponseEntity.notFound().build()//TODO, error handling
+
+                return ResponseEntity.notFound().build()//TODO, error handling
             } else {
-               return  ResponseEntity.ok(hanke)
+                return ResponseEntity.ok(hanke)
             }
         }
     }
@@ -73,6 +75,5 @@ open class HankeController() {
             ResponseEntity.ok(hanke)
         }
     }
-
 
 }
