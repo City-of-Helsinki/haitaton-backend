@@ -7,7 +7,7 @@ import javax.validation.ConstraintViolation
 /*
 Domain classes
  */
-
+/*
 data class Hanke(
         var hankeId: String?,
         var isYKTHanke: Boolean?,
@@ -16,7 +16,7 @@ data class Hanke(
         var endDate: ZonedDateTime?,
         val owner: String,
         var phase: Int?)
-
+*/
 @JsonSerialize(using = HankeErrorSerializer::class)
 enum class HankeError(
         val errorMessage: String) {
