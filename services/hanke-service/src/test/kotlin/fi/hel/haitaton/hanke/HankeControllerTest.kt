@@ -29,8 +29,6 @@ class HankeControllerTest {
     fun setUp() {
         MockitoAnnotations.initMocks(this)
         hankeController = HankeController(hankeService)
-        Mockito.`when`(hankeService.loadHanke(mockedHankeId))
-                .thenReturn(Hanke(mockedHankeId, true, "Mannerheimintien remontti remonttinen", ZonedDateTime.now(), ZonedDateTime.now(), "Risto", 1))
     }
 
     @AfterEach
@@ -40,7 +38,10 @@ class HankeControllerTest {
 
     @Test
     fun `test that the getHankebyId returns ok`() {
-        //  mockHankeService
+
+        Mockito.`when`(hankeService.loadHanke(mockedHankeId))
+                .thenReturn(fi.hel.haitaton.hanke.Hanke(mockedHankeId, true, "Mannerheimintien remontti remonttinen", java.time.ZonedDateTime.now(), java.time.ZonedDateTime.now(), "Risto", 1))
+
         val response: ResponseEntity<Any> = hankeController.getHankeById(mockedHankeId)
 
         Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)

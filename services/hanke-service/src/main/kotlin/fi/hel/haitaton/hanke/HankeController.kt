@@ -27,7 +27,12 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         }
         return try {
             val hanke = hankeService.loadHanke(hankeId)
+
             ResponseEntity.status(HttpStatus.OK).body(hanke)
+
+        } catch (e: HankeNotFoundException) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1016)
+
         } catch (e: Exception) {
             logger.error(e) {
                 HankeError.HAI1016.toString()
@@ -56,10 +61,9 @@ class HankeController(@Autowired private val hankeService: HankeService) {
     }
 
     /**
-     * Add one hanke.
+     * Update one hanke.
      *  TODO: user from front?
      *  TODO: validation for input
-     * This method will be called when we do not have id for hanke yet
      */
     @PutMapping("/{hankeId}")
     fun updateHanke(@RequestBody hanke: Hanke?, @PathVariable hankeId: String?): ResponseEntity<Any> {

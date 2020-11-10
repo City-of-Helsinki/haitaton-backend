@@ -1,12 +1,12 @@
 package fi.hel.haitaton.hanke
 
 import mu.KotlinLogging
-import org.springframework.stereotype.Component
+import org.springframework.stereotype.Service
 import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
 
-@Component
+@Service
 class HankeServiceImpl(private val dao: HankeDao) : HankeService {
 
     var index: Int = 12 //TODO: real hankeId generation

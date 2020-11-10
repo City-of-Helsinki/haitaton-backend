@@ -62,6 +62,6 @@ class HankeDaoImpl : HankeDao {
 
     override fun saveHanke(hanke: Hanke): HankeEntity {
         TODO("Not yet implemented")
-        return HankeEntity()
+        return HankeEntity("id")
     }
 }
