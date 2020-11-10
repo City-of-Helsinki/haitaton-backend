@@ -2,8 +2,6 @@ package fi.hel.haitaton.hanke
 
 import com.ninjasquad.springmockk.MockkBean
 import io.mockk.every
-import io.mockk.just
-import io.mockk.runs
 import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -34,14 +32,17 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
         hankeGeometriat.createdAt = null
         hankeGeometriat.updatedAt = null
         val hankeId = "1234567"
-        every { hankeGeometriaService.saveGeometria(hankeId, any()) } just runs
+        val savedHankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        savedHankeGeometriat.hankeId = hankeId
+        savedHankeGeometriat.version = 1
+        every { hankeGeometriaService.saveGeometria(hankeId, any()) } returns savedHankeGeometriat
 
         mockMvc.perform(post("/hankkeet/$hankeId/geometriat")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(hankeGeometriat.toJsonString())
                 .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNoContent)
-                .andExpect(content().string(""))
+                .andExpect(status().isOk)
+                .andExpect(content().string(savedHankeGeometriat.toJsonString()))
 
         verify { hankeGeometriaService.saveGeometria(hankeId, any()) }
     }

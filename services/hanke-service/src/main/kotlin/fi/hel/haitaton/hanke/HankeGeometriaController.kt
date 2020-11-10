@@ -24,8 +24,8 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriaSer
             return ResponseEntity.badRequest().body(HankeError.HAI1011)
         }
         return try {
-            service.saveGeometria(hankeId, hankeGeometriat)
-            ResponseEntity.noContent().build()
+            val savedHankeGeometriat = service.saveGeometria(hankeId, hankeGeometriat)
+            ResponseEntity.ok(savedHankeGeometriat)
         } catch (e: HankeNotFoundException) {
             logger.error {
                 e.message

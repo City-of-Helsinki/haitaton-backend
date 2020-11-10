@@ -9,7 +9,7 @@ private val logger = KotlinLogging.logger { }
 TODO merge this into HankeService?
  */
 class HankeGeometriaServiceImpl(private val dao: HankeDao) : HankeGeometriaService {
-    override fun saveGeometria(hankeId: String, hankeGeometriat: HankeGeometriat) {
+    override fun saveGeometria(hankeId: String, hankeGeometriat: HankeGeometriat): HankeGeometriat {
         logger.info {
             "Saving Geometria for Hanke $hankeId: ${hankeGeometriat.toJsonString()}"
         }
@@ -18,7 +18,9 @@ class HankeGeometriaServiceImpl(private val dao: HankeDao) : HankeGeometriaServi
         val oldHankeGeometriat = dao.loadHankeGeometria(hanke)
         if (oldHankeGeometriat == null) {
             hankeGeometriat.createdAt = now
+            hankeGeometriat.version = 1
         } else {
+            hankeGeometriat.createdAt = oldHankeGeometriat.createdAt
             if (oldHankeGeometriat.version == null) {
                 error("There is an old HankeGeometriat for Hanke ${hanke.id} but it has no 'version'")
             } else {
@@ -30,8 +32,9 @@ class HankeGeometriaServiceImpl(private val dao: HankeDao) : HankeGeometriaServi
         // TODO convert GeoJSON object to something else?
         dao.saveHankeGeometria(hanke, hankeGeometriat)
         logger.info {
-            "Saved Geometria for Hanke $hankeId"
+            "Saved Geometria for Hanke $hankeId: ${hankeGeometriat.toJsonString()}"
         }
+        return hankeGeometriat
     }
 
     override fun loadGeometria(hankeId: String): HankeGeometriat? {
