@@ -31,7 +31,7 @@ class HankeController(@Autowired private val hankeService: HankeService) {
             ResponseEntity.status(HttpStatus.OK).body(hanke)
 
         } catch (e: HankeNotFoundException) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1016)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
 
         } catch (e: Exception) {
             logger.error(e) {
