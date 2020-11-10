@@ -1,9 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import org.springframework.stereotype.Service
-
-
-@Service
 interface HankeService {
 
     /**
