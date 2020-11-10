@@ -8,7 +8,11 @@ import javax.validation.ConstraintViolation
 /*
 Domain classes
  */
-/*
+
+
+/**
+ * When creating Hanke, only owner is mandatory.
+ */
 data class Hanke(
         var hankeId: String?,
         var isYKTHanke: Boolean?,
@@ -17,7 +21,7 @@ data class Hanke(
         var endDate: ZonedDateTime?,
         val owner: String,
         var phase: Int?)
-*/
+
 data class HankeGeometriat(
         var hankeId: String? = null,
         var featureCollection: FeatureCollection? = null,
@@ -34,7 +38,9 @@ enum class HankeError(
     HAI1012("Internal error while saving Hanke geometry"),
     HAI1013("Invalid coordinate system"),
     HAI1014("Internal error while loading Hanke geometry"),
-    HAI1015("Hanke geometry not found");
+    HAI1015("Hanke geometry not found"),
+    HAI1016("Internal error while saving Hanke"),
+    HAI1017("Invalid Hanke data");
 
     val errorCode: String
         get() = name

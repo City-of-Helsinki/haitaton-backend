@@ -20,18 +20,15 @@ class HankeControllerTest {
 
     val mockedHankeId = "AFC1234"
 
-    @InjectMocks
-    lateinit var hankeController: HankeController
-
     @MockBean
     lateinit var hankeService: HankeService
+
+    lateinit var hankeController: HankeController
 
     @BeforeEach
     fun setUp() {
         MockitoAnnotations.initMocks(this)
-
-        Mockito.`when`(hankeService.loadHanke(mockedHankeId))
-                .thenReturn(Hanke(mockedHankeId, true, "Mannerheimintien remontti remonttinen", ZonedDateTime.now(), ZonedDateTime.now(), "Risto", 1))
+        hankeController = HankeController(hankeService)
     }
 
     @AfterEach
@@ -41,7 +38,10 @@ class HankeControllerTest {
 
     @Test
     fun `test that the getHankebyId returns ok`() {
-        //  mockHankeService
+
+        Mockito.`when`(hankeService.loadHanke(mockedHankeId))
+                .thenReturn(fi.hel.haitaton.hanke.Hanke(mockedHankeId, true, "Mannerheimintien remontti remonttinen", java.time.ZonedDateTime.now(), java.time.ZonedDateTime.now(), "Risto", 1))
+
         val response: ResponseEntity<Any> = hankeController.getHankeById(mockedHankeId)
 
         Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
@@ -51,18 +51,20 @@ class HankeControllerTest {
 
     @Test
     fun `test that the putHanke can be called with partial hanke data`() {
-        //TODO: mock with data when implementation further
 
-        // Dummy call:
         var partialHanke = Hanke(hankeId = "id123", name = "hankkeen nimi", isYKTHanke = false, startDate = null, endDate = null, owner = "Tiina", phase = null)
-        //mockHankeService
+        //mock HankeService response
+        Mockito.`when`(hankeService.save(partialHanke)).thenReturn(partialHanke)
 
-        val response: ResponseEntity<Any> = hankeController.createPartialHanke(partialHanke, "id123")
+        //Actual call
+        val response: ResponseEntity<Any> = hankeController.updateHanke(partialHanke, "id123")
 
         Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         Assertions.assertThat(response.body).isNotNull
         var responseHanke = response as? ResponseEntity<Hanke>
         Assertions.assertThat(responseHanke?.body).isNotNull
         Assertions.assertThat(responseHanke?.body?.name).isEqualTo("hankkeen nimi")
+
+
     }
 }

@@ -59,4 +59,9 @@ class HankeDaoImpl : HankeDao {
         """.trimIndent()
         return OBJECT_MAPPER.readValue(content)
     }
+
+    override fun saveHanke(hanke: Hanke): HankeEntity {
+        TODO("Not yet implemented")
+        return HankeEntity("id")
+    }
 }
