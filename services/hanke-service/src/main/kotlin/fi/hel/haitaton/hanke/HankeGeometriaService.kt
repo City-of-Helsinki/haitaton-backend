@@ -1,8 +1,9 @@
 package fi.hel.haitaton.hanke
 
-import org.geojson.FeatureCollection
-
 interface HankeGeometriaService {
-    fun saveGeometria(hankeId: String, hankeGeometria: FeatureCollection)
-    fun loadGeometria(hankeId: String): FeatureCollection?
+    /**
+     * Creates a new or updates an existing HankeGeometriat
+     */
+    fun saveGeometria(hankeId: String, hankeGeometriat: HankeGeometriat): HankeGeometriat
+    fun loadGeometria(hankeId: String): HankeGeometriat?
 }
