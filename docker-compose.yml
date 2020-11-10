@@ -17,6 +17,10 @@ services:
       - "5432:5432"
     volumes:
       - ${DB_VOLUME}:/var/lib/postgresql/data
+    networks:
+      backbone:
+        aliases:
+          - haitaton-db
 
   haitaton-hanke:
     build:
