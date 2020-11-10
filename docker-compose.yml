@@ -29,8 +29,6 @@ services:
     image: "services/hanke-service"
     container_name: "haitaton-hanke"
     hostname: haitaton-hanke
-    ports:
-      - "3000:8080"
     environment:
       HAITATON_HOST: db
       HAITATON_PORT: 5432
@@ -66,6 +64,9 @@ services:
       - 8080:80
     networks:
       - backbone
+    links:
+      - haitaton-hanke
+      - haitaton-ui
 
 networks:
   backbone:
