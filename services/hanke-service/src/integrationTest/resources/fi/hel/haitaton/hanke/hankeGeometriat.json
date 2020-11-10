@@ -14,8 +14,8 @@
         "geometry": {
           "type": "Point",
           "coordinates": [
-            24.948462,
-            60.174095
+            24747856.43,
+            6562789.70
           ]
         }
       },
@@ -24,8 +24,8 @@
         "geometry": {
           "type": "Point",
           "coordinates": [
-            24.9447,
-            60.172268
+            24747856.43,
+            6562789.70
           ]
         },
         "properties": {
@@ -35,6 +35,6 @@
     ]
   },
   "version": 0,
-  "createdOn": "2020-11-09T15:53:23.1234567+02:00[Europe/Helsinki]",
-  "updatedOn": "2020-11-09T16:53:23.1234567+02:00[Europe/Helsinki]"
+  "createdAt": "2020-11-09T15:53:23.1234567+02:00[Europe/Helsinki]",
+  "updatedAt": "2020-11-09T16:53:23.1234567+02:00[Europe/Helsinki]"
 }

@@ -19,11 +19,11 @@ data class Hanke(
         var phase: Int?)
 */
 data class HankeGeometriat(
-        val hankeId: String,
-        val featureCollection: FeatureCollection,
-        val version: Int,
-        val createdOn: ZonedDateTime,
-        val updatedOn: ZonedDateTime
+        var hankeId: String? = null,
+        var featureCollection: FeatureCollection? = null,
+        var version: Int? = null,
+        var createdAt: ZonedDateTime? = null,
+        var updatedAt: ZonedDateTime? = null
 )
 
 @JsonSerialize(using = HankeErrorSerializer::class)

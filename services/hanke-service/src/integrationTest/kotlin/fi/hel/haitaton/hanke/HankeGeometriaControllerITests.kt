@@ -28,13 +28,17 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `create Geometria OK`() {
-        val content = Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json"))
+        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        hankeGeometriat.hankeId = null
+        hankeGeometriat.version = null
+        hankeGeometriat.createdAt = null
+        hankeGeometriat.updatedAt = null
         val hankeId = "1234567"
         every { hankeGeometriaService.saveGeometria(hankeId, any()) } just runs
 
         mockMvc.perform(post("/hankkeet/$hankeId/geometriat")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(content)
+                .content(hankeGeometriat.toJsonString())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNoContent)
                 .andExpect(content().string(""))
@@ -44,13 +48,17 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `create Geometria with invalid HankeID`() {
-        val content = Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json"))
+        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        hankeGeometriat.hankeId = null
+        hankeGeometriat.version = null
+        hankeGeometriat.createdAt = null
+        hankeGeometriat.updatedAt = null
         val hankeId = "1234567"
         every { hankeGeometriaService.saveGeometria(hankeId, any()) } throws HankeNotFoundException(hankeId)
 
         mockMvc.perform(post("/hankkeet/$hankeId/geometriat")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(content)
+                .content(hankeGeometriat.toJsonString())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1001"))
@@ -60,13 +68,17 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `create Geometria with service failure`() {
-        val content = Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json"))
+        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        hankeGeometriat.hankeId = null
+        hankeGeometriat.version = null
+        hankeGeometriat.createdAt = null
+        hankeGeometriat.updatedAt = null
         val hankeId = "1234567"
         every { hankeGeometriaService.saveGeometria(hankeId, any()) } throws RuntimeException("Something went wrong")
 
         mockMvc.perform(post("/hankkeet/$hankeId/geometriat")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(content)
+                .content(hankeGeometriat.toJsonString())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isInternalServerError)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1012"))
@@ -76,10 +88,16 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `create Geometria without Geometria`() {
+        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        hankeGeometriat.featureCollection = null
+        hankeGeometriat.hankeId = null
+        hankeGeometriat.version = null
+        hankeGeometriat.createdAt = null
+        hankeGeometriat.updatedAt = null
         val hankeId = "1234567"
         mockMvc.perform(post("/hankkeet/$hankeId/geometriat")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("")
+                .content(hankeGeometriat.toJsonString())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1011"))
@@ -88,7 +106,11 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
     @Test
     fun `create Geometria without Geometria features`() {
         val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
-        hankeGeometriat.featureCollection.features = null
+        hankeGeometriat.hankeId = null
+        hankeGeometriat.version = null
+        hankeGeometriat.createdAt = null
+        hankeGeometriat.updatedAt = null
+        hankeGeometriat.featureCollection?.features = null
         val hankeId = "1234567"
         mockMvc.perform(post("/hankkeet/$hankeId/geometriat")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -102,7 +124,11 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
     @Test
     fun `create Geometria without Geometria crs`() {
         val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
-        hankeGeometriat.featureCollection.crs = null
+        hankeGeometriat.hankeId = null
+        hankeGeometriat.version = null
+        hankeGeometriat.createdAt = null
+        hankeGeometriat.updatedAt = null
+        hankeGeometriat.featureCollection?.crs = null
         val hankeId = "1234567"
         mockMvc.perform(post("/hankkeet/$hankeId/geometriat")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -116,7 +142,11 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
     @Test
     fun `create Geometria with invalid coordinate system`() {
         val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
-        hankeGeometriat.featureCollection.crs.properties["name"] = "urn:ogc:def:crs:EPSG::0000"
+        hankeGeometriat.hankeId = null
+        hankeGeometriat.version = null
+        hankeGeometriat.createdAt = null
+        hankeGeometriat.updatedAt = null
+        hankeGeometriat.featureCollection?.crs?.properties?.set("name", "urn:ogc:def:crs:EPSG::0000")
         val hankeId = "1234567"
         mockMvc.perform(post("/hankkeet/$hankeId/geometriat")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -137,6 +167,7 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
         mockMvc.perform(get("/hankkeet/$hankeId/geometriat")
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.hankeId").value(hankeId))
         verify { hankeGeometriaService.loadGeometria(hankeId) }
     }
 
