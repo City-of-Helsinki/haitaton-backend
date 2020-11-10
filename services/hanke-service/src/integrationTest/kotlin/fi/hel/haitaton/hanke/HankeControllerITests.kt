@@ -32,7 +32,6 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     val mockedHankeId = "GHSFG123"
 
-    @InjectMocks
     lateinit var hankeController: HankeController
 
     @MockBean
@@ -41,7 +40,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @BeforeEach
     fun setUp() {
         MockitoAnnotations.initMocks(this);
+        hankeController = HankeController(hankeService)
     }
+
 
     @Test
     fun `When hankeId not given then Bad Request`() {
@@ -97,6 +98,10 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         val objectMapper = ObjectMapper()
         val hankeJSON = objectMapper.writeValueAsString(hankeToBeAdded)
+
+        //faking the service call
+        Mockito.`when`(hankeService.save(hankeToBeAdded))
+                .thenReturn(hankeToBeAdded)
 
         mockMvc.perform(put("/hankkeet/hankeId=idHankkeelle123")
                 .contentType(MediaType.APPLICATION_JSON).content(hankeJSON)

@@ -5,7 +5,7 @@ import java.time.ZonedDateTime
 /**
  * When creating Hanke, only owner is mandatory.
  */
-data class Hanke(
+/*data class Hanke(
         var hankeId: String?,
         var isYKTHanke: Boolean?,
         var name: String?,
@@ -14,3 +14,4 @@ data class Hanke(
         val owner: String,
         var phase: Int?)
 
+*/
