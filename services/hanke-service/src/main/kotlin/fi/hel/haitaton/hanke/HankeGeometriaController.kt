@@ -1,9 +1,8 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.HankeError.Companion.CODE_PATTERN
-import fi.hel.haitaton.hanke.validation.ValidFeatureCollection
+import fi.hel.haitaton.hanke.validation.ValidHankeGeometriat
 import mu.KotlinLogging
-import org.geojson.FeatureCollection
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -20,13 +19,13 @@ private val logger = KotlinLogging.logger { }
 class HankeGeometriaController(@Autowired private val service: HankeGeometriaService) {
 
     @PostMapping("/{hankeId}/geometriat")
-    fun createGeometria(@PathVariable("hankeId") hankeId: String, @ValidFeatureCollection @RequestBody hankeGeometria: FeatureCollection?): ResponseEntity<Any> {
-        if (hankeGeometria == null) {
+    fun createGeometria(@PathVariable("hankeId") hankeId: String, @ValidHankeGeometriat @RequestBody hankeGeometriat: HankeGeometriat?): ResponseEntity<Any> {
+        if (hankeGeometriat == null) {
             return ResponseEntity.badRequest().body(HankeError.HAI1011)
         }
         return try {
-            service.saveGeometria(hankeId, hankeGeometria)
-            ResponseEntity.noContent().build()
+            val savedHankeGeometriat = service.saveGeometria(hankeId, hankeGeometriat)
+            ResponseEntity.ok(savedHankeGeometriat)
         } catch (e: HankeNotFoundException) {
             logger.error {
                 e.message
