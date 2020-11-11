@@ -88,12 +88,6 @@ If you need to change the build context, you can do so in .env.local file.
   │   ├── haitaton-backend
   │   └── haitaton-ui
 ```
-- Login Login to RedHat customer portal
-```
-docker login registry.redhat.io 
-``` 
-(If you do not have an account, you can create it at https://access.redhat
-.com/)
 - If you want to run all the services you can type
 ```
   docker-compose --env-file .env.local up
