@@ -24,12 +24,18 @@ most of this stuff with default settings as soon as it sees the relevant gradle 
 However, there are some steps left (runtime stuff?)..\
 Also, do check what are the manual steps needed to do the same?
 
+Building the service with both unit and integration tests:
+```
+$ ./gradlew :services:hanke-service:clean build integrationTest
+```
 Starting the application/services can be done afterwards with command line at haitaton-backend root directory:
 ```
 $ ./gradlew :services:hanke-service:bootRun
 ```
 
-After the application has started, the services should be available at URLs:
+After the application has started, the services should be available at URLs (see Swagger UI (below) for full API description):
+> http://localhost:8080/hankkeet/<id> \
+> http://localhost:8080/hankkeet/<id>/geometriat \
 > http://localhost:8080/ \
 > http://localhost:8080/api/hello/
 
