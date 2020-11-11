@@ -28,6 +28,8 @@ services:
       dockerfile: Dockerfile-local
     image: "services/hanke-service"
     container_name: "haitaton-hanke"
+    ports:
+      - "3000:8080"
     hostname: haitaton-hanke
     environment:
       HAITATON_HOST: db
