@@ -46,11 +46,14 @@ services:
   haitaton-ui:
     build:
       context: ${BUILD_ROOT}/haitaton-ui
-      dockerfile: Dockerfile-local
+      dockerfile: ${FRONT_DOCKERFILE}
     image: "haitaton-ui"
     container_name: "haitaton-ui"
     ports:
-      - "8000:8000"
+      - "8000:3000"
+    volumes: # For webpack dev server to use our local files
+      - ${BUILD_ROOT}/haitaton-ui:/app
+      -  '/app/node_modules'
     networks:
       backbone:
          aliases:
