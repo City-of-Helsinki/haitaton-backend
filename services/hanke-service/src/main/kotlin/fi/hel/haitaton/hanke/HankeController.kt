@@ -3,14 +3,17 @@ package fi.hel.haitaton.hanke
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-
 import org.springframework.http.ResponseEntity
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
+import javax.validation.Valid
+
 
 private val logger = KotlinLogging.logger { }
 
 @RestController
 @RequestMapping("/hankkeet")
+@Validated
 class HankeController(@Autowired private val hankeService: HankeService) {
 
     /**
@@ -49,7 +52,7 @@ class HankeController(@Autowired private val hankeService: HankeService) {
      * This method will be called when we do not have id for hanke yet
      */
     @PostMapping
-    fun createHanke(@RequestBody hanke: Hanke?): ResponseEntity<Any> {
+    fun createHanke(@Valid @RequestBody hanke: Hanke?): ResponseEntity<Any> {
 
         logger.info { "Entering createHanke ${hanke?.toJsonString()}" }
 
@@ -63,10 +66,9 @@ class HankeController(@Autowired private val hankeService: HankeService) {
     /**
      * Update one hanke.
      *  TODO: user from front?
-     *  TODO: validation for input
      */
     @PutMapping("/{hankeId}")
-    fun updateHanke(@RequestBody hanke: Hanke?, @PathVariable hankeId: String?): ResponseEntity<Any> {
+    fun updateHanke(@Valid @RequestBody hanke: Hanke?, @PathVariable hankeId: String?): ResponseEntity<Any> {
 
         logger.info { "Entering update Hanke $hankeId : ${hanke?.toJsonString()}" }
         if (hanke == null || hankeId == null) {
@@ -75,6 +77,9 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         return saveHanke(hanke)
     }
 
+    /**
+     * Helper method for saving and handling errors
+     */
     private fun saveHanke(hanke: Hanke): ResponseEntity<Any> {
         return try {
             val createdHanke = hankeService.save(hanke)
@@ -86,5 +91,6 @@ class HankeController(@Autowired private val hankeService: HankeService) {
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1016)
         }
     }
+
 
 }

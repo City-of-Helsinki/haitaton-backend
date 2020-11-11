@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import org.geojson.FeatureCollection
 import java.time.ZonedDateTime
 import javax.validation.ConstraintViolation
+import javax.validation.constraints.Max
+import javax.validation.constraints.Min
 
 /*
 Domain classes
@@ -20,6 +22,8 @@ data class Hanke(
         var startDate: ZonedDateTime?,
         var endDate: ZonedDateTime?,
         val owner: String,
+        @Min(1)
+        @Max(5)
         var phase: Int?)
 
 data class HankeGeometriat(
