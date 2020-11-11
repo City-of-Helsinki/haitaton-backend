@@ -51,7 +51,7 @@ services:
     container_name: "haitaton-ui"
     ports:
       - "8000:3000"
-    volumes: # For webpack dev server to use our local files
+    volumes:
       - ${BUILD_ROOT}/haitaton-ui:/app
       -  '/app/node_modules'
     networks:
