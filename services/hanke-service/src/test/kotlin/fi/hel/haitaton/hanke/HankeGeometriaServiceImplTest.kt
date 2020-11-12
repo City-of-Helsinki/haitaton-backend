@@ -19,12 +19,12 @@ internal class HankeGeometriaServiceImplTest {
     @Test
     fun `save HankeGeometriat OK - with old version`() {
         val hankeId = "1234567"
-        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/test/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
         hankeGeometriat.hankeId = null
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
         hankeGeometriat.updatedAt = null
-        val oldHankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        val oldHankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/test/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
         oldHankeGeometriat.hankeId = hankeId
         oldHankeGeometriat.version = 1
 
@@ -49,7 +49,7 @@ internal class HankeGeometriaServiceImplTest {
     @Test
     fun `save HankeGeometriat OK - without old version`() {
         val hankeId = "1234567"
-        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/test/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
         hankeGeometriat.hankeId = null
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
@@ -76,7 +76,7 @@ internal class HankeGeometriaServiceImplTest {
     @Test
     fun `save HankeGeometriat - no Hanke`() {
         val hankeId = "1234567"
-        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/test/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
         hankeGeometriat.hankeId = null
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
@@ -98,7 +98,7 @@ internal class HankeGeometriaServiceImplTest {
     @Test
     fun `load HankeGeometriat OK`() {
         val hankeId = "1234567"
-        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/test/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
         every { dao.findHankeByHankeId(hankeId) } returns HankeEntity(hankeId)
         every { dao.loadHankeGeometria(HankeEntity(hankeId)) } returns hankeGeometriat
 
