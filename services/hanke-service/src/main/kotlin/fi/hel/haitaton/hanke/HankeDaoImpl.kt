@@ -4,16 +4,16 @@ import com.fasterxml.jackson.module.kotlin.readValue
 
 class HankeDaoImpl : HankeDao {
 
-    override fun findHankeByHankeId(hankeId: String): HankeEntity? {
+    override fun findHankeByHankeId(hankeId: String): OldHankeEntity? {
         // TODO proper implementation
-        return HankeEntity("1234567")
+        return OldHankeEntity("1234567")
     }
 
-    override fun saveHankeGeometria(hankeEntity: HankeEntity, hankeGeometriat: HankeGeometriat) {
+    override fun saveHankeGeometria(hankeEntity: OldHankeEntity, hankeGeometriat: HankeGeometriat) {
         // TODO
     }
 
-    override fun loadHankeGeometria(hanke: HankeEntity): HankeGeometriat? {
+    override fun loadHankeGeometria(hanke: OldHankeEntity): HankeGeometriat? {
         // TODO
         val content = """
             {
@@ -60,8 +60,8 @@ class HankeDaoImpl : HankeDao {
         return OBJECT_MAPPER.readValue(content)
     }
 
-    override fun saveHanke(hanke: Hanke): HankeEntity {
-        TODO("Not yet implemented")
-        return HankeEntity("id")
+    override fun saveHanke(hanke: Hanke): OldHankeEntity {
+        // TODO("Not yet implemented")
+        return OldHankeEntity("id")
     }
 }
