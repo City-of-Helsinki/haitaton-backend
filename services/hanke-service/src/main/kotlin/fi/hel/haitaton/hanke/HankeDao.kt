@@ -1,9 +1,8 @@
 package fi.hel.haitaton.hanke
 
 interface HankeDao {
-    fun findHankeByHankeId(hankeId: String): HankeEntity?
-    fun saveHankeGeometria(hankeEntity: HankeEntity, hankeGeometriat: HankeGeometriat)
-    fun loadHankeGeometria(hanke: HankeEntity): HankeGeometriat?
-    fun saveHanke(hanke: Hanke) : HankeEntity
-
+    fun findHankeByHankeId(hankeId: String): OldHankeEntity?
+    fun saveHankeGeometria(hankeEntity: OldHankeEntity, hankeGeometriat: HankeGeometriat)
+    fun loadHankeGeometria(hanke: OldHankeEntity): HankeGeometriat?
+    fun saveHanke(hanke: Hanke) : OldHankeEntity
 }

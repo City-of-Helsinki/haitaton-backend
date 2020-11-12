@@ -28,14 +28,14 @@ internal class HankeGeometriaServiceImplTest {
         oldHankeGeometriat.hankeId = hankeId
         oldHankeGeometriat.version = 1
 
-        every { dao.findHankeByHankeId(hankeId) } returns HankeEntity(hankeId)
-        every { dao.loadHankeGeometria(HankeEntity(hankeId)) } returns oldHankeGeometriat
+        every { dao.findHankeByHankeId(hankeId) } returns OldHankeEntity(hankeId)
+        every { dao.loadHankeGeometria(OldHankeEntity(hankeId)) } returns oldHankeGeometriat
         every { dao.saveHankeGeometria(any(), any()) } just runs
 
         val savedHankeGeometria = service.saveGeometria(hankeId, hankeGeometriat)
 
         verify { dao.findHankeByHankeId(hankeId) }
-        verify { dao.loadHankeGeometria(HankeEntity(hankeId)) }
+        verify { dao.loadHankeGeometria(OldHankeEntity(hankeId)) }
         verify { dao.saveHankeGeometria(any(), any()) }
         assertAll {
             assertThat(savedHankeGeometria.version).isEqualTo(2)
@@ -55,14 +55,14 @@ internal class HankeGeometriaServiceImplTest {
         hankeGeometriat.createdAt = null
         hankeGeometriat.updatedAt = null
 
-        every { dao.findHankeByHankeId(hankeId) } returns HankeEntity(hankeId)
-        every { dao.loadHankeGeometria(HankeEntity(hankeId)) } returns null
+        every { dao.findHankeByHankeId(hankeId) } returns OldHankeEntity(hankeId)
+        every { dao.loadHankeGeometria(OldHankeEntity(hankeId)) } returns null
         every { dao.saveHankeGeometria(any(), any()) } just runs
 
         val savedHankeGeometria = service.saveGeometria(hankeId, hankeGeometriat)
 
         verify { dao.findHankeByHankeId(hankeId) }
-        verify { dao.loadHankeGeometria(HankeEntity(hankeId)) }
+        verify { dao.loadHankeGeometria(OldHankeEntity(hankeId)) }
         verify { dao.saveHankeGeometria(any(), any()) }
         assertAll {
             assertThat(savedHankeGeometria.version).isEqualTo(1)
@@ -91,7 +91,7 @@ internal class HankeGeometriaServiceImplTest {
         }
 
         verify { dao.findHankeByHankeId(hankeId) }
-        verify(exactly = 0) { dao.loadHankeGeometria(HankeEntity(hankeId)) }
+        verify(exactly = 0) { dao.loadHankeGeometria(OldHankeEntity(hankeId)) }
         verify(exactly = 0) { dao.saveHankeGeometria(any(), any()) }
     }
 
@@ -99,13 +99,13 @@ internal class HankeGeometriaServiceImplTest {
     fun `load HankeGeometriat OK`() {
         val hankeId = "1234567"
         val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/test/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
-        every { dao.findHankeByHankeId(hankeId) } returns HankeEntity(hankeId)
-        every { dao.loadHankeGeometria(HankeEntity(hankeId)) } returns hankeGeometriat
+        every { dao.findHankeByHankeId(hankeId) } returns OldHankeEntity(hankeId)
+        every { dao.loadHankeGeometria(OldHankeEntity(hankeId)) } returns hankeGeometriat
 
         val loadedHankeGeometriat = service.loadGeometria(hankeId)
 
         verify { dao.findHankeByHankeId(hankeId) }
-        verify { dao.loadHankeGeometria(HankeEntity(hankeId)) }
+        verify { dao.loadHankeGeometria(OldHankeEntity(hankeId)) }
         assertAll {
             assertThat(loadedHankeGeometriat).isNotNull()
             assertThat(loadedHankeGeometriat!!.version).isEqualTo(1)
@@ -129,6 +129,6 @@ internal class HankeGeometriaServiceImplTest {
         }
 
         verify { dao.findHankeByHankeId(hankeId) }
-        verify(exactly = 0) { dao.loadHankeGeometria(HankeEntity(hankeId)) }
+        verify(exactly = 0) { dao.loadHankeGeometria(OldHankeEntity(hankeId)) }
     }
 }
