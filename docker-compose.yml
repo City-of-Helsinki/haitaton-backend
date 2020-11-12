@@ -38,10 +38,11 @@ services:
       HAITATON_PASSWORD: haitaton
     depends_on:
       - db
+    command: [ "./wait-for-it.sh", "-t", "30", "--strict", "db:5432", "--", "java", "-jar", "haitaton.jar" ]
     networks:
       backbone:
-          aliases:
-            - haitaton-hanke
+        aliases:
+          - haitaton-hanke
 
   haitaton-ui:
     build:
@@ -53,11 +54,11 @@ services:
       - "3001:8000"
     volumes:
       - ${BUILD_ROOT}/haitaton-ui:/app
-      -  '/app/node_modules'
+      - '/app/node_modules'
     networks:
       backbone:
-         aliases:
-            - haitaton-ui
+        aliases:
+          - haitaton-ui
 
   haitaton-nginx:
     image: nginx:latest
