@@ -50,7 +50,7 @@ services:
     image: "haitaton-ui"
     container_name: "haitaton-ui"
     ports:
-      - "8000:3000"
+      - "3001:8000"
     volumes:
       - ${BUILD_ROOT}/haitaton-ui:/app
       -  '/app/node_modules'
