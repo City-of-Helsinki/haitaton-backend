@@ -1,44 +1,21 @@
 package fi.hel.haitaton.hanke
 
 import org.assertj.core.api.Assertions
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
-
 import org.junit.jupiter.api.Test
-import org.mockito.InjectMocks
 import org.mockito.Mockito
-import org.mockito.MockitoAnnotations
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
-
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
-import java.time.ZonedDateTime
 
-@SpringBootTest
 class HankeControllerTest {
 
-    val mockedHankeId = "AFC1234"
+    private val mockedHankeId = "AFC1234"
 
-    @MockBean
-    lateinit var hankeService: HankeService
+    private val hankeService: HankeService = Mockito.mock(HankeService::class.java)
 
-    lateinit var hankeController: HankeController
-
-    @BeforeEach
-    fun setUp() {
-        MockitoAnnotations.initMocks(this)
-        hankeController = HankeController(hankeService)
-    }
-
-    @AfterEach
-    fun tearDown() {
-    }
-
+    private val hankeController: HankeController = HankeController(hankeService)
 
     @Test
     fun `test that the getHankebyId returns ok`() {
-
         Mockito.`when`(hankeService.loadHanke(mockedHankeId))
                 .thenReturn(fi.hel.haitaton.hanke.Hanke(mockedHankeId, true, "Mannerheimintien remontti remonttinen", java.time.ZonedDateTime.now(), java.time.ZonedDateTime.now(), "Risto", 1))
 

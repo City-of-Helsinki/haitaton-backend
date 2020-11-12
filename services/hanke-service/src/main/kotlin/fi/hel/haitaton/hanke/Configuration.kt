@@ -12,6 +12,11 @@ class Configuration {
     }
 
     @Bean
+    fun hankeService(dao: HankeDao): HankeService {
+        return HankeServiceImpl(dao)
+    }
+
+    @Bean
     fun hankeGeometriaService(dao: HankeDao): HankeGeometriaService {
         return HankeGeometriaServiceImpl(dao)
     }

@@ -4,12 +4,12 @@ package fi.hel.haitaton.hanke
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.mockito.*
+import org.mockito.Mockito
+import org.mockito.MockitoAnnotations
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
@@ -25,9 +25,8 @@ import java.time.ZonedDateTime
  * This class should test only the weblayer (both HTTP server and context to be auto-mocked).
  */
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@EnableAutoConfiguration
+@WebMvcTest
+@Import(Configuration::class)
 class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     val mockedHankeId = "GHSFG123"
@@ -57,8 +56,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         //faking the service call
         Mockito.`when`(hankeService.loadHanke(mockedHankeId))
-                .thenReturn(Hanke(mockedHankeId, true, "Hämeentien perusparannus ja katuvalot"
-                        , ZonedDateTime.now(), ZonedDateTime.now(), "Risto", 1))
+                .thenReturn(Hanke(mockedHankeId, true, "Hämeentien perusparannus ja katuvalot", ZonedDateTime.now(), ZonedDateTime.now(), "Risto", 1))
 
         mockMvc.perform(get("/hankkeet?hankeId=" + mockedHankeId).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
