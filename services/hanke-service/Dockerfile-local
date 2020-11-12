@@ -1,0 +1,11 @@
+FROM openjdk:11.0.9.1-jdk as builder
+USER root
+ADD . /builder
+WORKDIR /builder
+RUN ./gradlew build
+
+FROM openjdk:11
+WORKDIR /app
+EXPOSE 8080 8081
+COPY --from=builder /builder/services/hanke-service/build/libs/hanke-service-*.jar /app/haitaton.jar
+CMD ["java", "-jar", "haitaton.jar" ]
