@@ -24,8 +24,8 @@ services:
 
   haitaton-hanke:
     build:
-      context: ${BUILD_ROOT}/haitaton-backend/services/hanke-service
-      dockerfile: Dockerfile-local
+      context: ${BUILD_ROOT}/haitaton-backend
+      dockerfile: services/hanke-service/Dockerfile-local
     image: "services/hanke-service"
     container_name: "haitaton-hanke"
     ports:
