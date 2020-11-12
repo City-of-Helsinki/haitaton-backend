@@ -43,7 +43,10 @@ plugins {
 	id("org.springframework.boot") version "2.3.4.RELEASE"
 	id("io.spring.dependency-management") version "1.0.10.RELEASE"
 	kotlin("jvm") version "1.4.10"
+	// Gives kotlin-allopen, which auto-opens classes with certain annotations
 	kotlin("plugin.spring") version "1.4.10"
+	// Gives kotlin-noarg for @Entity, @Embeddable
+	kotlin("plugin.jpa") version "1.4.10"
 	idea
 }
 
@@ -54,8 +57,14 @@ dependencies {
 	implementation("io.github.microutils:kotlin-logging:1.12.0")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	implementation("de.grundid.opendatalab:geojson-jackson:$geoJsonJacksonVersion")
-    runtimeOnly("org.postgresql:postgresql")
+	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+	implementation("org.liquibase:liquibase-core")								// TODO: do we need org.springframework:spring-dao ?
+
+	runtimeOnly("org.postgresql:postgresql")
+	// H2 is used as embedded db for some simple low level Entity and Repository class testing
+	runtimeOnly("com.h2database:h2")
 	runtimeOnly("org.springdoc:springdoc-openapi-ui:$springDocVersion")
+
 	testImplementation("org.springframework.boot:spring-boot-starter-test") {
 		exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
 	}
