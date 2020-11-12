@@ -7,15 +7,16 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 
 
 /**
  * For testing Spring Boot Actuator endpoints
  */
-@SpringBootTest(properties = ["management.server.port="])
+@SpringBootTest(properties = [
+    "management.server.port=",
+    "spring.liquibase.enabled=false",
+    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration"])
 @AutoConfigureMockMvc
 @EnableAutoConfiguration
 class ActuatorEndpointITests(@Autowired val mockMvc: MockMvc) {
