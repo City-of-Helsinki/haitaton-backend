@@ -1,11 +1,13 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.validation.ValidHanke
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
+import javax.validation.ConstraintViolationException
 import javax.validation.Valid
 
 
@@ -19,7 +21,7 @@ class HankeController(@Autowired private val hankeService: HankeService) {
     /**
      * Get one hanke with hankeId.
      *  TODO: token and user from front?
-     *  TODO: validation for input
+     *  TODO: validation for input parameter
      *
      */
     @GetMapping
@@ -52,7 +54,7 @@ class HankeController(@Autowired private val hankeService: HankeService) {
      * This method will be called when we do not have id for hanke yet
      */
     @PostMapping
-    fun createHanke(@Valid @RequestBody hanke: Hanke?): ResponseEntity<Any> {
+    fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): ResponseEntity<Any> {
 
         logger.info { "Entering createHanke ${hanke?.toJsonString()}" }
 
@@ -68,7 +70,7 @@ class HankeController(@Autowired private val hankeService: HankeService) {
      *  TODO: user from front?
      */
     @PutMapping("/{hankeId}")
-    fun updateHanke(@Valid @RequestBody hanke: Hanke?, @PathVariable hankeId: String?): ResponseEntity<Any> {
+    fun updateHanke(@ValidHanke @RequestBody hanke: Hanke?, @PathVariable hankeId: String?): ResponseEntity<Any> {
 
         logger.info { "Entering update Hanke $hankeId : ${hanke?.toJsonString()}" }
         if (hanke == null || hankeId == null) {
@@ -92,5 +94,17 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         }
     }
 
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(ConstraintViolationException::class)
+    fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
+        val violation = ex.constraintViolations.firstOrNull { constraintViolation ->
+            constraintViolation.message.matches(HankeError.CODE_PATTERN)
+        }
+        return if (violation != null) {
+            HankeError.valueOf(violation)
+        } else {
+            HankeError.HAI1011
+        }
+    }
 
 }

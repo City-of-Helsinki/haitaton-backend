@@ -38,7 +38,7 @@ class HankeControllerTest {
 
         Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         Assertions.assertThat(response.body).isNotNull
-        var responseHanke = response as? ResponseEntity<Hanke>
+        var responseHanke = response as ResponseEntity<Hanke>
         Assertions.assertThat(responseHanke?.body).isNotNull
         Assertions.assertThat(responseHanke?.body?.name).isEqualTo("hankkeen nimi")
 
@@ -48,14 +48,14 @@ class HankeControllerTest {
     @Test
     fun `test that the validation gives error with too big phase id`() {
 
-        var partialHanke = Hanke(hankeId = "id123", name = "hankkeen nimi", isYKTHanke = false, startDate = null, endDate = null, owner = "Tiina", phase = 3333337)
+        var partialHanke = Hanke(hankeId = "id123", name = "", isYKTHanke = false, startDate = null, endDate = null, owner = "", phase = 3333337)
         //mock HankeService response
         Mockito.`when`(hankeService.save(partialHanke)).thenReturn(partialHanke)
 
         //Actual call
         val response: ResponseEntity<Any> = hankeController.updateHanke(partialHanke, "id123")
 
-        //Should return validation error
+        //TODO: Should return validation error,but wont
         Assertions.assertThat(response.statusCode).isEqualTo(org.springframework.http.HttpStatus.BAD_REQUEST)
         Assertions.assertThat(response.body).isNotNull
        // var responseHanke = response as? ResponseEntity<Hanke>
