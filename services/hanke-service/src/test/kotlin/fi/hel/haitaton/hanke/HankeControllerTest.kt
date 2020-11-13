@@ -58,7 +58,7 @@ class HankeControllerTest {
 
         var partialHanke = Hanke(hankeId = "id123", name = "hankkeen nimi", isYKTHanke = false, startDate = null, endDate = null, owner = "Tiina", phase = 0)
         //mock HankeService response
-        Mockito.`when`(hankeService.save(partialHanke)).thenReturn(partialHanke)
+        Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
 
         //Actual call
         val response: ResponseEntity<Any> = hankeController.updateHanke(partialHanke, "id123")

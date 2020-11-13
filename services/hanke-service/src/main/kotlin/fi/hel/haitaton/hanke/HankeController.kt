@@ -25,13 +25,11 @@ class HankeController(@Autowired private val hankeService: HankeService) {
      */
     @GetMapping
     fun getHankeById(@RequestParam(name = "hankeId") hankeId: String?): ResponseEntity<Any> {
-
         if (hankeId == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
         return try {
             val hanke = hankeService.loadHanke(hankeId)
-
             ResponseEntity.status(HttpStatus.OK).body(hanke)
 
         } catch (e: HankeNotFoundException) {
@@ -61,7 +59,15 @@ class HankeController(@Autowired private val hankeService: HankeService) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
 
-        return saveHanke(hanke)
+        return try {
+            val createdHanke = hankeService.createHanke(hanke)
+            ResponseEntity.status(HttpStatus.OK).body(createdHanke)
+        } catch (e: Exception) {
+            logger.error(e) {
+                HankeError.HAI1016.toString()
+            } // TODO: change codes ^ v
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1016)
+        }
     }
 
     /**
@@ -75,15 +81,8 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         if (hanke == null || hankeId == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
-        return saveHanke(hanke)
-    }
-
-    /**
-     * Helper method for saving and handling errors
-     */
-    private fun saveHanke(hanke: Hanke): ResponseEntity<Any> {
         return try {
-            val createdHanke = hankeService.save(hanke)
+            val createdHanke = hankeService.updateHanke(hanke)
             ResponseEntity.status(HttpStatus.OK).body(createdHanke)
         } catch (e: Exception) {
             logger.error(e) {

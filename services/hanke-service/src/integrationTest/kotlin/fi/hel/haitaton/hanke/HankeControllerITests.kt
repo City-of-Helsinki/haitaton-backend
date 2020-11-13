@@ -76,7 +76,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         var hankeToBeAdded = Hanke(hankeId = "", name = hankeName, isYKTHanke = false, startDate = null, endDate = null, owner = "Tiina", phase = 0)
 
         //faking the service call
-        Mockito.`when`(hankeService.save(hankeToBeAdded))
+        Mockito.`when`(hankeService.createHanke(hankeToBeAdded))
                 .thenReturn(hankeToBeAdded)
 
         val objectMapper = ObjectMapper()
@@ -101,7 +101,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val hankeJSON = objectMapper.writeValueAsString(hankeToBeAdded)
 
         //faking the service call
-        Mockito.`when`(hankeService.save(hankeToBeAdded))
+        Mockito.`when`(hankeService.updateHanke(hankeToBeAdded))
                 .thenReturn(hankeToBeAdded)
 
         mockMvc.perform(put("/hankkeet/hankeId=idHankkeelle123")
@@ -130,5 +130,3 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     }
 
 }
-
-
