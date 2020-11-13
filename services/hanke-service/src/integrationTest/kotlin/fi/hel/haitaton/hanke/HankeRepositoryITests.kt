@@ -7,7 +7,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
 
 @DataJpaTest(properties = ["spring.liquibase.enabled=false"])
-class HankeRepositoryTests @Autowired constructor(
+class HankeRepositoryITests @Autowired constructor(
         val entityManager: TestEntityManager,
         val hankeRepository: HankeRepository) {
 
