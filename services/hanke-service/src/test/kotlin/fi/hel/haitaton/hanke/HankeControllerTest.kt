@@ -31,7 +31,7 @@ class HankeControllerTest {
 
         var partialHanke = Hanke(hankeId = "id123", name = "hankkeen nimi", isYKTHanke = false, startDate = null, endDate = null, owner = "Tiina", phase = null)
         //mock HankeService response
-        Mockito.`when`(hankeService.save(partialHanke)).thenReturn(partialHanke)
+        Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
 
         //Actual call
         val response: ResponseEntity<Any> = hankeController.updateHanke(partialHanke, "id123")
@@ -41,7 +41,5 @@ class HankeControllerTest {
         var responseHanke = response as? ResponseEntity<Hanke>
         Assertions.assertThat(responseHanke?.body).isNotNull
         Assertions.assertThat(responseHanke?.body?.name).isEqualTo("hankkeen nimi")
-
-
     }
 }

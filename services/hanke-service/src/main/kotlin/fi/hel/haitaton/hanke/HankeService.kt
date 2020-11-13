@@ -7,11 +7,8 @@ interface HankeService {
      */
     fun loadHanke(hankeId: String): Hanke?
 
-    /**
-     * Save hanke.
-     *
-     * If hankeId missing that is resolved here and returned back within hanke
-     */
-    fun save(hanke: Hanke): Hanke?
+    fun createHanke(hanke: Hanke): Hanke
+
+    fun updateHanke(hanke: Hanke): Hanke
 
 }

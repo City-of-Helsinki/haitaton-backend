@@ -1,8 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import org.springframework.data.jpa.repository.JpaRepository
-import java.sql.Date
-import java.sql.Timestamp
+import java.time.LocalDate
 import java.time.LocalDateTime
 import javax.persistence.*
 
@@ -22,18 +21,19 @@ enum class SaveType {
 
 // Build-time plugins will open the class and add no-arg constructor for @Entity classes.
 
-@Entity @Table(name = "Hanke")
+@Entity @Table(name = "hanke")
 class HankeEntity (
     @Enumerated(EnumType.STRING)
     var saveType: SaveType? = null,
     var hankeTunnus: String? = null,
-    var startDate: Date? = null, // TODO: possibly ZonedDateTime, but we don't need the time or timezone...
-    var endDate: Date? = null, // TODO: possibly ZonedDateTime, but we don't need the time or timezone...
+    var name: String? = null,
+    var startDate: LocalDate? = null, // NOTE: stored and handled in UTC, not "local"
+    var endDate: LocalDate? = null, // NOTE: stored and handled in UTC, not "local"
     var owner: String? = null,
-    var phase: String? = null, // TODO: convert to enum, once known, and @Enumerated(EnumType.STRING)
+    var phase: String? = null,
     var isYKTHanke: Boolean? = false,
-    var createdAt: Timestamp? = Timestamp.valueOf(LocalDateTime.now()),
-    var modifiedAt: Timestamp? = Timestamp.valueOf(LocalDateTime.now()),
+    var createdAt: LocalDateTime? = LocalDateTime.now(),
+    var modifiedAt: LocalDateTime? = LocalDateTime.now(),
     // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
     // can be a performance problem if there is a need to do bulk inserts.
     // Using SEQUENCE would allow getting multiple ids more efficiently.
