@@ -27,16 +27,16 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
         }
         var ok = true
         if (checkInputStringAllowNull(hanke?.owner)) {
-            context.buildConstraintViolationWithTemplate(HankeError.HAI1017.name).addPropertyNode("hanke").addPropertyNode("owner").addConstraintViolation()
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1017.name).addPropertyNode("owner").addConstraintViolation()
             ok = false
         }
         when {
             checkInputStringAllowNull(hanke?.name) -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1017.name).addPropertyNode("featureCollection").addPropertyNode("name").addConstraintViolation()
+                context.buildConstraintViolationWithTemplate(HankeError.HAI1017.name).addPropertyNode("name").addConstraintViolation()
                 ok = false
             }
             hanke.phase!! > 7 -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1017.name).addPropertyNode("featureCollection").addPropertyNode("pahse").addPropertyNode("properties").addConstraintViolation()
+                context.buildConstraintViolationWithTemplate(HankeError.HAI1017.name).addPropertyNode("phase").addConstraintViolation()
                 ok = false
             }
         }

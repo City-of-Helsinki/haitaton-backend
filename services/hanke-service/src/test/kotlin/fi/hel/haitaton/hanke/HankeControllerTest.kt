@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import org.assertj.core.api.Assertions
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
 import org.springframework.context.annotation.Configuration
+import javax.validation.ConstraintViolationException
 
 @ExtendWith(SpringExtension::class)
 @Import(HankeControllerTest.TestConfiguration::class)
@@ -66,8 +68,21 @@ class HankeControllerTest {
         var responseHanke = response as ResponseEntity<Hanke>
         Assertions.assertThat(responseHanke?.body).isNotNull
         Assertions.assertThat(responseHanke?.body?.name).isEqualTo("hankkeen nimi")
-
     }
 
+
+    @Test
+    fun `test that the updateHanke will give validation errors from invalid hanke data for owner and name`() {
+
+        var partialHanke = Hanke(hankeId = "id123", name = "", isYKTHanke = false, startDate = null, endDate = null, owner = "", phase = 0)
+        //mock HankeService response
+        Mockito.`when`(hankeService.save(partialHanke)).thenReturn(partialHanke)
+
+        //Actual call
+        Assertions.assertThatExceptionOfType(ConstraintViolationException::class.java).isThrownBy {
+            hankeController.updateHanke(partialHanke, "id123")
+        }.withMessageContaining("updateHanke.hanke.name: HAI1017").withMessageContaining("updateHanke.hanke.owner: HAI1017")
+
+    }
 
 }
