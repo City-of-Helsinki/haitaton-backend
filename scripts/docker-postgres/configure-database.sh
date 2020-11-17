@@ -2,11 +2,13 @@
 
 set -euo pipefail
 
-DB_APP_DB=haitaton
-DB_APP_DB_TEST=haitaton_test
-DB_APP_USER=haitaton_user
-DB_APP_PASSWORD=haitaton
-POSTGRES_USER=postgres
+#Uncomment these if you use docker without docker-compose
+#DB_APP_DB=haitaton
+#DB_APP_DB_TEST=haitaton_test
+#DB_APP_USER=haitaton_user
+#DB_APP_PASSWORD=haitaton
+#POSTGRES_USER=postgres
+#POSTGRES_PASSWORD=postgres
 
 echo "Creating database \"$DB_APP_DB\", creating role \"$DB_APP_USER\" with database owner privileges…"
 

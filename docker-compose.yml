@@ -1,0 +1,79 @@
+version: "3"
+services:
+  db:
+    build:
+      context: ${BUILD_ROOT}/haitaton-backend/scripts/docker-postgres
+      dockerfile: Dockerfile
+    image: "postgis/postgis"
+    container_name: "haitaton-db"
+    environment:
+      - DB_APP_DB=haitaton
+      - DB_APP_DB_TEST=haitaton_test
+      - DB_APP_USER=haitaton_user
+      - DB_APP_PASSWORD=haitaton
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${DB_VOLUME}:/var/lib/postgresql/data
+    networks:
+      backbone:
+        aliases:
+          - haitaton-db
+
+  haitaton-hanke:
+    build:
+      context: ${BUILD_ROOT}/haitaton-backend
+      dockerfile: services/hanke-service/Dockerfile-local
+    image: "services/hanke-service"
+    container_name: "haitaton-hanke"
+    ports:
+      - "3000:8080"
+    hostname: haitaton-hanke
+    environment:
+      HAITATON_HOST: db
+      HAITATON_PORT: 5432
+      HAITATON_USER: haitaton_user
+      HAITATON_PASSWORD: haitaton
+    depends_on:
+      - db
+    command: [ "./wait-for-it.sh", "-t", "30", "--strict", "db:5432", "--", "java", "-jar", "haitaton.jar" ]
+    networks:
+      backbone:
+        aliases:
+          - haitaton-hanke
+
+  haitaton-ui:
+    build:
+      context: ${BUILD_ROOT}/haitaton-ui
+      dockerfile: ${FRONT_DOCKERFILE}
+    image: "haitaton-ui"
+    container_name: "haitaton-ui"
+    ports:
+      - "3001:8000"
+    volumes:
+      - ${BUILD_ROOT}/haitaton-ui:/app
+      - '/app/node_modules'
+    networks:
+      backbone:
+        aliases:
+          - haitaton-ui
+
+  haitaton-nginx:
+    image: nginx:latest
+    container_name: haitaton_nginx
+    hostname: haitaton-nginx
+    volumes:
+      - ${BUILD_ROOT}/haitaton-backend/scripts/nginx/${NGINX_CONF}:/etc/nginx/conf.d/default.conf
+    ports:
+      - 8080:80
+    networks:
+      - backbone
+    links:
+      - haitaton-hanke
+      - haitaton-ui
+
+networks:
+  backbone:
+    driver: bridge
