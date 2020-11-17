@@ -13,7 +13,7 @@ set -euo pipefail
 echo "Creating database \"$DB_APP_DB\", creating role \"$DB_APP_USER\" with database owner privileges…"
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-END
-create extension postgis;
+create extension if not exists postgis;
 create role "${DB_APP_USER}" with password '${DB_APP_PASSWORD}' login;
 alter user "${DB_APP_USER}" with superuser;
 alter user "${DB_APP_USER}" with superuser;
