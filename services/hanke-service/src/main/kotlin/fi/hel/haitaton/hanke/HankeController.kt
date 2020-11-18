@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 import javax.validation.ConstraintViolationException
-import javax.validation.Valid
 
 
 private val logger = KotlinLogging.logger { }
@@ -28,7 +27,7 @@ class HankeController(@Autowired private val hankeService: HankeService) {
     fun getHankeById(@RequestParam(name = "hankeId") hankeId: String?): ResponseEntity<Any> {
 
         if (hankeId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1017)
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
         return try {
             val hanke = hankeService.loadHanke(hankeId)
@@ -40,9 +39,9 @@ class HankeController(@Autowired private val hankeService: HankeService) {
 
         } catch (e: Exception) {
             logger.error(e) {
-                HankeError.HAI1016.toString()
+                HankeError.HAI1003.toString()
             }
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1016)
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1003)
         }
     }
 
@@ -59,7 +58,7 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         logger.info { "Entering createHanke ${hanke?.toJsonString()}" }
 
         if (hanke == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1017)
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
 
         return saveHanke(hanke)
@@ -74,7 +73,7 @@ class HankeController(@Autowired private val hankeService: HankeService) {
 
         logger.info { "Entering update Hanke $hankeId : ${hanke?.toJsonString()}" }
         if (hanke == null || hankeId == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1017)
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
         return saveHanke(hanke)
     }
@@ -88,9 +87,9 @@ class HankeController(@Autowired private val hankeService: HankeService) {
             ResponseEntity.status(HttpStatus.OK).body(createdHanke)
         } catch (e: Exception) {
             logger.error(e) {
-                HankeError.HAI1016.toString()
+                HankeError.HAI1003.toString()
             }
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1016)
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1003)
         }
     }
 
@@ -103,7 +102,7 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         return if (violation != null) {
             HankeError.valueOf(violation)
         } else {
-            HankeError.HAI1011
+            HankeError.HAI1002
         }
     }
 

@@ -66,8 +66,8 @@ class HankeControllerTest {
         Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         Assertions.assertThat(response.body).isNotNull
         var responseHanke = response as ResponseEntity<Hanke>
-        Assertions.assertThat(responseHanke?.body).isNotNull
-        Assertions.assertThat(responseHanke?.body?.name).isEqualTo("hankkeen nimi")
+        Assertions.assertThat(responseHanke.body).isNotNull
+        Assertions.assertThat(responseHanke.body?.name).isEqualTo("hankkeen nimi")
     }
 
 
@@ -81,7 +81,7 @@ class HankeControllerTest {
         //Actual call
         Assertions.assertThatExceptionOfType(ConstraintViolationException::class.java).isThrownBy {
             hankeController.updateHanke(partialHanke, "id123")
-        }.withMessageContaining("updateHanke.hanke.name: HAI1017").withMessageContaining("updateHanke.hanke.owner: HAI1017")
+        }.withMessageContaining("updateHanke.hanke.name: "+HankeError.HAI1002.toString()).withMessageContaining("updateHanke.hanke.owner: "+HankeError.HAI1002.toString())
 
     }
 
