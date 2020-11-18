@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito
@@ -10,7 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
@@ -70,7 +73,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `Add Hanke and return it newly created hankeId (POST)`() {
 
         val hankeName = "Mannerheimintien remontti remonttinen"
-        var hankeToBeAdded = Hanke(hankeId = "", name = hankeName, isYKTHanke = false, startDate = null, endDate = null, owner = "Tiina", phase = null)
+        var hankeToBeAdded = Hanke(hankeId = "", name = hankeName, isYKTHanke = false, startDate = null, endDate = null, owner = "Tiina", phase = 0)
 
         //faking the service call
         Mockito.`when`(hankeService.save(hankeToBeAdded))
@@ -92,7 +95,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         var name = "kissahanke"
         //initializing only part of the data for Hanke
-        val hankeToBeAdded = Hanke(hankeId = null, name = name, isYKTHanke = false, startDate = null, endDate = null, owner = "Tiina", phase = null)
+        val hankeToBeAdded = Hanke(hankeId = null, name = name, isYKTHanke = false, startDate = null, endDate = null, owner = "Tiina", phase = 0)
 
         val objectMapper = ObjectMapper()
         val hankeJSON = objectMapper.writeValueAsString(hankeToBeAdded)
@@ -107,6 +110,23 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.name").value(name))
+    }
+
+    @Test
+    fun `test that the validation gives error and Bad Request is returned when owner is empty`() {
+
+        var hankeToBeAdded = Hanke(hankeId = "idHankkeelle123", name = "", isYKTHanke = false, startDate = null, endDate = null, owner = "", phase = 3)
+        //mock HankeService response
+        Mockito.`when`(hankeService.save(hankeToBeAdded)).thenReturn(hankeToBeAdded)
+
+        val objectMapper = ObjectMapper()
+        val hankeJSON = objectMapper.writeValueAsString(hankeToBeAdded)
+
+         mockMvc.perform(put("/hankkeet/hankeId=idHankkeelle123")
+                .contentType(MediaType.APPLICATION_JSON).content(hankeJSON)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
     }
 
 }
