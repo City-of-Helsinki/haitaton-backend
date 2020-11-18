@@ -34,13 +34,15 @@ data class HankeGeometriat(
 enum class HankeError(
         val errorMessage: String) {
     HAI1001("Hanke not found"),
+    HAI1002("Invalid Hanke data"),
+    HAI1003("Internal error while saving Hanke"),
     HAI1011("Invalid Hanke geometry"),
     HAI1012("Internal error while saving Hanke geometry"),
     HAI1013("Invalid coordinate system"),
     HAI1014("Internal error while loading Hanke geometry"),
-    HAI1015("Hanke geometry not found"),
-    HAI1016("Internal error while saving Hanke"),
-    HAI1017("Invalid Hanke data");
+    HAI1015("Hanke geometry not found");
+
+
 
     val errorCode: String
         get() = name
