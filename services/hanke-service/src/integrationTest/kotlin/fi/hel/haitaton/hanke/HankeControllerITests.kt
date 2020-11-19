@@ -47,10 +47,10 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
 
     @Test
-    fun `When hankeId not given then Bad Request`() {
+    fun `When hankeId not given for fetching then error`() {
 
         mockMvc.perform(get("/hankkeet/").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest)
+                .andExpect(status().is4xxClientError)
 
     }
 
@@ -61,7 +61,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         Mockito.`when`(hankeService.loadHanke(mockedHankeId))
                 .thenReturn(Hanke(mockedHankeId, true, "Hämeentien perusparannus ja katuvalot", ZonedDateTime.now(), ZonedDateTime.now(), "Risto", 1))
 
-        mockMvc.perform(get("/hankkeet?hankeId=" + mockedHankeId).accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/hankkeet/" + mockedHankeId).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.name")
