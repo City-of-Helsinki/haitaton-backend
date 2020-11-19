@@ -104,7 +104,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         Mockito.`when`(hankeService.save(hankeToBeAdded))
                 .thenReturn(hankeToBeAdded)
 
-        mockMvc.perform(put("/hankkeet/hankeId=idHankkeelle123")
+        mockMvc.perform(put("/hankkeet/idHankkeelle123")
                 .contentType(MediaType.APPLICATION_JSON).content(hankeJSON)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
@@ -122,7 +122,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val objectMapper = ObjectMapper()
         val hankeJSON = objectMapper.writeValueAsString(hankeToBeAdded)
 
-         mockMvc.perform(put("/hankkeet/hankeId=idHankkeelle123")
+         mockMvc.perform(put("/hankkeet/idHankkeelle123")
                 .contentType(MediaType.APPLICATION_JSON).content(hankeJSON)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest())

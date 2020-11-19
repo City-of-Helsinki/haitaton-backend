@@ -23,8 +23,8 @@ class HankeController(@Autowired private val hankeService: HankeService) {
      *  TODO: validation for input parameter
      *
      */
-    @GetMapping
-    fun getHankeById(@RequestParam(name = "hankeId") hankeId: String?): ResponseEntity<Any> {
+    @GetMapping("/{hankeId}")
+    fun getHankeById(@PathVariable(name = "hankeId") hankeId: String?): ResponseEntity<Any> {
 
         if (hankeId == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
