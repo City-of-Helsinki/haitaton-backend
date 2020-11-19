@@ -10,23 +10,19 @@ databaseChangeLog:
               - column: { name: id, type: int, autoIncrement: true, constraints: { primaryKey: true, nullable: false }}
               - column: { name: savetype, type: varchar(10) }
               # This column is split on multiple lines just to show the different formatting styles.
-              # "hankeTunnus" (and not "hankeID") in order to reserve the hankeID for referencing back
-              # to this table's "ID" field.
               - column:
                   name: hanketunnus
                   type: varchar(15)
                   constraints:
                     unique: true
-              - column: { name: name, type: varchar(100) }
-              - column: { name: startdate, type: date }
-              - column: { name: enddate, type: date }
-              - column: { name: owner, type: varchar(100) }
-              - column: { name: phase, type: varchar(30) }
-              - column: { name: isykthanke, type: boolean }
+              - column: { name: nimi, type: varchar(100) }
+              - column: { name: kuvaus, type: clob }
+              - column: { name: alkupaiva, type: date }
+              - column: { name: loppupaiva, type: date }
+              - column: { name: vaihe, type: varchar(30) }
+              - column: { name: onykthanke, type: boolean }
+              - column: { name: version, type: int }
+              - column: { name: creatoruserid, type: int } # Is pseudonymized personal info if access to rest of the data is restricted
               - column: { name: createdat, type: timestamp }
+              - column: { name: modifieruserid, type: int } # Is pseudonymized personal info if access to rest of the data is restricted
               - column: { name: modifiedat, type: timestamp }
-              # Things to consider:
-              # * the saving of draft states (SaveType can show the draft-state, but not e.g. the user, in case edit locking is not in effect/use)
-              # * saving the user who created and user who modified. However, latter is bad design,
-              #   as a single change will override previous user info; proper audit logging might be
-              #   better solution, and thus having the modification info with that..

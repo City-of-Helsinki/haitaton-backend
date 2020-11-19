@@ -18,18 +18,18 @@ private val logger = KotlinLogging.logger { }
 class HankeController(@Autowired private val hankeService: HankeService) {
 
     /**
-     * Get one hanke with hankeId.
+     * Get one hanke with hankeTunnus.
      *  TODO: token and user from front?
      *  TODO: validation for input parameter
      *
      */
     @GetMapping
-    fun getHankeById(@RequestParam(name = "hankeId") hankeId: String?): ResponseEntity<Any> {
-        if (hankeId == null) {
+    fun getHankeByTunnus(@RequestParam(name = "hankeId") hankeTunnus: String?): ResponseEntity<Any> {
+        if (hankeTunnus == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
         return try {
-            val hanke = hankeService.loadHanke(hankeId)
+            val hanke = hankeService.loadHanke(hankeTunnus)
             ResponseEntity.status(HttpStatus.OK).body(hanke)
 
         } catch (e: HankeNotFoundException) {
@@ -52,7 +52,6 @@ class HankeController(@Autowired private val hankeService: HankeService) {
      */
     @PostMapping
     fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): ResponseEntity<Any> {
-
         logger.info { "Entering createHanke ${hanke?.toJsonString()}" }
 
         if (hanke == null) {
@@ -64,9 +63,9 @@ class HankeController(@Autowired private val hankeService: HankeService) {
             ResponseEntity.status(HttpStatus.OK).body(createdHanke)
         } catch (e: Exception) {
             logger.error(e) {
-                HankeError.HAI1016.toString()
-            } // TODO: change codes ^ v
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1016)
+                HankeError.HAI1003.toString()
+            }
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1003)
         }
     }
 
@@ -74,11 +73,10 @@ class HankeController(@Autowired private val hankeService: HankeService) {
      * Update one hanke.
      *  TODO: user from front?
      */
-    @PutMapping("/{hankeId}")
-    fun updateHanke(@ValidHanke @RequestBody hanke: Hanke?, @PathVariable hankeId: String?): ResponseEntity<Any> {
-
-        logger.info { "Entering update Hanke $hankeId : ${hanke?.toJsonString()}" }
-        if (hanke == null || hankeId == null) {
+    @PutMapping("/{hankeTunnus}")
+    fun updateHanke(@ValidHanke @RequestBody hanke: Hanke?, @PathVariable hankeTunnus: String?): ResponseEntity<Any> {
+        logger.info { "Entering update Hanke $hankeTunnus : ${hanke?.toJsonString()}" }
+        if (hanke == null || hankeTunnus == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
         return try {

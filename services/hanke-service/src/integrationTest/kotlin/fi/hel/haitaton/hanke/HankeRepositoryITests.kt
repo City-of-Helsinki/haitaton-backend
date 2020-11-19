@@ -14,8 +14,9 @@ class HankeRepositoryITests @Autowired constructor(
     @Test
     fun `findByHankeTunnus returns existing hanke`() {
         // First insert one hanke to the repository:
-        val hankeEntity = HankeEntity(SaveType.AUTO, "ABC-123", null, null, null, "Onni Omistaja", null,
-            false, null, null)
+        val hankeEntity = HankeEntity(SaveType.AUTO, "ABC-123", null, null,
+                null, null, null, false,
+                1, null, null, null, null)
         entityManager.persist(hankeEntity)
         entityManager.flush()
 
