@@ -23,7 +23,7 @@ import java.time.ZonedDateTime
 
 
 /**
- * Testing the Hnake Controller through a full REST request.
+ * Testing the Hanke Controller through a full REST request.
  *
  * This class should test only the weblayer (both HTTP server and context to be auto-mocked).
  */

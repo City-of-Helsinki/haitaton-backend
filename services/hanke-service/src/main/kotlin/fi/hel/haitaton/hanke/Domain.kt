@@ -30,6 +30,17 @@ data class HankeGeometriat(
         var updatedAt: ZonedDateTime? = null
 )
 
+//e.g. omistaja, arvioija, toteuttaja
+data class ContactPerson(
+        var surname: String,
+        var firstname: String
+)
+
+data class ContactOrganization(
+        var id: String,
+        var name: String
+)
+
 @JsonSerialize(using = HankeErrorSerializer::class)
 enum class HankeError(
         val errorMessage: String) {
@@ -41,7 +52,6 @@ enum class HankeError(
     HAI1013("Invalid coordinate system"),
     HAI1014("Internal error while loading Hanke geometry"),
     HAI1015("Hanke geometry not found");
-
 
 
     val errorCode: String
