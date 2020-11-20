@@ -5,8 +5,8 @@ import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.context.annotation.Import
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -17,8 +17,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.nio.file.Files
 import java.nio.file.Paths
 
-@WebMvcTest
-@Import(Configuration::class)
+@SpringBootTest(properties = ["spring.liquibase.enabled=false"])  // Without this, the JPA repository service won't be found as a bean
+@AutoConfigureMockMvc
 internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @MockkBean
