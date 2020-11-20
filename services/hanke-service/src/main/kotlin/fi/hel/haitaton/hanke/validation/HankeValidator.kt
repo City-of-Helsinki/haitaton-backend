@@ -26,7 +26,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
                 context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("name").addConstraintViolation()
                 ok = false
             }
-/*          hanke.startDate == null -> {  //TODO: these to be added when we are ready to add the mandatory datas to tests
+            hanke.startDate == null -> {  //TODO: these to be added when we are ready to add the mandatory datas to tests
                 context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("startDate").addConstraintViolation()
                 ok = false
             }
@@ -34,7 +34,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
                 context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("endDate").addConstraintViolation()
                 ok = false
             }
-*/
+
             hanke.phase!! > 7 -> { //TODO: real phase validation checks when we know what we are passing through
                 context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("phase").addConstraintViolation()
                 ok = false

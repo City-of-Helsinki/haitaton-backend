@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
 import org.springframework.context.annotation.Configuration
+import java.time.ZonedDateTime
 import javax.validation.ConstraintViolationException
 
 @ExtendWith(SpringExtension::class)
@@ -54,9 +55,9 @@ class HankeControllerTest {
     }
 
     @Test
-    fun `test that the updateHanke can be called with partial hanke data`() {
+    fun `test that the updateHanke can be called with hanke data and response will be 200`() {
 
-        var partialHanke = Hanke(hankeId = "id123", name = "hankkeen nimi", isYKTHanke = false, startDate = null, endDate = null, owner = "Tiina", phase = 0)
+        var partialHanke = Hanke(hankeId = "id123", name = "hankkeen nimi", isYKTHanke = false, startDate = ZonedDateTime.now(), endDate = ZonedDateTime.now(), owner = "Tiina", phase = 0)
         //mock HankeService response
         Mockito.`when`(hankeService.save(partialHanke)).thenReturn(partialHanke)
 

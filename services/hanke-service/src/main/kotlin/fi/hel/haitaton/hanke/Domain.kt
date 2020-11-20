@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import fi.hel.haitaton.hanke.domain.HankeYhteystiedot
 import org.geojson.FeatureCollection
 import java.time.ZonedDateTime
 import javax.validation.ConstraintViolation
@@ -20,7 +21,13 @@ data class Hanke(
         var startDate: ZonedDateTime?,
         var endDate: ZonedDateTime?,
         val owner: String,
-        var phase: Int?)
+        var phase: Int?) {
+
+    var listOfOmistaja: List<HankeYhteystiedot> = arrayListOf()
+    var listOfArvioija: List<HankeYhteystiedot> = arrayListOf()
+    var listOfToteuttaja: List<HankeYhteystiedot> = arrayListOf()
+}
+
 
 data class HankeGeometriat(
         var hankeId: String? = null,
@@ -30,16 +37,6 @@ data class HankeGeometriat(
         var updatedAt: ZonedDateTime? = null
 )
 
-//e.g. omistaja, arvioija, toteuttaja
-data class ContactPerson(
-        var surname: String,
-        var firstname: String
-)
-
-data class ContactOrganization(
-        var id: String,
-        var name: String
-)
 
 @JsonSerialize(using = HankeErrorSerializer::class)
 enum class HankeError(

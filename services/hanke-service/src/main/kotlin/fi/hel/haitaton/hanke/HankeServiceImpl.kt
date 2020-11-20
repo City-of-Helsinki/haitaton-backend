@@ -11,7 +11,7 @@ class HankeServiceImpl(private val dao: HankeDao) : HankeService {
 
     override fun loadHanke(hankeId: String): Hanke? {
         // TODO
-        return Hanke("", true, "Hämeentien perusparannus ja katuvalot", ZonedDateTime.now(), ZonedDateTime.now(), "", 1)
+        return Hanke("", true, "Hämeentien perusparannus ja katuvalot", ZonedDateTime.now(), ZonedDateTime.now(), "kissa", 1)
     }
 
     override fun save(hanke: Hanke): Hanke? {
@@ -31,7 +31,7 @@ class HankeServiceImpl(private val dao: HankeDao) : HankeService {
         }
 
         //TODO: return mapped Entity data!!
-        return Hanke(hanke.hankeId, true, "Hämeentien perusparannus ja katuvalot tietokannasta", ZonedDateTime.now(), ZonedDateTime.now(), "", 1)
+        return Hanke(hanke.hankeId, true, "Hämeentien perusparannus ja katuvalot tietokannasta", ZonedDateTime.now(), ZonedDateTime.now(), "kissa", 1)
     }
 
 }
