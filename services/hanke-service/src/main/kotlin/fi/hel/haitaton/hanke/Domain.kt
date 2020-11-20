@@ -11,16 +11,29 @@ Domain classes
 
 
 /**
- * When creating Hanke, only owner is mandatory.
+ * When creating Hanke, only creatorUserId is mandatory.
+ * TODO: may be changing to a bit more of mandatory fields for at least draft saving.
  */
 data class Hanke(
-        var hankeId: String?,
-        var isYKTHanke: Boolean?,
-        var name: String?,
-        var startDate: ZonedDateTime?,
-        var endDate: ZonedDateTime?,
-        val owner: String,
-        var phase: Int?)
+        var id: Int?, // Can be used for e.g. autosaving before hankeTunnus has been given (optional future stuff)
+
+        var hankeTunnus: String?,
+        var onYKTHanke: Boolean?,
+        var nimi: String?,
+        var kuvaus: String?,
+        var alkuPvm: ZonedDateTime?,
+        var loppuPvm: ZonedDateTime?,
+        // TODO: change to enum?
+        var vaihe: String?,
+
+        var version: Int?,
+        val createdBy: String,
+        val createdAt: ZonedDateTime?,
+        var modifiedBy: String?,
+        var modifiedAt: ZonedDateTime?,
+
+        var saveType: SaveType? = SaveType.SUBMIT // Default for machine API's. UI should always give the save type.
+)
 
 data class HankeGeometriat(
         var hankeId: String? = null,

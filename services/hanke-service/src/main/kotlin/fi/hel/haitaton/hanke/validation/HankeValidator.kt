@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.validation
 
 import fi.hel.haitaton.hanke.Hanke
 import fi.hel.haitaton.hanke.HankeError
-import java.time.ZonedDateTime
 import javax.validation.ConstraintValidator
 import javax.validation.ConstraintValidatorContext
 
@@ -17,28 +16,30 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
         }
 
         var ok = true
-        if (hanke.owner.isNullOrBlank()) {
-            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("owner").addConstraintViolation()
+        if (hanke.createdBy.isNullOrBlank()) {
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("creatorUserId").addConstraintViolation()
             ok = false
         }
         when {
-            hanke.name.isNullOrBlank() -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("name").addConstraintViolation()
+            hanke.nimi.isNullOrBlank() -> {
+                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("nimi").addConstraintViolation()
                 ok = false
             }
-/*          hanke.startDate == null -> {  //TODO: these to be added when we are ready to add the mandatory datas to tests
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("startDate").addConstraintViolation()
+/*          hanke.alkuPvm == null -> {  //TODO: these to be added when we are ready to add the mandatory datas to tests
+                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("alkuPvm").addConstraintViolation()
                 ok = false
             }
-            hanke.endDate == null -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("endDate").addConstraintViolation()
+            hanke.loppuPvm == null -> {
+                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("loppuPvm").addConstraintViolation()
                 ok = false
             }
 */
-            hanke.phase!! > 7 -> { //TODO: real phase validation checks when we know what we are passing through
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("phase").addConstraintViolation()
-                ok = false
-            }
+            // TODO: real phase validation checks when we know what we are passing through
+            // TODO: no longer a number, but either a string or enum
+//            hanke.vaihe!! > 7 -> {
+//                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("vaihe").addConstraintViolation()
+//                ok = false
+//            }
         }
         return ok
     }
