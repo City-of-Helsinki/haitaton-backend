@@ -60,7 +60,7 @@ class HankeControllerTest {
         var partialHanke = Hanke(id = 123, hankeTunnus = "id123",
                 nimi = "hankkeen nimi", kuvaus = "lorem ipsum dolor sit amet...", onYKTHanke = false,
                 alkuPvm = null, loppuPvm = null, vaihe = "OHJELMOINTI",
-                version = 1, creatorUserId = "Tiina", createdAt = getCurrentTimeUTC(), modifierUserId = null, modifiedAt = null, saveType = SaveType.DRAFT)
+                version = 1, createdBy = "Tiina", createdAt = getCurrentTimeUTC(), modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
 
@@ -79,7 +79,7 @@ class HankeControllerTest {
     fun `test that the updateHanke will give validation errors from invalid hanke data for creatorUserId and name`() {
         var partialHanke = Hanke(id = 0, hankeTunnus = "id123", nimi = "", kuvaus = "", onYKTHanke = false,
                 alkuPvm = null, loppuPvm = null, vaihe = "",
-                version = 1, creatorUserId = "", createdAt = null, modifierUserId = null, modifiedAt = null, saveType = SaveType.DRAFT)
+                version = 1, createdBy = "", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
 

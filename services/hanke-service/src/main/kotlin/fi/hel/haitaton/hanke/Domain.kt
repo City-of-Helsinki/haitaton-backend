@@ -27,9 +27,9 @@ data class Hanke(
         var vaihe: String?,
 
         var version: Int?,
-        val creatorUserId: String,
+        val createdBy: String,
         val createdAt: ZonedDateTime?,
-        var modifierUserId: String?,
+        var modifiedBy: String?,
         var modifiedAt: ZonedDateTime?,
 
         var saveType: SaveType? = SaveType.SUBMIT // Default for machine API's. UI should always give the save type.

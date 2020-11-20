@@ -16,7 +16,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
         }
 
         var ok = true
-        if (hanke.creatorUserId.isNullOrBlank()) {
+        if (hanke.createdBy.isNullOrBlank()) {
             context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("creatorUserId").addConstraintViolation()
             ok = false
         }
@@ -25,12 +25,12 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
                 context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("nimi").addConstraintViolation()
                 ok = false
             }
-/*          hanke.startDate == null -> {  //TODO: these to be added when we are ready to add the mandatory datas to tests
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("startDate").addConstraintViolation()
+/*          hanke.alkuPvm == null -> {  //TODO: these to be added when we are ready to add the mandatory datas to tests
+                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("alkuPvm").addConstraintViolation()
                 ok = false
             }
-            hanke.endDate == null -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("endDate").addConstraintViolation()
+            hanke.loppuPvm == null -> {
+                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("loppuPvm").addConstraintViolation()
                 ok = false
             }
 */

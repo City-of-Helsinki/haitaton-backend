@@ -68,7 +68,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val hankeName = "Mannerheimintien remontti remonttinen"
         var hankeToBeAdded = Hanke(id = null, hankeTunnus = "", nimi = hankeName, kuvaus = "lorem ipsum dolor sit amet...",
                 onYKTHanke = false, alkuPvm = null, loppuPvm = null, vaihe = "OHJELMOINTI",
-                version = null, creatorUserId = "Tiina", createdAt = null, modifierUserId = null, modifiedAt = null, saveType = SaveType.DRAFT)
+                version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
         // faking the service call
         Mockito.`when`(hankeService.createHanke(hankeToBeAdded))
@@ -91,7 +91,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // initializing only part of the data for Hanke
         val hankeToBeAdded = Hanke(id = null, hankeTunnus = null, nimi = name, kuvaus = null,
                 onYKTHanke = false, alkuPvm = null, loppuPvm = null, vaihe = "OHJELMOINTI",
-                version = null, creatorUserId = "Tiina", createdAt = null, modifierUserId = null, modifiedAt = null, saveType = SaveType.DRAFT)
+                version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
         val objectMapper = ObjectMapper()
         val hankeJSON = objectMapper.writeValueAsString(hankeToBeAdded)
@@ -112,7 +112,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `test that the validation gives error and Bad Request is returned when creatorUserId is empty`() {
         var hankeToBeAdded = Hanke(id = null, hankeTunnus = "idHankkeelle123", nimi = "", kuvaus = null,
                 onYKTHanke = false, alkuPvm = null, loppuPvm = null, vaihe = "RAKENTAMINEN",
-                version = null, creatorUserId = "", createdAt = null, modifierUserId = null, modifiedAt = null, saveType = SaveType.DRAFT)
+                version = null, createdBy = "", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
         // mock HankeService response
         Mockito.`when`(hankeService.createHanke(hankeToBeAdded)).thenReturn(hankeToBeAdded)
 

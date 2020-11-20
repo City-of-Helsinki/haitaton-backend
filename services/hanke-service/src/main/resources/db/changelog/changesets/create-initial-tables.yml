@@ -17,12 +17,12 @@ databaseChangeLog:
                     unique: true
               - column: { name: nimi, type: varchar(100) }
               - column: { name: kuvaus, type: clob }
-              - column: { name: alkupaiva, type: date }
-              - column: { name: loppupaiva, type: date }
+              - column: { name: alkupvm, type: date }
+              - column: { name: loppupvm, type: date }
               - column: { name: vaihe, type: varchar(30) }
               - column: { name: onykthanke, type: boolean }
               - column: { name: version, type: int }
-              - column: { name: creatoruserid, type: int } # Is pseudonymized personal info if access to rest of the data is restricted
+              - column: { name: createdbyuserid, type: int } # Is pseudonymized personal info if access to rest of the data is restricted
               - column: { name: createdat, type: timestamp }
-              - column: { name: modifieruserid, type: int } # Is pseudonymized personal info if access to rest of the data is restricted
+              - column: { name: modifiedbyuserid, type: int } # Is pseudonymized personal info if access to rest of the data is restricted
               - column: { name: modifiedat, type: timestamp }

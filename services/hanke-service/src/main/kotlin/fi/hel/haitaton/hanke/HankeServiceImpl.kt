@@ -39,6 +39,9 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         return createHankeDomainObjectFromEntity(entity)
     }
 
+    /**
+     * @return a new Hanke instance with the added and possibly modified values.
+     */
     override fun createHanke(hanke: Hanke): Hanke {
         // TODO: Once we have a proper service for creating hanke-tunnus,
         //   only one save call is needed here. I.e. get a new tunnus, put it into
@@ -52,9 +55,9 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = 0
         // TODO: will need proper stuff derived from the logged in user.
-        entity.creatorUserId =  1
+        entity.createdByUserId =  1
         entity.createdAt = getCurrentTimeUTCAsLocalTime()
-        entity.modifierUserId = null
+        entity.modifiedByUserId = null
         entity.modifiedAt = null
 
         logger.info {
@@ -67,7 +70,6 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         val id = entity.id
         val tunnus = "SMTGEN2_$id"
         entity.hankeTunnus = tunnus
-        hanke.hankeTunnus = tunnus
         // TODO: once the hanke-tunnus gets its own service, this logging and the second save becomes obsolete.
         logger.info {
             "Saving  Hanke step 2 for: ${hanke.hankeTunnus}"
@@ -77,7 +79,9 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
             "Saved Hanke ${hanke.hankeTunnus}"
         }
 
-        return hanke
+        // Creating a new domain object for the return value; it will have the updated values from the database,
+        // e.g. the main date values truncated to midnight, and the added id and hanketunnus.
+        return createHankeDomainObjectFromEntity(entity)
     }
 
     override fun updateHanke(hanke: Hanke): Hanke {
@@ -90,7 +94,7 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         entity.version = entity.version?.inc() ?: 1
         // (Not changing creator/time fields.)
         // TODO: will need proper stuff derived from the logged in user.
-        entity.modifierUserId = 1
+        entity.modifiedByUserId = 1
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
 
         logger.info {
@@ -101,59 +105,59 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
             "Saved  Hanke ${hanke.hankeTunnus}"
         }
 
-        // TODO: could also just copy all fields from the entity to the existing domain object,
-        // but would need to create that helper method first.
+        // Creating a new domain object for the return value; it will have the updated values from the database,
+        // e.g. the main date values truncated to midnight.
         return createHankeDomainObjectFromEntity(entity)
     }
 
+    companion object Converters {
+        internal fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke {
+            // TODO: check if the SQL date things could be converted to newer types in the database/mapping,
+            // to avoid these conversions. (Note though that we do not really need the time part.)
+            val h = Hanke(
+                    hankeEntity.id,
 
-    fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke {
-        // TODO: check if the SQL date things could be converted to newer types in the database/mapping,
-        // to avoid these conversions. (Note though that we do not really need the time part.)
-        val h = Hanke(
-                hankeEntity.id,
+                    hankeEntity.hankeTunnus,
+                    hankeEntity.onYKTHanke,
+                    hankeEntity.nimi,
+                    hankeEntity.kuvaus,
+                    hankeEntity.alkuPvm?.atStartOfDay(TZ_UTC),
+                    hankeEntity.loppuPvm?.atStartOfDay(TZ_UTC),
+                    hankeEntity.vaihe,
 
-                hankeEntity.hankeTunnus,
-                hankeEntity.onYKTHanke,
-                hankeEntity.nimi,
-                hankeEntity.kuvaus,
-                hankeEntity.alkuPvm?.atStartOfDay(TZ_UTC),
-                hankeEntity.loppuPvm?.atStartOfDay(TZ_UTC),
-                hankeEntity.vaihe,
+                    hankeEntity.version,
+                    // TODO: will need in future to actually fetch the username from another service.. (or whatever we choose to pass out here)
+                    //   Do it below, outside this construction call.
+                    hankeEntity.createdByUserId?.toString() ?: "",
+                    // From UTC without timezone info to UTC with timezone info
+                    if (hankeEntity.createdAt != null) ZonedDateTime.of(hankeEntity.createdAt, TZ_UTC) else null,
+                    hankeEntity.modifiedByUserId?.toString(),
+                    if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC) else null,
 
-                hankeEntity.version,
-                // TODO: will need in future to actually fetch the username from another service.. (or whatever we choose to pass out here)
-                //   Do it below, outside this construction call.
-                hankeEntity.creatorUserId?.toString() ?: "",
-                // From UTC without timezone info to UTC with timezone info
-                if (hankeEntity.createdAt != null) ZonedDateTime.of(hankeEntity.createdAt, TZ_UTC) else null,
-                hankeEntity.modifierUserId?.toString(),
-                if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC) else null,
+                    hankeEntity.saveType
+            )
+            return h
+        }
 
-                hankeEntity.saveType
-        )
-        return h
+        /**
+         * Does NOT copy the id and hankeTunnus fields because one is supposed to find
+         * the HankeEntity instance from the database with those values, and after that,
+         * the values are filled by the database and should not be changed.
+         * Also, version, creatorUserId, createdAt, modifierUserId, modifiedAt, version are not
+         * set here, as they are to be set internally, and depends on which operation
+         * is being done.
+         */
+        internal fun copyNonNullHankeFieldsToEntity(hanke: Hanke, entity: HankeEntity) {
+            hanke.onYKTHanke?.let { entity.onYKTHanke = hanke.onYKTHanke }
+            hanke.nimi?.let { entity.nimi = hanke.nimi }
+            hanke.kuvaus?.let { entity.kuvaus = hanke.kuvaus }
+            // Assuming the incoming date, while being zoned date and time, is in UTC and time value can be simply dropped here.
+            // Note, .toLocalDate() does not do any time zone conversion.
+            hanke.alkuPvm?.let { entity.alkuPvm = hanke.alkuPvm?.toLocalDate() }
+            hanke.loppuPvm?.let { entity.loppuPvm = hanke.loppuPvm?.toLocalDate() }
+            hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
+
+            hanke.saveType?.let { entity.saveType = hanke.saveType }
+        }
     }
-
-    /**
-     * Does NOT copy the id and hankeTunnus fields because one is supposed to find
-     * the HankeEntity instance from the database with those values, and after that,
-     * the values are filled by the database and should not be changed.
-     * Also, version, creatorUserId, createdAt, modifierUserId, modifiedAt, version are not
-     * set here, as they are to be set internally, and depends on which operation
-     * is being done.
-     */
-    fun copyNonNullHankeFieldsToEntity(hanke: Hanke, entity: HankeEntity) {
-        hanke.onYKTHanke?.let { entity.onYKTHanke = hanke.onYKTHanke }
-        hanke.nimi?.let { entity.nimi = hanke.nimi }
-        hanke.kuvaus?.let { entity.kuvaus = hanke.kuvaus }
-        // Assuming the incoming date, while being zoned date and time, is in UTC and time value can be simply dropped here.
-        // Note, .toLocalDate() does not do any time zone conversion.
-        hanke.alkuPvm?.let { entity.alkuPvm = hanke.alkuPvm?.toLocalDate() }
-        hanke.loppuPvm?.let { entity.loppuPvm = hanke.loppuPvm?.toLocalDate() }
-        hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
-
-        hanke.saveType?.let { entity.saveType = hanke.saveType }
-    }
-
 }
