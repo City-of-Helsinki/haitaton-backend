@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.domain.Hanke
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -47,7 +48,7 @@ class HankeControllerTest {
                 .thenReturn(Hanke(1234, mockedHankeTunnus, true,
                         "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
                         getCurrentTimeUTC(), getCurrentTimeUTC(), "OHJELMOINTI",
-                        1,"Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT))
+                        1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT))
 
         val response: ResponseEntity<Any> = hankeController.getHankeByTunnus(mockedHankeTunnus)
 
@@ -57,12 +58,12 @@ class HankeControllerTest {
     }
 
     @Test
-
     fun `test that the updateHanke can be called with hanke data and response will be 200`() {
         var partialHanke = Hanke(id = 123, hankeTunnus = "id123",
                 nimi = "hankkeen nimi", kuvaus = "lorem ipsum dolor sit amet...", onYKTHanke = false,
-                alkuPvm = null, loppuPvm = null, vaihe = "OHJELMOINTI",
+                alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = "OHJELMOINTI",
                 version = 1, createdBy = "Tiina", createdAt = getCurrentTimeUTC(), modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
+
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
 
@@ -88,7 +89,8 @@ class HankeControllerTest {
         // Actual call
         Assertions.assertThatExceptionOfType(ConstraintViolationException::class.java).isThrownBy {
             hankeController.updateHanke(partialHanke, "id123")
-        }.withMessageContaining("updateHanke.hanke.nimi: "+HankeError.HAI1002.toString()).withMessageContaining("updateHanke.hanke.creatorUserId: "+HankeError.HAI1002.toString())
+        }.withMessageContaining("updateHanke.hanke.nimi: " + HankeError.HAI1002.toString())
+                .withMessageContaining("updateHanke.hanke.creatorUserId: " + HankeError.HAI1002.toString())
 
     }
 

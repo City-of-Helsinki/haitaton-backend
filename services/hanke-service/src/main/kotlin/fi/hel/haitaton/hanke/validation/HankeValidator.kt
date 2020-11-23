@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.validation
 
-import fi.hel.haitaton.hanke.Hanke
 import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.domain.Hanke
 import javax.validation.ConstraintValidator
 import javax.validation.ConstraintValidatorContext
 
@@ -25,7 +25,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
                 context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("nimi").addConstraintViolation()
                 ok = false
             }
-          hanke.alkuPvm == null -> {  //TODO: these to be added when we are ready to add the mandatory datas to tests
+            hanke.alkuPvm == null -> {
                 context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("alkuPvm").addConstraintViolation()
                 ok = false
             }
