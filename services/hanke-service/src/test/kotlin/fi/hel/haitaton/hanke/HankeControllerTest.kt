@@ -48,7 +48,7 @@ class HankeControllerTest {
         Mockito.`when`(hankeService.loadHanke(mockedHankeTunnus))
                 .thenReturn(Hanke(1234, mockedHankeTunnus, true,
                         "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
-                        getCurrentTimeUTC(), getCurrentTimeUTC(), "OHJELMOINTI",
+                        getCurrentTimeUTC(), getCurrentTimeUTC(), Vaihe.OHJELMOINTI,
                         1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT))
 
         val response: ResponseEntity<Any> = hankeController.getHankeByTunnus(mockedHankeTunnus)
@@ -62,7 +62,7 @@ class HankeControllerTest {
     fun `test that the updateHanke can be called with hanke data and response will be 200`() {
         var partialHanke = Hanke(id = 123, hankeTunnus = "id123",
                 nimi = "hankkeen nimi", kuvaus = "lorem ipsum dolor sit amet...", onYKTHanke = false,
-                alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = "OHJELMOINTI",
+                alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI,
                 version = 1, createdBy = "Tiina", createdAt = getCurrentTimeUTC(), modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
         // mock HankeService response
@@ -80,9 +80,9 @@ class HankeControllerTest {
 
 
     @Test
-    fun `test that the updateHanke will give validation errors from invalid hanke data for creatorUserId and name`() {
+    fun `test that the updateHanke will give validation errors from invalid hanke data for createdBy and name`() {
         var partialHanke = Hanke(id = 0, hankeTunnus = "id123", nimi = "", kuvaus = "", onYKTHanke = false,
-                alkuPvm = null, loppuPvm = null, vaihe = "",
+                alkuPvm = null, loppuPvm = null, vaihe = Vaihe.OHJELMOINTI,
                 version = 1, createdBy = "", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
@@ -102,7 +102,7 @@ class HankeControllerTest {
     fun `test that update with listOfOmistaja can be sent to controller and is responded with 200`() {
         var partialHanke = Hanke(id = 123, hankeTunnus = "id123",
                 nimi = "hankkeen nimi", kuvaus = "lorem ipsum dolor sit amet...", onYKTHanke = false,
-                alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = "OHJELMOINTI",
+                alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI,
                 version = 1, createdBy = "Tiina", createdAt = getCurrentTimeUTC(), modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
         // mock HankeService response
