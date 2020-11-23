@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import fi.hel.haitaton.hanke.domain.HankeYhteystiedot
 import org.geojson.FeatureCollection
 import java.time.ZonedDateTime
 import javax.validation.ConstraintViolation

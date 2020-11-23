@@ -17,7 +17,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
 
         var ok = true
         if (hanke.createdBy.isNullOrBlank()) {
-            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("creatorUserId").addConstraintViolation()
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("createdBy").addConstraintViolation()
             ok = false
         }
         when {

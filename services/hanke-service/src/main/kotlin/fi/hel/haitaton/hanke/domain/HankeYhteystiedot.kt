@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.domain
 data class HankeYhteystiedot(
         var id: Long?,
         //e.g. omistaja, arvioija, toteuttaja
-        var contactType: Int,
+        var contactType: String?,
 
         //must have contact information
         var sukunimi: String,

@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeYhteystiedot
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -90,8 +91,33 @@ class HankeControllerTest {
         Assertions.assertThatExceptionOfType(ConstraintViolationException::class.java).isThrownBy {
             hankeController.updateHanke(partialHanke, "id123")
         }.withMessageContaining("updateHanke.hanke.nimi: " + HankeError.HAI1002.toString())
-                .withMessageContaining("updateHanke.hanke.creatorUserId: " + HankeError.HAI1002.toString())
+                .withMessageContaining("updateHanke.hanke.createdBy: " + HankeError.HAI1002.toString())
 
     }
+
+    //sending of sub types
+/* in the construction
+
+    @Test
+    fun `test that update with listOfOmistaja can be sent to controller and is responded with 200`() {
+        var partialHanke = Hanke(id = 123, hankeTunnus = "id123",
+                nimi = "hankkeen nimi", kuvaus = "lorem ipsum dolor sit amet...", onYKTHanke = false,
+                alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = "OHJELMOINTI",
+                version = 1, createdBy = "Tiina", createdAt = getCurrentTimeUTC(), modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
+
+        // mock HankeService response
+        Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
+
+        partialHanke.listOfOmistaja = arrayListOf(HankeYhteystiedot(1,1,"Pekkanen", "Pekka","pekka@pekka.fi", "3212312", "Kaivuri ja mies",null))
+        // Actual call
+        val response: ResponseEntity<Any> = hankeController.updateHanke(partialHanke, "id123")
+
+        Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        Assertions.assertThat(response.body).isNotNull
+        var responseHanke = response as ResponseEntity<Hanke>
+        Assertions.assertThat(responseHanke.body).isNotNull
+        Assertions.assertThat(responseHanke.body?.nimi).isEqualTo("hankkeen nimi")
+    }*/
+
 
 }
