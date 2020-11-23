@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.domain.Hanke
+
 interface HankeService {
 
     /**

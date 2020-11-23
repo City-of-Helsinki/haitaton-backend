@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import fi.hel.haitaton.hanke.domain.Hanke
 
 class HankeDaoImpl : HankeDao {
 

@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.validation.ValidHanke
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
@@ -23,8 +24,10 @@ class HankeController(@Autowired private val hankeService: HankeService) {
      *  TODO: validation for input parameter
      *
      */
-    @GetMapping
-    fun getHankeByTunnus(@RequestParam(name = "hankeId") hankeTunnus: String?): ResponseEntity<Any> {
+
+    @GetMapping("/{hankeTunnus}")
+    fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String?): ResponseEntity<Any> {
+
         if (hankeTunnus == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
