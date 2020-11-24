@@ -6,10 +6,12 @@ import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.toJsonString
 import mu.KotlinLogging
 import java.time.ZonedDateTime
+import javax.transaction.Transactional
 
 private val logger = KotlinLogging.logger { }
 
-class HankeGeometriatServiceImpl(
+@Transactional
+open class HankeGeometriatServiceImpl(
         private val hankeRepository: HankeRepository,
         private val hankeGeometriaDao: HankeGeometriatDao) : HankeGeometriatService {
     override fun saveGeometriat(hankeTunnus: String, hankeGeometriat: HankeGeometriat): HankeGeometriat {
