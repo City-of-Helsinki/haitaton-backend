@@ -82,6 +82,10 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         if (hanke == null || hankeTunnus == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
+        if (!hankeTunnus.equals(hanke.hankeTunnus)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
+        }
+
         return try {
             val createdHanke = hankeService.updateHanke(hanke)
             ResponseEntity.status(HttpStatus.OK).body(createdHanke)
