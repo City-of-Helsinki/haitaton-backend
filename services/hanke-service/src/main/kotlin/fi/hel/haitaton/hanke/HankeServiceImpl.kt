@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
@@ -60,6 +61,8 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         entity.createdAt = getCurrentTimeUTCAsLocalTime()
         entity.modifiedByUserId = null
         entity.modifiedAt = null
+
+    //    entity.listOfHankeYhteystieto =
 
         logger.info {
             // TODO: once the hanke-tunnus gets its own service, this logging line gets more useful
@@ -135,8 +138,11 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
                     hankeEntity.modifiedByUserId?.toString(),
                     if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC) else null,
 
-                    hankeEntity.saveType
+                    hankeEntity.saveType,
             )
+
+            copyYhteystietoFromEntityToHanke(h, hankeEntity)
+
             return h
         }
 
@@ -159,6 +165,25 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
             hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
 
             hanke.saveType?.let { entity.saveType = hanke.saveType }
+
+            //TODO: yhteystiedot? is it correctly?
+            combineYhteystietoFromHankeToEntity(hanke, entity)
+
+        }
+        private fun combineYhteystietoFromHankeToEntity(h: Hanke, hankeEntity: HankeEntity) {
+            //TODO this is wrong way around
+         //   h.listOfOmistaja?.let { hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteystietoEntity -> hankeYhteystietoEntity.contactType.equals(ContactType.OMISTAJA) } }
+         //   h.listOfArvioija?.let { hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteystietoEntity -> hankeYhteystietoEntity.contactType.equals(ContactType.ARVIOIJA) } }
+         //   h.listOfToteuttaja?.let { hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteystietoEntity -> hankeYhteystietoEntity.contactType.equals(ContactType.TOTEUTTAJA) } }
+        }
+
+        /**
+         * Method divides different type of HankeYhteystieto for Hanke into separate lists
+         */
+        private fun copyYhteystietoFromEntityToHanke(h: Hanke, hankeEntity: HankeEntity) {
+            h.listOfOmistaja.let { hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteystietoEntity -> hankeYhteystietoEntity.contactType.equals(ContactType.OMISTAJA) } }
+            h.listOfArvioija.let { hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteystietoEntity -> hankeYhteystietoEntity.contactType.equals(ContactType.ARVIOIJA) } }
+            h.listOfToteuttaja.let { hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteystietoEntity -> hankeYhteystietoEntity.contactType.equals(ContactType.TOTEUTTAJA) } }
         }
     }
 }

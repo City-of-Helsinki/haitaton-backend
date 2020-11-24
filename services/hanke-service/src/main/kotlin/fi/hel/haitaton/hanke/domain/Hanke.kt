@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.domain
 
+import fi.hel.haitaton.hanke.HankeYhteystietoEntity
 import fi.hel.haitaton.hanke.SaveType
 import java.time.ZonedDateTime
 
@@ -27,7 +28,8 @@ data class Hanke(
         var modifiedAt: ZonedDateTime?,
 
         // Default for machine API's. UI should always give the save type.
-        var saveType: SaveType? = SaveType.SUBMIT) {
+        var saveType: SaveType? = SaveType.SUBMIT,
+        ) {
 
     var listOfOmistaja: List<HankeYhteystieto> = arrayListOf()
     var listOfArvioija: List<HankeYhteystieto> = arrayListOf()

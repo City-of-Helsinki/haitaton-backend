@@ -7,26 +7,22 @@ databaseChangeLog:
         - createTable:
             tableName: hankeyhteystieto
             columns:
-              - column: { name: id, type: int, autoIncrement: true, constraints: { primaryKey: true, nullable: false }}
+              - column: { name: id, type: int, autoIncrement: true, constraints: { primaryKey: true, nullable: false } }
               - column: { name: contacttype, type: varchar(10), constraints: { nullable: false } }
-              - column: {
-                name: hankeid,
-                type: int,
-                constraints:
-                  nullable: false
-                  foreignKeyName: fk_hanke_hankeyhteystieto
-                  references: hanke(id)
-
-
-              - column: { name: etunimi, type: varchar(100), constraints: { nullable: false }}
-              - column: { name: sukunimi, type: varchar(100), constraints: { nullable: false }}
+              - column:
+                  name: hankeid
+                  type: int
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_hanke_hankeyhteystieto
+                    references: hanke(id)
+              - column: { name: etunimi, type: varchar(100), constraints: { nullable: false } }
+              - column: { name: sukunimi, type: varchar(100), constraints: { nullable: false } }
               - column: { name: puhelinnumero, type: varchar(20) }
               - column: { name: email, type: varchar(100) }
-
-              - column: { name: kaytorganisaatio, type: varchar(200) }
-              - column: { name: viraorgid, type: int) }
+              - column: { name: organisaationimi, type: varchar(200) }
+              - column: { name: organisaatioid, type: int } #official, needs to be made foreign key later
               - column: { name: osasto, type: varchar(200) }
-
               - column: { name: createdbyuserid, type: int } # Is pseudonymized personal info if access to rest of the data is restricted
               - column: { name: createdat, type: timestamp }
               - column: { name: modifiedbyuserid, type: int } # Is pseudonymized personal info if access to rest of the data is restricted

@@ -46,7 +46,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         //faking the service call
         every { hankeService.loadHanke(any()) }.returns(Hanke(123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
                 getCurrentTimeUTC(), getCurrentTimeUTC(), "OHJELMOINTI",
-                1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT))
+                1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT, hankeEntity.listOfHankeYhteystieto))
 
         mockMvc.perform(get("/hankkeet/" + mockedHankeTunnus).accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
@@ -62,9 +62,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `Add Hanke and return it newly created hankeTunnus (POST)`() {
         val hankeName = "Mannerheimintien remontti remonttinen"
 
-        var hankeToBeMocked = Hanke(id = null, hankeTunnus = null, nimi = hankeName, kuvaus = "lorem ipsum dolor sit amet...",
-                onYKTHanke = false, alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = "OHJELMOINTI",
-                version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
+        var hankeToBeMocked = Hanke(id = null, hankeTunnus = null, onYKTHanke = false, nimi = hankeName,
+                kuvaus = "lorem ipsum dolor sit amet...", alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = "OHJELMOINTI",
+                version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT, listOfHankeYhteystieto = hankeEntity.listOfHankeYhteystieto)
 
         //faking the service call
         every { hankeService.createHanke(any()) }.returns(hankeToBeMocked)
@@ -91,9 +91,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val hankeName = "Mannerheimintien remontti remonttinen"
 
         // initializing only part of the data for Hanke
-        val hankeToBeUpdated = Hanke(id = 23, hankeTunnus = "idHankkeelle123", nimi = hankeName, kuvaus = "kuvaus",
-                onYKTHanke = false, alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = "OHJELMOINTI",
-                version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
+        val hankeToBeUpdated = Hanke(id = 23, hankeTunnus = "idHankkeelle123", onYKTHanke = false, nimi = hankeName,
+                kuvaus = "kuvaus", alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = "OHJELMOINTI",
+                version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT, listOfHankeYhteystieto = hankeEntity.listOfHankeYhteystieto)
 
         //faking the service call
         every { hankeService.updateHanke(any()) }.returns(hankeToBeUpdated)
@@ -112,9 +112,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `test that the validation gives error and Bad Request is returned when creatorUserId is empty`() {
-        var hankeToBeAdded = Hanke(id = null, hankeTunnus = "idHankkeelle123", nimi = "", kuvaus = null,
-                onYKTHanke = false, alkuPvm = null, loppuPvm = null, vaihe = "RAKENTAMINEN",
-                version = null, createdBy = "", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
+        var hankeToBeAdded = Hanke(id = null, hankeTunnus = "idHankkeelle123", onYKTHanke = false, nimi = "",
+                kuvaus = null, alkuPvm = null, loppuPvm = null, vaihe = "RAKENTAMINEN",
+                version = null, createdBy = "", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT, listOfHankeYhteystieto = hankeEntity.listOfHankeYhteystieto)
 
         every { hankeService.createHanke(any()) }.returns(hankeToBeAdded)
 
