@@ -2,14 +2,11 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import mu.KotlinLogging
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Service
 import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
 
-@Service
-class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : HankeService {
+class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeService {
 
     // TODO:
     /*
@@ -56,7 +53,7 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = 0
         // TODO: will need proper stuff derived from the logged in user.
-        entity.createdByUserId =  1
+        entity.createdByUserId = 1
         entity.createdAt = getCurrentTimeUTCAsLocalTime()
         entity.modifiedByUserId = null
         entity.modifiedAt = null
@@ -89,7 +86,8 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         if (hanke.hankeTunnus == null)
             error("Somehow got here with hanke without hanke-tunnus")
 
-        val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!) ?: throw HankeNotFoundException(hanke.hankeTunnus)
+        val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
+                ?: throw HankeNotFoundException(hanke.hankeTunnus)
         copyNonNullHankeFieldsToEntity(hanke, entity)
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = entity.version?.inc() ?: 1

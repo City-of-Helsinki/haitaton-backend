@@ -3,12 +3,14 @@ package fi.hel.haitaton.hanke.hello
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import org.hamcrest.Matchers.stringContainsInOrder
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
@@ -19,15 +21,9 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
  * This class should test only the weblayer (both HTTP server and context to be auto-mocked).
  */
 @WebMvcTest
-@Import(fi.hel.haitaton.hanke.Configuration::class)
+@Import(IntegrationTestConfiguration::class)
+@ActiveProfiles("itest")
 class HelloApiControllerITests(@Autowired val mockMvc: MockMvc) {
-
-    // Just to prevent the context trying to init that service, and fail doing it.
-    @MockkBean
-    lateinit var hankeRepository: HankeRepository
-
-    @MockkBean
-    lateinit var hankeService: HankeService
 
     @Test
     fun `Hello response at web layer`() {

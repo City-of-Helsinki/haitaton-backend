@@ -1,16 +1,17 @@
 package fi.hel.haitaton.hanke.geometria
 
-import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -20,11 +21,12 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.nio.file.Files
 import java.nio.file.Paths
 
-@SpringBootTest(properties = ["spring.liquibase.enabled=false"])  // Without this, the JPA repository service won't be found as a bean
-@AutoConfigureMockMvc
+@WebMvcTest
+@Import(IntegrationTestConfiguration::class)
+@ActiveProfiles("itest")
 internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
-    @MockkBean
+    @Autowired
     private lateinit var hankeGeometriatService: HankeGeometriatService
 
     @Test

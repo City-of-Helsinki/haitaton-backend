@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.domain.Hanke
 import io.mockk.every
 import io.mockk.verify
@@ -10,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
@@ -23,16 +23,14 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
  */
 
 @WebMvcTest
-@Import(Configuration::class)
+@Import(IntegrationTestConfiguration::class)
+@ActiveProfiles("itest")
 class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     val mockedHankeTunnus = "GHSFG123"
 
-    @MockkBean
+    @Autowired
     lateinit var hankeService: HankeService  //faking these calls
-
-    @MockkBean
-    lateinit var hankeRepository: HankeRepository
 
     @Test
     fun `When hankeId not given for fetching then error`() {
