@@ -29,7 +29,7 @@ data class Hanke(
         // Default for machine API's. UI should always give the save type.
         var saveType: SaveType? = SaveType.SUBMIT) {
 
-    var listOfOmistaja: List<HankeYhteystiedot> = arrayListOf()
-    var listOfArvioija: List<HankeYhteystiedot> = arrayListOf()
-    var listOfToteuttaja: List<HankeYhteystiedot> = arrayListOf()
+    var listOfOmistaja: List<HankeYhteystieto> = arrayListOf()
+    var listOfArvioija: List<HankeYhteystieto> = arrayListOf()
+    var listOfToteuttaja: List<HankeYhteystieto> = arrayListOf()
 }

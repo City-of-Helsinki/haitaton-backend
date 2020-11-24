@@ -1,9 +1,10 @@
 package fi.hel.haitaton.hanke.domain
 
-data class HankeYhteystiedot(
-        var id: Long?,
+data class HankeYhteystieto(
+        var id: Int?,
         //e.g. omistaja, arvioija, toteuttaja
-        var contactType: String?,
+        var contactType: String,
+        var hankeId: Int,
 
         //must have contact information
         var sukunimi: String,
