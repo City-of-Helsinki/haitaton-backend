@@ -1,11 +1,12 @@
 package fi.hel.haitaton.hanke.hello
 
+import com.ninjasquad.springmockk.MockkBean
+import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import org.hamcrest.Matchers.stringContainsInOrder
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
@@ -22,7 +23,10 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 class HelloApiControllerITests(@Autowired val mockMvc: MockMvc) {
 
     // Just to prevent the context trying to init that service, and fail doing it.
-    @MockBean
+    @MockkBean
+    lateinit var hankeRepository: HankeRepository
+
+    @MockkBean
     lateinit var hankeService: HankeService
 
     @Test

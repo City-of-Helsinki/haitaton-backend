@@ -45,7 +45,20 @@ class HankeEntity (
         // Using SEQUENCE would allow getting multiple ids more efficiently.
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
         var id: Int? = null
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is HankeEntity) return false
+
+        if (hankeTunnus != other.hankeTunnus) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return hankeTunnus?.hashCode() ?: 0
+    }
+}
 
 interface HankeRepository : JpaRepository<HankeEntity, Long> {
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?

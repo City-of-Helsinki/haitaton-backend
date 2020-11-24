@@ -1,7 +1,8 @@
-package fi.hel.haitaton.hanke
+package fi.hel.haitaton.hanke.geometria
 
+import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeError.Companion.CODE_PATTERN
-import fi.hel.haitaton.hanke.validation.ValidHankeGeometriat
+import fi.hel.haitaton.hanke.HankeNotFoundException
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -10,13 +11,12 @@ import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 import javax.validation.ConstraintViolationException
 
-
 private val logger = KotlinLogging.logger { }
 
 @RestController
 @RequestMapping("/hankkeet")
 @Validated
-class HankeGeometriaController(@Autowired private val service: HankeGeometriaService) {
+class HankeGeometriaController(@Autowired private val service: HankeGeometriatService) {
 
     @PostMapping("/{hankeId}/geometriat")
     fun createGeometria(@PathVariable("hankeId") hankeId: String, @ValidHankeGeometriat @RequestBody hankeGeometriat: HankeGeometriat?): ResponseEntity<Any> {
@@ -24,7 +24,7 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriaSer
             return ResponseEntity.badRequest().body(HankeError.HAI1011)
         }
         return try {
-            val savedHankeGeometriat = service.saveGeometria(hankeId, hankeGeometriat)
+            val savedHankeGeometriat = service.saveGeometriat(hankeId, hankeGeometriat)
             ResponseEntity.ok(savedHankeGeometriat)
         } catch (e: HankeNotFoundException) {
             logger.error {
@@ -42,7 +42,7 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriaSer
     @GetMapping("/{hankeId}/geometriat")
     fun getGeometria(@PathVariable("hankeId") hankeId: String): ResponseEntity<Any> {
         return try {
-            val geometry = service.loadGeometria(hankeId)
+            val geometry = service.loadGeometriat(hankeId)
             if (geometry == null) {
                 ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1015)
             } else {

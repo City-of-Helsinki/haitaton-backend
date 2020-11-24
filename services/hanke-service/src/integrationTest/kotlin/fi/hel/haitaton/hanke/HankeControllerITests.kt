@@ -31,6 +31,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @MockkBean
     lateinit var hankeService: HankeService  //faking these calls
 
+    @MockkBean
+    lateinit var hankeRepository: HankeRepository
 
     @Test
     fun `When hankeId not given for fetching then error`() {

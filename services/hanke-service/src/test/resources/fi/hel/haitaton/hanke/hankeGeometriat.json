@@ -1,5 +1,5 @@
 {
-  "hankeId": "1234567",
+  "hankeId": 1,
   "featureCollection": {
     "type": "FeatureCollection",
     "crs": {

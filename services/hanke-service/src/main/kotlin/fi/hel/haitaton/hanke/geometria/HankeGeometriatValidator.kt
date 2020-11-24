@@ -1,8 +1,7 @@
-package fi.hel.haitaton.hanke.validation
+package fi.hel.haitaton.hanke.geometria
 
 import fi.hel.haitaton.hanke.COORDINATE_SYSTEM_URN
 import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.HankeGeometriat
 import javax.validation.ConstraintValidator
 import javax.validation.ConstraintValidatorContext
 

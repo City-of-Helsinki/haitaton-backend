@@ -1,3 +1,5 @@
 databaseChangeLog:
   - include:
       file: db/changelog/changesets/create-initial-tables.yml
+#  - include:
+#      file: db/changelog/changesets/create-hankegeometry-tables.sql

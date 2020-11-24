@@ -1,5 +1,9 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
+import fi.hel.haitaton.hanke.geometria.HankeGeometriatDaoImpl
+import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.geometria.HankeGeometriatServiceImpl
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 
@@ -7,18 +11,12 @@ import org.springframework.context.annotation.Configuration
 class Configuration {
 
     @Bean
-    fun hankeGeometriaDao(): HankeDao {
-        return HankeDaoImpl()
+    fun hankeGeometriatDao(): HankeGeometriatDao {
+        return HankeGeometriatDaoImpl()
     }
 
-//    @Bean
-//    fun hankeService(dao: HankeDao): HankeService {
-//        return HankeServiceImpl(dao)
-//    }
-
-
     @Bean
-    fun hankeGeometriaService(dao: HankeDao): HankeGeometriaService {
-        return HankeGeometriaServiceImpl(dao)
+    fun hankeGeometriatService(repository: HankeRepository, hankeGeometriatDao: HankeGeometriatDao): HankeGeometriatService {
+        return HankeGeometriatServiceImpl(repository, hankeGeometriatDao)
     }
 }
