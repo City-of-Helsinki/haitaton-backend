@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeYhteystiedot
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -12,6 +14,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
 import org.springframework.context.annotation.Configuration
+import java.time.ZonedDateTime
 import javax.validation.ConstraintViolationException
 
 @ExtendWith(SpringExtension::class)
@@ -46,7 +49,7 @@ class HankeControllerTest {
                 .thenReturn(Hanke(1234, mockedHankeTunnus, true,
                         "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
                         getCurrentTimeUTC(), getCurrentTimeUTC(), "OHJELMOINTI",
-                        1,"Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT))
+                        1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT))
 
         val response: ResponseEntity<Any> = hankeController.getHankeByTunnus(mockedHankeTunnus)
 
@@ -56,11 +59,12 @@ class HankeControllerTest {
     }
 
     @Test
-    fun `test that the updateHanke can be called with partial hanke data`() {
+    fun `test that the updateHanke can be called with hanke data and response will be 200`() {
         var partialHanke = Hanke(id = 123, hankeTunnus = "id123",
                 nimi = "hankkeen nimi", kuvaus = "lorem ipsum dolor sit amet...", onYKTHanke = false,
-                alkuPvm = null, loppuPvm = null, vaihe = "OHJELMOINTI",
+                alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = "OHJELMOINTI",
                 version = 1, createdBy = "Tiina", createdAt = getCurrentTimeUTC(), modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
+
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
 
@@ -86,8 +90,34 @@ class HankeControllerTest {
         // Actual call
         Assertions.assertThatExceptionOfType(ConstraintViolationException::class.java).isThrownBy {
             hankeController.updateHanke(partialHanke, "id123")
-        }.withMessageContaining("updateHanke.hanke.nimi: "+HankeError.HAI1002.toString()).withMessageContaining("updateHanke.hanke.creatorUserId: "+HankeError.HAI1002.toString())
+        }.withMessageContaining("updateHanke.hanke.nimi: " + HankeError.HAI1002.toString())
+                .withMessageContaining("updateHanke.hanke.createdBy: " + HankeError.HAI1002.toString())
 
     }
+
+    //sending of sub types
+/* in the construction
+
+    @Test
+    fun `test that update with listOfOmistaja can be sent to controller and is responded with 200`() {
+        var partialHanke = Hanke(id = 123, hankeTunnus = "id123",
+                nimi = "hankkeen nimi", kuvaus = "lorem ipsum dolor sit amet...", onYKTHanke = false,
+                alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = "OHJELMOINTI",
+                version = 1, createdBy = "Tiina", createdAt = getCurrentTimeUTC(), modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
+
+        // mock HankeService response
+        Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
+
+        partialHanke.listOfOmistaja = arrayListOf(HankeYhteystiedot(1,1,"Pekkanen", "Pekka","pekka@pekka.fi", "3212312", "Kaivuri ja mies",null))
+        // Actual call
+        val response: ResponseEntity<Any> = hankeController.updateHanke(partialHanke, "id123")
+
+        Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        Assertions.assertThat(response.body).isNotNull
+        var responseHanke = response as ResponseEntity<Hanke>
+        Assertions.assertThat(responseHanke.body).isNotNull
+        Assertions.assertThat(responseHanke.body?.nimi).isEqualTo("hankkeen nimi")
+    }*/
+
 
 }
