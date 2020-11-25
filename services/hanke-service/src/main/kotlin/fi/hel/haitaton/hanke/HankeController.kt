@@ -20,11 +20,10 @@ class HankeController(@Autowired private val hankeService: HankeService) {
 
     /**
      * Get one hanke with hankeTunnus.
-     *  TODO: token and user from front?
+     *  TODO: token  from front?
      *  TODO: validation for input parameter
      *
      */
-
     @GetMapping("/{hankeTunnus}")
     fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String?): ResponseEntity<Any> {
 
@@ -49,7 +48,6 @@ class HankeController(@Autowired private val hankeService: HankeService) {
 
     /**
      * Add one hanke.
-     *  TODO: user from front?
      *  TODO: validation for input
      * This method will be called when we do not have id for hanke yet
      */
