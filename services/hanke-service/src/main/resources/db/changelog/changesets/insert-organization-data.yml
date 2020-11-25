@@ -45,16 +45,106 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
-                  value: "4"
+                  value: "3"
               - column:
                   name: nimi
-                  value: "FremantleMedia Finland Oy"
+                  value: "Elisa Oyj"
               - column:
                   name: organisaatiotunnus
-                  value: "FREMANTLE"
+                  value: "ELISA"
               - column:
                   name: createdat
                   value: now()
               - column:
                   name: modifiedat
                   value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "5"
+              - column:
+                  name: nimi
+                  value: "Helen Oy"
+              - column:
+                  name: organisaatiotunnus
+                  value: "HELEN"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "6"
+              - column:
+                  name: nimi
+                  value: "Helen sähköverkko Oy"
+              - column:
+                  name: organisaatiotunnus
+                  value: "HELENSAH"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "7"
+              - column:
+                  name: nimi
+                  value: "Helsingin kaupunki KYMP"
+              - column:
+                  name: organisaatiotunnus
+                  value: "HELKYMP"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "8"
+              - column:
+                  name: nimi
+                  value: "Helsingin tapahtumasäätiö sr"
+              - column:
+                  name: organisaatiotunnus
+                  value: "HELTA"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+          - insert:
+              tableName: organisaatio
+              columns:
+                - column:
+                    name: id
+                    value: "9"
+                - column:
+                    name: nimi
+                    value: "Helsingin seudun ympäristöpalvelut -kuntayhtymä HSY"
+                - column:
+                    name: organisaatiotunnus
+                    value: "HSY"
+                - column:
+                    name: createdat
+                    value: now()
+                - column:
+                    name: modifiedat
+                    value: now()
