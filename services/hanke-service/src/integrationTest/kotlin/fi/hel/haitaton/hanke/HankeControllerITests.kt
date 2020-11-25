@@ -45,7 +45,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         //faking the service call
         every { hankeService.loadHanke(any()) }.returns(Hanke(123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
-                getCurrentTimeUTC(), getCurrentTimeUTC(), "OHJELMOINTI",
+                getCurrentTimeUTC(), getCurrentTimeUTC(), Vaihe.OHJELMOINTI,
                 1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT))
 
         mockMvc.perform(get("/hankkeet/" + mockedHankeTunnus).accept(MediaType.APPLICATION_JSON))
@@ -63,7 +63,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val hankeName = "Mannerheimintien remontti remonttinen"
 
         var hankeToBeMocked = Hanke(id = null, hankeTunnus = null, nimi = hankeName, kuvaus = "lorem ipsum dolor sit amet...",
-                onYKTHanke = false, alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = "OHJELMOINTI",
+                onYKTHanke = false, alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI,
                 version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
         //faking the service call
@@ -92,7 +92,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         // initializing only part of the data for Hanke
         val hankeToBeUpdated = Hanke(id = 23, hankeTunnus = "idHankkeelle123", nimi = hankeName, kuvaus = "kuvaus",
-                onYKTHanke = false, alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = "OHJELMOINTI",
+                onYKTHanke = false, alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI,
                 version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
         //faking the service call
@@ -113,7 +113,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @Test
     fun `test that the validation gives error and Bad Request is returned when creatorUserId is empty`() {
         var hankeToBeAdded = Hanke(id = null, hankeTunnus = "idHankkeelle123", nimi = "", kuvaus = null,
-                onYKTHanke = false, alkuPvm = null, loppuPvm = null, vaihe = "RAKENTAMINEN",
+                onYKTHanke = false, alkuPvm = null, loppuPvm = null, vaihe = Vaihe.RAKENTAMINEN,
                 version = null, createdBy = "", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
         every { hankeService.createHanke(any()) }.returns(hankeToBeAdded)

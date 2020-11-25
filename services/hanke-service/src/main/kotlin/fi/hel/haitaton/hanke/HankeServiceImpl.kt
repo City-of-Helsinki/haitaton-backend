@@ -23,6 +23,9 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
            getHankeSaves(hankeId: Long): SpecialListOf ...
             getHankeSaves(hankeTunnus: String): SpecialListOf ...
 
+       - createHanke can do either autosave or draft, not submit (not enough data for that)
+       - updateHanke can do any save mode.
+
        - change loadHanke(tunnus) to return latest non-autosave (either draft or submit)
        - loadHanke(tunnus, savetype)
        - loadHanke(id, savetype)
@@ -32,7 +35,7 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         // TODO: Remove this special case after other stuff works; for testing purposes
         if (hankeTunnus.equals("SMTGEN_12"))
             return Hanke(0, "", true, "Hämeentien perusparannus ja katuvalot", "Lorem ipsum dolor sit amet...",
-                    getCurrentTimeUTC(), getCurrentTimeUTC(), "OHJELMOINTI",
+                    getCurrentTimeUTC(), getCurrentTimeUTC(), Vaihe.OHJELMOINTI,
                     1, "0", getCurrentTimeUTC(), "0", getCurrentTimeUTC(), SaveType.DRAFT)
 
         // TODO: Find out all savetype matches and return the more recent draft vs. submit.
@@ -63,7 +66,7 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
 
         logger.info {
             // TODO: once the hanke-tunnus gets its own service, this logging line gets more useful
-            //"Saving  Hanke ${hanke.hankeId}: ${hanke.toJsonString()}"
+            //"Saving  Hanke ${entity.hankeTunnus}: ${hanke.toJsonString()}"
             "Saving Hanke step 1 for: ${hanke.toJsonString()}"
         }
         hankeRepository.save(entity)
@@ -73,11 +76,11 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         entity.hankeTunnus = tunnus
         // TODO: once the hanke-tunnus gets its own service, this logging and the second save becomes obsolete.
         logger.info {
-            "Saving  Hanke step 2 for: ${hanke.hankeTunnus}"
+            "Saving  Hanke step 2 for: ${entity.hankeTunnus}"
         }
         hankeRepository.save(entity) // ... Just to save that newly created hankeTunnus
         logger.info {
-            "Saved Hanke ${hanke.hankeTunnus}"
+            "Saved Hanke ${entity.hankeTunnus}"
         }
 
         // Creating a new domain object for the return value; it will have the updated values from the database,
