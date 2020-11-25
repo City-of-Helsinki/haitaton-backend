@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: insert-organization-data
+      comment: Inser organization data
+      author: Anne-Mari Silvast
+      changes:
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "1"
+              - column:
+                  name: nimi
+                  value: "DNA Oyj"
+              - column:
+                  name: organisaatiotunnus
+                  value: "DNA"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "2"
+              - column:
+                  name: nimi
+                  value: "DNA Welho Oy"
+              - column:
+                  name: organisaatiotunnus
+                  value: "WELHO"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "4"
+              - column:
+                  name: nimi
+                  value: "FremantleMedia Finland Oy"
+              - column:
+                  name: organisaatiotunnus
+                  value: "FREMANTLE"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()

@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/changesets/create-initial-tables.yml
   - include:
       file: db/changelog/changesets/create-organization-tables.yml
+  - include:
+      file: db/changelog/changesets/insert-organization-data.yml

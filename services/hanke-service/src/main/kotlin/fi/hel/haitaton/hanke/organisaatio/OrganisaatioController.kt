@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.organisaatio
 
 import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Component
@@ -13,7 +14,7 @@ private val logger = KotlinLogging.logger { }
 @RestController
 @RequestMapping("/organisaatiot")
 @Validated
-class OrganisaatioController {
+class OrganisaatioController(@Autowired private val service: OrganisaatioService) {
 
     @GetMapping
     fun getOrganisaatiot(): ResponseEntity<Any> {
@@ -116,7 +117,8 @@ class OrganisaatioController {
               }
             ]
         """.trimIndent()
-
-        return ResponseEntity.status(HttpStatus.OK).body(organisaatioList)
+        val organisaatiot = service.getOrganisaatiot()
+        logger.info { organisaatiot }
+        return ResponseEntity.status(HttpStatus.OK).body(organisaatiot)
     }
 }
