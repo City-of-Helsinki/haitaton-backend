@@ -44,7 +44,7 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                     ) VALUES (
                         $id,
                         ST_SetSRID(ST_GeomFromGeoJSON('${feature.geometry.toJsonString()}'), $SRID),
-                        '${feature.properties.toJsonString()}'
+                        ${if (feature.properties != null) "'${feature.properties.toJsonString()}'" else "null"}
             )""".trimIndent())
             }
         }
