@@ -5,9 +5,9 @@ import fi.hel.haitaton.hanke.domain.Hanke
 interface HankeService {
 
     /**
-     * Fetch hanke with hankeId
+     * Fetch hanke with hankeTunnus
      */
-    fun loadHanke(hankeId: String): Hanke?
+    fun loadHanke(hankeTunnus: String): Hanke?
 
     fun createHanke(hanke: Hanke): Hanke
 

@@ -32,6 +32,48 @@ enum class SuunnitteluVaihe {
     TYOMAAN_TAI_HANKKEEN_AIKAINEN
 }
 
+enum class TyomaaTyyppi {
+    VESI,
+    VIEMARI,
+    SADEVESI,
+    SAHKO,
+    TIETOLIIKENNE,
+    LIIKENNEVALO,
+    YKT,
+    ULKOVALAISTUS,
+    KAAPPITYO,
+    KAUKOLAMPO,
+    KAUKOKYLMA,
+    KAASUJOHTO,
+    KISKOTYO,
+    MUU,
+    KADUNRAKENNUS,
+    KADUN_KUNNOSSAPITO,
+    KIINTEISTOLIITTYMA,
+    SULKU_TAI_KAIVO,
+    UUDISRAKENNUS,
+    SANEERAUS,
+    AKILLINEN_VIKAKORJAUS,
+    VIHERTYO,
+    RUNKOLINJA,
+    NOSTOTYO,
+    MUUTTO,
+    PYSAKKITYO,
+    KIINTEISTOREMONTTI,
+    ULKOMAINOS,
+    KUVAUKSET,
+    LUMENPUDOTUS,
+    YLEISOTILAISUUS,
+    VAIHTOLAVA
+}
+
+enum class TyomaaKoko {
+    SUPPEA_TAI_PISTE,
+    YLI_10M_TAI_KORTTELI,
+    LAAJA_TAI_USEA_KORTTELI
+}
+
+
 // Build-time plugins will open the class and add no-arg constructor for @Entity classes.
 
 @Entity @Table(name = "hanke")
@@ -59,7 +101,16 @@ class HankeEntity (
         // Using SEQUENCE would allow getting multiple ids more efficiently.
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
         var id: Int? = null
-)
+) {
+        // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
+        var tyomaaKatuosoite: String? = null
+        @ElementCollection(fetch = FetchType.EAGER)
+        @CollectionTable(name = "hanketyomaatyyppi", joinColumns = arrayOf(JoinColumn(name = "hankeid")))
+        @Enumerated(EnumType.STRING)
+        var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
+        var tyomaaKoko: TyomaaKoko? = null
+}
+
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
