@@ -37,12 +37,14 @@ internal class HankeGeometriatServiceImplTest {
 
         every { hankeRepository.findByHankeTunnus(hankeTunnus) } returns HankeEntity(id = hankeId, hankeTunnus = hankeTunnus)
         every { hankeGeometriatDao.loadHankeGeometriat(hankeId) } returns oldHankeGeometriat
+        every { hankeGeometriatDao.deleteHankeGeometriat(any()) } just runs
         every { hankeGeometriatDao.saveHankeGeometriat(any()) } just runs
 
         val savedHankeGeometria = service.saveGeometriat(hankeTunnus, hankeGeometriat)
 
         verify { hankeRepository.findByHankeTunnus(hankeTunnus) }
         verify { hankeGeometriatDao.loadHankeGeometriat(hankeId) }
+        verify { hankeGeometriatDao.deleteHankeGeometriat(any()) }
         verify { hankeGeometriatDao.saveHankeGeometriat(any()) }
         assertAll {
             assertThat(savedHankeGeometria.version).isEqualTo(2)
@@ -65,12 +67,14 @@ internal class HankeGeometriatServiceImplTest {
 
         every { hankeRepository.findByHankeTunnus(hankeTunnus) } returns HankeEntity(id = hankeId, hankeTunnus = hankeTunnus)
         every { hankeGeometriatDao.loadHankeGeometriat(hankeId) } returns null
+        every { hankeGeometriatDao.deleteHankeGeometriat(any()) } just runs
         every { hankeGeometriatDao.saveHankeGeometriat(any()) } just runs
 
         val savedHankeGeometria = service.saveGeometriat(hankeTunnus, hankeGeometriat)
 
         verify { hankeRepository.findByHankeTunnus(hankeTunnus) }
         verify { hankeGeometriatDao.loadHankeGeometriat(hankeId) }
+        verify { hankeGeometriatDao.deleteHankeGeometriat(any()) }
         verify { hankeGeometriatDao.saveHankeGeometriat(any()) }
         assertAll {
             assertThat(savedHankeGeometria.version).isEqualTo(1)
@@ -101,6 +105,7 @@ internal class HankeGeometriatServiceImplTest {
 
         verify { hankeRepository.findByHankeTunnus(hankeTunnus) }
         verify(exactly = 0) { hankeGeometriatDao.loadHankeGeometriat(hankeId) }
+        verify(exactly = 0) { hankeGeometriatDao.deleteHankeGeometriat(any()) }
         verify(exactly = 0) { hankeGeometriatDao.saveHankeGeometriat(any()) }
     }
 
