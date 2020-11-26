@@ -35,7 +35,7 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         // TODO: Remove this special case after other stuff works; for testing purposes
         if (hankeTunnus.equals("SMTGEN_12"))
             return Hanke(0, "", true, "Hämeentien perusparannus ja katuvalot", "Lorem ipsum dolor sit amet...",
-                    getCurrentTimeUTC(), getCurrentTimeUTC(), Vaihe.OHJELMOINTI,
+                    getCurrentTimeUTC(), getCurrentTimeUTC(), Vaihe.OHJELMOINTI, null,
                     1, "0", getCurrentTimeUTC(), "0", getCurrentTimeUTC(), SaveType.DRAFT)
 
         // TODO: Find out all savetype matches and return the more recent draft vs. submit.
@@ -128,6 +128,7 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
                     hankeEntity.alkuPvm?.atStartOfDay(TZ_UTC),
                     hankeEntity.loppuPvm?.atStartOfDay(TZ_UTC),
                     hankeEntity.vaihe,
+                    hankeEntity.suunnitteluVaihe,
 
                     hankeEntity.version,
                     // TODO: will need in future to actually fetch the username from another service.. (or whatever we choose to pass out here)
@@ -160,6 +161,7 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
             hanke.alkuPvm?.let { entity.alkuPvm = hanke.alkuPvm?.toLocalDate() }
             hanke.loppuPvm?.let { entity.loppuPvm = hanke.loppuPvm?.toLocalDate() }
             hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
+            hanke.suunnitteluVaihe?.let { entity.suunnitteluVaihe = hanke.suunnitteluVaihe }
 
             hanke.saveType?.let { entity.saveType = hanke.saveType }
         }
