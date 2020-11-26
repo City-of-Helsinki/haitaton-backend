@@ -125,9 +125,10 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
         logger.info {
             "Saved  Hanke ${hanke.hankeTunnus}"
         }
-        //TODO: yhteystiedot? is it correctly?
-        createEntityFromHankeYhteystiedotDomainObject(hanke, entity)
+        // yhteystiedot
+
         saveHankeYhteystiedot(entity, hanke)
+
         // Creating a new domain object for the return value; it will have the updated values from the database,
         // e.g. the main date values truncated to midnight.
         return createHankeDomainObjectFromEntity(entity)
@@ -135,7 +136,11 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
 
     private fun saveHankeYhteystiedot(entity: HankeEntity, hanke: Hanke) {
         return try {
-         //   entity.listOfHankeYhteystieto?.forEach { it.hankeid = entity.id!! }
+            logger.info {
+                "Saving HankeYhteystietos for ${hanke.hankeTunnus}"
+            }
+
+            createEntityFromHankeYhteystiedotDomainObject(hanke, entity)
 
             entity.listOfHankeYhteystieto?.let { hankeYhteystiedotRepository.saveAll(it) }  //saving hankeyhteystiedot
             logger.info {
@@ -179,19 +184,23 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
             return h
         }
 
+        /**
+         * createSeparateYhteystietolistsFromEntityData splits entity's one list to three different contact information
+         * lists and adds them for Hanke domain object
+         */
         private fun createSeparateYhteystietolistsFromEntityData(hanke: Hanke, hankeEntity: HankeEntity) {
             var it = hankeEntity.listOfHankeYhteystieto?.iterator()
             if (it != null) {
                 while (it.hasNext()) {
                     var hankeYhteysEntity = it.next()
                     var hankeYhteystieto = createHankeYhteystietoDomainObjectFromEntity(hankeYhteysEntity)
+
                     if (hankeYhteystieto.contactType.equals(ContactType.OMISTAJA))
                         hanke.omistajat.add(hankeYhteystieto)
                     if (hankeYhteystieto.contactType.equals(ContactType.TOTEUTTAJA))
                         hanke.toteuttajat.add(hankeYhteystieto)
                     if (hankeYhteystieto.contactType.equals(ContactType.ARVIOIJA))
                         hanke.arvioijat.add(hankeYhteystieto)
-
                 }
             }
         }
@@ -226,24 +235,17 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
             addHankeYhteystietoEntitysToList(h.omistajat, hankeEntity)
             addHankeYhteystietoEntitysToList(h.arvioijat, hankeEntity)
             addHankeYhteystietoEntitysToList(h.toteuttajat, hankeEntity)
-
         }
 
         private fun addHankeYhteystietoEntitysToList(listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity) {
             val iterator = listOfHankeYhteystiedot.iterator()
 
-
             while (iterator.hasNext()) {
 
                 var hankeYht: HankeYhteystieto = iterator.next()
 
-                var idForHanke = hankeEntity.id
-                if (hankeYht.hankeId != null)
-                    idForHanke = hankeYht.hankeId
-
                 var hankeYhtEnt: HankeYhteystietoEntity = HankeYhteystietoEntity(
                         hankeYht.contactType,
-                        idForHanke,
                         hankeYht.sukunimi,
                         hankeYht.etunimi,
                         hankeYht.email,
@@ -273,16 +275,8 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
             if (hankeYhteystietoEntity.modifiedAt != null)
                 modifiedAt = ZonedDateTime.of(hankeYhteystietoEntity.modifiedAt, TZ_UTC)
 
-
             return HankeYhteystieto(
                     id = hankeYhteystietoEntity.id,
-                    hankeId = hankeYhteystietoEntity.hankeId,
-
-                    createdBy = hankeYhteystietoEntity.createdByUserId?.toString() ?: "",
-                    modifiedBy = hankeYhteystietoEntity.modifiedByUserId?.toString() ?: "",
-                    createdAt = createdAt,
-                    modifiedAt = modifiedAt,
-
                     etunimi = hankeYhteystietoEntity.etunimi,
                     sukunimi = hankeYhteystietoEntity.sukunimi,
                     email = hankeYhteystietoEntity.email,
@@ -290,10 +284,13 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
                     contactType = hankeYhteystietoEntity.contactType,
                     organisaatioId = hankeYhteystietoEntity.organisaatioid,
                     organisaatioNimi = hankeYhteystietoEntity.organisaationimi,
-                    //TODO virallinen organisaatio implementaiton
-                    osasto = hankeYhteystietoEntity.osasto)
+                    osasto = hankeYhteystietoEntity.osasto,
+                    createdBy = hankeYhteystietoEntity.createdByUserId?.toString() ?: "",
+                    modifiedBy = hankeYhteystietoEntity.modifiedByUserId?.toString() ?: "",
+                    createdAt = createdAt,
+                    modifiedAt = modifiedAt
+            )
 
         }
-
     }
 }

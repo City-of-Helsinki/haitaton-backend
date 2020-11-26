@@ -24,7 +24,6 @@ data class Hanke(
 
         var vaihe: Vaihe?,
 
-
         var version: Int?,
         val createdBy: String,
         val createdAt: ZonedDateTime?,

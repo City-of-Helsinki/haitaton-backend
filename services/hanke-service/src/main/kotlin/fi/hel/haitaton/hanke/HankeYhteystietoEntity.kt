@@ -15,9 +15,8 @@ enum class ContactType {
 class HankeYhteystietoEntity (
         @Enumerated(EnumType.STRING)
         var contactType: ContactType,
-        var hankeId: Int? = 0,
 
-//must have contact information
+        //must have contact information
         var sukunimi: String,
         var etunimi: String,
         var email: String,
@@ -40,8 +39,7 @@ class HankeYhteystietoEntity (
         var id: Int? = null,
 
         @ManyToOne(fetch = FetchType.EAGER)
-        @JoinColumn(name="hankeid")
-        private var hanke: HankeEntity? = null
+        @JoinColumn(name="hankeid") var hanke: HankeEntity? = null
 )
 
 

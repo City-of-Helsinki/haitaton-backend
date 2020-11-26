@@ -7,7 +7,6 @@ data class HankeYhteystieto(
         var id: Int?,
         //e.g. omistaja, arvioija, toteuttaja
         var contactType: ContactType,  //TODO: don't bring to front, decide from list
-        var hankeId: Int?,
 
         //must have contact information
         var sukunimi: String,
