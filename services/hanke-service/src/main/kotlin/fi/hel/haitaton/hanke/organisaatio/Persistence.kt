@@ -14,6 +14,6 @@ class OrganisaatioEntity(
     var id: Int? = null
 )
 
-interface OrganisaatioRepository : JpaRepository<OrganisaatioEntity, Long> {
+interface OrganisaatioRepository : JpaRepository<OrganisaatioEntity, Int> {
     fun findAllByOrderByIdAsc(): Iterable<OrganisaatioEntity>
 }
