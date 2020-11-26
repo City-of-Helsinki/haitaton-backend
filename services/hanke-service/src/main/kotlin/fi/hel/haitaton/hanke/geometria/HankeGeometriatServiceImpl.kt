@@ -34,6 +34,7 @@ open class HankeGeometriatServiceImpl(
         }
         hankeGeometriat.hankeId = hanke.id
         hankeGeometriat.updatedAt = now
+        hankeGeometriaDao.deleteHankeGeometriat(hankeGeometriat.hankeId!!)
         hankeGeometriaDao.saveHankeGeometriat(hankeGeometriat)
         logger.info {
             "Saved Geometria for Hanke $hankeTunnus"
