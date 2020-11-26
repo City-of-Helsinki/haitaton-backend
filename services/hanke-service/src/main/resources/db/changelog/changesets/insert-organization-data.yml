@@ -63,6 +63,24 @@ databaseChangeLog:
             columns:
               - column:
                   name: id
+                  value: "4"
+              - column:
+                  name: nimi
+                  value: "FremantleMedia Finland Oy"
+              - column:
+                  name: organisaatiotunnus
+                  value: "FREMANTLE"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
                   value: "5"
               - column:
                   name: nimi
@@ -130,21 +148,201 @@ databaseChangeLog:
               - column:
                   name: modifiedat
                   value: now()
-          - insert:
-              tableName: organisaatio
-              columns:
-                - column:
-                    name: id
-                    value: "9"
-                - column:
-                    name: nimi
-                    value: "Helsingin seudun ympäristöpalvelut -kuntayhtymä HSY"
-                - column:
-                    name: organisaatiotunnus
-                    value: "HSY"
-                - column:
-                    name: createdat
-                    value: now()
-                - column:
-                    name: modifiedat
-                    value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "9"
+              - column:
+                  name: nimi
+                  value: "Helsingin seudun ympäristöpalvelut -kuntayhtymä HSY"
+              - column:
+                  name: organisaatiotunnus
+                  value: "HSY"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "10"
+              - column:
+                  name: nimi
+                  value: "Niemi palvelut Oy"
+              - column:
+                  name: organisaatiotunnus
+                  value: "NIEMI"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "11"
+              - column:
+                  name: nimi
+                  value: "Raide-Jokeri Allianssi / KYMP/MAKA/LIKE"
+              - column:
+                  name: organisaatiotunnus
+                  value: "JOKERI"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "12"
+              - column:
+                  name: nimi
+                  value: "Suomen Ilotulitus Oy"
+              - column:
+                  name: organisaatiotunnus
+                  value: "SUOILO"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "13"
+              - column:
+                  name: nimi
+                  value: "Telia Finland Oyj"
+              - column:
+                  name: organisaatiotunnus
+                  value: "TELIA"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "14"
+              - column:
+                  name: nimi
+                  value: "Varmatie Oy"
+              - column:
+                  name: organisaatiotunnus
+                  value: "VARMATIE"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "15"
+              - column:
+                  name: nimi
+                  value: "Viktor Ek Muutot Oy"
+              - column:
+                  name: organisaatiotunnus
+                  value: "VIKTOREK"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "16"
+              - column:
+                  name: nimi
+                  value: "Yellow Film & TV Oy"
+              - column:
+                  name: organisaatiotunnus
+                  value: "YELLOW"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "17"
+              - column:
+                  name: nimi
+                  value: "YIT Suomi Oy"
+              - column:
+                  name: organisaatiotunnus
+                  value: "YITSUOMI"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "18"
+              - column:
+                  name: nimi
+                  value: "Yleisradio Oy"
+              - column:
+                  name: organisaatiotunnus
+                  value: "YLE"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                  value: now()
+        - insert:
+            tableName: organisaatio
+            columns:
+              - column:
+                  name: id
+                  value: "19"
+              - column:
+                  name: nimi
+                  value: "Zodiak Finland Oy"
+              - column:
+                  name: organisaatiotunnus
+                  value: "ZODIAK"
+              - column:
+                  name: createdat
+                  value: now()
+              - column:
+                  name: modifiedat
+                value: now()
