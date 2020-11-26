@@ -57,13 +57,13 @@ internal class HankeGeometriatDaoImplITest {
 
     @Autowired
     private lateinit var jdbcOperations: JdbcOperations
-
+/*
     @BeforeEach
     fun setUp() {
         // delete all
         jdbcOperations.execute("DELETE FROM HankeGeometriat")
     }
-
+*/
     @Test
     fun `save, load and delete`() {
         val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)

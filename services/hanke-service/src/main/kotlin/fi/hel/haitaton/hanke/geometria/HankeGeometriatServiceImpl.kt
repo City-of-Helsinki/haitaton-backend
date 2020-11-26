@@ -10,10 +10,10 @@ import javax.transaction.Transactional
 
 private val logger = KotlinLogging.logger { }
 
-@Transactional
 open class HankeGeometriatServiceImpl(
         private val hankeRepository: HankeRepository,
         private val hankeGeometriaDao: HankeGeometriatDao) : HankeGeometriatService {
+    @Transactional
     override fun saveGeometriat(hankeTunnus: String, hankeGeometriat: HankeGeometriat): HankeGeometriat {
         logger.info {
             "Saving Geometria for Hanke $hankeTunnus: ${hankeGeometriat.toJsonString()}"

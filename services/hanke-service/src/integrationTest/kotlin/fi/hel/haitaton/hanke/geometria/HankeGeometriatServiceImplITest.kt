@@ -3,8 +3,8 @@ package fi.hel.haitaton.hanke.geometria
 import assertk.assertAll
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.*
+import mu.KotlinLogging
 import org.geojson.Point
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -18,12 +18,12 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.nio.file.Files
 import java.nio.file.Paths
-import javax.transaction.Transactional
+
+private val logger = KotlinLogging.logger { }
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
-@Transactional
 internal class HankeGeometriatServiceImplITest {
 
     companion object {
@@ -49,17 +49,20 @@ internal class HankeGeometriatServiceImplITest {
     private lateinit var hankeRepository: HankeRepository
 
     @Autowired
+    private lateinit var hankeGeometriatDao: HankeGeometriatDao
+
+    @Autowired
     private lateinit var hankeGeometriatService: HankeGeometriatService
 
     @Autowired
     private lateinit var jdbcOperations: JdbcOperations
-
+/*
     @BeforeEach
     fun setUp() {
         // delete all
         jdbcOperations.execute("DELETE FROM HankeGeometriat")
     }
-
+*/
     @Test
     fun `save and load`() {
         val hankeTunnus = "123456"
@@ -87,11 +90,5 @@ internal class HankeGeometriatServiceImplITest {
             val point = hankeGeometriat.featureCollection!!.features[0].geometry as Point
             assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
         }
-        // delete
-        jdbcOperations.execute("DELETE FROM HankeGeometriat WHERE hankeId=$hankeId")
-        // check that was deleted correctly
-        assertThat(hankeGeometriatService.loadGeometriat(hankeTunnus)).isNull()
-        assertThat(jdbcOperations.queryForObject("SELECT COUNT(*) FROM HankeGeometriat") { rs, _ -> rs.getInt(1) }).isEqualTo(0)
-        assertThat(jdbcOperations.queryForObject("SELECT COUNT(*) FROM HankeGeometria") { rs, _ -> rs.getInt(1) }).isEqualTo(0)
     }
 }
