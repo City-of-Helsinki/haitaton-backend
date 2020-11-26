@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.domain
 
 import fi.hel.haitaton.hanke.SaveType
+import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.Vaihe
 import java.time.ZonedDateTime
 
@@ -19,6 +20,7 @@ data class Hanke(
         var alkuPvm: ZonedDateTime?,
         var loppuPvm: ZonedDateTime?,
         var vaihe: Vaihe?,
+        var suunnitteluVaihe: SuunnitteluVaihe?,
 
         var version: Int?,
         val createdBy: String,

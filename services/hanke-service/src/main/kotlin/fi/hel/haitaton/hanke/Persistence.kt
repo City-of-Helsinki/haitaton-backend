@@ -25,6 +25,13 @@ enum class Vaihe {
     RAKENTAMINEN
 }
 
+enum class SuunnitteluVaihe {
+    YLEIS_TAI_HANKE,
+    KATUSUUNNITTELU_TAI_ALUEVARAUS,
+    RAKENNUS_TAI_TOTEUTUS,
+    TYOMAAN_TAI_HANKKEEN_AIKAINEN
+}
+
 // Build-time plugins will open the class and add no-arg constructor for @Entity classes.
 
 @Entity @Table(name = "hanke")
@@ -38,6 +45,7 @@ class HankeEntity (
         var loppuPvm: LocalDate? = null, // NOTE: stored and handled in UTC, not in "local" time
         @Enumerated(EnumType.STRING)
         var vaihe: Vaihe? = null,
+        var suunnitteluVaihe: SuunnitteluVaihe? = null,
         var onYKTHanke: Boolean? = false,
         var version: Int? = 0,
         // NOTE: creatorUserId must be non-null for valid data, but to allow creating instances with

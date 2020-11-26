@@ -1,6 +1,6 @@
 databaseChangeLog:
   - include:
-      file: db/changelog/changesets/create-initial-tables.yml
+      file: db/changelog/changesets/create-initial-hanke-table.yml
   - include:
       file: db/changelog/changesets/create-organization-tables.yml
   - include:
