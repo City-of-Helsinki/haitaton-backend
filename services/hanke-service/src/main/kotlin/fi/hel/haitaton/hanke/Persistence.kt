@@ -19,6 +19,19 @@ enum class SaveType {
     SUBMIT // When the user presses "save" or "submit" or such that indicates the data is ready.
 }
 
+enum class Vaihe {
+    OHJELMOINTI,
+    SUUNNITTELU,
+    RAKENTAMINEN
+}
+
+enum class SuunnitteluVaihe {
+    YLEIS_TAI_HANKE,
+    KATUSUUNNITTELU_TAI_ALUEVARAUS,
+    RAKENNUS_TAI_TOTEUTUS,
+    TYOMAAN_TAI_HANKKEEN_AIKAINEN
+}
+
 // Build-time plugins will open the class and add no-arg constructor for @Entity classes.
 
 @Entity @Table(name = "hanke")
@@ -30,8 +43,9 @@ class HankeEntity (
         var kuvaus: String? = null,
         var alkuPvm: LocalDate? = null, // NOTE: stored and handled in UTC, not in "local" time
         var loppuPvm: LocalDate? = null, // NOTE: stored and handled in UTC, not in "local" time
-        // TODO: change to enum?
-        var vaihe: String? = null,
+        @Enumerated(EnumType.STRING)
+        var vaihe: Vaihe? = null,
+        var suunnitteluVaihe: SuunnitteluVaihe? = null,
         var onYKTHanke: Boolean? = false,
         var version: Int? = 0,
         // NOTE: creatorUserId must be non-null for valid data, but to allow creating instances with
@@ -60,7 +74,7 @@ class HankeEntity (
     }
 }
 
-interface HankeRepository : JpaRepository<HankeEntity, Long> {
+interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
     // TODO: add any special 'find' etc. functions here, like searching by date range.
 }
