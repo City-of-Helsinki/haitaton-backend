@@ -20,12 +20,12 @@ open class HankeGeometriatServiceImpl(
         }
         val hanke = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
         val now = ZonedDateTime.now(TZ_UTC)
-        val oldHankeGeometriat = hankeGeometriaDao.loadHankeGeometria(hanke)
+        val oldHankeGeometriat = hankeGeometriaDao.loadHankeGeometriat(hanke.id!!)
         if (oldHankeGeometriat == null) {
             hankeGeometriat.createdAt = now
             hankeGeometriat.version = 1
         } else {
-            hankeGeometriat.createdAt = oldHankeGeometriat.createdAt
+            hankeGeometriat.createdAt = oldHankeGeometriat.createdAt ?: oldHankeGeometriat.updatedAt ?: now
             if (oldHankeGeometriat.version == null) {
                 error("There is an old HankeGeometriat for Hanke ${hanke.hankeTunnus} but it has no 'version'")
             } else {
@@ -34,8 +34,7 @@ open class HankeGeometriatServiceImpl(
         }
         hankeGeometriat.hankeId = hanke.id
         hankeGeometriat.updatedAt = now
-        // TODO convert GeoJSON object to something else?
-        hankeGeometriaDao.saveHankeGeometria(hanke, hankeGeometriat)
+        hankeGeometriaDao.saveHankeGeometriat(hankeGeometriat)
         logger.info {
             "Saved Geometria for Hanke $hankeTunnus"
         }
@@ -44,6 +43,6 @@ open class HankeGeometriatServiceImpl(
 
     override fun loadGeometriat(hankeTunnus: String): HankeGeometriat? {
         val hanke = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-        return hankeGeometriaDao.loadHankeGeometria(hanke)
+        return hankeGeometriaDao.loadHankeGeometriat(hanke.id!!)
     }
 }
