@@ -139,6 +139,11 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
 
                     hankeEntity.saveType
             )
+
+            h.tyomaaKatuosoite = hankeEntity.tyomaaKatuosoite
+            h.tyomaaTyyppi = hankeEntity.tyomaaTyyppi ?: mutableSetOf()
+            h.tyomaaKoko = hankeEntity.tyomaaKoko
+
             return h
         }
 
@@ -162,6 +167,10 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
             hanke.suunnitteluVaihe?.let { entity.suunnitteluVaihe = hanke.suunnitteluVaihe }
 
             hanke.saveType?.let { entity.saveType = hanke.saveType }
+
+            hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
+            hanke.tyomaaTyyppi?.let { entity.tyomaaTyyppi = hanke.tyomaaTyyppi }
+            hanke.tyomaaKoko?.let { entity.tyomaaKoko = hanke.tyomaaKoko }
         }
     }
 }
