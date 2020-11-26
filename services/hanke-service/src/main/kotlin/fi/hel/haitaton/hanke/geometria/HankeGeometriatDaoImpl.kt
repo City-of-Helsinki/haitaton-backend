@@ -91,7 +91,7 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                     val paramjson = rs.getString(2)
                     hankeGeometriat.featureCollection!!.features.add(Feature().apply {
                         geometry = OBJECT_MAPPER.readValue(geojson)
-                        properties = OBJECT_MAPPER.readValue(paramjson)
+                        paramjson?.let { properties = OBJECT_MAPPER.readValue(paramjson) }
                     })
                 }
                 hankeGeometriat
