@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.domain
 
 
-import fi.hel.haitaton.hanke.HankeYhteystietoEntity
+import fi.hel.haitaton.hanke.SaveType
 
 import fi.hel.haitaton.hanke.Vaihe
 
@@ -35,7 +35,7 @@ data class Hanke(
 
         var saveType: SaveType? = SaveType.SUBMIT) {
 
-    var listOfOmistaja: List<HankeYhteystiedot> = arrayListOf()
-    var listOfArvioija: List<HankeYhteystiedot> = arrayListOf()
-    var listOfToteuttaja: List<HankeYhteystiedot> = arrayListOf()
+    var omistajat: MutableList<HankeYhteystieto> = arrayListOf()
+    var arvioijat: MutableList<HankeYhteystieto> = arrayListOf()
+    var toteuttajat: MutableList<HankeYhteystieto> = arrayListOf()
 }

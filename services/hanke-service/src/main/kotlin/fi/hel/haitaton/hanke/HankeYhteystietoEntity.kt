@@ -1,9 +1,7 @@
 package fi.hel.haitaton.hanke
 
-
 import java.time.LocalDateTime
 import javax.persistence.*
-
 
 enum class ContactType {
     OMISTAJA, //owner
@@ -17,7 +15,7 @@ enum class ContactType {
 class HankeYhteystietoEntity (
         @Enumerated(EnumType.STRING)
         var contactType: ContactType,
-        var hankeId: Int = 0,
+        var hankeId: Int? = 0,
 
 //must have contact information
         var sukunimi: String,
@@ -41,9 +39,9 @@ class HankeYhteystietoEntity (
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
         var id: Int? = null,
 
-        @ManyToOne(fetch = FetchType.LAZY)
-        @JoinColumn(name="hanke_id")
-        private var user: HankeEntity? = null
+        @ManyToOne(fetch = FetchType.EAGER)
+        @JoinColumn(name="hankeid")
+        private var hanke: HankeEntity? = null
 )
 
 

@@ -5,13 +5,17 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
 import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
 
 @Service
-class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : HankeService {
+class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
+                       @Autowired val hankeYhteystiedotRepository: HankeYhteystietoRepository) : HankeService {
+
 
     // TODO:
     /*
@@ -42,6 +46,10 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
 
         // TODO: Find out all savetype matches and return the more recent draft vs. submit.
         val entity = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
+
+        val listOfHankeYhteystiedot = entity.id?.let { hankeYhteystiedotRepository.findByHankeId(it) };
+        entity.listOfHankeYhteystieto = listOfHankeYhteystiedot as MutableList<HankeYhteystietoEntity>?
+
         return createHankeDomainObjectFromEntity(entity)
     }
 
@@ -61,12 +69,12 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = 0
         // TODO: will need proper stuff derived from the logged in user.
-        entity.createdByUserId =  1
+        entity.createdByUserId = 1
         entity.createdAt = getCurrentTimeUTCAsLocalTime()
         entity.modifiedByUserId = null
         entity.modifiedAt = null
 
-    //    entity.listOfHankeYhteystieto =
+        //    entity.listOfHankeYhteystieto =
 
         logger.info {
             // TODO: once the hanke-tunnus gets its own service, this logging line gets more useful
@@ -82,10 +90,14 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         logger.info {
             "Saving  Hanke step 2 for: ${entity.hankeTunnus}"
         }
+
         hankeRepository.save(entity) // ... Just to save that newly created hankeTunnus
         logger.info {
             "Saved Hanke ${entity.hankeTunnus}"
         }
+
+        createEntityFromHankeYhteystiedotDomainObject(hanke, entity)
+        saveHankeYhteystiedot(entity, hanke)
 
         // Creating a new domain object for the return value; it will have the updated values from the database,
         // e.g. the main date values truncated to midnight, and the added id and hanketunnus.
@@ -96,7 +108,8 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         if (hanke.hankeTunnus == null)
             error("Somehow got here with hanke without hanke-tunnus")
 
-        val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!) ?: throw HankeNotFoundException(hanke.hankeTunnus)
+        val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
+                ?: throw HankeNotFoundException(hanke.hankeTunnus)
         copyNonNullHankeFieldsToEntity(hanke, entity)
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = entity.version?.inc() ?: 1
@@ -112,10 +125,28 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
         logger.info {
             "Saved  Hanke ${hanke.hankeTunnus}"
         }
-
+        //TODO: yhteystiedot? is it correctly?
+        createEntityFromHankeYhteystiedotDomainObject(hanke, entity)
+        saveHankeYhteystiedot(entity, hanke)
         // Creating a new domain object for the return value; it will have the updated values from the database,
         // e.g. the main date values truncated to midnight.
         return createHankeDomainObjectFromEntity(entity)
+    }
+
+    private fun saveHankeYhteystiedot(entity: HankeEntity, hanke: Hanke) {
+        return try {
+         //   entity.listOfHankeYhteystieto?.forEach { it.hankeid = entity.id!! }
+
+            entity.listOfHankeYhteystieto?.let { hankeYhteystiedotRepository.saveAll(it) }  //saving hankeyhteystiedot
+            logger.info {
+                "Saved HankeYhteystieto for ${hanke.hankeTunnus}"
+            }
+        } catch (e: Exception) {
+            logger.error(e) {
+                "HankeYhteystiedot save failed"
+            }
+            throw e
+        }
     }
 
     companion object Converters {
@@ -124,7 +155,6 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
             // to avoid these conversions. (Note though that we do not really need the time part.)
             val h = Hanke(
                     hankeEntity.id,
-
                     hankeEntity.hankeTunnus,
                     hankeEntity.onYKTHanke,
                     hankeEntity.nimi,
@@ -144,10 +174,26 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
 
                     hankeEntity.saveType,
             )
-
-            copyYhteystietoFromEntityToHanke(h, hankeEntity)
+            createSeparateYhteystietolistsFromEntityData(h, hankeEntity)
 
             return h
+        }
+
+        private fun createSeparateYhteystietolistsFromEntityData(hanke: Hanke, hankeEntity: HankeEntity) {
+            var it = hankeEntity.listOfHankeYhteystieto?.iterator()
+            if (it != null) {
+                while (it.hasNext()) {
+                    var hankeYhteysEntity = it.next()
+                    var hankeYhteystieto = createHankeYhteystietoDomainObjectFromEntity(hankeYhteysEntity)
+                    if (hankeYhteystieto.contactType.equals(ContactType.OMISTAJA))
+                        hanke.omistajat.add(hankeYhteystieto)
+                    if (hankeYhteystieto.contactType.equals(ContactType.TOTEUTTAJA))
+                        hanke.toteuttajat.add(hankeYhteystieto)
+                    if (hankeYhteystieto.contactType.equals(ContactType.ARVIOIJA))
+                        hanke.arvioijat.add(hankeYhteystieto)
+
+                }
+            }
         }
 
         /**
@@ -170,24 +216,84 @@ class HankeServiceImpl (@Autowired val hankeRepository: HankeRepository) : Hanke
 
             hanke.saveType?.let { entity.saveType = hanke.saveType }
 
-            //TODO: yhteystiedot? is it correctly?
-            combineYhteystietoFromHankeToEntity(hanke, entity)
-
-        }
-        private fun combineYhteystietoFromHankeToEntity(h: Hanke, hankeEntity: HankeEntity) {
-            //TODO this is wrong way around
-         //   h.listOfOmistaja?.let { hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteystietoEntity -> hankeYhteystietoEntity.contactType.equals(ContactType.OMISTAJA) } }
-         //   h.listOfArvioija?.let { hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteystietoEntity -> hankeYhteystietoEntity.contactType.equals(ContactType.ARVIOIJA) } }
-         //   h.listOfToteuttaja?.let { hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteystietoEntity -> hankeYhteystietoEntity.contactType.equals(ContactType.TOTEUTTAJA) } }
         }
 
-        /**
-         * Method divides different type of HankeYhteystieto for Hanke into separate lists
-         */
-        private fun copyYhteystietoFromEntityToHanke(h: Hanke, hankeEntity: HankeEntity) {
-            h.listOfOmistaja.let { hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteystietoEntity -> hankeYhteystietoEntity.contactType.equals(ContactType.OMISTAJA) } }
-            h.listOfArvioija.let { hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteystietoEntity -> hankeYhteystietoEntity.contactType.equals(ContactType.ARVIOIJA) } }
-            h.listOfToteuttaja.let { hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteystietoEntity -> hankeYhteystietoEntity.contactType.equals(ContactType.TOTEUTTAJA) } }
+        ///method combines three lists to one for database
+        private fun createEntityFromHankeYhteystiedotDomainObject(h: Hanke, hankeEntity: HankeEntity) {
+
+            hankeEntity.listOfHankeYhteystieto = mutableListOf<HankeYhteystietoEntity>()
+
+            addHankeYhteystietoEntitysToList(h.omistajat, hankeEntity)
+            addHankeYhteystietoEntitysToList(h.arvioijat, hankeEntity)
+            addHankeYhteystietoEntitysToList(h.toteuttajat, hankeEntity)
+
         }
+
+        private fun addHankeYhteystietoEntitysToList(listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity) {
+            val iterator = listOfHankeYhteystiedot.iterator()
+
+
+            while (iterator.hasNext()) {
+
+                var hankeYht: HankeYhteystieto = iterator.next()
+
+                var idForHanke = hankeEntity.id
+                if (hankeYht.hankeId != null)
+                    idForHanke = hankeYht.hankeId
+
+                var hankeYhtEnt: HankeYhteystietoEntity = HankeYhteystietoEntity(
+                        hankeYht.contactType,
+                        idForHanke,
+                        hankeYht.sukunimi,
+                        hankeYht.etunimi,
+                        hankeYht.email,
+                        hankeYht.puhelinnumero,
+                        hankeYht.organisaatioId,
+                        hankeYht.organisaatioNimi,
+                        hankeYht.osasto,
+                        1, //TODO: real user
+                        hankeYht.createdAt?.toLocalDateTime(),
+                        null, //TODO: real user
+                        getCurrentTimeUTCAsLocalTime(),  //TODO: if changed?
+                        hankeYht.id,
+                        hankeEntity
+                )
+                hankeEntity.listOfHankeYhteystieto!!.add(hankeYhtEnt)
+            }
+        }
+
+
+        private fun createHankeYhteystietoDomainObjectFromEntity(hankeYhteystietoEntity: HankeYhteystietoEntity): HankeYhteystieto {
+            var createdAt: ZonedDateTime? = null
+
+            if (hankeYhteystietoEntity.createdAt != null)
+                createdAt = ZonedDateTime.of(hankeYhteystietoEntity.modifiedAt, TZ_UTC)
+
+            var modifiedAt: ZonedDateTime? = null
+            if (hankeYhteystietoEntity.modifiedAt != null)
+                modifiedAt = ZonedDateTime.of(hankeYhteystietoEntity.modifiedAt, TZ_UTC)
+
+
+            return HankeYhteystieto(
+                    id = hankeYhteystietoEntity.id,
+                    hankeId = hankeYhteystietoEntity.hankeId,
+
+                    createdBy = hankeYhteystietoEntity.createdByUserId?.toString() ?: "",
+                    modifiedBy = hankeYhteystietoEntity.modifiedByUserId?.toString() ?: "",
+                    createdAt = createdAt,
+                    modifiedAt = modifiedAt,
+
+                    etunimi = hankeYhteystietoEntity.etunimi,
+                    sukunimi = hankeYhteystietoEntity.sukunimi,
+                    email = hankeYhteystietoEntity.email,
+                    puhelinnumero = hankeYhteystietoEntity.puhelinnumero,
+                    contactType = hankeYhteystietoEntity.contactType,
+                    organisaatioId = hankeYhteystietoEntity.organisaatioid,
+                    organisaatioNimi = hankeYhteystietoEntity.organisaationimi,
+                    //TODO virallinen organisaatio implementaiton
+                    osasto = hankeYhteystietoEntity.osasto)
+
+        }
+
     }
 }

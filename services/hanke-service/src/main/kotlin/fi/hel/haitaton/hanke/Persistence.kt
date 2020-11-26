@@ -10,7 +10,7 @@ Hibernate/JPA Entity classes
  */
 
 // TODO: remove once everything has been converted to use the new, real entity class
-data class OldHankeEntity(val id: String) { }
+data class OldHankeEntity(val id: String) {}
 
 
 enum class SaveType {
@@ -27,8 +27,9 @@ enum class Vaihe {
 
 // Build-time plugins will open the class and add no-arg constructor for @Entity classes.
 
-@Entity @Table(name = "hanke")
-class HankeEntity (
+@Entity
+@Table(name = "hanke")
+class HankeEntity(
         @Enumerated(EnumType.STRING)
         var saveType: SaveType? = null,
         var hankeTunnus: String? = null,
@@ -53,11 +54,16 @@ class HankeEntity (
         var id: Int? = null,
 
         // related
-        @OneToMany(fetch = FetchType.LAZY, mappedBy = "id")
-        var listOfHankeYhteystieto : List<HankeYhteystietoEntity>? = null
+        @OneToMany(fetch = FetchType.EAGER, mappedBy = "id")
+        var listOfHankeYhteystieto: MutableList<HankeYhteystietoEntity>? = null //mutableListOf()
 )
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
     // TODO: add any special 'find' etc. functions here, like searching by date range.
+}
+
+
+interface HankeYhteystietoRepository : JpaRepository<HankeYhteystietoEntity, Int> {
+    fun findByHankeId(hankeId: Int): List<HankeYhteystietoEntity>
 }
