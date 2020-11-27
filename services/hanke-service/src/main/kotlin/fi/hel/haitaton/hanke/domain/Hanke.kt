@@ -2,7 +2,9 @@ package fi.hel.haitaton.hanke.domain
 
 
 import fi.hel.haitaton.hanke.SaveType
-
+import fi.hel.haitaton.hanke.SuunnitteluVaihe
+import fi.hel.haitaton.hanke.TyomaaKoko
+import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 
 import java.time.ZonedDateTime
@@ -23,6 +25,7 @@ data class Hanke(
         var loppuPvm: ZonedDateTime?,
 
         var vaihe: Vaihe?,
+        var suunnitteluVaihe: SuunnitteluVaihe?,
 
         var version: Int?,
         val createdBy: String,
@@ -37,4 +40,8 @@ data class Hanke(
     var omistajat: MutableList<HankeYhteystieto> = arrayListOf()
     var arvioijat: MutableList<HankeYhteystieto> = arrayListOf()
     var toteuttajat: MutableList<HankeYhteystieto> = arrayListOf()
+
+    var tyomaaKatuosoite: String? = null
+    var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
+    var tyomaaKoko: TyomaaKoko? = null
 }
