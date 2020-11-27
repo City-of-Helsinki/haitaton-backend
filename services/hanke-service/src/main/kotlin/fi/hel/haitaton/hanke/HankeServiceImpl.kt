@@ -42,7 +42,7 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
         val entity = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
 
         if (entity.id == null) {
-            throw InvalidKeyException("Hanke id missing")
+            throw DatabaseStateException(hankeTunnus)
         }
 
         val listOfHankeYhteystiedot = entity.id?.let { hankeYhteystiedotRepository.findByHankeId(it) }
