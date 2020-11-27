@@ -37,12 +37,12 @@ data class Hanke(
         // Default for machine API's. UI should always give the save type.
         var saveType: SaveType? = SaveType.SUBMIT) {
 
-    var omistajat: MutableList<HankeYhteystieto> = arrayListOf()
-    var arvioijat: MutableList<HankeYhteystieto> = arrayListOf()
-    var toteuttajat: MutableList<HankeYhteystieto> = arrayListOf()
+    var omistajat = mutableListOf<HankeYhteystieto>()
+    var arvioijat = mutableListOf<HankeYhteystieto>()
+    var toteuttajat = mutableListOf<HankeYhteystieto>()
 
     var tyomaaKatuosoite: String? = null
-    var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
+    var tyomaaTyyppi = mutableListOf<TyomaaTyyppi>()
     var tyomaaKoko: TyomaaKoko? = null
 
     var haittaAlkuPvm: ZonedDateTime? = null

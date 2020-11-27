@@ -286,13 +286,10 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
     }
 
     internal fun addHankeYhteystietoEntitysToList(listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity, contactType: ContactType) {
-        val iterator = listOfHankeYhteystiedot.iterator()
 
-        while (iterator.hasNext()) {
+        listOfHankeYhteystiedot.forEach { hankeYht ->
 
-            val hankeYht: HankeYhteystieto = iterator.next()
-
-            val hankeYhtEnt: HankeYhteystietoEntity = HankeYhteystietoEntity(
+            val hankeYhtEntity = HankeYhteystietoEntity(
                     contactType,
                     hankeYht.sukunimi,
                     hankeYht.etunimi,
@@ -308,8 +305,9 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
                     hankeYht.id,
                     hankeEntity
             )
-            hankeEntity.listOfHankeYhteystieto!!.add(hankeYhtEnt)
+            hankeEntity.listOfHankeYhteystieto!!.add(hankeYhtEntity)
         }
+
     }
 
 }
