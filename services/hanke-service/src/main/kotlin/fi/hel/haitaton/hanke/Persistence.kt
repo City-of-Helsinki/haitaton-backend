@@ -115,7 +115,6 @@ class HankeEntity(
         // can be a performance problem if there is a need to do bulk inserts.
         // Using SEQUENCE would allow getting multiple ids more efficiently.
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-
         var id: Int? = null,
 
         // related

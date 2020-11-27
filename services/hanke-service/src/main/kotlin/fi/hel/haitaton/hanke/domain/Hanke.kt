@@ -35,7 +35,6 @@ data class Hanke(
         var modifiedAt: ZonedDateTime?,
 
         // Default for machine API's. UI should always give the save type.
-
         var saveType: SaveType? = SaveType.SUBMIT) {
 
     var omistajat: MutableList<HankeYhteystieto> = arrayListOf()

@@ -37,11 +37,6 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
      */
 
     override fun loadHanke(hankeTunnus: String): Hanke? {
-        // TODO: Remove this special case after other stuff works; for testing purposes
-        if (hankeTunnus.equals("SMTGEN_12"))
-            return Hanke(0, "", true, "Hämeentien perusparannus ja katuvalot", "Lorem ipsum dolor sit amet...",
-                    getCurrentTimeUTC(), getCurrentTimeUTC(), Vaihe.OHJELMOINTI, null,
-                    1, "0", getCurrentTimeUTC(), "0", getCurrentTimeUTC(), SaveType.DRAFT)
 
         // TODO: Find out all savetype matches and return the more recent draft vs. submit.
         val entity = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
@@ -50,7 +45,7 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
             throw InvalidKeyException("Hanke id missing")
         }
 
-        val listOfHankeYhteystiedot = entity.id?.let { hankeYhteystiedotRepository.findByHankeId(it) };
+        val listOfHankeYhteystiedot = entity.id?.let { hankeYhteystiedotRepository.findByHankeId(it) }
         entity.listOfHankeYhteystieto = listOfHankeYhteystiedot as MutableList<HankeYhteystietoEntity>?
 
         return createHankeDomainObjectFromEntity(entity)
@@ -77,8 +72,6 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
         entity.modifiedByUserId = null
         entity.modifiedAt = null
 
-        //    entity.listOfHankeYhteystieto =
-
         logger.info {
             // TODO: once the hanke-tunnus gets its own service, this logging line gets more useful
             //"Saving  Hanke ${entity.hankeTunnus}: ${hanke.toJsonString()}"
@@ -93,13 +86,14 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
         logger.info {
             "Saving  Hanke step 2 for: ${entity.hankeTunnus}"
         }
+        //TODO: maybe we need to check the transaction situation here before the subentity save?
 
         hankeRepository.save(entity) // ... Just to save that newly created hankeTunnus
         logger.info {
             "Saved Hanke ${entity.hankeTunnus}"
         }
 
-        createEntityFromHankeYhteystiedotDomainObject(hanke, entity)
+        //createEntityFromHankeYhteystiedotDomainObject(hanke, entity)
         saveHankeYhteystiedot(entity, hanke)
 
         // Creating a new domain object for the return value; it will have the updated values from the database,
@@ -129,7 +123,7 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
             "Saved  Hanke ${hanke.hankeTunnus}"
         }
         // yhteystiedot
-
+        //TODO: maybe we need to check the transaction situation here before the subentity save?
         saveHankeYhteystiedot(entity, hanke)
 
         // Creating a new domain object for the return value; it will have the updated values from the database,
@@ -186,7 +180,7 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
             createSeparateYhteystietolistsFromEntityData(h, hankeEntity)
 
             h.tyomaaKatuosoite = hankeEntity.tyomaaKatuosoite
-            h.tyomaaTyyppi = hankeEntity.tyomaaTyyppi ?: mutableSetOf()
+            h.tyomaaTyyppi = hankeEntity.tyomaaTyyppi
             h.tyomaaKoko = hankeEntity.tyomaaKoko
 
             h.haittaAlkuPvm = hankeEntity.haittaAlkuPvm?.atStartOfDay(TZ_UTC)
@@ -205,95 +199,18 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
          * lists and adds them for Hanke domain object
          */
         internal fun createSeparateYhteystietolistsFromEntityData(hanke: Hanke, hankeEntity: HankeEntity) {
-            val it = hankeEntity.listOfHankeYhteystieto?.iterator()
-            if (it != null) {
-                while (it.hasNext()) {
-                    val hankeYhteysEntity = it.next()
-                    val hankeYhteystieto = createHankeYhteystietoDomainObjectFromEntity(hankeYhteysEntity)
 
-                    if (hankeYhteysEntity.contactType.equals(ContactType.OMISTAJA))
-                        hanke.omistajat.add(hankeYhteystieto)
-                    if (hankeYhteysEntity.contactType.equals(ContactType.TOTEUTTAJA))
-                        hanke.toteuttajat.add(hankeYhteystieto)
-                    if (hankeYhteysEntity.contactType.equals(ContactType.ARVIOIJA))
-                        hanke.arvioijat.add(hankeYhteystieto)
-                }
+            hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteysEntity ->
+                var hankeYhteystieto = createHankeYhteystietoDomainObjectFromEntity(hankeYhteysEntity)
+
+                if (hankeYhteysEntity.contactType.equals(ContactType.OMISTAJA))
+                    hanke.omistajat.add(hankeYhteystieto)
+                if (hankeYhteysEntity.contactType.equals(ContactType.TOTEUTTAJA))
+                    hanke.toteuttajat.add(hankeYhteystieto)
+                if (hankeYhteysEntity.contactType.equals(ContactType.ARVIOIJA))
+                    hanke.arvioijat.add(hankeYhteystieto)
             }
         }
-
-        /**
-         * Does NOT copy the id and hankeTunnus fields because one is supposed to find
-         * the HankeEntity instance from the database with those values, and after that,
-         * the values are filled by the database and should not be changed.
-         * Also, version, creatorUserId, createdAt, modifierUserId, modifiedAt, version are not
-         * set here, as they are to be set internally, and depends on which operation
-         * is being done.
-         */
-        internal fun copyNonNullHankeFieldsToEntity(hanke: Hanke, entity: HankeEntity) {
-            hanke.onYKTHanke?.let { entity.onYKTHanke = hanke.onYKTHanke }
-            hanke.nimi?.let { entity.nimi = hanke.nimi }
-            hanke.kuvaus?.let { entity.kuvaus = hanke.kuvaus }
-            // Assuming the incoming date, while being zoned date and time, is in UTC and time value can be simply dropped here.
-            // Note, .toLocalDate() does not do any time zone conversion.
-            hanke.alkuPvm?.let { entity.alkuPvm = hanke.alkuPvm?.toLocalDate() }
-            hanke.loppuPvm?.let { entity.loppuPvm = hanke.loppuPvm?.toLocalDate() }
-            hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
-            hanke.suunnitteluVaihe?.let { entity.suunnitteluVaihe = hanke.suunnitteluVaihe }
-
-            hanke.saveType?.let { entity.saveType = hanke.saveType }
-            hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
-            hanke.tyomaaTyyppi?.let { entity.tyomaaTyyppi = hanke.tyomaaTyyppi }
-            hanke.tyomaaKoko?.let { entity.tyomaaKoko = hanke.tyomaaKoko }
-
-            // Assuming the incoming date, while being zoned date and time, is in UTC and time value can be simply dropped here.
-            // Note, .toLocalDate() does not do any time zone conversion.
-            hanke.haittaAlkuPvm?.let { entity.haittaAlkuPvm = hanke.haittaAlkuPvm?.toLocalDate() }
-            hanke.haittaLoppuPvm?.let { entity.haittaLoppuPvm = hanke.haittaLoppuPvm?.toLocalDate() }
-            hanke.kaistaHaitta?.let { entity.kaistaHaitta = hanke.kaistaHaitta }
-            hanke.kaistaPituusHaitta?.let { entity.kaistaPituusHaitta = hanke.kaistaPituusHaitta }
-            hanke.meluHaitta?.let { entity.meluHaitta = hanke.meluHaitta }
-            hanke.polyHaitta?.let { entity.polyHaitta = hanke.polyHaitta }
-            hanke.tarinaHaitta?.let { entity.tarinaHaitta = hanke.tarinaHaitta }
-
-        }
-
-        ///method combines three lists to one for database
-        internal fun createEntityFromHankeYhteystiedotDomainObject(h: Hanke, hankeEntity: HankeEntity) {
-
-            hankeEntity.listOfHankeYhteystieto = mutableListOf<HankeYhteystietoEntity>()
-
-            addHankeYhteystietoEntitysToList(h.omistajat, hankeEntity, ContactType.OMISTAJA)
-            addHankeYhteystietoEntitysToList(h.arvioijat, hankeEntity, ContactType.ARVIOIJA)
-            addHankeYhteystietoEntitysToList(h.toteuttajat, hankeEntity, ContactType.TOTEUTTAJA)
-        }
-
-        internal fun addHankeYhteystietoEntitysToList(listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity, contactType: ContactType) {
-            val iterator = listOfHankeYhteystiedot.iterator()
-
-            while (iterator.hasNext()) {
-
-                val hankeYht: HankeYhteystieto = iterator.next()
-
-                val hankeYhtEnt: HankeYhteystietoEntity = HankeYhteystietoEntity(
-                        contactType,
-                        hankeYht.sukunimi,
-                        hankeYht.etunimi,
-                        hankeYht.email,
-                        hankeYht.puhelinnumero,
-                        hankeYht.organisaatioId,
-                        hankeYht.organisaatioNimi,
-                        hankeYht.osasto,
-                        1, //TODO: real user
-                        hankeYht.createdAt?.toLocalDateTime(),
-                        null, //TODO: real user
-                        getCurrentTimeUTCAsLocalTime(),  //TODO: if changed?
-                        hankeYht.id,
-                        hankeEntity
-                )
-                hankeEntity.listOfHankeYhteystieto!!.add(hankeYhtEnt)
-            }
-        }
-
 
         internal fun createHankeYhteystietoDomainObjectFromEntity(hankeYhteystietoEntity: HankeYhteystietoEntity): HankeYhteystieto {
             var createdAt: ZonedDateTime? = null
@@ -320,6 +237,79 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
                     modifiedAt = modifiedAt
             )
         }
+    }
+
+    /**
+     * Does NOT copy the id and hankeTunnus fields because one is supposed to find
+     * the HankeEntity instance from the database with those values, and after that,
+     * the values are filled by the database and should not be changed.
+     * Also, version, creatorUserId, createdAt, modifierUserId, modifiedAt, version are not
+     * set here, as they are to be set internally, and depends on which operation
+     * is being done.
+     */
+    internal fun copyNonNullHankeFieldsToEntity(hanke: Hanke, entity: HankeEntity) {
+        hanke.onYKTHanke?.let { entity.onYKTHanke = hanke.onYKTHanke }
+        hanke.nimi?.let { entity.nimi = hanke.nimi }
+        hanke.kuvaus?.let { entity.kuvaus = hanke.kuvaus }
+        // Assuming the incoming date, while being zoned date and time, is in UTC and time value can be simply dropped here.
+        // Note, .toLocalDate() does not do any time zone conversion.
+        hanke.alkuPvm?.let { entity.alkuPvm = hanke.alkuPvm?.toLocalDate() }
+        hanke.loppuPvm?.let { entity.loppuPvm = hanke.loppuPvm?.toLocalDate() }
+        hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
+        hanke.suunnitteluVaihe?.let { entity.suunnitteluVaihe = hanke.suunnitteluVaihe }
+
+        hanke.saveType?.let { entity.saveType = hanke.saveType }
+        hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
+        hanke.tyomaaTyyppi.let { entity.tyomaaTyyppi = hanke.tyomaaTyyppi }
+        hanke.tyomaaKoko.let { entity.tyomaaKoko = hanke.tyomaaKoko }
+
+        // Assuming the incoming date, while being zoned date and time, is in UTC and time value can be simply dropped here.
+        // Note, .toLocalDate() does not do any time zone conversion.
+        hanke.haittaAlkuPvm?.let { entity.haittaAlkuPvm = hanke.haittaAlkuPvm?.toLocalDate() }
+        hanke.haittaLoppuPvm?.let { entity.haittaLoppuPvm = hanke.haittaLoppuPvm?.toLocalDate() }
+        hanke.kaistaHaitta?.let { entity.kaistaHaitta = hanke.kaistaHaitta }
+        hanke.kaistaPituusHaitta?.let { entity.kaistaPituusHaitta = hanke.kaistaPituusHaitta }
+        hanke.meluHaitta?.let { entity.meluHaitta = hanke.meluHaitta }
+        hanke.polyHaitta?.let { entity.polyHaitta = hanke.polyHaitta }
+        hanke.tarinaHaitta?.let { entity.tarinaHaitta = hanke.tarinaHaitta }
 
     }
+
+    ///method combines three lists to one for database
+    internal fun createEntityFromHankeYhteystiedotDomainObject(h: Hanke, hankeEntity: HankeEntity) {
+
+        hankeEntity.listOfHankeYhteystieto = mutableListOf<HankeYhteystietoEntity>()
+
+        addHankeYhteystietoEntitysToList(h.omistajat, hankeEntity, ContactType.OMISTAJA)
+        addHankeYhteystietoEntitysToList(h.arvioijat, hankeEntity, ContactType.ARVIOIJA)
+        addHankeYhteystietoEntitysToList(h.toteuttajat, hankeEntity, ContactType.TOTEUTTAJA)
+    }
+
+    internal fun addHankeYhteystietoEntitysToList(listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity, contactType: ContactType) {
+        val iterator = listOfHankeYhteystiedot.iterator()
+
+        while (iterator.hasNext()) {
+
+            val hankeYht: HankeYhteystieto = iterator.next()
+
+            val hankeYhtEnt: HankeYhteystietoEntity = HankeYhteystietoEntity(
+                    contactType,
+                    hankeYht.sukunimi,
+                    hankeYht.etunimi,
+                    hankeYht.email,
+                    hankeYht.puhelinnumero,
+                    hankeYht.organisaatioId,
+                    hankeYht.organisaatioNimi,
+                    hankeYht.osasto,
+                    1, //TODO: real user , make sure you don't update by another user but only once
+                    hankeYht.createdAt?.toLocalDateTime(),
+                    null, //TODO: real user , make sure updated only if real changes? or what is the design decision?
+                    getCurrentTimeUTCAsLocalTime(),  //TODO: only if changed?  do we always want to change the date? how do we know has subobject really been updated?
+                    hankeYht.id,
+                    hankeEntity
+            )
+            hankeEntity.listOfHankeYhteystieto!!.add(hankeYhtEnt)
+        }
+    }
+
 }

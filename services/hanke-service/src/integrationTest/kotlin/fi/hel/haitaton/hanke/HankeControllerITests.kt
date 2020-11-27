@@ -148,9 +148,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         //changing some return values
         val expectedHanke = hankeToBeMocked
-                .apply { hankeTunnus = mockedHankeTunnus }
-                .apply { id = 12 }
-                .apply { omistajat.get(0).id = 3 }
+                .apply { hankeTunnus = mockedHankeTunnus
+                         id = 12
+                         omistajat.get(0).id = 3 }
 
         //faking the service call
         every { hankeService.createHanke(any()) }.returns(expectedHanke)
