@@ -24,7 +24,7 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                         ${hankeGeometriat.id},
                         ST_SetSRID(ST_GeomFromGeoJSON('${feature.geometry.toJsonString()}'), $SRID),
                         ${if (feature.properties != null) "'${feature.properties.toJsonString()}'" else "null"}
-            )""".trimIndent())
+                    )""".trimIndent())
             }
         }
 
@@ -52,7 +52,7 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                     ${if (hankeGeometriat.updatedAt != null) "'${Timestamp(hankeGeometriat.updatedAt!!.toInstant().toEpochMilli())}'" else null}               
                 )
                 RETURNING id
-            """.trimIndent()) { rs, _ ->
+                """.trimIndent()) { rs, _ ->
                 rs.getInt(1)
             }
             hankeGeometriat.id = id

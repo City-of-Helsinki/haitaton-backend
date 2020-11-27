@@ -32,9 +32,9 @@ internal class HankeGeometriatDaoImplITest {
     companion object {
         @Container
         var container: HaitatonPostgreSQLContainer = HaitatonPostgreSQLContainer
+                .withExposedPorts(5433) // use non-default port
                 .withPassword("test")
                 .withUsername("test")
-                .withExposedPorts(5433) // use a different port than the default
 
         @JvmStatic
         @DynamicPropertySource
