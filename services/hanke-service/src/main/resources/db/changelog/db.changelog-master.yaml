@@ -3,3 +3,5 @@ databaseChangeLog:
       file: db/changelog/changesets/create-initial-hanke-table.yml
   - include:
       file: db/changelog/changesets/add-hanke-tyomaatiedot-fields.yml
+  - include:
+      file: db/changelog/changesets/add-hanke-haitat-fields.yml
