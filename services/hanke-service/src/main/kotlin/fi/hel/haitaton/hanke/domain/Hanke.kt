@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
+
 import java.time.ZonedDateTime
 
 /**
@@ -23,6 +24,7 @@ data class Hanke(
         var kuvaus: String?,
         var alkuPvm: ZonedDateTime?,
         var loppuPvm: ZonedDateTime?,
+
         var vaihe: Vaihe?,
         var suunnitteluVaihe: SuunnitteluVaihe?,
 
@@ -35,12 +37,12 @@ data class Hanke(
         // Default for machine API's. UI should always give the save type.
         var saveType: SaveType? = SaveType.SUBMIT) {
 
-    var listOfOmistaja: List<HankeYhteystiedot> = arrayListOf()
-    var listOfArvioija: List<HankeYhteystiedot> = arrayListOf()
-    var listOfToteuttaja: List<HankeYhteystiedot> = arrayListOf()
+    var omistajat = mutableListOf<HankeYhteystieto>()
+    var arvioijat = mutableListOf<HankeYhteystieto>()
+    var toteuttajat = mutableListOf<HankeYhteystieto>()
 
     var tyomaaKatuosoite: String? = null
-    var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
+    var tyomaaTyyppi = mutableSetOf<TyomaaTyyppi>()
     var tyomaaKoko: TyomaaKoko? = null
 
     var haittaAlkuPvm: ZonedDateTime? = null
