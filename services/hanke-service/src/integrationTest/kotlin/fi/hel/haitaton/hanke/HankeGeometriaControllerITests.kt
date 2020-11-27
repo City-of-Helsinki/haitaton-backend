@@ -26,9 +26,6 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
     @MockkBean
     private lateinit var hankeGeometriaService: HankeGeometriaService
 
-    @MockBean
-    lateinit var organisaatioService: OrganisaatioService
-
     @Test
     fun `create Geometria OK`() {
         val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)

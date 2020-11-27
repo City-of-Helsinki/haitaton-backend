@@ -33,6 +33,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @MockkBean
     lateinit var hankeService: HankeService  //faking these calls
 
+    //This is temporary so that organisaatioservice does not break the tests
     @MockBean
     lateinit var organisaatioService: OrganisaatioService
 
