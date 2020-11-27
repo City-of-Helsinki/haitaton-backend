@@ -260,7 +260,7 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
 
         hanke.saveType?.let { entity.saveType = hanke.saveType }
         hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
-        hanke.tyomaaTyyppi.let { entity.tyomaaTyyppi = hanke.tyomaaTyyppi }
+        hanke.tyomaaTyyppi?.let { entity.tyomaaTyyppi = hanke.tyomaaTyyppi }
         hanke.tyomaaKoko.let { entity.tyomaaKoko = hanke.tyomaaKoko }
 
         // Assuming the incoming date, while being zoned date and time, is in UTC and time value can be simply dropped here.
