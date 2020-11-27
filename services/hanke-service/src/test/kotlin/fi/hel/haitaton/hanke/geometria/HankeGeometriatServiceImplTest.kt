@@ -36,16 +36,15 @@ internal class HankeGeometriatServiceImplTest {
         oldHankeGeometriat.version = 1
 
         every { hankeRepository.findByHankeTunnus(hankeTunnus) } returns HankeEntity(id = hankeId, hankeTunnus = hankeTunnus)
-        every { hankeGeometriatDao.loadHankeGeometriat(hankeId) } returns oldHankeGeometriat
-        every { hankeGeometriatDao.deleteHankeGeometriat(any()) } just runs
-        every { hankeGeometriatDao.saveHankeGeometriat(any()) } just runs
+        every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns oldHankeGeometriat
+        every { hankeGeometriatDao.updateHankeGeometriat(any()) } just runs
 
         val savedHankeGeometria = service.saveGeometriat(hankeTunnus, hankeGeometriat)
 
         verify { hankeRepository.findByHankeTunnus(hankeTunnus) }
-        verify { hankeGeometriatDao.loadHankeGeometriat(hankeId) }
-        verify { hankeGeometriatDao.deleteHankeGeometriat(any()) }
-        verify { hankeGeometriatDao.saveHankeGeometriat(any()) }
+        verify { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
+        verify { hankeGeometriatDao.updateHankeGeometriat(any()) }
+        verify(exactly = 0) { hankeGeometriatDao.createHankeGeometriat(any()) }
         assertAll {
             assertThat(savedHankeGeometria.version).isEqualTo(2)
             assertThat(savedHankeGeometria.createdAt).isNotNull()
@@ -66,16 +65,14 @@ internal class HankeGeometriatServiceImplTest {
         hankeGeometriat.updatedAt = null
 
         every { hankeRepository.findByHankeTunnus(hankeTunnus) } returns HankeEntity(id = hankeId, hankeTunnus = hankeTunnus)
-        every { hankeGeometriatDao.loadHankeGeometriat(hankeId) } returns null
-        every { hankeGeometriatDao.deleteHankeGeometriat(any()) } just runs
-        every { hankeGeometriatDao.saveHankeGeometriat(any()) } just runs
+        every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns null
+        every { hankeGeometriatDao.createHankeGeometriat(any()) } just runs
 
         val savedHankeGeometria = service.saveGeometriat(hankeTunnus, hankeGeometriat)
 
         verify { hankeRepository.findByHankeTunnus(hankeTunnus) }
-        verify { hankeGeometriatDao.loadHankeGeometriat(hankeId) }
-        verify { hankeGeometriatDao.deleteHankeGeometriat(any()) }
-        verify { hankeGeometriatDao.saveHankeGeometriat(any()) }
+        verify { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
+        verify { hankeGeometriatDao.createHankeGeometriat(any()) }
         assertAll {
             assertThat(savedHankeGeometria.version).isEqualTo(1)
             assertThat(savedHankeGeometria.createdAt).isNotNull()
@@ -104,9 +101,8 @@ internal class HankeGeometriatServiceImplTest {
         }
 
         verify { hankeRepository.findByHankeTunnus(hankeTunnus) }
-        verify(exactly = 0) { hankeGeometriatDao.loadHankeGeometriat(hankeId) }
-        verify(exactly = 0) { hankeGeometriatDao.deleteHankeGeometriat(any()) }
-        verify(exactly = 0) { hankeGeometriatDao.saveHankeGeometriat(any()) }
+        verify(exactly = 0) { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
+        verify(exactly = 0) { hankeGeometriatDao.createHankeGeometriat(any()) }
     }
 
     @Test
@@ -115,12 +111,12 @@ internal class HankeGeometriatServiceImplTest {
         val hankeId = 1
         val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/test/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
         every { hankeRepository.findByHankeTunnus(hankeTunnus) } returns HankeEntity(id = hankeId, hankeTunnus = hankeTunnus)
-        every { hankeGeometriatDao.loadHankeGeometriat(hankeId) } returns hankeGeometriat
+        every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns hankeGeometriat
 
         val loadedHankeGeometriat = service.loadGeometriat(hankeTunnus)
 
         verify { hankeRepository.findByHankeTunnus(hankeTunnus) }
-        verify { hankeGeometriatDao.loadHankeGeometriat(hankeId) }
+        verify { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
         assertAll {
             assertThat(loadedHankeGeometriat).isNotNull()
             assertThat(loadedHankeGeometriat!!.version).isEqualTo(1)
@@ -144,6 +140,6 @@ internal class HankeGeometriatServiceImplTest {
         }
 
         verify { hankeRepository.findByHankeTunnus(hankeTunnus) }
-        verify(exactly = 0) { hankeGeometriatDao.loadHankeGeometriat(hankeId) }
+        verify(exactly = 0) { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
     }
 }

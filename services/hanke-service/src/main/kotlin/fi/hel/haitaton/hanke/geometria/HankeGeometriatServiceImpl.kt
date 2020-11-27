@@ -12,7 +12,9 @@ private val logger = KotlinLogging.logger { }
 
 open class HankeGeometriatServiceImpl(
         private val hankeRepository: HankeRepository,
-        private val hankeGeometriaDao: HankeGeometriatDao) : HankeGeometriatService {
+        private val hankeGeometriaDao: HankeGeometriatDao)
+    : HankeGeometriatService {
+
     @Transactional
     override fun saveGeometriat(hankeTunnus: String, hankeGeometriat: HankeGeometriat): HankeGeometriat {
         logger.info {
@@ -20,10 +22,13 @@ open class HankeGeometriatServiceImpl(
         }
         val hanke = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
         val now = ZonedDateTime.now(TZ_UTC)
-        val oldHankeGeometriat = hankeGeometriaDao.loadHankeGeometriat(hanke.id!!)
+        val oldHankeGeometriat = hankeGeometriaDao.retrieveHankeGeometriat(hanke.id!!)
         if (oldHankeGeometriat == null) {
             hankeGeometriat.createdAt = now
             hankeGeometriat.version = 1
+            hankeGeometriat.hankeId = hanke.id
+            hankeGeometriat.updatedAt = now
+            hankeGeometriaDao.createHankeGeometriat(hankeGeometriat)
         } else {
             hankeGeometriat.createdAt = oldHankeGeometriat.createdAt ?: oldHankeGeometriat.updatedAt ?: now
             if (oldHankeGeometriat.version == null) {
@@ -31,11 +36,10 @@ open class HankeGeometriatServiceImpl(
             } else {
                 hankeGeometriat.version = oldHankeGeometriat.version!! + 1
             }
+            hankeGeometriat.hankeId = hanke.id
+            hankeGeometriat.updatedAt = now
+            hankeGeometriaDao.updateHankeGeometriat(hankeGeometriat)
         }
-        hankeGeometriat.hankeId = hanke.id
-        hankeGeometriat.updatedAt = now
-        hankeGeometriaDao.deleteHankeGeometriat(hankeGeometriat.hankeId!!)
-        hankeGeometriaDao.saveHankeGeometriat(hankeGeometriat)
         logger.info {
             "Saved Geometria for Hanke $hankeTunnus"
         }
@@ -44,6 +48,6 @@ open class HankeGeometriatServiceImpl(
 
     override fun loadGeometriat(hankeTunnus: String): HankeGeometriat? {
         val hanke = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-        return hankeGeometriaDao.loadHankeGeometriat(hanke.id!!)
+        return hankeGeometriaDao.retrieveHankeGeometriat(hanke.id!!)
     }
 }

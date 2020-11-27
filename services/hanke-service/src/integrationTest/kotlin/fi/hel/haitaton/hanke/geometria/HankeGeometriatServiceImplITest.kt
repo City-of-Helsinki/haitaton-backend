@@ -4,9 +4,7 @@ import assertk.assertAll
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.*
-import mu.KotlinLogging
 import org.geojson.Point
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -18,8 +16,6 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.nio.file.Files
 import java.nio.file.Paths
-
-private val logger = KotlinLogging.logger { }
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -49,20 +45,8 @@ internal class HankeGeometriatServiceImplITest {
     private lateinit var hankeRepository: HankeRepository
 
     @Autowired
-    private lateinit var hankeGeometriatDao: HankeGeometriatDao
-
-    @Autowired
     private lateinit var hankeGeometriatService: HankeGeometriatService
 
-    @Autowired
-    private lateinit var jdbcOperations: JdbcOperations
-/*
-    @BeforeEach
-    fun setUp() {
-        // delete all
-        jdbcOperations.execute("DELETE FROM HankeGeometriat")
-    }
-*/
     @Test
     fun `save and load`() {
         val hankeTunnus = "123456"
