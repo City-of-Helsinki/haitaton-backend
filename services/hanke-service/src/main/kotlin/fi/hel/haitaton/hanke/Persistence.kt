@@ -32,6 +32,62 @@ enum class SuunnitteluVaihe {
     TYOMAAN_TAI_HANKKEEN_AIKAINEN
 }
 
+enum class TyomaaTyyppi {
+    VESI,
+    VIEMARI,
+    SADEVESI,
+    SAHKO,
+    TIETOLIIKENNE,
+    LIIKENNEVALO,
+    YKT,
+    ULKOVALAISTUS,
+    KAAPPITYO,
+    KAUKOLAMPO,
+    KAUKOKYLMA,
+    KAASUJOHTO,
+    KISKOTYO,
+    MUU,
+    KADUNRAKENNUS,
+    KADUN_KUNNOSSAPITO,
+    KIINTEISTOLIITTYMA,
+    SULKU_TAI_KAIVO,
+    UUDISRAKENNUS,
+    SANEERAUS,
+    AKILLINEN_VIKAKORJAUS,
+    VIHERTYO,
+    RUNKOLINJA,
+    NOSTOTYO,
+    MUUTTO,
+    PYSAKKITYO,
+    KIINTEISTOREMONTTI,
+    ULKOMAINOS,
+    KUVAUKSET,
+    LUMENPUDOTUS,
+    YLEISOTILAISUUS,
+    VAIHTOLAVA
+}
+
+enum class TyomaaKoko {
+    SUPPEA_TAI_PISTE,
+    YLI_10M_TAI_KORTTELI,
+    LAAJA_TAI_USEA_KORTTELI
+}
+
+enum class Haitta04 {
+    EI_VAIKUTA,
+    YKSI,
+    KAKSI,
+    KOLME,
+    NELJA
+}
+
+enum class Haitta13 {
+    YKSI,
+    KAKSI,
+    KOLME
+}
+
+
 // Build-time plugins will open the class and add no-arg constructor for @Entity classes.
 
 @Entity @Table(name = "hanke")
@@ -59,7 +115,27 @@ class HankeEntity (
         // Using SEQUENCE would allow getting multiple ids more efficiently.
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
         var id: Int? = null
-)
+) {
+        // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
+        var tyomaaKatuosoite: String? = null
+        @ElementCollection(fetch = FetchType.EAGER)
+        @CollectionTable(name = "hanketyomaatyyppi", joinColumns = arrayOf(JoinColumn(name = "hankeid")))
+        @Enumerated(EnumType.STRING)
+        var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
+        @Enumerated(EnumType.STRING)
+        var tyomaaKoko: TyomaaKoko? = null
+
+        // --------------- Hankkeen haitat -------------------
+        var haittaAlkuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
+        var haittaLoppuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
+        // These five fields have generic string values, so can just as well store them with the ordinal number.
+        var kaistaHaitta: Haitta04? = null
+        var kaistaPituusHaitta: Haitta04? = null
+        var meluHaitta: Haitta13? = null
+        var polyHaitta: Haitta13? = null
+        var tarinaHaitta: Haitta13? = null
+}
+
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
