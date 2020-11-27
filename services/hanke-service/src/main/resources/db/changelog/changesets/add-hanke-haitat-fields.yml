@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-hanke-haitat-fields
+      comment: Add new fields for 'hanke haitat' -page
+      author: Markku Hassinen
+      changes:
+        - addColumn:
+            tableName: hanke
+            columns:
+              - column: { name: haittaalkupvm, type: date }
+              - column: { name: haittaloppupvm, type: date }
+              - column: { name: kaistahaitta, type: tinyint } # enum
+              - column: { name: kaistapituushaitta, type: tinyint } # enum
+              - column: { name: meluhaitta, type: tinyint } # enum
+              - column: { name: polyhaitta, type: tinyint } # enum
+              - column: { name: tarinahaitta, type: tinyint } # enum

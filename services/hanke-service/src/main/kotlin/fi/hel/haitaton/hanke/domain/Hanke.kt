@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke.domain
 
+import fi.hel.haitaton.hanke.Haitta04
+import fi.hel.haitaton.hanke.Haitta13
 import fi.hel.haitaton.hanke.SaveType
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TyomaaKoko
@@ -40,4 +42,13 @@ data class Hanke(
     var tyomaaKatuosoite: String? = null
     var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
     var tyomaaKoko: TyomaaKoko? = null
+
+    var haittaAlkuPvm: ZonedDateTime? = null
+    var haittaLoppuPvm: ZonedDateTime? = null
+    var kaistaHaitta: Haitta04? = null
+    var kaistaPituusHaitta: Haitta04? = null
+    var meluHaitta: Haitta13? = null
+    var polyHaitta: Haitta13? = null
+    var tarinaHaitta: Haitta13? = null
+
 }
