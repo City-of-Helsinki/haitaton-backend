@@ -27,6 +27,7 @@ class ActuatorEndpointITests(@Autowired val mockMvc: MockMvc) {
     @MockBean
     lateinit var hankeService: HankeService
 
+    //This is temporary so that organisaatioservice does not break the tests
     @MockBean
     lateinit var organisaatioService: OrganisaatioService
 

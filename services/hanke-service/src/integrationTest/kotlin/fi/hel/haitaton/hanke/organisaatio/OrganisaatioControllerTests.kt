@@ -14,17 +14,19 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 
-
 /**
  * For testing Spring Boot Actuator endpoints
  */
-@SpringBootTest(properties = [
-    "management.server.port=",
-    "spring.liquibase.enabled=false",
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration"])
+@SpringBootTest(
+    properties = [
+        "management.server.port=",
+        "spring.liquibase.enabled=false",
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration"
+    ]
+)
 @AutoConfigureMockMvc
 @EnableAutoConfiguration
-class OrgansaatioControllerEndpointITests(@Autowired val mockMvc: MockMvc) {
+class OrgansaatioControllerEndpointTests(@Autowired val mockMvc: MockMvc) {
 
     // Just to prevent the context trying to init that service, and fail doing it.
     @MockBean
@@ -35,19 +37,28 @@ class OrgansaatioControllerEndpointITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `Get list of organisaatiot (GET)`() {
-        val organisations = listOf( Organisaatio(1, "DNA", "DNA Oy"),
-                Organisaatio(2, "WELHO", "DNA WELHO Oy"))
+        val organisations = listOf(
+            Organisaatio(1, "DNA", "DNA Oy"),
+            Organisaatio(2, "WELHO", "DNA WELHO Oy")
+        )
 
         every { organisaatioService.getOrganisaatiot() }.returns(organisations)
 
         mockMvc
-                .perform(get("/organisaatiot/"))
-                .andExpect(status().isOk)
-                .andExpect(content().contentType("application/json"))
-                .andExpect(jsonPath("$[*].id").value(containsInAnyOrder
-                (1, 2)))
-                .andExpect(jsonPath("$[*].nimi").value(containsInAnyOrder
-                ("DNA Oy", "DNA WELHO Oy")))
+            .perform(get("/organisaatiot/"))
+            .andExpect(status().isOk)
+            .andExpect(content().contentType("application/json"))
+            .andExpect(
+                jsonPath("$[*].id").value(
+                    containsInAnyOrder
+                    (1, 2)
+                )
+            )
+            .andExpect(
+                jsonPath("$[*].nimi").value(
+                    containsInAnyOrder
+                    ("DNA Oy", "DNA WELHO Oy")
+                )
+            )
     }
-
 }
