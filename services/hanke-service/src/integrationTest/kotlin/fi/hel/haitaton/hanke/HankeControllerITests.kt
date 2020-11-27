@@ -63,8 +63,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `Add Hanke and return it newly created hankeTunnus (POST)`() {
         val hankeName = "Mannerheimintien remontti remonttinen"
 
-
-        var hankeToBeMocked = Hanke(id = null, hankeTunnus = null, nimi = hankeName, kuvaus = "lorem ipsum dolor sit amet...",
+        val hankeToBeMocked = Hanke(id = null, hankeTunnus = null, nimi = hankeName, kuvaus = "lorem ipsum dolor sit amet...",
                 onYKTHanke = false, alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = null,
                 version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
@@ -115,7 +114,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @Test
     fun `test that the validation gives error and Bad Request is returned when creatorUserId is empty`() {
 
-        var hankeToBeAdded = Hanke(id = null, hankeTunnus = "idHankkeelle123", nimi = "", kuvaus = null,
+        val hankeToBeAdded = Hanke(id = null, hankeTunnus = "idHankkeelle123", nimi = "", kuvaus = null,
                 onYKTHanke = false, alkuPvm = null, loppuPvm = null, vaihe = Vaihe.RAKENTAMINEN, suunnitteluVaihe = null,
                 version = null, createdBy = "", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
@@ -136,13 +135,13 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `Add Hanke and HankeYhteystiedot and return it with newly created hankeTunnus (POST)`() {
         val hankeName = "Mannerheimintien remontti remonttinen"
 
-        var hankeToBeMocked = Hanke(id = null, hankeTunnus = null, nimi = hankeName, kuvaus = "lorem ipsum dolor sit amet...",
+        val hankeToBeMocked = Hanke(id = null, hankeTunnus = null, nimi = hankeName, kuvaus = "lorem ipsum dolor sit amet...",
                 onYKTHanke = false, alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
                 version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
         //HankeYhteystieto Omistaja added
         hankeToBeMocked.omistajat = arrayListOf(
-                HankeYhteystieto(null, ContactType.TOTEUTTAJA, "Pekkanen", "Pekka",
+                HankeYhteystieto(null, "Pekkanen", "Pekka",
                         "pekka@pekka.fi", "3212312", null,
                         "Kaivuri ja mies", null, null, null,
                         null, null))

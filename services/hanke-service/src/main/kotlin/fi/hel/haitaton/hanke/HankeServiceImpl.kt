@@ -5,9 +5,8 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.stereotype.Service
+import java.security.InvalidKeyException
 import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
@@ -46,6 +45,10 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
 
         // TODO: Find out all savetype matches and return the more recent draft vs. submit.
         val entity = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
+
+        if (entity.id == null) {
+            throw InvalidKeyException("Hanke id missing")
+        }
 
         val listOfHankeYhteystiedot = entity.id?.let { hankeYhteystiedotRepository.findByHankeId(it) };
         entity.listOfHankeYhteystieto = listOfHankeYhteystiedot as MutableList<HankeYhteystietoEntity>?
@@ -201,18 +204,18 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
          * createSeparateYhteystietolistsFromEntityData splits entity's one list to three different contact information
          * lists and adds them for Hanke domain object
          */
-        private fun createSeparateYhteystietolistsFromEntityData(hanke: Hanke, hankeEntity: HankeEntity) {
-            var it = hankeEntity.listOfHankeYhteystieto?.iterator()
+        internal fun createSeparateYhteystietolistsFromEntityData(hanke: Hanke, hankeEntity: HankeEntity) {
+            val it = hankeEntity.listOfHankeYhteystieto?.iterator()
             if (it != null) {
                 while (it.hasNext()) {
-                    var hankeYhteysEntity = it.next()
-                    var hankeYhteystieto = createHankeYhteystietoDomainObjectFromEntity(hankeYhteysEntity)
+                    val hankeYhteysEntity = it.next()
+                    val hankeYhteystieto = createHankeYhteystietoDomainObjectFromEntity(hankeYhteysEntity)
 
-                    if (hankeYhteystieto.contactType.equals(ContactType.OMISTAJA))
+                    if (hankeYhteysEntity.contactType.equals(ContactType.OMISTAJA))
                         hanke.omistajat.add(hankeYhteystieto)
-                    if (hankeYhteystieto.contactType.equals(ContactType.TOTEUTTAJA))
+                    if (hankeYhteysEntity.contactType.equals(ContactType.TOTEUTTAJA))
                         hanke.toteuttajat.add(hankeYhteystieto)
-                    if (hankeYhteystieto.contactType.equals(ContactType.ARVIOIJA))
+                    if (hankeYhteysEntity.contactType.equals(ContactType.ARVIOIJA))
                         hanke.arvioijat.add(hankeYhteystieto)
                 }
             }
@@ -255,24 +258,24 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
         }
 
         ///method combines three lists to one for database
-        private fun createEntityFromHankeYhteystiedotDomainObject(h: Hanke, hankeEntity: HankeEntity) {
+        internal fun createEntityFromHankeYhteystiedotDomainObject(h: Hanke, hankeEntity: HankeEntity) {
 
             hankeEntity.listOfHankeYhteystieto = mutableListOf<HankeYhteystietoEntity>()
 
-            addHankeYhteystietoEntitysToList(h.omistajat, hankeEntity)
-            addHankeYhteystietoEntitysToList(h.arvioijat, hankeEntity)
-            addHankeYhteystietoEntitysToList(h.toteuttajat, hankeEntity)
+            addHankeYhteystietoEntitysToList(h.omistajat, hankeEntity, ContactType.OMISTAJA)
+            addHankeYhteystietoEntitysToList(h.arvioijat, hankeEntity, ContactType.ARVIOIJA)
+            addHankeYhteystietoEntitysToList(h.toteuttajat, hankeEntity, ContactType.TOTEUTTAJA)
         }
 
-        private fun addHankeYhteystietoEntitysToList(listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity) {
+        internal fun addHankeYhteystietoEntitysToList(listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity, contactType: ContactType) {
             val iterator = listOfHankeYhteystiedot.iterator()
 
             while (iterator.hasNext()) {
 
-                var hankeYht: HankeYhteystieto = iterator.next()
+                val hankeYht: HankeYhteystieto = iterator.next()
 
-                var hankeYhtEnt: HankeYhteystietoEntity = HankeYhteystietoEntity(
-                        hankeYht.contactType,
+                val hankeYhtEnt: HankeYhteystietoEntity = HankeYhteystietoEntity(
+                        contactType,
                         hankeYht.sukunimi,
                         hankeYht.etunimi,
                         hankeYht.email,
@@ -292,7 +295,7 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
         }
 
 
-        private fun createHankeYhteystietoDomainObjectFromEntity(hankeYhteystietoEntity: HankeYhteystietoEntity): HankeYhteystieto {
+        internal fun createHankeYhteystietoDomainObjectFromEntity(hankeYhteystietoEntity: HankeYhteystietoEntity): HankeYhteystieto {
             var createdAt: ZonedDateTime? = null
 
             if (hankeYhteystietoEntity.createdAt != null)
@@ -308,7 +311,6 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
                     sukunimi = hankeYhteystietoEntity.sukunimi,
                     email = hankeYhteystietoEntity.email,
                     puhelinnumero = hankeYhteystietoEntity.puhelinnumero,
-                    contactType = hankeYhteystietoEntity.contactType,
                     organisaatioId = hankeYhteystietoEntity.organisaatioid,
                     organisaatioNimi = hankeYhteystietoEntity.organisaationimi,
                     osasto = hankeYhteystietoEntity.osasto,
@@ -319,6 +321,5 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
             )
         }
 
-        
     }
 }
