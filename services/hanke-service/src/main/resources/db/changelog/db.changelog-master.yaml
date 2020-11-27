@@ -4,4 +4,6 @@ databaseChangeLog:
   - include:
       file: db/changelog/changesets/add-hanke-tyomaatiedot-fields.yml
   - include:
+      file: db/changelog/changesets/add-hanke-haitat-fields.yml
+  - include:
       file: db/changelog/changesets/create-hankegeometriat-tables.sql

@@ -144,6 +144,14 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
             h.tyomaaTyyppi = hankeEntity.tyomaaTyyppi ?: mutableSetOf()
             h.tyomaaKoko = hankeEntity.tyomaaKoko
 
+            h.haittaAlkuPvm = hankeEntity.haittaAlkuPvm?.atStartOfDay(TZ_UTC)
+            h.haittaLoppuPvm = hankeEntity.haittaLoppuPvm?.atStartOfDay(TZ_UTC)
+            h.kaistaHaitta = hankeEntity.kaistaHaitta
+            h.kaistaPituusHaitta = hankeEntity.kaistaPituusHaitta
+            h.meluHaitta = hankeEntity.meluHaitta
+            h.polyHaitta = hankeEntity.polyHaitta
+            h.tarinaHaitta = hankeEntity.tarinaHaitta
+
             return h
         }
 
@@ -171,6 +179,16 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
             hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
             hanke.tyomaaTyyppi?.let { entity.tyomaaTyyppi = hanke.tyomaaTyyppi }
             hanke.tyomaaKoko?.let { entity.tyomaaKoko = hanke.tyomaaKoko }
+
+            // Assuming the incoming date, while being zoned date and time, is in UTC and time value can be simply dropped here.
+            // Note, .toLocalDate() does not do any time zone conversion.
+            hanke.haittaAlkuPvm?.let { entity.haittaAlkuPvm = hanke.haittaAlkuPvm?.toLocalDate() }
+            hanke.haittaLoppuPvm?.let { entity.haittaLoppuPvm = hanke.haittaLoppuPvm?.toLocalDate() }
+            hanke.kaistaHaitta?.let { entity.kaistaHaitta = hanke.kaistaHaitta }
+            hanke.kaistaPituusHaitta?.let { entity.kaistaPituusHaitta = hanke.kaistaPituusHaitta }
+            hanke.meluHaitta?.let { entity.meluHaitta = hanke.meluHaitta }
+            hanke.polyHaitta?.let { entity.polyHaitta = hanke.polyHaitta }
+            hanke.tarinaHaitta?.let { entity.tarinaHaitta = hanke.tarinaHaitta }
         }
     }
 }

@@ -13,6 +13,7 @@ enum class HankeError(
     HAI1001("Hanke not found"),
     HAI1002("Invalid Hanke data"),
     HAI1003("Internal error while saving Hanke"),
+    HAI1004("Internal error while loading Hanke"),
     HAI1011("Invalid Hanke geometry"),
     HAI1012("Internal error while saving Hanke geometry"),
     HAI1013("Invalid coordinate system"),

@@ -40,9 +40,9 @@ class HankeController(@Autowired private val hankeService: HankeService) {
 
         } catch (e: Exception) {
             logger.error(e) {
-                HankeError.HAI1003.toString()
+                HankeError.HAI1004.toString()
             }
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1003)
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1004)
         }
     }
 
