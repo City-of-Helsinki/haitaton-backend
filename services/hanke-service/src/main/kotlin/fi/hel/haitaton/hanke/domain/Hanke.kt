@@ -42,7 +42,7 @@ data class Hanke(
     var toteuttajat = mutableListOf<HankeYhteystieto>()
 
     var tyomaaKatuosoite: String? = null
-    var tyomaaTyyppi = mutableListOf<TyomaaTyyppi>()
+    var tyomaaTyyppi = mutableSetOf<TyomaaTyyppi>()
     var tyomaaKoko: TyomaaKoko? = null
 
     var haittaAlkuPvm: ZonedDateTime? = null
