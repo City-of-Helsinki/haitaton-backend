@@ -175,7 +175,7 @@ class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
                     hankeEntity.modifiedByUserId?.toString(),
                     if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC) else null,
 
-                    hankeEntity.saveType,
+                    hankeEntity.saveType
             )
             createSeparateYhteystietolistsFromEntityData(h, hankeEntity)
 
