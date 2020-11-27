@@ -6,7 +6,6 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.*
 import org.geojson.Point
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -58,7 +57,6 @@ internal class HankeGeometriatServiceImplITest {
         val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
         hankeGeometriat.createdByUserId = 1111
         hankeGeometriat.updatedByUserId = 2222
-        val hankeId = hankeGeometriat.hankeId
         // For FK constraints we need a Hanke in database
         hankeRepository.save(HankeEntity(id = hankeGeometriat.hankeId, hankeTunnus = hankeTunnus))
 
