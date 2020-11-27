@@ -73,6 +73,20 @@ enum class TyomaaKoko {
     LAAJA_TAI_USEA_KORTTELI
 }
 
+enum class Haitta04 {
+    EI_VAIKUTA,
+    YKSI,
+    KAKSI,
+    KOLME,
+    NELJA
+}
+
+enum class Haitta13 {
+    YKSI,
+    KAKSI,
+    KOLME
+}
+
 
 // Build-time plugins will open the class and add no-arg constructor for @Entity classes.
 
@@ -115,7 +129,18 @@ class HankeEntity(
         @CollectionTable(name = "hanketyomaatyyppi", joinColumns = arrayOf(JoinColumn(name = "hankeid")))
         @Enumerated(EnumType.STRING)
         var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
+        @Enumerated(EnumType.STRING)
         var tyomaaKoko: TyomaaKoko? = null
+
+        // --------------- Hankkeen haitat -------------------
+        var haittaAlkuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
+        var haittaLoppuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
+        // These five fields have generic string values, so can just as well store them with the ordinal number.
+        var kaistaHaitta: Haitta04? = null
+        var kaistaPituusHaitta: Haitta04? = null
+        var meluHaitta: Haitta13? = null
+        var polyHaitta: Haitta13? = null
+        var tarinaHaitta: Haitta13? = null
 }
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
