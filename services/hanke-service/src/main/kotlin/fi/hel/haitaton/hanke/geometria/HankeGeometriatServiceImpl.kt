@@ -27,7 +27,7 @@ open class HankeGeometriatServiceImpl(
             hankeGeometriat.createdAt = now
             hankeGeometriat.version = 1
             hankeGeometriat.hankeId = hanke.id
-            hankeGeometriat.updatedAt = now
+            hankeGeometriat.modifiedAt = now
             hankeGeometriaDao.createHankeGeometriat(hankeGeometriat)
             logger.info {
                 "Created new geometries for Hanke $hankeTunnus"
@@ -39,7 +39,7 @@ open class HankeGeometriatServiceImpl(
             } else {
                 oldHankeGeometriat.version = oldHankeGeometriat.version!! + 1
             }
-            oldHankeGeometriat.updatedAt = now
+            oldHankeGeometriat.modifiedAt = now
             oldHankeGeometriat.featureCollection = hankeGeometriat.featureCollection
             hankeGeometriaDao.updateHankeGeometriat(oldHankeGeometriat)
             logger.info {

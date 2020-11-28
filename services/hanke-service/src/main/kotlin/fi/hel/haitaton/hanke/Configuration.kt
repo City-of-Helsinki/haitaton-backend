@@ -14,7 +14,7 @@ import org.springframework.jdbc.core.JdbcOperations
 class Configuration {
 
     @Bean
-    fun hankeService(hankeRepository: HankeRepository): HankeService = HankeServiceImpl(hankeRepository)
+    fun hankeService(hankeRepository: HankeRepository, hankeYhteystietoRepository: HankeYhteystietoRepository): HankeService = HankeServiceImpl(hankeRepository, hankeYhteystietoRepository)
 
     @Bean
     fun hankeGeometriatDao(jdbcOperations: JdbcOperations): HankeGeometriatDao = HankeGeometriatDaoImpl(jdbcOperations)

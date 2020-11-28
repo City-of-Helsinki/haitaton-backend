@@ -1,8 +1,5 @@
 package fi.hel.haitaton.hanke.hello
 
-import com.ninjasquad.springmockk.MockkBean
-import fi.hel.haitaton.hanke.HankeRepository
-import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import org.hamcrest.Matchers.stringContainsInOrder
 import org.junit.jupiter.api.Test

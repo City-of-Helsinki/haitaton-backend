@@ -7,12 +7,10 @@ import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
-import fi.hel.haitaton.hanke.OBJECT_MAPPER
+import fi.hel.haitaton.hanke.asJsonResource
 import io.mockk.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
-import java.nio.file.Files
-import java.nio.file.Paths
 
 internal class HankeGeometriatServiceImplTest {
 
@@ -26,12 +24,12 @@ internal class HankeGeometriatServiceImplTest {
     fun `save HankeGeometriat OK - with old version`() {
         val hankeTunnus = "1234567"
         val hankeId = 1
-        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/test/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
         hankeGeometriat.hankeId = null
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
-        hankeGeometriat.updatedAt = null
-        val oldHankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/test/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        hankeGeometriat.modifiedAt = null
+        val oldHankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
         oldHankeGeometriat.hankeId = hankeId
         oldHankeGeometriat.version = 1
 
@@ -48,7 +46,7 @@ internal class HankeGeometriatServiceImplTest {
         assertAll {
             assertThat(savedHankeGeometria.version).isEqualTo(2)
             assertThat(savedHankeGeometria.createdAt).isNotNull()
-            assertThat(savedHankeGeometria.updatedAt).isNotNull()
+            assertThat(savedHankeGeometria.modifiedAt).isNotNull()
             assertThat(savedHankeGeometria.hankeId).isEqualTo(hankeId)
             assertThat(savedHankeGeometria.featureCollection).isNotNull()
         }
@@ -58,11 +56,11 @@ internal class HankeGeometriatServiceImplTest {
     fun `save HankeGeometriat OK - without old version`() {
         val hankeTunnus = "1234567"
         val hankeId = 1
-        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/test/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
         hankeGeometriat.hankeId = null
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
-        hankeGeometriat.updatedAt = null
+        hankeGeometriat.modifiedAt = null
 
         every { hankeRepository.findByHankeTunnus(hankeTunnus) } returns HankeEntity(id = hankeId, hankeTunnus = hankeTunnus)
         every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns null
@@ -76,7 +74,7 @@ internal class HankeGeometriatServiceImplTest {
         assertAll {
             assertThat(savedHankeGeometria.version).isEqualTo(1)
             assertThat(savedHankeGeometria.createdAt).isNotNull()
-            assertThat(savedHankeGeometria.updatedAt).isNotNull()
+            assertThat(savedHankeGeometria.modifiedAt).isNotNull()
             assertThat(savedHankeGeometria.hankeId).isEqualTo(hankeId)
             assertThat(savedHankeGeometria.featureCollection).isNotNull()
         }
@@ -86,11 +84,11 @@ internal class HankeGeometriatServiceImplTest {
     fun `save HankeGeometriat - no Hanke`() {
         val hankeTunnus = "1234567"
         val hankeId = 1
-        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/test/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
         hankeGeometriat.hankeId = null
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
-        hankeGeometriat.updatedAt = null
+        hankeGeometriat.modifiedAt = null
 
         every { hankeRepository.findByHankeTunnus(hankeTunnus) } returns null
 
@@ -109,7 +107,7 @@ internal class HankeGeometriatServiceImplTest {
     fun `load HankeGeometriat OK`() {
         val hankeTunnus = "1234567"
         val hankeId = 1
-        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/test/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
         every { hankeRepository.findByHankeTunnus(hankeTunnus) } returns HankeEntity(id = hankeId, hankeTunnus = hankeTunnus)
         every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns hankeGeometriat
 
@@ -121,7 +119,7 @@ internal class HankeGeometriatServiceImplTest {
             assertThat(loadedHankeGeometriat).isNotNull()
             assertThat(loadedHankeGeometriat!!.version).isEqualTo(1)
             assertThat(loadedHankeGeometriat.createdAt).isNotNull()
-            assertThat(loadedHankeGeometriat.updatedAt).isNotNull()
+            assertThat(loadedHankeGeometriat.modifiedAt).isNotNull()
             assertThat(loadedHankeGeometriat.hankeId).isEqualTo(hankeId)
             assertThat(loadedHankeGeometriat.featureCollection).isNotNull()
         }

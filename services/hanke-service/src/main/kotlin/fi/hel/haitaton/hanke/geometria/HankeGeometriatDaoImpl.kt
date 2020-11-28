@@ -41,15 +41,15 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                     version,
                     createdByUserId,
                     createdAt,
-                    updatedByUserId,
-                    updateddAt
+                    modifiedByUserId,
+                    modifiedAt
                 ) VALUES (
                     ${hankeGeometriat.hankeId},
                     ${hankeGeometriat.version ?: 0},
                     ${if (hankeGeometriat.createdByUserId != null) "'${hankeGeometriat.createdByUserId}'" else null},
                     ${if (hankeGeometriat.createdAt != null) "'${Timestamp(hankeGeometriat.createdAt!!.toInstant().toEpochMilli())}'" else null},
-                    ${if (hankeGeometriat.updatedByUserId != null) "'${hankeGeometriat.updatedByUserId}'" else null},
-                    ${if (hankeGeometriat.updatedAt != null) "'${Timestamp(hankeGeometriat.updatedAt!!.toInstant().toEpochMilli())}'" else null}               
+                    ${if (hankeGeometriat.modifiedByUserId != null) "'${hankeGeometriat.modifiedByUserId}'" else null},
+                    ${if (hankeGeometriat.modifiedAt != null) "'${Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli())}'" else null}               
                 )
                 RETURNING id
                 """.trimIndent()) { rs, _ ->
@@ -66,8 +66,8 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                 UPDATE HankeGeometriat
                 SET
                     version = ${hankeGeometriat.version},
-                    updatedByUserId = ${if (hankeGeometriat.updatedByUserId != null) "'${hankeGeometriat.updatedByUserId}'" else null},
-                    updateddAt = ${if (hankeGeometriat.updatedAt != null) "'${Timestamp(hankeGeometriat.updatedAt!!.toInstant().toEpochMilli())}'" else null}
+                    modifiedByUserId = ${if (hankeGeometriat.modifiedByUserId != null) "'${hankeGeometriat.modifiedByUserId}'" else null},
+                    modifiedAt = ${if (hankeGeometriat.modifiedAt != null) "'${Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli())}'" else null}
                 WHERE
                     id = ${hankeGeometriat.id}
             """.trimIndent())
@@ -87,8 +87,8 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                 version,
                 createdByUserId,
                 createdAt,
-                updatedByUserId,
-                updateddAt
+                modifiedByUserId,
+                modifiedAt
             FROM HankeGeometriat WHERE hankeId = $hankeId            
         """.trimIndent()) { rs, _ ->
                 HankeGeometriat(

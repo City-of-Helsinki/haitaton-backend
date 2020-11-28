@@ -13,7 +13,7 @@ import org.springframework.jdbc.core.JdbcOperations
 class IntegrationTestConfiguration {
 
     @Bean
-    fun jdbcOpeations(): JdbcOperations = mockk()
+    fun jdbcOperations(): JdbcOperations = mockk()
 
     @Bean
     fun hankeRepository(): HankeRepository = mockk()

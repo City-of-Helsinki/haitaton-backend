@@ -15,8 +15,6 @@ import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
-import java.nio.file.Files
-import java.nio.file.Paths
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -54,9 +52,9 @@ internal class HankeGeometriatServiceImplITest {
     @Test
     fun `save and load and update`() {
         val hankeTunnus = "123456"
-        val hankeGeometriat = OBJECT_MAPPER.readValue(Files.readString(Paths.get("src/integrationTest/resources/fi/hel/haitaton/hanke/hankeGeometriat.json")), HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
         hankeGeometriat.createdByUserId = 1111
-        hankeGeometriat.updatedByUserId = 2222
+        hankeGeometriat.modifiedByUserId = 2222
         // For FK constraints we need a Hanke in database
         hankeRepository.save(HankeEntity(id = hankeGeometriat.hankeId, hankeTunnus = hankeTunnus))
 
@@ -70,7 +68,7 @@ internal class HankeGeometriatServiceImplITest {
             assertThat(loadedHankeGeometriat!!.hankeId).isEqualTo(hankeGeometriat.hankeId)
             assertThat(loadedHankeGeometriat!!.version).isEqualTo(1)
             assertThat(loadedHankeGeometriat!!.createdByUserId).isEqualTo(hankeGeometriat.createdByUserId)
-            assertThat(loadedHankeGeometriat!!.updatedByUserId).isEqualTo(hankeGeometriat.updatedByUserId)
+            assertThat(loadedHankeGeometriat!!.modifiedByUserId).isEqualTo(hankeGeometriat.modifiedByUserId)
             assertThat(loadedHankeGeometriat!!.featureCollection!!.features.size).isEqualTo(2)
             assertThat(loadedHankeGeometriat!!.featureCollection!!.features[0].geometry is Point)
             val loadedPoint = loadedHankeGeometriat!!.featureCollection!!.features[0].geometry as Point
@@ -82,7 +80,7 @@ internal class HankeGeometriatServiceImplITest {
         loadedHankeGeometriat.featureCollection!!.features.add(loadedHankeGeometriat.featureCollection!!.features[0])
         loadedHankeGeometriat.id = null
         loadedHankeGeometriat.version = null
-        loadedHankeGeometriat.updatedAt = null
+        loadedHankeGeometriat.modifiedAt = null
 
         // save
         hankeGeometriatService.saveGeometriat(hankeTunnus, loadedHankeGeometriat)
@@ -94,7 +92,7 @@ internal class HankeGeometriatServiceImplITest {
             assertThat(loadedHankeGeometriat.version).isEqualTo(2) // this has increased
             assertThat(loadedHankeGeometriat.createdByUserId).isEqualTo(hankeGeometriat.createdByUserId)
             assertThat(loadedHankeGeometriat.createdAt!!.format(DATABASE_TIMESTAMP_FORMAT)).isEqualTo(createdAt.format(DATABASE_TIMESTAMP_FORMAT))
-            assertThat(loadedHankeGeometriat.updatedByUserId).isEqualTo(hankeGeometriat.updatedByUserId)
+            assertThat(loadedHankeGeometriat.modifiedByUserId).isEqualTo(hankeGeometriat.modifiedByUserId)
             assertThat(loadedHankeGeometriat.featureCollection!!.features.size).isEqualTo(3) // this was increased
             assertThat(loadedHankeGeometriat.featureCollection!!.features[0].geometry is Point)
             val loadedPoint = loadedHankeGeometriat.featureCollection!!.features[0].geometry as Point

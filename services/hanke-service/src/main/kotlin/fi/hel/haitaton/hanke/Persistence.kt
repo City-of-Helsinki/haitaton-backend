@@ -122,37 +122,46 @@ class HankeEntity(
         var listOfHankeYhteystieto: MutableList<HankeYhteystietoEntity>? = null //mutableListOf()
 
 ) {
-        // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
-        var tyomaaKatuosoite: String? = null
-        @ElementCollection(fetch = FetchType.EAGER)
-        @CollectionTable(name = "hanketyomaatyyppi", joinColumns = arrayOf(JoinColumn(name = "hankeid")))
-        @Enumerated(EnumType.STRING)
-        var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
-        @Enumerated(EnumType.STRING)
-        var tyomaaKoko: TyomaaKoko? = null
+    // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
+    var tyomaaKatuosoite: String? = null
 
-        // --------------- Hankkeen haitat -------------------
-        var haittaAlkuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
-        var haittaLoppuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
-        // These five fields have generic string values, so can just as well store them with the ordinal number.
-        var kaistaHaitta: Haitta04? = null
-        var kaistaPituusHaitta: Haitta04? = null
-        var meluHaitta: Haitta13? = null
-        var polyHaitta: Haitta13? = null
-        var tarinaHaitta: Haitta13? = null
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "hanketyomaatyyppi", joinColumns = arrayOf(JoinColumn(name = "hankeid")))
+    @Enumerated(EnumType.STRING)
+    var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
+
+    @Enumerated(EnumType.STRING)
+    var tyomaaKoko: TyomaaKoko? = null
+
+    // --------------- Hankkeen haitat -------------------
+    var haittaAlkuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
+    var haittaLoppuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
+
+    // These five fields have generic string values, so can just as well store them with the ordinal number.
+    var kaistaHaitta: Haitta04? = null
+    var kaistaPituusHaitta: Haitta04? = null
+    var meluHaitta: Haitta13? = null
+    var polyHaitta: Haitta13? = null
+    var tarinaHaitta: Haitta13? = null
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is HankeEntity) return false
 
+        if (saveType != other.saveType) return false
+        if (hankeTunnus != other.hankeTunnus) return false
         if (id != other.id) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return id?.hashCode() ?: 0
+        var result = saveType?.hashCode() ?: 0
+        result = 31 * result + (hankeTunnus?.hashCode() ?: 0)
+        result = 31 * result + (id ?: 0)
+        return result
     }
+
 }
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {

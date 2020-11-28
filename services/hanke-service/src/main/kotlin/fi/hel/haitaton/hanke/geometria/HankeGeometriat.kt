@@ -10,6 +10,6 @@ data class HankeGeometriat(
         var version: Int? = null,
         var createdByUserId: Int? = null,
         var createdAt: ZonedDateTime? = null,
-        var updatedByUserId: Int? = null,
-        var updatedAt: ZonedDateTime? = null
+        var modifiedByUserId: Int? = null,
+        var modifiedAt: ZonedDateTime? = null
 )
