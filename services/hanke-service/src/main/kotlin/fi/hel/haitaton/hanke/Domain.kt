@@ -14,11 +14,13 @@ enum class HankeError(
     HAI1002("Invalid Hanke data"),
     HAI1003("Internal error while saving Hanke"),
     HAI1004("Internal error while loading Hanke"),
+    HAI1005("Database state invalid"),
     HAI1011("Invalid Hanke geometry"),
     HAI1012("Internal error while saving Hanke geometry"),
     HAI1013("Invalid coordinate system"),
     HAI1014("Internal error while loading Hanke geometry"),
     HAI1015("Hanke geometry not found");
+
 
 
     val errorCode: String
@@ -37,4 +39,6 @@ enum class HankeError(
     }
 }
 
-class HankeNotFoundException(val hankeTunnus: String? = null) : RuntimeException(HankeError.HAI1001.errorMessage)
+class HankeNotFoundException(val hankeId: String? = null) : RuntimeException(HankeError.HAI1001.errorMessage)
+
+class DatabaseStateException(val hankeId: String? = null) : RuntimeException(HankeError.HAI1005.errorMessage)

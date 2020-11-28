@@ -10,7 +10,7 @@ Hibernate/JPA Entity classes
  */
 
 // TODO: remove once everything has been converted to use the new, real entity class
-data class OldHankeEntity(val id: String) { }
+data class OldHankeEntity(val id: String) {}
 
 
 enum class SaveType {
@@ -90,8 +90,9 @@ enum class Haitta13 {
 
 // Build-time plugins will open the class and add no-arg constructor for @Entity classes.
 
-@Entity @Table(name = "hanke")
-class HankeEntity (
+@Entity
+@Table(name = "hanke")
+class HankeEntity(
         @Enumerated(EnumType.STRING)
         var saveType: SaveType? = null,
         var hankeTunnus: String? = null,
@@ -114,7 +115,12 @@ class HankeEntity (
         // can be a performance problem if there is a need to do bulk inserts.
         // Using SEQUENCE would allow getting multiple ids more efficiently.
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-        var id: Int? = null
+        var id: Int? = null,
+
+        // related
+        @OneToMany(fetch = FetchType.EAGER, mappedBy = "id")
+        var listOfHankeYhteystieto: MutableList<HankeYhteystietoEntity>? = null //mutableListOf()
+
 ) {
         // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
         var tyomaaKatuosoite: String? = null
@@ -139,17 +145,22 @@ class HankeEntity (
         if (this === other) return true
         if (other !is HankeEntity) return false
 
-        if (hankeTunnus != other.hankeTunnus) return false
+        if (id != other.id) return false
 
         return true
     }
 
     override fun hashCode(): Int {
-        return hankeTunnus?.hashCode() ?: 0
+        return id?.hashCode() ?: 0
     }
 }
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
     // TODO: add any special 'find' etc. functions here, like searching by date range.
+}
+
+
+interface HankeYhteystietoRepository : JpaRepository<HankeYhteystietoEntity, Int> {
+    fun findByHankeId(hankeId: Int): List<HankeYhteystietoEntity>
 }
