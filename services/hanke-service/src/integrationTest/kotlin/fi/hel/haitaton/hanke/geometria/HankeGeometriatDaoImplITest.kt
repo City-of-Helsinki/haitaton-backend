@@ -4,13 +4,14 @@ import assertk.assertAll
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
-import fi.hel.haitaton.hanke.*
-import mu.KotlinLogging
+import fi.hel.haitaton.hanke.HaitatonPostgreSQLContainer
+import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.asJsonResource
 import org.geojson.Point
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -19,8 +20,6 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.time.ZonedDateTime
 import javax.transaction.Transactional
-
-private val logger = KotlinLogging.logger { }
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
