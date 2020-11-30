@@ -25,38 +25,34 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("createdBy").addConstraintViolation()
             ok = false
         }
-        when {
-            hanke.nimi.isNullOrBlank() -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("nimi").addConstraintViolation()
-                ok = false
-            }
-            hanke.alkuPvm == null -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("alkuPvm").addConstraintViolation()
-                ok = false
-            }
-            hanke.loppuPvm == null -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("loppuPvm").addConstraintViolation()
-                ok = false
-            }
-
-            hanke.vaihe == null || !Vaihe.values().contains(hanke.vaihe) -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("vaihe").addConstraintViolation()
-                ok = false
-            }
-
-            // if vaihe = SUUNNITTELU then suunniteluVaihe must have value
-            // notice: suunnitteluVaihe can be null but if it is not, then enum values needs to match
-            (hanke.vaihe!!.equals(Vaihe.SUUNNITTELU) && hanke.suunnitteluVaihe == null) ||
-            (hanke.suunnitteluVaihe != null && !SuunnitteluVaihe.values().contains(hanke.suunnitteluVaihe)) -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("suunnitteluVaihe").addConstraintViolation()
-                ok = false
-            }
-            hanke.saveType == null || !SaveType.values().contains(hanke.saveType) -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("tallennus").addConstraintViolation()
-                ok = false
-            }
-
+        if (hanke.nimi.isNullOrBlank()) {
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("nimi").addConstraintViolation()
+            ok = false
         }
+        if (hanke.alkuPvm == null) {
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("alkuPvm").addConstraintViolation()
+            ok = false
+        }
+        if (hanke.loppuPvm == null) {
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("loppuPvm").addConstraintViolation()
+            ok = false
+        }
+        if (hanke.vaihe == null || !Vaihe.values().contains(hanke.vaihe)) {
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("vaihe").addConstraintViolation()
+            ok = false
+        }
+        // if vaihe = SUUNNITTELU then suunniteluVaihe must have value
+        // notice: suunnitteluVaihe can be null but if it is not, then enum values needs to match
+        if ((hanke.vaihe!!.equals(Vaihe.SUUNNITTELU) && hanke.suunnitteluVaihe == null) ||
+                (hanke.suunnitteluVaihe != null && !SuunnitteluVaihe.values().contains(hanke.suunnitteluVaihe))) {
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("suunnitteluVaihe").addConstraintViolation()
+            ok = false
+        }
+        if (hanke.saveType == null || !SaveType.values().contains(hanke.saveType)) {
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("tallennus").addConstraintViolation()
+            ok = false
+        }
+
         return ok
     }
 }
