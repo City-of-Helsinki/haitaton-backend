@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.SaveType
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import javax.validation.ConstraintValidator
 import javax.validation.ConstraintValidatorContext
 
@@ -53,6 +54,35 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             ok = false
         }
 
+        ok = isValidHankeYhteystietos(hanke, context, ok)
+
         return ok
+    }
+
+    private fun isValidHankeYhteystietos(hanke: Hanke, context: ConstraintValidatorContext, ok: Boolean): Boolean {
+        var ok1 = ok
+        hanke.omistajat.forEach { yhteystieto ->
+            //mandatory
+            ok1 = checkMandatoryYhteystietoData(yhteystieto, context, ok1)
+        }
+        hanke.toteuttajat.forEach { yhteystieto ->
+            //mandatory
+           ok1 = checkMandatoryYhteystietoData(yhteystieto, context, ok1)
+        }
+        hanke.arvioijat.forEach { yhteystieto ->
+            //mandatory
+            ok1 =  checkMandatoryYhteystietoData(yhteystieto, context, ok1)
+        }
+        return ok1
+    }
+
+    private fun checkMandatoryYhteystietoData(yhteystieto: HankeYhteystieto, context: ConstraintValidatorContext, ok: Boolean):Boolean {
+        var ok1 = ok
+        if (yhteystieto.sukunimi.isNullOrBlank() || yhteystieto.etunimi.isNullOrBlank()
+                || yhteystieto.email.isNullOrBlank() || yhteystieto.puhelinnumero.isNullOrBlank()) {
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("YhteysTiedot").addConstraintViolation()
+            ok1 = false
+        }
+        return ok1
     }
 }

@@ -15,6 +15,8 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import java.nio.file.Files
+import java.nio.file.Paths
 
 
 /**
@@ -168,5 +170,37 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         verify { hankeService.createHanke(any()) }
 
     }
+
+    @Test
+    fun `Try add with invalid data and get validation error (POST)`() {
+
+        val hankeName = "Mannerheimintien remontti remonttinen"
+
+        val hankeInvalid = Hanke(id = null, hankeTunnus = null, nimi = hankeName, kuvaus = "lorem ipsum dolor sit amet...",
+                onYKTHanke = false, alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
+                version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
+
+        //HankeYhteystieto Omistaja added
+        hankeInvalid.omistajat = arrayListOf(
+                HankeYhteystieto(null, "", "",
+                        "", "3212312", null,
+                        "Kaivuri ja mies", null, null, null,
+                        null, null))
+        //HankeYhteystieto Omistaja added
+        hankeInvalid.toteuttajat = arrayListOf(
+                HankeYhteystieto(null, "", "",
+                        "", "3212312", null,
+                        "Kaivuri ja toteuttaja", null, null, null,
+                        null, null))
+
+        mockMvc.perform(post("/hankkeet")
+                .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(hankeInvalid.toJsonString())
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest)
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1002"))
+
+
+    }
+
 
 }
