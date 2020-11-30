@@ -127,10 +127,14 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                         rs.getTimestamp(7).toInstant().atZone(TZ_UTC)
                 )
             }, hankeId).getOrNull(0)
-            return if (hankeGeometriat != null) {
-                hankeGeometriat.featureCollection = FeatureCollection()
-                hankeGeometriat.featureCollection!!.features = mutableListOf()
-                query("""
+            return hankeGeometriat?.withFeatureCollection(FeatureCollection().apply {
+                features = retrieveHankeGeometriaRows(hankeGeometriat.id!!, this@with)
+            })
+        }
+    }
+
+    private fun retrieveHankeGeometriaRows(hankeGeometriatId: Int, jdbcOperations: JdbcOperations): List<Feature> {
+        return jdbcOperations.query("""
                     SELECT
                         ST_AsGeoJSON(geometria),
                         parametrit
@@ -139,17 +143,12 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                     WHERE
                         hankeGeometriatId = ?
                 """.trimIndent(), { rs, _ ->
-                    val geojson = rs.getString(1)
-                    val paramjson = rs.getString(2)
-                    hankeGeometriat.featureCollection!!.features.add(Feature().apply {
-                        geometry = OBJECT_MAPPER.readValue(geojson)
-                        paramjson?.let { properties = OBJECT_MAPPER.readValue(paramjson) }
-                    })
-                }, hankeGeometriat.id)
-                hankeGeometriat
-            } else {
-                null
+            val geojson = rs.getString(1)
+            val paramjson = rs.getString(2)
+            Feature().apply {
+                geometry = OBJECT_MAPPER.readValue(geojson)
+                paramjson?.let { properties = OBJECT_MAPPER.readValue(paramjson) }
             }
-        }
+        }, hankeGeometriatId)
     }
 }

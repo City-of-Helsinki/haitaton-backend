@@ -12,4 +12,9 @@ data class HankeGeometriat(
         var createdAt: ZonedDateTime? = null,
         var modifiedByUserId: Int? = null,
         var modifiedAt: ZonedDateTime? = null
-)
+) {
+    fun withFeatureCollection(featureCollection: FeatureCollection): HankeGeometriat {
+        this.featureCollection = featureCollection
+        return this
+    }
+}
