@@ -67,7 +67,7 @@ internal class HankeGeometriatServiceImplITest {
         val modifiedAt = loadedHankeGeometriat.modifiedAt!!
         assertAll {
             assertThat(loadedHankeGeometriat!!.hankeId).isEqualTo(hankeGeometriat.hankeId)
-            assertThat(loadedHankeGeometriat!!.version).isEqualTo(1)
+            assertThat(loadedHankeGeometriat!!.version).isEqualTo(0)
             assertThat(loadedHankeGeometriat!!.createdByUserId).isEqualTo(hankeGeometriat.createdByUserId)
             assertThat(loadedHankeGeometriat!!.modifiedByUserId).isEqualTo(hankeGeometriat.modifiedByUserId)
             assertThat(loadedHankeGeometriat!!.featureCollection!!.features.size).isEqualTo(2)
@@ -90,7 +90,7 @@ internal class HankeGeometriatServiceImplITest {
         loadedHankeGeometriat = hankeGeometriatService.loadGeometriat(hankeTunnus)
         assertAll {
             assertThat(loadedHankeGeometriat!!.hankeId).isEqualTo(hankeGeometriat.hankeId)
-            assertThat(loadedHankeGeometriat.version).isEqualTo(2) // this has increased
+            assertThat(loadedHankeGeometriat.version).isEqualTo(1) // this has increased
             assertThat(loadedHankeGeometriat.createdByUserId).isEqualTo(hankeGeometriat.createdByUserId)
             assertThat(loadedHankeGeometriat.createdAt!!.format(DATABASE_TIMESTAMP_FORMAT)).isEqualTo(createdAt.format(DATABASE_TIMESTAMP_FORMAT))
             assertThat(loadedHankeGeometriat.modifiedAt!!.isAfter(modifiedAt)) // this has changed

@@ -25,7 +25,7 @@ open class HankeGeometriatServiceImpl(
         val oldHankeGeometriat = hankeGeometriaDao.retrieveHankeGeometriat(hanke.id!!)
         return if (oldHankeGeometriat == null) {
             hankeGeometriat.createdAt = now
-            hankeGeometriat.version = 1
+            hankeGeometriat.version = 0
             hankeGeometriat.hankeId = hanke.id
             hankeGeometriat.modifiedAt = now
             hankeGeometriaDao.createHankeGeometriat(hankeGeometriat)

@@ -31,7 +31,7 @@ internal class HankeGeometriatServiceImplTest {
         hankeGeometriat.modifiedAt = null
         val oldHankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
         oldHankeGeometriat.hankeId = hankeId
-        oldHankeGeometriat.version = 1
+        oldHankeGeometriat.version = 0
 
         every { hankeRepository.findByHankeTunnus(hankeTunnus) } returns HankeEntity(id = hankeId, hankeTunnus = hankeTunnus)
         every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns oldHankeGeometriat
@@ -44,7 +44,7 @@ internal class HankeGeometriatServiceImplTest {
         verify { hankeGeometriatDao.updateHankeGeometriat(any()) }
         verify(exactly = 0) { hankeGeometriatDao.createHankeGeometriat(any()) }
         assertAll {
-            assertThat(savedHankeGeometria.version).isEqualTo(2)
+            assertThat(savedHankeGeometria.version).isEqualTo(1)
             assertThat(savedHankeGeometria.createdAt).isNotNull()
             assertThat(savedHankeGeometria.modifiedAt).isNotNull()
             assertThat(savedHankeGeometria.hankeId).isEqualTo(hankeId)
@@ -72,7 +72,7 @@ internal class HankeGeometriatServiceImplTest {
         verify { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
         verify { hankeGeometriatDao.createHankeGeometriat(any()) }
         assertAll {
-            assertThat(savedHankeGeometria.version).isEqualTo(1)
+            assertThat(savedHankeGeometria.version).isEqualTo(0)
             assertThat(savedHankeGeometria.createdAt).isNotNull()
             assertThat(savedHankeGeometria.modifiedAt).isNotNull()
             assertThat(savedHankeGeometria.hankeId).isEqualTo(hankeId)
