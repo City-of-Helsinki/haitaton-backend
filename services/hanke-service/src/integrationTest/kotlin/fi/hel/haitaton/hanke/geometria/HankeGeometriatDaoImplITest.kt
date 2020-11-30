@@ -4,22 +4,23 @@ import assertk.assertAll
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
-import fi.hel.haitaton.hanke.HaitatonPostgreSQLContainer
-import fi.hel.haitaton.hanke.HankeEntity
-import fi.hel.haitaton.hanke.HankeRepository
-import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.*
+import mu.KotlinLogging
 import org.geojson.Point
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.JdbcOperations
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
+import java.time.ZonedDateTime
 import javax.transaction.Transactional
 
+private val logger = KotlinLogging.logger { }
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -53,7 +54,7 @@ internal class HankeGeometriatDaoImplITest {
     private lateinit var hankeGeometriatDao: HankeGeometriatDao
 
     @Autowired
-    private lateinit var jdbcOperations: JdbcOperations
+    private lateinit var jdbcTemplate: JdbcTemplate
 
     @Test
     fun `CRUD testing`() {
@@ -82,6 +83,8 @@ internal class HankeGeometriatDaoImplITest {
         }
         // Update
         hankeGeometriat.featureCollection!!.features.add(hankeGeometriat.featureCollection!!.features[0]) // add one more geometry
+        hankeGeometriat.version = hankeGeometriat.version!! + 1
+        hankeGeometriat.modifiedAt = ZonedDateTime.now()
         hankeGeometriatDao.updateHankeGeometriat(hankeGeometriat)
         loadedHankeGeometriat = hankeGeometriatDao.retrieveHankeGeometriat(hankeGeometriat.hankeId!!)
         assertAll {
@@ -90,7 +93,7 @@ internal class HankeGeometriatDaoImplITest {
             assertThat(loadedHankeGeometriat.createdByUserId).isEqualTo(hankeGeometriat.createdByUserId)
             assertThat(loadedHankeGeometriat.createdAt).isEqualTo(hankeGeometriat.createdAt)
             assertThat(loadedHankeGeometriat.modifiedByUserId).isEqualTo(hankeGeometriat.modifiedByUserId)
-            assertThat(loadedHankeGeometriat.modifiedAt).isEqualTo(hankeGeometriat.modifiedAt)
+            assertThat(loadedHankeGeometriat.modifiedAt!!.isAfter(hankeGeometriat.modifiedAt!!))
             assertThat(loadedHankeGeometriat.featureCollection!!.features.size).isEqualTo(3) // this has increased
             assertThat(loadedHankeGeometriat.featureCollection!!.features[0].geometry is Point)
             val loadedPoint = loadedHankeGeometriat.featureCollection!!.features[0].geometry as Point
@@ -99,10 +102,10 @@ internal class HankeGeometriatDaoImplITest {
         }
 
         // Delete
-        jdbcOperations.execute("DELETE FROM HankeGeometriat WHERE hankeId=${hankeGeometriat.hankeId}")
+        jdbcTemplate.execute("DELETE FROM HankeGeometriat WHERE hankeId=${hankeGeometriat.hankeId}")
         // check that all was deleted correctly
         assertThat(hankeGeometriatDao.retrieveHankeGeometriat(hankeGeometriat.hankeId!!)).isNull()
-        assertThat(jdbcOperations.queryForObject("SELECT COUNT(*) FROM HankeGeometriat") { rs, _ -> rs.getInt(1) }).isEqualTo(0)
-        assertThat(jdbcOperations.queryForObject("SELECT COUNT(*) FROM HankeGeometria") { rs, _ -> rs.getInt(1) }).isEqualTo(0)
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometriat") { rs, _ -> rs.getInt(1) }).isEqualTo(0)
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometria") { rs, _ -> rs.getInt(1) }).isEqualTo(0)
     }
 }

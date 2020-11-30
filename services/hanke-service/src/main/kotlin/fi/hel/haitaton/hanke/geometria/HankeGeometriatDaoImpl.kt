@@ -74,7 +74,7 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
 
     override fun updateHankeGeometriat(hankeGeometriat: HankeGeometriat) {
         with(jdbcOperations) {
-            execute("""
+            update("""
                 UPDATE HankeGeometriat
                 SET
                     version = ?,
