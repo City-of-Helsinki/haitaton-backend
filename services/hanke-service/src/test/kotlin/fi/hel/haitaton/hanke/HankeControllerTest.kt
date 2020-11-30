@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeYhteystiedot
+import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -94,29 +94,38 @@ class HankeControllerTest {
 
     }
 
-    // sending of sub types
-/* in the construction
-
+    //sending of sub types
     @Test
-    fun `test that update with listOfOmistaja can be sent to controller and is responded with 200`() {
-        var partialHanke = Hanke(id = 123, hankeTunnus = "id123",
+    fun `test that create with listOfOmistaja can be sent to controller and is responded with 200`() {
+        var hanke = Hanke(id = null, hankeTunnus = null,
                 nimi = "hankkeen nimi", kuvaus = "lorem ipsum dolor sit amet...", onYKTHanke = false,
                 alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = null,
                 version = 1, createdBy = "Tiina", createdAt = getCurrentTimeUTC(), modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
-        // mock HankeService response
-        Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
 
-        partialHanke.listOfOmistaja = arrayListOf(HankeYhteystiedot(1,1,"Pekkanen", "Pekka","pekka@pekka.fi", "3212312", "Kaivuri ja mies",null))
+        hanke.omistajat = arrayListOf(
+                HankeYhteystieto(null, "Pekkanen", "Pekka",
+                        "pekka@pekka.fi", "3212312", null,
+                        "Kaivuri ja mies", null, null, null,
+                        null, null))
+
+        var mockedHanke = hanke.copy()
+        mockedHanke.omistajat = mutableListOf(hanke.omistajat.get(0))
+        mockedHanke.id = 12
+        mockedHanke.hankeTunnus= "JOKU12"
+        mockedHanke.omistajat.get(0).id =1
+
+        // mock HankeService response
+        Mockito.`when`(hankeService.createHanke(hanke)).thenReturn(hanke)
+
         // Actual call
-        val response: ResponseEntity<Any> = hankeController.updateHanke(partialHanke, "id123")
+        val response: ResponseEntity<Any> = hankeController.createHanke(hanke)
 
         Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         Assertions.assertThat(response.body).isNotNull
         var responseHanke = response as ResponseEntity<Hanke>
         Assertions.assertThat(responseHanke.body).isNotNull
         Assertions.assertThat(responseHanke.body?.nimi).isEqualTo("hankkeen nimi")
-    }*/
-
+    }
 
 }
