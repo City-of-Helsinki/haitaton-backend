@@ -8,4 +8,8 @@ databaseChangeLog:
   - include:
       file: db/changelog/changesets/create-hankeyhteystieto-table.yml
   - include:
+      file: db/changelog/changesets/create-organization-tables.yml
+  - include:
+      file: db/changelog/changesets/insert-organization-data.yml
+  - include:
       file: db/changelog/changesets/create-hankegeometriat-tables.sql

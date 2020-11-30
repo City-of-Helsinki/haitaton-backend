@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import io.mockk.mockk
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -20,6 +21,9 @@ class IntegrationTestConfiguration {
 
     @Bean
     fun hankeService(): HankeService = mockk()
+
+    @Bean
+    fun organisaatioService(): OrganisaatioService = mockk()
 
     @Bean
     fun hankeGeometriatDao(jdbcOperations: JdbcOperations): HankeGeometriatDao = mockk()
