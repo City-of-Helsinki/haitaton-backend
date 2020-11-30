@@ -15,5 +15,5 @@ class OrganisaatioEntity(
 )
 
 interface OrganisaatioRepository : JpaRepository<OrganisaatioEntity, Int> {
-    fun findAllByOrderByIdAsc(): Iterable<OrganisaatioEntity>
+    fun findAllByOrderByNimiAsc(): Iterable<OrganisaatioEntity>
 }

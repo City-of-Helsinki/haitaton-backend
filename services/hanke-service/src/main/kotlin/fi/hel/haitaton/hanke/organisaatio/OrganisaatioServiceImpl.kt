@@ -11,7 +11,7 @@ class OrganisaatioServiceImpl(@Autowired val organisaatioRepository: Organisaati
 
     override fun getOrganisaatiot(): Iterable<Organisaatio> {
         logger.info { "fetching organizations" }
-        val entities = organisaatioRepository.findAllByOrderByIdAsc()
+        val entities = organisaatioRepository.findAllByOrderByNimiAsc()
         return entities.map { createdOrganisaatioDomainObjectFromEntity(it) }
     }
 
