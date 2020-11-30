@@ -67,16 +67,16 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
         }
         hanke.toteuttajat.forEach { yhteystieto ->
             //mandatory
-           ok1 = checkMandatoryYhteystietoData(yhteystieto, context, ok1)
+            ok1 = checkMandatoryYhteystietoData(yhteystieto, context, ok1)
         }
         hanke.arvioijat.forEach { yhteystieto ->
             //mandatory
-            ok1 =  checkMandatoryYhteystietoData(yhteystieto, context, ok1)
+            ok1 = checkMandatoryYhteystietoData(yhteystieto, context, ok1)
         }
         return ok1
     }
 
-    private fun checkMandatoryYhteystietoData(yhteystieto: HankeYhteystieto, context: ConstraintValidatorContext, ok: Boolean):Boolean {
+    private fun checkMandatoryYhteystietoData(yhteystieto: HankeYhteystieto, context: ConstraintValidatorContext, ok: Boolean): Boolean {
         var ok1 = ok
         if (yhteystieto.sukunimi.isNullOrBlank() || yhteystieto.etunimi.isNullOrBlank()
                 || yhteystieto.email.isNullOrBlank() || yhteystieto.puhelinnumero.isNullOrBlank()) {

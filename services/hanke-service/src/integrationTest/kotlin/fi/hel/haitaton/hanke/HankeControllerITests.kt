@@ -17,16 +17,12 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
-import java.nio.file.Files
-import java.nio.file.Paths
-
 
 /**
  * Testing the Hanke Controller through a full REST request.
  *
  * This class should test only the weblayer (both HTTP server and context to be auto-mocked).
  */
-
 @WebMvcTest
 @Import(Configuration::class)
 class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
@@ -155,9 +151,11 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         //changing some return values
         val expectedHanke = hankeToBeMocked
-                .apply { hankeTunnus = mockedHankeTunnus
-                         id = 12
-                         omistajat.get(0).id = 3 }
+                .apply {
+                    hankeTunnus = mockedHankeTunnus
+                    id = 12
+                    omistajat.get(0).id = 3
+                }
 
         //faking the service call
         every { hankeService.createHanke(any()) }.returns(expectedHanke)
