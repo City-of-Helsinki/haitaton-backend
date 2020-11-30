@@ -1,14 +1,12 @@
 package fi.hel.haitaton.hanke.domain
 
-import fi.hel.haitaton.hanke.ContactType
 import java.time.ZonedDateTime
 
+//e.g. omistaja, arvioija, toteuttaja
 data class HankeYhteystieto(
         var id: Int?,
-        //e.g. omistaja, arvioija, toteuttaja
-     //   var contactType: ContactType,  //TODO: don't bring to front, decide from list
 
-        //must have contact information
+        //must have contact information fields:
         var sukunimi: String,
         var etunimi: String,
         var email: String,

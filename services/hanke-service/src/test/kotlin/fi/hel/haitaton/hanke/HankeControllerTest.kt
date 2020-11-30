@@ -61,7 +61,7 @@ class HankeControllerTest {
     fun `test that the updateHanke can be called with hanke data and response will be 200`() {
         var partialHanke = Hanke(id = 123, hankeTunnus = "id123",
                 nimi = "hankkeen nimi", kuvaus = "lorem ipsum dolor sit amet...", onYKTHanke = false,
-                alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = null,
+                alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.SUUNNITTELU, suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
                 version = 1, createdBy = "Tiina", createdAt = getCurrentTimeUTC(), modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
         // mock HankeService response
