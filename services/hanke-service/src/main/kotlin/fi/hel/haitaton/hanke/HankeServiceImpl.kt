@@ -4,16 +4,12 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 
 import mu.KotlinLogging
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.stereotype.Service
-import java.security.InvalidKeyException
 import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
 
-@Service
-class HankeServiceImpl(@Autowired val hankeRepository: HankeRepository,
-                       @Autowired val hankeYhteystiedotRepository: HankeYhteystietoRepository) : HankeService {
+class HankeServiceImpl(private val hankeRepository: HankeRepository,
+                       private val hankeYhteystiedotRepository: HankeYhteystietoRepository) : HankeService {
 
 
     // TODO:

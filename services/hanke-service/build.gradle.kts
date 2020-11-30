@@ -42,11 +42,11 @@ springBoot {
 plugins {
 	id("org.springframework.boot") version "2.3.4.RELEASE"
 	id("io.spring.dependency-management") version "1.0.10.RELEASE"
-	kotlin("jvm") version "1.4.10"
+	kotlin("jvm") version "1.4.20"
 	// Gives kotlin-allopen, which auto-opens classes with certain annotations
-	kotlin("plugin.spring") version "1.4.10"
+	kotlin("plugin.spring") version "1.4.20"
 	// Gives kotlin-noarg for @Entity, @Embeddable
-	kotlin("plugin.jpa") version "1.4.10"
+	kotlin("plugin.jpa") version "1.4.20"
 	idea
 }
 
@@ -71,6 +71,8 @@ dependencies {
 	testImplementation("io.mockk:mockk:$mockkVersion")
 	testImplementation("com.ninja-squad:springmockk:$springmockkVersion")
 	testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
+	testImplementation("org.testcontainers:junit-jupiter:1.15.0")
+	testImplementation("org.testcontainers:postgresql:1.15.0")
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 }

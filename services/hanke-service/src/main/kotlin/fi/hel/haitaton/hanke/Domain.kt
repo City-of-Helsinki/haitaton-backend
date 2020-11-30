@@ -1,23 +1,11 @@
 package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
-import org.geojson.FeatureCollection
-import java.time.ZonedDateTime
 import javax.validation.ConstraintViolation
 
 /*
 Domain classes
  */
-
-
-data class HankeGeometriat(
-        var hankeId: String? = null,
-        var featureCollection: FeatureCollection? = null,
-        var version: Int? = null,
-        var createdAt: ZonedDateTime? = null,
-        var updatedAt: ZonedDateTime? = null
-)
-
 
 @JsonSerialize(using = HankeErrorSerializer::class)
 enum class HankeError(

@@ -1,5 +1,5 @@
 {
-  "hankeId": "1234567",
+  "hankeId": 1,
   "featureCollection": {
     "type": "FeatureCollection",
     "crs": {
@@ -35,6 +35,6 @@
     ]
   },
   "version": 1,
-  "createdAt": "2020-11-09T15:53:23.1234567+02:00[Europe/Helsinki]",
-  "updatedAt": "2020-11-09T16:53:23.1234567+02:00[Europe/Helsinki]"
+  "createdAt": "2020-11-09T15:53:23.123+02:00[Europe/Helsinki]",
+  "modifiedAt": "2020-11-09T16:53:23.123+02:00[Europe/Helsinki]"
 }

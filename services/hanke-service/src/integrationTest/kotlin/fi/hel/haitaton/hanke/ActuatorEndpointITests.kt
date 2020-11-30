@@ -1,12 +1,11 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
@@ -21,15 +20,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
     "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration"])
 @AutoConfigureMockMvc
 @EnableAutoConfiguration
+@ActiveProfiles("itest")
 class ActuatorEndpointITests(@Autowired val mockMvc: MockMvc) {
-
-    // Just to prevent the context trying to init that service, and fail doing it.
-    @MockBean
-    lateinit var hankeService: HankeService
-
-    //This is temporary so that organisaatioservice does not break the tests
-    @MockBean
-    lateinit var organisaatioService: OrganisaatioService
 
     @Test
     fun readiness() {
