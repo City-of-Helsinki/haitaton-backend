@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.hello
 
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import org.hamcrest.Matchers.stringContainsInOrder
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -24,6 +25,10 @@ class HelloApiControllerITests(@Autowired val mockMvc: MockMvc) {
     // Just to prevent the context trying to init that service, and fail doing it.
     @MockBean
     lateinit var hankeService: HankeService
+
+    //This is temporary so that organisaatioservice does not break the tests
+    @MockBean
+    lateinit var organisaatioService: OrganisaatioService
 
     @Test
     fun `Hello response at web layer`() {
