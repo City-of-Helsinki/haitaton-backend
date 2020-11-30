@@ -7,3 +7,7 @@ databaseChangeLog:
       file: db/changelog/changesets/add-hanke-haitat-fields.yml
   - include:
       file: db/changelog/changesets/create-hankeyhteystieto-table.yml
+  - include:
+      file: db/changelog/changesets/create-organization-tables.yml
+  - include:
+      file: db/changelog/changesets/insert-organization-data.yml
