@@ -1,18 +1,16 @@
 package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
@@ -26,17 +24,14 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
  */
 
 @WebMvcTest
-@Import(Configuration::class)
+@Import(IntegrationTestConfiguration::class)
+@ActiveProfiles("itest")
 class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     val mockedHankeTunnus = "GHSFG123"
 
-    @MockkBean
+    @Autowired
     lateinit var hankeService: HankeService  //faking these calls
-
-    //This is temporary so that organisaatioservice does not break the tests
-    @MockBean
-    lateinit var organisaatioService: OrganisaatioService
 
     @Test
     fun `When hankeId not given for fetching then error`() {
@@ -153,9 +148,11 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         //changing some return values
         val expectedHanke = hankeToBeMocked
-                .apply { hankeTunnus = mockedHankeTunnus
-                         id = 12
-                         omistajat.get(0).id = 3 }
+                .apply {
+                    hankeTunnus = mockedHankeTunnus
+                    id = 12
+                    omistajat.get(0).id = 3
+                }
 
         //faking the service call
         every { hankeService.createHanke(any()) }.returns(expectedHanke)

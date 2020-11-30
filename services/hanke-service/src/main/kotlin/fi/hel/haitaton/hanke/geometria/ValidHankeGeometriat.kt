@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.validation
+package fi.hel.haitaton.hanke.geometria
 
 import javax.validation.Constraint
 import javax.validation.Payload
