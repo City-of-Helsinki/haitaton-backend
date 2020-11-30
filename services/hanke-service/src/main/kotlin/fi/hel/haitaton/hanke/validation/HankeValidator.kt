@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.validation
 
 import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.SaveType
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
@@ -48,6 +49,10 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             (hanke.vaihe!!.equals(Vaihe.SUUNNITTELU) && hanke.suunnitteluVaihe == null) ||
             (hanke.suunnitteluVaihe != null && !SuunnitteluVaihe.values().contains(hanke.suunnitteluVaihe)) -> {
                 context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("suunnitteluVaihe").addConstraintViolation()
+                ok = false
+            }
+            hanke.saveType == null || !SaveType.values().contains(hanke.saveType) -> {
+                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("tallennus").addConstraintViolation()
                 ok = false
             }
 
