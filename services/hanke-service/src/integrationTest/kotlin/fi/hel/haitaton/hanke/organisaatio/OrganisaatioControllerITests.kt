@@ -26,7 +26,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 )
 @AutoConfigureMockMvc
 @EnableAutoConfiguration
-class OrgansaatioControllerEndpointITests(@Autowired val mockMvc: MockMvc) {
+class OrganisaatioControllerEndpointITests(@Autowired val mockMvc: MockMvc) {
 
     // Just to prevent the context trying to init that service, and fail doing it.
     @MockBean
