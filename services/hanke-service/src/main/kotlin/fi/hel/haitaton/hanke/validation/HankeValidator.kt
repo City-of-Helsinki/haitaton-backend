@@ -6,8 +6,8 @@ import fi.hel.haitaton.hanke.MAXIMUM_TYOMAAKATUOSOITE_LENGTH
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.getCurrentTimeUTC
-import java.time.temporal.ChronoUnit
+//import fi.hel.haitaton.hanke.getCurrentTimeUTC
+//import java.time.temporal.ChronoUnit
 import javax.validation.ConstraintValidator
 import javax.validation.ConstraintValidatorContext
 
@@ -30,12 +30,16 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
         }
 
         // Must be from the begin of today or later, and earlier than some relevant maximum date
-        if (hanke.alkuPvm == null || hanke.alkuPvm!!.isBefore(getCurrentTimeUTC().truncatedTo(ChronoUnit.DAYS)) || hanke.alkuPvm!!.isAfter(MAXIMUM_DATE)) {
+        // TODO: past date should only be prevented during creation of new hanke, not when updating one.
+        if (hanke.alkuPvm == null /* || hanke.alkuPvm!!.isBefore(getCurrentTimeUTC().truncatedTo(ChronoUnit.DAYS)) */
+                || hanke.alkuPvm!!.isAfter(MAXIMUM_DATE)) {
             context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("alkuPvm").addConstraintViolation()
             ok = false
         }
         // Must be from the begin of today or later, and earlier than some relevant maximum date, and same or later than alkuPvm
-        if (hanke.loppuPvm == null || hanke.loppuPvm!!.isBefore(getCurrentTimeUTC().truncatedTo(ChronoUnit.DAYS)) || hanke.loppuPvm!!.isAfter(MAXIMUM_DATE)) {
+        // TODO: past date should only be prevented during creation of new hanke, not when updating one.
+        if (hanke.loppuPvm == null /* || hanke.loppuPvm!!.isBefore(getCurrentTimeUTC().truncatedTo(ChronoUnit.DAYS)) */
+                || hanke.loppuPvm!!.isAfter(MAXIMUM_DATE)) {
             context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("loppuPvm").addConstraintViolation()
             ok = false
         }
@@ -79,11 +83,11 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
 
     private fun checkMandatoryYhteystietoData(yhteystieto: HankeYhteystieto, context: ConstraintValidatorContext, ok: Boolean): Boolean {
         var ok1 = ok
-        if (!yhteystieto.sukunimi.isNullOrBlank() || !yhteystieto.etunimi.isNullOrBlank()
-                || !yhteystieto.email.isNullOrBlank() || !yhteystieto.puhelinnumero.isNullOrBlank()) {
+        if (!yhteystieto.sukunimi.isBlank() || !yhteystieto.etunimi.isBlank()
+                || !yhteystieto.email.isBlank() || !yhteystieto.puhelinnumero.isBlank()) {
             // if any of the attributes contains something then all must exist
-            if (yhteystieto.sukunimi.isNullOrBlank() || yhteystieto.etunimi.isNullOrBlank()
-                    || yhteystieto.email.isNullOrBlank() || yhteystieto.puhelinnumero.isNullOrBlank()) {
+            if (yhteystieto.sukunimi.isBlank() || yhteystieto.etunimi.isBlank()
+                    || yhteystieto.email.isBlank() || yhteystieto.puhelinnumero.isBlank()) {
                 // TODO: is that property node correct?
                 // TODO: Does not currently matter, though, as the node information does not get through to error response.
                 context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("YhteysTiedot").addConstraintViolation()
