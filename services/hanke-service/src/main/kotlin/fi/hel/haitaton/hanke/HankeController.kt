@@ -59,6 +59,7 @@ class HankeController(@Autowired private val hankeService: HankeService) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
 
+
         return try {
             val createdHanke = hankeService.createHanke(hanke)
             ResponseEntity.status(HttpStatus.OK).body(createdHanke)
