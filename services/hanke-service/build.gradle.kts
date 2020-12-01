@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_11
+val postgreSQLVersion = "42.2.18"
 val springDocVersion = "1.4.8"
 val geoJsonJacksonVersion = "1.14"
 val mockkVersion = "1.10.2"
@@ -60,7 +61,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.liquibase:liquibase-core")								// TODO: do we need org.springframework:spring-dao ?
 
-	runtimeOnly("org.postgresql:postgresql")
+	runtimeOnly("org.postgresql:postgresql:$postgreSQLVersion")
 	// H2 is used as embedded db for some simple low level Entity and Repository class testing
 	runtimeOnly("com.h2database:h2")
 	runtimeOnly("org.springdoc:springdoc-openapi-ui:$springDocVersion")
