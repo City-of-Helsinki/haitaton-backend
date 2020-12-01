@@ -78,10 +78,14 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
 
     private fun checkMandatoryYhteystietoData(yhteystieto: HankeYhteystieto, context: ConstraintValidatorContext, ok: Boolean): Boolean {
         var ok1 = ok
-        if (yhteystieto.sukunimi.isNullOrBlank() || yhteystieto.etunimi.isNullOrBlank()
-                || yhteystieto.email.isNullOrBlank() || yhteystieto.puhelinnumero.isNullOrBlank()) {
-            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("YhteysTiedot").addConstraintViolation()
-            ok1 = false
+        if (!yhteystieto.sukunimi.isNullOrBlank() || !yhteystieto.etunimi.isNullOrBlank()
+                || !yhteystieto.email.isNullOrBlank() || !yhteystieto.puhelinnumero.isNullOrBlank()) {
+            //if any of the attributes contains something then all must exist
+            if(yhteystieto.sukunimi.isNullOrBlank() || yhteystieto.etunimi.isNullOrBlank()
+                    || yhteystieto.email.isNullOrBlank() || yhteystieto.puhelinnumero.isNullOrBlank()) {
+                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("YhteysTiedot").addConstraintViolation()
+                ok1 = false
+            }
         }
         return ok1
     }

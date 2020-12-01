@@ -284,26 +284,27 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository,
     internal fun addHankeYhteystietoEntitysToList(listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity, contactType: ContactType) {
 
         listOfHankeYhteystiedot.forEach { hankeYht ->
+            if (hankeYht.sukunimi?.isNotBlank() && hankeYht.etunimi?.isNotBlank() && hankeYht.email?.isNotBlank() &&
+                    hankeYht.puhelinnumero?.isNotBlank()) {
+                val hankeYhtEntity = HankeYhteystietoEntity(
+                        contactType,
+                        hankeYht.sukunimi,
+                        hankeYht.etunimi,
+                        hankeYht.email,
+                        hankeYht.puhelinnumero,
+                        hankeYht.organisaatioId,
+                        hankeYht.organisaatioNimi,
+                        hankeYht.osasto,
+                        1, //TODO: real user , make sure you don't update by another user but only once
+                        hankeYht.createdAt?.toLocalDateTime(),
+                        null, //TODO: real user , make sure updated only if real changes? or what is the design decision?
+                        getCurrentTimeUTCAsLocalTime(),  //TODO: only if changed?  do we always want to change the date? how do we know has subobject really been updated?
+                        hankeYht.id,
+                        hankeEntity)
 
-            val hankeYhtEntity = HankeYhteystietoEntity(
-                    contactType,
-                    hankeYht.sukunimi,
-                    hankeYht.etunimi,
-                    hankeYht.email,
-                    hankeYht.puhelinnumero,
-                    hankeYht.organisaatioId,
-                    hankeYht.organisaatioNimi,
-                    hankeYht.osasto,
-                    1, //TODO: real user , make sure you don't update by another user but only once
-                    hankeYht.createdAt?.toLocalDateTime(),
-                    null, //TODO: real user , make sure updated only if real changes? or what is the design decision?
-                    getCurrentTimeUTCAsLocalTime(),  //TODO: only if changed?  do we always want to change the date? how do we know has subobject really been updated?
-                    hankeYht.id,
-                    hankeEntity
-            )
-            hankeEntity.listOfHankeYhteystieto!!.add(hankeYhtEntity)
+                hankeEntity.listOfHankeYhteystieto!!.add(hankeYhtEntity)
+            }
         }
-
     }
 
 }
