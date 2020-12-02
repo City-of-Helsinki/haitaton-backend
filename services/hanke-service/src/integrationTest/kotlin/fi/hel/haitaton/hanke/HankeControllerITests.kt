@@ -110,26 +110,6 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     }
 
     @Test
-    fun `test that the validation gives error and Bad Request is returned when creatorUserId is empty`() {
-
-        val hankeToBeAdded = Hanke(id = null, hankeTunnus = "idHankkeelle123", nimi = "", kuvaus = null,
-                onYKTHanke = false, alkuPvm = null, loppuPvm = null, vaihe = Vaihe.RAKENTAMINEN, suunnitteluVaihe = null,
-                version = null, createdBy = "", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
-
-        every { hankeService.createHanke(any()) }.returns(hankeToBeAdded)
-
-        val objectMapper = ObjectMapper()
-        val hankeJSON = objectMapper.writeValueAsString(hankeToBeAdded)
-
-        mockMvc.perform(put("/hankkeet/idHankkeelle123")
-                .contentType(MediaType.APPLICATION_JSON).content(hankeJSON)
-                .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-
-    }
-
-    @Test
     fun `Add Hanke and HankeYhteystiedot and return it with newly created hankeTunnus (POST)`() {
         val hankeName = "Mannerheimintien remontti remonttinen"
 
