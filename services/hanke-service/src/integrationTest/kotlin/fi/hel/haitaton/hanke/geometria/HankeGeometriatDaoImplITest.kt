@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.asJsonResource
 import org.geojson.Point
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -55,6 +56,12 @@ internal class HankeGeometriatDaoImplITest {
 
     @Autowired
     private lateinit var jdbcTemplate: JdbcTemplate
+
+    @BeforeEach
+    fun setUp() {
+        // delete existing data from database
+        jdbcTemplate.execute("DELETE FROM HankeGeometriat")
+    }
 
     @Test
     fun `CRUD testing`() {

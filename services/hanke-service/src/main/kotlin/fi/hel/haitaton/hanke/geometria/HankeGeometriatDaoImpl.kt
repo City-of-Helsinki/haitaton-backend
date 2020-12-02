@@ -28,14 +28,14 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                         parametrit
                     ) VALUES (
                         ?,
-                        ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON(?), $originalSrid), $SRID),
+                        ${ if (originalSrid == SRID) "ST_SetSRID(ST_GeomFromGeoJSON(?), $SRID)" else "ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON(?), $originalSrid), $SRID)"},
                         ?
                     )""".trimIndent(), arguments, argumentTypes)
             }
         }
 
-        private fun FeatureCollection.srid(): String {
-            return this.crs?.properties?.get("name")?.toString()?.split("::")?.get(1) ?: SRID.toString()
+        private fun FeatureCollection.srid(): Int {
+            return this.crs?.properties?.get("name")?.toString()?.split("::")?.get(1)?.toInt() ?: SRID
         }
 
         private fun deleteHankeGeometriaRows(hankeGeometriat: HankeGeometriat, jdbcOperations: JdbcOperations) {
