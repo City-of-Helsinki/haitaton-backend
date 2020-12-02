@@ -1,10 +1,8 @@
 package fi.hel.haitaton.hanke.geometria
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import fi.hel.haitaton.hanke.OBJECT_MAPPER
-import fi.hel.haitaton.hanke.SRID
-import fi.hel.haitaton.hanke.TZ_UTC
-import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.*
+import org.geojson.Crs
 import org.geojson.Feature
 import org.geojson.FeatureCollection
 import org.springframework.jdbc.core.JdbcOperations
@@ -134,6 +132,7 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
             }, hankeId).getOrNull(0)
             return hankeGeometriat?.withFeatureCollection(FeatureCollection().apply {
                 features = retrieveHankeGeometriaRows(hankeGeometriat.id!!, this@with)
+                crs = Crs().apply { properties = mapOf(Pair("name", COORDINATE_SYSTEM_URN)) }
             })
         }
     }
