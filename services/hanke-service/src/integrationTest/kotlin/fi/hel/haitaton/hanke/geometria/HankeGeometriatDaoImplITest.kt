@@ -19,6 +19,7 @@ import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import javax.transaction.Transactional
 
 @Testcontainers
@@ -71,9 +72,9 @@ internal class HankeGeometriatDaoImplITest {
             assertThat(loadedHankeGeometriat!!.hankeId).isEqualTo(hankeGeometriat.hankeId)
             assertThat(loadedHankeGeometriat!!.version).isEqualTo(hankeGeometriat.version)
             assertThat(loadedHankeGeometriat!!.createdByUserId).isEqualTo(hankeGeometriat.createdByUserId)
-            assertThat(loadedHankeGeometriat!!.createdAt).isEqualTo(hankeGeometriat.createdAt)
+            assertThat(loadedHankeGeometriat!!.createdAt!!.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).isEqualTo(hankeGeometriat.createdAt!!.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
             assertThat(loadedHankeGeometriat!!.modifiedByUserId).isEqualTo(hankeGeometriat.modifiedByUserId)
-            assertThat(loadedHankeGeometriat!!.modifiedAt).isEqualTo(hankeGeometriat.modifiedAt)
+            assertThat(loadedHankeGeometriat!!.modifiedAt!!.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).isEqualTo(hankeGeometriat.modifiedAt!!.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
             assertThat(loadedHankeGeometriat!!.featureCollection!!.features.size).isEqualTo(2)
             assertThat(loadedHankeGeometriat!!.featureCollection!!.features[0].geometry is Point)
             val loadedPoint = loadedHankeGeometriat!!.featureCollection!!.features[0].geometry as Point
@@ -90,7 +91,7 @@ internal class HankeGeometriatDaoImplITest {
             assertThat(loadedHankeGeometriat!!.hankeId).isEqualTo(hankeGeometriat.hankeId)
             assertThat(loadedHankeGeometriat.version).isEqualTo(hankeGeometriat.version)
             assertThat(loadedHankeGeometriat.createdByUserId).isEqualTo(hankeGeometriat.createdByUserId)
-            assertThat(loadedHankeGeometriat.createdAt).isEqualTo(hankeGeometriat.createdAt)
+            assertThat(loadedHankeGeometriat.createdAt!!.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)).isEqualTo(hankeGeometriat.createdAt!!.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
             assertThat(loadedHankeGeometriat.modifiedByUserId).isEqualTo(hankeGeometriat.modifiedByUserId)
             assertThat(loadedHankeGeometriat.modifiedAt!!.isAfter(hankeGeometriat.modifiedAt!!))
             assertThat(loadedHankeGeometriat.featureCollection!!.features.size).isEqualTo(3) // this has increased

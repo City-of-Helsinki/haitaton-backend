@@ -22,6 +22,7 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
             }
             val argumentTypes = intArrayOf(Types.INTEGER, Types.VARCHAR, Types.OTHER)
             if (arguments != null) {
+                val originalSrid = hankeGeometriat.featureCollection!!.srid()
                 jdbcOperations.batchUpdate("""
                     INSERT INTO HankeGeometria (
                         hankeGeometriatId,
@@ -29,10 +30,14 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                         parametrit
                     ) VALUES (
                         ?,
-                        ST_SetSRID(ST_GeomFromGeoJSON(?), $SRID),
+                        ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON(?), $originalSrid), $SRID),
                         ?
                     )""".trimIndent(), arguments, argumentTypes)
             }
+        }
+
+        private fun FeatureCollection.srid(): String {
+            return this.crs?.properties?.get("name")?.toString()?.split("::")?.get(1) ?: SRID.toString()
         }
 
         private fun deleteHankeGeometriaRows(hankeGeometriat: HankeGeometriat, jdbcOperations: JdbcOperations) {
