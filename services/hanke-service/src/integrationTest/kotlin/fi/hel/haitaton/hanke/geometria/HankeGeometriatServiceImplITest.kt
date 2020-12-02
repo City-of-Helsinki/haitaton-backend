@@ -6,10 +6,11 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.*
 import org.geojson.Point
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.jdbc.core.JdbcOperations
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -47,7 +48,13 @@ internal class HankeGeometriatServiceImplITest {
     private lateinit var hankeGeometriatService: HankeGeometriatService
 
     @Autowired
-    private lateinit var jdbcOperations: JdbcOperations
+    private lateinit var jdbcTemplate: JdbcTemplate
+
+    @BeforeEach
+    fun setUp() {
+        // delete existing data from database
+        jdbcTemplate.execute("DELETE FROM HankeGeometriat")
+    }
 
     @Test
     fun `save and load and update`() {
@@ -104,8 +111,8 @@ internal class HankeGeometriatServiceImplITest {
 
         // check database too to make sure there is everything correctly
         assertAll {
-            assertThat(jdbcOperations.queryForObject("SELECT COUNT(*) FROM HankeGeometriat") { rs, _ -> rs.getInt(1) }).isEqualTo(1)
-            val ids = jdbcOperations.query("SELECT id, hankegeometriatid FROM HankeGeometria") { rs, _ ->
+            assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometriat") { rs, _ -> rs.getInt(1) }).isEqualTo(1)
+            val ids = jdbcTemplate.query("SELECT id, hankegeometriatid FROM HankeGeometria") { rs, _ ->
                 Pair(rs.getInt(1), rs.getInt(2))
             }
             assertThat(ids.size).isEqualTo(3)
