@@ -1,10 +1,8 @@
 package fi.hel.haitaton.hanke.geometria
 
 import com.fasterxml.jackson.module.kotlin.readValue
-import fi.hel.haitaton.hanke.OBJECT_MAPPER
-import fi.hel.haitaton.hanke.SRID
-import fi.hel.haitaton.hanke.TZ_UTC
-import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.*
+import org.geojson.Crs
 import org.geojson.Feature
 import org.geojson.FeatureCollection
 import org.springframework.jdbc.core.JdbcOperations
@@ -22,6 +20,7 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
             }
             val argumentTypes = intArrayOf(Types.INTEGER, Types.VARCHAR, Types.OTHER)
             if (arguments != null) {
+                val originalSrid = hankeGeometriat.featureCollection!!.srid()
                 jdbcOperations.batchUpdate("""
                     INSERT INTO HankeGeometria (
                         hankeGeometriatId,
@@ -29,10 +28,14 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                         parametrit
                     ) VALUES (
                         ?,
-                        ST_SetSRID(ST_GeomFromGeoJSON(?), $SRID),
+                        ${ if (originalSrid == SRID) "ST_SetSRID(ST_GeomFromGeoJSON(?), $SRID)" else "ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON(?), $originalSrid), $SRID)"},
                         ?
                     )""".trimIndent(), arguments, argumentTypes)
             }
+        }
+
+        private fun FeatureCollection.srid(): Int {
+            return this.crs?.properties?.get("name")?.toString()?.split("::")?.get(1)?.toInt() ?: SRID
         }
 
         private fun deleteHankeGeometriaRows(hankeGeometriat: HankeGeometriat, jdbcOperations: JdbcOperations) {
@@ -129,6 +132,7 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
             }, hankeId).getOrNull(0)
             return hankeGeometriat?.withFeatureCollection(FeatureCollection().apply {
                 features = retrieveHankeGeometriaRows(hankeGeometriat.id!!, this@with)
+                crs = Crs().apply { properties = mapOf(Pair("name", COORDINATE_SYSTEM_URN)) }
             })
         }
     }
