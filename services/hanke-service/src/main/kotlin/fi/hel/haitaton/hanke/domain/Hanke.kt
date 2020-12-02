@@ -12,7 +12,6 @@ import java.time.ZonedDateTime
 
 /**
  * When creating Hanke, only creatorUserId is mandatory.
- * TODO: may be changing to a bit more of mandatory fields for at least draft saving.
  */
 data class Hanke(
 
@@ -29,7 +28,7 @@ data class Hanke(
         var suunnitteluVaihe: SuunnitteluVaihe?,
 
         var version: Int?,
-        val createdBy: String,
+        val createdBy: String?,
         val createdAt: ZonedDateTime?,
         var modifiedBy: String?,
         var modifiedAt: ZonedDateTime?,

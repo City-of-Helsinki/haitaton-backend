@@ -22,8 +22,7 @@ class HankeControllerTest {
 
     @Configuration
     class TestConfiguration {
-
-        //makes validation happen here in unit test as well
+        // makes validation happen here in unit test as well
         @Bean
         fun bean(): MethodValidationPostProcessor = MethodValidationPostProcessor()
 
@@ -59,7 +58,7 @@ class HankeControllerTest {
 
     @Test
     fun `test that the updateHanke can be called with hanke data and response will be 200`() {
-        var partialHanke = Hanke(id = 123, hankeTunnus = "id123",
+        val partialHanke = Hanke(id = 123, hankeTunnus = "id123",
                 nimi = "hankkeen nimi", kuvaus = "lorem ipsum dolor sit amet...", onYKTHanke = false,
                 alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.SUUNNITTELU, suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
                 version = 1, createdBy = "Tiina", createdAt = getCurrentTimeUTC(), modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
@@ -72,15 +71,17 @@ class HankeControllerTest {
 
         Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         Assertions.assertThat(response.body).isNotNull
-        var responseHanke = response as ResponseEntity<Hanke>
+        // If the status is ok, we expect ResponseEntity<Hanke>
+        @Suppress("UNCHECKED_CAST")
+        val responseHanke = response as ResponseEntity<Hanke>
         Assertions.assertThat(responseHanke.body).isNotNull
         Assertions.assertThat(responseHanke.body?.nimi).isEqualTo("hankkeen nimi")
     }
 
 
     @Test
-    fun `test that the updateHanke will give validation errors from invalid hanke data for createdBy and name`() {
-        var partialHanke = Hanke(id = 0, hankeTunnus = "id123", nimi = "", kuvaus = "", onYKTHanke = false,
+    fun `test that the updateHanke will give validation errors from invalid hanke data for name`() {
+        val partialHanke = Hanke(id = 0, hankeTunnus = "id123", nimi = "", kuvaus = "", onYKTHanke = false,
                 alkuPvm = null, loppuPvm = null, vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = null,
                 version = 1, createdBy = "", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
         // mock HankeService response
@@ -90,14 +91,12 @@ class HankeControllerTest {
         Assertions.assertThatExceptionOfType(ConstraintViolationException::class.java).isThrownBy {
             hankeController.updateHanke(partialHanke, "id123")
         }.withMessageContaining("updateHanke.hanke.nimi: " + HankeError.HAI1002.toString())
-                .withMessageContaining("updateHanke.hanke.createdBy: " + HankeError.HAI1002.toString())
-
     }
 
-    //sending of sub types
+    // sending of sub types
     @Test
     fun `test that create with listOfOmistaja can be sent to controller and is responded with 200`() {
-        var hanke = Hanke(id = null, hankeTunnus = null,
+        val hanke = Hanke(id = null, hankeTunnus = null,
                 nimi = "hankkeen nimi", kuvaus = "lorem ipsum dolor sit amet...", onYKTHanke = false,
                 alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = null,
                 version = 1, createdBy = "Tiina", createdAt = getCurrentTimeUTC(), modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
@@ -109,11 +108,11 @@ class HankeControllerTest {
                         "Kaivuri ja mies", null, null, null,
                         null, null))
 
-        var mockedHanke = hanke.copy()
+        val mockedHanke = hanke.copy()
         mockedHanke.omistajat = mutableListOf(hanke.omistajat.get(0))
         mockedHanke.id = 12
         mockedHanke.hankeTunnus= "JOKU12"
-        mockedHanke.omistajat.get(0).id =1
+        mockedHanke.omistajat.get(0).id = 1
 
         // mock HankeService response
         Mockito.`when`(hankeService.createHanke(hanke)).thenReturn(hanke)
@@ -123,7 +122,9 @@ class HankeControllerTest {
 
         Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         Assertions.assertThat(response.body).isNotNull
-        var responseHanke = response as ResponseEntity<Hanke>
+        // If the status is ok, we expect ResponseEntity<Hanke>
+        @Suppress("UNCHECKED_CAST")
+        val responseHanke = response as ResponseEntity<Hanke>
         Assertions.assertThat(responseHanke.body).isNotNull
         Assertions.assertThat(responseHanke.body?.nimi).isEqualTo("hankkeen nimi")
     }

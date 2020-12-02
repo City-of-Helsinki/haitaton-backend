@@ -239,7 +239,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository,
      * Does NOT copy the id and hankeTunnus fields because one is supposed to find
      * the HankeEntity instance from the database with those values, and after that,
      * the values are filled by the database and should not be changed.
-     * Also, version, creatorUserId, createdAt, modifierUserId, modifiedAt, version are not
+     * Also, version, createdByUserId, createdAt, modifiedByUserId, modifiedAt, version are not
      * set here, as they are to be set internally, and depends on which operation
      * is being done.
      */
@@ -256,8 +256,8 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository,
 
         hanke.saveType?.let { entity.saveType = hanke.saveType }
         hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
-        hanke.tyomaaTyyppi?.let { entity.tyomaaTyyppi = hanke.tyomaaTyyppi }
-        hanke.tyomaaKoko.let { entity.tyomaaKoko = hanke.tyomaaKoko }
+        entity.tyomaaTyyppi = hanke.tyomaaTyyppi
+        hanke.tyomaaKoko?.let { entity.tyomaaKoko = hanke.tyomaaKoko }
 
         // Assuming the incoming date, while being zoned date and time, is in UTC and time value can be simply dropped here.
         // Note, .toLocalDate() does not do any time zone conversion.
@@ -284,8 +284,8 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository,
     internal fun addHankeYhteystietoEntitysToList(listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity, contactType: ContactType) {
 
         listOfHankeYhteystiedot.forEach { hankeYht ->
-            if (hankeYht.sukunimi?.isNotBlank() && hankeYht.etunimi?.isNotBlank() && hankeYht.email?.isNotBlank() &&
-                    hankeYht.puhelinnumero?.isNotBlank()) {
+            if (hankeYht.sukunimi.isNotBlank() && hankeYht.etunimi.isNotBlank() && hankeYht.email.isNotBlank()
+                    && hankeYht.puhelinnumero.isNotBlank()) {
                 val hankeYhtEntity = HankeYhteystietoEntity(
                         contactType,
                         hankeYht.sukunimi,

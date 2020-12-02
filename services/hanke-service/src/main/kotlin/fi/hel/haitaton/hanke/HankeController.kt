@@ -22,11 +22,9 @@ class HankeController(@Autowired private val hankeService: HankeService) {
      * Get one hanke with hankeTunnus.
      *  TODO: token  from front?
      *  TODO: validation for input parameter
-     *
      */
     @GetMapping("/{hankeTunnus}")
     fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String?): ResponseEntity<Any> {
-
         if (hankeTunnus == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
@@ -48,7 +46,6 @@ class HankeController(@Autowired private val hankeService: HankeService) {
 
     /**
      * Add one hanke.
-     *  TODO: validation for input
      * This method will be called when we do not have id for hanke yet
      */
     @PostMapping
@@ -58,7 +55,6 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         if (hanke == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
-
 
         return try {
             val createdHanke = hankeService.createHanke(hanke)
