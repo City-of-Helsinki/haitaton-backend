@@ -6,7 +6,7 @@ import javax.persistence.*
 enum class ContactType {
     OMISTAJA, //owner
     ARVIOIJA, //planner or person to do the planning of hanke
-    TOTEUTTAJA // implementator or builder
+    TOTEUTTAJA // implementor or builder
 }
 
 
@@ -16,17 +16,17 @@ class HankeYhteystietoEntity (
         @Enumerated(EnumType.STRING)
         var contactType: ContactType,
 
-        //must have contact information
+        // must have contact information
         var sukunimi: String,
         var etunimi: String,
         var email: String,
         var puhelinnumero: String,
 
-        var organisaatioid: Int? = 0,
-        var organisaationimi: String? = null,
+        var organisaatioId: Int? = 0,
+        var organisaatioNimi: String? = null,
         var osasto: String? = null,
 
-        // NOTE: creatorUserId must be non-null for valid data, but to allow creating instances with
+        // NOTE: createdByUserId must be non-null for valid data, but to allow creating instances with
         // no-arg constructor and programming convenience, this class allows it to be null (temporarily).
         var createdByUserId: Int? = null,
         var createdAt: LocalDateTime? = null,
@@ -39,7 +39,6 @@ class HankeYhteystietoEntity (
         var id: Int? = null,
 
         @ManyToOne(fetch = FetchType.EAGER)
-        @JoinColumn(name="hankeid") var hanke: HankeEntity? = null
+        @JoinColumn(name="hankeid")
+        var hanke: HankeEntity? = null
 )
-
-

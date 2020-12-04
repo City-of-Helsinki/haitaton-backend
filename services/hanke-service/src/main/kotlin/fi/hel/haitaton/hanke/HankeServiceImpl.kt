@@ -8,8 +8,7 @@ import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
 
-class HankeServiceImpl(private val hankeRepository: HankeRepository,
-                       private val hankeYhteystiedotRepository: HankeYhteystietoRepository) : HankeService {
+class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeService {
 
 
     // TODO:
@@ -32,17 +31,13 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository,
        - loadHanke(id, savetype)
      */
 
-    override fun loadHanke(hankeTunnus: String): Hanke? {
-
+    override fun loadHanke(hankeTunnus: String): Hanke {
         // TODO: Find out all savetype matches and return the more recent draft vs. submit.
         val entity = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
 
         if (entity.id == null) {
             throw DatabaseStateException(hankeTunnus)
         }
-
-        val listOfHankeYhteystiedot = entity.id?.let { hankeYhteystiedotRepository.findByHankeId(it) }
-        entity.listOfHankeYhteystieto = listOfHankeYhteystiedot as MutableList<HankeYhteystietoEntity>?
 
         return createHankeDomainObjectFromEntity(entity)
     }
@@ -57,13 +52,16 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository,
         // TODO: Only create that hanke-tunnus if a specific set of fields are non-empty/set.
         //   For now, hanke-tunnus is created as soon as this function is called, even for fully empty data.
 
+        // TODO: will need proper stuff derived from the logged in user.
+        val userid = 1
+
         // Create the entity object and save it (first time) to get db-id
         val entity = HankeEntity()
         copyNonNullHankeFieldsToEntity(hanke, entity)
+        copyYhteystietosToEntity(hanke, entity, userid)
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = 0
-        // TODO: will need proper stuff derived from the logged in user.
-        entity.createdByUserId = 1
+        entity.createdByUserId = userid
         entity.createdAt = getCurrentTimeUTCAsLocalTime()
         entity.modifiedByUserId = null
         entity.modifiedAt = null
@@ -82,15 +80,11 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository,
         logger.info {
             "Saving  Hanke step 2 for: ${entity.hankeTunnus}"
         }
-        //TODO: maybe we need to check the transaction situation here before the subentity save?
 
-        hankeRepository.save(entity) // ... Just to save that newly created hankeTunnus
+        hankeRepository.save(entity)
         logger.info {
             "Saved Hanke ${entity.hankeTunnus}"
         }
-
-        //createEntityFromHankeYhteystiedotDomainObject(hanke, entity)
-        saveHankeYhteystiedot(entity, hanke)
 
         // Creating a new domain object for the return value; it will have the updated values from the database,
         // e.g. the main date values truncated to midnight, and the added id and hanketunnus.
@@ -101,13 +95,17 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository,
         if (hanke.hankeTunnus == null)
             error("Somehow got here with hanke without hanke-tunnus")
 
+        // Both checks that the hanke already exists, and get its old fields to transfer data into
         val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
                 ?: throw HankeNotFoundException(hanke.hankeTunnus)
+        // TODO: will need proper stuff derived from the logged in user.
+        val userid = 1
+        // Transfer field values from domain object to entity object, and set relevant audit fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
+        copyYhteystietosToEntity(hanke, entity, userid)
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = entity.version?.inc() ?: 1
-        // (Not changing creator/time fields.)
-        // TODO: will need proper stuff derived from the logged in user.
+        // (Not changing createdBy/At fields.)
         entity.modifiedByUserId = 1
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
 
@@ -118,39 +116,15 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository,
         logger.info {
             "Saved  Hanke ${hanke.hankeTunnus}"
         }
-        // yhteystiedot
-        //TODO: maybe we need to check the transaction situation here before the subentity save?
-        saveHankeYhteystiedot(entity, hanke)
 
         // Creating a new domain object for the return value; it will have the updated values from the database,
         // e.g. the main date values truncated to midnight.
         return createHankeDomainObjectFromEntity(entity)
     }
 
-    private fun saveHankeYhteystiedot(entity: HankeEntity, hanke: Hanke) {
-        return try {
-            logger.info {
-                "Saving HankeYhteystietos for ${hanke.hankeTunnus}"
-            }
-
-            createEntityFromHankeYhteystiedotDomainObject(hanke, entity)
-
-            entity.listOfHankeYhteystieto?.let { hankeYhteystiedotRepository.saveAll(it) }  //saving hankeyhteystiedot
-            logger.info {
-                "Saved HankeYhteystieto for ${hanke.hankeTunnus}"
-            }
-        } catch (e: Exception) {
-            logger.error(e) {
-                "HankeYhteystiedot save failed"
-            }
-            throw e
-        }
-    }
 
     companion object Converters {
         internal fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke {
-            // TODO: check if the SQL date things could be converted to newer types in the database/mapping,
-            // to avoid these conversions. (Note though that we do not really need the time part.)
             val h = Hanke(
                     hankeEntity.id,
                     hankeEntity.hankeTunnus,
@@ -194,25 +168,25 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository,
          * createSeparateYhteystietolistsFromEntityData splits entity's one list to three different contact information
          * lists and adds them for Hanke domain object
          */
-        internal fun createSeparateYhteystietolistsFromEntityData(hanke: Hanke, hankeEntity: HankeEntity) {
+        private fun createSeparateYhteystietolistsFromEntityData(hanke: Hanke, hankeEntity: HankeEntity) {
 
-            hankeEntity.listOfHankeYhteystieto?.forEach { hankeYhteysEntity ->
-                var hankeYhteystieto = createHankeYhteystietoDomainObjectFromEntity(hankeYhteysEntity)
+            hankeEntity.listOfHankeYhteystieto.forEach { hankeYhteysEntity ->
+                val hankeYhteystieto = createHankeYhteystietoDomainObjectFromEntity(hankeYhteysEntity)
 
-                if (hankeYhteysEntity.contactType.equals(ContactType.OMISTAJA))
+                if (hankeYhteysEntity.contactType == ContactType.OMISTAJA)
                     hanke.omistajat.add(hankeYhteystieto)
-                if (hankeYhteysEntity.contactType.equals(ContactType.TOTEUTTAJA))
+                if (hankeYhteysEntity.contactType == ContactType.TOTEUTTAJA)
                     hanke.toteuttajat.add(hankeYhteystieto)
-                if (hankeYhteysEntity.contactType.equals(ContactType.ARVIOIJA))
+                if (hankeYhteysEntity.contactType == ContactType.ARVIOIJA)
                     hanke.arvioijat.add(hankeYhteystieto)
             }
         }
 
-        internal fun createHankeYhteystietoDomainObjectFromEntity(hankeYhteystietoEntity: HankeYhteystietoEntity): HankeYhteystieto {
+        private fun createHankeYhteystietoDomainObjectFromEntity(hankeYhteystietoEntity: HankeYhteystietoEntity): HankeYhteystieto {
             var createdAt: ZonedDateTime? = null
 
             if (hankeYhteystietoEntity.createdAt != null)
-                createdAt = ZonedDateTime.of(hankeYhteystietoEntity.modifiedAt, TZ_UTC)
+                createdAt = ZonedDateTime.of(hankeYhteystietoEntity.createdAt, TZ_UTC)
 
             var modifiedAt: ZonedDateTime? = null
             if (hankeYhteystietoEntity.modifiedAt != null)
@@ -224,11 +198,11 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository,
                     sukunimi = hankeYhteystietoEntity.sukunimi,
                     email = hankeYhteystietoEntity.email,
                     puhelinnumero = hankeYhteystietoEntity.puhelinnumero,
-                    organisaatioId = hankeYhteystietoEntity.organisaatioid,
-                    organisaatioNimi = hankeYhteystietoEntity.organisaationimi,
+                    organisaatioId = hankeYhteystietoEntity.organisaatioId,
+                    organisaatioNimi = hankeYhteystietoEntity.organisaatioNimi,
                     osasto = hankeYhteystietoEntity.osasto,
-                    createdBy = hankeYhteystietoEntity.createdByUserId?.toString() ?: "",
-                    modifiedBy = hankeYhteystietoEntity.modifiedByUserId?.toString() ?: "",
+                    createdBy = hankeYhteystietoEntity.createdByUserId?.toString(),
+                    modifiedBy = hankeYhteystietoEntity.modifiedByUserId?.toString(),
                     createdAt = createdAt,
                     modifiedAt = modifiedAt
             )
@@ -243,7 +217,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository,
      * set here, as they are to be set internally, and depends on which operation
      * is being done.
      */
-    internal fun copyNonNullHankeFieldsToEntity(hanke: Hanke, entity: HankeEntity) {
+    private fun copyNonNullHankeFieldsToEntity(hanke: Hanke, entity: HankeEntity) {
         hanke.onYKTHanke?.let { entity.onYKTHanke = hanke.onYKTHanke }
         hanke.nimi?.let { entity.nimi = hanke.nimi }
         hanke.kuvaus?.let { entity.kuvaus = hanke.kuvaus }
@@ -271,38 +245,97 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository,
 
     }
 
-    ///method combines three lists to one for database
-    internal fun createEntityFromHankeYhteystiedotDomainObject(h: Hanke, hankeEntity: HankeEntity) {
+    /**
+     * Transfer yhteystieto fields from domain to (new or existing) entity object,
+     * combine the three lists into one list, and set the audit fields as relevant.
+     */
+    private fun copyYhteystietosToEntity(hanke: Hanke, entity: HankeEntity, userid: Int) {
+        // Note, if the incoming data indicates it is an already saved yhteystieto (id-field is set), should try
+        // to transfer the business fields to the same old corresponding entity. Pretty much a must in order to
+        // preserve createdBy and createdAt field values without having to rely on the client-side to hold
+        // the values for us (bad design), which would also require checks on those (to prevent tampering).
 
-        hankeEntity.listOfHankeYhteystieto = mutableListOf<HankeYhteystietoEntity>()
+        // Create temporary id-to-existingyhteystieto -map
+        val existingYTs: MutableMap<Int, HankeYhteystietoEntity> = mutableMapOf()
+        for (existingYT in entity.listOfHankeYhteystieto) {
+            if (existingYT.id == null) {
+                throw DatabaseStateException("A persisted HankeYhteystietoEntity somehow missing id, Hanke id ${entity.id}")
+            } else {
+                existingYTs[existingYT.id!!] = existingYT
+            }
+        }
 
-        addHankeYhteystietoEntitysToList(h.omistajat, hankeEntity, ContactType.OMISTAJA)
-        addHankeYhteystietoEntitysToList(h.arvioijat, hankeEntity, ContactType.ARVIOIJA)
-        addHankeYhteystietoEntitysToList(h.toteuttajat, hankeEntity, ContactType.TOTEUTTAJA)
+        // Check each incoming yhteystieto (from three lists) for being new or an update to existing one,
+        // and add to the main entity's single list if necessary:
+        processIncomingHankeYhteystietosOfSpecificTypeToEntity(hanke.omistajat, entity, ContactType.OMISTAJA, userid, existingYTs)
+        processIncomingHankeYhteystietosOfSpecificTypeToEntity(hanke.arvioijat, entity, ContactType.ARVIOIJA, userid, existingYTs)
+        processIncomingHankeYhteystietosOfSpecificTypeToEntity(hanke.toteuttajat, entity, ContactType.TOTEUTTAJA, userid, existingYTs)
+
+        // If there is anything left in the existingYTs map, they have been removed in the incoming data,
+        // so remove them from the entity's list (and thus from the database).
+        // TODO: it should not be a list, but a "bag".  Their order does not matter, and removing things from the list
+        // gets inefficient. Since there are so few entries, this crude solution works, for now.
+        entity.listOfHankeYhteystieto.removeAll(existingYTs.values)
     }
 
-    internal fun addHankeYhteystietoEntitysToList(listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity, contactType: ContactType) {
+    private fun processIncomingHankeYhteystietosOfSpecificTypeToEntity(
+            listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity, contactType: ContactType,
+            userid: Int, existingYTs: MutableMap<Int, HankeYhteystietoEntity>) {
 
-        listOfHankeYhteystiedot.forEach { hankeYht ->
-            if (hankeYht.sukunimi.isNotBlank() && hankeYht.etunimi.isNotBlank() && hankeYht.email.isNotBlank()
-                    && hankeYht.puhelinnumero.isNotBlank()) {
-                val hankeYhtEntity = HankeYhteystietoEntity(
-                        contactType,
-                        hankeYht.sukunimi,
-                        hankeYht.etunimi,
-                        hankeYht.email,
-                        hankeYht.puhelinnumero,
-                        hankeYht.organisaatioId,
-                        hankeYht.organisaatioNimi,
-                        hankeYht.osasto,
-                        1, //TODO: real user , make sure you don't update by another user but only once
-                        hankeYht.createdAt?.toLocalDateTime(),
-                        null, //TODO: real user , make sure updated only if real changes? or what is the design decision?
-                        getCurrentTimeUTCAsLocalTime(),  //TODO: only if changed?  do we always want to change the date? how do we know has subobject really been updated?
-                        hankeYht.id,
-                        hankeEntity)
+        for (hankeYht in listOfHankeYhteystiedot) {
+            // Is the incoming YT new (does not have id, create new) or old (has id, update existing):
+            if (hankeYht.id == null) {
+                // New YT, check if it is fully empty; if anything set, create new one.
+                // Note, validator should have enforced that at least the four main fields are all set (or none of them set).
+                if (hankeYht.sukunimi.isNotBlank() || hankeYht.etunimi.isNotBlank()
+                        || hankeYht.email.isNotBlank() || hankeYht.puhelinnumero.isNotBlank()
+                        || !hankeYht.organisaatioNimi.isNullOrBlank() || !hankeYht.osasto.isNullOrBlank()) {
+                    val hankeYhtEntity = HankeYhteystietoEntity(
+                            contactType,
+                            hankeYht.sukunimi,
+                            hankeYht.etunimi,
+                            hankeYht.email,
+                            hankeYht.puhelinnumero,
+                            hankeYht.organisaatioId,
+                            hankeYht.organisaatioNimi,
+                            hankeYht.osasto,
 
-                hankeEntity.listOfHankeYhteystieto!!.add(hankeYhtEntity)
+                            userid, // createdByUserId
+                            getCurrentTimeUTCAsLocalTime(), // createdAt
+                            null,
+                            null,
+                            null, // will be set by the database
+                            hankeEntity) // reference back to parent hanke
+                    hankeEntity.listOfHankeYhteystieto.add(hankeYhtEntity)
+                }
+            } else {
+                // Should be an existing YT, so update the values from the incoming YT to the existing database YT entity.
+                // If incoming YT has id set, it _should_ be among the existing YTs, or some kind of error has happened.
+                val incomingId: Int = hankeYht.id!!
+                val existingYT: HankeYhteystietoEntity? = existingYTs[incomingId]
+                if (existingYT == null) {
+                    // Some sort of error situation (e.g. simultaneous edits to the same hanke by someone else).
+                    throw DatabaseStateException("A persisted HankeYhteystietoEntity somehow missing from the database. YT.id $incomingId, Hanke id ${hankeEntity.id}")
+                } else {
+                    // All found, so update existing entity fields, and remove the entry from the map
+                    existingYT.sukunimi = hankeYht.sukunimi
+                    existingYT.etunimi = hankeYht.etunimi
+                    existingYT.email = hankeYht.email
+                    existingYT.puhelinnumero = hankeYht.puhelinnumero
+                    hankeYht.organisaatioId?.let { existingYT.organisaatioId = hankeYht.organisaatioId }
+                    hankeYht.organisaatioNimi?.let { existingYT.organisaatioNimi = hankeYht.organisaatioNimi }
+                    hankeYht.osasto?.let { existingYT.osasto = hankeYht.osasto }
+
+                    // (Not changing createdBy/At fields)
+                    existingYT.modifiedByUserId = userid
+                    existingYT.modifiedAt = getCurrentTimeUTCAsLocalTime()
+                    // (Not touching the id or hanke fields)
+
+                    // No need to add the existing YT entity to the list; it is already in it.
+                    // But, remove the corresponding entry from the map, so that in the end of the loop, the map reveals
+                    // which entries have been removed in the incoming data.
+                    existingYTs.remove(incomingId)
+                }
             }
         }
     }

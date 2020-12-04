@@ -118,15 +118,15 @@ class HankeEntity(
         var id: Int? = null,
 
         // related
-        @OneToMany(fetch = FetchType.EAGER, mappedBy = "id")
-        var listOfHankeYhteystieto: MutableList<HankeYhteystietoEntity>? = null //mutableListOf()
+        @OneToMany(fetch = FetchType.LAZY, mappedBy = "hanke", cascade = [CascadeType.ALL])
+        var listOfHankeYhteystieto: MutableList<HankeYhteystietoEntity> = mutableListOf()
 
 ) {
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
     var tyomaaKatuosoite: String? = null
 
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "hanketyomaatyyppi", joinColumns = arrayOf(JoinColumn(name = "hankeid")))
+    @CollectionTable(name = "hanketyomaatyyppi", joinColumns = [JoinColumn(name = "hankeid")])
     @Enumerated(EnumType.STRING)
     var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
 
@@ -167,9 +167,4 @@ class HankeEntity(
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
     // TODO: add any special 'find' etc. functions here, like searching by date range.
-}
-
-
-interface HankeYhteystietoRepository : JpaRepository<HankeYhteystietoEntity, Int> {
-    fun findByHankeId(hankeId: Int): List<HankeYhteystietoEntity>
 }

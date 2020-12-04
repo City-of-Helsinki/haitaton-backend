@@ -39,6 +39,6 @@ enum class HankeError(
     }
 }
 
-class HankeNotFoundException(val hankeId: String? = null) : RuntimeException(HankeError.HAI1001.errorMessage)
+class HankeNotFoundException(val hankeTunnus: String? = null) : RuntimeException(HankeError.HAI1001.errorMessage)
 
-class DatabaseStateException(val hankeId: String? = null) : RuntimeException(HankeError.HAI1005.errorMessage)
+class DatabaseStateException(val context: String? = null) : RuntimeException(HankeError.HAI1005.errorMessage)
