@@ -129,4 +129,9 @@ class HankeControllerTest {
         Assertions.assertThat(responseHanke.body?.nimi).isEqualTo("hankkeen nimi")
     }
 
+    // TODO: test that checks that tyomaa- and haitat-fields can be sent to controller and come back in the response
+
+
+
+
 }
