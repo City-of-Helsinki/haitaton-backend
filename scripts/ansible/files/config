@@ -1,0 +1,5 @@
+DB_CONTEXT_PATH=../docker-postgres
+DB_VOLUME=~/haitaton-data
+BUILD_ROOT=..
+NGINX_CONF=nginx.conf
+FRONT_DOCKERFILE=Dockerfile-local
