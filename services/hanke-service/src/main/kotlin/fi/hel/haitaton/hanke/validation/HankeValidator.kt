@@ -24,7 +24,6 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
 
         var ok = true
         if (hanke.nimi.isNullOrBlank()) {
-            context.disableDefaultConstraintViolation()
             context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("nimi").addConstraintViolation()
             ok = false
         }
@@ -89,9 +88,12 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
 
     private fun checkMandatoryYhteystietoData(yhteystieto: HankeYhteystieto, context: ConstraintValidatorContext, ok: Boolean): Boolean {
         var ok1 = ok
+        // TODO: NOTE: having all four mandatory fields empty, but giving organisation is still valid for this... needs to be fixed.
+        // Short version: Either all four mandatory fields must be have proper value, or all of them must be empty/whitespace-only.
+        // If any of the four mandatory fields have any non-whitespace in them...
         if (!yhteystieto.sukunimi.isBlank() || !yhteystieto.etunimi.isBlank()
                 || !yhteystieto.email.isBlank() || !yhteystieto.puhelinnumero.isBlank()) {
-            // if any of the attributes contains something then all must exist
+            // ... but if any other of them is empty/whitespace-only, it is not valid
             if (yhteystieto.sukunimi.isBlank() || yhteystieto.etunimi.isBlank()
                     || yhteystieto.email.isBlank() || yhteystieto.puhelinnumero.isBlank()) {
                 // TODO: is that property node correct?
