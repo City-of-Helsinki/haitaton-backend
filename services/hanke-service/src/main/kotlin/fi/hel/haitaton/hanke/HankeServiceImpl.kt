@@ -255,7 +255,8 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
         // preserve createdBy and createdAt field values without having to rely on the client-side to hold
         // the values for us (bad design), which would also require checks on those (to prevent tampering).
 
-        // Create temporary id-to-existingyhteystieto -map, used to find quickly whether an incoming YT is new or exists already.
+        // Create temporary id-to-existingyhteystieto -map, used to find quickly whether an incoming Yhteystieto is new or exists already.
+        // YT = Yhteystieto
         val existingYTs: MutableMap<Int, HankeYhteystietoEntity> = mutableMapOf()
         for (existingYT in entity.listOfHankeYhteystieto) {
             if (existingYT.id == null) {
@@ -281,7 +282,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
         // If there is anything left in the existingYTs map, they have been removed in the incoming data,
         // so remove them from the entity's list and make the back-reference null (and thus delete from the database).
         // TODO: it should not be a list, but a "bag", or ensure it is e.g. linkedlist instead of arraylist (or similars).
-        //    The order of YTs does not matter(?), and removing things from e.g. array list
+        //    The order of Yhteystietos does not matter(?), and removing things from e.g. array list
         //    gets inefficient. Since there are so few entries, this crude solution works, for now.
         entity.listOfHankeYhteystieto.removeAll(existingYTs.values)
         for (hankeYht in existingYTs.values) {
@@ -294,41 +295,52 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
             listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity, contactType: ContactType,
             userid: Int, existingYTs: MutableMap<Int, HankeYhteystietoEntity>) {
         for (hankeYht in listOfHankeYhteystiedot) {
-            var someFieldsSet = false
-            var validYT = false
-            // The UI has currently bigger problems implementing it so that YT entries that haven't even been touched
+            val someFieldsSet = isSomeFieldsSet(hankeYht)
+            var validYhteystieto = false
+            // The UI has currently bigger problems implementing it so that Yhteystieto entries that haven't even been touched
             //   would not be sent to backend as a group of ""-fields, so the condition here is to make
             //   such fully-empty entry considered as non-existent (i.e. skip it).
             //   Also, for now, if anything is given, it is checked that all 4 mandatory fields are given, or we log an error and skip it.
             // Note, validator should have enforced that at least the four main fields are all set (or all of them are empty).
             // TODO: Currently validator does allow through an entry with four mandatory fields empty, but organisation field(s) non-empty!
-            // If anything field is given (not empty and not only whitespace)...
-            if (hankeYht.sukunimi.isNotBlank() || hankeYht.etunimi.isNotBlank()
-                    || hankeYht.email.isNotBlank() || hankeYht.puhelinnumero.isNotBlank()
-                    || !hankeYht.organisaatioNimi.isNullOrBlank() || !hankeYht.osasto.isNullOrBlank()) {
-                someFieldsSet = true
-                // ... and if at least the 4 mandatory fields are given ...
-                if (hankeYht.sukunimi.isNotBlank() && hankeYht.etunimi.isNotBlank()
-                        && hankeYht.email.isNotBlank() && hankeYht.puhelinnumero.isNotBlank()) {
-                    validYT = true
-                }
+            // If any field is given (not empty and not only whitespace)...
+            if (someFieldsSet) {
+                // Check if at least the 4 mandatory fields are given
+                validYhteystieto = isValidYhteystieto(hankeYht)
             }
 
-            // Is the incoming YT new (does not have id, create new) or old (has id, update existing)?
+            // Is the incoming Yhteystieto new (does not have id, create new) or old (has id, update existing)?
             if (hankeYht.id == null) {
-                // New YT
-                processCreateYT(hankeYht, validYT, contactType, userid, hankeEntity)
+                // New Yhteystieto
+                processCreateYhteystieto(hankeYht, validYhteystieto, contactType, userid, hankeEntity)
             } else {
-                // Should be an existing YT
-                processUpdateYT(hankeYht, existingYTs, someFieldsSet, validYT, userid, hankeEntity)
+                // Should be an existing Yhteystieto
+                processUpdateYhteystieto(hankeYht, existingYTs, someFieldsSet, validYhteystieto, userid, hankeEntity)
             }
         }
     }
 
-    private fun processCreateYT(hankeYht: HankeYhteystieto, validYT: Boolean, contactType: ContactType, userid: Int,
-            hankeEntity: HankeEntity ) {
-        if (validYT) {
-            // ... it is valid, so create a new YT
+    /**
+     * Returns true if at least one Yhteystieto-field is non-null, non-empty and non-whitespace-only.
+     */
+    private fun isSomeFieldsSet(hankeYht: HankeYhteystieto) : Boolean {
+        return hankeYht.sukunimi.isNotBlank() || hankeYht.etunimi.isNotBlank()
+                || hankeYht.email.isNotBlank() || hankeYht.puhelinnumero.isNotBlank()
+                || !hankeYht.organisaatioNimi.isNullOrBlank() || !hankeYht.osasto.isNullOrBlank()
+    }
+
+    /**
+     * Returns true if all the four mandatory fields are non-null, non-empty and non-whitespace-only.
+     */
+    private fun isValidYhteystieto(hankeYht: HankeYhteystieto) : Boolean {
+        return hankeYht.sukunimi.isNotBlank() && hankeYht.etunimi.isNotBlank()
+                && hankeYht.email.isNotBlank() && hankeYht.puhelinnumero.isNotBlank()
+    }
+
+    private fun processCreateYhteystieto(hankeYht: HankeYhteystieto, validYhteystieto: Boolean, contactType: ContactType,
+            userid: Int, hankeEntity: HankeEntity ) {
+        if (validYhteystieto) {
+            // ... it is valid, so create a new Yhteystieto
             val hankeYhtEntity = HankeYhteystietoEntity(
                     contactType,
                     hankeYht.sukunimi,
@@ -354,19 +366,19 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
         }
     }
 
-    private fun processUpdateYT(hankeYht: HankeYhteystieto, existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
-            someFieldsSet: Boolean, validYT: Boolean, userid: Int, hankeEntity: HankeEntity) {
-        // If incoming YT has id set, it _should_ be among the existing YTs, or some kind of error has happened.
+    private fun processUpdateYhteystieto(hankeYht: HankeYhteystieto, existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
+            someFieldsSet: Boolean, validYhteystieto: Boolean, userid: Int, hankeEntity: HankeEntity) {
+        // If incoming Yhteystieto has id set, it _should_ be among the existing Yhteystietos, or some kind of error has happened.
         val incomingId: Int = hankeYht.id!!
         val existingYT: HankeYhteystietoEntity? = existingYTs[incomingId]
         if (existingYT == null) {
             // Some sort of error situation;
-            // - simultaneous edits to the same hanke by someone else (the YT could have been removed in the database)
+            // - simultaneous edits to the same hanke by someone else (the Yhteystieto could have been removed in the database)
             // - the incoming ids are for different hanke (i.e. incorrect data in the incoming request)
             throw HankeYhteystietoNotFoundException(hankeEntity.id, incomingId)
         }
 
-        if (validYT) {
+        if (validYhteystieto) {
             // All required fields found, so update existing entity fields:
             existingYT.sukunimi = hankeYht.sukunimi
             existingYT.etunimi = hankeYht.etunimi
@@ -381,16 +393,16 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
             existingYT.modifiedAt = getCurrentTimeUTCAsLocalTime()
             // (Not touching the id or hanke fields)
 
-            // No need to add the existing YT entity to the hanke's list; it is already in it.
+            // No need to add the existing Yhteystieto entity to the hanke's list; it is already in it.
             // Remove the corresponding entry from the map. (Afterwards, the entries remaining in the map
             // were not in the incoming data, so should be removed from the database.)
             existingYTs.remove(incomingId)
         } else {
-            // Trying to update an YT with one or more empty mandatory data fields.
+            // Trying to update an Yhteystieto with one or more empty mandatory data fields.
             // If we do not change anything, the response will send back to previous stored values.
             // TODO: Check if the above operation is ok?
             // However, checking one special case; all fields being empty. This corresponds to initial state,
-            // where the corresponding YT is not set. Therefore, for now, considering it as "please delete".
+            // where the corresponding Yhteystieto is not set. Therefore, for now, considering it as "please delete".
             // (Handling it by reversed logic using the existingYTs map, see above.)
             if (someFieldsSet) {
                 logger.error {
