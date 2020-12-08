@@ -77,3 +77,17 @@ jobs:
           tags: |
             ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:latest
             ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:dev
+  temp_test_deploy:
+    name: Deploy to temporary test environment at haitaton.kaupunkiymparisto.fi
+    needs: docker_build_and_push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v2
+      - name: Play Ansible Playbook
+        uses: arillso/action.playbook@master
+        with:
+          playbook: scripts/ansible/playbook.yml
+          inventory: scripts/ansible/hosts.yml
+          verbose: 2
+          private_key: ${{ secrets.ANSIBLE_SSH_KEY }}
