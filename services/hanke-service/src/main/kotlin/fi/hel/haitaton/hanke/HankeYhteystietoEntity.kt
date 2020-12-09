@@ -41,4 +41,39 @@ class HankeYhteystietoEntity (
         @ManyToOne(fetch = FetchType.EAGER)
         @JoinColumn(name="hankeid")
         var hanke: HankeEntity? = null
-)
+) {
+
+    // Must consider both id and all non-audit fields for correct operations in certain collections
+    // Id can not be used as the only comparison, as one can have entities with null id (before they get saved).
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is HankeYhteystietoEntity) return false
+
+        if (id == other.id) return true
+
+        if (contactType != other.contactType) return false
+        if (sukunimi != other.sukunimi) return false
+        if (etunimi != other.etunimi) return false
+        if (email != other.email) return false
+        if (puhelinnumero != other.puhelinnumero) return false
+        if (organisaatioId != other.organisaatioId) return false
+        if (organisaatioNimi != other.organisaatioNimi) return false
+        if (osasto != other.osasto) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id ?: 0
+        result = 31 * result + contactType.hashCode()
+        result = 31 * result + sukunimi.hashCode()
+        result = 31 * result + etunimi.hashCode()
+        result = 31 * result + email.hashCode()
+        result = 31 * result + puhelinnumero.hashCode()
+        result = 31 * result + (organisaatioId ?: 0)
+        result = 31 * result + (organisaatioNimi?.hashCode() ?: 0)
+        result = 31 * result + (osasto?.hashCode() ?: 0)
+        return result
+    }
+
+}

@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
-import java.time.temporal.ChronoUnit
+import java.time.LocalDateTime
 
 /**
  * Testing the HankeRepository with a database.
@@ -48,7 +48,8 @@ class HankeRepositoryITests @Autowired constructor(
     // in production mode, but these are quite usual field types, so shouldn't be an issue.
     @Test
     fun `basic fields, tyomaa and haitat fields can be round-trip saved and loaded`() {
-        val date = getCurrentTimeUTCAsLocalTime().toLocalDate()
+        val datetime = LocalDateTime.of(2020, 2, 20, 20, 20)
+        val date = datetime.toLocalDate()
         // Setup test fields
         val baseHankeEntity = HankeEntity(SaveType.DRAFT, "ABC-123", "nimi", "kuvaus",
                 date, date, Vaihe.SUUNNITTELU, SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS, true,
@@ -96,7 +97,8 @@ class HankeRepositoryITests @Autowired constructor(
 
     @Test
     fun `yhteystieto fields can be round-trip saved and loaded`() {
-        val datetime = getCurrentTimeUTCAsLocalTime().truncatedTo(ChronoUnit.MILLIS)
+        // Keeping just seconds so that database truncation does not affect testing
+        val datetime = LocalDateTime.of(2020, 2, 20, 20, 20, 20)
         val date = datetime.toLocalDate()
         // Setup test fields
         val baseHankeEntity = HankeEntity(SaveType.DRAFT, "ABC-124", "nimi", "kuvaus",
@@ -117,9 +119,9 @@ class HankeRepositoryITests @Autowired constructor(
                 3, "org3", "osasto3",
                 3, datetime, 33, datetime, null, baseHankeEntity)
 
-        baseHankeEntity.listOfHankeYhteystieto.add(hankeYhteystietoEntity1)
-        baseHankeEntity.listOfHankeYhteystieto.add(hankeYhteystietoEntity2)
-        baseHankeEntity.listOfHankeYhteystieto.add(hankeYhteystietoEntity3)
+        baseHankeEntity.addYhteystieto(hankeYhteystietoEntity1)
+        baseHankeEntity.addYhteystieto(hankeYhteystietoEntity2)
+        baseHankeEntity.addYhteystieto(hankeYhteystietoEntity3)
 
         // Save it:
         hankeRepository.save(baseHankeEntity)
@@ -179,7 +181,57 @@ class HankeRepositoryITests @Autowired constructor(
         assertThat(loadedHankeYhteystietoEntity3.modifiedAt).isEqualTo(datetime)
     }
 
+    @Test
+    fun `yhteystieto entry can be round-trip deleted`() {
+        val datetime = LocalDateTime.of(2020, 2, 20, 20, 20, 20)
+        val date = datetime.toLocalDate()
+        // Setup test fields
+        val baseHankeEntity = HankeEntity(SaveType.DRAFT, "ABC-124", "nimi", "kuvaus",
+                date, date, Vaihe.SUUNNITTELU, SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS, true,
+                1, null, null, null, null)
 
+        // Note, leaving id and hanke fields unset on purpose (Hibernate should set them as needed)
+        val hankeYhteystietoEntity1 = HankeYhteystietoEntity(
+                ContactType.OMISTAJA, "Suku1", "Etu1", "email1", "0101111111",
+                1, "org1", "osasto1",
+                1, datetime, 11, datetime, null, baseHankeEntity)
+        val hankeYhteystietoEntity2 = HankeYhteystietoEntity(
+                ContactType.ARVIOIJA, "Suku2", "Etu2", "email2", "0102222222",
+                2, "org2", "osasto2",
+                2, datetime, 22, datetime, null, baseHankeEntity)
+
+        baseHankeEntity.addYhteystieto(hankeYhteystietoEntity1)
+        baseHankeEntity.addYhteystieto(hankeYhteystietoEntity2)
+
+        // Save it:
+        hankeRepository.save(baseHankeEntity)
+        entityManager.flush() // Make sure the stuff is run to database (though not necessarily committed)
+        entityManager.clear() // Ensure the original entity is no longer in Hibernate's 1st level cache
+
+        // Load it back to different entity and check there is two yhteystietos:
+        val loadedHanke = hankeRepository.findByHankeTunnus("ABC-124")
+        assertThat(loadedHanke).isNotNull
+        assertThat(loadedHanke!!.listOfHankeYhteystieto).isNotNull
+        assertThat(loadedHanke.listOfHankeYhteystieto).hasSize(2)
+
+        // Remove the first yhteystieto, and save again; (also record the other one's organisaatioId for later confirmation):
+        val loadedHankeYhteystietoEntity1 = loadedHanke.listOfHankeYhteystieto[0]
+        val loadedHankeYhteystietoEntity2 = loadedHanke.listOfHankeYhteystieto[1]
+        val loadedHankeYhteystietoOrgId2 = loadedHankeYhteystietoEntity2.organisaatioId
+
+        loadedHanke.removeYhteystieto(loadedHankeYhteystietoEntity1)
+
+        hankeRepository.save(loadedHanke)
+        entityManager.flush() // Make sure the stuff is run to database (though not necessarily committed)
+        entityManager.clear() // Ensure the original entity is no longer in Hibernate's 1st level cache
+
+        // Reload the hanke and check that only the second hanke remains:
+        val loadedHanke2 = hankeRepository.findByHankeTunnus("ABC-124")
+        assertThat(loadedHanke2).isNotNull
+        assertThat(loadedHanke2!!.listOfHankeYhteystieto).isNotNull
+        assertThat(loadedHanke2.listOfHankeYhteystieto).hasSize(1)
+        assertThat(loadedHanke2.listOfHankeYhteystieto[0].organisaatioId).isEqualTo(loadedHankeYhteystietoOrgId2)
+    }
 
 
     // TODO: more tests (when more functions appear)
