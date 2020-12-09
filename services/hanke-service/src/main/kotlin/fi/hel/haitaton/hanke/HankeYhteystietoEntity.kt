@@ -49,6 +49,9 @@ class HankeYhteystietoEntity (
         if (this === other) return true
         if (other !is HankeYhteystietoEntity) return false
 
+        if (id == other.id) return true
+
+        if (contactType != other.contactType) return false
         if (sukunimi != other.sukunimi) return false
         if (etunimi != other.etunimi) return false
         if (email != other.email) return false
@@ -62,6 +65,7 @@ class HankeYhteystietoEntity (
 
     override fun hashCode(): Int {
         var result = id ?: 0
+        result = 31 * result + contactType.hashCode()
         result = 31 * result + sukunimi.hashCode()
         result = 31 * result + etunimi.hashCode()
         result = 31 * result + email.hashCode()
