@@ -17,10 +17,10 @@ data class HankeYhteystieto(
         var organisaatioNimi: String?,
         var osasto: String?,
 
-        var createdBy: String?,
-        var createdAt: ZonedDateTime?,
-        var modifiedBy: String?,
-        var modifiedAt: ZonedDateTime?
+        var createdBy: String? = null,
+        var createdAt: ZonedDateTime? = null,
+        var modifiedBy: String? = null,
+        var modifiedAt: ZonedDateTime? = null
 )
 
 

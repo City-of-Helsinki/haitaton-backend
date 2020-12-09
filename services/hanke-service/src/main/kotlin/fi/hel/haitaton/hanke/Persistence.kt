@@ -9,10 +9,6 @@ import javax.persistence.*
 Hibernate/JPA Entity classes
  */
 
-// TODO: remove once everything has been converted to use the new, real entity class
-data class OldHankeEntity(val id: String) {}
-
-
 enum class SaveType {
     AUTO, // When the information has been saved by a periodic auto-save feature
     DRAFT, // When the user presses "saves as draft"
@@ -118,15 +114,16 @@ class HankeEntity(
         var id: Int? = null,
 
         // related
-        @OneToMany(fetch = FetchType.EAGER, mappedBy = "id")
-        var listOfHankeYhteystieto: MutableList<HankeYhteystietoEntity>? = null //mutableListOf()
+        // orphanRemoval is needed for even explicit child-object removal. JPA weirdness...
+        @OneToMany(fetch = FetchType.LAZY, mappedBy = "hanke", cascade = [CascadeType.ALL], orphanRemoval = true)
+        var listOfHankeYhteystieto: MutableList<HankeYhteystietoEntity> = mutableListOf()
 
 ) {
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
     var tyomaaKatuosoite: String? = null
 
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "hanketyomaatyyppi", joinColumns = arrayOf(JoinColumn(name = "hankeid")))
+    @CollectionTable(name = "hanketyomaatyyppi", joinColumns = [JoinColumn(name = "hankeid")])
     @Enumerated(EnumType.STRING)
     var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
 
@@ -143,6 +140,18 @@ class HankeEntity(
     var meluHaitta: Haitta13? = null
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
+
+    fun addYhteystieto(yhteystieto: HankeYhteystietoEntity) {
+        listOfHankeYhteystieto.add(yhteystieto)
+        yhteystieto.hanke = this
+    }
+    fun removeYhteystieto(yhteystieto: HankeYhteystietoEntity) {
+        // NOTE: this relies on equals() to match yhteystietos almost fully.
+        if (listOfHankeYhteystieto.contains(yhteystieto)) {
+            listOfHankeYhteystieto.remove(yhteystieto)
+            yhteystieto.hanke = null
+        }
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -167,9 +176,4 @@ class HankeEntity(
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
     // TODO: add any special 'find' etc. functions here, like searching by date range.
-}
-
-
-interface HankeYhteystietoRepository : JpaRepository<HankeYhteystietoEntity, Int> {
-    fun findByHankeId(hankeId: Int): List<HankeYhteystietoEntity>
 }
