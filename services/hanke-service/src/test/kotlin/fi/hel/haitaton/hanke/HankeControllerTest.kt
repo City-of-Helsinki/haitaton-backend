@@ -131,7 +131,10 @@ class HankeControllerTest {
 
     // TODO: test that checks that tyomaa- and haitat-fields can be sent to controller and come back in the response
 
+    // TODO: test that sending an Yhteystieto field without id twice with the same data does not create duplicate entries
+    //   (old version gets removed, id increases in response, get-operation returns only one)
 
+    // TODO: test that sending a fully empty version of existing Yhteystieto removes the entry
 
 
 }

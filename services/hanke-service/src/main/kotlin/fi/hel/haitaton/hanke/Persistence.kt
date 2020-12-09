@@ -141,6 +141,18 @@ class HankeEntity(
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
 
+    fun addYhteystieto(yhteystieto: HankeYhteystietoEntity) {
+        listOfHankeYhteystieto.add(yhteystieto)
+        yhteystieto.hanke = this
+    }
+    fun removeYhteystieto(yhteystieto: HankeYhteystietoEntity) {
+        // NOTE: this relies on equals() to match yhteystietos almost fully.
+        if (listOfHankeYhteystieto.contains(yhteystieto)) {
+            listOfHankeYhteystieto.remove(yhteystieto)
+            yhteystieto.hanke = null
+        }
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is HankeEntity) return false
