@@ -78,16 +78,14 @@ jobs:
             ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:latest
             ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:dev
   temp_test_deploy:
-    name: Deploy to temporary test environment at haitaton.kaupunkiymparisto.fi
+    name: Trigger deployment to temporary test environment at haitaton.kaupunkiymparisto.fi
     needs: docker_build_and_push
     runs-on: ubuntu-latest
     steps:
-      - name: Check out the repo
-        uses: actions/checkout@v2
-      - name: Play Ansible Playbook
-        uses: arillso/action.playbook@master
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v1
         with:
-          playbook: scripts/ansible/playbook.yml
-          inventory: scripts/ansible/hosts.yml
-          verbose: 2
-          private_key: ${{ secrets.ANSIBLE_SSH_KEY }}
+          token: ${{ secrets.DEPLOY_REPO_ACCESS_TOKEN }}
+          repository: City-of-Helsinki/haitaton-deploy
+          event-type: haitaton-backend
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
