@@ -281,12 +281,11 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
         //     So, consider the code below as "for now".
         // If there is anything left in the existingYTs map, they have been removed in the incoming data,
         // so remove them from the entity's list and make the back-reference null (and thus delete from the database).
-        // TODO: it should not be a list, but a "bag", or ensure it is e.g. linkedlist instead of arraylist (or similars).
+        // TODO: Yhteystietos should not be in a list, but a "bag", or ensure it is e.g. linkedlist instead of arraylist (or similars).
         //    The order of Yhteystietos does not matter(?), and removing things from e.g. array list
         //    gets inefficient. Since there are so few entries, this crude solution works, for now.
-        entity.listOfHankeYhteystieto.removeAll(existingYTs.values)
         for (hankeYht in existingYTs.values) {
-            hankeYht.hanke = null
+            entity.removeYhteystieto(hankeYht)
         }
     }
 
@@ -357,7 +356,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
                     null,
                     null, // will be set by the database
                     hankeEntity) // reference back to parent hanke
-            hankeEntity.listOfHankeYhteystieto.add(hankeYhtEntity)
+            hankeEntity.addYhteystieto(hankeYhtEntity)
         } else {
             // ... missing some mandatory fields, should not have gotten here. Log it and skip it.
             logger.error {
