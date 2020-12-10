@@ -222,7 +222,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.content().json(expectedContent))
-                // TODO? check tyomaa/haitta fields?
+                // These might be redundant, but at least it is clear what we're checking here:
+                .andExpect(jsonPath("$.tyomaaKatuosoite").value("Testikatu 1"))
+                .andExpect(jsonPath("$.kaistaHaitta").value("KAKSI")) // Note, here as string, not the enum.
         verify { hankeService.updateHanke(any()) }
     }
 

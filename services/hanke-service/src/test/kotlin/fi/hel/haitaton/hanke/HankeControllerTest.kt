@@ -55,7 +55,7 @@ class HankeControllerTest {
 
         Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         Assertions.assertThat(response.body).isNotNull
-        Assertions.assertThat((response.body as Hanke).nimi).isNotEmpty
+        Assertions.assertThat((response.body as Hanke).nimi).isNotEmpty() // Some compilation/build-setups apparently do not allow this .isNotEmpty without ()
     }
 
     @Test
