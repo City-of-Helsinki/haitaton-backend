@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import io.mockk.every
@@ -15,6 +14,8 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 
 /**
  * Testing the Hanke Controller through a full REST request.
@@ -26,7 +27,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 @ActiveProfiles("itest")
 class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
-    val mockedHankeTunnus = "GHSFG123"
+    private val mockedHankeTunnus = "GHSFG123"
 
     @Autowired
     lateinit var hankeService: HankeService  //faking these calls
@@ -44,11 +45,11 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         // faking the service call
         every { hankeService.loadHanke(any()) }.returns(Hanke(123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
-                getCurrentTimeUTC(), getCurrentTimeUTC(), Vaihe.OHJELMOINTI, null,
+                getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
                 1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT))
 
 
-        mockMvc.perform(get("/hankkeet/" + mockedHankeTunnus).accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/hankkeet/$mockedHankeTunnus").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.nimi")
@@ -62,7 +63,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val hankeName = "Mannerheimintien remontti remonttinen"
 
         val hankeToBeMocked = Hanke(id = null, hankeTunnus = null, nimi = hankeName, kuvaus = "lorem ipsum dolor sit amet...",
-                onYKTHanke = false, alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = null,
+                onYKTHanke = false, alkuPvm = getDatetimeAlku(), loppuPvm = getDatetimeLoppu(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = null,
                 version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
         // faking the service call
@@ -91,7 +92,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // initializing only part of the data for Hanke
 
         val hankeToBeUpdated = Hanke(id = 23, hankeTunnus = "idHankkeelle123", nimi = hankeName, kuvaus = "kuvaus",
-                onYKTHanke = false, alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = null,
+                onYKTHanke = false, alkuPvm = getDatetimeAlku(), loppuPvm = getDatetimeLoppu(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = null,
                 version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
         // faking the service call
@@ -114,7 +115,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val hankeName = "Mannerheimintien remontti remonttinen"
 
         val hankeToBeMocked = Hanke(id = null, hankeTunnus = null, nimi = hankeName, kuvaus = "lorem ipsum dolor sit amet...",
-                onYKTHanke = false, alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
+                onYKTHanke = false, alkuPvm = getDatetimeAlku(), loppuPvm = getDatetimeLoppu(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
                 version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
         //HankeYhteystieto Omistaja added
@@ -124,20 +125,19 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                         "Kaivuri ja mies", null, null, null,
                         null, null))
 
+        val content = hankeToBeMocked.toJsonString()
+
         //changing some return values
         val expectedHanke = hankeToBeMocked
                 .apply {
                     hankeTunnus = mockedHankeTunnus
                     id = 12
-                    omistajat.get(0).id = 3
+                    omistajat[0].id = 3
                 }
 
         //faking the service call
         every { hankeService.createHanke(any()) }.returns(expectedHanke)
         val expectedContent = expectedHanke.toJsonString()
-
-        val content = hankeToBeMocked.toJsonString()
-
         mockMvc.perform(post("/hankkeet")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
                 .accept(MediaType.APPLICATION_JSON))
@@ -155,7 +155,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val hankeName = "Mannerheimintien remontti remonttinen"
 
         val hankeInvalid = Hanke(id = null, hankeTunnus = null, nimi = hankeName, kuvaus = "lorem ipsum dolor sit amet...",
-                onYKTHanke = false, alkuPvm = getCurrentTimeUTC(), loppuPvm = getCurrentTimeUTC(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
+                onYKTHanke = false, alkuPvm = getDatetimeAlku(), loppuPvm = getDatetimeLoppu(), vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
                 version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
 
         //HankeYhteystieto Omistaja added
@@ -176,9 +176,122 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1002"))
-
-
     }
 
+
+    @Test
+    fun `test tyomaa and haitat-fields roundtrip`() {
+        val hankeName = "Mannerheimintien remontti remonttinen"
+        // Initializing all fields
+        val hankeToBeUpdated = Hanke(id = 23, hankeTunnus = "idHankkeelle123", nimi = hankeName, kuvaus = "kuvaus",
+                onYKTHanke = false, alkuPvm = getDatetimeAlku(), loppuPvm = getDatetimeLoppu(), vaihe = Vaihe.SUUNNITTELU, suunnitteluVaihe = SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS,
+                version = 0, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
+        hankeToBeUpdated.tyomaaKatuosoite = "Testikatu 1"
+        hankeToBeUpdated.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
+        hankeToBeUpdated.tyomaaTyyppi.add(TyomaaTyyppi.KAASUJOHTO)
+        hankeToBeUpdated.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
+        hankeToBeUpdated.haittaAlkuPvm = getDatetimeAlku()
+        hankeToBeUpdated.haittaLoppuPvm = getDatetimeLoppu()
+        hankeToBeUpdated.kaistaHaitta = Haitta04.KAKSI
+        hankeToBeUpdated.kaistaPituusHaitta = Haitta04.NELJA
+        hankeToBeUpdated.meluHaitta = Haitta13.YKSI
+        hankeToBeUpdated.polyHaitta = Haitta13.KAKSI
+        hankeToBeUpdated.tarinaHaitta = Haitta13.KOLME
+        val content = hankeToBeUpdated.toJsonString()
+
+        // Prepare the expected result/return
+        // Note, "pvm" values should have become truncated to begin of the day
+        val expectedDateAlku = getDatetimeAlku().truncatedTo(ChronoUnit.DAYS) // nextyear.2.20 00:00:00Z
+        val expectedDateLoppu = getDatetimeLoppu().truncatedTo(ChronoUnit.DAYS) // nextyear.2.21 00:00:00Z
+        val expectedHanke = hankeToBeUpdated
+                .apply {
+                    alkuPvm = expectedDateAlku
+                    loppuPvm = expectedDateLoppu
+                    haittaAlkuPvm = expectedDateAlku
+                    haittaLoppuPvm = expectedDateLoppu
+                }
+        val expectedContent = expectedHanke.toJsonString()
+
+        // faking the service call
+        every { hankeService.updateHanke(any()) }.returns(expectedHanke)
+
+        // Call it and check results
+        mockMvc.perform(put("/hankkeet/idHankkeelle123")
+                .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk)
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.content().json(expectedContent))
+                // TODO? check tyomaa/haitta fields?
+        verify { hankeService.updateHanke(any()) }
+    }
+
+    @Test
+    fun `test dates and times do not change on a roundtrip, except for rounding to midnight`() {
+        // NOTE: times sent in and returned are expected to be in UTC ("Z" or +00:00 offset)
+
+        // Setup hanke with specific date/times:
+        // These time values should reveal possible timezone shifts, and not get affected by database time rounding.
+        // (That is, if timezone handling causes even 1 hour shift one or the other, either one of these values
+        // will flip over to previous/next day with the date-truncation effect done in the service.)
+        val datetimeAlku = getDatetimeAlku()
+        val datetimeLoppu = getDatetimeLoppu()
+        val hankeName = "Mannerheimintien remontti remonttinen"
+        val hankeToBeMocked = Hanke(id = null, hankeTunnus = null, nimi = hankeName, kuvaus = "lorem ipsum dolor sit amet...",
+                onYKTHanke = false, alkuPvm = datetimeAlku, loppuPvm = datetimeLoppu, vaihe = Vaihe.OHJELMOINTI, suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
+                version = null, createdBy = "Tiina", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
+        hankeToBeMocked.haittaAlkuPvm = datetimeAlku
+        hankeToBeMocked.haittaLoppuPvm = datetimeLoppu
+        val content = hankeToBeMocked.toJsonString()
+
+        // Prepare the expected result/return
+        // Note, "pvm" values should have become truncated to begin of the day
+        val expectedDateAlku = datetimeAlku.truncatedTo(ChronoUnit.DAYS) // nextyear.2.20 00:00:00Z
+        val expectedDateLoppu = datetimeLoppu.truncatedTo(ChronoUnit.DAYS) // nextyear.2.21 00:00:00Z
+        val expectedHanke = hankeToBeMocked
+                .apply {
+                    hankeTunnus = mockedHankeTunnus
+                    id = 12
+                    alkuPvm = expectedDateAlku
+                    loppuPvm = expectedDateLoppu
+                    haittaAlkuPvm = expectedDateAlku
+                    haittaLoppuPvm = expectedDateLoppu
+                }
+        val expectedContent = expectedHanke.toJsonString()
+        // JSON string versions without quotes:
+        var expectedDateAlkuJson = expectedDateAlku.toJsonString()
+        var expectedDateLoppuJson = expectedDateLoppu.toJsonString()
+        expectedDateAlkuJson = expectedDateAlkuJson.substring(1, expectedDateAlkuJson.length-1)
+        expectedDateLoppuJson = expectedDateLoppuJson.substring(1, expectedDateLoppuJson.length-1)
+
+        // faking the service call
+        every { hankeService.createHanke(any()) }.returns(expectedHanke)
+
+        // Call it and check results
+        mockMvc.perform(post("/hankkeet")
+                .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk)
+                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.content().json(expectedContent))
+                // These might be redundant, but at least it is clear what we're checking here:
+                .andExpect(jsonPath("$.alkuPvm").value(expectedDateAlkuJson))
+                .andExpect(jsonPath("$.loppuPvm").value(expectedDateLoppuJson))
+                .andExpect(jsonPath("$.haittaAlkuPvm").value(expectedDateAlkuJson))
+                .andExpect(jsonPath("$.haittaLoppuPvm").value(expectedDateLoppuJson))
+        verify { hankeService.createHanke(any()) }
+    }
+
+    private fun getDatetimeAlku(): ZonedDateTime {
+        val year = getCurrentTimeUTC().year + 1
+        return ZonedDateTime.of(year, 2, 20, 23, 45, 56, 0, TZ_UTC)
+                .truncatedTo(ChronoUnit.MILLIS)
+    }
+
+    private fun getDatetimeLoppu(): ZonedDateTime {
+        val year = getCurrentTimeUTC().year + 1
+        return ZonedDateTime.of(year, 2, 21, 0, 12, 34, 0, TZ_UTC)
+                .truncatedTo(ChronoUnit.MILLIS)
+    }
 
 }
