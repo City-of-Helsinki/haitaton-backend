@@ -77,3 +77,15 @@ jobs:
           tags: |
             ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:latest
             ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:dev
+  temp_test_deploy:
+    name: Trigger deployment to temporary test environment at haitaton.kaupunkiymparisto.fi
+    needs: docker_build_and_push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v1
+        with:
+          token: ${{ secrets.DEPLOY_REPO_ACCESS_TOKEN }}
+          repository: City-of-Helsinki/haitaton-deploy
+          event-type: haitaton-backend
+          client-payload: '{"ref": "${{ github.ref }}", "sha": "${{ github.sha }}"}'
