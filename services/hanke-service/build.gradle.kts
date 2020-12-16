@@ -72,8 +72,8 @@ dependencies {
 	testImplementation("io.mockk:mockk:$mockkVersion")
 	testImplementation("com.ninja-squad:springmockk:$springmockkVersion")
 	testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
-	testImplementation("org.testcontainers:junit-jupiter:1.15.0")
-	testImplementation("org.testcontainers:postgresql:1.15.0")
+	testImplementation("org.testcontainers:junit-jupiter:1.15.1")
+	testImplementation("org.testcontainers:postgresql:1.15.1")
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 }

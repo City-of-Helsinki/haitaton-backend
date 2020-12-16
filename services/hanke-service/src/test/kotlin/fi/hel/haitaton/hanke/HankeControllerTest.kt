@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
@@ -90,7 +91,7 @@ class HankeControllerTest {
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
 
         // Actual call
-        Assertions.assertThatExceptionOfType(ConstraintViolationException::class.java).isThrownBy {
+        assertThatExceptionOfType(ConstraintViolationException::class.java).isThrownBy {
             hankeController.updateHanke(partialHanke, "id123")
         }.withMessageContaining("updateHanke.hanke.nimi: " + HankeError.HAI1002.toString())
     }
@@ -113,7 +114,7 @@ class HankeControllerTest {
         val mockedHanke = hanke.copy()
         mockedHanke.omistajat = mutableListOf(hanke.omistajat[0])
         mockedHanke.id = 12
-        mockedHanke.hankeTunnus= "JOKU12"
+        mockedHanke.hankeTunnus = "JOKU12"
         mockedHanke.omistajat[0].id = 1
 
         // mock HankeService response
@@ -137,6 +138,22 @@ class HankeControllerTest {
         Assertions.assertThat(responseHanke.body?.omistajat!![0].sukunimi).isEqualTo("Pekkanen")
     }
 
+    @Test
+    fun `test that the updateHanke will give validation errors from null enum values`() {
+        val partialHanke = Hanke(id = 0, hankeTunnus = "id123", nimi = "", kuvaus = "", onYKTHanke = false,
+                alkuPvm = null, loppuPvm = null, vaihe = null, suunnitteluVaihe = null,
+                version = 1, createdBy = "", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = null)
+        // mock HankeService response
+        Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
+
+        // Actual call
+        assertThatExceptionOfType(ConstraintViolationException::class.java).isThrownBy {
+            hankeController.updateHanke(partialHanke, "id123")
+        }.withMessageContaining("updateHanke.hanke.vaihe: " + HankeError.HAI1002.toString())
+                .withMessageContaining("updateHanke.hanke.saveType: " + HankeError.HAI1002.toString())
+    }
+
+
     private fun getDatetimeAlku(): ZonedDateTime {
         val year = getCurrentTimeUTC().year + 1
         return ZonedDateTime.of(year, 2, 20, 23, 45, 56, 0, TZ_UTC)
@@ -148,5 +165,6 @@ class HankeControllerTest {
         return ZonedDateTime.of(year, 2, 21, 0, 12, 34, 0, TZ_UTC)
                 .truncatedTo(ChronoUnit.MILLIS)
     }
+
 
 }
