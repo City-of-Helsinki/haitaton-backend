@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
@@ -90,7 +91,7 @@ class HankeControllerTest {
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
 
         // Actual call
-        Assertions.assertThatExceptionOfType(ConstraintViolationException::class.java).isThrownBy {
+        assertThatExceptionOfType(ConstraintViolationException::class.java).isThrownBy {
             hankeController.updateHanke(partialHanke, "id123")
         }.withMessageContaining("updateHanke.hanke.nimi: " + HankeError.HAI1002.toString())
     }
@@ -146,11 +147,10 @@ class HankeControllerTest {
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
 
         // Actual call
-        Assertions.assertThatExceptionOfType(ConstraintViolationException::class.java).isThrownBy {
+        assertThatExceptionOfType(ConstraintViolationException::class.java).isThrownBy {
             hankeController.updateHanke(partialHanke, "id123")
         }.withMessageContaining("updateHanke.hanke.vaihe: " + HankeError.HAI1002.toString())
                 .withMessageContaining("updateHanke.hanke.saveType: " + HankeError.HAI1002.toString())
-        //.withMessageContaining("updateHanke.hanke.saveType: " + HankeError.HAI1002.toString())
     }
 
 
