@@ -33,14 +33,6 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     lateinit var hankeService: HankeService  //faking these calls
 
     @Test
-    fun `When hankeId not given for fetching then error`() {
-
-        mockMvc.perform(get("/hankkeet/").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().is4xxClientError)
-
-    }
-
-    @Test
     fun `When hankeTunnus is given then return Hanke with it (GET)`() {
 
         // faking the service call
