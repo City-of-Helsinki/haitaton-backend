@@ -60,6 +60,36 @@ class HankeControllerTest {
     }
 
     @Test
+    fun `test that the getAllHankeItems returns ok and two items`() {
+
+        var listOfHanke =  mutableListOf(
+            Hanke(1234, mockedHankeTunnus, true,
+                    "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
+                    getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
+                    1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
+            Hanke(50, "HAME50", true,
+                    "Hämeenlinnanväylän uudistus", "Lorem ipsum dolor sit amet...",
+                    getDatetimeAlku(), getDatetimeLoppu(), Vaihe.SUUNNITTELU, SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
+                    1, "Paavo", getCurrentTimeUTC(), null, null, SaveType.SUBMIT)
+        )
+
+        Mockito.`when`(hankeService.loadListOfHanke()).thenReturn(listOfHanke)
+
+        val response: ResponseEntity<Any> = hankeController.getAllHankeItems()
+
+        //basic checks for getting a response
+        Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        Assertions.assertThat(response.body).isNotNull
+
+        // If the status is ok, we expect ResponseEntity<List<Hanke>>
+        @Suppress("UNCHECKED_CAST")
+        val responseList = response as ResponseEntity<List<Hanke>>
+
+        Assertions.assertThat(responseList.body?.get(0)?.nimi).isEqualTo("Mannerheimintien remontti remonttinen")
+        Assertions.assertThat(responseList.body?.get(1)?.nimi).isEqualTo("Hämeenlinnanväylän uudistus")
+    }
+
+    @Test
     fun `test that the updateHanke can be called with hanke data and response will be 200`() {
         val partialHanke = Hanke(id = 123, hankeTunnus = "id123",
                 nimi = "hankkeen nimi", kuvaus = "lorem ipsum dolor sit amet...", onYKTHanke = false,

@@ -43,6 +43,23 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
     }
 
     /**
+     * TODO user information to limit what all Hanke items we get?
+     */
+   override fun loadListOfHanke(): MutableList<Hanke> {
+
+        val entity = hankeRepository.findAll()
+        if( entity.size == 0)
+            throw HankeNotFoundException()
+
+        var hankeList:MutableList<Hanke>  = mutableListOf()
+        entity.forEach {  hankeEntity ->
+            hankeList.add(createHankeDomainObjectFromEntity(hankeEntity))
+        }
+        return hankeList
+    }
+
+
+    /**
      * @return a new Hanke instance with the added and possibly modified values.
      */
     override fun createHanke(hanke: Hanke): Hanke {

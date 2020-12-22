@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
+import java.time.ZonedDateTime
 import javax.validation.ConstraintViolationException
 
 
@@ -43,6 +44,29 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         }
     }
 
+    /**
+     * Get all hanke
+     *  TODO: token  from front?
+     *  TODO: limit call with user information and return only user's own hanke or something?
+     *  TODO: do we later on have users who can read all Hanke items?
+     */
+    @GetMapping("")
+    fun getAllHankeItems(): ResponseEntity<Any> {
+        logger.info { "Entering getAllHankeItems" }
+        return try {
+            val hankeList = hankeService.loadListOfHanke()
+            ResponseEntity.status(HttpStatus.OK).body(hankeList)
+
+        } catch (e: HankeNotFoundException) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
+
+        } catch (e: Exception) {
+            logger.error(e) {
+                HankeError.HAI1004.toString()
+            }
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1004)
+        }
+    }
 
     /**
      * Add one hanke.
