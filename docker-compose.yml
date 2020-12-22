@@ -22,6 +22,46 @@ services:
         aliases:
           - haitaton-db
 
+  auth-db:
+    image: postgres:11.6
+    container_name: haitaton-auth-db
+    environment:
+      - POSTGRES_DB=keycloak
+      - POSTGRES_USER=keycloak
+      - POSTGRES_PASSWORD=password
+    ports:
+      - 5433:5432
+    volumes:
+      - ${AUTH_DB_VOLUME}:/var/lib/postgresql/data
+    networks:
+      backbone:
+        aliases:
+          - auth-db
+
+  auth-service:
+    build:
+      context: ${BUILD_ROOT}/haitaton-backend/services/auth-service
+      dockerfile: Dockerfile
+    container_name: haitaton-auth-service
+    ports:
+      - 3030:8080
+    hostname: auth-service
+    environment:
+      - KEYCLOAK_USER=admin
+      - KEYCLOAK_PASSWORD=admin
+      - DB_VENDOR=POSTGRES
+      - DB_ADDR=auth-db
+      - DB_USER=keycloak
+      - DB_PASSWORD=password
+      - DB_DATABASE=keycloak
+      - DB_SCHEMA=public
+    depends_on:
+      - auth-db
+    networks:
+      backbone:
+        aliases:
+          - auth-service
+
   haitaton-hanke:
     build:
       context: ${BUILD_ROOT}/haitaton-backend
@@ -38,6 +78,7 @@ services:
       HAITATON_PASSWORD: haitaton
     depends_on:
       - db
+      - auth-service
     command: [ "./wait-for-it.sh", "-t", "30", "--strict", "db:5432", "--", "java", "-jar", "haitaton.jar" ]
     networks:
       backbone:
