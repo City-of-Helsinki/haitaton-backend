@@ -53,9 +53,17 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             ok = false
         }
 
-        // if vaihe = SUUNNITTELU then suunniteluVaihe must have value
-        if ((hanke.vaihe!!.equals(Vaihe.SUUNNITTELU) && hanke.suunnitteluVaihe == null)) {
+        if (hanke.vaihe == null) {
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("vaihe").addConstraintViolation()
+            ok = false
+        } else if (hanke.vaihe!! == Vaihe.SUUNNITTELU && hanke.suunnitteluVaihe == null) {
+            // if vaihe = SUUNNITTELU then suunnitteluVaihe must have value
             context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("suunnitteluVaihe").addConstraintViolation()
+            ok = false
+        }
+
+        if (hanke.saveType == null) {
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("saveType").addConstraintViolation()
             ok = false
         }
 
