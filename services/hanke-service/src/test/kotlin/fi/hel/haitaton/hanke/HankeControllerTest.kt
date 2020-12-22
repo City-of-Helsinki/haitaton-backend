@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import org.assertj.core.api.Assertions
+import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -54,15 +55,15 @@ class HankeControllerTest {
 
         val response: ResponseEntity<Any> = hankeController.getHankeByTunnus(mockedHankeTunnus)
 
-        Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        Assertions.assertThat(response.body).isNotNull
-        Assertions.assertThat((response.body as Hanke).nimi).isNotEmpty() // Some compilation/build-setups apparently do not allow this .isNotEmpty without ()
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(response.body).isNotNull
+        assertThat((response.body as Hanke).nimi).isNotEmpty() // Some compilation/build-setups apparently do not allow this .isNotEmpty without ()
     }
 
     @Test
     fun `test that the getAllHankeItems returns ok and two items`() {
 
-        var listOfHanke =  mutableListOf(
+        var listOfHanke =  listOf(
             Hanke(1234, mockedHankeTunnus, true,
                     "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
                     getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
@@ -73,20 +74,20 @@ class HankeControllerTest {
                     1, "Paavo", getCurrentTimeUTC(), null, null, SaveType.SUBMIT)
         )
 
-        Mockito.`when`(hankeService.loadListOfHanke()).thenReturn(listOfHanke)
+        Mockito.`when`(hankeService.loadAllHanke()).thenReturn(listOfHanke)
 
         val response: ResponseEntity<Any> = hankeController.getAllHankeItems()
 
         //basic checks for getting a response
-        Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        Assertions.assertThat(response.body).isNotNull
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(response.body).isNotNull
 
         // If the status is ok, we expect ResponseEntity<List<Hanke>>
         @Suppress("UNCHECKED_CAST")
         val responseList = response as ResponseEntity<List<Hanke>>
 
-        Assertions.assertThat(responseList.body?.get(0)?.nimi).isEqualTo("Mannerheimintien remontti remonttinen")
-        Assertions.assertThat(responseList.body?.get(1)?.nimi).isEqualTo("Hämeenlinnanväylän uudistus")
+        assertThat(responseList.body?.get(0)?.nimi).isEqualTo("Mannerheimintien remontti remonttinen")
+        assertThat(responseList.body?.get(1)?.nimi).isEqualTo("Hämeenlinnanväylän uudistus")
     }
 
     @Test
@@ -102,13 +103,13 @@ class HankeControllerTest {
         // Actual call
         val response: ResponseEntity<Any> = hankeController.updateHanke(partialHanke, "id123")
 
-        Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        Assertions.assertThat(response.body).isNotNull
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(response.body).isNotNull
         // If the status is ok, we expect ResponseEntity<Hanke>
         @Suppress("UNCHECKED_CAST")
         val responseHanke = response as ResponseEntity<Hanke>
-        Assertions.assertThat(responseHanke.body).isNotNull
-        Assertions.assertThat(responseHanke.body?.nimi).isEqualTo("hankkeen nimi")
+        assertThat(responseHanke.body).isNotNull
+        assertThat(responseHanke.body?.nimi).isEqualTo("hankkeen nimi")
     }
 
 
@@ -153,19 +154,19 @@ class HankeControllerTest {
         // Actual call
         val response: ResponseEntity<Any> = hankeController.createHanke(hanke)
 
-        Assertions.assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        Assertions.assertThat(response.body).isNotNull
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(response.body).isNotNull
         // If the status is ok, we expect ResponseEntity<Hanke>
         @Suppress("UNCHECKED_CAST")
         val responseHanke = response as ResponseEntity<Hanke>
-        Assertions.assertThat(responseHanke.body).isNotNull
-        Assertions.assertThat(responseHanke.body?.id).isEqualTo(12)
-        Assertions.assertThat(responseHanke.body?.hankeTunnus).isEqualTo("JOKU12")
-        Assertions.assertThat(responseHanke.body?.nimi).isEqualTo("hankkeen nimi")
-        Assertions.assertThat(responseHanke.body?.omistajat).isNotNull
-        Assertions.assertThat(responseHanke.body?.omistajat).hasSize(1)
-        Assertions.assertThat(responseHanke.body?.omistajat!![0].id).isEqualTo(1)
-        Assertions.assertThat(responseHanke.body?.omistajat!![0].sukunimi).isEqualTo("Pekkanen")
+        assertThat(responseHanke.body).isNotNull
+        assertThat(responseHanke.body?.id).isEqualTo(12)
+        assertThat(responseHanke.body?.hankeTunnus).isEqualTo("JOKU12")
+        assertThat(responseHanke.body?.nimi).isEqualTo("hankkeen nimi")
+        assertThat(responseHanke.body?.omistajat).isNotNull
+        assertThat(responseHanke.body?.omistajat).hasSize(1)
+        assertThat(responseHanke.body?.omistajat!![0].id).isEqualTo(1)
+        assertThat(responseHanke.body?.omistajat!![0].sukunimi).isEqualTo("Pekkanen")
     }
 
     @Test

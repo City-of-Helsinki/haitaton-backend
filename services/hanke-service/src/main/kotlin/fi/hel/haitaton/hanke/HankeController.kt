@@ -54,7 +54,7 @@ class HankeController(@Autowired private val hankeService: HankeService) {
     fun getAllHankeItems(): ResponseEntity<Any> {
         logger.info { "Entering getAllHankeItems" }
         return try {
-            val hankeList = hankeService.loadListOfHanke()
+            val hankeList = hankeService.loadAllHanke()
             ResponseEntity.status(HttpStatus.OK).body(hankeList)
 
         } catch (e: HankeNotFoundException) {

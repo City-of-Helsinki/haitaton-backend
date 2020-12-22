@@ -43,13 +43,14 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
     }
 
     /**
+     * Returns all the Hanke items from database for now
+     *
+     * Returns empty list if no items to return
      * TODO user information to limit what all Hanke items we get?
      */
-   override fun loadListOfHanke(): MutableList<Hanke> {
+   override fun loadAllHanke(): List<Hanke> {
 
         val entity = hankeRepository.findAll()
-        if( entity.size == 0)
-            throw HankeNotFoundException()
 
         var hankeList:MutableList<Hanke>  = mutableListOf()
         entity.forEach {  hankeEntity ->
