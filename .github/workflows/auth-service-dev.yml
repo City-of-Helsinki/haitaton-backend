@@ -1,7 +1,6 @@
 name: auth-service-dev
 
 env:
-  GRADLE_MODULE: services:auth-service
   MODULE_PATH: services/auth-service
   ARTIFACT_NAME: auth-service
 
