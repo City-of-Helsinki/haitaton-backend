@@ -4,8 +4,7 @@ services:
     build:
       context: ${BUILD_ROOT}/haitaton-backend/scripts/docker-postgres
       dockerfile: Dockerfile
-    image: "postgis/postgis"
-    container_name: "haitaton-db"
+    container_name: haitaton-db
     environment:
       - DB_APP_DB=haitaton
       - DB_APP_DB_TEST=haitaton_test
@@ -14,7 +13,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
     ports:
-      - "5432:5432"
+      - 5432:5432
     volumes:
       - ${DB_VOLUME}:/var/lib/postgresql/data
     networks:
@@ -66,10 +65,10 @@ services:
     build:
       context: ${BUILD_ROOT}/haitaton-backend
       dockerfile: services/hanke-service/Dockerfile-local
-    image: "services/hanke-service"
-    container_name: "haitaton-hanke"
+    image: services/hanke-service
+    container_name: haitaton-hanke
     ports:
-      - "3000:8080"
+      - 3000:8080
     hostname: haitaton-hanke
     environment:
       HAITATON_HOST: db
@@ -89,10 +88,10 @@ services:
     build:
       context: ${BUILD_ROOT}/haitaton-ui
       dockerfile: ${FRONT_DOCKERFILE}
-    image: "haitaton-ui"
-    container_name: "haitaton-ui"
+    image: haitaton-ui
+    container_name: haitaton-ui
     ports:
-      - "3001:8000"
+      - 3001:8000
     volumes:
       - ${BUILD_ROOT}/haitaton-ui:/app
       - '/app/node_modules'
@@ -109,9 +108,14 @@ services:
       - ${BUILD_ROOT}/haitaton-backend/scripts/nginx/${NGINX_CONF}:/etc/nginx/conf.d/default.conf
     ports:
       - 8080:80
+    depends_on:
+      - auth-service
+      - haitaton-hanke
+      - haitaton-ui
     networks:
       - backbone
     links:
+      - auth-service
       - haitaton-hanke
       - haitaton-ui
 

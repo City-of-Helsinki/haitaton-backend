@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import org.springframework.data.domain.Example
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -175,5 +176,8 @@ class HankeEntity(
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
+
+    override fun findAll(): List<HankeEntity>
+
     // TODO: add any special 'find' etc. functions here, like searching by date range.
 }

@@ -15,5 +15,5 @@ interface HankeService {
 
     fun updateHanke(hanke: Hanke): Hanke
 
-
+    fun loadAllHanke(): List<Hanke>
 }
