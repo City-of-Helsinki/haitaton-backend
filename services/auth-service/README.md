@@ -6,4 +6,3 @@ This service contains only a Dockerfile for building a Haitaton auth-service ima
 See local docker-compose.yml (in root) and also docker-compose.yml in haitaton-deploy project for information how this image is used in local development and testing.
 
 TODO: desdribe how this image should be used in OpenShift environment (pass all the environment variables needed).
-

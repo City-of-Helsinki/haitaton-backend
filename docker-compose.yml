@@ -108,9 +108,14 @@ services:
       - ${BUILD_ROOT}/haitaton-backend/scripts/nginx/${NGINX_CONF}:/etc/nginx/conf.d/default.conf
     ports:
       - 8080:80
+    depends_on:
+      - auth-service
+      - haitaton-hanke
+      - haitaton-ui
     networks:
       - backbone
     links:
+      - auth-service
       - haitaton-hanke
       - haitaton-ui
 
