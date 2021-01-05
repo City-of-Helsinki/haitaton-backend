@@ -179,5 +179,7 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
 
     override fun findAll(): List<HankeEntity>
 
+    fun findByAlkuPvmBetweenOrLoppuPvmBetween(startAlkuPvm: LocalDate, endAlkuPvm: LocalDate,startLoppuPvm: LocalDate, endLoppuPvm: LocalDate): List<HankeEntity>
+
     // TODO: add any special 'find' etc. functions here, like searching by date range.
 }

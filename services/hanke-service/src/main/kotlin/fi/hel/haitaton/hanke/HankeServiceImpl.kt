@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 
 import mu.KotlinLogging
+import java.time.LocalDate
 import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
@@ -48,12 +49,29 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
      * Returns empty list if no items to return
      * TODO user information to limit what all Hanke items we get?
      */
-   override fun loadAllHanke(): List<Hanke> {
+    override fun loadAllHanke(): List<Hanke> {
 
         val entity = hankeRepository.findAll()
 
-        var hankeList:MutableList<Hanke>  = mutableListOf()
-        entity.forEach {  hankeEntity ->
+        val hankeList: MutableList<Hanke> = mutableListOf()
+        entity.forEach { hankeEntity ->
+            hankeList.add(createHankeDomainObjectFromEntity(hankeEntity))
+        }
+        return hankeList
+    }
+
+    /**
+     * Returns all the Hanke items from database with alkuPvm and/or loppuPvm between the periodStart and periodEnd
+     *
+     * Returns empty list if no items to return
+     * TODO user information to limit what all Hanke items we get?
+     */
+    override fun loadAllHankeBetweenDates(periodBegin: LocalDate, periodEnd: LocalDate): List<Hanke> {
+        //using period dates for both alkuPvm and loppuPvm
+        val entity = hankeRepository.findByAlkuPvmBetweenOrLoppuPvmBetween(periodBegin, periodEnd, periodBegin, periodEnd)
+
+        val hankeList: MutableList<Hanke> = mutableListOf()
+        entity.forEach { hankeEntity ->
             hankeList.add(createHankeDomainObjectFromEntity(hankeEntity))
         }
         return hankeList
@@ -340,7 +358,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
     /**
      * Returns true if at least one Yhteystieto-field is non-null, non-empty and non-whitespace-only.
      */
-    private fun isSomeFieldsSet(hankeYht: HankeYhteystieto) : Boolean {
+    private fun isSomeFieldsSet(hankeYht: HankeYhteystieto): Boolean {
         return hankeYht.sukunimi.isNotBlank() || hankeYht.etunimi.isNotBlank()
                 || hankeYht.email.isNotBlank() || hankeYht.puhelinnumero.isNotBlank()
                 || !hankeYht.organisaatioNimi.isNullOrBlank() || !hankeYht.osasto.isNullOrBlank()
@@ -349,13 +367,13 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
     /**
      * Returns true if all the four mandatory fields are non-null, non-empty and non-whitespace-only.
      */
-    private fun isValidYhteystieto(hankeYht: HankeYhteystieto) : Boolean {
+    private fun isValidYhteystieto(hankeYht: HankeYhteystieto): Boolean {
         return hankeYht.sukunimi.isNotBlank() && hankeYht.etunimi.isNotBlank()
                 && hankeYht.email.isNotBlank() && hankeYht.puhelinnumero.isNotBlank()
     }
 
     private fun processCreateYhteystieto(hankeYht: HankeYhteystieto, validYhteystieto: Boolean, contactType: ContactType,
-            userid: Int, hankeEntity: HankeEntity ) {
+                                         userid: Int, hankeEntity: HankeEntity) {
         if (validYhteystieto) {
             // ... it is valid, so create a new Yhteystieto
             val hankeYhtEntity = HankeYhteystietoEntity(
@@ -384,7 +402,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
     }
 
     private fun processUpdateYhteystieto(hankeYht: HankeYhteystieto, existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
-            someFieldsSet: Boolean, validYhteystieto: Boolean, userid: Int, hankeEntity: HankeEntity) {
+                                         someFieldsSet: Boolean, validYhteystieto: Boolean, userid: Int, hankeEntity: HankeEntity) {
         // If incoming Yhteystieto has id set, it _should_ be among the existing Yhteystietos, or some kind of error has happened.
         val incomingId: Int = hankeYht.id!!
         val existingYT: HankeYhteystietoEntity? = existingYTs[incomingId]
