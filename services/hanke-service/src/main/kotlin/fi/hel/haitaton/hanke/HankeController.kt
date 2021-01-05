@@ -53,7 +53,7 @@ class HankeController(@Autowired private val hankeService: HankeService) {
      *  TODO: limit call with user information and return only user's own hanke or something?
      *  TODO: do we later on have users who can read all Hanke items?
      */
-    @GetMapping("")
+  //  @GetMapping
     fun getAllHankeItems(): ResponseEntity<Any> {
         logger.info { "Entering getAllHankeItems" }
         return try {
@@ -71,14 +71,33 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         }
     }
 
+    @GetMapping
+    fun getHankeList(@RequestParam(name = "periodBegin") @DateTimeFormat(pattern = "yyyy-MM-dd") periodBegin: LocalDate?,
+       @RequestParam(name = "periodEnd") @DateTimeFormat(pattern = "yyyy-MM-dd") periodEnd: LocalDate?): ResponseEntity<Any> {
+
+        if (periodBegin == null || periodEnd == null) {
+            return getAllHankeItems()
+        }
+        return try {
+            val hankeList = hankeService.loadAllHankeBetweenDates(periodBegin, periodEnd)
+            ResponseEntity.status(HttpStatus.OK).body(hankeList)
+
+        } catch (e: Exception) {
+            logger.error(e) {
+                HankeError.HAI1004.toString()
+            }
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1004)
+        }
+    }
+
     /**
      * Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
      *  TODO: user token  from front?
      *  TODO: do we limit result for user own hanke?
      */
-    @GetMapping("/periodBegin/{periodBegin}/periodEnd/{periodEnd}")
-    fun getHankeByPeriodOfTime(@PathVariable(name = "periodBegin") @DateTimeFormat(pattern = "yyyy-MM-dd") periodBegin: LocalDate?,
-                               @PathVariable(name = "periodEnd") @DateTimeFormat(pattern = "yyyy-MM-dd") periodEnd: LocalDate?): ResponseEntity<Any> {
+ //   @RequestMapping( method = arrayOf(RequestMethod.GET))
+    fun getHankeByPeriodOfTime(@RequestParam(name = "periodBegin") @DateTimeFormat(pattern = "yyyy-MM-dd") periodBegin: LocalDate?,
+                               @RequestParam(name = "periodEnd") @DateTimeFormat(pattern = "yyyy-MM-dd") periodEnd: LocalDate?): ResponseEntity<Any> {
 
         logger.info { "getHankeByPeriodOfTime with range: " + periodBegin + " - " + periodEnd }
         if (periodBegin == null || periodEnd == null) {

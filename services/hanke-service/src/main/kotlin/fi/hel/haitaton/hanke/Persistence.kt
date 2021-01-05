@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import org.springframework.data.domain.Example
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
 import java.time.LocalDate
 import java.time.LocalDateTime
 import javax.persistence.*
@@ -179,7 +180,12 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
 
     override fun findAll(): List<HankeEntity>
 
-    fun findByAlkuPvmBetweenOrLoppuPvmBetween(startAlkuPvm: LocalDate, endAlkuPvm: LocalDate,startLoppuPvm: LocalDate, endLoppuPvm: LocalDate): List<HankeEntity>
+
+    @Query("select h from HankeEntity h "+
+            " where (alkupvm >= :periodBegin and alkupvm <= :periodEnd) " +
+            " or (loppupvm >= :periodBegin and loppupvm <= :periodEnd) " +
+            " or (alkupvm <= :periodBegin and loppupvm >= :periodEnd)")
+    fun getByAllHankeBetweenTimePeriod(periodBegin: LocalDate, periodEnd: LocalDate): List<HankeEntity>
 
     // TODO: add any special 'find' etc. functions here, like searching by date range.
 }

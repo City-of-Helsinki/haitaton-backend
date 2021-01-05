@@ -68,7 +68,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
      */
     override fun loadAllHankeBetweenDates(periodBegin: LocalDate, periodEnd: LocalDate): List<Hanke> {
         //using period dates for both alkuPvm and loppuPvm
-        val entity = hankeRepository.findByAlkuPvmBetweenOrLoppuPvmBetween(periodBegin, periodEnd, periodBegin, periodEnd)
+        val entity = hankeRepository.getByAllHankeBetweenTimePeriod(periodBegin, periodEnd)
 
         val hankeList: MutableList<Hanke> = mutableListOf()
         entity.forEach { hankeEntity ->
