@@ -66,10 +66,10 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
      * Returns empty list if no items to return
      * TODO user information to limit what all Hanke items we get?
      */
-    override fun loadAllHankeBetweenDates(periodBegin: LocalDate, periodEnd: LocalDate): List<Hanke> {
+    override fun loadAllHankeBetweenDates(periodBegin: ZonedDateTime, periodEnd: ZonedDateTime): List<Hanke> {
 
         //Hanke ends must be after period start and hanke starts before period ends (that's the reason for parameters going in reversed)
-        val entity = hankeRepository.findAllByAlkuPvmIsBeforeAndLoppuPvmIsAfter(periodEnd, periodBegin)
+        val entity = hankeRepository.findAllByAlkuPvmIsBeforeAndLoppuPvmIsAfter(periodEnd.toLocalDate(), periodBegin.toLocalDate())
         val hankeList: MutableList<Hanke> = mutableListOf()
         entity.forEach { hankeEntity ->
             hankeList.add(createHankeDomainObjectFromEntity(hankeEntity))

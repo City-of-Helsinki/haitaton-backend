@@ -436,9 +436,9 @@ class HankeServiceITests {
                 .truncatedTo(ChronoUnit.MILLIS)
 
         var periodStart =  ZonedDateTime.of(2000, 1, 1, 1, 45, 56, 0, TZ_UTC)
-                .toLocalDate()
+
         var periodEnd =  ZonedDateTime.of(2000, 12, 31, 1, 45, 56, 0, TZ_UTC)
-                .toLocalDate()
+
         // Call create, get the return object, and make some general checks:
         val returnedHankeWithWantedDate = hankeService.createHanke(hankeExpected)
         assertThat(returnedHankeWithWantedDate).isNotNull
@@ -471,8 +471,6 @@ class HankeServiceITests {
         //couple of checks to make sure we got the wanted hanke still
         assertThat(returnedHankeResult2.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
         assertThat(returnedHankeResult2.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
-
-
 
         //Testing situation where only loppuPvm is inside the period
         val updatedHanke2 = returnedHankeResult2.get(0)
