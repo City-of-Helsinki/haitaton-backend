@@ -44,6 +44,8 @@ services:
     container_name: haitaton-auth-service
     ports:
       - 3030:8080
+    volumes:
+      - services/auth-service/realms:/tmp/
     hostname: auth-service
     environment:
       - KEYCLOAK_USER=admin
