@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.context.annotation.Import
+import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
@@ -416,7 +417,7 @@ class HankeServiceITests {
 
 
     @Test
-    fun `test that loadAllHankeBetweenDates returns correct hanke out of three`() {
+    fun `test that loadAllHankeBetweenDates returns correct hanke out of two`() {
 
         // Setup Hanke 1 that will not be returned in the result having too new alkuPvm and loppuPvm
         val hanke: Hanke = getATestHanke("yksi", 1)
@@ -434,10 +435,10 @@ class HankeServiceITests {
         hankeExpected.alkuPvm = ZonedDateTime.of(2000, 2, 20, 23, 45, 56, 0, TZ_UTC)
                 .truncatedTo(ChronoUnit.MILLIS)
 
-        var periodStart = ZonedDateTime.of(2000, 1, 1, 1, 45, 56, 0, TZ_UTC)
-                .truncatedTo(ChronoUnit.MILLIS)
-        var periodEnd = ZonedDateTime.of(2000, 12, 31, 1, 45, 56, 0, TZ_UTC)
-                .truncatedTo(ChronoUnit.MILLIS)
+        var periodStart =  ZonedDateTime.of(2000, 1, 1, 1, 45, 56, 0, TZ_UTC)
+                .toLocalDate()
+        var periodEnd =  ZonedDateTime.of(2000, 12, 31, 1, 45, 56, 0, TZ_UTC)
+                .toLocalDate()
         // Call create, get the return object, and make some general checks:
         val returnedHankeWithWantedDate = hankeService.createHanke(hankeExpected)
         assertThat(returnedHankeWithWantedDate).isNotNull
@@ -448,13 +449,67 @@ class HankeServiceITests {
         val returnedHankeResult = hankeService.loadAllHankeBetweenDates(periodStart, periodEnd)
         // General checks (because using another API action)
         assertThat(returnedHankeResult).isNotNull
-
         //only one of the added hanke is between time period and should be returned
         assertThat(returnedHankeResult.size).isEqualTo(1)
-
         //couple of checks to make sure we got the wanted
         assertThat(returnedHankeResult.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
         assertThat(returnedHankeResult.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
+
+
+        //Testing situation where both alkuPvm and loppuPvm are inside the period
+        val updatedHanke = returnedHankeResult.get(0)
+        updatedHanke.loppuPvm = ZonedDateTime.of(2000, 5, 20, 23, 45, 56, 0, TZ_UTC)
+                .truncatedTo(ChronoUnit.MILLIS)
+        hankeService.updateHanke(updatedHanke)
+
+        // Use loadHanke and check it also returns only one entry
+        val returnedHankeResult2 = hankeService.loadAllHankeBetweenDates(periodStart, periodEnd)
+        // General checks (because using another API action)
+        assertThat(returnedHankeResult2).isNotNull
+        //only one of the added hanke is between time period and should be returned
+        assertThat(returnedHankeResult2.size).isEqualTo(1)
+        //couple of checks to make sure we got the wanted hanke still
+        assertThat(returnedHankeResult2.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
+        assertThat(returnedHankeResult2.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
+
+
+
+        //Testing situation where only loppuPvm is inside the period
+        val updatedHanke2 = returnedHankeResult2.get(0)
+        //ending is still inside the period but we put starting before it
+        updatedHanke2.alkuPvm = ZonedDateTime.of(1999, 5, 20, 23, 45, 56, 0, TZ_UTC)
+                .truncatedTo(ChronoUnit.MILLIS)
+        hankeService.updateHanke(updatedHanke2)
+
+        // Use loadHanke and check it also returns only one entry
+        val returnedHankeResult3 = hankeService.loadAllHankeBetweenDates(periodStart, periodEnd)
+        // General checks (because using another API action)
+        assertThat(returnedHankeResult3).isNotNull
+        //only one of the added hanke is between time period and should be returned
+        assertThat(returnedHankeResult3.size).isEqualTo(1)
+        //couple of checks to make sure we got the wanted
+        assertThat(returnedHankeResult3.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
+        assertThat(returnedHankeResult3.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
+
+
+
+        //Testing situation where alkuPvm is before the period and loppuPvm is after the period
+        val updatedHanke3 = returnedHankeResult3.get(0)
+        //we put hanke to end after the period
+        updatedHanke3.loppuPvm = ZonedDateTime.of(2021, 5, 20, 23, 45, 56, 0, TZ_UTC)
+                .truncatedTo(ChronoUnit.MILLIS)
+        hankeService.updateHanke(updatedHanke3)
+
+        // Use loadHanke and check it also returns only one entry
+        val returnedHankeResult4 = hankeService.loadAllHankeBetweenDates(periodStart, periodEnd)
+        // General checks (because using another API action)
+        assertThat(returnedHankeResult4).isNotNull
+        //only one of the added hanke is between time period and should be returned
+        assertThat(returnedHankeResult4.size).isEqualTo(1)
+        //couple of checks to make sure we got the wanted
+        assertThat(returnedHankeResult4.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
+        assertThat(returnedHankeResult4.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
+
     }
 
 

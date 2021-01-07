@@ -53,15 +53,11 @@ class HankeController(@Autowired private val hankeService: HankeService) {
      *  TODO: limit call with user information and return only user's own hanke or something?
      *  TODO: do we later on have users who can read all Hanke items?
      */
-  //  @GetMapping
     fun getAllHankeItems(): ResponseEntity<Any> {
         logger.info { "Entering getAllHankeItems" }
         return try {
             val hankeList = hankeService.loadAllHanke()
             ResponseEntity.status(HttpStatus.OK).body(hankeList)
-
-        } catch (e: HankeNotFoundException) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
 
         } catch (e: Exception) {
             logger.error(e) {

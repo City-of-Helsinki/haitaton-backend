@@ -19,4 +19,5 @@ interface HankeService {
     fun loadAllHanke(): List<Hanke>
 
     fun loadAllHankeBetweenDates(periodBegin: LocalDate, periodEnd: LocalDate): List<Hanke>
+
 }

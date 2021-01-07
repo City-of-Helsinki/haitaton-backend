@@ -67,9 +67,9 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
      * TODO user information to limit what all Hanke items we get?
      */
     override fun loadAllHankeBetweenDates(periodBegin: LocalDate, periodEnd: LocalDate): List<Hanke> {
-        //using period dates for both alkuPvm and loppuPvm
-        val entity = hankeRepository.getByAllHankeBetweenTimePeriod(periodBegin, periodEnd)
 
+        //Hanke ends must be after period start and hanke starts before period ends (that's the reason for parameters going in reversed)
+        val entity = hankeRepository.findAllByAlkuPvmIsBeforeAndLoppuPvmIsAfter(periodEnd, periodBegin)
         val hankeList: MutableList<Hanke> = mutableListOf()
         entity.forEach { hankeEntity ->
             hankeList.add(createHankeDomainObjectFromEntity(hankeEntity))
