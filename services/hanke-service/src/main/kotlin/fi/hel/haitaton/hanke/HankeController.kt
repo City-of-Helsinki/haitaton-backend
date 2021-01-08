@@ -64,23 +64,25 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         }
     }
 
-    @GetMapping("")
-    fun getHankeList(@RequestParam(name = "hankeSearch") hankeSearch: HankeSearch?): ResponseEntity<Any> {
+    @GetMapping
+    fun getHankeList(hankeSearch: HankeSearch?): ResponseEntity<Any> {
 
     //was before
     //   @RequestParam(name = "periodBegin") @DateTimeFormat(pattern = "yyyy-MM-dd") periodBegin: LocalDate?,
     //   @RequestParam(name = "periodEnd") @DateTimeFormat(pattern = "yyyy-MM-dd") periodEnd: LocalDate?): ResponseEntity<Any> {
 
-        if (hankeSearch == null || hankeSearch.periodBegin == null || hankeSearch.periodEnd == null) {
-            return getAllHankeItems()
+        if (hankeSearch == null || hankeSearch.periodBegin == null || hankeSearch.periodEnd == null){
+
+                return getAllHankeItems()
+
         }
         return try {
             //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
             // TODO: user token  from front?
             //  TODO: do we limit result for user own hanke?
-      //      val hankeList = hankeService.loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
-        //    ResponseEntity.status(HttpStatus.OK).body(hankeList)
-            ResponseEntity.status(HttpStatus.OK).body("")
+            val hankeList = hankeService.loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
+            ResponseEntity.status(HttpStatus.OK).body(hankeList)
+
         } catch (e: Exception) {
             logger.error(e) {
                 HankeError.HAI1004.toString()
