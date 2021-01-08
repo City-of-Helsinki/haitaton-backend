@@ -1,13 +1,16 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.runner.RunWith
 import org.mockito.Mockito
+import org.mockito.junit.MockitoJUnitRunner
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
@@ -16,6 +19,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
 import org.springframework.context.annotation.Configuration
+import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import javax.validation.ConstraintViolationException
@@ -61,7 +65,7 @@ class HankeControllerTest {
     }
 
     @Test
-    fun `test that the getAllHankeItems returns ok and two items`() {
+    fun `test when called without parameters then getAllHankeItems returns ok and two items`() {
 
         var listOfHanke =  listOf(
             Hanke(1234, mockedHankeTunnus, true,
@@ -76,7 +80,7 @@ class HankeControllerTest {
 
         Mockito.`when`(hankeService.loadAllHanke()).thenReturn(listOfHanke)
 
-        val response: ResponseEntity<Any> = hankeController.getAllHankeItems()
+        val response: ResponseEntity<Any> = hankeController.getHankeList(null)
 
         //basic checks for getting a response
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)

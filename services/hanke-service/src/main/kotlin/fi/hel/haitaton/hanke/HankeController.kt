@@ -66,10 +66,9 @@ class HankeController(@Autowired private val hankeService: HankeService) {
 
     @GetMapping
     fun getHankeList(hankeSearch: HankeSearch?): ResponseEntity<Any> {
+
         if (hankeSearch == null || hankeSearch.periodBegin == null || hankeSearch.periodEnd == null){
-
                 return getAllHankeItems()
-
         }
         return try {
             //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
