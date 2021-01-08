@@ -22,8 +22,10 @@ Manual build
 
 ## Modules
 
+* services/auth-service
+  * Haitaton 2.0 Authentication service
 * services/hanke-service
-    * Haitaton 2.0 Hanke service
+  * Haitaton 2.0 Hanke service
 
 ## How to compile, build and run
 
