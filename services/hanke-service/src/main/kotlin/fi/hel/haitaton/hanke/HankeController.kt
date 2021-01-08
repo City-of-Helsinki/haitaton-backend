@@ -66,11 +66,6 @@ class HankeController(@Autowired private val hankeService: HankeService) {
 
     @GetMapping
     fun getHankeList(hankeSearch: HankeSearch?): ResponseEntity<Any> {
-
-    //was before
-    //   @RequestParam(name = "periodBegin") @DateTimeFormat(pattern = "yyyy-MM-dd") periodBegin: LocalDate?,
-    //   @RequestParam(name = "periodEnd") @DateTimeFormat(pattern = "yyyy-MM-dd") periodEnd: LocalDate?): ResponseEntity<Any> {
-
         if (hankeSearch == null || hankeSearch.periodBegin == null || hankeSearch.periodEnd == null){
 
                 return getAllHankeItems()
