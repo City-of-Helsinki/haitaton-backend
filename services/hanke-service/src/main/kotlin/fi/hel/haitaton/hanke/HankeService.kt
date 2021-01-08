@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
+import java.time.LocalDate
 
 interface HankeService {
 
@@ -16,4 +17,7 @@ interface HankeService {
     fun updateHanke(hanke: Hanke): Hanke
 
     fun loadAllHanke(): List<Hanke>
+
+    fun loadAllHankeBetweenDates(periodBegin: LocalDate, periodEnd: LocalDate): List<Hanke>
+
 }

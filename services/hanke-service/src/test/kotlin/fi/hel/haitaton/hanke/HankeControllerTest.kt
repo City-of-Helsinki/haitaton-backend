@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
@@ -61,22 +60,22 @@ class HankeControllerTest {
     }
 
     @Test
-    fun `test that the getAllHankeItems returns ok and two items`() {
+    fun `test when called without parameters then getHankeList returns ok and two items`() {
 
-        var listOfHanke =  listOf(
-            Hanke(1234, mockedHankeTunnus, true,
-                    "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
-                    getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
-                    1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
-            Hanke(50, "HAME50", true,
-                    "Hämeenlinnanväylän uudistus", "Lorem ipsum dolor sit amet...",
-                    getDatetimeAlku(), getDatetimeLoppu(), Vaihe.SUUNNITTELU, SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
-                    1, "Paavo", getCurrentTimeUTC(), null, null, SaveType.SUBMIT)
+        var listOfHanke = listOf(
+                Hanke(1234, mockedHankeTunnus, true,
+                        "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
+                        getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
+                        1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
+                Hanke(50, "HAME50", true,
+                        "Hämeenlinnanväylän uudistus", "Lorem ipsum dolor sit amet...",
+                        getDatetimeAlku(), getDatetimeLoppu(), Vaihe.SUUNNITTELU, SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
+                        1, "Paavo", getCurrentTimeUTC(), null, null, SaveType.SUBMIT)
         )
 
         Mockito.`when`(hankeService.loadAllHanke()).thenReturn(listOfHanke)
 
-        val response: ResponseEntity<Any> = hankeController.getAllHankeItems()
+        val response: ResponseEntity<Any> = hankeController.getHankeList()
 
         //basic checks for getting a response
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)

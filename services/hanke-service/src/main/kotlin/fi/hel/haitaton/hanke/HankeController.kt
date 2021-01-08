@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.validation.ValidHanke
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
@@ -8,7 +9,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
-import java.time.ZonedDateTime
 import javax.validation.ConstraintViolationException
 
 
@@ -44,21 +44,39 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         }
     }
 
+
+    @GetMapping
+    fun getHankeList(hankeSearch: HankeSearch? = null): ResponseEntity<Any> {
+
+        if (hankeSearch == null || hankeSearch.periodBegin == null || hankeSearch.periodEnd == null) {
+            return getAllHankeItems()
+        }
+        return try {
+            //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
+            // TODO: user token  from front?
+            //  TODO: do we limit result for user own hanke?
+            val hankeList = hankeService.loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
+            ResponseEntity.status(HttpStatus.OK).body(hankeList)
+
+        } catch (e: Exception) {
+            logger.error(e) {
+                HankeError.HAI1004.toString()
+            }
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1004)
+        }
+    }
+
     /**
      * Get all hanke
      *  TODO: token  from front?
      *  TODO: limit call with user information and return only user's own hanke or something?
      *  TODO: do we later on have users who can read all Hanke items?
      */
-    @GetMapping("")
-    fun getAllHankeItems(): ResponseEntity<Any> {
+    internal fun getAllHankeItems(): ResponseEntity<Any> {
         logger.info { "Entering getAllHankeItems" }
         return try {
             val hankeList = hankeService.loadAllHanke()
             ResponseEntity.status(HttpStatus.OK).body(hankeList)
-
-        } catch (e: HankeNotFoundException) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
 
         } catch (e: Exception) {
             logger.error(e) {
