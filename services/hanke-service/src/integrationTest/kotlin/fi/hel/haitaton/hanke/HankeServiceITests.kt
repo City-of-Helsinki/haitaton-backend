@@ -71,7 +71,7 @@ class HankeServiceITests {
         assertThat(returnedHanke.polyHaitta).isEqualTo(Haitta13.KAKSI)
         assertThat(returnedHanke.tarinaHaitta).isEqualTo(Haitta13.KOLME)
 
-        assertThat(returnedHanke.version).isZero()
+        assertThat(returnedHanke.version).isZero
         assertThat(returnedHanke.createdAt).isNotNull
         assertThat(returnedHanke.createdAt!!.toEpochSecond() - currentDatetime.toEpochSecond()).isBetween(-600, 600) // +/-10 minutes
         assertThat(returnedHanke.createdBy).isNotNull // TODO: once getting users, this might be nice to check a match
@@ -416,7 +416,7 @@ class HankeServiceITests {
 
 
     @Test
-    fun `test that loadAllHankeBetweenDates returns hanke when alkuPvm will be between the wanted search period`() {
+    fun `loadAllHankeBetweenDates returns Hanke when alkuPvm is inside the given time period`() {
 
         // Setup Hanke 1 that will not be returned in the result having too new alkuPvm and loppuPvm
         val hanke: Hanke = getATestHanke("yksi", 1)
@@ -455,7 +455,7 @@ class HankeServiceITests {
     }
 
     @Test
-    fun `test that loadAllHankeBetweenDates returns hanke when both alkuPvm and loppuPvm are inside the period`() {
+    fun `loadAllHankeBetweenDates returns Hanke when both alkuPvm and loppuPvm are inside the period`() {
 
         // Setup Hanke 1 that will not be returned in the result having too new alkuPvm and loppuPvm
         val hanke: Hanke = getATestHanke("yksi", 1)
@@ -466,7 +466,7 @@ class HankeServiceITests {
         assertThat(returnedHanke).isNotSameAs(hanke)
         assertThat(returnedHanke.id).isNotNull
 
-        // Setup Hanke which is the one we want to be returned as it starts within the wanted time period
+        // Setup Hanke which is the one we want to be returned as it starts and ends within the wanted time period
         val hankeExpected: Hanke = getATestHanke("wanted", 2)
 
         //alkuPvm and loppuPvm will be between the wanted search period
@@ -498,7 +498,7 @@ class HankeServiceITests {
     }
 
     @Test
-    fun `test that loadAllHankeBetweenDates returns hanke when  only loppuPvm is inside the period`() {
+    fun `loadAllHankeBetweenDates returns Hanke when only loppuPvm is inside the period`() {
 
         // Setup Hanke 1 that will not be returned in the result having too new alkuPvm and loppuPvm
         val hanke: Hanke = getATestHanke("yksi", 1)
@@ -509,7 +509,7 @@ class HankeServiceITests {
         assertThat(returnedHanke).isNotSameAs(hanke)
         assertThat(returnedHanke.id).isNotNull()
 
-        // Setup Hanke which is the one we want to be returned as it starts within the wanted time period
+        // Setup Hanke which is the one we want to be returned as it ends within the wanted time period
         val hankeExpected: Hanke = getATestHanke("wanted", 2)
 
         //ending is  inside the period but we put starting before it
@@ -551,7 +551,7 @@ class HankeServiceITests {
         assertThat(returnedHanke).isNotSameAs(hanke)
         assertThat(returnedHanke.id).isNotNull()
 
-        // Setup Hanke which is the one we want to be returned as it starts within the wanted time period
+        // Setup Hanke which is the one we want to be returned as it is on going during the wanted time period
         val hankeExpected: Hanke = getATestHanke("wanted", 2)
 
         //alkuPvm will be before the period

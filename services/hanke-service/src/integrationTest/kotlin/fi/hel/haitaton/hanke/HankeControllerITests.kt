@@ -53,14 +53,14 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     }
 
     @Test
-    fun `When called get without parameters then return all Hanke data with it (GET)`() {
+    fun `When calling get without parameters then return all Hanke data`() {
 
         // faking the service call with two returned Hanke
         every { hankeService.loadAllHanke() }.returns(
                 listOf(Hanke(123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
-                        getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
+                        getDatetimeAlku().minusDays(500), getDatetimeLoppu().minusDays(450), Vaihe.OHJELMOINTI, null,
                         1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
-                        Hanke(444, "hanketunnus2", true, "Esplanadin viemäröinti", "lorem ipsum dolor sit amet...",
+                       Hanke(444, "hanketunnus2", true, "Esplanadin viemäröinti", "lorem ipsum dolor sit amet...",
                                 getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
                                 1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT)))
 

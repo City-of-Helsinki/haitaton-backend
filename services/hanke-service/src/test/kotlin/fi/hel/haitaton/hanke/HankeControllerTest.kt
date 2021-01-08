@@ -60,7 +60,7 @@ class HankeControllerTest {
     }
 
     @Test
-    fun `test when called without parameters then getAllHankeItems returns ok and two items`() {
+    fun `test when called without parameters then getHankeList returns ok and two items`() {
 
         var listOfHanke = listOf(
                 Hanke(1234, mockedHankeTunnus, true,
@@ -75,7 +75,7 @@ class HankeControllerTest {
 
         Mockito.`when`(hankeService.loadAllHanke()).thenReturn(listOfHanke)
 
-        val response: ResponseEntity<Any> = hankeController.getHankeList(null)
+        val response: ResponseEntity<Any> = hankeController.getHankeList()
 
         //basic checks for getting a response
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)

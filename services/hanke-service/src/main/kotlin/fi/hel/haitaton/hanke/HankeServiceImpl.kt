@@ -51,17 +51,13 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
      */
     override fun loadAllHanke(): List<Hanke> {
 
-        val entity = hankeRepository.findAll()
+      //  val entity = hankeRepository.findAll()
 
-        val hankeList: MutableList<Hanke> = mutableListOf()
-        entity.forEach { hankeEntity ->
-            hankeList.add(createHankeDomainObjectFromEntity(hankeEntity))
-        }
-        return hankeList
+        return hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
     }
 
     /**
-     * Returns all the Hanke items from database with alkuPvm and/or loppuPvm between the periodStart and periodEnd
+     * Returns all the Hanke items for which the hanke period overlaps with the given period.
      *
      * Returns empty list if no items to return
      * TODO user information to limit what all Hanke items we get?
@@ -69,12 +65,8 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
     override fun loadAllHankeBetweenDates(periodBegin: LocalDate, periodEnd: LocalDate): List<Hanke> {
 
         //Hanke ends must be after period start and hanke starts before period ends (that's the reason for parameters going in reversed)
-        val entity = hankeRepository.findAllByAlkuPvmIsBeforeAndLoppuPvmIsAfter(periodEnd, periodBegin)
-        val hankeList: MutableList<Hanke> = mutableListOf()
-        entity.forEach { hankeEntity ->
-            hankeList.add(createHankeDomainObjectFromEntity(hankeEntity))
-        }
-        return hankeList
+        return hankeRepository.findAllByAlkuPvmIsBeforeAndLoppuPvmIsAfter(periodEnd, periodBegin).map { createHankeDomainObjectFromEntity(it) }
+
     }
 
 

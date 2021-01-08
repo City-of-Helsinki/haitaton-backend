@@ -44,16 +44,18 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         }
     }
 
-    /**
-     * Get all hanke
-     *  TODO: token  from front?
-     *  TODO: limit call with user information and return only user's own hanke or something?
-     *  TODO: do we later on have users who can read all Hanke items?
-     */
-    fun getAllHankeItems(): ResponseEntity<Any> {
-        logger.info { "Entering getAllHankeItems" }
+
+    @GetMapping
+    fun getHankeList(hankeSearch: HankeSearch? = null): ResponseEntity<Any> {
+
+        if (hankeSearch == null || hankeSearch.periodBegin == null || hankeSearch.periodEnd == null) {
+            return getAllHankeItems()
+        }
         return try {
-            val hankeList = hankeService.loadAllHanke()
+            //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
+            // TODO: user token  from front?
+            //  TODO: do we limit result for user own hanke?
+            val hankeList = hankeService.loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
             ResponseEntity.status(HttpStatus.OK).body(hankeList)
 
         } catch (e: Exception) {
@@ -64,17 +66,16 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         }
     }
 
-    @GetMapping
-    fun getHankeList(hankeSearch: HankeSearch?): ResponseEntity<Any> {
-
-        if (hankeSearch == null || hankeSearch.periodBegin == null || hankeSearch.periodEnd == null) {
-            return getAllHankeItems()
-        }
+    /**
+     * Get all hanke
+     *  TODO: token  from front?
+     *  TODO: limit call with user information and return only user's own hanke or something?
+     *  TODO: do we later on have users who can read all Hanke items?
+     */
+    internal fun getAllHankeItems(): ResponseEntity<Any> {
+        logger.info { "Entering getAllHankeItems" }
         return try {
-            //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
-            // TODO: user token  from front?
-            //  TODO: do we limit result for user own hanke?
-            val hankeList = hankeService.loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
+            val hankeList = hankeService.loadAllHanke()
             ResponseEntity.status(HttpStatus.OK).body(hankeList)
 
         } catch (e: Exception) {
