@@ -1,16 +1,12 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import org.assertj.core.api.Assertions
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.runner.RunWith
 import org.mockito.Mockito
-import org.mockito.junit.MockitoJUnitRunner
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
@@ -19,7 +15,6 @@ import org.springframework.http.ResponseEntity
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
 import org.springframework.context.annotation.Configuration
-import java.time.LocalDate
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import javax.validation.ConstraintViolationException
@@ -67,15 +62,15 @@ class HankeControllerTest {
     @Test
     fun `test when called without parameters then getAllHankeItems returns ok and two items`() {
 
-        var listOfHanke =  listOf(
-            Hanke(1234, mockedHankeTunnus, true,
-                    "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
-                    getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
-                    1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
-            Hanke(50, "HAME50", true,
-                    "Hämeenlinnanväylän uudistus", "Lorem ipsum dolor sit amet...",
-                    getDatetimeAlku(), getDatetimeLoppu(), Vaihe.SUUNNITTELU, SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
-                    1, "Paavo", getCurrentTimeUTC(), null, null, SaveType.SUBMIT)
+        var listOfHanke = listOf(
+                Hanke(1234, mockedHankeTunnus, true,
+                        "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
+                        getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
+                        1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
+                Hanke(50, "HAME50", true,
+                        "Hämeenlinnanväylän uudistus", "Lorem ipsum dolor sit amet...",
+                        getDatetimeAlku(), getDatetimeLoppu(), Vaihe.SUUNNITTELU, SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
+                        1, "Paavo", getCurrentTimeUTC(), null, null, SaveType.SUBMIT)
         )
 
         Mockito.`when`(hankeService.loadAllHanke()).thenReturn(listOfHanke)
