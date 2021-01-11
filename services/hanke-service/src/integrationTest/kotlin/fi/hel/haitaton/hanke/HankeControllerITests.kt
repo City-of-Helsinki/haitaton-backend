@@ -14,8 +14,10 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
+
 
 /**
  * Testing the Hanke Controller through a full REST request.
@@ -47,6 +49,30 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.nimi")
                         .value("Hämeentien perusparannus ja katuvalot"))
         verify { hankeService.loadHanke(any()) }
+
+    }
+
+    @Test
+    fun `When calling get without parameters then return all Hanke data`() {
+
+        // faking the service call with two returned Hanke
+        every { hankeService.loadAllHanke() }.returns(
+                listOf(Hanke(123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
+                        getDatetimeAlku().minusDays(500), getDatetimeLoppu().minusDays(450), Vaihe.OHJELMOINTI, null,
+                        1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
+                       Hanke(444, "hanketunnus2", true, "Esplanadin viemäröinti", "lorem ipsum dolor sit amet...",
+                                getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
+                                1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT)))
+
+        //we check that we get the two hankeTunnus we expect
+        mockMvc.perform(get("/hankkeet")
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk)
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].hankeTunnus").value(mockedHankeTunnus))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[1].hankeTunnus").value("hanketunnus2"))
+
+        verify { hankeService.loadAllHanke() }
 
     }
 
@@ -255,8 +281,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // JSON string versions without quotes:
         var expectedDateAlkuJson = expectedDateAlku.toJsonString()
         var expectedDateLoppuJson = expectedDateLoppu.toJsonString()
-        expectedDateAlkuJson = expectedDateAlkuJson.substring(1, expectedDateAlkuJson.length-1)
-        expectedDateLoppuJson = expectedDateLoppuJson.substring(1, expectedDateLoppuJson.length-1)
+        expectedDateAlkuJson = expectedDateAlkuJson.substring(1, expectedDateAlkuJson.length - 1)
+        expectedDateLoppuJson = expectedDateLoppuJson.substring(1, expectedDateLoppuJson.length - 1)
 
         // faking the service call
         every { hankeService.createHanke(any()) }.returns(expectedHanke)
