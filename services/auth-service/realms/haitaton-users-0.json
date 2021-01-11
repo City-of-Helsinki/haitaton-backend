@@ -1,0 +1,26 @@
+{
+  "realm" : "haitaton",
+  "users" : [ {
+    "id" : "79c49f28-9756-46d7-b5d1-649002446d9e",
+    "createdTimestamp" : 1609762385126,
+    "username" : "admin",
+    "enabled" : true,
+    "totp" : false,
+    "emailVerified" : true,
+    "credentials" : [ {
+      "id" : "f70711d1-cf22-49b5-b762-636495d1cf87",
+      "type" : "password",
+      "createdDate" : 1609762400241,
+      "secretData" : "{\"value\":\"xex2jEfxQaUbqiITxGK/EQZmr+BOG8DmRoklKoi5X23RX5OlKyzoHbiuWjG2PXlfWh/c6NTUvi7elnJPtO7ZZA==\",\"salt\":\"S9WuK+m8MTgfs7fuBa/xpw==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "realmRoles" : [ "uma_authorization", "offline_access" ],
+    "clientRoles" : {
+      "account" : [ "view-profile", "manage-account" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ "/admin" ]
+  } ]
+}
