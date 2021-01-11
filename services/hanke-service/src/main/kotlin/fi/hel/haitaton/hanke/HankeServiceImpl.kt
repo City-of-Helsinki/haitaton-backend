@@ -51,9 +51,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
      */
     override fun loadAllHanke(): List<Hanke> {
 
-      //  val entity = hankeRepository.findAll()
-
-        return hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
+          return hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
     }
 
     /**
@@ -66,10 +64,17 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
 
         //Hanke ends must be after period start and hanke starts before period ends (that's the reason for parameters going in reversed)
         return hankeRepository.findAllByAlkuPvmIsBeforeAndLoppuPvmIsAfter(periodEnd, periodBegin).map { createHankeDomainObjectFromEntity(it) }
-
     }
 
-
+    /**
+     * Returns all the Hanke items for which the saveType is the wanted
+     *
+     * Returns empty list if no items to return
+     * TODO user information to limit what all Hanke items we get?
+     */
+    override fun loadAllHankeWithSavetype(saveType: SaveType): List<Hanke>{
+        return hankeRepository.findAllBySaveType(saveType).map { createHankeDomainObjectFromEntity(it) }
+    }
     /**
      * @return a new Hanke instance with the added and possibly modified values.
      */
