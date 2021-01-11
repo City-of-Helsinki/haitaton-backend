@@ -48,7 +48,21 @@ class HankeController(@Autowired private val hankeService: HankeService) {
     @GetMapping
     fun getHankeList(hankeSearch: HankeSearch? = null): ResponseEntity<Any> {
 
-        if (hankeSearch == null || hankeSearch.periodBegin == null || hankeSearch.periodEnd == null) {
+
+        if (hankeSearch != null && hankeSearch.saveType != null) {
+            return try {
+                val hankeList = hankeService.loadAllHankeWithSavetype(hankeSearch.saveType)
+                ResponseEntity.status(HttpStatus.OK).body(hankeList)
+
+            } catch (e: Exception) {
+                logger.error(e) {
+                    HankeError.HAI1004.toString()
+                }
+                ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1004)
+            }
+        }
+
+        if (hankeSearch == null || hankeSearch.periodBegin == null || hankeSearch.periodEnd == null ) {
             return getAllHankeItems()
         }
         return try {

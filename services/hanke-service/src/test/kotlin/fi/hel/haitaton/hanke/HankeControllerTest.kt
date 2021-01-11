@@ -1,12 +1,14 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
+import org.mockito.MockitoAnnotations
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
@@ -76,6 +78,39 @@ class HankeControllerTest {
         Mockito.`when`(hankeService.loadAllHanke()).thenReturn(listOfHanke)
 
         val response: ResponseEntity<Any> = hankeController.getHankeList()
+
+        //basic checks for getting a response
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(response.body).isNotNull
+
+        // If the status is ok, we expect ResponseEntity<List<Hanke>>
+        @Suppress("UNCHECKED_CAST")
+        val responseList = response as ResponseEntity<List<Hanke>>
+
+        assertThat(responseList.body?.get(0)?.nimi).isEqualTo("Mannerheimintien remontti remonttinen")
+        assertThat(responseList.body?.get(1)?.nimi).isEqualTo("Hämeenlinnanväylän uudistus")
+    }
+
+    @Test
+    fun `when called with saveType parameter then getHankeList returns ok and two items`() {
+        MockitoAnnotations.initMocks(this)
+
+        // both hanke with wanted saveType
+        var listOfHanke = listOf(
+                Hanke(1234, mockedHankeTunnus, true,
+                        "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
+                        getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
+                        1, "Risto", getCurrentTimeUTC(), null, null, SaveType.SUBMIT),
+                Hanke(50, "HAME50", true,
+                        "Hämeenlinnanväylän uudistus", "Lorem ipsum dolor sit amet...",
+                        getDatetimeAlku(), getDatetimeLoppu(), Vaihe.SUUNNITTELU, SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
+                        1, "Paavo", getCurrentTimeUTC(), null, null, SaveType.SUBMIT)
+        )
+
+        var searchCriteria = HankeSearch(saveType = SaveType.SUBMIT)
+        Mockito.`when`(hankeService.loadAllHankeWithSavetype(SaveType.SUBMIT)).thenReturn(listOfHanke)
+
+        val response: ResponseEntity<Any> = hankeController.getHankeList(searchCriteria)
 
         //basic checks for getting a response
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
