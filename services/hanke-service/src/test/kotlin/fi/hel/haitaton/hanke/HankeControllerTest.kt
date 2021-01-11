@@ -107,7 +107,7 @@ class HankeControllerTest {
                         1, "Paavo", getCurrentTimeUTC(), null, null, SaveType.SUBMIT)
         )
 
-        var searchCriteria = HankeSearch(saveType=SaveType.SUBMIT)
+        var searchCriteria = HankeSearch(saveType = SaveType.SUBMIT)
         Mockito.`when`(hankeService.loadAllHankeWithSavetype(SaveType.SUBMIT)).thenReturn(listOfHanke)
 
         val response: ResponseEntity<Any> = hankeController.getHankeList(searchCriteria)

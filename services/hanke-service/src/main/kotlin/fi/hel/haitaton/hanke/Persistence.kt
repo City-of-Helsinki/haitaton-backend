@@ -183,6 +183,9 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
     // search with date range
     fun findAllByAlkuPvmIsBeforeAndLoppuPvmIsAfter(endAlkuPvm: LocalDate, startLoppuPvm: LocalDate): List<HankeEntity>
 
+    //search with saveType
+    fun findAllBySaveType(saveType: SaveType): List<HankeEntity>
+
     /*
         // search with date range, example with query:
         @Query("select h from HankeEntity h "+

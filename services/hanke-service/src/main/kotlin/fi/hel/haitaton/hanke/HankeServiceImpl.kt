@@ -76,7 +76,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
      * TODO user information to limit what all Hanke items we get?
      */
     override fun loadAllHankeWithSavetype(saveType: SaveType): List<Hanke>{
-        return emptyList()
+        return hankeRepository.findAllBySaveType(saveType).map { createHankeDomainObjectFromEntity(it) }
     }
     /**
      * @return a new Hanke instance with the added and possibly modified values.
