@@ -52,9 +52,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
      */
     override fun loadAllHanke(): List<Hanke> {
 
-      //  val entity = hankeRepository.findAll()
-
-        return hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
+          return hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
     }
 
     /**
