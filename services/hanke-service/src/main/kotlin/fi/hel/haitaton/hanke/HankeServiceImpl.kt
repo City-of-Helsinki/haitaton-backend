@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 
 import mu.KotlinLogging
@@ -66,10 +67,17 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
 
         //Hanke ends must be after period start and hanke starts before period ends (that's the reason for parameters going in reversed)
         return hankeRepository.findAllByAlkuPvmIsBeforeAndLoppuPvmIsAfter(periodEnd, periodBegin).map { createHankeDomainObjectFromEntity(it) }
-
     }
 
-
+    /**
+     * Returns all the Hanke items for which the saveType is the wanted
+     *
+     * Returns empty list if no items to return
+     * TODO user information to limit what all Hanke items we get?
+     */
+    override fun loadAllHankeWithSavetype(saveType: SaveType): List<Hanke>{
+        return emptyList()
+    }
     /**
      * @return a new Hanke instance with the added and possibly modified values.
      */
