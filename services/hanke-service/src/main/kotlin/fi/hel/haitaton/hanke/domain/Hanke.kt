@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 
 import java.time.ZonedDateTime
 
@@ -52,4 +53,5 @@ data class Hanke(
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
 
+    var geometriat: HankeGeometriat? = null
 }

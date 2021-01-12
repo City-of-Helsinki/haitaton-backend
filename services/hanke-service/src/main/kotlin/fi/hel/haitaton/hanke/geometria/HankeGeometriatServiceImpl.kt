@@ -11,9 +11,9 @@ import javax.transaction.Transactional
 private val logger = KotlinLogging.logger { }
 
 open class HankeGeometriatServiceImpl(
-        private val hankeRepository: HankeRepository,
-        private val hankeGeometriaDao: HankeGeometriatDao)
-    : HankeGeometriatService {
+    private val hankeRepository: HankeRepository,
+    private val hankeGeometriaDao: HankeGeometriatDao
+) : HankeGeometriatService {
 
     @Transactional
     override fun saveGeometriat(hankeTunnus: String, hankeGeometriat: HankeGeometriat): HankeGeometriat {
@@ -51,6 +51,10 @@ open class HankeGeometriatServiceImpl(
 
     override fun loadGeometriat(hankeTunnus: String): HankeGeometriat? {
         val hanke = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-        return hankeGeometriaDao.retrieveHankeGeometriat(hanke.id!!)
+        return loadGeometriat(hanke.id!!)
+    }
+
+    override fun loadGeometriat(hankeId: Int): HankeGeometriat? {
+        return hankeGeometriaDao.retrieveHankeGeometriat(hankeId)
     }
 }
