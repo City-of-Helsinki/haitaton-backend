@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
@@ -52,7 +53,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         mockMvc.perform(get("/hankkeet/$mockedHankeTunnus").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.nimi")
+                .andExpect(jsonPath("$.nimi")
                         .value("Hämeentien perusparannus ja katuvalot"))
         verify { hankeService.loadHanke(any()) }
 
@@ -60,13 +61,15 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `When calling get without parameters then return all Hanke data without geometry`() {
-
+        //because test call has limitation and automatically creates object for call, we need to create
+        // "empty" object for init and verify
+        val criteria = HankeSearch()
         // faking the service call with two returned Hanke
-        every { hankeService.loadAllHanke() }.returns(
+        every { hankeService.loadAllHanke(criteria) }.returns(
                 listOf(Hanke(123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
                         getDatetimeAlku().minusDays(500), getDatetimeLoppu().minusDays(450), Vaihe.OHJELMOINTI, null,
                         1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
-                       Hanke(444, "hanketunnus2", true, "Esplanadin viemäröinti", "lorem ipsum dolor sit amet...",
+                        Hanke(444, "hanketunnus2", true, "Esplanadin viemäröinti", "lorem ipsum dolor sit amet...",
                                 getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
                                 1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT)))
 
@@ -80,34 +83,35 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .andExpect(jsonPath("$[0].geometriat").doesNotExist())
                 .andExpect(jsonPath("$[1].geometriat").doesNotExist())
 
-        verify { hankeService.loadAllHanke() }
+        verify { hankeService.loadAllHanke(criteria) }
 
     }
 
     @Test
     fun `When calling get with geometry=true then return all Hanke data with geometry`() {
         // faking the service call with two returned Hanke
-        every { hankeService.loadAllHanke() }.returns(
-            listOf(Hanke(123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
-                getDatetimeAlku().minusDays(500), getDatetimeLoppu().minusDays(450), Vaihe.OHJELMOINTI, null,
-                1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
-                Hanke(444, "hanketunnus2", true, "Esplanadin viemäröinti", "lorem ipsum dolor sit amet...",
-                    getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
-                    1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT)))
+        val criteria = HankeSearch(geometry=true)
+        every { hankeService.loadAllHanke(criteria) }.returns(
+                listOf(Hanke(123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
+                        getDatetimeAlku().minusDays(500), getDatetimeLoppu().minusDays(450), Vaihe.OHJELMOINTI, null,
+                        1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
+                        Hanke(444, "hanketunnus2", true, "Esplanadin viemäröinti", "lorem ipsum dolor sit amet...",
+                                getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
+                                1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT)))
         every { hankeGeometriatService.loadGeometriat(123) }.returns(HankeGeometriat(1, 123, FeatureCollection()))
         every { hankeGeometriatService.loadGeometriat(444) }.returns(HankeGeometriat(2, 444, FeatureCollection()))
 
         //we check that we get the two hankeTunnus and geometriat we expect
         mockMvc.perform(get("/hankkeet?geometry=true")
-            .accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isOk)
-            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(jsonPath("$[0].hankeTunnus").value(mockedHankeTunnus))
-            .andExpect(jsonPath("$[1].hankeTunnus").value("hanketunnus2"))
-            .andExpect(jsonPath("$[0].geometriat.id").value(1))
-            .andExpect(jsonPath("$[1].geometriat.id").value(2))
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk)
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$[0].hankeTunnus").value(mockedHankeTunnus))
+                .andExpect(jsonPath("$[1].hankeTunnus").value("hanketunnus2"))
+                .andExpect(jsonPath("$[0].geometriat.id").value(1))
+                .andExpect(jsonPath("$[1].geometriat.id").value(2))
 
-        verify { hankeService.loadAllHanke() }
+        verify { hankeService.loadAllHanke(criteria) }
         verify { hankeGeometriatService.loadGeometriat(123) }
         verify { hankeGeometriatService.loadGeometriat(444) }
     }
@@ -131,8 +135,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().json(expectedContent))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(content().json(expectedContent))
                 .andExpect(jsonPath("$.hankeTunnus").value(mockedHankeTunnus))
         verify { hankeService.createHanke(any()) }
 
@@ -159,7 +163,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.nimi").value(hankeName))
+                .andExpect(jsonPath("$.nimi").value(hankeName))
 
         verify { hankeService.updateHanke(any()) }
     }
@@ -196,8 +200,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().json(expectedContent))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(content().json(expectedContent))
                 .andExpect(jsonPath("$.hankeTunnus").value(mockedHankeTunnus))
         verify { hankeService.createHanke(any()) }
 
@@ -229,7 +233,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(hankeInvalid.toJsonString())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1002"))
+                .andExpect(jsonPath("$.errorCode").value("HAI1002"))
     }
 
 
@@ -275,7 +279,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().json(expectedContent))
+                .andExpect(content().json(expectedContent))
                 // These might be redundant, but at least it is clear what we're checking here:
                 .andExpect(jsonPath("$.tyomaaKatuosoite").value("Testikatu 1"))
                 .andExpect(jsonPath("$.kaistaHaitta").value("KAKSI")) // Note, here as string, not the enum.
@@ -328,8 +332,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
-                .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.content().json(expectedContent))
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(content().json(expectedContent))
                 // These might be redundant, but at least it is clear what we're checking here:
                 .andExpect(jsonPath("$.alkuPvm").value(expectedDateAlkuJson))
                 .andExpect(jsonPath("$.loppuPvm").value(expectedDateLoppuJson))
