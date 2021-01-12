@@ -52,8 +52,11 @@ class HankeController(
     @GetMapping
     fun getHankeList(hankeSearch: HankeSearch? = null): ResponseEntity<Any> {
         return try {
+            // TODO it might be better to move this logic with different search types into service and keep controller as clean and lean as possible
             val hankeList = if (hankeSearch == null || hankeSearch.isEmpty()) {
                 hankeService.loadAllHanke()
+            } else if (hankeSearch.saveType != null) {
+                hankeService.loadAllHankeWithSavetype(hankeSearch.saveType)
             } else {
                 //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
                 // TODO: user token  from front?

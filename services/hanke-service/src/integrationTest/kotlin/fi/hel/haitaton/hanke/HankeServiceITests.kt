@@ -582,6 +582,40 @@ class HankeServiceITests {
 
     }
 
+    @Test
+    fun `test that loadAllHankeWithSavetype only returns hanke with correct saveType`() {
+
+        // Setup Hanke 1 that will not be returned in the result having different saveType
+        val hanke: Hanke = getATestHanke("yksi", 1)
+        hanke.saveType = SaveType.DRAFT
+        // Call create, get the return object, and make some general checks:
+        val returnedHanke = hankeService.createHanke(hanke)
+
+        assertThat(returnedHanke).isNotNull
+        assertThat(returnedHanke).isNotSameAs(hanke)
+        assertThat(returnedHanke.id).isNotNull()
+
+        // Setup Hanke which is the one we want to be returned as it has wanted saveType
+        val hankeExpected: Hanke = getATestHanke("wanted", 2)
+        hankeExpected.saveType = SaveType.SUBMIT
+        // Call create, get the return object, and make some general checks:
+        val returnedHankeWithWantedDate = hankeService.createHanke(hankeExpected)
+        assertThat(returnedHankeWithWantedDate).isNotNull
+        assertThat(returnedHankeWithWantedDate).isNotSameAs(hanke)
+        assertThat(returnedHankeWithWantedDate.id).isNotNull()
+
+        // Use loadHanke and check it also returns only one entry
+        val returnedHankeResult = hankeService.loadAllHankeWithSavetype(SaveType.SUBMIT)
+        // General checks (because using another API action)
+        assertThat(returnedHankeResult).isNotNull
+        //only one of the added hanke is between time period and should be returned
+        assertThat(returnedHankeResult.size).isEqualTo(1)
+        //couple of checks to make sure we got the wanted
+        assertThat(returnedHankeResult.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
+        assertThat(returnedHankeResult.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
+
+    }
+
 
     /**
      * Just fills a new Hanke domain object with some crap (excluding any Yhteystieto entries) and returns it.
