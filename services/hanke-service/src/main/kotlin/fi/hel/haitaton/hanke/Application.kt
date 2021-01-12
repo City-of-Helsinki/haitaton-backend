@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.Bean
@@ -15,6 +16,9 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 @SpringBootApplication
 class Application {
 
+    @Value("\${haitaton.cors.allowedOrigins}")
+    lateinit var allowedOrigins: String
+
     @Bean
     fun forwardedHeaderFilter(): ForwardedHeaderFilter? {
         return ForwardedHeaderFilter()
@@ -24,8 +28,9 @@ class Application {
     fun corsConfigurer(): WebMvcConfigurer? {
         return object : WebMvcConfigurer {
             override fun addCorsMappings(registry: CorsRegistry) {
-                registry.addMapping("/hankkeet").allowedOrigins("http://localhost", "http://localhost:8000", "http://localhost:3001", "https://haitaton-ui-dev.agw.arodevtest.hel.fi")
-                registry.addMapping("/organisaatiot").allowedOrigins("http://localhost", "http://localhost:8000", "http://localhost:3001", "https://haitaton-ui-dev.agw.arodevtest.hel.fi")
+                registry.addMapping("/hankkeet").allowedMethods("POST", "GET").allowedOrigins(allowedOrigins)
+                registry.addMapping("/hankkeet/**").allowedMethods("POST", "GET", "PUT").allowedOrigins(allowedOrigins)
+                registry.addMapping("/organisaatiot").allowedMethods("GET").allowedOrigins(allowedOrigins)
             }
         }
     }
