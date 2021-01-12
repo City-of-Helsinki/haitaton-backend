@@ -19,8 +19,8 @@ private val logger = KotlinLogging.logger { }
 @RequestMapping("/hankkeet")
 @Validated
 class HankeController(
-    @Autowired private val hankeService: HankeService,
-    @Autowired private val hankeGeometriatService: HankeGeometriatService
+        @Autowired private val hankeService: HankeService,
+        @Autowired private val hankeGeometriatService: HankeGeometriatService
 ) {
 
     /**
@@ -52,17 +52,9 @@ class HankeController(
     @GetMapping
     fun getHankeList(hankeSearch: HankeSearch? = null): ResponseEntity<Any> {
         return try {
-            // TODO it might be better to move this logic with different search types into service and keep controller as clean and lean as possible
-            val hankeList = if (hankeSearch == null || hankeSearch.isEmpty()) {
-                hankeService.loadAllHanke()
-            } else if (hankeSearch.saveType != null) {
-                hankeService.loadAllHankeWithSavetype(hankeSearch.saveType)
-            } else {
-                //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
-                // TODO: user token  from front?
-                //  TODO: do we limit result for user own hanke?
-                hankeService.loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
-            }
+
+            var hankeList = hankeService.loadAllHanke(hankeSearch)
+
             if (hankeSearch != null && hankeSearch.includeGeometry()) {
                 includeGeometry(hankeList)
             }
