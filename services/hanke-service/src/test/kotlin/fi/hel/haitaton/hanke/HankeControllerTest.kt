@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
@@ -35,7 +36,10 @@ class HankeControllerTest {
         fun hankeService(): HankeService = Mockito.mock(HankeService::class.java)
 
         @Bean
-        fun hankeController(hankeService: HankeService): HankeController = HankeController(hankeService)
+        fun hankeGeometriatService(): HankeGeometriatService = Mockito.mock(HankeGeometriatService::class.java)
+
+        @Bean
+        fun hankeController(hankeService: HankeService, hankeGeometriatService: HankeGeometriatService): HankeController = HankeController(hankeService, hankeGeometriatService)
     }
 
     private val mockedHankeTunnus = "AFC1234"
@@ -62,9 +66,9 @@ class HankeControllerTest {
     }
 
     @Test
-    fun `test when called without parameters then getHankeList returns ok and two items`() {
+    fun `test when called without parameters then getHankeList returns ok and two items without geometry`() {
 
-        var listOfHanke = listOf(
+        val listOfHanke = listOf(
                 Hanke(1234, mockedHankeTunnus, true,
                         "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
                         getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
@@ -89,6 +93,8 @@ class HankeControllerTest {
 
         assertThat(responseList.body?.get(0)?.nimi).isEqualTo("Mannerheimintien remontti remonttinen")
         assertThat(responseList.body?.get(1)?.nimi).isEqualTo("Hämeenlinnanväylän uudistus")
+        assertThat(responseList.body?.get(0)?.geometriat).isNull()
+        assertThat(responseList.body?.get(1)?.geometriat).isNull()
     }
 
     @Test
