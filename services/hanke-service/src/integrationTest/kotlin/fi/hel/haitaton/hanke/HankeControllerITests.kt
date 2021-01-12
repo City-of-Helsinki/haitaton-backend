@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
@@ -60,9 +61,11 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `When calling get without parameters then return all Hanke data without geometry`() {
-
+        //because test call has limitation and automatically creates object for call, we need to create
+        // "empty" object for init and verify
+        val criteria = HankeSearch()
         // faking the service call with two returned Hanke
-        every { hankeService.loadAllHanke(any()) }.returns(
+        every { hankeService.loadAllHanke(criteria) }.returns(
                 listOf(Hanke(123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
                         getDatetimeAlku().minusDays(500), getDatetimeLoppu().minusDays(450), Vaihe.OHJELMOINTI, null,
                         1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
@@ -80,14 +83,15 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .andExpect(jsonPath("$[0].geometriat").doesNotExist())
                 .andExpect(jsonPath("$[1].geometriat").doesNotExist())
 
-        verify { hankeService.loadAllHanke(any()) }
+        verify { hankeService.loadAllHanke(criteria) }
 
     }
 
     @Test
     fun `When calling get with geometry=true then return all Hanke data with geometry`() {
         // faking the service call with two returned Hanke
-        every { hankeService.loadAllHanke(any()) }.returns(
+        val criteria = HankeSearch(geometry=true)
+        every { hankeService.loadAllHanke(criteria) }.returns(
                 listOf(Hanke(123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
                         getDatetimeAlku().minusDays(500), getDatetimeLoppu().minusDays(450), Vaihe.OHJELMOINTI, null,
                         1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
@@ -107,7 +111,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .andExpect(jsonPath("$[0].geometriat.id").value(1))
                 .andExpect(jsonPath("$[1].geometriat.id").value(2))
 
-        verify { hankeService.loadAllHanke(any()) }
+        verify { hankeService.loadAllHanke(criteria) }
         verify { hankeGeometriatService.loadGeometriat(123) }
         verify { hankeGeometriatService.loadGeometriat(444) }
     }
