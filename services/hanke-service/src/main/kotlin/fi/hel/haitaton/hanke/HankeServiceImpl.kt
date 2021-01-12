@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 
 import mu.KotlinLogging
@@ -32,6 +33,21 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
        - loadHanke(id, savetype)
      */
 
+    override fun loadAllHanke(hankeSearch: HankeSearch?): List<Hanke> {
+
+        // TODO: user token  from front?
+        // TODO: do we limit result for user own hanke?
+
+        return if (hankeSearch == null || hankeSearch.isEmpty()) {
+            loadAllHanke()
+        } else if (hankeSearch.saveType != null) {
+            loadAllHankeWithSavetype(hankeSearch.saveType)
+        } else {
+            //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
+            loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
+        }
+    }
+
     override fun loadHanke(hankeTunnus: String): Hanke {
         // TODO: Find out all savetype matches and return the more recent draft vs. submit.
         val entity = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
@@ -43,15 +59,16 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
         return createHankeDomainObjectFromEntity(entity)
     }
 
+
     /**
      * Returns all the Hanke items from database for now
      *
      * Returns empty list if no items to return
      * TODO user information to limit what all Hanke items we get?
      */
-    override fun loadAllHanke(): List<Hanke> {
+    internal fun loadAllHanke(): List<Hanke> {
 
-          return hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
+        return hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
     }
 
     /**
@@ -60,7 +77,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
      * Returns empty list if no items to return
      * TODO user information to limit what all Hanke items we get?
      */
-    override fun loadAllHankeBetweenDates(periodBegin: LocalDate, periodEnd: LocalDate): List<Hanke> {
+    internal fun loadAllHankeBetweenDates(periodBegin: LocalDate, periodEnd: LocalDate): List<Hanke> {
 
         //Hanke ends must be after period start and hanke starts before period ends (that's the reason for parameters going in reversed)
         return hankeRepository.findAllByAlkuPvmIsBeforeAndLoppuPvmIsAfter(periodEnd, periodBegin).map { createHankeDomainObjectFromEntity(it) }
@@ -72,9 +89,10 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
      * Returns empty list if no items to return
      * TODO user information to limit what all Hanke items we get?
      */
-    override fun loadAllHankeWithSavetype(saveType: SaveType): List<Hanke>{
+    internal fun loadAllHankeWithSavetype(saveType: SaveType): List<Hanke> {
         return hankeRepository.findAllBySaveType(saveType).map { createHankeDomainObjectFromEntity(it) }
     }
+
     /**
      * @return a new Hanke instance with the added and possibly modified values.
      */
