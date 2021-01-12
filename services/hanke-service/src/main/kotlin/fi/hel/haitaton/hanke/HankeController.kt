@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeSearch
+import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.validation.ValidHanke
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
@@ -17,7 +18,10 @@ private val logger = KotlinLogging.logger { }
 @RestController
 @RequestMapping("/hankkeet")
 @Validated
-class HankeController(@Autowired private val hankeService: HankeService) {
+class HankeController(
+    @Autowired private val hankeService: HankeService,
+    @Autowired private val hankeGeometriatService: HankeGeometriatService
+) {
 
     /**
      * Get one hanke with hankeTunnus.
@@ -47,17 +51,19 @@ class HankeController(@Autowired private val hankeService: HankeService) {
 
     @GetMapping
     fun getHankeList(hankeSearch: HankeSearch? = null): ResponseEntity<Any> {
-
-        if (hankeSearch == null || hankeSearch.periodBegin == null || hankeSearch.periodEnd == null) {
-            return getAllHankeItems()
-        }
         return try {
-            //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
-            // TODO: user token  from front?
-            //  TODO: do we limit result for user own hanke?
-            val hankeList = hankeService.loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
+            val hankeList = if (hankeSearch == null || hankeSearch.isEmpty()) {
+                hankeService.loadAllHanke()
+            } else {
+                //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
+                // TODO: user token  from front?
+                //  TODO: do we limit result for user own hanke?
+                hankeService.loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
+            }
+            if (hankeSearch != null && hankeSearch.includeGeometry()) {
+                includeGeometry(hankeList)
+            }
             ResponseEntity.status(HttpStatus.OK).body(hankeList)
-
         } catch (e: Exception) {
             logger.error(e) {
                 HankeError.HAI1004.toString()
@@ -66,23 +72,9 @@ class HankeController(@Autowired private val hankeService: HankeService) {
         }
     }
 
-    /**
-     * Get all hanke
-     *  TODO: token  from front?
-     *  TODO: limit call with user information and return only user's own hanke or something?
-     *  TODO: do we later on have users who can read all Hanke items?
-     */
-    internal fun getAllHankeItems(): ResponseEntity<Any> {
-        logger.info { "Entering getAllHankeItems" }
-        return try {
-            val hankeList = hankeService.loadAllHanke()
-            ResponseEntity.status(HttpStatus.OK).body(hankeList)
-
-        } catch (e: Exception) {
-            logger.error(e) {
-                HankeError.HAI1004.toString()
-            }
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1004)
+    private fun includeGeometry(hankeList: List<Hanke>) {
+        hankeList.forEach { hanke ->
+            hanke.geometriat = hankeGeometriatService.loadGeometriat(hanke.hankeTunnus!!)
         }
     }
 

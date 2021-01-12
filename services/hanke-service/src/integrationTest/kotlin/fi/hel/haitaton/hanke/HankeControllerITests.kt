@@ -2,8 +2,11 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import io.mockk.every
 import io.mockk.verify
+import org.geojson.FeatureCollection
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -34,6 +37,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @Autowired
     lateinit var hankeService: HankeService  //faking these calls
 
+    @Autowired
+    lateinit var hankeGeometriatService: HankeGeometriatService
+
     @Test
     fun `When hankeTunnus is given then return Hanke with it (GET)`() {
 
@@ -53,7 +59,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     }
 
     @Test
-    fun `When calling get without parameters then return all Hanke data`() {
+    fun `When calling get without parameters then return all Hanke data without geometry`() {
 
         // faking the service call with two returned Hanke
         every { hankeService.loadAllHanke() }.returns(
@@ -69,11 +75,41 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].hankeTunnus").value(mockedHankeTunnus))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].hankeTunnus").value("hanketunnus2"))
+                .andExpect(jsonPath("$[0].hankeTunnus").value(mockedHankeTunnus))
+                .andExpect(jsonPath("$[1].hankeTunnus").value("hanketunnus2"))
+                .andExpect(jsonPath("$[0].geometriat").doesNotExist())
+                .andExpect(jsonPath("$[1].geometriat").doesNotExist())
 
         verify { hankeService.loadAllHanke() }
 
+    }
+
+    @Test
+    fun `When calling get with geometry=true then return all Hanke data with geometry`() {
+        // faking the service call with two returned Hanke
+        every { hankeService.loadAllHanke() }.returns(
+            listOf(Hanke(123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
+                getDatetimeAlku().minusDays(500), getDatetimeLoppu().minusDays(450), Vaihe.OHJELMOINTI, null,
+                1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
+                Hanke(444, "hanketunnus2", true, "Esplanadin viemäröinti", "lorem ipsum dolor sit amet...",
+                    getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
+                    1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT)))
+        every { hankeGeometriatService.loadGeometriat(mockedHankeTunnus) }.returns(HankeGeometriat(1, 123, FeatureCollection()))
+        every { hankeGeometriatService.loadGeometriat("hanketunnus2") }.returns(HankeGeometriat(2, 444, FeatureCollection()))
+
+        //we check that we get the two hankeTunnus and geometriat we expect
+        mockMvc.perform(get("/hankkeet?geometry=true")
+            .accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk)
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$[0].hankeTunnus").value(mockedHankeTunnus))
+            .andExpect(jsonPath("$[1].hankeTunnus").value("hanketunnus2"))
+            .andExpect(jsonPath("$[0].geometriat.id").value(1))
+            .andExpect(jsonPath("$[1].geometriat.id").value(2))
+
+        verify { hankeService.loadAllHanke() }
+        verify { hankeGeometriatService.loadGeometriat(mockedHankeTunnus) }
+        verify { hankeGeometriatService.loadGeometriat("hanketunnus2") }
     }
 
     @Test
