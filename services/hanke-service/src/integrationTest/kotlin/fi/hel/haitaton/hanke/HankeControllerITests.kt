@@ -94,8 +94,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 Hanke(444, "hanketunnus2", true, "Esplanadin viemäröinti", "lorem ipsum dolor sit amet...",
                     getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
                     1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT)))
-        every { hankeGeometriatService.loadGeometriat(mockedHankeTunnus) }.returns(HankeGeometriat(1, 123, FeatureCollection()))
-        every { hankeGeometriatService.loadGeometriat("hanketunnus2") }.returns(HankeGeometriat(2, 444, FeatureCollection()))
+        every { hankeGeometriatService.loadGeometriat(123) }.returns(HankeGeometriat(1, 123, FeatureCollection()))
+        every { hankeGeometriatService.loadGeometriat(444) }.returns(HankeGeometriat(2, 444, FeatureCollection()))
 
         //we check that we get the two hankeTunnus and geometriat we expect
         mockMvc.perform(get("/hankkeet?geometry=true")
@@ -108,8 +108,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("$[1].geometriat.id").value(2))
 
         verify { hankeService.loadAllHanke() }
-        verify { hankeGeometriatService.loadGeometriat(mockedHankeTunnus) }
-        verify { hankeGeometriatService.loadGeometriat("hanketunnus2") }
+        verify { hankeGeometriatService.loadGeometriat(123) }
+        verify { hankeGeometriatService.loadGeometriat(444) }
     }
 
     @Test
