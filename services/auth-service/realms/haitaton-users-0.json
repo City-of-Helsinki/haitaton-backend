@@ -1,17 +1,17 @@
 {
   "realm" : "haitaton",
   "users" : [ {
-    "id" : "79c49f28-9756-46d7-b5d1-649002446d9e",
-    "createdTimestamp" : 1609762385126,
+    "id" : "694e70d8-65ba-4b49-8a2a-7420a88cf8f1",
+    "createdTimestamp" : 1610109669639,
     "username" : "admin",
     "enabled" : true,
     "totp" : false,
     "emailVerified" : true,
     "credentials" : [ {
-      "id" : "f70711d1-cf22-49b5-b762-636495d1cf87",
+      "id" : "58badc05-ebf1-4cca-8ae8-b53862fb27b2",
       "type" : "password",
-      "createdDate" : 1609762400241,
-      "secretData" : "{\"value\":\"xex2jEfxQaUbqiITxGK/EQZmr+BOG8DmRoklKoi5X23RX5OlKyzoHbiuWjG2PXlfWh/c6NTUvi7elnJPtO7ZZA==\",\"salt\":\"S9WuK+m8MTgfs7fuBa/xpw==\",\"additionalParameters\":{}}",
+      "createdDate" : 1610109681103,
+      "secretData" : "{\"value\":\"amRtQq5bJrllaToBHDmkFgCtNaiHpwEiMIJhVJw1nvQVWxNK0iLOvudIhxgXuSTkyxoNF6XiXpc1O3VtmUNQMQ==\",\"salt\":\"g0b8/8tyOo8YrMsWObrxkg==\",\"additionalParameters\":{}}",
       "credentialData" : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
     } ],
     "disableableCredentialTypes" : [ ],
@@ -22,5 +22,30 @@
     },
     "notBefore" : 0,
     "groups" : [ "/admin" ]
+  }, {
+    "id" : "0d05cabc-03af-4af5-a9ed-afea18045614",
+    "createdTimestamp" : 1610458105435,
+    "username" : "petteri",
+    "enabled" : true,
+    "totp" : false,
+    "emailVerified" : true,
+    "firstName" : "Petteri",
+    "lastName" : "Innanmaa",
+    "email" : "petteri.innanmaa@gofore.com",
+    "credentials" : [ {
+      "id" : "9c2aaf17-29fa-4d34-ad01-6819674f29ff",
+      "type" : "password",
+      "createdDate" : 1610546408814,
+      "secretData" : "{\"value\":\"a3/EybK7pONcobPpxe76a4+ulYaAq4R5qzmjrmRAu23RQwxF8cWlcCjL/jFrMswTtl2yN2UgbYPgZk4rjB5qTg==\",\"salt\":\"SaCStPREPy8MTc7RpH4/vw==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "realmRoles" : [ "haitaton-user", "uma_authorization", "offline_access" ],
+    "clientRoles" : {
+      "account" : [ "view-profile", "manage-account" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ ]
   } ]
 }
