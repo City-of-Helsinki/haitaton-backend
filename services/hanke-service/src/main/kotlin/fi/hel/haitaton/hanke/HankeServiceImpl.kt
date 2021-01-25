@@ -368,7 +368,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
      */
     private fun isValidYhteystieto(hankeYht: HankeYhteystieto): Boolean {
         return isSomeFieldsSet(hankeYht)
-      /*  return hankeYht.sukunimi.isNotBlank() && hankeYht.etunimi.isNotBlank()
+      /* TODO, put this back:  return hankeYht.sukunimi.isNotBlank() && hankeYht.etunimi.isNotBlank()
                 && hankeYht.email.isNotBlank() && hankeYht.puhelinnumero.isNotBlank()*/
     }
 
