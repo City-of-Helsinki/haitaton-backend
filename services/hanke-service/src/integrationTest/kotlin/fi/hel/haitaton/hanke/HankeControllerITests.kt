@@ -8,6 +8,8 @@ import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import io.mockk.every
 import io.mockk.verify
 import org.geojson.FeatureCollection
+import org.junit.Ignore
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -207,6 +209,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     }
 
+    @Disabled //TODO: removed from run because at the moment mandatory checks for omistajat has been removed and this will not return validation error
     @Test
     fun `Try add with invalid data and get validation error (POST)`() {
 
