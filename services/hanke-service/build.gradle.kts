@@ -76,6 +76,8 @@ dependencies {
 	testImplementation("org.testcontainers:postgresql:1.15.1")
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	// Spring Security with Keycloak
+	implementation("org.keycloak:keycloak-spring-boot-starter:12.0.2")
 }
 
 //tasks.withType<Test> {
