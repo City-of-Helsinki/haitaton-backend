@@ -67,7 +67,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             ok = false
         }
 
-        ok = ok && isValidHankeYhteystietos(hanke, context)
+     //  TODO ok = ok && isValidHankeYhteystietos(hanke, context) removed mandatory checks for now when front is not ready to add same rules and this confuses
         ok = ok && checkTyomaaTiedot(hanke, context)
         ok = ok && checkHaitat(hanke, context)
 

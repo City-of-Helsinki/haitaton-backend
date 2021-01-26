@@ -380,11 +380,14 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
     }
 
     /**
-     * Returns true if all the four mandatory fields are non-null, non-empty and non-whitespace-only.
+     * Returns true if any the four mandatory fields are non-null, non-empty and non-whitespace-only.
+     *
+     *  Logic changed to allow any of these to be saved separately
      */
     private fun isValidYhteystieto(hankeYht: HankeYhteystieto): Boolean {
-        return hankeYht.sukunimi.isNotBlank() && hankeYht.etunimi.isNotBlank()
-                && hankeYht.email.isNotBlank() && hankeYht.puhelinnumero.isNotBlank()
+        return isSomeFieldsSet(hankeYht)
+      /* TODO, put this back:  return hankeYht.sukunimi.isNotBlank() && hankeYht.etunimi.isNotBlank()
+                && hankeYht.email.isNotBlank() && hankeYht.puhelinnumero.isNotBlank()*/
     }
 
     private fun processCreateYhteystieto(hankeYht: HankeYhteystieto, validYhteystieto: Boolean, contactType: ContactType,
