@@ -48,11 +48,21 @@ internal class HanketunnusServiceImplManualTest {
     @Transactional
     fun newHanketunnus() {
         val ids = ConcurrentHashMap.newKeySet<String>()
-        IntStream.range(0, 10000).parallel().forEach { i ->
-            val hanketunnus = hanketunnusService.newHanketunnus()
-            ids.add(hanketunnus)
-            logger.debug {
-                "$i - $hanketunnus"
+        IntStream.range(0, 100).parallel().forEach { i ->
+            (0 until 100).forEach { j ->
+                val hanketunnus = hanketunnusService.newHanketunnus()
+                ids.add(hanketunnus)
+                logger.debug {
+                    "${i * 100 + j} - $hanketunnus"
+                }
+                if (Math.random() > 0.5) {
+                    Thread.sleep((Math.random() * 5).toLong())
+                } else {
+                    var c = 0
+                    (0..(1000 * Math.random()).toInt() + 1000).forEach { k ->
+                        c += k
+                    }
+                }
             }
         }
         assertThat(ids.size).isEqualTo(10000)
