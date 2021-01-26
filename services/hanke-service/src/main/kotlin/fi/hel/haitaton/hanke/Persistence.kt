@@ -218,6 +218,7 @@ interface IdCounterRepository : JpaRepository<IdCounter, CounterType> {
     'FOR UPDATE' in nested SELECT clause makes sure that no other process can update the row during this whole UPDATE clause
     'RETURNING' in the end is for UPDATE clase to return not just the number of affected rows but also the column data of those rows (a single row in our case)
     With these two specialities we can assure that concurrent calls for this method will never return duplicate values.
+    Notice also that the method returns a list even though there is always only max. 1 item in it
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
