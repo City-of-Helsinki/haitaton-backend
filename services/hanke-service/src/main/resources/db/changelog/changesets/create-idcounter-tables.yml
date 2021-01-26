@@ -1,0 +1,16 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-idcounter-tables
+      comment: Create ID counter tables
+      author: Teemu Hiltunen
+      changes:
+        - createTable:
+            tableName: idcounter
+            columns:
+              - column: { name: countertype, type: varchar(20), constraints: { primaryKey: true, nullable: false } }
+              - column: { name: value, type: integer }
+        - insert:
+            tableName: idcounter
+            columns:
+              - column: { name: countertype, value: "HANKETUNNUS" }
+              - column: { name: value, value: 0 }

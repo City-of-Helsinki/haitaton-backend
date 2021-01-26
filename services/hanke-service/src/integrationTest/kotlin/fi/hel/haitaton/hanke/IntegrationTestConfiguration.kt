@@ -20,6 +20,9 @@ class IntegrationTestConfiguration {
     fun hankeRepository(): HankeRepository = mockk()
 
     @Bean
+    fun hanketunnusService(): HanketunnusService = mockk()
+
+    @Bean
     fun hankeService(): HankeService = mockk()
 
     @Bean
