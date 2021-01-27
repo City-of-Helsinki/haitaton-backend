@@ -14,6 +14,7 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.util.concurrent.ConcurrentHashMap
 import java.util.stream.IntStream
+import kotlin.random.Random
 
 private val logger = KotlinLogging.logger { }
 
@@ -44,10 +45,15 @@ internal class HanketunnusServiceImplManualTest {
     @Autowired
     lateinit var hanketunnusService: HanketunnusService
 
+    /*
+    A manual test for testing concurrent calls to HanketunnusService.newHanketunnus() in order to make sure that it will never return a duplicate value
+    Test will trigger 100 concurrent runs which each loops 100 times making call to newHanketunnus() and then sleeping or doing random looping in order to create some variation
+    Total number of created unique ids should therefore be 100 * 100 = 10000.
+     */
     @Test
     @Transactional
     fun newHanketunnus() {
-        val ids = ConcurrentHashMap.newKeySet<String>()
+        val ids = ConcurrentHashMap.newKeySet<String>() // using a set makes sure that all items are unique
         IntStream.range(0, 100).parallel().forEach { i ->
             (0 until 100).forEach { j ->
                 val hanketunnus = hanketunnusService.newHanketunnus()
@@ -55,11 +61,11 @@ internal class HanketunnusServiceImplManualTest {
                 logger.debug {
                     "${i * 100 + j} - $hanketunnus"
                 }
-                if (Math.random() > 0.5) {
-                    Thread.sleep((Math.random() * 5).toLong())
+                if (Random.nextBoolean()) {
+                    Thread.sleep(Random.nextLong(6))
                 } else {
                     var c = 0
-                    (0..(1000 * Math.random()).toInt() + 1000).forEach { k ->
+                    (0..(1000 + Random.nextInt(1000))).forEach { k ->
                         c += k
                     }
                 }
