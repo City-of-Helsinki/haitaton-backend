@@ -10,7 +10,7 @@ import java.time.ZonedDateTime
 class HanketunnusServiceImplTest {
 
     @Test
-    fun newHanketunnus() {
+    fun `newHanketunnus() returns id matching pattern HAIYY-N`() {
         val repository: IdCounterRepository = mockk()
         val service = HanketunnusServiceImpl(repository)
 
