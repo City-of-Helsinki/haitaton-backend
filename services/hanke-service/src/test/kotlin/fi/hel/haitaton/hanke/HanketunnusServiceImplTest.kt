@@ -19,6 +19,7 @@ class HanketunnusServiceImplTest {
         val hankeTunnus = service.newHanketunnus()
         val currentYear = ZonedDateTime.now(TZ_UTC).year
 
+        // hanketunnus pattern is HAIYY-N where YY is the current year (only last two digits) and N is a serial number starting from 1
         assertThat(hankeTunnus).isEqualTo("HAI${currentYear.toString().substring(2)}-1")
     }
 }
