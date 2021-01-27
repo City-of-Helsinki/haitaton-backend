@@ -5,8 +5,6 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.HaitatonPostgreSQLContainer
-import fi.hel.haitaton.hanke.HankeEntity
-import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.asJsonResource
 import org.geojson.Point
 import org.junit.jupiter.api.BeforeEach
@@ -20,7 +18,6 @@ import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import javax.transaction.Transactional
 
 @Testcontainers
@@ -32,9 +29,9 @@ internal class HankeGeometriatDaoImplITest {
     companion object {
         @Container
         var container: HaitatonPostgreSQLContainer = HaitatonPostgreSQLContainer
-                .withExposedPorts(5433) // use non-default port
-                .withPassword("test")
-                .withUsername("test")
+            .withExposedPorts(5433) // use non-default port
+            .withPassword("test")
+            .withUsername("test")
 
         @JvmStatic
         @DynamicPropertySource
@@ -47,9 +44,6 @@ internal class HankeGeometriatDaoImplITest {
             registry.add("spring.liquibase.password", container::getPassword)
         }
     }
-
-    @Autowired
-    private lateinit var hankeRepository: HankeRepository
 
     @Autowired
     private lateinit var hankeGeometriatDao: HankeGeometriatDao
@@ -69,7 +63,7 @@ internal class HankeGeometriatDaoImplITest {
         hankeGeometriat.createdByUserId = 1111
         hankeGeometriat.modifiedByUserId = 2222
         // For FK constraints we need a Hanke in database
-        hankeRepository.save(HankeEntity(id = hankeGeometriat.hankeId))
+        jdbcTemplate.execute("INSERT INTO Hanke (id) VALUES (${hankeGeometriat.hankeId})")
 
         // Create
         hankeGeometriatDao.createHankeGeometriat(hankeGeometriat)
@@ -112,7 +106,11 @@ internal class HankeGeometriatDaoImplITest {
         jdbcTemplate.execute("DELETE FROM HankeGeometriat WHERE hankeId=${hankeGeometriat.hankeId}")
         // check that all was deleted correctly
         assertThat(hankeGeometriatDao.retrieveHankeGeometriat(hankeGeometriat.hankeId!!)).isNull()
-        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometriat") { rs, _ -> rs.getInt(1) }).isEqualTo(0)
-        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometria") { rs, _ -> rs.getInt(1) }).isEqualTo(0)
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometriat") { rs, _ -> rs.getInt(1) }).isEqualTo(
+            0
+        )
+        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometria") { rs, _ -> rs.getInt(1) }).isEqualTo(
+            0
+        )
     }
 }

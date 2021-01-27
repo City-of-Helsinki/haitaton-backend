@@ -1,10 +1,12 @@
 package fi.hel.haitaton.hanke
 
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import java.time.LocalDate
 import java.time.LocalDateTime
 import javax.persistence.*
+
 
 /*
 Hibernate/JPA Entity classes
@@ -90,34 +92,34 @@ enum class Haitta13 {
 @Entity
 @Table(name = "hanke")
 class HankeEntity(
-        @Enumerated(EnumType.STRING)
-        var saveType: SaveType? = null,
-        var hankeTunnus: String? = null,
-        var nimi: String? = null,
-        var kuvaus: String? = null,
-        var alkuPvm: LocalDate? = null, // NOTE: stored and handled in UTC, not in "local" time
-        var loppuPvm: LocalDate? = null, // NOTE: stored and handled in UTC, not in "local" time
-        @Enumerated(EnumType.STRING)
-        var vaihe: Vaihe? = null,
-        var suunnitteluVaihe: SuunnitteluVaihe? = null,
-        var onYKTHanke: Boolean? = false,
-        var version: Int? = 0,
-        // NOTE: creatorUserId must be non-null for valid data, but to allow creating instances with
-        // no-arg constructor and programming convenience, this class allows it to be null (temporarily).
-        var createdByUserId: Int? = null,
-        var createdAt: LocalDateTime? = null,
-        var modifiedByUserId: Int? = null,
-        var modifiedAt: LocalDateTime? = null,
-        // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
-        // can be a performance problem if there is a need to do bulk inserts.
-        // Using SEQUENCE would allow getting multiple ids more efficiently.
-        @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-        var id: Int? = null,
+    @Enumerated(EnumType.STRING)
+    var saveType: SaveType? = null,
+    var hankeTunnus: String? = null,
+    var nimi: String? = null,
+    var kuvaus: String? = null,
+    var alkuPvm: LocalDate? = null, // NOTE: stored and handled in UTC, not in "local" time
+    var loppuPvm: LocalDate? = null, // NOTE: stored and handled in UTC, not in "local" time
+    @Enumerated(EnumType.STRING)
+    var vaihe: Vaihe? = null,
+    var suunnitteluVaihe: SuunnitteluVaihe? = null,
+    var onYKTHanke: Boolean? = false,
+    var version: Int? = 0,
+    // NOTE: creatorUserId must be non-null for valid data, but to allow creating instances with
+    // no-arg constructor and programming convenience, this class allows it to be null (temporarily).
+    var createdByUserId: Int? = null,
+    var createdAt: LocalDateTime? = null,
+    var modifiedByUserId: Int? = null,
+    var modifiedAt: LocalDateTime? = null,
+    // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
+    // can be a performance problem if there is a need to do bulk inserts.
+    // Using SEQUENCE would allow getting multiple ids more efficiently.
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    var id: Int? = null,
 
-        // related
-        // orphanRemoval is needed for even explicit child-object removal. JPA weirdness...
-        @OneToMany(fetch = FetchType.LAZY, mappedBy = "hanke", cascade = [CascadeType.ALL], orphanRemoval = true)
-        var listOfHankeYhteystieto: MutableList<HankeYhteystietoEntity> = mutableListOf()
+    // related
+    // orphanRemoval is needed for even explicit child-object removal. JPA weirdness...
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "hanke", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var listOfHankeYhteystieto: MutableList<HankeYhteystietoEntity> = mutableListOf()
 
 ) {
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
@@ -197,3 +199,48 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
 
 }
 
+enum class CounterType {
+    HANKETUNNUS
+}
+
+@Entity
+@Table(name = "idcounter")
+class IdCounter(
+    @Id
+    @Enumerated(EnumType.STRING)
+    var counterType: CounterType? = null,
+    var value: Long? = null
+)
+
+interface IdCounterRepository : JpaRepository<IdCounter, CounterType> {
+    /*
+    Basic principals:
+    - if current year is the same as before (in column 'year') return incrementing value
+    - if current year is not the same as before return 1
+    This SQL clause has some PostgreSQL specific thingies:
+    'WITH' clause describes a 'variable' table used inside query in two places
+    'FOR UPDATE' in nested SELECT clause makes sure that no other process can update the row during this whole UPDATE clause
+    'RETURNING' in the end is for UPDATE clase to return not just the number of affected rows but also the column data of those rows (a single row in our case)
+    With these specialities we can assure that concurrent calls for this method will never return duplicate values.
+    Notice also that the method returns a list even though there is always only max. 1 item in it because counterType is PK.
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(
+        """
+            WITH currentyear AS (SELECT EXTRACT(YEAR FROM now() AT TIME ZONE 'UTC'))
+            UPDATE 
+                idcounter
+            SET
+                value = CASE
+                    WHEN year = currentyear.date_part THEN (SELECT value FROM IdCounter WHERE counterType = :counterType FOR UPDATE) + 1
+                    ELSE 1 
+                END,
+                year = currentyear.date_part
+            FROM currentyear
+            WHERE counterType = :counterType
+            RETURNING counterType, value
+            """,
+        nativeQuery = true
+    )
+    fun incrementAndGet(counterType: String): List<IdCounter>
+}
