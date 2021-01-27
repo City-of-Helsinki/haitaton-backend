@@ -8,9 +8,11 @@ databaseChangeLog:
             tableName: idcounter
             columns:
               - column: { name: countertype, type: varchar(20), constraints: { primaryKey: true, nullable: false } }
+              - column: { name: year, type: integer }
               - column: { name: value, type: integer }
         - insert:
             tableName: idcounter
             columns:
               - column: { name: countertype, value: "HANKETUNNUS" }
+              - column: { name: year, value: 2021 }
               - column: { name: value, value: 0 }
