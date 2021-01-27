@@ -3,7 +3,13 @@ package fi.hel.haitaton.hanke
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 
-object HaitatonPostgreSQLContainer : PostgreSQLContainer<HaitatonPostgreSQLContainer>(DockerImageName.parse("postgis/postgis:13-master").asCompatibleSubstituteFor("postgres")) {
+const val POSTGRESQL_IMAGE = "postgis/postgis:13-master"
+
+object HaitatonPostgreSQLContainer : PostgreSQLContainer<HaitatonPostgreSQLContainer>(
+    DockerImageName.parse(
+        POSTGRESQL_IMAGE
+    ).asCompatibleSubstituteFor("postgres")
+) {
 
     override fun start() {
         super.start()
