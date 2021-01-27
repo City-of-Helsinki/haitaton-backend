@@ -10,7 +10,7 @@ import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
 
-class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeService {
+class HankeServiceImpl(private val hankeRepository: HankeRepository, private val hanketunnusService: HanketunnusService) : HankeService {
 
 
     // TODO:
@@ -97,9 +97,6 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
      * @return a new Hanke instance with the added and possibly modified values.
      */
     override fun createHanke(hanke: Hanke): Hanke {
-        // TODO: Once we have a proper service for creating hanke-tunnus,
-        //   only one save call is needed here. I.e. get a new tunnus, put it into
-        //   both the domain object and the entity, save the entity, return
         // TODO: Only create that hanke-tunnus if a specific set of fields are non-empty/set.
         //   For now, hanke-tunnus is created as soon as this function is called, even for fully empty data.
 
@@ -117,24 +114,15 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository) : HankeServ
         entity.modifiedByUserId = null
         entity.modifiedAt = null
 
-        logger.info {
-            // TODO: once the hanke-tunnus gets its own service, this logging line gets more useful
-            //"Saving  Hanke ${entity.hankeTunnus}: ${hanke.toJsonString()}"
-            "Saving Hanke step 1 for: ${hanke.toJsonString()}"
-        }
-        hankeRepository.save(entity)
-        // TODO: For now, get the db-id and create hankeTunnus with it, put it in both objects, save again
-        val id = entity.id
-        val tunnus = "SMTGEN2_$id"
-        entity.hankeTunnus = tunnus
-        // TODO: once the hanke-tunnus gets its own service, this logging and the second save becomes obsolete.
-        logger.info {
-            "Saving  Hanke step 2 for: ${entity.hankeTunnus}"
-        }
+        val hanketunnus = hanketunnusService.newHanketunnus()
+        entity.hankeTunnus = hanketunnus
 
+        logger.info {
+            "Creating Hanke with new hanketunnus $hanketunnus: ${hanke.toJsonString()}"
+        }
         hankeRepository.save(entity)
         logger.info {
-            "Saved Hanke ${entity.hankeTunnus}"
+            "Created Hanke ${entity.hankeTunnus}"
         }
 
         // Creating a new domain object for the return value; it will have the updated values from the database,

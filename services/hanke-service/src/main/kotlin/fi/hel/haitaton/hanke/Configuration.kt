@@ -17,14 +17,23 @@ import org.springframework.jdbc.core.JdbcOperations
 class Configuration {
 
     @Bean
-    fun hankeService(hankeRepository: HankeRepository): HankeService = HankeServiceImpl(hankeRepository)
+    fun hanketunnusService(idCounterRepository: IdCounterRepository): HanketunnusService =
+        HanketunnusServiceImpl(idCounterRepository)
 
     @Bean
-    fun organisaatioService(organisaatioRepository: OrganisaatioRepository): OrganisaatioService = OrganisaatioServiceImpl(organisaatioRepository)
+    fun hankeService(hankeRepository: HankeRepository, hanketunnusService: HanketunnusService): HankeService =
+        HankeServiceImpl(hankeRepository, hanketunnusService)
+
+    @Bean
+    fun organisaatioService(organisaatioRepository: OrganisaatioRepository): OrganisaatioService =
+        OrganisaatioServiceImpl(organisaatioRepository)
 
     @Bean
     fun hankeGeometriatDao(jdbcOperations: JdbcOperations): HankeGeometriatDao = HankeGeometriatDaoImpl(jdbcOperations)
 
     @Bean
-    fun hankeGeometriatService(repository: HankeRepository, hankeGeometriatDao: HankeGeometriatDao): HankeGeometriatService = HankeGeometriatServiceImpl(repository, hankeGeometriatDao)
+    fun hankeGeometriatService(
+        repository: HankeRepository,
+        hankeGeometriatDao: HankeGeometriatDao
+    ): HankeGeometriatService = HankeGeometriatServiceImpl(repository, hankeGeometriatDao)
 }
