@@ -78,7 +78,7 @@ services:
       HAITATON_PORT: 5432
       HAITATON_USER: haitaton_user
       HAITATON_PASSWORD: haitaton
-      HAITATON_CORS_ALLOWED_ORIGINS: http://localhost:8000
+#      HAITATON_CORS_ALLOWED_ORIGINS: http://localhost:8000
     depends_on:
       - db
       - auth-service
