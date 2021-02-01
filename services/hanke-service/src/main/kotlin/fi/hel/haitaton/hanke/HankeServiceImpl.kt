@@ -6,12 +6,14 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 
 import mu.KotlinLogging
 import org.springframework.security.access.prepost.PostAuthorize
+import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.userdetails.UserDetails
 import java.time.LocalDate
 import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
 
-class HankeServiceImpl(private val hankeRepository: HankeRepository, private val hanketunnusService: HanketunnusService) : HankeService {
+open class HankeServiceImpl(private val hankeRepository: HankeRepository, private val hanketunnusService: HanketunnusService) : HankeService {
 
 
     // TODO:
@@ -49,9 +51,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository, private val
         }
     }
 
-    //@PostAuthorize("returnObject.omistajat.stream().map(y -> y.getOrganisaatioId()).contains(#authentication.authorities)")
     override fun loadHanke(hankeTunnus: String): Hanke {
-
         // TODO: Find out all savetype matches and return the more recent draft vs. submit.
         val entity = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
 
@@ -133,6 +133,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository, private val
         return createHankeDomainObjectFromEntity(entity)
     }
 
+    @PreAuthorize("returnObject.createdBy == ((KeycloakPrincipal)httpServletRequest.userPrincipal).")
     override fun updateHanke(hanke: Hanke): Hanke {
         if (hanke.hankeTunnus == null)
             error("Somehow got here with hanke without hanke-tunnus")

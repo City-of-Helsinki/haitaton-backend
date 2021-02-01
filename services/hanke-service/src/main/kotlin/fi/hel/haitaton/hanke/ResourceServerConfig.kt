@@ -37,7 +37,7 @@ class ResourceServerConfig : ResourceServerConfigurerAdapter() {
     override fun configure(http: HttpSecurity) {
         http.authorizeRequests()
             .mvcMatchers(HttpMethod.GET, "/**")
-            .hasAuthority("ROLE_ADMIN")
+            .hasAuthority("haitaton-user")
             .anyRequest().authenticated()
     }
 
