@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: modify-userids-to-strings
+      comment: Modify all userid fields to strings in all tables
+      author: Teemu Hiltunen
+      changes:
+        - modifyDataType:
+            tableName: hanke
+            columnName: createdbyuserid
+            newDataType: varchar(40)
+        - modifyDataType:
+            tableName: hanke
+            columnName: modifiedbyuserid
+            newDataType: varchar(40)
+        - modifyDataType:
+            tableName: hankeyhteystieto
+            columnName: createdbyuserid
+            newDataType: varchar(40)
+        - modifyDataType:
+            tableName: hankeyhteystieto
+            columnName: modifiedbyuserid
+            newDataType: varchar(40)
+        - modifyDataType:
+            tableName: hankegeometriat
+            columnName: createdbyuserid
+            newDataType: varchar(40)
+        - modifyDataType:
+            tableName: hankegeometriat
+            columnName: modifiedbyuserid
+            newDataType: varchar(40)

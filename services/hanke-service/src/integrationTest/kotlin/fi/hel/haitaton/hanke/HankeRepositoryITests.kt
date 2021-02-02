@@ -109,15 +109,15 @@ class HankeRepositoryITests @Autowired constructor(
         val hankeYhteystietoEntity1 = HankeYhteystietoEntity(
                 ContactType.OMISTAJA, "Suku1", "Etu1", "email1", "0101111111",
                 1, "org1", "osasto1",
-                1, datetime, 11, datetime, null, baseHankeEntity)
+                "1", datetime, "11", datetime, null, baseHankeEntity)
         val hankeYhteystietoEntity2 = HankeYhteystietoEntity(
                 ContactType.ARVIOIJA, "Suku2", "Etu2", "email2", "0102222222",
                 2, "org2", "osasto2",
-                2, datetime, 22, datetime, null, baseHankeEntity)
+                "2", datetime, "22", datetime, null, baseHankeEntity)
         val hankeYhteystietoEntity3 = HankeYhteystietoEntity(
                 ContactType.TOTEUTTAJA, "Suku3", "Etu3", "email3", "0103333333",
                 3, "org3", "osasto3",
-                3, datetime, 33, datetime, null, baseHankeEntity)
+                "3", datetime, "33", datetime, null, baseHankeEntity)
 
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity1)
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity2)
@@ -194,11 +194,11 @@ class HankeRepositoryITests @Autowired constructor(
         val hankeYhteystietoEntity1 = HankeYhteystietoEntity(
                 ContactType.OMISTAJA, "Suku1", "Etu1", "email1", "0101111111",
                 1, "org1", "osasto1",
-                1, datetime, 11, datetime, null, baseHankeEntity)
+                "1", datetime, "11", datetime, null, baseHankeEntity)
         val hankeYhteystietoEntity2 = HankeYhteystietoEntity(
                 ContactType.ARVIOIJA, "Suku2", "Etu2", "email2", "0102222222",
                 2, "org2", "osasto2",
-                2, datetime, 22, datetime, null, baseHankeEntity)
+                "2", datetime, "22", datetime, null, baseHankeEntity)
 
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity1)
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity2)
