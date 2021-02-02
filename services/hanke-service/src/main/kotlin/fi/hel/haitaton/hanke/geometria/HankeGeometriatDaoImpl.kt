@@ -88,7 +88,7 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
             """.trimIndent()) { ps ->
                 ps.setInt(1, hankeGeometriat.version!!)
                 if (hankeGeometriat.modifiedByUserId != null) {
-                    ps.setInt(2, hankeGeometriat.modifiedByUserId!!)
+                    ps.setString(2, hankeGeometriat.modifiedByUserId!!)
                 } else {
                     ps.setNull(2, Types.INTEGER)
                 }
@@ -124,9 +124,9 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                         rs.getInt(2),
                         null,
                         rs.getInt(3),
-                        rs.getInt(4),
+                        rs.getString(4),
                         rs.getTimestamp(5).toInstant().atZone(TZ_UTC),
-                        rs.getInt(6),
+                        rs.getString(6),
                         rs.getTimestamp(7).toInstant().atZone(TZ_UTC)
                 )
             }, hankeId).getOrNull(0)

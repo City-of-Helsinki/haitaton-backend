@@ -8,9 +8,9 @@ data class HankeGeometriat(
         var hankeId: Int? = null,
         var featureCollection: FeatureCollection? = null,
         var version: Int? = null,
-        var createdByUserId: Int? = null,
+        var createdByUserId: String? = null,
         var createdAt: ZonedDateTime? = null,
-        var modifiedByUserId: Int? = null,
+        var modifiedByUserId: String? = null,
         var modifiedAt: ZonedDateTime? = null
 ) {
     fun withFeatureCollection(featureCollection: FeatureCollection): HankeGeometriat {

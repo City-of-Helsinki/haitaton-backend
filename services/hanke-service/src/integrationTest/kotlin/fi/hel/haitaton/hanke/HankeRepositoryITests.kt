@@ -109,15 +109,15 @@ class HankeRepositoryITests @Autowired constructor(
         val hankeYhteystietoEntity1 = HankeYhteystietoEntity(
                 ContactType.OMISTAJA, "Suku1", "Etu1", "email1", "0101111111",
                 1, "org1", "osasto1",
-                1, datetime, 11, datetime, null, baseHankeEntity)
+                "1", datetime, "11", datetime, null, baseHankeEntity)
         val hankeYhteystietoEntity2 = HankeYhteystietoEntity(
                 ContactType.ARVIOIJA, "Suku2", "Etu2", "email2", "0102222222",
                 2, "org2", "osasto2",
-                2, datetime, 22, datetime, null, baseHankeEntity)
+                "2", datetime, "22", datetime, null, baseHankeEntity)
         val hankeYhteystietoEntity3 = HankeYhteystietoEntity(
                 ContactType.TOTEUTTAJA, "Suku3", "Etu3", "email3", "0103333333",
                 3, "org3", "osasto3",
-                3, datetime, 33, datetime, null, baseHankeEntity)
+                "3", datetime, "33", datetime, null, baseHankeEntity)
 
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity1)
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity2)
@@ -147,9 +147,9 @@ class HankeRepositoryITests @Autowired constructor(
         assertThat(loadedHankeYhteystietoEntity1.organisaatioId).isEqualTo(1)
         assertThat(loadedHankeYhteystietoEntity1.organisaatioNimi).isEqualTo("org1")
         assertThat(loadedHankeYhteystietoEntity1.osasto).isEqualTo("osasto1")
-        assertThat(loadedHankeYhteystietoEntity1.createdByUserId).isEqualTo(1)
+        assertThat(loadedHankeYhteystietoEntity1.createdByUserId).isEqualTo("1")
         assertThat(loadedHankeYhteystietoEntity1.createdAt).isEqualTo(datetime)
-        assertThat(loadedHankeYhteystietoEntity1.modifiedByUserId).isEqualTo(11)
+        assertThat(loadedHankeYhteystietoEntity1.modifiedByUserId).isEqualTo("11")
         assertThat(loadedHankeYhteystietoEntity1.modifiedAt).isEqualTo(datetime)
         // Check the back reference to parent Hanke:
         assertThat(loadedHankeYhteystietoEntity1.hanke).isSameAs(loadedHanke)
@@ -162,9 +162,9 @@ class HankeRepositoryITests @Autowired constructor(
         assertThat(loadedHankeYhteystietoEntity2.organisaatioId).isEqualTo(2)
         assertThat(loadedHankeYhteystietoEntity2.organisaatioNimi).isEqualTo("org2")
         assertThat(loadedHankeYhteystietoEntity2.osasto).isEqualTo("osasto2")
-        assertThat(loadedHankeYhteystietoEntity2.createdByUserId).isEqualTo(2)
+        assertThat(loadedHankeYhteystietoEntity2.createdByUserId).isEqualTo("2")
         assertThat(loadedHankeYhteystietoEntity2.createdAt).isEqualTo(datetime)
-        assertThat(loadedHankeYhteystietoEntity2.modifiedByUserId).isEqualTo(22)
+        assertThat(loadedHankeYhteystietoEntity2.modifiedByUserId).isEqualTo("22")
         assertThat(loadedHankeYhteystietoEntity2.modifiedAt).isEqualTo(datetime)
 
         assertThat(loadedHankeYhteystietoEntity3).isNotNull
@@ -175,9 +175,9 @@ class HankeRepositoryITests @Autowired constructor(
         assertThat(loadedHankeYhteystietoEntity3.organisaatioId).isEqualTo(3)
         assertThat(loadedHankeYhteystietoEntity3.organisaatioNimi).isEqualTo("org3")
         assertThat(loadedHankeYhteystietoEntity3.osasto).isEqualTo("osasto3")
-        assertThat(loadedHankeYhteystietoEntity3.createdByUserId).isEqualTo(3)
+        assertThat(loadedHankeYhteystietoEntity3.createdByUserId).isEqualTo("3")
         assertThat(loadedHankeYhteystietoEntity3.createdAt).isEqualTo(datetime)
-        assertThat(loadedHankeYhteystietoEntity3.modifiedByUserId).isEqualTo(33)
+        assertThat(loadedHankeYhteystietoEntity3.modifiedByUserId).isEqualTo("33")
         assertThat(loadedHankeYhteystietoEntity3.modifiedAt).isEqualTo(datetime)
     }
 
@@ -194,11 +194,11 @@ class HankeRepositoryITests @Autowired constructor(
         val hankeYhteystietoEntity1 = HankeYhteystietoEntity(
                 ContactType.OMISTAJA, "Suku1", "Etu1", "email1", "0101111111",
                 1, "org1", "osasto1",
-                1, datetime, 11, datetime, null, baseHankeEntity)
+                "1", datetime, "11", datetime, null, baseHankeEntity)
         val hankeYhteystietoEntity2 = HankeYhteystietoEntity(
                 ContactType.ARVIOIJA, "Suku2", "Etu2", "email2", "0102222222",
                 2, "org2", "osasto2",
-                2, datetime, 22, datetime, null, baseHankeEntity)
+                "2", datetime, "22", datetime, null, baseHankeEntity)
 
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity1)
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity2)
