@@ -8,10 +8,10 @@ import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 import javax.validation.ConstraintViolationException
-
 
 private val logger = KotlinLogging.logger { }
 
@@ -19,8 +19,8 @@ private val logger = KotlinLogging.logger { }
 @RequestMapping("/hankkeet")
 @Validated
 class HankeController(
-        @Autowired private val hankeService: HankeService,
-        @Autowired private val hankeGeometriatService: HankeGeometriatService
+    @Autowired private val hankeService: HankeService,
+    @Autowired private val hankeGeometriatService: HankeGeometriatService
 ) {
 
     /**
@@ -36,10 +36,10 @@ class HankeController(
         return try {
             val hanke = hankeService.loadHanke(hankeTunnus)
             ResponseEntity.status(HttpStatus.OK).body(hanke)
-
+        } catch (e:AccessDeniedException) {
+            throw e
         } catch (e: HankeNotFoundException) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
-
         } catch (e: Exception) {
             logger.error(e) {
                 HankeError.HAI1004.toString()
@@ -134,4 +134,7 @@ class HankeController(
         }
     }
 
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ExceptionHandler(AccessDeniedException::class)
+    fun handleAccessDeniedException(ex: AccessDeniedException): HankeError = HankeError.HAI0001
 }
