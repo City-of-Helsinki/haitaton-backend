@@ -147,9 +147,9 @@ class HankeRepositoryITests @Autowired constructor(
         assertThat(loadedHankeYhteystietoEntity1.organisaatioId).isEqualTo(1)
         assertThat(loadedHankeYhteystietoEntity1.organisaatioNimi).isEqualTo("org1")
         assertThat(loadedHankeYhteystietoEntity1.osasto).isEqualTo("osasto1")
-        assertThat(loadedHankeYhteystietoEntity1.createdByUserId).isEqualTo(1)
+        assertThat(loadedHankeYhteystietoEntity1.createdByUserId).isEqualTo("1")
         assertThat(loadedHankeYhteystietoEntity1.createdAt).isEqualTo(datetime)
-        assertThat(loadedHankeYhteystietoEntity1.modifiedByUserId).isEqualTo(11)
+        assertThat(loadedHankeYhteystietoEntity1.modifiedByUserId).isEqualTo("11")
         assertThat(loadedHankeYhteystietoEntity1.modifiedAt).isEqualTo(datetime)
         // Check the back reference to parent Hanke:
         assertThat(loadedHankeYhteystietoEntity1.hanke).isSameAs(loadedHanke)
@@ -162,9 +162,9 @@ class HankeRepositoryITests @Autowired constructor(
         assertThat(loadedHankeYhteystietoEntity2.organisaatioId).isEqualTo(2)
         assertThat(loadedHankeYhteystietoEntity2.organisaatioNimi).isEqualTo("org2")
         assertThat(loadedHankeYhteystietoEntity2.osasto).isEqualTo("osasto2")
-        assertThat(loadedHankeYhteystietoEntity2.createdByUserId).isEqualTo(2)
+        assertThat(loadedHankeYhteystietoEntity2.createdByUserId).isEqualTo("2")
         assertThat(loadedHankeYhteystietoEntity2.createdAt).isEqualTo(datetime)
-        assertThat(loadedHankeYhteystietoEntity2.modifiedByUserId).isEqualTo(22)
+        assertThat(loadedHankeYhteystietoEntity2.modifiedByUserId).isEqualTo("22")
         assertThat(loadedHankeYhteystietoEntity2.modifiedAt).isEqualTo(datetime)
 
         assertThat(loadedHankeYhteystietoEntity3).isNotNull
@@ -175,9 +175,9 @@ class HankeRepositoryITests @Autowired constructor(
         assertThat(loadedHankeYhteystietoEntity3.organisaatioId).isEqualTo(3)
         assertThat(loadedHankeYhteystietoEntity3.organisaatioNimi).isEqualTo("org3")
         assertThat(loadedHankeYhteystietoEntity3.osasto).isEqualTo("osasto3")
-        assertThat(loadedHankeYhteystietoEntity3.createdByUserId).isEqualTo(3)
+        assertThat(loadedHankeYhteystietoEntity3.createdByUserId).isEqualTo("3")
         assertThat(loadedHankeYhteystietoEntity3.createdAt).isEqualTo(datetime)
-        assertThat(loadedHankeYhteystietoEntity3.modifiedByUserId).isEqualTo(33)
+        assertThat(loadedHankeYhteystietoEntity3.modifiedByUserId).isEqualTo("33")
         assertThat(loadedHankeYhteystietoEntity3.modifiedAt).isEqualTo(datetime)
     }
 
