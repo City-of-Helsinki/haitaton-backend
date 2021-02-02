@@ -47,5 +47,33 @@
     },
     "notBefore" : 0,
     "groups" : [ ]
+  }, {
+    "id" : "c09272b1-2232-4e42-af27-a0ea482f55f0",
+    "createdTimestamp" : 1611928245782,
+    "username" : "teemu",
+    "enabled" : true,
+    "totp" : false,
+    "emailVerified" : true,
+    "firstName" : "Teemu",
+    "lastName" : "Hiltunen",
+    "email" : "teemu.hiltunen@gofore.com",
+    "attributes" : {
+      "id" : [ "1" ]
+    },
+    "credentials" : [ {
+      "id" : "e4692d67-60f3-4307-990e-ef76a07c420d",
+      "type" : "password",
+      "createdDate" : 1611928313406,
+      "secretData" : "{\"value\":\"PZQWHXpfE1kfjuP5wGh4oJVu8R2WqcAVJ6dXa6tK4+S/kYmaaAtyL13gfnO82WoIDI05Pe5jSKJu7TuVdna1OA==\",\"salt\":\"W/TzZdc81YHMe2ilKhg4Og==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "realmRoles" : [ "haitaton-user" ],
+    "clientRoles" : {
+      "account" : [ "view-profile", "manage-account" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ ]
   } ]
 }
