@@ -60,8 +60,8 @@ internal class HankeGeometriatServiceImplITest {
     fun `save and load and update`() {
         val hankeTunnus = "123456"
         val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
-        hankeGeometriat.createdByUserId = 1111
-        hankeGeometriat.modifiedByUserId = 2222
+        hankeGeometriat.createdByUserId = "1111"
+        hankeGeometriat.modifiedByUserId = "2222"
         // For FK constraints we need a Hanke in database
         hankeRepository.save(HankeEntity(id = hankeGeometriat.hankeId, hankeTunnus = hankeTunnus))
 

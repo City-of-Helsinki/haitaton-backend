@@ -60,8 +60,8 @@ internal class HankeGeometriatDaoImplITest {
     @Test
     fun `CRUD testing`() {
         val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
-        hankeGeometriat.createdByUserId = 1111
-        hankeGeometriat.modifiedByUserId = 2222
+        hankeGeometriat.createdByUserId = "1111"
+        hankeGeometriat.modifiedByUserId = "2222"
         // For FK constraints we need a Hanke in database
         jdbcTemplate.execute("INSERT INTO Hanke (id) VALUES (${hankeGeometriat.hankeId})")
 
