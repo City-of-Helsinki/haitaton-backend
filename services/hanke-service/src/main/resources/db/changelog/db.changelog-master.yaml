@@ -15,3 +15,5 @@ databaseChangeLog:
       file: db/changelog/changesets/create-hankegeometriat-tables.sql
   - include:
       file: db/changelog/changesets/create-idcounter-tables.yml
+  - include:
+      file: db/changelog/changesets/modify-userids-to-strings.yml

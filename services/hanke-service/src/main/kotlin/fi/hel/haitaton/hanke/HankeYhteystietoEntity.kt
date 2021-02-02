@@ -28,9 +28,9 @@ class HankeYhteystietoEntity (
 
         // NOTE: createdByUserId must be non-null for valid data, but to allow creating instances with
         // no-arg constructor and programming convenience, this class allows it to be null (temporarily).
-        var createdByUserId: Int? = null,
+        var createdByUserId: String? = null,
         var createdAt: LocalDateTime? = null,
-        var modifiedByUserId: Int? = null,
+        var modifiedByUserId: String? = null,
         var modifiedAt: LocalDateTime? = null,
         // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
         // can be a performance problem if there is a need to do bulk inserts.

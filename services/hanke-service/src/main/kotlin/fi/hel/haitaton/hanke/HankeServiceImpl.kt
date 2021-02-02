@@ -104,7 +104,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         //   For now, hanke-tunnus is created as soon as this function is called, even for fully empty data.
 
         // TODO: will need proper stuff derived from the logged in user.
-        val userid = 1
+        val userid = "1"
 
         // Create the entity object and save it (first time) to get db-id
         val entity = HankeEntity()
@@ -142,14 +142,14 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
                 ?: throw HankeNotFoundException(hanke.hankeTunnus)
         // TODO: will need proper stuff derived from the logged in user.
-        val userid = 1
+        val userid = "1"
         // Transfer field values from domain object to entity object, and set relevant audit fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
         copyYhteystietosToEntity(hanke, entity, userid)
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = entity.version?.inc() ?: 1
         // (Not changing createdBy/At fields.)
-        entity.modifiedByUserId = 1
+        entity.modifiedByUserId = "1"
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
 
         logger.info {
@@ -292,7 +292,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
      * Transfer yhteystieto fields from domain to (new or existing) entity object,
      * combine the three lists into one list, and set the audit fields as relevant.
      */
-    private fun copyYhteystietosToEntity(hanke: Hanke, entity: HankeEntity, userid: Int) {
+    private fun copyYhteystietosToEntity(hanke: Hanke, entity: HankeEntity, userid: String) {
         // Note, if the incoming data indicates it is an already saved yhteystieto (id-field is set), should try
         // to transfer the business fields to the same old corresponding entity. Pretty much a must in order to
         // preserve createdBy and createdAt field values without having to rely on the client-side to hold
@@ -335,7 +335,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
 
     private fun processIncomingHankeYhteystietosOfSpecificTypeToEntity(
             listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity, contactType: ContactType,
-            userid: Int, existingYTs: MutableMap<Int, HankeYhteystietoEntity>) {
+            userid: String, existingYTs: MutableMap<Int, HankeYhteystietoEntity>) {
         for (hankeYht in listOfHankeYhteystiedot) {
             val someFieldsSet = isSomeFieldsSet(hankeYht)
             var validYhteystieto = false
@@ -383,7 +383,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
     }
 
     private fun processCreateYhteystieto(hankeYht: HankeYhteystieto, validYhteystieto: Boolean, contactType: ContactType,
-                                         userid: Int, hankeEntity: HankeEntity) {
+                                         userid: String, hankeEntity: HankeEntity) {
         if (validYhteystieto) {
             // ... it is valid, so create a new Yhteystieto
             val hankeYhtEntity = HankeYhteystietoEntity(
@@ -412,7 +412,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
     }
 
     private fun processUpdateYhteystieto(hankeYht: HankeYhteystieto, existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
-                                         someFieldsSet: Boolean, validYhteystieto: Boolean, userid: Int, hankeEntity: HankeEntity) {
+                                         someFieldsSet: Boolean, validYhteystieto: Boolean, userid: String, hankeEntity: HankeEntity) {
         // If incoming Yhteystieto has id set, it _should_ be among the existing Yhteystietos, or some kind of error has happened.
         val incomingId: Int = hankeYht.id!!
         val existingYT: HankeYhteystietoEntity? = existingYTs[incomingId]
