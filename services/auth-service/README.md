@@ -35,9 +35,12 @@ In order to make changes to the realm itself or the users in it one has to do fo
 * export the realm and users by doing this:
   * open terminal connection to the keycloak container: `docker-compose --env-file .env.local exec auth-service sh`
   * inside container run the export command:  `/opt/jboss/keycloak/bin/standalone.sh -Djboss.socket.binding.port-offset=100 -Dkeycloak.migration.action=export -Dkeycloak.migration.provider=singleFile -Dkeycloak.migration.realmName=haitaton -Dkeycloak.migration.usersExportStrategy=REALM_FILE -Dkeycloak.migration.file=/tmp/haitaton-realm-with-users.json`
-    (this will update file `realms/haitaton-realm-with-users.json`)
+    - After message ` Admin console listening on http://127.0.0.1:10090` use CTRL+C to stop the process
+    - This will update file `realms/haitaton-realm-with-users.json`
   * AND if you made changes to the realm you need to ALSO export it without the user data (for other than local dev environments): `/opt/jboss/keycloak/bin/standalone.sh -Djboss.socket.binding.port-offset=100 -Dkeycloak.migration.action=export -Dkeycloak.migration.provider=dir -Dkeycloak.migration.realmName=haitaton -Dkeycloak.migration.usersExportStrategy=SAME_FILE -Dkeycloak.migration.dir=/tmp`
-    (this will update files `realms/haitaton-realm.json` and `realms/haitaton-users-0.json`)
+    - After message ` Admin console listening on http://127.0.0.1:10090` use CTRL+C to stop the process
+    - This will update files `realms/haitaton-realm.json` and `realms/haitaton-users-0.json`
+
 * after export you need to stop `auth-service` container and manually delete `auth-db`´s PostgreSQL data directory (`~/haitaton-auth-data`)
 * PS. if export commands create some new directories under `realms` please add them to `.gitignore` - they are not needed but in some cases JBoss (Keycloak) may create them
 
