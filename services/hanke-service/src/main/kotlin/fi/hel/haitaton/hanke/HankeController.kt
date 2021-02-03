@@ -30,6 +30,8 @@ class HankeController(
      */
     @GetMapping("/{hankeTunnus}")
     fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String?): ResponseEntity<Any> {
+        throw RuntimeException("Test error")
+
         if (hankeTunnus == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }

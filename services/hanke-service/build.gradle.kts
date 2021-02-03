@@ -85,6 +85,9 @@ dependencies {
 	testImplementation("org.testcontainers:postgresql:1.15.1")
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	// Sentry
+	implementation("io.sentry:sentry-spring-boot-starter:4.0.0")
+	implementation("io.sentry:sentry-logback:4.0.0")
 }
 
 //tasks.withType<Test> {
