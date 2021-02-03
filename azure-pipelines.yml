@@ -5,8 +5,9 @@
 trigger:
   branches:
     include:
-    - develop
-    - feature/*
+    - dev
+    - HAI*
+    - hai*
   paths:
     exclude:
     - README.md
@@ -21,7 +22,7 @@ trigger:
 pr:
   branches:
     include:
-    - develop
+    - dev
 
 # By default, use self-hosted agents
 pool: Default
