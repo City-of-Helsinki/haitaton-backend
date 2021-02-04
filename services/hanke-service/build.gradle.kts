@@ -92,6 +92,9 @@ dependencies {
 	implementation("org.springframework.security:spring-security-oauth2-resource-server:5.3.6.RELEASE")
 	implementation("org.springframework.security:spring-security-oauth2-jose:5.3.6.RELEASE")
 	testImplementation("org.springframework.security:spring-security-test")
+	// Sentry
+	implementation("io.sentry:sentry-spring-boot-starter:4.0.0")
+	implementation("io.sentry:sentry-logback:4.0.0")
 }
 
 //tasks.withType<Test> {

@@ -430,7 +430,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
             existingYT.etunimi = hankeYht.etunimi
             existingYT.email = hankeYht.email
             existingYT.puhelinnumero = hankeYht.puhelinnumero
-            hankeYht.organisaatioId?.let { existingYT.organisaatioId = hankeYht.organisaatioId }
+            existingYT.organisaatioId = hankeYht.organisaatioId
             hankeYht.organisaatioNimi?.let { existingYT.organisaatioNimi = hankeYht.organisaatioNimi }
             hankeYht.osasto?.let { existingYT.osasto = hankeYht.osasto }
 
