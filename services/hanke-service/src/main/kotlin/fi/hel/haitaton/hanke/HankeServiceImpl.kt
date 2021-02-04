@@ -5,8 +5,6 @@ import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 
 import mu.KotlinLogging
-import org.springframework.security.access.prepost.PostAuthorize
-import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
 import java.time.LocalDate
 import java.time.ZonedDateTime
@@ -51,7 +49,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         }
     }
 
-    @PostAuthorize("returnObject.createdBy == authentication.name")
+    // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO LOAD A HANKE: @PostAuthorize("returnObject.createdBy == authentication.name")
     override fun loadHanke(hankeTunnus: String): Hanke {
         // TODO: Find out all savetype matches and return the more recent draft vs. submit.
         val entity = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
@@ -134,7 +132,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         return createHankeDomainObjectFromEntity(entity)
     }
 
-    @PreAuthorize("#hanke.createdBy == authentication.name")
+    // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO UPDATE A HANKE: @PreAuthorize("#hanke.createdBy == authentication.name")
     override fun updateHanke(hanke: Hanke): Hanke {
         if (hanke.hankeTunnus == null)
             error("Somehow got here with hanke without hanke-tunnus")
