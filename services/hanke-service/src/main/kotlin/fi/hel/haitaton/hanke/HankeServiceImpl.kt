@@ -179,13 +179,10 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
                     hankeEntity.version,
                     // TODO: will need in future to actually fetch the username from another service.. (or whatever we choose to pass out here)
                     //   Do it below, outside this construction call.
-                    hankeEntity.createdByUserId?.toString() ?: "",
+                    hankeEntity.createdByUserId ?: "",
                     // From UTC without timezone info to UTC with timezone info
-                    if (hankeEntity.createdAt != null) ZonedDateTime.of(hankeEntity.createdAt, TZ_UTC) else null,
-                    hankeEntity.modifiedByUserId?.toString(),
-                    if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC) else null,
-
-                    hankeEntity.saveType
+                    if (hankeEntity.createdAt != null) ZonedDateTime.of(hankeEntity.createdAt, TZ_UTC) else null, hankeEntity.modifiedByUserId,
+                    if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC) else null, hankeEntity.saveType
             )
             createSeparateYhteystietolistsFromEntityData(h, hankeEntity)
 
@@ -241,8 +238,8 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
                     organisaatioId = hankeYhteystietoEntity.organisaatioId,
                     organisaatioNimi = hankeYhteystietoEntity.organisaatioNimi,
                     osasto = hankeYhteystietoEntity.osasto,
-                    createdBy = hankeYhteystietoEntity.createdByUserId?.toString(),
-                    modifiedBy = hankeYhteystietoEntity.modifiedByUserId?.toString(),
+                    createdBy = hankeYhteystietoEntity.createdByUserId,
+                    modifiedBy = hankeYhteystietoEntity.modifiedByUserId,
                     createdAt = createdAt,
                     modifiedAt = modifiedAt
             )
