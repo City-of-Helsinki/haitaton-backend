@@ -107,7 +107,9 @@ JWT/OIDC-based authentication using Keycloak and Spring Security.
 
 ### Testing with curl 
 
-Retrieve access_token (auth-service needs to on, replace `USERNAME` and `PASSWORD` with real values - create new user in Keycloak if necessary):
+**In order to this to work you need to enable Direct Access Grants for the client (`hanke-service` in these examples)**
+
+Retrieve access_token (auth-service needs to be on, replace `USERNAME` and `PASSWORD` with real values - create new user in Keycloak if necessary):
 ```shell
 curl -XPOST 'http://localhost:3030/auth/realms/haitaton/protocol/openid-connect/token' \
 -H 'Content-Type: application/x-www-form-urlencoded' \
