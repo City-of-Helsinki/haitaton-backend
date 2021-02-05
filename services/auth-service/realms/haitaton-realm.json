@@ -544,7 +544,7 @@
     },
     "fullScopeAllowed" : true,
     "nodeReRegistrationTimeout" : -1,
-    "defaultClientScopes" : [ "web-origins", "role_list", "profile", "roles", "email" ],
+    "defaultClientScopes" : [ "role_list", "spring-security" ],
     "optionalClientScopes" : [ "address", "phone", "offline_access", "microprofile-jwt" ]
   }, {
     "id" : "9ecac2c6-47a6-4019-b486-f4743a7578d6",
@@ -565,7 +565,7 @@
     "consentRequired" : false,
     "standardFlowEnabled" : true,
     "implicitFlowEnabled" : false,
-    "directAccessGrantsEnabled" : true,
+    "directAccessGrantsEnabled" : false,
     "serviceAccountsEnabled" : false,
     "publicClient" : true,
     "frontchannelLogout" : false,
@@ -592,7 +592,7 @@
     "authenticationFlowBindingOverrides" : { },
     "fullScopeAllowed" : true,
     "nodeReRegistrationTimeout" : -1,
-    "defaultClientScopes" : [ "role_list", "hanke-service" ],
+    "defaultClientScopes" : [ "role_list", "spring-security" ],
     "optionalClientScopes" : [ ]
   }, {
     "id" : "5f407ba7-df73-4603-8c19-5f7a057757c1",
@@ -669,6 +669,55 @@
     "optionalClientScopes" : [ "address", "phone", "offline_access", "microprofile-jwt" ]
   } ],
   "clientScopes" : [ {
+    "id" : "78d290ae-536b-4643-b99f-59e369e12519",
+    "name" : "spring-security",
+    "protocol" : "openid-connect",
+    "attributes" : {
+      "include.in.token.scope" : "true",
+      "display.on.consent.screen" : "true"
+    },
+    "protocolMappers" : [ {
+      "id" : "b6c1bcb8-bff9-4e92-ba44-2592c2e03548",
+      "name" : "aud",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-audience-mapper",
+      "consentRequired" : false,
+      "config" : {
+        "included.client.audience" : "hanke-service",
+        "id.token.claim" : "false",
+        "access.token.claim" : "true",
+        "userinfo.token.claim" : "false"
+      }
+    }, {
+      "id" : "a3a68d24-a64c-4ae5-b4a8-ae843212b889",
+      "name" : "username",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-usermodel-property-mapper",
+      "consentRequired" : false,
+      "config" : {
+        "userinfo.token.claim" : "true",
+        "user.attribute" : "id",
+        "id.token.claim" : "true",
+        "access.token.claim" : "true",
+        "claim.name" : "user_name",
+        "jsonType.label" : "String"
+      }
+    }, {
+      "id" : "5a7e00b3-35c1-46e2-a2fe-ccbf272bad91",
+      "name" : "authorities",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-usermodel-realm-role-mapper",
+      "consentRequired" : false,
+      "config" : {
+        "usermodel.realmRoleMapping.rolePrefix" : "ROLE_",
+        "multivalued" : "true",
+        "userinfo.token.claim" : "true",
+        "id.token.claim" : "true",
+        "access.token.claim" : "true",
+        "claim.name" : "authorities"
+      }
+    } ]
+  }, {
     "id" : "937f4b26-522e-4717-9080-41027d8c34b8",
     "name" : "offline_access",
     "description" : "OpenID Connect built-in scope: offline_access",
@@ -1107,55 +1156,6 @@
         "access.token.claim" : "true",
         "claim.name" : "groups",
         "jsonType.label" : "String"
-      }
-    } ]
-  }, {
-    "id" : "78d290ae-536b-4643-b99f-59e369e12519",
-    "name" : "hanke-service",
-    "protocol" : "openid-connect",
-    "attributes" : {
-      "include.in.token.scope" : "true",
-      "display.on.consent.screen" : "true"
-    },
-    "protocolMappers" : [ {
-      "id" : "b6c1bcb8-bff9-4e92-ba44-2592c2e03548",
-      "name" : "aud",
-      "protocol" : "openid-connect",
-      "protocolMapper" : "oidc-audience-mapper",
-      "consentRequired" : false,
-      "config" : {
-        "included.client.audience" : "hanke-service",
-        "id.token.claim" : "false",
-        "access.token.claim" : "true",
-        "userinfo.token.claim" : "false"
-      }
-    }, {
-      "id" : "a3a68d24-a64c-4ae5-b4a8-ae843212b889",
-      "name" : "username",
-      "protocol" : "openid-connect",
-      "protocolMapper" : "oidc-usermodel-property-mapper",
-      "consentRequired" : false,
-      "config" : {
-        "userinfo.token.claim" : "true",
-        "user.attribute" : "id",
-        "id.token.claim" : "true",
-        "access.token.claim" : "true",
-        "claim.name" : "user_name",
-        "jsonType.label" : "String"
-      }
-    }, {
-      "id" : "5a7e00b3-35c1-46e2-a2fe-ccbf272bad91",
-      "name" : "authorities",
-      "protocol" : "openid-connect",
-      "protocolMapper" : "oidc-usermodel-realm-role-mapper",
-      "consentRequired" : false,
-      "config" : {
-        "usermodel.realmRoleMapping.rolePrefix" : "ROLE_",
-        "multivalued" : "true",
-        "userinfo.token.claim" : "true",
-        "id.token.claim" : "true",
-        "access.token.claim" : "true",
-        "claim.name" : "authorities"
       }
     } ]
   } ],
