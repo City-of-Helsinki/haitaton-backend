@@ -28,12 +28,6 @@ class ResourceServerConfig : ResourceServerConfigurerAdapter() {
     @Value("\${jwkSetUri}")
     lateinit var urlJwk: String
 
-    override fun configure(resources: ResourceServerSecurityConfigurer) {
-        resources.tokenStore(tokenStore())
-        resources.resourceId(claimAud)
-        resources.expressionHandler(handler())
-    }
-
     override fun configure(http: HttpSecurity) {
         http.anonymous().and()
             .authorizeRequests()
@@ -41,6 +35,12 @@ class ResourceServerConfig : ResourceServerConfigurerAdapter() {
             .mvcMatchers(HttpMethod.POST, "/hankkeet", "/hankkeet/**").hasRole("haitaton-user")
             .mvcMatchers(HttpMethod.GET, "/hankkeet", "/hankkeet/**").hasRole("haitaton-user")
             .mvcMatchers(HttpMethod.PUT, "/hankkeet/**").hasRole("haitaton-user")
+    }
+
+    override fun configure(resources: ResourceServerSecurityConfigurer) {
+        resources.tokenStore(tokenStore())
+        resources.resourceId(claimAud)
+        resources.expressionHandler(handler())
     }
 
     @Bean
