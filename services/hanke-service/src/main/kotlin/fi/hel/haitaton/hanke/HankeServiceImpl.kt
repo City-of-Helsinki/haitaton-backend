@@ -102,7 +102,6 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         // TODO: Only create that hanke-tunnus if a specific set of fields are non-empty/set.
         //   For now, hanke-tunnus is created as soon as this function is called, even for fully empty data.
 
-        // TODO: will need proper stuff derived from the logged in user.
         val userid = SecurityContextHolder.getContext().authentication.name
 
         // Create the entity object and save it (first time) to get db-id
@@ -140,7 +139,6 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         // Both checks that the hanke already exists, and get its old fields to transfer data into
         val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
                 ?: throw HankeNotFoundException(hanke.hankeTunnus)
-        // TODO: will need proper stuff derived from the logged in user.
         val userid = SecurityContextHolder.getContext().authentication.name
         // Transfer field values from domain object to entity object, and set relevant audit fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
