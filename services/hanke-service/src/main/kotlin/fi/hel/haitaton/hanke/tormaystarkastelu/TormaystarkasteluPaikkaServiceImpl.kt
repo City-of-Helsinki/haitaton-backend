@@ -8,14 +8,15 @@ class TormaystarkasteluPaikkaServiceImpl : TormaystarkasteluPaikkaService {
      * Returns luokittelutulos list for hanke based on its hankeGeometria comparison to the different map references
      * and rajaarvot which is brought in for some classification information
      */
-    override fun getTormaystarkasteluLuokitteluTulos(hanke: Hanke, rajaarvot: LuokitteluRajaarvot): List<Luokittelutulos> {
+    override fun calculateTormaystarkasteluLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot): List<Luokittelutulos> {
 
         val luokitteluTulosComplete = mutableListOf<Luokittelutulos>()
 
-        luokitteluTulosComplete.addAll(getPyorailyLuokitteluTulos(hanke, rajaarvot))
-        luokitteluTulosComplete.addAll(getKatuluokkaLuokitteluTulos(hanke, rajaarvot))
-        luokitteluTulosComplete.addAll(getLiikennemaaraLuokitteluTulos(hanke, rajaarvot))
+        var katuluokkaLuokittelut = getKatuluokkaLuokitteluTulos(hanke, rajaArvot)
 
+        luokitteluTulosComplete.addAll(katuluokkaLuokittelut)
+        luokitteluTulosComplete.addAll(getLiikennemaaraLuokitteluTulos(hanke, rajaArvot, katuluokkaLuokittelut))
+        luokitteluTulosComplete.addAll(getPyorailyLuokitteluTulos(hanke, rajaArvot))
         //TODO: "call methods for deciding separate luokittelu steps for missing luokittelu"
         //bussit
         //raitiovaunut
@@ -23,17 +24,19 @@ class TormaystarkasteluPaikkaServiceImpl : TormaystarkasteluPaikkaService {
         return luokitteluTulosComplete
     }
 
-    internal fun getPyorailyLuokitteluTulos(hanke: Hanke, rajaarvot: LuokitteluRajaarvot): List<Luokittelutulos> {
+
+    internal fun getKatuluokkaLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot): List<Luokittelutulos> {
         TODO("Not yet implemented")
     }
 
-    internal fun getLiikennemaaraLuokitteluTulos(hanke: Hanke, rajaarvot: LuokitteluRajaarvot): List<Luokittelutulos> {
+    internal fun getLiikennemaaraLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot, katuluokkaLuokittelut: List<Luokittelutulos>): List<Luokittelutulos> {
         TODO("Not yet implemented")
     }
 
-    internal fun getKatuluokkaLuokitteluTulos(hanke: Hanke, rajaarvot: LuokitteluRajaarvot): List<Luokittelutulos> {
+    internal fun getPyorailyLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot): List<Luokittelutulos> {
         TODO("Not yet implemented")
     }
+
 
 }
 

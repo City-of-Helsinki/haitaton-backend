@@ -8,5 +8,5 @@ interface TormaystarkasteluPaikkaService {
      * Returns luokittelutulos list for hanke based on its hankeGeometria comparison to the different map references
      * and rajaarvot which is brought in for some classification information
      */
-    fun getTormaystarkasteluLuokitteluTulos(hanke: Hanke, rajaarvot: LuokitteluRajaarvot) : List<Luokittelutulos>
+    fun calculateTormaystarkasteluLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot): List<Luokittelutulos>
 }
