@@ -75,5 +75,30 @@
     },
     "notBefore" : 0,
     "groups" : [ ]
+  }, {
+    "id" : "5e1c8300-1040-4b7a-b924-58c749559ffa",
+    "createdTimestamp" : 1612948559204,
+    "username" : "tiinatestaaja",
+    "enabled" : true,
+    "totp" : false,
+    "emailVerified" : true,
+    "firstName" : "Tiina",
+    "lastName" : "Testaaja",
+    "email" : "testaajatiina@hotmail.com",
+    "credentials" : [ {
+      "id" : "0130b6ff-57ec-41a9-bddf-aa3d80d8597d",
+      "type" : "password",
+      "createdDate" : 1612948889509,
+      "secretData" : "{\"value\":\"kNPA5bspuDH6Pg6h3aGHnAgKSL/XPBYpwyLGr/mNC0ei/Zo0v/sqy+NPAZPWbV7VHLW+4d7+KgMT2+gBwYc/ww==\",\"salt\":\"frEMMxxxTZJ+n7uRtR/OOw==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "realmRoles" : [ "haitaton-user", "uma_authorization", "offline_access" ],
+    "clientRoles" : {
+      "account" : [ "view-profile", "manage-account" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ ]
   } ]
 }
