@@ -6,8 +6,6 @@ trigger:
   branches:
     include:
     - dev
-    - HAI*
-    - hai*
   paths:
     exclude:
     - README.md
