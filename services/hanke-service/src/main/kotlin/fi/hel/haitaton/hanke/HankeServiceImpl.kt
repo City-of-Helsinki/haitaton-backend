@@ -5,12 +5,13 @@ import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 
 import mu.KotlinLogging
+import org.springframework.security.core.context.SecurityContextHolder
 import java.time.LocalDate
 import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
 
-class HankeServiceImpl(private val hankeRepository: HankeRepository, private val hanketunnusService: HanketunnusService) : HankeService {
+open class HankeServiceImpl(private val hankeRepository: HankeRepository, private val hanketunnusService: HanketunnusService) : HankeService {
 
 
     // TODO:
@@ -48,6 +49,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository, private val
         }
     }
 
+    // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO LOAD A HANKE: @PostAuthorize("returnObject.createdBy == authentication.name")
     override fun loadHanke(hankeTunnus: String): Hanke {
         // TODO: Find out all savetype matches and return the more recent draft vs. submit.
         val entity = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
@@ -100,8 +102,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository, private val
         // TODO: Only create that hanke-tunnus if a specific set of fields are non-empty/set.
         //   For now, hanke-tunnus is created as soon as this function is called, even for fully empty data.
 
-        // TODO: will need proper stuff derived from the logged in user.
-        val userid = "1"
+        val userid = SecurityContextHolder.getContext().authentication.name
 
         // Create the entity object and save it (first time) to get db-id
         val entity = HankeEntity()
@@ -130,6 +131,7 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository, private val
         return createHankeDomainObjectFromEntity(entity)
     }
 
+    // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO UPDATE A HANKE: @PreAuthorize("#hanke.createdBy == authentication.name")
     override fun updateHanke(hanke: Hanke): Hanke {
         if (hanke.hankeTunnus == null)
             error("Somehow got here with hanke without hanke-tunnus")
@@ -137,15 +139,14 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository, private val
         // Both checks that the hanke already exists, and get its old fields to transfer data into
         val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
                 ?: throw HankeNotFoundException(hanke.hankeTunnus)
-        // TODO: will need proper stuff derived from the logged in user.
-        val userid = "1"
+        val userid = SecurityContextHolder.getContext().authentication.name
         // Transfer field values from domain object to entity object, and set relevant audit fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
         copyYhteystietosToEntity(hanke, entity, userid)
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = entity.version?.inc() ?: 1
         // (Not changing createdBy/At fields.)
-        entity.modifiedByUserId = "1"
+        entity.modifiedByUserId = userid
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
 
         logger.info {
@@ -178,13 +179,10 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository, private val
                     hankeEntity.version,
                     // TODO: will need in future to actually fetch the username from another service.. (or whatever we choose to pass out here)
                     //   Do it below, outside this construction call.
-                    hankeEntity.createdByUserId?.toString() ?: "",
+                    hankeEntity.createdByUserId ?: "",
                     // From UTC without timezone info to UTC with timezone info
-                    if (hankeEntity.createdAt != null) ZonedDateTime.of(hankeEntity.createdAt, TZ_UTC) else null,
-                    hankeEntity.modifiedByUserId?.toString(),
-                    if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC) else null,
-
-                    hankeEntity.saveType
+                    if (hankeEntity.createdAt != null) ZonedDateTime.of(hankeEntity.createdAt, TZ_UTC) else null, hankeEntity.modifiedByUserId,
+                    if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC) else null, hankeEntity.saveType
             )
             createSeparateYhteystietolistsFromEntityData(h, hankeEntity)
 
@@ -240,8 +238,8 @@ class HankeServiceImpl(private val hankeRepository: HankeRepository, private val
                     organisaatioId = hankeYhteystietoEntity.organisaatioId,
                     organisaatioNimi = hankeYhteystietoEntity.organisaatioNimi,
                     osasto = hankeYhteystietoEntity.osasto,
-                    createdBy = hankeYhteystietoEntity.createdByUserId?.toString(),
-                    modifiedBy = hankeYhteystietoEntity.modifiedByUserId?.toString(),
+                    createdBy = hankeYhteystietoEntity.createdByUserId,
+                    modifiedBy = hankeYhteystietoEntity.modifiedByUserId,
                     createdAt = createdAt,
                     modifiedAt = modifiedAt
             )

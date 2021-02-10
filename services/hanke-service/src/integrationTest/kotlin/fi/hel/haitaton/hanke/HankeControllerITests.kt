@@ -15,6 +15,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.security.test.context.support.WithMockUser
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
@@ -33,6 +36,7 @@ import java.time.temporal.ChronoUnit
 @WebMvcTest
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
+@WithMockUser("test", roles = ["haitaton-user"])
 class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     private val mockedHankeTunnus = "GHSFG123"
@@ -135,6 +139,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         mockMvc.perform(post("/hankkeet")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .with(csrf())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -162,6 +167,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         mockMvc.perform(put("/hankkeet/idHankkeelle123")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .with(csrf())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -200,6 +206,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val expectedContent = expectedHanke.toJsonString()
         mockMvc.perform(post("/hankkeet")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .with(csrf())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -234,6 +241,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         mockMvc.perform(post("/hankkeet")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(hankeInvalid.toJsonString())
+                .with(csrf())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.errorCode").value("HAI1002"))
@@ -279,6 +287,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // Call it and check results
         mockMvc.perform(put("/hankkeet/idHankkeelle123")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .with(csrf())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -333,6 +342,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // Call it and check results
         mockMvc.perform(post("/hankkeet")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .with(csrf())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))

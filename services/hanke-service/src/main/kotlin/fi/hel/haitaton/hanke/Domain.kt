@@ -10,6 +10,7 @@ Domain classes
 @JsonSerialize(using = HankeErrorSerializer::class)
 enum class HankeError(
         val errorMessage: String) {
+    HAI0001("Access denied"),
     HAI1001("Hanke not found"),
     HAI1002("Invalid Hanke data"),
     HAI1003("Internal error while saving Hanke"),

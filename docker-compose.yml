@@ -78,6 +78,7 @@ services:
       HAITATON_PORT: 5432
       HAITATON_USER: haitaton_user
       HAITATON_PASSWORD: haitaton
+      HAITATON_AUTH_OIDC_CERTS_ENDPOINT: http://auth-service:8080/auth/realms/haitaton/protocol/openid-connect/certs
 #      HAITATON_CORS_ALLOWED_ORIGINS: http://localhost:8000
     depends_on:
       - db
