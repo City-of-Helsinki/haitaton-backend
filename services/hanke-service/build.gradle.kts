@@ -85,6 +85,13 @@ dependencies {
 	testImplementation("org.testcontainers:postgresql:1.15.1")
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	// Spring Security
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	implementation("org.springframework.cloud:spring-cloud-starter-oauth2:2.2.4.RELEASE")
+	implementation("org.springframework.security:spring-security-data")
+	implementation("org.springframework.security:spring-security-oauth2-resource-server:5.3.6.RELEASE")
+	implementation("org.springframework.security:spring-security-oauth2-jose:5.3.6.RELEASE")
+	testImplementation("org.springframework.security:spring-security-test")
 	// Sentry
 	implementation("io.sentry:sentry-spring-boot-starter:4.0.0")
 	implementation("io.sentry:sentry-logback:4.0.0")
