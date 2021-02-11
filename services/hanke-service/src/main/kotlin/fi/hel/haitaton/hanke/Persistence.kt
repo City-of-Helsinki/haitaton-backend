@@ -144,6 +144,20 @@ class HankeEntity(
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
 
+    // --------------- State flags -------------------
+    // NOTE: need to be careful with these to not end up with inconsistent database state.
+    // All of these should be resolved automatically, i.e. there are no "setters" for them.
+    // They are saved to database in order to reduce processing overhead e.g. when fetching
+    // lots of Hanke-objects for showing a list.
+    var tilaOnGeometrioita: Boolean? = false
+    var tilaOnKaikkiPakollisetLuontiTiedot: Boolean? = false
+    var tilaOnTiedotLiikHaittaIndeksille: Boolean? = false
+    var tilaOnLiikHaittaIndeksi: Boolean? = false
+    var tilaOnViereisiaHankkeita: Boolean? = false
+    var tilaOnAsiakasryhmia: Boolean? = false
+
+    // ---------------  Helper functions -----------------
+
     fun addYhteystieto(yhteystieto: HankeYhteystietoEntity) {
         listOfHankeYhteystieto.add(yhteystieto)
         yhteystieto.hanke = this

@@ -50,9 +50,11 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
     }
 
     // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO LOAD A HANKE: @PostAuthorize("returnObject.createdBy == authentication.name")
-    override fun loadHanke(hankeTunnus: String): Hanke {
+    override fun loadHanke(hankeTunnus: String): Hanke? {
         // TODO: Find out all savetype matches and return the more recent draft vs. submit.
-        val entity = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
+        val entity = hankeRepository.findByHankeTunnus(hankeTunnus)
+        if (entity == null)
+            return null
 
         if (entity.id == null) {
             throw DatabaseStateException(hankeTunnus)
@@ -108,6 +110,9 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         val entity = HankeEntity()
         copyNonNullHankeFieldsToEntity(hanke, entity)
         copyYhteystietosToEntity(hanke, entity, userid)
+        // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
+        hanke.updateStateFlagTiedotLiikHaittaIndeksille()
+        hanke.updateStateFlagOnKaikkiPakollisetLuontiTiedot()
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = 0
         entity.createdByUserId = userid
@@ -143,6 +148,9 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         // Transfer field values from domain object to entity object, and set relevant audit fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
         copyYhteystietosToEntity(hanke, entity, userid)
+        // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
+        hanke.updateStateFlagTiedotLiikHaittaIndeksille()
+        hanke.updateStateFlagOnKaikkiPakollisetLuontiTiedot()
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = entity.version?.inc() ?: 1
         // (Not changing createdBy/At fields.)
@@ -162,6 +170,20 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         return createHankeDomainObjectFromEntity(entity)
     }
 
+    override fun updateHankeStateFlags(hanke: Hanke) {
+        if (hanke.hankeTunnus == null)
+            error("Somehow got here with hanke without hanke-tunnus")
+        // Both checks that the hanke already exists, and get its old fields to transfer data into
+        val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
+                ?: throw HankeNotFoundException(hanke.hankeTunnus)
+        copyStateFlagsToEntity(hanke, entity)
+        hankeRepository.save(entity)
+    }
+
+
+    // ======================================================================
+
+    // --------------- Helpers for data transfer from database ------------
 
     companion object Converters {
         internal fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke {
@@ -181,8 +203,11 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
                     //   Do it below, outside this construction call.
                     hankeEntity.createdByUserId ?: "",
                     // From UTC without timezone info to UTC with timezone info
-                    if (hankeEntity.createdAt != null) ZonedDateTime.of(hankeEntity.createdAt, TZ_UTC) else null, hankeEntity.modifiedByUserId,
-                    if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC) else null, hankeEntity.saveType
+                    if (hankeEntity.createdAt != null) ZonedDateTime.of(hankeEntity.createdAt, TZ_UTC) else null,
+                    hankeEntity.modifiedByUserId,
+                    if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC) else null,
+
+                    hankeEntity.saveType
             )
             createSeparateYhteystietolistsFromEntityData(h, hankeEntity)
 
@@ -198,6 +223,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
             h.polyHaitta = hankeEntity.polyHaitta
             h.tarinaHaitta = hankeEntity.tarinaHaitta
 
+            copyStateFlagsFromEntity(h, hankeEntity)
             return h
         }
 
@@ -244,6 +270,27 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
                     modifiedAt = modifiedAt
             )
         }
+
+        private fun copyStateFlagsFromEntity(h: Hanke, entity: HankeEntity) {
+            h.tilaOnGeometrioita = entity.tilaOnGeometrioita
+            h.tilaOnKaikkiPakollisetLuontiTiedot = entity.tilaOnKaikkiPakollisetLuontiTiedot
+            h.tilaOnTiedotLiikHaittaIndeksille = entity.tilaOnTiedotLiikHaittaIndeksille
+            h.tilaOnLiikHaittaIndeksi = entity.tilaOnLiikHaittaIndeksi
+            h.tilaOnViereisiaHankkeita = entity.tilaOnViereisiaHankkeita
+            h.tilaOnAsiakasryhmia = entity.tilaOnAsiakasryhmia
+        }
+
+    }
+
+    // --------------- Helpers for data transfer towards database ------------
+
+    private fun copyStateFlagsToEntity(hanke: Hanke, entity: HankeEntity) {
+        hanke.tilaOnGeometrioita?.let { entity.tilaOnGeometrioita = hanke.tilaOnGeometrioita }
+        hanke.tilaOnKaikkiPakollisetLuontiTiedot?.let { entity.tilaOnKaikkiPakollisetLuontiTiedot = hanke.tilaOnKaikkiPakollisetLuontiTiedot }
+        hanke.tilaOnTiedotLiikHaittaIndeksille?.let { entity.tilaOnTiedotLiikHaittaIndeksille = hanke.tilaOnTiedotLiikHaittaIndeksille }
+        hanke.tilaOnLiikHaittaIndeksi?.let { entity.tilaOnLiikHaittaIndeksi = hanke.tilaOnLiikHaittaIndeksi }
+        hanke.tilaOnViereisiaHankkeita?.let { entity.tilaOnViereisiaHankkeita = hanke.tilaOnViereisiaHankkeita }
+        hanke.tilaOnAsiakasryhmia?.let { entity.tilaOnAsiakasryhmia = hanke.tilaOnAsiakasryhmia }
     }
 
     /**
@@ -331,7 +378,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
             listOfHankeYhteystiedot: List<HankeYhteystieto>, hankeEntity: HankeEntity, contactType: ContactType,
             userid: String, existingYTs: MutableMap<Int, HankeYhteystietoEntity>) {
         for (hankeYht in listOfHankeYhteystiedot) {
-            val someFieldsSet = isSomeFieldsSet(hankeYht)
+            val someFieldsSet = hankeYht.isAnyFieldSet()
             var validYhteystieto = false
             // The UI has currently bigger problems implementing it so that Yhteystieto entries that haven't even been touched
             //   would not be sent to backend as a group of ""-fields, so the condition here is to make
@@ -341,8 +388,11 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
             // TODO: Currently validator does allow through an entry with four mandatory fields empty, but organisation field(s) non-empty!
             // If any field is given (not empty and not only whitespace)...
             if (someFieldsSet) {
+                // TODO: Logic has been changed to allow saving the fields separately (or added one at a time)
+                //   Seems the process needs some more thinking through to ensure valid final situation.
+                validYhteystieto = hankeYht.isAnyFieldSet()
                 // Check if at least the 4 mandatory fields are given
-                validYhteystieto = isValidYhteystieto(hankeYht)
+                //validYhteystieto = hankeYht.isValid()
             }
 
             // Is the incoming Yhteystieto new (does not have id, create new) or old (has id, update existing)?
@@ -354,26 +404,6 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
                 processUpdateYhteystieto(hankeYht, existingYTs, someFieldsSet, validYhteystieto, userid, hankeEntity)
             }
         }
-    }
-
-    /**
-     * Returns true if at least one Yhteystieto-field is non-null, non-empty and non-whitespace-only.
-     */
-    private fun isSomeFieldsSet(hankeYht: HankeYhteystieto): Boolean {
-        return hankeYht.sukunimi.isNotBlank() || hankeYht.etunimi.isNotBlank()
-                || hankeYht.email.isNotBlank() || hankeYht.puhelinnumero.isNotBlank()
-                || !hankeYht.organisaatioNimi.isNullOrBlank() || !hankeYht.osasto.isNullOrBlank()
-    }
-
-    /**
-     * Returns true if any the four mandatory fields are non-null, non-empty and non-whitespace-only.
-     *
-     *  Logic changed to allow any of these to be saved separately
-     */
-    private fun isValidYhteystieto(hankeYht: HankeYhteystieto): Boolean {
-        return isSomeFieldsSet(hankeYht)
-      /* TODO, put this back:  return hankeYht.sukunimi.isNotBlank() && hankeYht.etunimi.isNotBlank()
-                && hankeYht.email.isNotBlank() && hankeYht.puhelinnumero.isNotBlank()*/
     }
 
     private fun processCreateYhteystieto(hankeYht: HankeYhteystieto, validYhteystieto: Boolean, contactType: ContactType,

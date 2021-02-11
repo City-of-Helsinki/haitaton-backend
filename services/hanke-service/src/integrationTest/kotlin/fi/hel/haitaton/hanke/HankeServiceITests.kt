@@ -201,7 +201,7 @@ class HankeServiceITests {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3.id).isNotNull
+        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke has the same 3 Yhteystietos:
         assertThat(returnedHanke3.omistajat).hasSize(2)
@@ -266,7 +266,7 @@ class HankeServiceITests {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3.id).isNotNull
+        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke has the same 3 Yhteystietos:
         assertThat(returnedHanke3.omistajat).hasSize(2)
@@ -322,7 +322,7 @@ class HankeServiceITests {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3.id).isNotNull
+        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke has the same 3 Yhteystietos:
         assertThat(returnedHanke3.omistajat).hasSize(1)
@@ -381,7 +381,7 @@ class HankeServiceITests {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3.id).isNotNull
+        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke has the same 3 Yhteystietos:
         assertThat(returnedHanke2.arvioijat).hasSize(0)
@@ -435,7 +435,7 @@ class HankeServiceITests {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3.id).isNotNull
+        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke only has one entry, with that new id
         assertThat(returnedHanke3.omistajat).hasSize(1)
