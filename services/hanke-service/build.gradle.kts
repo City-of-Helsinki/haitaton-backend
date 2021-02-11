@@ -70,7 +70,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.liquibase:liquibase-core")								// TODO: do we need org.springframework:spring-dao ?
 
-	runtimeOnly("org.postgresql:postgresql:$postgreSQLVersion")
+	implementation("org.postgresql:postgresql:$postgreSQLVersion")
 	// H2 is used as embedded db for some simple low level Entity and Repository class testing
 	runtimeOnly("com.h2database:h2")
 	runtimeOnly("org.springdoc:springdoc-openapi-ui:$springDocVersion")
