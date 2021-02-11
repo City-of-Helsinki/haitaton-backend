@@ -82,6 +82,7 @@ internal class HankeGeometriatServiceImplITest {
             val loadedPoint = loadedHankeGeometriat!!.featureCollection!!.features[0].geometry as Point
             val point = hankeGeometriat.featureCollection!!.features[0].geometry as Point
             assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
+            assertThat(loadedHankeGeometriat!!.featureCollection!!.features[0].properties["hankeTunnus"]).isEqualTo(hankeTunnus)
         }
 
         // update
@@ -107,6 +108,7 @@ internal class HankeGeometriatServiceImplITest {
             val loadedPoint = loadedHankeGeometriat.featureCollection!!.features[0].geometry as Point
             val point = hankeGeometriat.featureCollection!!.features[0].geometry as Point
             assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
+            assertThat(loadedHankeGeometriat.featureCollection!!.features[0].properties["hankeTunnus"]).isEqualTo(hankeTunnus)
         }
 
         // check database too to make sure there is everything correctly

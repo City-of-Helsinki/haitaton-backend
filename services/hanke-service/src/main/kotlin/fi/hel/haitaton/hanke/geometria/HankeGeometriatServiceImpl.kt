@@ -51,10 +51,9 @@ open class HankeGeometriatServiceImpl(
 
     override fun loadGeometriat(hankeTunnus: String): HankeGeometriat? {
         val hanke = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-        return loadGeometriat(hanke.id!!)
+        val hankeGeometriat = hankeGeometriaDao.retrieveHankeGeometriat(hanke.id!!)
+        hankeGeometriat?.includeHankeProperties(hanke)
+        return hankeGeometriat
     }
 
-    override fun loadGeometriat(hankeId: Int): HankeGeometriat? {
-        return hankeGeometriaDao.retrieveHankeGeometriat(hankeId)
-    }
 }
