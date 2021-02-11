@@ -35,7 +35,7 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
                 hankegeometriat.id = ?;
         """.trimIndent(), { rs, _ ->
                     PyorailyTormaystarkastelu(
-                        Pyorailyreittiluokka.valueOfCycleway(rs.getString(2)) ?: Pyorailyreittiluokka.EI_PYORAILYREITTI,
+                        TormaystarkasteluPyorailyreittiluokitus.valueOfCycleway(rs.getString(2)) ?: TormaystarkasteluPyorailyreittiluokitus.EI_PYORAILYREITTI,
                         rs.getInt(3)
                     )
                 }, hankegeometriatId, hankegeometriatId
