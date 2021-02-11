@@ -11,10 +11,10 @@ enum class LuokitteluType {
     //TODO: add types that come from hanke "text data"
 }
 
-enum class Pyorailyreittiluokka(private val cycleway: String = "") {
-    PRIORISOITU_REITTI("priority"),
-    PAAREITTI("main"),
-    EI_PYORAILYREITTI;
+enum class Pyorailyreittiluokka(private val value: Int, private val cycleway: String = "") {
+    PRIORISOITU_REITTI(5, "priority"),
+    PAAREITTI(4, "main"),
+    EI_PYORAILYREITTI(0);
 
     companion object {
         fun valueOfCycleway(cycleway: String): Pyorailyreittiluokka? {
