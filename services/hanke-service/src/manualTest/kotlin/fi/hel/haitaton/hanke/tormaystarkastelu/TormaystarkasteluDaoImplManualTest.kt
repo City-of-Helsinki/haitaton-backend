@@ -8,7 +8,7 @@ import javax.sql.DataSource
 
 /*
  A manual test for TormaystarkasteluDaoImpl.
- NOTICE! You need PostgreSQL running during the test.
+ NOTICE! You need db (in docker-compose.yml) running during the test and the "tormays" data loaded into it.
  */
 internal class TormaystarkasteluDaoImplManualTest {
 
