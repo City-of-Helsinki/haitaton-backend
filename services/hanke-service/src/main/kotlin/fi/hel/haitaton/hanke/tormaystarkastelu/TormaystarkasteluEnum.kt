@@ -10,3 +10,10 @@ enum class LuokitteluType {
 
     //TODO: add types that come from hanke "text data"
 }
+
+
+enum class PyorailyTormaysLuokittelu(s: String) {
+    FIVE( "Pyöräilyn priorisoidut reitit / priorisoidun reitin osana toimiva katu"),
+    FOUR ( "Pyöräilyn pääreitti / pääreitin osana toimiva katu"),
+    ZERO ( "Ei vaikuta pyöräliikenteeseen")
+}
