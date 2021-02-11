@@ -27,7 +27,25 @@ class TormaystarkasteluPaikkaServiceImpl : TormaystarkasteluPaikkaService {
 
 
     internal fun getKatuluokkaLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot): List<Luokittelutulos> {
-        TODO("Not yet implemented")
+
+        val katuLuokittelu = mutableListOf<Luokittelutulos>()
+
+        var hankeGeometriatId = hanke.geometriat?.id
+        //if no id let's get out of here
+        if (hankeGeometriatId == null)
+            return katuLuokittelu
+
+        val tormaystarkasteluYlreParts = ""   //TODO: call dao check to get the priority/main
+        val tormaystarkasteluYlreClasses = ""   //TODO: call dao check to get the priority/main
+
+
+        if (!hitsInYlreParts() && !hitsInYlreClass() ) {
+            katuLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, "0", KatuluokkaTormaysLuokittelu.ZERO.toString()))
+        }
+
+
+
+        return katuLuokittelu
     }
 
     internal fun getLiikennemaaraLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot, katuluokkaLuokittelut: List<Luokittelutulos>): List<Luokittelutulos> {
@@ -39,20 +57,19 @@ class TormaystarkasteluPaikkaServiceImpl : TormaystarkasteluPaikkaService {
         val pyorailyLuokittelu = mutableListOf<Luokittelutulos>()
 
         var hankeGeometriatId = hanke.geometriat?.id
-
         //if no id let's get out of here
         if (hankeGeometriatId == null) return pyorailyLuokittelu
 
         val tormaystarkastelutulos = ""   //TODO: call dao check to get the priority/main
 
         if (matchesPriorityCycling(tormaystarkastelutulos)) {
-            pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, "5", PyorailyTormaysLuokittelu.FIVE.toString()), )
+            pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, "5", PyorailyTormaysLuokittelu.FIVE.toString()))
 
         } else if (matchesMainCycling(tormaystarkastelutulos)) {
-            pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, "4", PyorailyTormaysLuokittelu.FOUR.toString()), )
+            pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, "4", PyorailyTormaysLuokittelu.FOUR.toString()))
 
         } else {
-            pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, "0", PyorailyTormaysLuokittelu.ZERO.toString()), )
+            pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, "0", PyorailyTormaysLuokittelu.ZERO.toString()))
         }
 
         return pyorailyLuokittelu
