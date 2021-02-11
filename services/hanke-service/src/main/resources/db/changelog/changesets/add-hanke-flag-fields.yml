@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-hanke-flag-fields
+      comment: Add new fields for various state/flag info e.g. does it have geometries or have the traffic index values been calculated and still valid
+      author: Markku Hassinen
+      changes:
+        - addColumn:
+            tableName: hanke
+            columns:
+              - column: { name: tilaOnGeometrioita, type: boolean }
+              - column: { name: tilaOnKaikkiPakollisetLuontiTiedot, type: boolean }
+              - column: { name: tilaOnTiedotLiikIndeksille, type: boolean }
+              - column: { name: tilaOnLiikIndeksi, type: boolean }
+              - column: { name: tilaOnViereisiaHankkeita, type: boolean }
+              - column: { name: tilaOnAsiakasryhmia, type: boolean }

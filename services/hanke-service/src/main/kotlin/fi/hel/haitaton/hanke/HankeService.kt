@@ -7,14 +7,21 @@ interface HankeService {
 
     /**
      * Fetch hanke with hankeTunnus.
-     * Either returns the hanke instance, or throws exception.
-     * TODO: return type to "Hanke?", and return null if not found, move the exception to controller.
+     * Returns null if there is no hanke with the given tunnus.
      */
-    fun loadHanke(hankeTunnus: String): Hanke
+    fun loadHanke(hankeTunnus: String): Hanke?
 
     fun createHanke(hanke: Hanke): Hanke
 
     fun updateHanke(hanke: Hanke): Hanke
+
+    /**
+     * Meant for internal use only (do not reveal in controller or other public end-point).
+     * Only saves the flag-fields from the given hanke-object.
+     * Does not change version or modifiedAt/By fields, and does not return
+     * anything.
+     */
+    fun updateHankeStateFlags(hanke: Hanke)
 
     fun loadAllHanke(hankeSearch: HankeSearch? = null): List<Hanke>
 

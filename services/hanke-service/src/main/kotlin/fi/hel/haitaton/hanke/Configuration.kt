@@ -35,11 +35,12 @@ class Configuration {
 
     @Bean
     fun hankeGeometriatService(
-        repository: HankeRepository,
+        hankeService: HankeService,
         hankeGeometriatDao: HankeGeometriatDao
-    ): HankeGeometriatService = HankeGeometriatServiceImpl(repository, hankeGeometriatDao)
+    ): HankeGeometriatService = HankeGeometriatServiceImpl(hankeService, hankeGeometriatDao)
 
     @Bean
     fun tormaystarkasteluDao(jdbcOperations: JdbcOperations): TormaystarkasteluDao =
-        TormaystarkasteluDaoImpl(jdbcOperations)
+            TormaystarkasteluDaoImpl(jdbcOperations)
+
 }
