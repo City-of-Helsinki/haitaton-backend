@@ -95,14 +95,10 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // faking the service call with two returned Hanke
         val criteria = HankeSearch(geometry=true)
         every { hankeService.loadAllHanke(criteria) }.returns(
-                listOf(Hanke(123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
-                        getDatetimeAlku().minusDays(500), getDatetimeLoppu().minusDays(450), Vaihe.OHJELMOINTI, null,
-                        1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
-                        Hanke(444, "hanketunnus2", true, "Esplanadin viemäröinti", "lorem ipsum dolor sit amet...",
-                                getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
-                                1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT)))
-        every { hankeGeometriatService.loadGeometriat(mockedHankeTunnus) }.returns(HankeGeometriat(1, 123, FeatureCollection()))
-        every { hankeGeometriatService.loadGeometriat("hanketunnus2") }.returns(HankeGeometriat(2, 444, FeatureCollection()))
+                listOf(Hanke(123, mockedHankeTunnus),
+                        Hanke(444, "hanketunnus2")))
+        every { hankeGeometriatService.loadGeometriat(Hanke(123, mockedHankeTunnus)) }.returns(HankeGeometriat(1, 123, FeatureCollection()))
+        every { hankeGeometriatService.loadGeometriat(Hanke(444, "hanketunnus2")) }.returns(HankeGeometriat(2, 444, FeatureCollection()))
 
         //we check that we get the two hankeTunnus and geometriat we expect
         mockMvc.perform(get("/hankkeet?geometry=true")
@@ -115,8 +111,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .andExpect(jsonPath("$[1].geometriat.id").value(2))
 
         verify { hankeService.loadAllHanke(criteria) }
-        verify { hankeGeometriatService.loadGeometriat(mockedHankeTunnus) }
-        verify { hankeGeometriatService.loadGeometriat("hanketunnus2") }
+        verify { hankeGeometriatService.loadGeometriat(Hanke(123, mockedHankeTunnus)) }
+        verify { hankeGeometriatService.loadGeometriat(Hanke(444, "hanketunnus2")) }
     }
 
     @Test

@@ -68,7 +68,7 @@ class HankeController(
 
     private fun includeGeometry(hankeList: List<Hanke>) {
         hankeList.forEach { hanke ->
-            hanke.geometriat = hankeGeometriatService.loadGeometriat(hanke.hankeTunnus!!)
+            hanke.geometriat = hankeGeometriatService.loadGeometriat(hanke)
         }
     }
 
