@@ -52,7 +52,7 @@ class HankeController(
     fun getHankeList(hankeSearch: HankeSearch? = null): ResponseEntity<Any> {
         return try {
 
-            var hankeList = hankeService.loadAllHanke(hankeSearch)
+            val hankeList = hankeService.loadAllHanke(hankeSearch)
 
             if (hankeSearch != null && hankeSearch.includeGeometry()) {
                 includeGeometry(hankeList)
@@ -68,7 +68,7 @@ class HankeController(
 
     private fun includeGeometry(hankeList: List<Hanke>) {
         hankeList.forEach { hanke ->
-            hanke.geometriat = hankeGeometriatService.loadGeometriat(hanke.id!!)
+            hanke.geometriat = hankeGeometriatService.loadGeometriat(hanke)
         }
     }
 
@@ -105,7 +105,7 @@ class HankeController(
         if (hanke == null || hankeTunnus == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
-        if (!hankeTunnus.equals(hanke.hankeTunnus)) {
+        if (hankeTunnus != hanke.hankeTunnus) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
 
