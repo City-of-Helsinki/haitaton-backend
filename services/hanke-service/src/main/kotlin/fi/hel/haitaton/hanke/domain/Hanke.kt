@@ -76,16 +76,27 @@ data class Hanke(
     var tilaOnViereisiaHankkeita: Boolean? = false
     var tilaOnAsiakasryhmia: Boolean? = false
 
+    // TODO: ended up not being used in this class after all... remove to avoid
+    // mismatch between entity-class code and these?
     fun updateStateFlagOnKaikkiPakollisetLuontiTiedot() {
-        // TODO: all mandatory fields have been given... (though their validity should be checked elsewhere)
+        // All mandatory fields have been given... (though their validity should be checked elsewhere)
         //  and saveType is submit, not just draft?
-        // For now, a dummy solution giving pseudo-random value derived from the fields:
-        var i = (id?.hashCode() ?: 0) + (hankeTunnus?.hashCode() ?: 0) + (nimi?.hashCode() ?: 0) + (createdAt?.hashCode() ?: 0)
-        tilaOnKaikkiPakollisetLuontiTiedot = (i % 2 == 0)
+        tilaOnKaikkiPakollisetLuontiTiedot = !nimi.isNullOrBlank()
+                && !kuvaus.isNullOrBlank()
+                && (alkuPvm != null) && (loppuPvm != null)
+                && (vaihe != null) && (vaihe != Vaihe.SUUNNITTELU || suunnitteluVaihe != null)
+                && !tyomaaKatuosoite.isNullOrBlank()
+                && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
+                && tilaOnGeometrioita == true
+                && saveType == SaveType.SUBMIT
     }
+
     fun updateStateFlagTiedotLiikHaittaIndeksille() {
-        // Requires start date, stop date and geometry. (They don't have to be "valid", though, that is another thing.)
-        tilaOnTiedotLiikHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null) && tilaOnGeometrioita == true
+        // Requires start date, stop date, geometry, and both kaista-related haittas.
+        // (They don't have to be "valid", though, that is another thing.)
+        tilaOnTiedotLiikHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null)
+                && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
+                && tilaOnGeometrioita == true
     }
 
 }

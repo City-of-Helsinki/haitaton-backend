@@ -52,7 +52,6 @@ open class HankeGeometriatServiceImpl(
             logger.info {
                 "Updated geometries for Hanke $hankeTunnus"
             }
-            // TODO: why return the old geometry, vs. returning the given geometry when doing a create?
             oldHankeGeometriat
         }
     }

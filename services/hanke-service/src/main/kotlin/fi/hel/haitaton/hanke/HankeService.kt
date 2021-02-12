@@ -17,7 +17,8 @@ interface HankeService {
 
     /**
      * Meant for internal use only (do not reveal in controller or other public end-point).
-     * Only saves the flag-fields from the given hanke-object.
+     * Only saves the flag-fields from the given hanke-object, and caller needs to
+     * make sure the flags in the given hanke instance have not come from "outside".
      * Does not change version or modifiedAt/By fields, and does not return
      * anything.
      */
