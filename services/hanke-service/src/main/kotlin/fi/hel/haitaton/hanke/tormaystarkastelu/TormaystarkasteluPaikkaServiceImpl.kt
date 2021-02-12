@@ -130,15 +130,10 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
 
         if (matchesPriorityCycling(tormaystarkastelutulos)) {
             pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, 5, PyorailyTormaysLuokittelu.FIVE.toString()))
-            return pyorailyLuokittelu
-
         } else if (matchesMainCycling(tormaystarkastelutulos)) {
             pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, 4, PyorailyTormaysLuokittelu.FOUR.toString()))
-            return pyorailyLuokittelu
-
         } else {
             pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
-            return pyorailyLuokittelu
         }
 
         return pyorailyLuokittelu
