@@ -26,7 +26,16 @@ internal class TormaystarkasteluDaoImplManualTest {
     private val dao = TormaystarkasteluDaoImpl(JdbcTemplate(dataSource()))
 
     /*
-    Test manually what kind of cycleways are overlapping specific Hanke geometries
+    Test manually whether Hanke geometries are located on "yleinen katualue"
+     */
+    @Test
+    fun yleisetKatualueet() {
+        val yleisetKatualueet = dao.yleisetKatualueet(1)
+        println(yleisetKatualueet.toJsonPrettyString())
+    }
+
+    /*
+    Test manually what kind of cycleways Hanke geometries are located on
      */
     @Test
     fun pyorailyreitit() {
