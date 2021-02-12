@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 
 //we get arvo+selite per luokitteluType per hankeGeometriaId for hanke (hanke can have multiple geometria)
-data class Luokittelutulos(val hankeGeometriaId: Int, val luokitteluType: LuokitteluType, val arvo: String, val selite: String) {
+data class Luokittelutulos(val hankeGeometriaId: Int, val luokitteluType: LuokitteluType, val arvo: int, val selite: String) {
 }
 
 //one type's one arvo rule for minumum value
