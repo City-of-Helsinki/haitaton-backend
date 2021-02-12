@@ -6,13 +6,13 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
 
     /**
      * Returns luokittelutulos list for hanke based on its hankeGeometria comparison to the different map references
-     * and rajaarvot which is brought in for some classification information
+     * and rajaArvot which is brought in for some classification information
      */
     override fun calculateTormaystarkasteluLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot): List<Luokittelutulos> {
 
         val luokitteluTulosComplete = mutableListOf<Luokittelutulos>()
 
-        var katuluokkaLuokittelut = getKatuluokkaLuokitteluTulos(hanke, rajaArvot)
+        val katuluokkaLuokittelut = getKatuluokkaLuokitteluTulos(hanke, rajaArvot)
 
         luokitteluTulosComplete.addAll(katuluokkaLuokittelut)
         luokitteluTulosComplete.addAll(getLiikennemaaraLuokitteluTulos(hanke, rajaArvot, katuluokkaLuokittelut))
@@ -29,7 +29,7 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
 
         val katuLuokittelu = mutableListOf<Luokittelutulos>()
 
-        var hankeGeometriatId = hanke.geometriat?.id
+        val hankeGeometriatId = hanke.geometriat?.id
         //if no id let's get out of here
         if (hankeGeometriatId == null)
             return katuLuokittelu
@@ -112,7 +112,7 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
     internal fun getLiikennemaaraLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot, katuluokkaLuokittelut: List<Luokittelutulos>): List<Luokittelutulos> {
         val liikennemaaraLuokittelu = mutableListOf<Luokittelutulos>()
 
-        var hankeGeometriatId = hanke.geometriat?.id
+        val hankeGeometriatId = hanke.geometriat?.id
         //if no id let's get out of here
         if (hankeGeometriatId == null) return liikennemaaraLuokittelu
 
@@ -124,9 +124,10 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
 
         val pyorailyLuokittelu = mutableListOf<Luokittelutulos>()
 
-        var hankeGeometriatId = hanke.geometriat?.id
+        val hankeGeometriatId = hanke.geometriat?.id
         //if no id let's get out of here
-        if (hankeGeometriatId == null) return pyorailyLuokittelu
+        if (hankeGeometriatId == null)
+            return pyorailyLuokittelu
 
         val tormaystarkastelutulos = tormaystarkasteluDao.pyorailyreitit(hankeGeometriatId)
 
