@@ -37,6 +37,9 @@ data class Hanke(
         // Default for machine API's. UI should always give the save type.
         var saveType: SaveType? = SaveType.SUBMIT) {
 
+    constructor(id: Int) : this(id, null, null, null, null, null, null, null, null, null, null, null, null, null)
+    constructor(id: Int, hankeTunnus: String) : this(id, hankeTunnus, null, null, null, null, null, null, null, null, null, null, null, null)
+
     var omistajat = mutableListOf<HankeYhteystieto>()
     var arvioijat = mutableListOf<HankeYhteystieto>()
     var toteuttajat = mutableListOf<HankeYhteystieto>()
