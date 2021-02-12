@@ -37,6 +37,7 @@ internal class HankeGeometriatServiceImplTest {
         every { hankeService.loadHanke(hankeTunnus) } returns getDummyHanke(hankeId, hankeTunnus)
         every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns oldHankeGeometriat
         every { hankeGeometriatDao.updateHankeGeometriat(any()) } just runs
+        every { hankeService.updateHankeStateFlags(any()) } just runs
 
         val savedHankeGeometria = service.saveGeometriat(hankeTunnus, hankeGeometriat)
 
@@ -66,6 +67,7 @@ internal class HankeGeometriatServiceImplTest {
         every { hankeService.loadHanke(hankeTunnus) } returns getDummyHanke(hankeId, hankeTunnus)
         every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns null
         every { hankeGeometriatDao.createHankeGeometriat(any()) } just runs
+        every { hankeService.updateHankeStateFlags(any()) } just runs
 
         val savedHankeGeometria = service.saveGeometriat(hankeTunnus, hankeGeometriat)
 
