@@ -87,9 +87,6 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
             }
         }
 
-
-
-
         return katuLuokittelu
     }
 
