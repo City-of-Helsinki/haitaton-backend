@@ -111,8 +111,8 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         copyNonNullHankeFieldsToEntity(hanke, entity)
         copyYhteystietosToEntity(hanke, entity, userid)
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
-        hanke.updateStateFlagTiedotLiikHaittaIndeksille()
-        hanke.updateStateFlagOnKaikkiPakollisetLuontiTiedot()
+        entity.updateStateFlagTiedotLiikHaittaIndeksille()
+        entity.updateStateFlagOnKaikkiPakollisetLuontiTiedot()
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = 0
         entity.createdByUserId = userid
@@ -149,8 +149,8 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         copyNonNullHankeFieldsToEntity(hanke, entity)
         copyYhteystietosToEntity(hanke, entity, userid)
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
-        hanke.updateStateFlagTiedotLiikHaittaIndeksille()
-        hanke.updateStateFlagOnKaikkiPakollisetLuontiTiedot()
+        entity.updateStateFlagTiedotLiikHaittaIndeksille()
+        entity.updateStateFlagOnKaikkiPakollisetLuontiTiedot()
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = entity.version?.inc() ?: 1
         // (Not changing createdBy/At fields.)

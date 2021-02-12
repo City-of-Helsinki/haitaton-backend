@@ -179,16 +179,20 @@ class HankeServiceITests {
         returnedHanke.toteuttajat = arrayListOf(yt3)
         returnedHanke.saveType = SaveType.SUBMIT
 
+        // "Mocking" adding geometry stuff, by manually setting the geometry state flag to true
+        // and calling the service to save flags:
+        returnedHanke.tilaOnGeometrioita = true
+        hankeService.updateHankeStateFlags(returnedHanke)
+
+
         // Call update
         val returnedHanke2 = hankeService.updateHanke(returnedHanke)
-
-        // "Mocking" geometry stuff, by manually setting the geometry state flag to true:
-        returnedHanke2.tilaOnGeometrioita = true
 
         // Check the return object in general:
         assertThat(returnedHanke2).isNotNull
         assertThat(returnedHanke2).isNotSameAs(returnedHanke)
         assertThat(returnedHanke2.id).isNotNull
+
 
         // Check the flag states:
         // TODO:

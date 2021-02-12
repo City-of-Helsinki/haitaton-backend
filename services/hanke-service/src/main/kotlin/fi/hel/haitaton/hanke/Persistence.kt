@@ -171,6 +171,28 @@ class HankeEntity(
         }
     }
 
+    fun updateStateFlagOnKaikkiPakollisetLuontiTiedot() {
+        // All mandatory fields have been given... (though their validity should be checked elsewhere)
+        //  and saveType is submit, not just draft?
+        tilaOnKaikkiPakollisetLuontiTiedot = !nimi.isNullOrBlank()
+                && !kuvaus.isNullOrBlank()
+                && (alkuPvm != null) && (loppuPvm != null)
+                && (vaihe != null) && (vaihe != Vaihe.SUUNNITTELU || suunnitteluVaihe != null)
+                && !tyomaaKatuosoite.isNullOrBlank()
+                && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
+                && tilaOnGeometrioita == true
+                && saveType == SaveType.SUBMIT
+    }
+
+    fun updateStateFlagTiedotLiikHaittaIndeksille() {
+        // Requires start date, stop date, geometry, and both kaista-related haittas.
+        // (They don't have to be "valid", though, that is another thing.)
+        tilaOnTiedotLiikHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null)
+                && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
+                && tilaOnGeometrioita == true
+    }
+
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is HankeEntity) return false

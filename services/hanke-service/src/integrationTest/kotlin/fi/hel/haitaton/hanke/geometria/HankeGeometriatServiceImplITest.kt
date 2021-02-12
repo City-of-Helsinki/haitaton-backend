@@ -5,12 +5,14 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.*
+import fi.hel.haitaton.hanke.domain.Hanke
 import org.geojson.Point
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -20,6 +22,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
+@WithMockUser(username = "test", roles = ["haitaton-user"])
 internal class HankeGeometriatServiceImplITest {
 
     companion object {
@@ -41,8 +44,10 @@ internal class HankeGeometriatServiceImplITest {
         }
     }
 
+//    @Autowired
+//    private lateinit var hankeRepository: HankeRepository
     @Autowired
-    private lateinit var hankeRepository: HankeRepository
+    private lateinit var hankeService: HankeService
 
     @Autowired
     private lateinit var hankeGeometriatService: HankeGeometriatService
@@ -58,12 +63,17 @@ internal class HankeGeometriatServiceImplITest {
 
     @Test
     fun `save and load and update`() {
-        val hankeTunnus = "123456"
         val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
         hankeGeometriat.createdByUserId = "1111"
         hankeGeometriat.modifiedByUserId = "2222"
+
         // For FK constraints we need a Hanke in database
-        hankeRepository.save(HankeEntity(id = hankeGeometriat.hankeId, hankeTunnus = hankeTunnus))
+        // Using hankeService to create the dummy hanke into database causes
+        // tunnus and id to be whatever the service thinks is right, so
+        // they must be picked from the created hanke-instance.
+        val hanke = hankeService.createHanke(getDummyHanke(hankeGeometriat.hankeId!!, ""))
+        val hankeTunnus = hanke.hankeTunnus!!
+        hankeGeometriat.hankeId = hanke.id // replaces the id with the correct one
 
         // save
         hankeGeometriatService.saveGeometriat(hankeTunnus, hankeGeometriat)
@@ -124,4 +134,12 @@ internal class HankeGeometriatServiceImplITest {
             }
         }
     }
+
+    private fun getDummyHanke(hankeId: Int, hankeTunnus: String): Hanke {
+        return Hanke(
+                id = hankeId, hankeTunnus = hankeTunnus,
+                false, null, null, null, null, null, null,
+                1, null, null, null, null, SaveType.DRAFT)
+    }
+
 }
