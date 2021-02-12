@@ -35,6 +35,15 @@ internal class TormaystarkasteluDaoImplManualTest {
     }
 
     /*
+    Test manually what general street classes Hanke geometries are located on
+     */
+    @Test
+    fun yleisetKatuluokat() {
+        val yleisetKatuluokat = dao.yleisetKatuluokat(1)
+        println(yleisetKatuluokat.toJsonPrettyString())
+    }
+
+    /*
     Test manually what kind of cycleways Hanke geometries are located on
      */
     @Test

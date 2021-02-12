@@ -30,6 +30,33 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
         }
     }
 
+    override fun yleisetKatuluokat(hankegeometriatId: Int): List<YleinenKatuluokkaTormaystarkastelu> {
+        with(jdbcOperations) {
+            return query(
+                """
+            SELECT 
+                tormays_ylre_classes_polys.fid,
+                tormays_ylre_classes_polys.ylre_class,
+                hankegeometria.id
+            FROM
+                tormays_ylre_classes_polys,
+                hankegeometria,
+                hankegeometriat
+            WHERE
+                st_overlaps(tormays_ylre_classes_polys.geom, hankegeometria.geometria) AND
+                hankegeometria.hankegeometriatid = hankegeometriat.id AND
+                hankegeometriat.id = ?;
+        """.trimIndent(), { rs, _ ->
+                    val ylreClass = rs.getString(2)
+                    YleinenKatuluokkaTormaystarkastelu(
+                        YleinenKatuluokka.valueOfKatuluokka(ylreClass) ?: throw IllegalKatuluokkaException(ylreClass),
+                        rs.getInt(3)
+                    )
+                }, hankegeometriatId
+            )
+        }
+    }
+
     override fun pyorailyreitit(hankegeometriatId: Int): List<PyorailyTormaystarkastelu> {
         with(jdbcOperations) {
             return query(
@@ -61,7 +88,7 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
                 hankegeometriat.id = ?;
         """.trimIndent(), { rs, _ ->
                     PyorailyTormaystarkastelu(
-                        TormaystarkasteluPyorailyreittiluokitus.valueOfCycleway(rs.getString(2))
+                        TormaystarkasteluPyorailyreittiluokitus.valueOfPyorailyvayla(rs.getString(2))
                             ?: TormaystarkasteluPyorailyreittiluokitus.EI_PYORAILYREITTI,
                         rs.getInt(3)
                     )

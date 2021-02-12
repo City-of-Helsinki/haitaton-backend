@@ -10,4 +10,5 @@ interface TormaystarkasteluDao {
      * Checks whether these Hanke geometries are on any categorized cycling route
      */
     fun pyorailyreitit(hankegeometriatId: Int): List<PyorailyTormaystarkastelu>
+    fun yleisetKatuluokat(hankegeometriatId: Int): List<YleinenKatuluokkaTormaystarkastelu>
 }
