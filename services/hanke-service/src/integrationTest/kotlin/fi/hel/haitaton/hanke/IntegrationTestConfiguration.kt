@@ -32,5 +32,5 @@ class IntegrationTestConfiguration {
     fun hankeGeometriatDao(jdbcOperations: JdbcOperations): HankeGeometriatDao = mockk()
 
     @Bean
-    fun hankeGeometriatService(repository: HankeRepository, hankeGeometriatDao: HankeGeometriatDao): HankeGeometriatService = mockk()
+    fun hankeGeometriatService(service: HankeService, hankeGeometriatDao: HankeGeometriatDao): HankeGeometriatService = mockk()
 }
