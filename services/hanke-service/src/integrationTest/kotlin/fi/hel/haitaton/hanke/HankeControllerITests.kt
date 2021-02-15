@@ -8,17 +8,17 @@ import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import io.mockk.every
 import io.mockk.verify
 import org.geojson.FeatureCollection
-import org.junit.Ignore
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.security.test.context.support.WithMockUser
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 
 import java.time.ZonedDateTime
@@ -33,9 +33,10 @@ import java.time.temporal.ChronoUnit
 @WebMvcTest
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
+@WithMockUser("test", roles = ["haitaton-user"])
 class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
-    private val mockedHankeTunnus = "GHSFG123"
+    private val mockedHankeTunnus = "HAI21-1"
 
     @Autowired
     lateinit var hankeService: HankeService  //faking these calls
@@ -94,14 +95,10 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // faking the service call with two returned Hanke
         val criteria = HankeSearch(geometry=true)
         every { hankeService.loadAllHanke(criteria) }.returns(
-                listOf(Hanke(123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
-                        getDatetimeAlku().minusDays(500), getDatetimeLoppu().minusDays(450), Vaihe.OHJELMOINTI, null,
-                        1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT),
-                        Hanke(444, "hanketunnus2", true, "Esplanadin viemäröinti", "lorem ipsum dolor sit amet...",
-                                getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
-                                1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT)))
-        every { hankeGeometriatService.loadGeometriat(123) }.returns(HankeGeometriat(1, 123, FeatureCollection()))
-        every { hankeGeometriatService.loadGeometriat(444) }.returns(HankeGeometriat(2, 444, FeatureCollection()))
+                listOf(Hanke(123, mockedHankeTunnus),
+                        Hanke(444, "hanketunnus2")))
+        every { hankeGeometriatService.loadGeometriat(Hanke(123, mockedHankeTunnus)) }.returns(HankeGeometriat(1, 123, FeatureCollection()))
+        every { hankeGeometriatService.loadGeometriat(Hanke(444, "hanketunnus2")) }.returns(HankeGeometriat(2, 444, FeatureCollection()))
 
         //we check that we get the two hankeTunnus and geometriat we expect
         mockMvc.perform(get("/hankkeet?geometry=true")
@@ -114,8 +111,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 .andExpect(jsonPath("$[1].geometriat.id").value(2))
 
         verify { hankeService.loadAllHanke(criteria) }
-        verify { hankeGeometriatService.loadGeometriat(123) }
-        verify { hankeGeometriatService.loadGeometriat(444) }
+        verify { hankeGeometriatService.loadGeometriat(Hanke(123, mockedHankeTunnus)) }
+        verify { hankeGeometriatService.loadGeometriat(Hanke(444, "hanketunnus2")) }
     }
 
     @Test
@@ -135,6 +132,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         mockMvc.perform(post("/hankkeet")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .with(csrf())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -162,6 +160,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         mockMvc.perform(put("/hankkeet/idHankkeelle123")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .with(csrf())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -200,6 +199,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val expectedContent = expectedHanke.toJsonString()
         mockMvc.perform(post("/hankkeet")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .with(csrf())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -234,6 +234,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         mockMvc.perform(post("/hankkeet")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(hankeInvalid.toJsonString())
+                .with(csrf())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest)
                 .andExpect(jsonPath("$.errorCode").value("HAI1002"))
@@ -279,6 +280,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // Call it and check results
         mockMvc.perform(put("/hankkeet/idHankkeelle123")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .with(csrf())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
@@ -333,6 +335,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // Call it and check results
         mockMvc.perform(post("/hankkeet")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .with(csrf())
                 .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))

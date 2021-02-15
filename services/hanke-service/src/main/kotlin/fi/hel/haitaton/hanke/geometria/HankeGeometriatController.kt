@@ -18,13 +18,13 @@ private val logger = KotlinLogging.logger { }
 @Validated
 class HankeGeometriaController(@Autowired private val service: HankeGeometriatService) {
 
-    @PostMapping("/{hankeId}/geometriat")
-    fun createGeometria(@PathVariable("hankeId") hankeId: String, @ValidHankeGeometriat @RequestBody hankeGeometriat: HankeGeometriat?): ResponseEntity<Any> {
+    @PostMapping("/{hankeTunnus}/geometriat")
+    fun createGeometria(@PathVariable("hankeTunnus") hankeTunnus: String, @ValidHankeGeometriat @RequestBody hankeGeometriat: HankeGeometriat?): ResponseEntity<Any> {
         if (hankeGeometriat == null) {
             return ResponseEntity.badRequest().body(HankeError.HAI1011)
         }
         return try {
-            val savedHankeGeometriat = service.saveGeometriat(hankeId, hankeGeometriat)
+            val savedHankeGeometriat = service.saveGeometriat(hankeTunnus, hankeGeometriat)
             ResponseEntity.ok(savedHankeGeometriat)
         } catch (e: HankeNotFoundException) {
             logger.error {
@@ -39,10 +39,10 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriatSe
         }
     }
 
-    @GetMapping("/{hankeId}/geometriat")
-    fun getGeometria(@PathVariable("hankeId") hankeId: String): ResponseEntity<Any> {
+    @GetMapping("/{hankeTunnus}/geometriat")
+    fun getGeometria(@PathVariable("hankeTunnus") hankeTunnus: String): ResponseEntity<Any> {
         return try {
-            val geometry = service.loadGeometriat(hankeId)
+            val geometry = service.loadGeometriat(hankeTunnus)
             if (geometry == null) {
                 ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1015)
             } else {

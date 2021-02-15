@@ -12,15 +12,14 @@ import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 import javax.validation.ConstraintViolationException
 
-
 private val logger = KotlinLogging.logger { }
 
 @RestController
 @RequestMapping("/hankkeet")
 @Validated
 class HankeController(
-        @Autowired private val hankeService: HankeService,
-        @Autowired private val hankeGeometriatService: HankeGeometriatService
+    @Autowired private val hankeService: HankeService,
+    @Autowired private val hankeGeometriatService: HankeGeometriatService
 ) {
 
     /**
@@ -36,10 +35,10 @@ class HankeController(
         return try {
             val hanke = hankeService.loadHanke(hankeTunnus)
             ResponseEntity.status(HttpStatus.OK).body(hanke)
-
+        } catch (e:AccessDeniedException) {
+            throw e
         } catch (e: HankeNotFoundException) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
-
         } catch (e: Exception) {
             logger.error(e) {
                 HankeError.HAI1004.toString()
@@ -53,7 +52,7 @@ class HankeController(
     fun getHankeList(hankeSearch: HankeSearch? = null): ResponseEntity<Any> {
         return try {
 
-            var hankeList = hankeService.loadAllHanke(hankeSearch)
+            val hankeList = hankeService.loadAllHanke(hankeSearch)
 
             if (hankeSearch != null && hankeSearch.includeGeometry()) {
                 includeGeometry(hankeList)
@@ -69,7 +68,7 @@ class HankeController(
 
     private fun includeGeometry(hankeList: List<Hanke>) {
         hankeList.forEach { hanke ->
-            hanke.geometriat = hankeGeometriatService.loadGeometriat(hanke.id!!)
+            hanke.geometriat = hankeGeometriatService.loadGeometriat(hanke)
         }
     }
 
@@ -106,7 +105,7 @@ class HankeController(
         if (hanke == null || hankeTunnus == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
-        if (!hankeTunnus.equals(hanke.hankeTunnus)) {
+        if (hankeTunnus != hanke.hankeTunnus) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
 
@@ -134,4 +133,7 @@ class HankeController(
         }
     }
 
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ExceptionHandler(AccessDeniedException::class)
+    fun handleAccessDeniedException(ex: AccessDeniedException): HankeError = HankeError.HAI0001
 }

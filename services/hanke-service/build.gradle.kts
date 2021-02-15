@@ -70,7 +70,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.liquibase:liquibase-core")								// TODO: do we need org.springframework:spring-dao ?
 
-	runtimeOnly("org.postgresql:postgresql:$postgreSQLVersion")
+	implementation("org.postgresql:postgresql:$postgreSQLVersion")
 	// H2 is used as embedded db for some simple low level Entity and Repository class testing
 	runtimeOnly("com.h2database:h2")
 	runtimeOnly("org.springdoc:springdoc-openapi-ui:$springDocVersion")
@@ -85,6 +85,13 @@ dependencies {
 	testImplementation("org.testcontainers:postgresql:1.15.1")
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	// Spring Security
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	implementation("org.springframework.cloud:spring-cloud-starter-oauth2:2.2.4.RELEASE")
+	implementation("org.springframework.security:spring-security-data")
+	implementation("org.springframework.security:spring-security-oauth2-resource-server:5.3.6.RELEASE")
+	implementation("org.springframework.security:spring-security-oauth2-jose:5.3.6.RELEASE")
+	testImplementation("org.springframework.security:spring-security-test")
 	// Sentry
 	implementation("io.sentry:sentry-spring-boot-starter:4.0.0")
 	implementation("io.sentry:sentry-logback:4.0.0")

@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.geometria
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.TZ_UTC
+import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.toJsonString
 import mu.KotlinLogging
 import java.time.ZonedDateTime
@@ -51,10 +52,14 @@ open class HankeGeometriatServiceImpl(
 
     override fun loadGeometriat(hankeTunnus: String): HankeGeometriat? {
         val hanke = hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-        return loadGeometriat(hanke.id!!)
+        val hankeGeometriat = hankeGeometriaDao.retrieveHankeGeometriat(hanke.id!!)
+        hankeGeometriat?.includeHankeProperties(hanke)
+        return hankeGeometriat
     }
 
-    override fun loadGeometriat(hankeId: Int): HankeGeometriat? {
-        return hankeGeometriaDao.retrieveHankeGeometriat(hankeId)
+    override fun loadGeometriat(hanke: Hanke): HankeGeometriat? {
+        val hankeGeometriat = hankeGeometriaDao.retrieveHankeGeometriat(hanke.id!!)
+        hankeGeometriat?.includeHankeProperties(hanke)
+        return hankeGeometriat
     }
 }
