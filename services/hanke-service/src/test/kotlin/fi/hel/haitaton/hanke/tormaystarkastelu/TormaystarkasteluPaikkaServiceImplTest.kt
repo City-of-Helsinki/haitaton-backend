@@ -48,9 +48,9 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
 
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
 
-        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 0, KatuluokkaTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 0, KatuluokkaTormaysLuokittelu.EI_MOOTTORILIIKENNE_VAIK.toString()))
         assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
-        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()))
 
     }
 
@@ -77,9 +77,9 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
 
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
 
-        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 3, KatuluokkaTormaysLuokittelu.THREE.toString()))
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 3, KatuluokkaTormaysLuokittelu.PAIKALLINEN_KOKOOJA.toString()))
         assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
-        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()))
     }
 
     @Test
@@ -106,9 +106,9 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
 
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
 
-        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 3, KatuluokkaTormaysLuokittelu.THREE.toString()))
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 3, KatuluokkaTormaysLuokittelu.PAIKALLINEN_KOKOOJA.toString()))
         assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
-        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()))
     }
 
     @Test
@@ -134,9 +134,9 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
 
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
 
-        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 4, KatuluokkaTormaysLuokittelu.FOUR.toString()))
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 4, KatuluokkaTormaysLuokittelu.ALUEELLINEN_KOKOOJA.toString()))
         assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
-        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()))
     }
 
 
@@ -162,9 +162,9 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
 
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
 
-        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 2, KatuluokkaTormaysLuokittelu.TWO.toString()))
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 2, KatuluokkaTormaysLuokittelu.KANTAKAUPUNGIN_TONTTIKATU.toString()))
         assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
-        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()))
     }
 
 
@@ -192,9 +192,9 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
 
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
 
-        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 2, KatuluokkaTormaysLuokittelu.TWO.toString()))
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 2, KatuluokkaTormaysLuokittelu.KANTAKAUPUNGIN_TONTTIKATU.toString()))
         assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
-        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()))
 
     }
 
@@ -220,9 +220,9 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
 
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
 
-        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 1, KatuluokkaTormaysLuokittelu.ONE.toString()))
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 1, KatuluokkaTormaysLuokittelu.MUU_TONTTIKATU_ALUE.toString()))
         assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
-        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()))
 
     }
 
@@ -247,9 +247,9 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(),
                 LuokitteluRajaArvot())
 
-        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 1, KatuluokkaTormaysLuokittelu.ONE.toString()))
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 1, KatuluokkaTormaysLuokittelu.MUU_TONTTIKATU_ALUE.toString()))
         assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
-        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()))
     }
 
     @Test
@@ -260,9 +260,9 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         )
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
 
-        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 0, KatuluokkaTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 0, KatuluokkaTormaysLuokittelu.EI_MOOTTORILIIKENNE_VAIK.toString()))
         assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
-        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 5, PyorailyTormaysLuokittelu.FIVE.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 5, PyorailyTormaysLuokittelu.PRIORISOITU_REITTI.toString()))
 
     }
 
@@ -274,9 +274,9 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         )
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
 
-        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 0, KatuluokkaTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 0, KatuluokkaTormaysLuokittelu.EI_MOOTTORILIIKENNE_VAIK.toString()))
         assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
-        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 4, PyorailyTormaysLuokittelu.FOUR.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 4, PyorailyTormaysLuokittelu.PAAREITTI.toString()))
 
     }
 
