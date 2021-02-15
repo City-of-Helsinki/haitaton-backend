@@ -270,9 +270,9 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         }
 
         private fun copyStateFlagsFromEntity(h: Hanke, entity: HankeEntity) {
-            h.state.onGeometrioita = entity.tilaOnGeometrioita
-            h.state.onViereisiaHankkeita = entity.tilaOnViereisiaHankkeita
-            h.state.onAsiakasryhmia = entity.tilaOnAsiakasryhmia
+            h.tilat.onGeometrioita = entity.tilaOnGeometrioita
+            h.tilat.onViereisiaHankkeita = entity.tilaOnViereisiaHankkeita
+            h.tilat.onAsiakasryhmia = entity.tilaOnAsiakasryhmia
         }
 
     }
@@ -280,9 +280,9 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
     // --------------- Helpers for data transfer towards database ------------
 
     private fun copyStateFlagsToEntity(hanke: Hanke, entity: HankeEntity) {
-        entity.tilaOnGeometrioita = hanke.state.onGeometrioita
-        entity.tilaOnViereisiaHankkeita = hanke.state.onViereisiaHankkeita
-        entity.tilaOnAsiakasryhmia = hanke.state.onAsiakasryhmia
+        entity.tilaOnGeometrioita = hanke.tilat.onGeometrioita
+        entity.tilaOnViereisiaHankkeita = hanke.tilat.onViereisiaHankkeita
+        entity.tilaOnAsiakasryhmia = hanke.tilat.onAsiakasryhmia
     }
 
     /**

@@ -70,7 +70,7 @@ data class Hanke(
     var geometriat: HankeGeometriat? = null
 
     // --------------- State flags -------------------
-    var state: HankeTilat = HankeTilat()
+    var tilat: HankeTilat = HankeTilat()
 
     fun updateStateFlags() {
         updateStateFlagOnKaikkiPakollisetLuontiTiedot()
@@ -80,22 +80,22 @@ data class Hanke(
     fun updateStateFlagOnKaikkiPakollisetLuontiTiedot() {
         // All mandatory fields have been given... (though their validity should be checked elsewhere)
         //  and saveType is submit, not just draft?
-        state.onKaikkiPakollisetLuontiTiedot = !nimi.isNullOrBlank()
+        tilat.onKaikkiPakollisetLuontiTiedot = !nimi.isNullOrBlank()
                 && !kuvaus.isNullOrBlank()
                 && (alkuPvm != null) && (loppuPvm != null)
                 && (vaihe != null) && (vaihe != Vaihe.SUUNNITTELU || suunnitteluVaihe != null)
                 && !tyomaaKatuosoite.isNullOrBlank()
                 && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
-                && state.onGeometrioita == true
+                && tilat.onGeometrioita == true
                 && saveType == SaveType.SUBMIT
     }
 
     fun updateStateFlagTiedotLiikHaittaIndeksille() {
         // Requires start date, stop date, geometry, and both kaista-related haittas.
         // (They don't have to be "valid", though, that is another thing.)
-        state.onTiedotLiikHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null)
+        tilat.onTiedotLiikHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null)
                 && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
-                && state.onGeometrioita == true
+                && tilat.onGeometrioita == true
     }
 
 }
