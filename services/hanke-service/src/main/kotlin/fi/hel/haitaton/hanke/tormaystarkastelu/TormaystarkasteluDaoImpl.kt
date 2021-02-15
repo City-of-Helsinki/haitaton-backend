@@ -115,6 +115,35 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
         }
     }
 
+    override fun liikennemaarat(hankegeometriat: HankeGeometriat, etaisyys: TormaystarkasteluLiikennemaaranEtaisyys): Map<Int, List<Int>> {
+        val results = mutableMapOf<Int, MutableList<Int>>()
+        val tableName = "tormays_volumes${etaisyys.radius}_polys"
+        with(jdbcOperations) {
+            query(
+                """
+            SELECT
+                $tableName.fid,
+                $tableName.volume,
+                hankegeometria.id
+            FROM
+                 $tableName,
+                 hankegeometria
+            WHERE
+                hankegeometria.hankegeometriatid = ? AND
+                st_overlaps($tableName.geom, hankegeometria.geometria);
+        """.trimIndent(), { rs, _ ->
+                    Pair(
+                        rs.getInt(2),
+                        rs.getInt(3)
+                    )
+                }, hankegeometriat.id!!
+            ).forEach { pair ->
+                results.computeIfAbsent(pair.second) { mutableListOf() }.add(pair.first)
+            }
+        }
+        return results
+    }
+
     override fun pyorailyreitit(hankegeometriat: HankeGeometriat): Map<Int, Set<TormaystarkasteluPyorailyreittiluokka>> {
         val results = mutableMapOf<Int, MutableSet<TormaystarkasteluPyorailyreittiluokka>>()
         with(jdbcOperations) {

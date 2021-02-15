@@ -63,6 +63,24 @@ internal class TormaystarkasteluDaoImplManualTest {
     }
 
     /*
+    Test manually what kinds of traffic counts there are on Hanke geometries with radius of 15m
+     */
+    @Test
+    fun liikennemaarat15() {
+        val liikennemaarat = dao.liikennemaarat(HankeGeometriat(1), TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15)
+        println(liikennemaarat.toJsonPrettyString())
+    }
+
+    /*
+    Test manually what kinds of traffic counts there are on Hanke geometries with radius of 30m
+     */
+    @Test
+    fun liikennemaarat30() {
+        val liikennemaarat = dao.liikennemaarat(HankeGeometriat(1), TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30)
+        println(liikennemaarat.toJsonPrettyString())
+    }
+
+    /*
     Test manually what kind of cycleways Hanke geometries are located on
      */
     @Test
