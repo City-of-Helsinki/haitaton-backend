@@ -17,6 +17,8 @@ import java.time.ZonedDateTime
 // TODO: should give most constructor parameters a default value (or move out of constructor),
 // and instead ensure that there are explicit checks for the mandatory fields in the validator.
 // Current way causes a lot of bloat in test methods, yet gives no real benefit.
+// The original thinking was that the constructor has the first page fields, which are
+// mandatory... but e.g. audit fields are internal stuff, should be outside of constructor.
 data class Hanke(
 
         var id: Int?, // Can be used for e.g. autosaving before hankeTunnus has been given (optional future stuff)
@@ -68,35 +70,32 @@ data class Hanke(
     var geometriat: HankeGeometriat? = null
 
     // --------------- State flags -------------------
-    // TODO: englanniksi?
-    var tilaOnGeometrioita: Boolean? = false
-    var tilaOnKaikkiPakollisetLuontiTiedot: Boolean? = false
-    var tilaOnTiedotLiikHaittaIndeksille: Boolean? = false
-    var tilaOnLiikHaittaIndeksi: Boolean? = false
-    var tilaOnViereisiaHankkeita: Boolean? = false
-    var tilaOnAsiakasryhmia: Boolean? = false
+    var state: HankeTilat = HankeTilat()
 
-    // TODO: ended up not being used in this class after all... remove to avoid
-    // mismatch between entity-class code and these?
+    fun updateStateFlags() {
+        updateStateFlagOnKaikkiPakollisetLuontiTiedot()
+        updateStateFlagTiedotLiikHaittaIndeksille()
+    }
+
     fun updateStateFlagOnKaikkiPakollisetLuontiTiedot() {
         // All mandatory fields have been given... (though their validity should be checked elsewhere)
         //  and saveType is submit, not just draft?
-        tilaOnKaikkiPakollisetLuontiTiedot = !nimi.isNullOrBlank()
+        state.onKaikkiPakollisetLuontiTiedot = !nimi.isNullOrBlank()
                 && !kuvaus.isNullOrBlank()
                 && (alkuPvm != null) && (loppuPvm != null)
                 && (vaihe != null) && (vaihe != Vaihe.SUUNNITTELU || suunnitteluVaihe != null)
                 && !tyomaaKatuosoite.isNullOrBlank()
                 && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
-                && tilaOnGeometrioita == true
+                && state.onGeometrioita == true
                 && saveType == SaveType.SUBMIT
     }
 
     fun updateStateFlagTiedotLiikHaittaIndeksille() {
         // Requires start date, stop date, geometry, and both kaista-related haittas.
         // (They don't have to be "valid", though, that is another thing.)
-        tilaOnTiedotLiikHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null)
+        state.onTiedotLiikHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null)
                 && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
-                && tilaOnGeometrioita == true
+                && state.onGeometrioita == true
     }
 
 }

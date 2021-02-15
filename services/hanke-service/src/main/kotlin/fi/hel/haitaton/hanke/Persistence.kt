@@ -146,15 +146,18 @@ class HankeEntity(
 
     // --------------- State flags -------------------
     // NOTE: need to be careful with these to not end up with inconsistent database state.
-    // All of these should be resolved automatically, i.e. there are no "setters" for them.
-    // They are saved to database in order to reduce processing overhead e.g. when fetching
-    // lots of Hanke-objects for showing a list.
-    var tilaOnGeometrioita: Boolean? = false
-    var tilaOnKaikkiPakollisetLuontiTiedot: Boolean? = false
-    var tilaOnTiedotLiikHaittaIndeksille: Boolean? = false
-    var tilaOnLiikHaittaIndeksi: Boolean? = false
-    var tilaOnViereisiaHankkeita: Boolean? = false
-    var tilaOnAsiakasryhmia: Boolean? = false
+    // Some flags are saved to database in order to reduce processing overhead e.g. when fetching
+    // lots of Hanke-objects for showing a list. (Those that are not saved are left in comments
+    // as reference; see Hanke domain-object.)
+    // Checking geometry requires lookup into another database table.
+    // Checking for nearby other Hanke requires GIS database query.
+
+    var tilaOnGeometrioita: Boolean = false
+    //var tilaOnKaikkiPakollisetLuontiTiedot: Boolean = false
+    //var tilaOnTiedotLiikHaittaIndeksille: Boolean = false
+    //var tilaOnLiikHaittaIndeksi: Boolean = false
+    var tilaOnViereisiaHankkeita: Boolean = false
+    var tilaOnAsiakasryhmia: Boolean = false
 
     // ---------------  Helper functions -----------------
 
@@ -171,26 +174,6 @@ class HankeEntity(
         }
     }
 
-    fun updateStateFlagOnKaikkiPakollisetLuontiTiedot() {
-        // All mandatory fields have been given... (though their validity should be checked elsewhere)
-        //  and saveType is submit, not just draft?
-        tilaOnKaikkiPakollisetLuontiTiedot = !nimi.isNullOrBlank()
-                && !kuvaus.isNullOrBlank()
-                && (alkuPvm != null) && (loppuPvm != null)
-                && (vaihe != null) && (vaihe != Vaihe.SUUNNITTELU || suunnitteluVaihe != null)
-                && !tyomaaKatuosoite.isNullOrBlank()
-                && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
-                && tilaOnGeometrioita == true
-                && saveType == SaveType.SUBMIT
-    }
-
-    fun updateStateFlagTiedotLiikHaittaIndeksille() {
-        // Requires start date, stop date, geometry, and both kaista-related haittas.
-        // (They don't have to be "valid", though, that is another thing.)
-        tilaOnTiedotLiikHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null)
-                && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
-                && tilaOnGeometrioita == true
-    }
 
 
     override fun equals(other: Any?): Boolean {
