@@ -10,6 +10,9 @@ trigger:
     exclude:
     - README.md
 
+# no PR triggers
+pr: none
+
 # By default, use self-hosted agents
 pool: Default
 
