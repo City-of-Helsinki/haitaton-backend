@@ -1,8 +1,9 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import fi.hel.haitaton.hanke.domain.Hanke
+import java.util.function.Consumer
 
-open class TormaystarkasteluPaikkaServiceImpl(private val dao: TormaystarkasteluDao) : TormaystarkasteluPaikkaService {
+class TormaystarkasteluPaikkaServiceImpl : TormaystarkasteluPaikkaService {
 
     /**
      * Returns luokittelutulos list for hanke based on its hankeGeometria comparison to the different map references
@@ -34,20 +35,24 @@ open class TormaystarkasteluPaikkaServiceImpl(private val dao: Tormaystarkastelu
     }
 
     internal fun getPyorailyLuokitteluTulos(hanke: Hanke): List<Luokittelutulos> {
+
         val pyorailyLuokittelu = mutableListOf<Luokittelutulos>()
-        val hankeGeometriat = hanke.geometriat ?: throw IllegalStateException("Hanke.geometriat must be set")
-        val tormaystarkastelutulos = dao.pyorailyreitit(hankeGeometriat)
-        val uniqueResults = tormaystarkastelutulos.values.flatten().distinct()
-        when {
-            uniqueResults.contains(TormaystarkasteluPyorailyreittiluokka.PRIORISOITU_REITTI) -> {
-                //pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, "5", PyorailyTormaysLuokittelu.FIVE.toString()), )
-            }
-            uniqueResults.contains(TormaystarkasteluPyorailyreittiluokka.PAAREITTI) -> {
-                //pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, "4", PyorailyTormaysLuokittelu.FOUR.toString()), )
-            }
-            else -> {
-                //pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, "0", PyorailyTormaysLuokittelu.ZERO.toString()), )
-            }
+
+        var hankeGeometriatId = hanke.geometriat?.id
+
+        //if no id let's get out of here
+        if (hankeGeometriatId == null) return pyorailyLuokittelu
+
+        val tormaystarkastelutulos = ""   //TODO: call dao check to get the priority/main
+
+        if (matchesPriorityCycling(tormaystarkastelutulos)) {
+            pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, "5", PyorailyTormaysLuokittelu.FIVE.toString()), )
+
+        } else if (matchesMainCycling(tormaystarkastelutulos)) {
+            pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, "4", PyorailyTormaysLuokittelu.FOUR.toString()), )
+
+        } else {
+            pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, "0", PyorailyTormaysLuokittelu.ZERO.toString()), )
         }
 
         return pyorailyLuokittelu
