@@ -141,8 +141,8 @@ class HankeServiceITests {
         // Check state flag fields; all false in this case (because geometry has not been given):
         assertThat(returnedHanke.tilat.onGeometrioita).isFalse()
         assertThat(returnedHanke.tilat.onKaikkiPakollisetLuontiTiedot).isFalse()
-        assertThat(returnedHanke.tilat.onTiedotLiikHaittaIndeksille).isFalse()
-        assertThat(returnedHanke.tilat.onLiikHaittaIndeksi).isFalse()
+        assertThat(returnedHanke.tilat.onTiedotLiikenneHaittaIndeksille).isFalse()
+        assertThat(returnedHanke.tilat.onLiikenneHaittaIndeksi).isFalse()
         assertThat(returnedHanke.tilat.onViereisiaHankkeita).isFalse()
         assertThat(returnedHanke.tilat.onAsiakasryhmia).isFalse()
     }
@@ -165,7 +165,7 @@ class HankeServiceITests {
 
         // Check certain flags for false state:
         assertThat(returnedHanke.tilat.onKaikkiPakollisetLuontiTiedot).isFalse()
-        assertThat(returnedHanke.tilat.onTiedotLiikHaittaIndeksille).isFalse()
+        assertThat(returnedHanke.tilat.onTiedotLiikenneHaittaIndeksille).isFalse()
 
         // Fill the values and give proper save type:
         returnedHanke.tyomaaKatuosoite = "Testikatu 1 A 1"
@@ -193,7 +193,7 @@ class HankeServiceITests {
 
         // Check those flags to be true now with full data (and the faked geometry) available:
         assertThat(returnedHanke2.tilat.onKaikkiPakollisetLuontiTiedot).isTrue()
-        assertThat(returnedHanke2.tilat.onTiedotLiikHaittaIndeksille).isTrue()
+        assertThat(returnedHanke2.tilat.onTiedotLiikenneHaittaIndeksille).isTrue()
     }
 
 

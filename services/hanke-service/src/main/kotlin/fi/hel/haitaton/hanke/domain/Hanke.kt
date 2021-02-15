@@ -83,8 +83,9 @@ data class Hanke(
         tilat.onKaikkiPakollisetLuontiTiedot = !nimi.isNullOrBlank()
                 && !kuvaus.isNullOrBlank()
                 && (alkuPvm != null) && (loppuPvm != null)
-                && (vaihe != null) && (vaihe != Vaihe.SUUNNITTELU || suunnitteluVaihe != null)
-                && !tyomaaKatuosoite.isNullOrBlank()
+                && hasMandatoryVaiheValues()
+                // TODO: Not certain if this is required; remove/uncomment later once it gets decided
+                // && !tyomaaKatuosoite.isNullOrBlank()
                 && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
                 && tilat.onGeometrioita == true
                 && saveType == SaveType.SUBMIT
@@ -93,9 +94,16 @@ data class Hanke(
     fun updateStateFlagTiedotLiikHaittaIndeksille() {
         // Requires start date, stop date, geometry, and both kaista-related haittas.
         // (They don't have to be "valid", though, that is another thing.)
-        tilat.onTiedotLiikHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null)
+        tilat.onTiedotLiikenneHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null)
                 && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
                 && tilat.onGeometrioita == true
+    }
+
+    private fun hasMandatoryVaiheValues(): Boolean {
+        // Vaihe must be given, but suunnitteluVaihe is mandatory only if vaihe is "SUUNNITTELU".
+        if (vaihe == null) return false
+        if (vaihe == Vaihe.SUUNNITTELU && suunnitteluVaihe == null) return false
+        return true
     }
 
 }

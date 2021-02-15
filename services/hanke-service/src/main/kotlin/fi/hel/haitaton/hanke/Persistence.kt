@@ -154,8 +154,8 @@ class HankeEntity(
 
     var tilaOnGeometrioita: Boolean = false
     //var tilaOnKaikkiPakollisetLuontiTiedot: Boolean = false
-    //var tilaOnTiedotLiikHaittaIndeksille: Boolean = false
-    //var tilaOnLiikHaittaIndeksi: Boolean = false
+    //var tilaOnTiedotLiikenneHaittaIndeksille: Boolean = false
+    //var tilaOnLiikenneHaittaIndeksi: Boolean = false
     var tilaOnViereisiaHankkeita: Boolean = false
     var tilaOnAsiakasryhmia: Boolean = false
 
