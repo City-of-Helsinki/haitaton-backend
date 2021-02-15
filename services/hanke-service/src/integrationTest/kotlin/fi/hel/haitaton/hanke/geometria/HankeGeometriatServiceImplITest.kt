@@ -77,7 +77,7 @@ internal class HankeGeometriatServiceImplITest {
         val hankeTunnus = hanke.hankeTunnus!!
         hankeGeometriat.hankeId = hanke.id // replaces the id with the correct one
         // Check that the hanke geometry flag is false:
-        assertThat(hanke.state.onGeometrioita).isFalse()
+        assertThat(hanke.tilat.onGeometrioita).isFalse()
 
         // save
         hankeGeometriatService.saveGeometriat(hankeTunnus, hankeGeometriat)
@@ -86,7 +86,7 @@ internal class HankeGeometriatServiceImplITest {
         // the hanke to check that the flag changed to true:
         val updatedHanke = hankeService.loadHanke(hankeTunnus)
         assertThat(updatedHanke).isNotNull()
-        assertThat(updatedHanke!!.state.onGeometrioita).isTrue()
+        assertThat(updatedHanke!!.tilat.onGeometrioita).isTrue()
 
 
         // load

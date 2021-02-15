@@ -27,7 +27,7 @@ open class HankeGeometriatServiceImpl(
         // TODO: if the new geometry is empty, is it actually a removal?
         val hasGeom = isGeometryNonEmpty(hankeGeometriat)
         // Set/update the state flag in hanke data and save it
-        hanke.state.onGeometrioita = hasGeom
+        hanke.tilat.onGeometrioita = hasGeom
         hankeService.updateHankeStateFlags(hanke)
 
         return if (oldHankeGeometriat == null) {
