@@ -98,17 +98,11 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
         var ok1 = ok
         // TODO: NOTE: having all four mandatory fields empty, but giving organisation is still valid for this... needs to be fixed.
         // Short version: Either all four mandatory fields must be have proper value, or all of them must be empty/whitespace-only.
-        // If any of the four mandatory fields have any non-whitespace in them...
-        if (!yhteystieto.sukunimi.isBlank() || !yhteystieto.etunimi.isBlank()
-                || !yhteystieto.email.isBlank() || !yhteystieto.puhelinnumero.isBlank()) {
-            // ... but if any other of them is empty/whitespace-only, it is not valid
-            if (yhteystieto.sukunimi.isBlank() || yhteystieto.etunimi.isBlank()
-                    || yhteystieto.email.isBlank() || yhteystieto.puhelinnumero.isBlank()) {
-                // TODO: is that property node correct?
-                // TODO: Does not currently matter, though, as the node information does not get through to error response.
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("YhteysTiedot").addConstraintViolation()
-                ok1 = false
-            }
+        if (yhteystieto.isAnyMandatoryFieldSet() && !yhteystieto.isValid()) {
+            // TODO: is that property node correct?
+            // TODO: Does not currently matter, though, as the node information does not get through to error response.
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("YhteysTiedot").addConstraintViolation()
+            ok1 = false
         }
         return ok1
     }

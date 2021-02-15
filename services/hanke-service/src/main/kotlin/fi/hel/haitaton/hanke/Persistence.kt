@@ -144,6 +144,23 @@ class HankeEntity(
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
 
+    // --------------- State flags -------------------
+    // NOTE: need to be careful with these to not end up with inconsistent database state.
+    // Some flags are saved to database in order to reduce processing overhead e.g. when fetching
+    // lots of Hanke-objects for showing a list. (Those that are not saved are left in comments
+    // as reference; see Hanke domain-object.)
+    // Checking geometry requires lookup into another database table.
+    // Checking for nearby other Hanke requires GIS database query.
+
+    var tilaOnGeometrioita: Boolean = false
+    //var tilaOnKaikkiPakollisetLuontiTiedot: Boolean = false
+    //var tilaOnTiedotLiikenneHaittaIndeksille: Boolean = false
+    //var tilaOnLiikenneHaittaIndeksi: Boolean = false
+    var tilaOnViereisiaHankkeita: Boolean = false
+    var tilaOnAsiakasryhmia: Boolean = false
+
+    // ---------------  Helper functions -----------------
+
     fun addYhteystieto(yhteystieto: HankeYhteystietoEntity) {
         listOfHankeYhteystieto.add(yhteystieto)
         yhteystieto.hanke = this
@@ -156,6 +173,8 @@ class HankeEntity(
             yhteystieto.hanke = null
         }
     }
+
+
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

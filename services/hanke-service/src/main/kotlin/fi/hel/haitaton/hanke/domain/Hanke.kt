@@ -12,8 +12,13 @@ import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import java.time.ZonedDateTime
 
 /**
- * When creating Hanke, only creatorUserId is mandatory.
+ *
  */
+// TODO: should give most constructor parameters a default value (or move out of constructor),
+// and instead ensure that there are explicit checks for the mandatory fields in the validator.
+// Current way causes a lot of bloat in test methods, yet gives no real benefit.
+// The original thinking was that the constructor has the first page fields, which are
+// mandatory... but e.g. audit fields are internal stuff, should be outside of constructor.
 data class Hanke(
 
         var id: Int?, // Can be used for e.g. autosaving before hankeTunnus has been given (optional future stuff)
@@ -40,14 +45,17 @@ data class Hanke(
     constructor(id: Int) : this(id, null, null, null, null, null, null, null, null, null, null, null, null, null)
     constructor(id: Int, hankeTunnus: String) : this(id, hankeTunnus, null, null, null, null, null, null, null, null, null, null, null, null)
 
+    // --------------- Yhteystiedot -----------------
     var omistajat = mutableListOf<HankeYhteystieto>()
     var arvioijat = mutableListOf<HankeYhteystieto>()
     var toteuttajat = mutableListOf<HankeYhteystieto>()
 
+    // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
     var tyomaaKatuosoite: String? = null
     var tyomaaTyyppi = mutableSetOf<TyomaaTyyppi>()
     var tyomaaKoko: TyomaaKoko? = null
 
+    // --------------- Hankkeen haitat -------------------
     var haittaAlkuPvm: ZonedDateTime? = null
     var haittaLoppuPvm: ZonedDateTime? = null
     var kaistaHaitta: Haitta04? = null
@@ -56,5 +64,46 @@ data class Hanke(
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
 
+    /** Note: this can be null for two reasons; the field wasn't requested for, or there are no geometries for the hanke.
+     * See 'tilaOnGeometrioita' field.
+     */
     var geometriat: HankeGeometriat? = null
+
+    // --------------- State flags -------------------
+    var tilat: HankeTilat = HankeTilat()
+
+    fun updateStateFlags() {
+        updateStateFlagOnKaikkiPakollisetLuontiTiedot()
+        updateStateFlagTiedotLiikHaittaIndeksille()
+    }
+
+    fun updateStateFlagOnKaikkiPakollisetLuontiTiedot() {
+        // All mandatory fields have been given... (though their validity should be checked elsewhere)
+        //  and saveType is submit, not just draft?
+        tilat.onKaikkiPakollisetLuontiTiedot = !nimi.isNullOrBlank()
+                && !kuvaus.isNullOrBlank()
+                && (alkuPvm != null) && (loppuPvm != null)
+                && hasMandatoryVaiheValues()
+                // TODO: Not certain if this is required; remove/uncomment later once it gets decided
+                // && !tyomaaKatuosoite.isNullOrBlank()
+                && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
+                && tilat.onGeometrioita == true
+                && saveType == SaveType.SUBMIT
+    }
+
+    fun updateStateFlagTiedotLiikHaittaIndeksille() {
+        // Requires start date, stop date, geometry, and both kaista-related haittas.
+        // (They don't have to be "valid", though, that is another thing.)
+        tilat.onTiedotLiikenneHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null)
+                && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
+                && tilat.onGeometrioita == true
+    }
+
+    private fun hasMandatoryVaiheValues(): Boolean {
+        // Vaihe must be given, but suunnitteluVaihe is mandatory only if vaihe is "SUUNNITTELU".
+        if (vaihe == null) return false
+        if (vaihe == Vaihe.SUUNNITTELU && suunnitteluVaihe == null) return false
+        return true
+    }
+
 }
