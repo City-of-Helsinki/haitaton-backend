@@ -35,7 +35,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
     fun calculateTormaystarkasteluLuokitteluTulos_whenOnlyPriorityPyoraily() {
 
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(GEOMETRY_ID)).thenReturn(
-                mutableListOf(PyorailyTormaystarkastelu(TormaystarkasteluPyorailyreittiluokitus.PRIORISOITU_REITTI, GEOMETRY_ID))
+                mutableMapOf(Pair(GEOMETRY_ID,TormaystarkasteluPyorailyreittiluokka.PRIORISOITU_REITTI))
         )
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
 
@@ -49,7 +49,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
     fun calculateTormaystarkasteluLuokitteluTulos_whenOnlyMainPyoraily() {
 
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(GEOMETRY_ID)).thenReturn(
-                mutableListOf(PyorailyTormaystarkastelu(TormaystarkasteluPyorailyreittiluokitus.PAAREITTI, GEOMETRY_ID))
+                mutableMapOf(Pair( GEOMETRY_ID,TormaystarkasteluPyorailyreittiluokka.PAAREITTI))
         )
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
 

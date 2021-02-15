@@ -12,7 +12,7 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
 
         val luokitteluTulosComplete = mutableListOf<Luokittelutulos>()
 
-        val katuluokkaLuokittelut = getKatuluokkaLuokitteluTulos(hanke, rajaArvot)
+        val katuluokkaLuokittelut = getKatuluokkaLuokitteluTulos(hanke)
 
         luokitteluTulosComplete.addAll(katuluokkaLuokittelut)
         luokitteluTulosComplete.addAll(getLiikennemaaraLuokitteluTulos(hanke, rajaArvot, katuluokkaLuokittelut))
@@ -25,7 +25,7 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
     }
 
 
-    internal fun getKatuluokkaLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot): List<Luokittelutulos> {
+    internal fun getKatuluokkaLuokitteluTulos(hanke: Hanke): List<Luokittelutulos> {
 
         val katuLuokittelu = mutableListOf<Luokittelutulos>()
 
@@ -34,7 +34,7 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
         if (hankeGeometriatId == null)
             return katuLuokittelu
 
-        val tormaystarkasteluYlreParts = ""   //TODO: call dao check to get the matches
+        val tormaystarkasteluYlreParts = tormaystarkasteluDao.yleisetKatualueet(hankeGeometriatId)  //TODO: call dao check to get the matches
         val tormaystarkasteluYlreClasses = ""   //TODO: call dao check to get the matches
 
 
@@ -102,7 +102,7 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
         return false //TODO implement
     }
 
-    private fun hitsInYlreParts(tormaystarkasteluYlreParts: String): Boolean {
+    private fun hitsInYlreParts(tormaystarkasteluYlreParts: Map<Int, Boolean>): Boolean {
         return false //TODO implement
     }
 
@@ -139,17 +139,17 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
         return pyorailyLuokittelu
     }
 
-    private fun matchesMainCycling(tormaystulos: List<PyorailyTormaystarkastelu>): Boolean {
+    private fun matchesMainCycling(tormaystulos: Map<Int, TormaystarkasteluPyorailyreittiluokka>): Boolean {
         //if contains any rows with ("priority")
         return tormaystulos.any { tormaystulosRivi ->
-            tormaystulosRivi.reittiluokka.name == TormaystarkasteluPyorailyreittiluokitus.PAAREITTI.name
+            tormaystulosRivi.value.name == TormaystarkasteluPyorailyreittiluokka.PAAREITTI.name
         }
     }
 
-    private fun matchesPriorityCycling(tormaystulos: List<PyorailyTormaystarkastelu>): Boolean {
+    private fun matchesPriorityCycling(tormaystulos: Map<Int, TormaystarkasteluPyorailyreittiluokka>): Boolean {
         //if contains any rows with("main")
         return tormaystulos.any { tormaystulosRivi ->
-            tormaystulosRivi.reittiluokka.name == TormaystarkasteluPyorailyreittiluokitus.PRIORISOITU_REITTI.name
+            tormaystulosRivi.value.name == TormaystarkasteluPyorailyreittiluokka.PRIORISOITU_REITTI.name
         }
     }
 
