@@ -6,7 +6,6 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.SaveType
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.domain.Hanke
 import io.mockk.*
@@ -34,7 +33,7 @@ internal class HankeGeometriatServiceImplTest {
         oldHankeGeometriat.hankeId = hankeId
         oldHankeGeometriat.version = 0
 
-        every { hankeService.loadHanke(hankeTunnus) } returns getDummyHanke(hankeId, hankeTunnus)
+        every { hankeService.loadHanke(hankeTunnus) } returns Hanke(hankeId, hankeTunnus)
         every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns oldHankeGeometriat
         every { hankeGeometriatDao.updateHankeGeometriat(any()) } just runs
         every { hankeService.updateHankeStateFlags(any()) } just runs
@@ -64,7 +63,7 @@ internal class HankeGeometriatServiceImplTest {
         hankeGeometriat.createdAt = null
         hankeGeometriat.modifiedAt = null
 
-        every { hankeService.loadHanke(hankeTunnus) } returns getDummyHanke(hankeId, hankeTunnus)
+        every { hankeService.loadHanke(hankeTunnus) } returns Hanke(hankeId, hankeTunnus)
         every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns null
         every { hankeGeometriatDao.createHankeGeometriat(any()) } just runs
         every { hankeService.updateHankeStateFlags(any()) } just runs
@@ -111,7 +110,7 @@ internal class HankeGeometriatServiceImplTest {
         val hankeTunnus = "1234567"
         val hankeId = 1
         val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
-        every { hankeService.loadHanke(hankeTunnus) } returns getDummyHanke(hankeId, hankeTunnus)
+        every { hankeService.loadHanke(hankeTunnus) } returns Hanke(hankeId, hankeTunnus)
         every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns hankeGeometriat
 
         val loadedHankeGeometriat = service.loadGeometriat(hankeTunnus)
@@ -144,11 +143,4 @@ internal class HankeGeometriatServiceImplTest {
         verify(exactly = 0) { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
     }
 
-
-    private fun getDummyHanke(hankeId: Int, hankeTunnus: String): Hanke {
-        return Hanke(
-                id = hankeId, hankeTunnus = hankeTunnus,
-                false, null, null, null, null, null, null,
-                1, null, null, null, null, SaveType.DRAFT)
-    }
 }

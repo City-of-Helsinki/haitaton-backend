@@ -73,7 +73,7 @@ internal class HankeGeometriatServiceImplITest {
         // Using hankeService to create the dummy hanke into database causes
         // tunnus and id to be whatever the service thinks is right, so
         // they must be picked from the created hanke-instance.
-        val hanke = hankeService.createHanke(getDummyHanke(hankeGeometriat.hankeId!!, ""))
+        val hanke = hankeService.createHanke(Hanke(hankeGeometriat.hankeId!!, ""))
         val hankeTunnus = hanke.hankeTunnus!!
         hankeGeometriat.hankeId = hanke.id // replaces the id with the correct one
         // Check that the hanke geometry flag is false:
@@ -144,13 +144,6 @@ internal class HankeGeometriatServiceImplITest {
                 assertThat(idPair.second).isEqualTo(loadedHankeGeometriat!!.id)
             }
         }
-    }
-
-    private fun getDummyHanke(hankeId: Int, hankeTunnus: String): Hanke {
-        return Hanke(
-                id = hankeId, hankeTunnus = hankeTunnus,
-                false, null, null, null, null, null, null,
-                1, null, null, null, null, SaveType.DRAFT)
     }
 
 }
