@@ -137,7 +137,65 @@ class HankeServiceITests {
         assertThat(ryt2.id).isNotEqualTo(firstId)
         assertThat(ryt3.id).isNotEqualTo(firstId)
         assertThat(ryt3.id).isNotEqualTo(ryt2.id)
+
+        // Check state flag fields; all false in this case (because geometry has not been given):
+        assertThat(returnedHanke.tilat.onGeometrioita).isFalse()
+        assertThat(returnedHanke.tilat.onKaikkiPakollisetLuontiTiedot).isFalse()
+        assertThat(returnedHanke.tilat.onTiedotLiikenneHaittaIndeksille).isFalse()
+        assertThat(returnedHanke.tilat.onLiikenneHaittaIndeksi).isFalse()
+        assertThat(returnedHanke.tilat.onViereisiaHankkeita).isFalse()
+        assertThat(returnedHanke.tilat.onAsiakasryhmia).isFalse()
     }
+
+
+    @Test
+    fun `create Hanke with partial data set and update with full data set give correct state flags`() {
+        // Setup Hanke (without any yhteystieto):
+        val hanke: Hanke = getATestHanke("yksi", 1)
+        // Also null one mandatory simple field:
+        hanke.tyomaaKatuosoite = null
+
+        // Call create and get the return object:
+        val returnedHanke = hankeService.createHanke(hanke)
+
+        // Check the return object in general:
+        assertThat(returnedHanke).isNotNull
+        assertThat(returnedHanke).isNotSameAs(hanke)
+        assertThat(returnedHanke.id).isNotNull
+
+        // Check certain flags for false state:
+        assertThat(returnedHanke.tilat.onKaikkiPakollisetLuontiTiedot).isFalse()
+        assertThat(returnedHanke.tilat.onTiedotLiikenneHaittaIndeksille).isFalse()
+
+        // Fill the values and give proper save type:
+        returnedHanke.tyomaaKatuosoite = "Testikatu 1 A 1"
+        val yt1 = getATestYhteystieto(1)
+        val yt2 = getATestYhteystieto(2)
+        val yt3 = getATestYhteystieto(3)
+        returnedHanke.omistajat = arrayListOf(yt1)
+        returnedHanke.arvioijat = arrayListOf(yt2)
+        returnedHanke.toteuttajat = arrayListOf(yt3)
+        returnedHanke.saveType = SaveType.SUBMIT
+
+        // "Mocking" adding geometry stuff, by manually setting the geometry state flag to true
+        // and calling the service to save flags:
+        returnedHanke.tilat.onGeometrioita = true
+        hankeService.updateHankeStateFlags(returnedHanke)
+
+
+        // Call update
+        val returnedHanke2 = hankeService.updateHanke(returnedHanke)
+
+        // Check the return object in general:
+        assertThat(returnedHanke2).isNotNull
+        assertThat(returnedHanke2).isNotSameAs(returnedHanke)
+        assertThat(returnedHanke2.id).isNotNull
+
+        // Check those flags to be true now with full data (and the faked geometry) available:
+        assertThat(returnedHanke2.tilat.onKaikkiPakollisetLuontiTiedot).isTrue()
+        assertThat(returnedHanke2.tilat.onTiedotLiikenneHaittaIndeksille).isTrue()
+    }
+
 
     @Test
     fun `test adding a new Yhteystieto to a group that already has one and to another group`() {
@@ -201,7 +259,7 @@ class HankeServiceITests {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3.id).isNotNull
+        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke has the same 3 Yhteystietos:
         assertThat(returnedHanke3.omistajat).hasSize(2)
@@ -215,6 +273,7 @@ class HankeServiceITests {
         assertThat(returnedHanke3.arvioijat[0].id).isNotEqualTo(returnedHanke3.omistajat[1].id)
 
         // A small side-check here for audit fields handling on update:
+        // TODO: cut-paste error with '2'?
         assertThat(returnedHanke2.omistajat[0].createdAt).isEqualTo(returnedHanke.omistajat[0].createdAt)
         assertThat(returnedHanke2.omistajat[0].createdBy).isEqualTo(returnedHanke.omistajat[0].createdBy)
         assertThat(returnedHanke2.omistajat[0].modifiedAt).isNotNull
@@ -266,10 +325,11 @@ class HankeServiceITests {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3.id).isNotNull
+        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke has the same 3 Yhteystietos:
         assertThat(returnedHanke3.omistajat).hasSize(2)
+        // TODO: typo with '2'?
         assertThat(returnedHanke2.omistajat[0].id).isEqualTo(ytid1)
         assertThat(returnedHanke3.omistajat[1].id).isEqualTo(ytid2)
         assertThat(returnedHanke3.omistajat[0].sukunimi).isEqualTo("suku1")
@@ -322,7 +382,7 @@ class HankeServiceITests {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3.id).isNotNull
+        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke has the same 3 Yhteystietos:
         assertThat(returnedHanke3.omistajat).hasSize(1)
@@ -381,7 +441,7 @@ class HankeServiceITests {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3.id).isNotNull
+        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke has the same 3 Yhteystietos:
         assertThat(returnedHanke2.arvioijat).hasSize(0)
@@ -435,7 +495,7 @@ class HankeServiceITests {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3.id).isNotNull
+        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke only has one entry, with that new id
         assertThat(returnedHanke3.omistajat).hasSize(1)
