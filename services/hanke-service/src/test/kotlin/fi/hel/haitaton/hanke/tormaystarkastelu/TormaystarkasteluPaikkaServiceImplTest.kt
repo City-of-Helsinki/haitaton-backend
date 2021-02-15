@@ -29,13 +29,234 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
 
     private var tormaysPaikkaDao: TormaystarkasteluDao = Mockito.mock(TormaystarkasteluDao::class.java)
 
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_whenNoHitsWithGeometry() {
 
+        //setting explicitly dao to return empty lists a.k.a "no hits"
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(GEOMETRY_ID)).thenReturn(
+                mutableMapOf()
+        )
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(GEOMETRY_ID)).thenReturn(
+                mutableMapOf()
+        )
+        Mockito.`when`(tormaysPaikkaDao.katuluokat(GEOMETRY_ID)).thenReturn(
+                mutableMapOf()
+        )
+        Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(GEOMETRY_ID)).thenReturn(
+                mutableMapOf()
+        )
+
+        var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
+
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 0, KatuluokkaTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+
+    }
+
+
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_whenExpected3FromKatuluokka() {
+
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(GEOMETRY_ID)).thenReturn(mutableMapOf())
+        Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(GEOMETRY_ID)).thenReturn(mutableMapOf())
+
+        //hit in yleiset katualueet
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, true))
+        )
+        //hit in katuluokat
+        Mockito.`when`(tormaysPaikkaDao.katuluokat(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, TormaystarkasteluKatuluokka.PAIKALLINEN_KOKOOJAKATU))
+        )
+
+        //central_business_area hit -> kantakaupunki
+        Mockito.`when`(tormaysPaikkaDao.kantakaupunki(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, true))
+        )
+
+        var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
+
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 3, KatuluokkaTormaysLuokittelu.THREE.toString()))
+        assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+    }
+
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_whenExpected3FromYleisetKatuluokat() {
+
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, TormaystarkasteluKatuluokka.PAIKALLINEN_KOKOOJAKATU))
+        )
+
+        Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(GEOMETRY_ID)).thenReturn(mutableMapOf())
+
+        //NO hit in yleiset katualueet
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, false))
+        )
+
+        //no hit in katuluokat
+        Mockito.`when`(tormaysPaikkaDao.katuluokat(GEOMETRY_ID)).thenReturn(mutableMapOf())
+
+        // should no not have affect: central_business_area hit -> kantakaupunki
+        Mockito.`when`(tormaysPaikkaDao.kantakaupunki(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, true))
+        )
+
+        var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
+
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 3, KatuluokkaTormaysLuokittelu.THREE.toString()))
+        assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+    }
+
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_whenExpected4FromYleisetKatuluokatAndAlsoHitInKatualue() {
+
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU))
+        )
+
+        Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(GEOMETRY_ID)).thenReturn(mutableMapOf())
+
+        //hit in yleiset katualueet
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, true))
+        )
+        //no hit in katuluokat
+        Mockito.`when`(tormaysPaikkaDao.katuluokat(GEOMETRY_ID)).thenReturn(mutableMapOf())
+
+        // should no not have affect: central_business_area hit -> kantakaupunki
+        Mockito.`when`(tormaysPaikkaDao.kantakaupunki(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, true))
+        )
+
+        var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
+
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 4, KatuluokkaTormaysLuokittelu.FOUR.toString()))
+        assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+    }
+
+
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_whenExpectedCentralBusinessArea() {
+
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(GEOMETRY_ID)).thenReturn(mutableMapOf())
+        Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(GEOMETRY_ID)).thenReturn(mutableMapOf())
+
+        //hit in yleiset katualueet
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, true))
+        )
+        //hit in katuluokat
+        Mockito.`when`(tormaysPaikkaDao.katuluokat(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, TormaystarkasteluKatuluokka.TONTTIKATU_TAI_AJOYHTEYS))
+        )
+
+        //central_business_area hit -> kantakaupunki
+        Mockito.`when`(tormaysPaikkaDao.kantakaupunki(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, true))
+        )
+
+        var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
+
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 2, KatuluokkaTormaysLuokittelu.TWO.toString()))
+        assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+    }
+
+
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_whenExpectedCentralBusinessArea_WhenAlsoYleinenKatuluokka1or2() {
+
+        //hit in yleiset katuluokat 1-2
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, TormaystarkasteluKatuluokka.TONTTIKATU_TAI_AJOYHTEYS)))
+
+        Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(GEOMETRY_ID)).thenReturn(mutableMapOf())
+
+        //hit in yleiset katualueet
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, true))
+        )
+
+        //no hit in katuluokat
+        Mockito.`when`(tormaysPaikkaDao.katuluokat(GEOMETRY_ID)).thenReturn(mutableMapOf())
+
+        //central_business_area hit -> kantakaupunki
+        Mockito.`when`(tormaysPaikkaDao.kantakaupunki(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, true))
+        )
+
+        var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
+
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 2, KatuluokkaTormaysLuokittelu.TWO.toString()))
+        assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+
+    }
+
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_WhenYleinenKatuluokka1or2_AndNotCentralBusinessArea() {
+
+        //hit in yleiset katuluokat 1-2
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, TormaystarkasteluKatuluokka.TONTTIKATU_TAI_AJOYHTEYS)))
+
+        Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(GEOMETRY_ID)).thenReturn(mutableMapOf())
+
+        //hit in yleiset katualueet
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, true))
+        )
+
+        //no hit in katuluokat
+        Mockito.`when`(tormaysPaikkaDao.katuluokat(GEOMETRY_ID)).thenReturn(mutableMapOf())
+
+        // NO hit in central_business_area hit -> kantakaupunki
+        Mockito.`when`(tormaysPaikkaDao.kantakaupunki(GEOMETRY_ID)).thenReturn(mutableMapOf())
+
+        var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
+
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 1, KatuluokkaTormaysLuokittelu.ONE.toString()))
+        assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+
+    }
+
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_WhenKatuluokka1or2_AndNotCentralBusinessArea() {
+
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(GEOMETRY_ID)).thenReturn(mutableMapOf())
+        Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(GEOMETRY_ID)).thenReturn(mutableMapOf())
+
+        //hit in yleiset katualueet
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, true))
+        )
+        //hit in katuluokat
+        Mockito.`when`(tormaysPaikkaDao.katuluokat(GEOMETRY_ID)).thenReturn(
+                mutableMapOf(Pair(GEOMETRY_ID, TormaystarkasteluKatuluokka.TONTTIKATU_TAI_AJOYHTEYS))
+        )
+
+        // NO hit in central_business_area -> kantakaupunki
+        Mockito.`when`(tormaysPaikkaDao.kantakaupunki(GEOMETRY_ID)).thenReturn(mutableMapOf())
+
+        var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(),
+                LuokitteluRajaArvot())
+
+        assertThat(result.get(0)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.KATULUOKKA, 1, KatuluokkaTormaysLuokittelu.ONE.toString()))
+        assertThat(result.get(1)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
+        assertThat(result.get(2)).isEqualTo(Luokittelutulos(GEOMETRY_ID, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.ZERO.toString()))
+    }
 
     @Test
     fun calculateTormaystarkasteluLuokitteluTulos_whenOnlyPriorityPyoraily() {
 
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(GEOMETRY_ID)).thenReturn(
-                mutableMapOf(Pair(GEOMETRY_ID,TormaystarkasteluPyorailyreittiluokka.PRIORISOITU_REITTI))
+                mutableMapOf(Pair(GEOMETRY_ID, TormaystarkasteluPyorailyreittiluokka.PRIORISOITU_REITTI))
         )
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
 
@@ -49,7 +270,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
     fun calculateTormaystarkasteluLuokitteluTulos_whenOnlyMainPyoraily() {
 
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(GEOMETRY_ID)).thenReturn(
-                mutableMapOf(Pair( GEOMETRY_ID,TormaystarkasteluPyorailyreittiluokka.PAAREITTI))
+                mutableMapOf(Pair(GEOMETRY_ID, TormaystarkasteluPyorailyreittiluokka.PAAREITTI))
         )
         var result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(createHankeForTest(), LuokitteluRajaArvot())
 

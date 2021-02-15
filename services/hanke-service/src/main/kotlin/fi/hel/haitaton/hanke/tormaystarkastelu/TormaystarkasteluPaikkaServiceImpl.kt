@@ -24,7 +24,6 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
         return luokitteluTulosComplete
     }
 
-
     internal fun getKatuluokkaLuokitteluTulos(hanke: Hanke): List<Luokittelutulos> {
 
         val katuLuokittelu = mutableListOf<Luokittelutulos>()
@@ -34,8 +33,8 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
         if (hankeGeometriatId == null)
             return katuLuokittelu
 
-        val tormaystarkasteluYlreParts = tormaystarkasteluDao.yleisetKatualueet(hankeGeometriatId)  //TODO: call dao check to get the matches
-        val tormaystarkasteluYlreClasses = ""   //TODO: call dao check to get the matches
+        val tormaystarkasteluYlreParts = tormaystarkasteluDao.yleisetKatualueet(hankeGeometriatId)
+        val tormaystarkasteluYlreClasses = tormaystarkasteluDao.yleisetKatuluokat(hankeGeometriatId)
 
 
         if (hitsInYlreParts(tormaystarkasteluYlreParts) == false && hitsInYlreClass(tormaystarkasteluYlreClasses) == false) {
@@ -43,17 +42,24 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
             return katuLuokittelu
         }
 
-        val tormaystarkasteluStreetClasses = "" //TODO: call dao check to get the matches
+        val tormaystarkasteluStreetClasses = tormaystarkasteluDao.katuluokat(hankeGeometriatId)
 
-        val maximumStreetClass = maximumInStreetClasses(tormaystarkasteluStreetClasses)
-        if (maximumStreetClass != null) { //streetClass exits
+        if (hitsInStreetClasses(tormaystarkasteluStreetClasses)) { //streetClass exits
             //get max from streetclasses
-            if (maximumStreetClass == "5" || maximumStreetClass == "4" || maximumStreetClass == "3") {
-                //is it 3-5, use it and leave
-            } else {
-                //else (1-2)
+            if (tormaystarkasteluStreetClasses.containsValue(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)) {
+                katuLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 5, KatuluokkaTormaysLuokittelu.FIVE.toString()))
+                return katuLuokittelu
             }
-            val tormaystarkasteluCentralBusinessArea = "" //TODO: call dao check to get the matches
+            if (tormaystarkasteluStreetClasses.containsValue(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)) {
+                katuLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 4, KatuluokkaTormaysLuokittelu.FOUR.toString()))
+                return katuLuokittelu
+            }
+            if (tormaystarkasteluStreetClasses.containsValue(TormaystarkasteluKatuluokka.PAIKALLINEN_KOKOOJAKATU)) {
+                katuLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 3, KatuluokkaTormaysLuokittelu.THREE.toString()))
+                return katuLuokittelu
+            }
+
+            val tormaystarkasteluCentralBusinessArea = tormaystarkasteluDao.kantakaupunki(hankeGeometriatId)
 
             if (hitsInCentralBusinessArea(tormaystarkasteluCentralBusinessArea)) {
                 //arvo is 2 set, and leave
@@ -69,12 +75,23 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
         if (hitsInYlreClass(tormaystarkasteluYlreClasses) == false) {  //ylre_parts yes but still no hit in any usable classification
             katuLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 0, KatuluokkaTormaysLuokittelu.ZERO.toString()))
             return katuLuokittelu
-        } else {
-            //is ylre_class hit 3-5
-            //use it 3-5 and leave
 
-            //else (1-2)
-            val tormaystarkasteluCentralBusinessArea = "" //TODO: call dao check to get the matches
+        } else {
+            //get max from ylreclasses = yleinen katuluokka
+            if (tormaystarkasteluYlreClasses.containsValue(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)) {
+                katuLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 5, KatuluokkaTormaysLuokittelu.FIVE.toString()))
+                return katuLuokittelu
+            }
+            if (tormaystarkasteluYlreClasses.containsValue(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)) {
+                katuLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 4, KatuluokkaTormaysLuokittelu.FOUR.toString()))
+                return katuLuokittelu
+            }
+            if (tormaystarkasteluYlreClasses.containsValue(TormaystarkasteluKatuluokka.PAIKALLINEN_KOKOOJAKATU)) {
+                katuLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 3, KatuluokkaTormaysLuokittelu.THREE.toString()))
+                return katuLuokittelu
+            }
+            //central business area
+            val tormaystarkasteluCentralBusinessArea = tormaystarkasteluDao.kantakaupunki(hankeGeometriatId)
 
             if (hitsInCentralBusinessArea(tormaystarkasteluCentralBusinessArea)) {
                 //arvo is 2 set, and leave
@@ -90,20 +107,30 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
         return katuLuokittelu
     }
 
-    private fun maximumInStreetClasses(tormaystarkasteluStreetClasses: String): String {
-        return "" //TODO implement
+    private fun hitsInCentralBusinessArea(tormaystarkasteluCentralBusinessArea: Map<Int, Boolean>): Boolean {
+        if (tormaystarkasteluCentralBusinessArea != null && tormaystarkasteluCentralBusinessArea.size > 0)
+            return true
+        return false
     }
 
-    private fun hitsInCentralBusinessArea(tormaystarkasteluCentralBusinessArea: String): Boolean {
-        return false //TODO implement
+    private fun hitsInYlreClass(tormaystarkasteluYlreClasses: Map<Int, TormaystarkasteluKatuluokka>): Boolean {
+        if (tormaystarkasteluYlreClasses != null && tormaystarkasteluYlreClasses.size > 0)
+            return true
+        return false
+
     }
 
-    private fun hitsInYlreClass(tormaystarkasteluYlreClasses: String): Boolean {
-        return false //TODO implement
+    private fun hitsInStreetClasses(tormaystarkasteluStreetClasses: Map<Int, TormaystarkasteluKatuluokka>): Boolean {
+        if (tormaystarkasteluStreetClasses != null && tormaystarkasteluStreetClasses.size > 0)
+            return true
+        return false
     }
+
 
     private fun hitsInYlreParts(tormaystarkasteluYlreParts: Map<Int, Boolean>): Boolean {
-        return false //TODO implement
+        if (tormaystarkasteluYlreParts != null && tormaystarkasteluYlreParts.size > 0)
+            return true
+        return false
     }
 
     internal fun getLiikennemaaraLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot, katuluokkaLuokittelut: List<Luokittelutulos>): List<Luokittelutulos> {
