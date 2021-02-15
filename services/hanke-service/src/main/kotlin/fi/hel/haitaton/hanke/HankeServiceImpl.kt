@@ -111,8 +111,6 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         copyNonNullHankeFieldsToEntity(hanke, entity)
         copyYhteystietosToEntity(hanke, entity, userid)
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
-        entity.updateStateFlagTiedotLiikHaittaIndeksille()
-        entity.updateStateFlagOnKaikkiPakollisetLuontiTiedot()
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = 0
         entity.createdByUserId = userid
@@ -149,8 +147,6 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         copyNonNullHankeFieldsToEntity(hanke, entity)
         copyYhteystietosToEntity(hanke, entity, userid)
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
-        entity.updateStateFlagTiedotLiikHaittaIndeksille()
-        entity.updateStateFlagOnKaikkiPakollisetLuontiTiedot()
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = entity.version?.inc() ?: 1
         // (Not changing createdBy/At fields.)
@@ -224,6 +220,8 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
             h.tarinaHaitta = hankeEntity.tarinaHaitta
 
             copyStateFlagsFromEntity(h, hankeEntity)
+            h.updateStateFlags()
+
             return h
         }
 
@@ -272,12 +270,9 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         }
 
         private fun copyStateFlagsFromEntity(h: Hanke, entity: HankeEntity) {
-            h.tilaOnGeometrioita = entity.tilaOnGeometrioita
-            h.tilaOnKaikkiPakollisetLuontiTiedot = entity.tilaOnKaikkiPakollisetLuontiTiedot
-            h.tilaOnTiedotLiikHaittaIndeksille = entity.tilaOnTiedotLiikHaittaIndeksille
-            h.tilaOnLiikHaittaIndeksi = entity.tilaOnLiikHaittaIndeksi
-            h.tilaOnViereisiaHankkeita = entity.tilaOnViereisiaHankkeita
-            h.tilaOnAsiakasryhmia = entity.tilaOnAsiakasryhmia
+            h.state.onGeometrioita = entity.tilaOnGeometrioita
+            h.state.onViereisiaHankkeita = entity.tilaOnViereisiaHankkeita
+            h.state.onAsiakasryhmia = entity.tilaOnAsiakasryhmia
         }
 
     }
@@ -285,12 +280,9 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
     // --------------- Helpers for data transfer towards database ------------
 
     private fun copyStateFlagsToEntity(hanke: Hanke, entity: HankeEntity) {
-        hanke.tilaOnGeometrioita?.let { entity.tilaOnGeometrioita = hanke.tilaOnGeometrioita }
-        hanke.tilaOnKaikkiPakollisetLuontiTiedot?.let { entity.tilaOnKaikkiPakollisetLuontiTiedot = hanke.tilaOnKaikkiPakollisetLuontiTiedot }
-        hanke.tilaOnTiedotLiikHaittaIndeksille?.let { entity.tilaOnTiedotLiikHaittaIndeksille = hanke.tilaOnTiedotLiikHaittaIndeksille }
-        hanke.tilaOnLiikHaittaIndeksi?.let { entity.tilaOnLiikHaittaIndeksi = hanke.tilaOnLiikHaittaIndeksi }
-        hanke.tilaOnViereisiaHankkeita?.let { entity.tilaOnViereisiaHankkeita = hanke.tilaOnViereisiaHankkeita }
-        hanke.tilaOnAsiakasryhmia?.let { entity.tilaOnAsiakasryhmia = hanke.tilaOnAsiakasryhmia }
+        entity.tilaOnGeometrioita = hanke.state.onGeometrioita
+        entity.tilaOnViereisiaHankkeita = hanke.state.onViereisiaHankkeita
+        entity.tilaOnAsiakasryhmia = hanke.state.onAsiakasryhmia
     }
 
     /**

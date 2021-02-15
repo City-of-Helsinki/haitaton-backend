@@ -3,7 +3,9 @@ package fi.hel.haitaton.hanke.geometria
 import assertk.assertAll
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
+import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.*
 import fi.hel.haitaton.hanke.domain.Hanke
 import org.geojson.Point
@@ -16,12 +18,14 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
+@Transactional
 @WithMockUser(username = "test", roles = ["haitaton-user"])
 internal class HankeGeometriatServiceImplITest {
 
@@ -44,8 +48,6 @@ internal class HankeGeometriatServiceImplITest {
         }
     }
 
-//    @Autowired
-//    private lateinit var hankeRepository: HankeRepository
     @Autowired
     private lateinit var hankeService: HankeService
 
@@ -74,9 +76,18 @@ internal class HankeGeometriatServiceImplITest {
         val hanke = hankeService.createHanke(getDummyHanke(hankeGeometriat.hankeId!!, ""))
         val hankeTunnus = hanke.hankeTunnus!!
         hankeGeometriat.hankeId = hanke.id // replaces the id with the correct one
+        // Check that the hanke geometry flag is false:
+        assertThat(hanke.state.onGeometrioita).isFalse()
 
         // save
         hankeGeometriatService.saveGeometriat(hankeTunnus, hankeGeometriat)
+
+        // NOTE: the local Hanke instance has not been updated by the above call. Need to reload
+        // the hanke to check that the flag changed to true:
+        val updatedHanke = hankeService.loadHanke(hankeTunnus)
+        assertThat(updatedHanke).isNotNull()
+        assertThat(updatedHanke!!.state.onGeometrioita).isTrue()
+
 
         // load
         var loadedHankeGeometriat = hankeGeometriatService.loadGeometriat(hankeTunnus)

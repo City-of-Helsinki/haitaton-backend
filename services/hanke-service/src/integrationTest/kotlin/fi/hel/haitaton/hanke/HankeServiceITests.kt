@@ -138,14 +138,13 @@ class HankeServiceITests {
         assertThat(ryt3.id).isNotEqualTo(firstId)
         assertThat(ryt3.id).isNotEqualTo(ryt2.id)
 
-        // Check state flag fields; mostly false in this case, but the KaikkiPakollisetLuontiTiedot should be true
-        assertThat(returnedHanke.tilaOnGeometrioita).isFalse()
-        // TODO: enable this after the logic has been implemented correctly
-        //assertThat(returnedHanke.tilaOnKaikkiPakollisetLuontiTiedot).isTrue()
-        assertThat(returnedHanke.tilaOnTiedotLiikHaittaIndeksille).isFalse()
-        assertThat(returnedHanke.tilaOnLiikHaittaIndeksi).isFalse()
-        assertThat(returnedHanke.tilaOnViereisiaHankkeita).isFalse()
-        assertThat(returnedHanke.tilaOnAsiakasryhmia).isFalse()
+        // Check state flag fields; all false in this case (because geometry has not been given):
+        assertThat(returnedHanke.state.onGeometrioita).isFalse()
+        assertThat(returnedHanke.state.onKaikkiPakollisetLuontiTiedot).isFalse()
+        assertThat(returnedHanke.state.onTiedotLiikHaittaIndeksille).isFalse()
+        assertThat(returnedHanke.state.onLiikHaittaIndeksi).isFalse()
+        assertThat(returnedHanke.state.onViereisiaHankkeita).isFalse()
+        assertThat(returnedHanke.state.onAsiakasryhmia).isFalse()
     }
 
 
@@ -164,10 +163,9 @@ class HankeServiceITests {
         assertThat(returnedHanke).isNotSameAs(hanke)
         assertThat(returnedHanke.id).isNotNull
 
-        // Check the flag for false
-        // TODO:
-        //assertThat(returnedHanke.tilaOnKaikkiPakollisetLuontiTiedot).isFalse()
-        assertThat(returnedHanke.tilaOnTiedotLiikHaittaIndeksille).isFalse()
+        // Check certain flags for false state:
+        assertThat(returnedHanke.state.onKaikkiPakollisetLuontiTiedot).isFalse()
+        assertThat(returnedHanke.state.onTiedotLiikHaittaIndeksille).isFalse()
 
         // Fill the values and give proper save type:
         returnedHanke.tyomaaKatuosoite = "Testikatu 1 A 1"
@@ -181,7 +179,7 @@ class HankeServiceITests {
 
         // "Mocking" adding geometry stuff, by manually setting the geometry state flag to true
         // and calling the service to save flags:
-        returnedHanke.tilaOnGeometrioita = true
+        returnedHanke.state.onGeometrioita = true
         hankeService.updateHankeStateFlags(returnedHanke)
 
 
@@ -193,11 +191,9 @@ class HankeServiceITests {
         assertThat(returnedHanke2).isNotSameAs(returnedHanke)
         assertThat(returnedHanke2.id).isNotNull
 
-
-        // Check the flag states:
-        // TODO:
-        //assertThat(returnedHanke2.tilaOnKaikkiPakollisetLuontiTiedot).isTrue()
-        assertThat(returnedHanke2.tilaOnTiedotLiikHaittaIndeksille).isTrue()
+        // Check those flags to be true now with full data (and the faked geometry) available:
+        assertThat(returnedHanke2.state.onKaikkiPakollisetLuontiTiedot).isTrue()
+        assertThat(returnedHanke2.state.onTiedotLiikHaittaIndeksille).isTrue()
     }
 
 

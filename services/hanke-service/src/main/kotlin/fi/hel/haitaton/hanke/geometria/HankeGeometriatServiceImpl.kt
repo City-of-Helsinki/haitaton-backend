@@ -27,7 +27,7 @@ open class HankeGeometriatServiceImpl(
         // TODO: if the new geometry is empty, is it actually a removal?
         val hasGeom = isGeometryNonEmpty(hankeGeometriat)
         // Set/update the state flag in hanke data and save it
-        hanke.tilaOnGeometrioita = hasGeom
+        hanke.state.onGeometrioita = hasGeom
         hankeService.updateHankeStateFlags(hanke)
 
         return if (oldHankeGeometriat == null) {
@@ -69,8 +69,8 @@ open class HankeGeometriatServiceImpl(
         return hankeGeometriat
     }
 
-    internal fun isGeometryNonEmpty(hankeGeometriat: HankeGeometriat): Boolean {
-        // TODO: might check deeper, and there are some multi-thread unsafe things hidden...
+    private fun isGeometryNonEmpty(hankeGeometriat: HankeGeometriat): Boolean {
+        // TODO: might check deeper, and if so, there could be some multi-thread unsafe things hidden (though mostly theoretical)...
         if (hankeGeometriat.featureCollection?.features.isNullOrEmpty()) return false
         return true
     }

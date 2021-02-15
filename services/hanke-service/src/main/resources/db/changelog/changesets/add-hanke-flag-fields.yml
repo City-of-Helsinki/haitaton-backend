@@ -8,8 +8,5 @@ databaseChangeLog:
             tableName: hanke
             columns:
               - column: { name: tilaongeometrioita, type: boolean }
-              - column: { name: tilaonkaikkipakollisetluontitiedot, type: boolean }
-              - column: { name: tilaontiedotliikhaittaindeksille, type: boolean }
-              - column: { name: tilaonliikhaittaindeksi, type: boolean }
               - column: { name: tilaonviereisiahankkeita, type: boolean }
               - column: { name: tilaonasiakasryhmia, type: boolean }
