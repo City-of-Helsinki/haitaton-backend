@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
+import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.toJsonPrettyString
 import org.junit.jupiter.api.Test
 import org.postgresql.ds.PGSimpleDataSource
@@ -30,7 +31,7 @@ internal class TormaystarkasteluDaoImplManualTest {
      */
     @Test
     fun yleisetKatualueet() {
-        val yleisetKatualueet = dao.yleisetKatualueet(1)
+        val yleisetKatualueet = dao.yleisetKatualueet(HankeGeometriat(1))
         println(yleisetKatualueet.toJsonPrettyString())
     }
 
@@ -39,7 +40,7 @@ internal class TormaystarkasteluDaoImplManualTest {
      */
     @Test
     fun yleisetKatuluokat() {
-        val yleisetKatuluokat = dao.yleisetKatuluokat(1)
+        val yleisetKatuluokat = dao.yleisetKatuluokat(HankeGeometriat(1))
         println(yleisetKatuluokat.toJsonPrettyString())
     }
 
@@ -48,7 +49,7 @@ internal class TormaystarkasteluDaoImplManualTest {
      */
     @Test
     fun katuluokat() {
-        val katuluokat = dao.katuluokat(1)
+        val katuluokat = dao.katuluokat(HankeGeometriat(1))
         println(katuluokat.toJsonPrettyString())
     }
 
@@ -57,7 +58,7 @@ internal class TormaystarkasteluDaoImplManualTest {
      */
     @Test
     fun kantakaupunki() {
-        val katuluokat = dao.kantakaupunki(1)
+        val katuluokat = dao.kantakaupunki(HankeGeometriat(1))
         println(katuluokat.toJsonPrettyString())
     }
 
@@ -66,7 +67,7 @@ internal class TormaystarkasteluDaoImplManualTest {
      */
     @Test
     fun pyorailyreitit() {
-        val pyorailyreitit = dao.pyorailyreitit(1)
+        val pyorailyreitit = dao.pyorailyreitit(HankeGeometriat(1))
         println(pyorailyreitit.toJsonPrettyString())
     }
 }
