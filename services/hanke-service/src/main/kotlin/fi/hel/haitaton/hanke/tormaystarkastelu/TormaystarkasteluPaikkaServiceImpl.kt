@@ -39,34 +39,35 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
 
         val katuLuokittelu = mutableListOf<Luokittelutulos>()
 
-        val hankeGeometriatId = hanke.geometriat?.id
+        val hankeGeometriat = hanke.geometriat
+        val hankeGeometriatId = hankeGeometriat?.id
         //if no id let's get out of here
         if (hankeGeometriatId == null)
             return null
 
-        val tormaystarkasteluYlreParts = tormaystarkasteluDao.yleisetKatualueet(hankeGeometriatId)
-        val tormaystarkasteluYlreClasses = tormaystarkasteluDao.yleisetKatuluokat(hankeGeometriatId)
+        val tormaystarkasteluYlreParts = tormaystarkasteluDao.yleisetKatualueet(hankeGeometriat)
+        val tormaystarkasteluYlreClasses = tormaystarkasteluDao.yleisetKatuluokat(hankeGeometriat)
 
         if (hitsInYlreParts(tormaystarkasteluYlreParts) == false && hitsInYlreClass(tormaystarkasteluYlreClasses) == false) {
             return Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 0, KatuluokkaTormaysLuokittelu.EI_MOOTTORILIIKENNE_VAIK.toString())
         }
 
-        val tormaystarkasteluStreetClasses = tormaystarkasteluDao.katuluokat(hankeGeometriatId)
+        val tormaystarkasteluStreetClasses = tormaystarkasteluDao.katuluokat(hankeGeometriat)
 
         if (hitsInStreetClasses(tormaystarkasteluStreetClasses)) { //streetClass exits
             //get max from streetclasses
-            if (tormaystarkasteluStreetClasses.containsValue(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)) {
+            if (tormaystarkasteluStreetClasses.values.flatten().contains(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)) {
                 return Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 5, KatuluokkaTormaysLuokittelu.PAAKATU_MOOTTORIVAYLA.toString())
             }
-            if (tormaystarkasteluStreetClasses.containsValue(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)) {
+            if (tormaystarkasteluStreetClasses.values.flatten().contains(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)) {
                 return Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 4, KatuluokkaTormaysLuokittelu.ALUEELLINEN_KOKOOJA.toString())
             }
-            if (tormaystarkasteluStreetClasses.containsValue(TormaystarkasteluKatuluokka.PAIKALLINEN_KOKOOJAKATU)) {
+            if (tormaystarkasteluStreetClasses.values.flatten().contains(TormaystarkasteluKatuluokka.PAIKALLINEN_KOKOOJAKATU)) {
                 return Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 3, KatuluokkaTormaysLuokittelu.PAIKALLINEN_KOKOOJA.toString())
 
             }
 
-            val tormaystarkasteluCentralBusinessArea = tormaystarkasteluDao.kantakaupunki(hankeGeometriatId)
+            val tormaystarkasteluCentralBusinessArea = tormaystarkasteluDao.kantakaupunki(hankeGeometriat)
 
             if (hitsInCentralBusinessArea(tormaystarkasteluCentralBusinessArea)) {
                 //arvo is 2 set, and leave
@@ -82,17 +83,17 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
             return Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 0, KatuluokkaTormaysLuokittelu.EI_MOOTTORILIIKENNE_VAIK.toString())
         } else {
             //get max from ylreclasses = yleinen katuluokka
-            if (tormaystarkasteluYlreClasses.containsValue(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)) {
+            if (tormaystarkasteluYlreClasses.values.flatten().contains(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)) {
                 return Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 5, KatuluokkaTormaysLuokittelu.PAAKATU_MOOTTORIVAYLA.toString())
             }
-            if (tormaystarkasteluYlreClasses.containsValue(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)) {
+            if (tormaystarkasteluYlreClasses.values.flatten().contains(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)) {
                 return Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 4, KatuluokkaTormaysLuokittelu.ALUEELLINEN_KOKOOJA.toString())
             }
-            if (tormaystarkasteluYlreClasses.containsValue(TormaystarkasteluKatuluokka.PAIKALLINEN_KOKOOJAKATU)) {
+            if (tormaystarkasteluYlreClasses.values.flatten().contains(TormaystarkasteluKatuluokka.PAIKALLINEN_KOKOOJAKATU)) {
                 return Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 3, KatuluokkaTormaysLuokittelu.PAIKALLINEN_KOKOOJA.toString())
             }
             //central business area
-            val tormaystarkasteluCentralBusinessArea = tormaystarkasteluDao.kantakaupunki(hankeGeometriatId)
+            val tormaystarkasteluCentralBusinessArea = tormaystarkasteluDao.kantakaupunki(hankeGeometriat)
 
             if (hitsInCentralBusinessArea(tormaystarkasteluCentralBusinessArea)) {
                 //arvo is 2 set, and leave
@@ -112,14 +113,14 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
         return false
     }
 
-    private fun hitsInYlreClass(tormaystarkasteluYlreClasses: Map<Int, TormaystarkasteluKatuluokka>): Boolean {
+    private fun hitsInYlreClass(tormaystarkasteluYlreClasses: Map<Int, Set<TormaystarkasteluKatuluokka>>): Boolean {
         if (tormaystarkasteluYlreClasses != null && tormaystarkasteluYlreClasses.size > 0)
             return true
         return false
 
     }
 
-    private fun hitsInStreetClasses(tormaystarkasteluStreetClasses: Map<Int, TormaystarkasteluKatuluokka>): Boolean {
+    private fun hitsInStreetClasses(tormaystarkasteluStreetClasses: Map<Int, Set<TormaystarkasteluKatuluokka>>): Boolean {
         if (tormaystarkasteluStreetClasses != null && tormaystarkasteluStreetClasses.size > 0)
             return true
         return false
@@ -182,12 +183,13 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
 
         val pyorailyLuokittelu = mutableListOf<Luokittelutulos>()
 
-        val hankeGeometriatId = hanke.geometriat?.id
+        val hankeGeometriat = hanke.geometriat
+        val hankeGeometriatId = hankeGeometriat?.id
         //if no id let's get out of here
         if (hankeGeometriatId == null)
             return pyorailyLuokittelu
 
-        val tormaystarkastelutulos = tormaystarkasteluDao.pyorailyreitit(hankeGeometriatId)
+        val tormaystarkastelutulos = tormaystarkasteluDao.pyorailyreitit(hankeGeometriat)
 
         if (matchesPriorityCycling(tormaystarkastelutulos)) {
             pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, 5, PyorailyTormaysLuokittelu.PRIORISOITU_REITTI.toString()))
@@ -200,17 +202,17 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
         return pyorailyLuokittelu
     }
 
-    private fun matchesMainCycling(tormaystulos: Map<Int, TormaystarkasteluPyorailyreittiluokka>): Boolean {
+    private fun matchesMainCycling(tormaystulos: Map<Int, Set<TormaystarkasteluPyorailyreittiluokka>>): Boolean {
         //if contains any rows with ("priority")
         return tormaystulos.any { tormaystulosRivi ->
-            tormaystulosRivi.value.name == TormaystarkasteluPyorailyreittiluokka.PAAREITTI.name
+            tormaystulosRivi.value.contains(TormaystarkasteluPyorailyreittiluokka.PAAREITTI)
         }
     }
 
-    private fun matchesPriorityCycling(tormaystulos: Map<Int, TormaystarkasteluPyorailyreittiluokka>): Boolean {
+    private fun matchesPriorityCycling(tormaystulos: Map<Int, Set<TormaystarkasteluPyorailyreittiluokka>>): Boolean {
         //if contains any rows with("main")
         return tormaystulos.any { tormaystulosRivi ->
-            tormaystulosRivi.value.name == TormaystarkasteluPyorailyreittiluokka.PRIORISOITU_REITTI.name
+            tormaystulosRivi.value.contains(TormaystarkasteluPyorailyreittiluokka.PRIORISOITU_REITTI)
         }
     }
 
