@@ -136,37 +136,28 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
     internal fun getLiikennemaaraLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot, katuluokkaLuokittelu: Luokittelutulos?): List<Luokittelutulos> {
         val liikennemaaraLuokittelu = mutableListOf<Luokittelutulos>()
 
-    /*    val hankeGeometriatId = hanke.geometriat?.id
-        //if no id let's get out of here
-        if (hankeGeometriatId == null) return liikennemaaraLuokittelu
-*/
-
-
         // case when not a street -> no trafic -> leave
         if (katuluokkaLuokittelu?.arvo == 0) {
-            liikennemaaraLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
+            //TODO: use rajaArvolist values:
+            var arvoRivi = rajaArvot.liikennemaaraRajaArvot.firstOrNull {  rajaArvo -> rajaArvo.minimumValue == 0  }//find zero
+
+            if (arvoRivi != null) {
+                liikennemaaraLuokittelu.add(Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.LIIKENNEMAARA, arvoRivi.arvo, arvoRivi.explanation))
+            }
             return liikennemaaraLuokittelu
         }
 
-        var tormaystulos: Map<Int, Set<Int>> = mutableMapOf()
 
-        // type of street (=street class) decides which volume data we use for trafic (buffering of street width varies)
-        if (1 <= katuluokkaLuokittelu?.arvo!! && katuluokkaLuokittelu?.arvo!! <= 3) {
-            //volumes 15 comparison
-            tormaystulos = tormaystarkasteluDao.liikennemaarat(hanke.geometriat!!, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15)
-
-        } else if (4 <= katuluokkaLuokittelu?.arvo!!) {
-            //volumes 30 comparison
-            tormaystulos = tormaystarkasteluDao.liikennemaarat(hanke.geometriat!!, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30)
-        }
 
         //find maximum tormaystulos
-        var maximum = tormaystulos.values.flatten().max()
+        var maximum = getMaximumLiikennemaaraFromVolumes(hanke,katuluokkaLuokittelu)
+        if(maximum == null)
+            throw TormaysAnalyysiException("Liikennemaara comparison went wrong for hankeId=${hanke.id}")
 
         //actual classification
         rajaArvot.liikennemaaraRajaArvot.forEach {
             rajaArvo ->
-            if(rajaArvo.minimumValue >= maximum!!) {  //check against max
+            if(rajaArvo.minimumValue <= maximum!!) {  //check against max
                 liikennemaaraLuokittelu.add(Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.LIIKENNEMAARA, rajaArvo.arvo, rajaArvo.explanation))
                 return liikennemaaraLuokittelu
             }
@@ -174,6 +165,24 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
 
         return liikennemaaraLuokittelu
     }
+
+    private fun getMaximumLiikennemaaraFromVolumes(hanke: Hanke, katuluokkaLuokittelu: Luokittelutulos?): Int? {
+
+        var tormaystulos: Map<Int, Set<Int>> = mutableMapOf()
+
+        // type of street (=street class) decides which volume data we use for trafic (buffering of street width varies)
+        if (1 <= katuluokkaLuokittelu?.arvo!! && katuluokkaLuokittelu?.arvo!! <= 3) {  //TODO: use enums for values
+            //volumes 15 comparison
+            tormaystulos = tormaystarkasteluDao.liikennemaarat(hanke.geometriat!!, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15)
+
+        } else if (4 <= katuluokkaLuokittelu?.arvo!!) { //TODO: use enums for values
+            //volumes 30 comparison
+            tormaystulos = tormaystarkasteluDao.liikennemaarat(hanke.geometriat!!, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30)
+        }
+
+        return tormaystulos.values.flatten().max()
+    }
+
 
     internal fun getPyorailyLuokitteluTulos(hanke: Hanke): List<Luokittelutulos> {
 
