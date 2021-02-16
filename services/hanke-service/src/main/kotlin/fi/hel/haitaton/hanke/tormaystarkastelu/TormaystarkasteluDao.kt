@@ -1,28 +1,45 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
+import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+
 interface TormaystarkasteluDao {
     /**
      * Checks which general street areas ("yleinen katualue", ylre_parts) these Hanke geometries are on
+     *
+     * @return true for all those geometries that are located on general street area. If returned map is empty then none of the geometries are on a general street area.
      */
-    fun yleisetKatualueet(hankegeometriatId: Int): Map<Int, Boolean>
+    fun yleisetKatualueet(hankegeometriat: HankeGeometriat): Map<Int, Boolean>
 
     /**
      * Checks which general street classes ("yleinen katuluokka", ylre_classes) these Hanke geometrias are on
+     *
+     * @return for each Hanke geometry a set of TormaystarkasteluKatuluokka of which that geometry is located on
      */
-    fun yleisetKatuluokat(hankegeometriatId: Int): Map<Int, TormaystarkasteluKatuluokka>
+    fun yleisetKatuluokat(hankegeometriat: HankeGeometriat): Map<Int, Set<TormaystarkasteluKatuluokka>>
 
     /**
      * Checks which street classes ("katuluokka", street_classes) these Hanke geometrias are on
+     *
+     * @return for each Hanke geometry a set of TormaystarkasteluKatuluokka for the roads that geometry is located on
      */
-    fun katuluokat(hankegeometriatId: Int): Map<Int, TormaystarkasteluKatuluokka>
+    fun katuluokat(hankegeometriat: HankeGeometriat): Map<Int, Set<TormaystarkasteluKatuluokka>>
 
     /**
      * Checks which of these Hanke geometries are located on central business area ("kantakapunki", central_business_area)
+     *
+     * @return true for all those geometries that are located on central business area. If returned map is empty then none of the geometries are on central business area.
      */
-    fun kantakaupunki(hankegeometriatId: Int): Map<Int, Boolean>
+    fun kantakaupunki(hankegeometriat: HankeGeometriat): Map<Int, Boolean>
+
+    /**
+     * Collects all traffic counts ("liikennemäärä") for each Hanke geometry within given radius.
+     */
+    fun liikennemaarat(hankegeometriat: HankeGeometriat, etaisyys: TormaystarkasteluLiikennemaaranEtaisyys): Map<Int, Set<Int>>
 
     /**
      * Checks whether these Hanke geometries are on any categorized cycling route ("pyöräilyreitti", cycleways_priority/cycleways_main)
+     *
+     * @return for each Hanke geometry a set of TormaystarkasteluPyorailyreittiluokka for the cycleways that geometry is located on
      */
-    fun pyorailyreitit(hankegeometriatId: Int): Map<Int, TormaystarkasteluPyorailyreittiluokka>
+    fun pyorailyreitit(hankegeometriat: HankeGeometriat): Map<Int, Set<TormaystarkasteluPyorailyreittiluokka>>
 }
