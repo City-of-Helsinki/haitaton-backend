@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.domain
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import java.time.ZonedDateTime
 
 // e.g. omistaja, arvioija, toteuttaja
@@ -26,6 +27,7 @@ data class HankeYhteystieto(
     /**
      * Returns true if at least one Yhteystieto-field is non-null, non-empty and non-whitespace-only.
      */
+    @JsonIgnore
     fun isAnyFieldSet(): Boolean {
         return isAnyMandatoryFieldSet() || !organisaatioNimi.isNullOrBlank() || !osasto.isNullOrBlank()
     }
@@ -33,6 +35,7 @@ data class HankeYhteystieto(
     /**
      * Returns true if at least one mandatory Yhteystieto-field is non-null, non-empty and non-whitespace-only.
      */
+    @JsonIgnore
     fun isAnyMandatoryFieldSet(): Boolean {
         return sukunimi.isNotBlank() || etunimi.isNotBlank()
                 || email.isNotBlank() || puhelinnumero.isNotBlank()
@@ -41,6 +44,7 @@ data class HankeYhteystieto(
     /**
      * Returns true if all four mandatory fields are non-null, non-empty and non-whitespace-only.
      */
+    @JsonIgnore
     fun isValid(): Boolean {
         return sukunimi.isNotBlank() && etunimi.isNotBlank()
                 && email.isNotBlank() && puhelinnumero.isNotBlank()
