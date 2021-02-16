@@ -115,8 +115,8 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
         }
     }
 
-    override fun liikennemaarat(hankegeometriat: HankeGeometriat, etaisyys: TormaystarkasteluLiikennemaaranEtaisyys): Map<Int, List<Int>> {
-        val results = mutableMapOf<Int, MutableList<Int>>()
+    override fun liikennemaarat(hankegeometriat: HankeGeometriat, etaisyys: TormaystarkasteluLiikennemaaranEtaisyys): Map<Int, Set<Int>> {
+        val results = mutableMapOf<Int, MutableSet<Int>>()
         val tableName = "tormays_volumes${etaisyys.radius}_polys"
         with(jdbcOperations) {
             query(
@@ -138,7 +138,7 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
                     )
                 }, hankegeometriat.id!!
             ).forEach { pair ->
-                results.computeIfAbsent(pair.second) { mutableListOf() }.add(pair.first)
+                results.computeIfAbsent(pair.second) { mutableSetOf() }.add(pair.first)
             }
         }
         return results

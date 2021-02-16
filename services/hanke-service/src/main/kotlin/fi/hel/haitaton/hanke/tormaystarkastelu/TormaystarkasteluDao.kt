@@ -34,7 +34,7 @@ interface TormaystarkasteluDao {
     /**
      * Collects all traffic counts ("liikennemäärä") for each Hanke geometry within given radius.
      */
-    fun liikennemaarat(hankegeometriat: HankeGeometriat, etaisyys: TormaystarkasteluLiikennemaaranEtaisyys): Map<Int, List<Int>>
+    fun liikennemaarat(hankegeometriat: HankeGeometriat, etaisyys: TormaystarkasteluLiikennemaaranEtaisyys): Map<Int, Set<Int>>
 
     /**
      * Checks whether these Hanke geometries are on any categorized cycling route ("pyöräilyreitti", cycleways_priority/cycleways_main)
