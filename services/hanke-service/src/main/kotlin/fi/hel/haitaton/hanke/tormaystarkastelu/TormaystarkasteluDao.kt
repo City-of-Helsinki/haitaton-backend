@@ -37,6 +37,18 @@ interface TormaystarkasteluDao {
     fun liikennemaarat(hankegeometriat: HankeGeometriat, etaisyys: TormaystarkasteluLiikennemaaranEtaisyys): Map<Int, Set<Int>>
 
     /**
+     * Checks which Hanke geometries are located on critical area for buses
+     */
+    fun bussiliikenteenKannaltaKriittinenAlue(hankegeometriat: HankeGeometriat): Map<Int, Boolean>
+
+    /**
+     * Collects all bus routes for each Hanke geometry.
+     *
+     * @return for each Hanke geometry a set of TormaystarkasteluBussireitti for the bus routes that geometry is located on
+     */
+    fun bussit(hankegeometriat: HankeGeometriat): Map<Int, Set<TormaystarkasteluBussireitti>>
+
+    /**
      * Checks whether these Hanke geometries are on any categorized cycling route ("pyöräilyreitti", cycleways_priority/cycleways_main)
      *
      * @return for each Hanke geometry a set of TormaystarkasteluPyorailyreittiluokka for the cycleways that geometry is located on
