@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
+import fi.hel.haitaton.hanke.InvalidStateException
 import fi.hel.haitaton.hanke.TormaysAnalyysiException
 import fi.hel.haitaton.hanke.domain.Hanke
 
@@ -10,6 +11,11 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
      * and rajaArvot which is brought in for some classification information
      */
     override fun calculateTormaystarkasteluLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot): List<Luokittelutulos> {
+
+        val hankeGeometriatId = hanke.geometriat?.id
+        //if no id let's get out of here
+        if (hankeGeometriatId == null)
+            throw InvalidStateException("Hanke.geometriat should be set for hankeid ${hanke.id}")
 
         val luokitteluTulosComplete = mutableListOf<Luokittelutulos>()
 
@@ -41,10 +47,8 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
         val tormaystarkasteluYlreParts = tormaystarkasteluDao.yleisetKatualueet(hankeGeometriatId)
         val tormaystarkasteluYlreClasses = tormaystarkasteluDao.yleisetKatuluokat(hankeGeometriatId)
 
-
         if (hitsInYlreParts(tormaystarkasteluYlreParts) == false && hitsInYlreClass(tormaystarkasteluYlreClasses) == false) {
             return Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 0, KatuluokkaTormaysLuokittelu.EI_MOOTTORILIIKENNE_VAIK.toString())
-
         }
 
         val tormaystarkasteluStreetClasses = tormaystarkasteluDao.katuluokat(hankeGeometriatId)
@@ -128,14 +132,49 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
         return false
     }
 
-    internal fun getLiikennemaaraLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot, katuluokkaLuokittelut: Luokittelutulos?): List<Luokittelutulos> {
+    internal fun getLiikennemaaraLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot, katuluokkaLuokittelu: Luokittelutulos?): List<Luokittelutulos> {
         val liikennemaaraLuokittelu = mutableListOf<Luokittelutulos>()
 
         val hankeGeometriatId = hanke.geometriat?.id
         //if no id let's get out of here
         if (hankeGeometriatId == null) return liikennemaaraLuokittelu
 
-        liikennemaaraLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
+        val tormaystulos: Pair<Int, Int>
+
+        // case when not a street -> no trafic -> leave
+        if (katuluokkaLuokittelu?.arvo == 0) {
+            liikennemaaraLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
+            return liikennemaaraLuokittelu
+        }
+
+        // type of street (=street class) decides which volume data we use for trafic (buffering of street width varies)
+        if (1 <= katuluokkaLuokittelu?.arvo!! && katuluokkaLuokittelu?.arvo!! <= 3) {
+            //volumes 15 comparison
+            tormaystulos = tormaystarkasteluDao.liikennemaara(hankeGeometriatId, 15) //TODO real call and use enum
+
+        } else if (4 <= katuluokkaLuokittelu?.arvo!!) {
+            //volumes 30 comparison
+            tormaystulos = tormaystarkasteluDao.liikennemaara(hankeGeometriatId, 30) //TODO real call and use enum
+        }
+
+        //find maximum tormaystulos
+
+        rajaArvot.liikennemaaraRajaArvot. forEach {
+            rajaArvo ->
+            if(rajaArvo.minimumValue >= tormaystulos.max) {  //check against max
+                liikennemaaraLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.LIIKENNEMAARA, rajaArvo.arvo, rajaArvo.explanation))
+
+            }
+        }
+
+
+        //actual classification
+        rajaArvot.liikennemaaraRajaArvot.firstOrNull { rajaArvo -> rajaArvo.arvo == 5  }?.minimumValue
+        rajaArvot.liikennemaaraRajaArvot.firstOrNull { rajaArvo -> rajaArvo.arvo == 5  }?.minimumValue
+        rajaArvot.liikennemaaraRajaArvot.firstOrNull { rajaArvo -> rajaArvo.arvo == 5  }?.minimumValue
+        rajaArvot.liikennemaaraRajaArvot.firstOrNull { rajaArvo -> rajaArvo.arvo == 5  }?.minimumValue
+        rajaArvot.liikennemaaraRajaArvot.firstOrNull { rajaArvo -> rajaArvo.arvo == 5  }?.minimumValue
+
         return liikennemaaraLuokittelu
     }
 
