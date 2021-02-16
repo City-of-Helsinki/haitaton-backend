@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: set-defaults-to-hanke-flag-fields
+      comment: Set the default values to false and notnull constraint for all flag fields
+      author: Markku Hassinen
+      changes:
+        - addDefaultValue: { tableName: hanke, columnName: tilaongeometrioita, defaultValueBoolean: false }
+        - addDefaultValue: { tableName: hanke, columnName: tilaonviereisiahankkeita, defaultValueBoolean: false }
+        - addDefaultValue: { tableName: hanke, columnName: tilaonasiakasryhmia, defaultValueBoolean: false }
+        - addNotNullConstraint: { tableName: hanke, columnName: tilaongeometrioita, defaultNullValue: false }
+        - addNotNullConstraint: { tableName: hanke, columnName: tilaonviereisiahankkeita, defaultNullValue: false }
+        - addNotNullConstraint: { tableName: hanke, columnName: tilaonasiakasryhmia, defaultNullValue: false }

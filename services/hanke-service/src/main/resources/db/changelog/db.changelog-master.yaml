@@ -19,3 +19,5 @@ databaseChangeLog:
       file: db/changelog/changesets/modify-userids-to-strings.yml
   - include:
       file: db/changelog/changesets/add-hanke-flag-fields.yml
+  - include:
+      file: db/changelog/changesets/set-defaults-to-hanke-flag-fields.yml
