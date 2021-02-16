@@ -136,11 +136,11 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
     internal fun getLiikennemaaraLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot, katuluokkaLuokittelu: Luokittelutulos?): List<Luokittelutulos> {
         val liikennemaaraLuokittelu = mutableListOf<Luokittelutulos>()
 
-        val hankeGeometriatId = hanke.geometriat?.id
+    /*    val hankeGeometriatId = hanke.geometriat?.id
         //if no id let's get out of here
         if (hankeGeometriatId == null) return liikennemaaraLuokittelu
+*/
 
-        val tormaystulos: Pair<Int, Int>
 
         // case when not a street -> no trafic -> leave
         if (katuluokkaLuokittelu?.arvo == 0) {
@@ -148,33 +148,29 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
             return liikennemaaraLuokittelu
         }
 
+        var tormaystulos: Map<Int, Set<Int>> = mutableMapOf()
+
         // type of street (=street class) decides which volume data we use for trafic (buffering of street width varies)
         if (1 <= katuluokkaLuokittelu?.arvo!! && katuluokkaLuokittelu?.arvo!! <= 3) {
             //volumes 15 comparison
-            tormaystulos = tormaystarkasteluDao.liikennemaara(hankeGeometriatId, 15) //TODO real call and use enum
+            tormaystulos = tormaystarkasteluDao.liikennemaarat(hanke.geometriat!!, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15)
 
         } else if (4 <= katuluokkaLuokittelu?.arvo!!) {
             //volumes 30 comparison
-            tormaystulos = tormaystarkasteluDao.liikennemaara(hankeGeometriatId, 30) //TODO real call and use enum
+            tormaystulos = tormaystarkasteluDao.liikennemaarat(hanke.geometriat!!, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30)
         }
 
         //find maximum tormaystulos
-
-        rajaArvot.liikennemaaraRajaArvot. forEach {
-            rajaArvo ->
-            if(rajaArvo.minimumValue >= tormaystulos.max) {  //check against max
-                liikennemaaraLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.LIIKENNEMAARA, rajaArvo.arvo, rajaArvo.explanation))
-
-            }
-        }
-
+        var maximum = tormaystulos.values.flatten().max()
 
         //actual classification
-        rajaArvot.liikennemaaraRajaArvot.firstOrNull { rajaArvo -> rajaArvo.arvo == 5  }?.minimumValue
-        rajaArvot.liikennemaaraRajaArvot.firstOrNull { rajaArvo -> rajaArvo.arvo == 5  }?.minimumValue
-        rajaArvot.liikennemaaraRajaArvot.firstOrNull { rajaArvo -> rajaArvo.arvo == 5  }?.minimumValue
-        rajaArvot.liikennemaaraRajaArvot.firstOrNull { rajaArvo -> rajaArvo.arvo == 5  }?.minimumValue
-        rajaArvot.liikennemaaraRajaArvot.firstOrNull { rajaArvo -> rajaArvo.arvo == 5  }?.minimumValue
+        rajaArvot.liikennemaaraRajaArvot.forEach {
+            rajaArvo ->
+            if(rajaArvo.minimumValue >= maximum!!) {  //check against max
+                liikennemaaraLuokittelu.add(Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.LIIKENNEMAARA, rajaArvo.arvo, rajaArvo.explanation))
+                return liikennemaaraLuokittelu
+            }
+        }
 
         return liikennemaaraLuokittelu
     }
