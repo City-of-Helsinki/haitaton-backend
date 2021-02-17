@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 import fi.hel.haitaton.hanke.TormaysAnalyysiException
 import fi.hel.haitaton.hanke.domain.Hanke
 
-class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: TormaystarkasteluDao) : TormaystarkasteluPaikkaService {
+class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: TormaystarkasteluDao) : TormaystarkasteluPaikkaService {
 
     /**
      * Returns luokittelutulos list for hanke based on its hankeGeometria comparison to the different map references
@@ -11,17 +11,18 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
      */
     override fun calculateTormaystarkasteluLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot): List<Luokittelutulos> {
 
+        //if no geometries so let's get out of here, this is invalid state
+        if (hanke.geometriat == null || hanke.geometriat?.id == null)
+            throw IllegalArgumentException("Hanke.geometriat should be set for hankeid ${hanke.id}")
+
         val luokitteluTulosComplete = mutableListOf<Luokittelutulos>()
 
         val katuluokkaLuokittelu = getKatuluokkaLuokitteluTulos(hanke)
 
-        if (katuluokkaLuokittelu != null) {
-            luokitteluTulosComplete.add(katuluokkaLuokittelu)
-            luokitteluTulosComplete.addAll(getLiikennemaaraLuokitteluTulos(hanke, rajaArvot, katuluokkaLuokittelu))
-        } else {
-            throw TormaysAnalyysiException("Katuluokka not resolved for Hanke id ${hanke.id}")
-        }
-        luokitteluTulosComplete.addAll(getPyorailyLuokitteluTulos(hanke))
+        luokitteluTulosComplete.add(katuluokkaLuokittelu)
+        luokitteluTulosComplete.add(getLiikennemaaraLuokitteluTulos(hanke, rajaArvot, katuluokkaLuokittelu))
+        luokitteluTulosComplete.add(getPyorailyLuokitteluTulos(hanke))
+
         //TODO: "call methods for deciding separate luokittelu steps for missing luokittelu"
         //bussit
         //raitiovaunut
@@ -29,23 +30,18 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
         return luokitteluTulosComplete
     }
 
-    internal fun getKatuluokkaLuokitteluTulos(hanke: Hanke): Luokittelutulos? {
-
-        val katuLuokittelu = mutableListOf<Luokittelutulos>()
+    private fun getKatuluokkaLuokitteluTulos(hanke: Hanke): Luokittelutulos {
 
         val hankeGeometriat = hanke.geometriat
         val hankeGeometriatId = hankeGeometriat?.id
+                ?: throw IllegalArgumentException("Hanke.geometriat should be set for hankeid ${hanke.id}")
         //if no id let's get out of here
-        if (hankeGeometriatId == null)
-            return null
 
         val tormaystarkasteluYlreParts = tormaystarkasteluDao.yleisetKatualueet(hankeGeometriat)
         val tormaystarkasteluYlreClasses = tormaystarkasteluDao.yleisetKatuluokat(hankeGeometriat)
 
-
-        if (hitsInYlreParts(tormaystarkasteluYlreParts) == false && hitsInYlreClass(tormaystarkasteluYlreClasses) == false) {
+        if (!hitsInYlreParts(tormaystarkasteluYlreParts) && !hitsInYlreClass(tormaystarkasteluYlreClasses)) {
             return Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 0, KatuluokkaTormaysLuokittelu.EI_MOOTTORILIIKENNE_VAIK.toString())
-
         }
 
         val tormaystarkasteluStreetClasses = tormaystarkasteluDao.katuluokat(hankeGeometriat)
@@ -75,7 +71,7 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
             }
         }
 
-        if (hitsInYlreClass(tormaystarkasteluYlreClasses) == false) {  //ylre_parts yes but still no hit in any usable classification
+        if (!hitsInYlreClass(tormaystarkasteluYlreClasses)) {  //ylre_parts yes but still no hit in any usable classification
             return Luokittelutulos(hankeGeometriatId, LuokitteluType.KATULUOKKA, 0, KatuluokkaTormaysLuokittelu.EI_MOOTTORILIIKENNE_VAIK.toString())
         } else {
             //get max from ylreclasses = yleinen katuluokka
@@ -104,63 +100,101 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
     }
 
     private fun hitsInCentralBusinessArea(tormaystarkasteluCentralBusinessArea: Map<Int, Boolean>): Boolean {
-        if (tormaystarkasteluCentralBusinessArea != null && tormaystarkasteluCentralBusinessArea.size > 0)
+        if (tormaystarkasteluCentralBusinessArea.isNotEmpty())
             return true
         return false
     }
 
     private fun hitsInYlreClass(tormaystarkasteluYlreClasses: Map<Int, Set<TormaystarkasteluKatuluokka>>): Boolean {
-        if (tormaystarkasteluYlreClasses != null && tormaystarkasteluYlreClasses.size > 0)
+        if (tormaystarkasteluYlreClasses.isNotEmpty())
             return true
         return false
 
     }
 
     private fun hitsInStreetClasses(tormaystarkasteluStreetClasses: Map<Int, Set<TormaystarkasteluKatuluokka>>): Boolean {
-        if (tormaystarkasteluStreetClasses != null && tormaystarkasteluStreetClasses.size > 0)
+        if (tormaystarkasteluStreetClasses.isNotEmpty())
             return true
         return false
     }
 
 
     private fun hitsInYlreParts(tormaystarkasteluYlreParts: Map<Int, Boolean>): Boolean {
-        if (tormaystarkasteluYlreParts != null && tormaystarkasteluYlreParts.size > 0)
+        if (tormaystarkasteluYlreParts.isNotEmpty())
             return true
         return false
     }
 
-    internal fun getLiikennemaaraLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot, katuluokkaLuokittelut: Luokittelutulos?): List<Luokittelutulos> {
-        val liikennemaaraLuokittelu = mutableListOf<Luokittelutulos>()
+    internal fun getLiikennemaaraLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot, katuluokkaLuokittelu: Luokittelutulos?): Luokittelutulos {
 
-        val hankeGeometriatId = hanke.geometriat?.id
-        //if no id let's get out of here
-        if (hankeGeometriatId == null) return liikennemaaraLuokittelu
+        // case when not a street -> no trafic -> leave
+        if (katuluokkaLuokittelu?.arvo == 0) {
+            return getLiikenneMaaraLowestLuokittelu(hanke.geometriat!!.id!!, rajaArvot)
+        }
 
-        liikennemaaraLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.LIIKENNEMAARA, 0, LiikenneMaaraTormaysLuokittelu.ZERO.toString()))
-        return liikennemaaraLuokittelu
+        //find maximum tormaystulos
+        var maximum = getMaximumLiikennemaaraFromVolumes(hanke, katuluokkaLuokittelu)
+        if (maximum == null)
+            throw TormaysAnalyysiException("Liikennemaara comparison went wrong for hankeId=${hanke.id}")
+
+        //actual classification
+        rajaArvot.liikennemaaraRajaArvot.forEach { rajaArvo ->
+            if (rajaArvo.minimumValue <= maximum) {  //check against max
+                return Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.LIIKENNEMAARA, rajaArvo.arvo, rajaArvo.explanation)
+            }
+        }
+
+        //return value is needed here, but this should never be needed
+        return getLiikenneMaaraLowestLuokittelu(hanke.geometriat!!.id!!, rajaArvot)
     }
 
-    internal fun getPyorailyLuokitteluTulos(hanke: Hanke): List<Luokittelutulos> {
+    private fun getLiikenneMaaraLowestLuokittelu(hankeGeometriatId: Int, rajaArvot: LuokitteluRajaArvot): Luokittelutulos {
+        val arvoRivi = rajaArvot.liikennemaaraRajaArvot.first { rajaArvo -> rajaArvo.minimumValue == 0 } //find zero
+        return Luokittelutulos(hankeGeometriatId, LuokitteluType.LIIKENNEMAARA, arvoRivi.arvo, arvoRivi.explanation)
+    }
 
-        val pyorailyLuokittelu = mutableListOf<Luokittelutulos>()
+    private fun getMaximumLiikennemaaraFromVolumes(hanke: Hanke, katuluokkaLuokittelu: Luokittelutulos?): Int? {
+
+        var tormaystulos: Map<Int, Set<Int>> = mutableMapOf()
+
+        // type of street (=street class) decides which volume data we use for trafic (buffering of street width varies)
+        if (shouldUseSmallerRadiusVolumes(katuluokkaLuokittelu)) {
+            //volumes 15 comparison
+            tormaystulos = tormaystarkasteluDao.liikennemaarat(hanke.geometriat!!, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15)
+
+        } else if (shouldUseWiderRadiusVolumes(katuluokkaLuokittelu)) {
+            //volumes 30 comparison
+            tormaystulos = tormaystarkasteluDao.liikennemaarat(hanke.geometriat!!, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30)
+        }
+
+        return tormaystulos.values.flatten().max()
+    }
+
+    private fun shouldUseWiderRadiusVolumes(katuluokkaLuokittelu: Luokittelutulos?) =
+            4 <= katuluokkaLuokittelu?.arvo!!
+
+
+    private fun shouldUseSmallerRadiusVolumes(katuluokkaLuokittelu: Luokittelutulos?) =
+            katuluokkaLuokittelu?.arvo!! in 1..3  //this is range check
+
+
+    internal fun getPyorailyLuokitteluTulos(hanke: Hanke): Luokittelutulos {
 
         val hankeGeometriat = hanke.geometriat
         val hankeGeometriatId = hankeGeometriat?.id
-        //if no id let's get out of here
+        //if no id -> let's get out of here
         if (hankeGeometriatId == null)
-            return pyorailyLuokittelu
+            throw IllegalArgumentException("Hanke.geometriat should be set for hankeid ${hanke.id}")
 
         val tormaystarkastelutulos = tormaystarkasteluDao.pyorailyreitit(hankeGeometriat)
 
         if (matchesPriorityCycling(tormaystarkastelutulos)) {
-            pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, 5, PyorailyTormaysLuokittelu.PRIORISOITU_REITTI.toString()))
+            return Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, 5, PyorailyTormaysLuokittelu.PRIORISOITU_REITTI.toString())
         } else if (matchesMainCycling(tormaystarkastelutulos)) {
-            pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, 4, PyorailyTormaysLuokittelu.PAAREITTI.toString()))
+            return Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, 4, PyorailyTormaysLuokittelu.PAAREITTI.toString())
         } else {
-            pyorailyLuokittelu.add(Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()))
+            return Luokittelutulos(hankeGeometriatId, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString())
         }
-
-        return pyorailyLuokittelu
     }
 
     private fun matchesMainCycling(tormaystulos: Map<Int, Set<TormaystarkasteluPyorailyreittiluokka>>): Boolean {
