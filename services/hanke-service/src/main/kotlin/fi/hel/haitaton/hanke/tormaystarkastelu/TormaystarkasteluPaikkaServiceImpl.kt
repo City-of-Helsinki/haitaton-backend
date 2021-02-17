@@ -14,7 +14,7 @@ class TormaystarkasteluPaikkaServiceImpl(val tormaystarkasteluDao: Tormaystarkas
 
         //if no geometries let's get out of here, this is invalid state
         if (hanke.geometriat == null ||  hanke.geometriat?.id == null )
-            throw InvalidStateException("Hanke.geometriat should be set for hankeid ${hanke.id}")
+            throw IllegalArgumentException("Hanke.geometriat should be set for hankeid ${hanke.id}")
 
         val luokitteluTulosComplete = mutableListOf<Luokittelutulos>()
 
