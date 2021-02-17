@@ -115,7 +115,10 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
         }
     }
 
-    override fun liikennemaarat(hankegeometriat: HankeGeometriat, etaisyys: TormaystarkasteluLiikennemaaranEtaisyys): Map<Int, Set<Int>> {
+    override fun liikennemaarat(
+        hankegeometriat: HankeGeometriat,
+        etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
+    ): Map<Int, Set<Int>> {
         val results = mutableMapOf<Int, MutableSet<Int>>()
         val tableName = "tormays_volumes${etaisyys.radius}_polys"
         with(jdbcOperations) {
@@ -140,6 +143,65 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
             ).forEach { pair ->
                 results.computeIfAbsent(pair.second) { mutableSetOf() }.add(pair.first)
             }
+        }
+        return results
+    }
+
+    override fun bussiliikenteenKannaltaKriittinenAlue(hankegeometriat: HankeGeometriat): Map<Int, Boolean> {
+        with(jdbcOperations) {
+            return query(
+                """
+            SELECT 
+                tormays_critical_area_polys.fid,
+                tormays_critical_area_polys.critical_area,
+                hankegeometria.id
+            FROM
+                tormays_critical_area_polys,
+                hankegeometria
+            WHERE
+                hankegeometria.hankegeometriatid = ? AND
+                st_overlaps(tormays_critical_area_polys.geom, hankegeometria.geometria);
+        """.trimIndent(), { rs, _ ->
+                    Pair(
+                        rs.getInt(2) == 1,
+                        rs.getInt(3)
+                    )
+                }, hankegeometriat.id!!
+            ).associate { Pair(it.second, it.first) }
+        }
+    }
+
+    override fun bussit(hankegeometriat: HankeGeometriat): Map<Int, Set<TormaystarkasteluBussireitti>> {
+        val results = mutableMapOf<Int, MutableSet<TormaystarkasteluBussireitti>>()
+        with(jdbcOperations) {
+            query(
+                """
+                SELECT
+                    tormays_buses_polys.fid,
+                    tormays_buses_polys.route_id,
+                    tormays_buses_polys.direction_id,
+                    tormays_buses_polys.rush_hour,
+                    tormays_buses_polys.trunk,
+                    hankegeometria.id
+                FROM
+                    tormays_buses_polys,
+                    hankegeometria
+                WHERE
+                    hankegeometria.hankegeometriatid = ? AND
+                    st_overlaps(tormays_buses_polys.geom, hankegeometria.geometria);
+                """.trimIndent(), { rs, _ ->
+                    val geometriaId = rs.getInt(6)
+                    val buses = results.computeIfAbsent(geometriaId) { mutableSetOf() }
+                    buses.add(
+                        TormaystarkasteluBussireitti(
+                            rs.getString(2),
+                            rs.getInt(3),
+                            rs.getInt(4),
+                            TormaystarkasteluBussiRunkolinja.valueOfRunkolinja(rs.getString(5))!!
+                        )
+                    )
+                }, hankegeometriat.id!!
+            )
         }
         return results
     }
