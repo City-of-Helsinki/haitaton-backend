@@ -99,6 +99,15 @@ internal class TormaystarkasteluDaoImplManualTest {
     }
 
     /*
+    Test manually what tram lane types each Hanke geometry is located on
+     */
+    @Test
+    fun raitiotiet() {
+        val raitiotiet = dao.raitiotiet(HankeGeometriat(1))
+        println(raitiotiet.toJsonPrettyString())
+    }
+
+    /*
     Test manually what kind of cycleways Hanke geometries are located on
      */
     @Test
