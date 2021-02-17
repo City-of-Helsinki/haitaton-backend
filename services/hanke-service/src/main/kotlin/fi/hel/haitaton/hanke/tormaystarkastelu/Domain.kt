@@ -30,6 +30,47 @@ enum class TormaystarkasteluLiikennemaaranEtaisyys(internal val radius: Int) {
 }
 
 /**
+ * Bus route
+ */
+class TormaystarkasteluBussireitti(
+    val reittiId: String,
+    val suunta: Int,
+    val vuoromaaraRuuhkatunnissa: Int,
+    val runkolinja: TormaystarkasteluBussiRunkolinja
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is TormaystarkasteluBussireitti) return false
+
+        if (reittiId != other.reittiId) return false
+        if (suunta != other.suunta) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = reittiId.hashCode()
+        result = 31 * result + suunta
+        return result
+    }
+}
+
+/**
+ * Bus route trunk line category
+ */
+enum class TormaystarkasteluBussiRunkolinja(internal val runkolinja: String) {
+    EI("no"),
+    LAHES("almost"),
+    ON("yes");
+
+    companion object {
+        fun valueOfRunkolinja(runkolinja: String): TormaystarkasteluBussiRunkolinja? {
+            return values().find { it.runkolinja == runkolinja }
+        }
+    }
+}
+
+/**
  * Cycling route category
  */
 enum class TormaystarkasteluPyorailyreittiluokka(internal val value: Int, private val pyorailyvayla: String = "") {

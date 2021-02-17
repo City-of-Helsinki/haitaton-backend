@@ -81,6 +81,24 @@ internal class TormaystarkasteluDaoImplManualTest {
     }
 
     /*
+    Test manually what Hanke geometries are located on critical area for buses
+     */
+    @Test
+    fun bussiliikenteenKannaltaKriittinenAlue() {
+        val bussiliikenteenKannaltaKriittinenAlue = dao.bussiliikenteenKannaltaKriittinenAlue(HankeGeometriat(1))
+        println(bussiliikenteenKannaltaKriittinenAlue.toJsonPrettyString())
+    }
+
+    /*
+    Test manually what bus routes each Hanke geometry is located on
+     */
+    @Test
+    fun bussit() {
+        val bussit = dao.bussit(HankeGeometriat(1))
+        println(bussit.toJsonPrettyString())
+    }
+
+    /*
     Test manually what kind of cycleways Hanke geometries are located on
      */
     @Test
