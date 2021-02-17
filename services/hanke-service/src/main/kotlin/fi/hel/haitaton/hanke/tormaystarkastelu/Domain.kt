@@ -58,7 +58,7 @@ class TormaystarkasteluBussireitti(
 /**
  * Bus route trunk line category
  */
-enum class TormaystarkasteluBussiRunkolinja(internal val runkolinja: String) {
+enum class TormaystarkasteluBussiRunkolinja(private val runkolinja: String) {
     EI("no"),
     LAHES("almost"),
     ON("yes");
@@ -66,6 +66,20 @@ enum class TormaystarkasteluBussiRunkolinja(internal val runkolinja: String) {
     companion object {
         fun valueOfRunkolinja(runkolinja: String): TormaystarkasteluBussiRunkolinja? {
             return values().find { it.runkolinja == runkolinja }
+        }
+    }
+}
+
+/**
+ * Tram lane type
+ */
+enum class TormaystarkasteluRaitiotiekaistatyyppi(private val kaistatyyppi: String = "") {
+    OMA("dedicated"),
+    JAETTU("mixed");
+
+    companion object {
+        fun valueOfKaistatyyppi(kaistatyyppi: String): TormaystarkasteluRaitiotiekaistatyyppi? {
+            return values().find { it.kaistatyyppi == kaistatyyppi }
         }
     }
 }

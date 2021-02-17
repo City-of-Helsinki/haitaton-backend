@@ -206,6 +206,37 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
         return results
     }
 
+    override fun raitiotiet(hankegeometriat: HankeGeometriat): Map<Int, Set<TormaystarkasteluRaitiotiekaistatyyppi>> {
+        val results = mutableMapOf<Int, MutableSet<TormaystarkasteluRaitiotiekaistatyyppi>>()
+        with(jdbcOperations) {
+            query(
+                """
+            SELECT 
+                tormays_trams_polys.fid,
+                tormays_trams_polys.lane,
+                hankegeometria.id
+            FROM
+                tormays_trams_polys,
+                hankegeometria
+            WHERE
+                hankegeometria.hankegeometriatid = ? AND
+                st_overlaps(tormays_trams_polys.geom, hankegeometria.geometria);
+        """.trimIndent(), { rs, _ ->
+                    val lane = rs.getString(2)
+                    Pair(
+                        TormaystarkasteluRaitiotiekaistatyyppi.valueOfKaistatyyppi(lane) ?: throw IllegalKatuluokkaException(
+                            lane
+                        ),
+                        rs.getInt(3)
+                    )
+                }, hankegeometriat.id!!
+            ).forEach { pair ->
+                results.computeIfAbsent(pair.second) { mutableSetOf() }.add(pair.first)
+            }
+        }
+        return results
+    }
+
     override fun pyorailyreitit(hankegeometriat: HankeGeometriat): Map<Int, Set<TormaystarkasteluPyorailyreittiluokka>> {
         val results = mutableMapOf<Int, MutableSet<TormaystarkasteluPyorailyreittiluokka>>()
         with(jdbcOperations) {
