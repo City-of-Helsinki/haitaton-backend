@@ -49,6 +49,13 @@ interface TormaystarkasteluDao {
     fun bussit(hankegeometriat: HankeGeometriat): Map<Int, Set<TormaystarkasteluBussireitti>>
 
     /**
+     * Collects tram lane types for each Hanke geometry
+     *
+     * @return for each Hanke geometry a set of TormaystarkasteluRaitiotiekaistatyyppi for the tram lane types that geometry is located on
+     */
+    fun raitiotiet(hankegeometriat: HankeGeometriat): Map<Int, Set<TormaystarkasteluRaitiotiekaistatyyppi>>
+
+    /**
      * Checks whether these Hanke geometries are on any categorized cycling route ("pyöräilyreitti", cycleways_priority/cycleways_main)
      *
      * @return for each Hanke geometry a set of TormaystarkasteluPyorailyreittiluokka for the cycleways that geometry is located on
