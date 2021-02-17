@@ -383,7 +383,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
                 LuokitteluRajaArvot())
 
         assertThat(result[0]).isEqualTo(Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.KATULUOKKA, 1, KatuluokkaTormaysLuokittelu.MUU_TONTTIKATU_ALUE.toString()))
-        assertThat(result[1]).isEqualTo(Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.LIIKENNEMAARA, 2, "500 - 1 499"))
+        assertThat(result[1]).isEqualTo(Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.LIIKENNEMAARA, 2, "500 - 1499"))
         assertThat(result[2]).isEqualTo(Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()))
     }
 
@@ -413,7 +413,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
                 LuokitteluRajaArvot())
 
         assertThat(result[0]).isEqualTo(Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.KATULUOKKA, 5, KatuluokkaTormaysLuokittelu.PAAKATU_MOOTTORIVAYLA.toString()))
-        assertThat(result[1]).isEqualTo(Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.LIIKENNEMAARA, 3, "1 500-4 999"))
+        assertThat(result[1]).isEqualTo(Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.LIIKENNEMAARA, 3, "1 500-4999"))
         assertThat(result[2]).isEqualTo(Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()))
     }
 

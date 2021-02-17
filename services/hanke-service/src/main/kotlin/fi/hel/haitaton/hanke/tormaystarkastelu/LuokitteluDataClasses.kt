@@ -20,10 +20,10 @@ class LuokitteluRajaArvot {
     )
 
     val liikennemaaraRajaArvot = listOf<RajaArvo>(
-            RajaArvo(LuokitteluType.LIIKENNEMAARA, 5, 10000, "10 000 tai enemmän"),
-            RajaArvo(LuokitteluType.LIIKENNEMAARA, 4, 5000, "5 000-9 999"),
-            RajaArvo(LuokitteluType.LIIKENNEMAARA, 3, 1500, "1 500-4 999"),
-            RajaArvo(LuokitteluType.LIIKENNEMAARA, 2, 500, "500 - 1 499"),
+            RajaArvo(LuokitteluType.LIIKENNEMAARA, 5, 10000, "10000 tai enemmän"),
+            RajaArvo(LuokitteluType.LIIKENNEMAARA, 4, 5000, "5 000-9999"),
+            RajaArvo(LuokitteluType.LIIKENNEMAARA, 3, 1500, "1 500-4999"),
+            RajaArvo(LuokitteluType.LIIKENNEMAARA, 2, 500, "500 - 1499"),
             RajaArvo(LuokitteluType.LIIKENNEMAARA, 1, 1, "Alle 500"),
             RajaArvo(LuokitteluType.LIIKENNEMAARA, 0, 0, "Ei autoliikennettä") // no hits
     )
