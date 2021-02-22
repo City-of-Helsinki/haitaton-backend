@@ -62,7 +62,7 @@ internal class HanketunnusServiceImplManualTest {
     fun newHanketunnus() {
         val ids = ConcurrentHashMap.newKeySet<String>() // using a set makes sure that all items are unique
         IntStream.range(0, 100).parallel().forEach { i ->
-            (0 until 100).forEach { j ->
+            for (j in 0 until 100) {
                 val hanketunnus = hanketunnusService.newHanketunnus()
                 ids.add(hanketunnus)
                 logger.debug {

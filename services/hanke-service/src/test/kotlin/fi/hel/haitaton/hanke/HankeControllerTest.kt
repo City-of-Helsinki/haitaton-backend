@@ -58,10 +58,21 @@ class HankeControllerTest {
         Mockito.`when`(hankeService.loadHanke(mockedHankeTunnus))
             .thenReturn(
                 Hanke(
-                    1234, mockedHankeTunnus, true,
-                    "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
-                    getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
-                    1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT
+                    1234,
+                    mockedHankeTunnus,
+                    true,
+                    "Mannerheimintien remontti remonttinen",
+                    "Lorem ipsum dolor sit amet...",
+                    getDatetimeAlku(),
+                    getDatetimeLoppu(),
+                    Vaihe.OHJELMOINTI,
+                    null,
+                    1,
+                    "Risto",
+                    getCurrentTimeUTC(),
+                    null,
+                    null,
+                    SaveType.DRAFT
                 )
             )
 
@@ -69,7 +80,8 @@ class HankeControllerTest {
 
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.body).isNotNull
-        assertThat((response.body as Hanke).nimi).isNotEmpty() // Some compilation/build-setups apparently do not allow this .isNotEmpty without ()
+        // Some compilation/build-setups apparently do not allow this .isNotEmpty without ()
+        assertThat((response.body as Hanke).nimi).isNotEmpty()
     }
 
     @Test
@@ -77,10 +89,20 @@ class HankeControllerTest {
 
         val listOfHanke = listOf(
             Hanke(
-                1234, mockedHankeTunnus, true,
+                1234,
+                mockedHankeTunnus,
+                true,
                 "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
-                getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
-                1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT
+                getDatetimeAlku(),
+                getDatetimeLoppu(),
+                Vaihe.OHJELMOINTI,
+                null,
+                1,
+                "Risto",
+                getCurrentTimeUTC(),
+                null,
+                null,
+                SaveType.DRAFT
             ),
             Hanke(
                 50,
@@ -105,7 +127,7 @@ class HankeControllerTest {
 
         val response: ResponseEntity<Any> = hankeController.getHankeList()
 
-        //basic checks for getting a response
+        // basic checks for getting a response
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.body).isNotNull
 
@@ -124,12 +146,22 @@ class HankeControllerTest {
         MockitoAnnotations.initMocks(this)
 
         // both hanke with wanted saveType
-        var listOfHanke = listOf(
+        val listOfHanke = listOf(
             Hanke(
-                1234, mockedHankeTunnus, true,
+                1234,
+                mockedHankeTunnus,
+                true,
                 "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
-                getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
-                1, "Risto", getCurrentTimeUTC(), null, null, SaveType.SUBMIT
+                getDatetimeAlku(),
+                getDatetimeLoppu(),
+                Vaihe.OHJELMOINTI,
+                null,
+                1,
+                "Risto",
+                getCurrentTimeUTC(),
+                null,
+                null,
+                SaveType.SUBMIT
             ),
             Hanke(
                 50,
@@ -150,12 +182,12 @@ class HankeControllerTest {
             )
         )
 
-        var searchCriteria = HankeSearch(saveType = SaveType.SUBMIT)
+        val searchCriteria = HankeSearch(saveType = SaveType.SUBMIT)
         Mockito.`when`(hankeService.loadAllHanke(searchCriteria)).thenReturn(listOfHanke)
 
         val response: ResponseEntity<Any> = hankeController.getHankeList(searchCriteria)
 
-        //basic checks for getting a response
+        // basic checks for getting a response
         assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
         assertThat(response.body).isNotNull
 
@@ -201,7 +233,6 @@ class HankeControllerTest {
         assertThat(responseHanke.body).isNotNull
         assertThat(responseHanke.body?.nimi).isEqualTo("hankkeen nimi")
     }
-
 
     @Test
     fun `test that the updateHanke will give validation errors from invalid hanke data for name`() {
@@ -252,7 +283,6 @@ class HankeControllerTest {
             saveType = SaveType.DRAFT
         )
 
-
         hanke.omistajat = arrayListOf(
             HankeYhteystieto(
                 null, "Pekkanen", "Pekka",
@@ -292,9 +322,21 @@ class HankeControllerTest {
     @Test
     fun `test that the updateHanke will give validation errors from null enum values`() {
         val partialHanke = Hanke(
-            id = 0, hankeTunnus = "id123", nimi = "", kuvaus = "", onYKTHanke = false,
-            alkuPvm = null, loppuPvm = null, vaihe = null, suunnitteluVaihe = null,
-            version = 1, createdBy = "", createdAt = null, modifiedBy = null, modifiedAt = null, saveType = null
+            id = 0,
+            hankeTunnus = "id123",
+            nimi = "",
+            kuvaus = "",
+            onYKTHanke = false,
+            alkuPvm = null,
+            loppuPvm = null,
+            vaihe = null,
+            suunnitteluVaihe = null,
+            version = 1,
+            createdBy = "",
+            createdAt = null,
+            modifiedBy = null,
+            modifiedAt = null,
+            saveType = null
         )
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)

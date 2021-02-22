@@ -1,12 +1,16 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-
-import fi.hel.haitaton.hanke.*
+import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.SaveType
+import fi.hel.haitaton.hanke.TZ_UTC
+import fi.hel.haitaton.hanke.TormaysAnalyysiException
+import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.assertThrows
-
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
@@ -32,7 +36,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
     fun calculateTormaystarkasteluLuokitteluTulos_whenNoHitsWithGeometry() {
         val hanke = createHankeForTest()
 
-        //setting explicitly dao to return empty lists a.k.a "no hits"
+        // setting explicitly dao to return empty lists a.k.a "no hits"
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf()
         )
@@ -74,9 +78,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
                 PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()
             )
         )
-
     }
-
 
     @Test
     fun calculateTormaystarkasteluLuokitteluTulos_whenExpected3FromKatuluokka() {
@@ -92,11 +94,11 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
             )
         ).thenReturn(mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(0))))
 
-        //hit in yleiset katualueet
+        // hit in yleiset katualueet
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
-        //hit in katuluokat
+        // hit in katuluokat
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.PAIKALLINEN_KOKOOJAKATU)))
         )
@@ -146,7 +148,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
 
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
-        //NO hit in yleiset katualueet
+        // NO hit in yleiset katualueet
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, false))
         )
@@ -158,7 +160,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
             )
         ).thenReturn(mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(0))))
 
-        //no hit in katuluokat
+        // no hit in katuluokat
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
         // should no not have affect: central_business_area hit -> kantakaupunki
@@ -206,11 +208,11 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
 
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
-        //hit in yleiset katualueet
+        // hit in yleiset katualueet
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
-        //no hit in katuluokat
+        // no hit in katuluokat
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(mutableMapOf())
         // Liikennemaara maximum=0
         Mockito.`when`(
@@ -256,7 +258,6 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         )
     }
 
-
     @Test
     fun calculateTormaystarkasteluLuokitteluTulos_whenExpectedCentralBusinessArea() {
         val hanke = createHankeForTest()
@@ -264,11 +265,11 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(hanke.geometriat!!)).thenReturn(mutableMapOf())
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
-        //hit in yleiset katualueet
+        // hit in yleiset katualueet
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
-        //hit in katuluokat
+        // hit in katuluokat
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.TONTTIKATU_TAI_AJOYHTEYS)))
         )
@@ -281,7 +282,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         )
             .thenReturn(mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(0))))
 
-        //central_business_area hit -> kantakaupunki
+        // central_business_area hit -> kantakaupunki
         Mockito.`when`(tormaysPaikkaDao.kantakaupunki(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
@@ -317,24 +318,23 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         )
     }
 
-
     @Test
     fun calculateTormaystarkasteluLuokitteluTulos_whenExpectedCentralBusinessArea_WhenAlsoYleinenKatuluokka1or2() {
         val hanke = createHankeForTest()
 
-        //hit in yleiset katuluokat 1-2
+        // hit in yleiset katuluokat 1-2
         Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.TONTTIKATU_TAI_AJOYHTEYS)))
         )
 
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
-        //hit in yleiset katualueet
+        // hit in yleiset katualueet
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
 
-        //no hit in katuluokat
+        // no hit in katuluokat
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
         // Liikennemaara maximum=0
@@ -345,7 +345,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
             )
         ).thenReturn(mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(0))))
 
-        //central_business_area hit -> kantakaupunki
+        // central_business_area hit -> kantakaupunki
         Mockito.`when`(tormaysPaikkaDao.kantakaupunki(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
@@ -379,21 +379,20 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
                 PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()
             )
         )
-
     }
 
     @Test
     fun calculateTormaystarkasteluLuokitteluTulos_WhenYleinenKatuluokka1or2_AndNotCentralBusinessArea() {
         val hanke = createHankeForTest()
 
-        //hit in yleiset katuluokat 1-2
+        // hit in yleiset katuluokat 1-2
         Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.TONTTIKATU_TAI_AJOYHTEYS)))
         )
 
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
-        //hit in yleiset katualueet
+        // hit in yleiset katualueet
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
@@ -405,7 +404,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
             )
         ).thenReturn(mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(0))))
 
-        //no hit in katuluokat
+        // no hit in katuluokat
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
         // NO hit in central_business_area hit -> kantakaupunki
@@ -440,7 +439,6 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
                 PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()
             )
         )
-
     }
 
     @Test
@@ -450,11 +448,11 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(hanke.geometriat!!)).thenReturn(mutableMapOf())
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
-        //hit in yleiset katualueet
+        // hit in yleiset katualueet
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
-        //hit in katuluokat
+        // hit in katuluokat
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.TONTTIKATU_TAI_AJOYHTEYS)))
         )
@@ -465,7 +463,6 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
                 TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
             )
         ).thenReturn(mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(0))))
-
 
         // NO hit in central_business_area -> kantakaupunki
         Mockito.`when`(tormaysPaikkaDao.kantakaupunki(hanke.geometriat!!)).thenReturn(mutableMapOf())
@@ -537,7 +534,6 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
                 PyorailyTormaysLuokittelu.PRIORISOITU_REITTI.toString()
             )
         )
-
     }
 
     @Test
@@ -576,7 +572,6 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
                 PyorailyTormaysLuokittelu.PAAREITTI.toString()
             )
         )
-
     }
 
     private fun createHankeForTest(): Hanke {
@@ -598,7 +593,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
             saveType = SaveType.DRAFT
         )
 
-        //adding geometry
+        // adding geometry
         hanke.geometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
         hanke.geometriat!!.id = 1
         return hanke
@@ -611,11 +606,11 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(hanke.geometriat!!)).thenReturn(mutableMapOf())
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
-        //hit in yleiset katualueet
+        // hit in yleiset katualueet
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
-        //hit in katuluokat
+        // hit in katuluokat
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.TONTTIKATU_TAI_AJOYHTEYS)))
         )
@@ -631,7 +626,6 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         }
 
         assertThat(exception).hasMessage(HankeError.HAI1030.errorMessage)
-
     }
 
     @Test
@@ -641,12 +635,12 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(hanke.geometriat!!)).thenReturn(mutableMapOf())
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
-        //hit in yleiset katualueet
+        // hit in yleiset katualueet
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
-        //hit in katuluokat
-        var katuluokat =
+        // hit in katuluokat
+        val katuluokat =
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.TONTTIKATU_TAI_AJOYHTEYS)))
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(katuluokat)
 
@@ -660,7 +654,6 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
                 TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
             )
         ).thenReturn(mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(1000))))
-
 
         val result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(
             hanke,
@@ -700,12 +693,12 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(hanke.geometriat!!)).thenReturn(mutableMapOf())
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
-        //hit in yleiset katualueet
+        // hit in yleiset katualueet
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
-        //hit in katuluokat
-        var katuluokat =
+        // hit in katuluokat
+        val katuluokat =
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)))
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(katuluokat)
 
@@ -758,12 +751,12 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(hanke.geometriat!!)).thenReturn(mutableMapOf())
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
-        //hit in yleiset katualueet
+        // hit in yleiset katualueet
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
-        //hit in katuluokat
-        var katuluokat =
+        // hit in katuluokat
+        val katuluokat =
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)))
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(katuluokat)
 
@@ -818,12 +811,12 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(hanke.geometriat!!)).thenReturn(mutableMapOf())
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
-        //hit in yleiset katualueet
+        // hit in yleiset katualueet
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
-        //hit in katuluokat
-        var katuluokat =
+        // hit in katuluokat
+        val katuluokat =
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)))
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(katuluokat)
 
@@ -838,7 +831,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
             )
         ).thenReturn(mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(3500))))
 
-        //trams return shared
+        // trams return shared
         Mockito.`when`(tormaysPaikkaDao.raitiotiet(hanke.geometriat!!))
             .thenReturn(
                 mutableMapOf(
@@ -886,12 +879,12 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(hanke.geometriat!!)).thenReturn(mutableMapOf())
         Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
-        //hit in yleiset katualueet
+        // hit in yleiset katualueet
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
-        //hit in katuluokat
-        var katuluokat =
+        // hit in katuluokat
+        val katuluokat =
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)))
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(katuluokat)
 
@@ -906,7 +899,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
             )
         ).thenReturn(mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(3500))))
 
-        //trams return shared
+        // trams return shared
         Mockito.`when`(tormaysPaikkaDao.raitiotiet(hanke.geometriat!!))
             .thenReturn(
                 mutableMapOf(

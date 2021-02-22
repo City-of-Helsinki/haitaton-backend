@@ -15,12 +15,7 @@ class HanketunnusServiceImplTest {
         val service = HanketunnusServiceImpl(repository)
 
         every { repository.incrementAndGet(CounterType.HANKETUNNUS.name) }.returns(
-            listOf(
-                IdCounter(
-                    CounterType.HANKETUNNUS,
-                    1
-                )
-            )
+            listOf(IdCounter(CounterType.HANKETUNNUS, 1))
         )
 
         val hankeTunnus = service.newHanketunnus()

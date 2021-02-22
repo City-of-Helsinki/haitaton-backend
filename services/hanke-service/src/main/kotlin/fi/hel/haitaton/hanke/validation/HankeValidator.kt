@@ -6,8 +6,6 @@ import fi.hel.haitaton.hanke.MAXIMUM_TYOMAAKATUOSOITE_LENGTH
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-//import fi.hel.haitaton.hanke.getCurrentTimeUTC
-//import java.time.temporal.ChronoUnit
 import javax.validation.ConstraintValidator
 import javax.validation.ConstraintValidatorContext
 
@@ -41,7 +39,8 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
                 .addConstraintViolation()
             ok = false
         }
-        // Must be from the begin of today or later, and earlier than some relevant maximum date, and same or later than alkuPvm
+        // Must be from the begin of today or later, and earlier than some relevant maximum date,
+        // and same or later than alkuPvm
         // TODO: past date should only be prevented during creation of new hanke, not when updating one.
         //  (However, this is currently a situation which can not be validated correctly, as the update-method here
         //  does not differentiate between updates during using wizard vs. updates being done weeks afterward,
@@ -76,7 +75,8 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             ok = false
         }
 
-        //  TODO ok = ok && isValidHankeYhteystietos(hanke, context) removed mandatory checks for now when front is not ready to add same rules and this confuses
+        //  TODO ok = ok && isValidHankeYhteystietos(hanke, context) removed mandatory checks for now when
+        //   front is not ready to add same rules and this confuses
         ok = ok && checkTyomaaTiedot(hanke, context)
         ok = ok && checkHaitat(hanke, context)
 
@@ -109,8 +109,10 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
         ok: Boolean
     ): Boolean {
         var ok1 = ok
-        // TODO: NOTE: having all four mandatory fields empty, but giving organisation is still valid for this... needs to be fixed.
-        // Short version: Either all four mandatory fields must be have proper value, or all of them must be empty/whitespace-only.
+        // TODO: NOTE: having all four mandatory fields empty,
+        //  but giving organisation is still valid for this... needs to be fixed.
+        // Short version: Either all four mandatory fields must be have proper value,
+        // or all of them must be empty/whitespace-only.
         if (yhteystieto.isAnyMandatoryFieldSet() && !yhteystieto.isValid()) {
             // TODO: is that property node correct?
             // TODO: Does not currently matter, though, as the node information does not get through to error response.
@@ -135,20 +137,21 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
 
     private fun checkHaitat(hanke: Hanke, context: ConstraintValidatorContext): Boolean {
         var ok = true
-        // TODO: can haitta alku/loppu pvm be after the hanke ends? E.g. if agreed that another hanke will continue with the same hole soon after?
+        // TODO: can haitta alku/loppu pvm be after the hanke ends?
+        //  E.g. if agreed that another hanke will continue with the same hole soon after?
         // haittaAlkuPvm - either null or after alkuPvm and before maximum end date
-        if (hanke.haittaAlkuPvm != null && (hanke.haittaAlkuPvm!!.isBefore(hanke.alkuPvm) || hanke.haittaAlkuPvm!!.isAfter(
-                MAXIMUM_DATE
-            ))
+        if (hanke.haittaAlkuPvm != null &&
+            (hanke.haittaAlkuPvm!!.isBefore(hanke.alkuPvm) ||
+                    hanke.haittaAlkuPvm!!.isAfter(MAXIMUM_DATE))
         ) {
             context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString()).addPropertyNode("haittaAlkuPvm")
                 .addConstraintViolation()
             ok = false
         }
         // haittaLoppuPvm - either null or after haittaAlkuPvm and before maximum end date
-        if (hanke.haittaLoppuPvm != null && (hanke.haittaLoppuPvm!!.isBefore(hanke.haittaAlkuPvm) || hanke.haittaLoppuPvm!!.isAfter(
-                MAXIMUM_DATE
-            ))
+        if (hanke.haittaLoppuPvm != null &&
+            (hanke.haittaLoppuPvm!!.isBefore(hanke.haittaAlkuPvm) ||
+                    hanke.haittaLoppuPvm!!.isAfter(MAXIMUM_DATE))
         ) {
             context.buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
                 .addPropertyNode("haittaLoppuPvm").addConstraintViolation()
