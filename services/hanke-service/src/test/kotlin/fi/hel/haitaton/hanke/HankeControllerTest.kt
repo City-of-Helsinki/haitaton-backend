@@ -285,10 +285,18 @@ class HankeControllerTest {
 
         hanke.omistajat = arrayListOf(
             HankeYhteystieto(
-                null, "Pekkanen", "Pekka",
-                "pekka@pekka.fi", "3212312", null,
-                "Kaivuri ja mies", null, null, null,
-                null, null
+                null,
+                "Pekkanen",
+                "Pekka",
+                "pekka@pekka.fi",
+                "3212312",
+                null,
+                "Kaivuri ja mies",
+                null,
+                null,
+                null,
+                null,
+                null
             )
         )
 
