@@ -229,10 +229,7 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
         return getLiikenneMaaraLowestLuokittelu(hanke.geometriat!!.id!!, rajaArvot)
     }
 
-    private fun getLiikenneMaaraLowestLuokittelu(
-        hankeGeometriatId: Int,
-        rajaArvot: LuokitteluRajaArvot
-    ): Luokittelutulos {
+    private fun getLiikenneMaaraLowestLuokittelu( hankeGeometriatId: Int, rajaArvot: LuokitteluRajaArvot): Luokittelutulos {
         val arvoRivi = rajaArvot.liikennemaaraRajaArvot.first { rajaArvo -> rajaArvo.minimumValue == 0 } //find zero
         return Luokittelutulos(hankeGeometriatId, LuokitteluType.LIIKENNEMAARA, arvoRivi.arvo, arvoRivi.explanation)
     }
