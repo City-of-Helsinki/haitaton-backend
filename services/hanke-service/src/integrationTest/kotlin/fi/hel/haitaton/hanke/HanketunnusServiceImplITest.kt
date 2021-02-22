@@ -49,7 +49,8 @@ internal class HanketunnusServiceImplITest {
         println("hanketunnus 2: $hanketunnus2")
         val serial1 = hanketunnus1.substringAfterLast('-').toInt()
         val serial2 = hanketunnus2.substringAfterLast('-').toInt()
-        // hanketunnus pattern is HAIYY-N where YY is the current year (2 last digits) and N is a increasing serial number
+        // hanketunnus pattern is HAIYY-N where YY is the current year (2 last digits)
+        // and N is a increasing serial number
         assertThat(serial1).isLessThan(serial2)
     }
 }

@@ -49,9 +49,11 @@ internal class HanketunnusServiceImplManualTest {
     lateinit var hanketunnusService: HanketunnusService
 
     /**
-     * A manual test for testing concurrent calls to HanketunnusService.newHanketunnus() in order to make sure that it will never return a duplicate value.
+     * A manual test for testing concurrent calls to HanketunnusService.newHanketunnus() in order to make sure that
+     * it will never return a duplicate value.
      *
-     * Test will trigger 100 concurrent runs which each loops 100 times making call to newHanketunnus() and then sleeping or doing random looping in order to create some variation.
+     * Test will trigger 100 concurrent runs which each loops 100 times making call to newHanketunnus() and then
+     * sleeping or doing random looping in order to create some variation.
      *
      * Total number of created unique ids should therefore be 100 * 100 = 10000.
      */
@@ -60,7 +62,7 @@ internal class HanketunnusServiceImplManualTest {
     fun newHanketunnus() {
         val ids = ConcurrentHashMap.newKeySet<String>() // using a set makes sure that all items are unique
         IntStream.range(0, 100).parallel().forEach { i ->
-            (0 until 100).forEach { j ->
+            for (j in 0 until 100) {
                 val hanketunnus = hanketunnusService.newHanketunnus()
                 ids.add(hanketunnus)
                 logger.debug {

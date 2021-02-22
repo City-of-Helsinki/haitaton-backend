@@ -19,6 +19,6 @@ object HaitatonPostgreSQLContainer : PostgreSQLContainer<HaitatonPostgreSQLConta
     }
 
     override fun stop() {
-        //do nothing, JVM handles shut down
+        // do nothing, JVM handles shut down
     }
 }

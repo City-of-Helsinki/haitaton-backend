@@ -15,20 +15,34 @@ class HankeGeometriatValidator : ConstraintValidator<ValidHankeGeometriat, Hanke
         }
         var ok = true
         if (featureCollection.features.isNullOrEmpty()) {
-            context.buildConstraintViolationWithTemplate(HankeError.HAI1011.name).addPropertyNode("featureCollection").addPropertyNode("features").addConstraintViolation()
+            context.buildConstraintViolationWithTemplate(HankeError.HAI1011.name)
+                .addPropertyNode("featureCollection")
+                .addPropertyNode("features")
+                .addConstraintViolation()
             ok = false
         }
         when {
             featureCollection.crs == null -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1011.name).addPropertyNode("featureCollection").addPropertyNode("crs").addConstraintViolation()
+                context.buildConstraintViolationWithTemplate(HankeError.HAI1011.name)
+                    .addPropertyNode("featureCollection")
+                    .addPropertyNode("crs")
+                    .addConstraintViolation()
                 ok = false
             }
             featureCollection.crs.properties.isNullOrEmpty() -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1011.name).addPropertyNode("featureCollection").addPropertyNode("crs").addPropertyNode("properties").addConstraintViolation()
+                context.buildConstraintViolationWithTemplate(HankeError.HAI1011.name)
+                    .addPropertyNode("featureCollection")
+                    .addPropertyNode("crs")
+                    .addPropertyNode("properties")
+                    .addConstraintViolation()
                 ok = false
             }
             featureCollection.crs?.properties?.get("name")?.toString() != COORDINATE_SYSTEM_URN -> {
-                context.buildConstraintViolationWithTemplate(HankeError.HAI1013.name).addPropertyNode("featureCollection").addPropertyNode("crs").addPropertyNode("properties").addPropertyNode(null).inIterable().atKey("name").addConstraintViolation()
+                context.buildConstraintViolationWithTemplate(HankeError.HAI1013.name)
+                    .addPropertyNode("featureCollection")
+                    .addPropertyNode("crs")
+                    .addPropertyNode("properties")
+                    .addPropertyNode(null).inIterable().atKey("name").addConstraintViolation()
                 ok = false
             }
         }

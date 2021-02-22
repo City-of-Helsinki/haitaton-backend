@@ -11,7 +11,9 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 /**
  * Testing the Hello API through a full REST request.
@@ -28,17 +30,16 @@ class HelloApiControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `Hello response at web layer`() {
         // First call
         mockMvc.perform(get("/api/hello/").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk)
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.count").value("1"))
-                .andExpect(jsonPath("$.message").value(stringContainsInOrder(listOf("Hello", "world"))))
+            .andExpect(status().isOk)
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.count").value("1"))
+            .andExpect(jsonPath("$.message").value(stringContainsInOrder(listOf("Hello", "world"))))
 
         // Second call
         mockMvc.perform(get("/api/hello/").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk)
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.count").value("2"))
-                .andExpect(jsonPath("$.message").value(stringContainsInOrder(listOf("again", "world"))))
+            .andExpect(status().isOk)
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$.count").value("2"))
+            .andExpect(jsonPath("$.message").value(stringContainsInOrder(listOf("again", "world"))))
     }
-
 }

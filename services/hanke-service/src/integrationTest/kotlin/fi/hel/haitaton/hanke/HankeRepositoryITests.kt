@@ -12,15 +12,29 @@ import java.time.LocalDateTime
  */
 @DataJpaTest(properties = ["spring.liquibase.enabled=false"])
 class HankeRepositoryITests @Autowired constructor(
-        val entityManager: TestEntityManager,
-        val hankeRepository: HankeRepository) {
+    val entityManager: TestEntityManager,
+    val hankeRepository: HankeRepository
+) {
 
     @Test
     fun `findByHankeTunnus returns existing hanke`() {
         // First insert one hanke to the repository (using entityManager directly):
-        val hankeEntity = HankeEntity(SaveType.AUTO, "ABC-123", null, null,
-                null, null, null, null, false,
-                1, null, null, null, null)
+        val hankeEntity = HankeEntity(
+            SaveType.AUTO,
+            "ABC-123",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            false,
+            1,
+            null,
+            null,
+            null,
+            null
+        )
         entityManager.persist(hankeEntity)
         entityManager.flush()
 
@@ -32,9 +46,22 @@ class HankeRepositoryITests @Autowired constructor(
     @Test
     fun `findByHankeTunnus does not return anything for non-existing hanke`() {
         // First insert one hanke to the repository (using entityManager directly):
-        val hankeEntity = HankeEntity(SaveType.AUTO, "ABC-123", null, null,
-                null, null, null, null, false,
-                1, null, null, null, null)
+        val hankeEntity = HankeEntity(
+            SaveType.AUTO,
+            "ABC-123",
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            false,
+            1,
+            null,
+            null,
+            null,
+            null
+        )
         entityManager.persist(hankeEntity)
         entityManager.flush()
 
@@ -51,9 +78,22 @@ class HankeRepositoryITests @Autowired constructor(
         val datetime = LocalDateTime.of(2020, 2, 20, 20, 20)
         val date = datetime.toLocalDate()
         // Setup test fields
-        val baseHankeEntity = HankeEntity(SaveType.DRAFT, "ABC-123", "nimi", "kuvaus",
-                date, date, Vaihe.SUUNNITTELU, SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS, true,
-                1, null, null, null, null)
+        val baseHankeEntity = HankeEntity(
+            SaveType.DRAFT,
+            "ABC-123",
+            "nimi",
+            "kuvaus",
+            date,
+            date,
+            Vaihe.SUUNNITTELU,
+            SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS,
+            true,
+            1,
+            null,
+            null,
+            null,
+            null
+        )
         baseHankeEntity.tyomaaKatuosoite = "katu 1"
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
@@ -101,23 +141,72 @@ class HankeRepositoryITests @Autowired constructor(
         val datetime = LocalDateTime.of(2020, 2, 20, 20, 20, 20)
         val date = datetime.toLocalDate()
         // Setup test fields
-        val baseHankeEntity = HankeEntity(SaveType.DRAFT, "ABC-124", "nimi", "kuvaus",
-                date, date, Vaihe.SUUNNITTELU, SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS, true,
-                1, null, null, null, null)
+        val baseHankeEntity = HankeEntity(
+            SaveType.DRAFT,
+            "ABC-124",
+            "nimi",
+            "kuvaus",
+            date,
+            date,
+            Vaihe.SUUNNITTELU,
+            SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS,
+            true,
+            1,
+            null,
+            null,
+            null,
+            null
+        )
 
         // Note, leaving id and hanke fields unset on purpose (Hibernate should set them as needed)
         val hankeYhteystietoEntity1 = HankeYhteystietoEntity(
-                ContactType.OMISTAJA, "Suku1", "Etu1", "email1", "0101111111",
-                1, "org1", "osasto1",
-                "1", datetime, "11", datetime, null, baseHankeEntity)
+            ContactType.OMISTAJA,
+            "Suku1",
+            "Etu1",
+            "email1",
+            "0101111111",
+            1,
+            "org1",
+            "osasto1",
+            "1",
+            datetime,
+            "11",
+            datetime,
+            null,
+            baseHankeEntity
+        )
         val hankeYhteystietoEntity2 = HankeYhteystietoEntity(
-                ContactType.ARVIOIJA, "Suku2", "Etu2", "email2", "0102222222",
-                2, "org2", "osasto2",
-                "2", datetime, "22", datetime, null, baseHankeEntity)
+            ContactType.ARVIOIJA,
+            "Suku2",
+            "Etu2",
+            "email2",
+            "0102222222",
+            2,
+            "org2",
+            "osasto2",
+            "2",
+            datetime,
+            "22",
+            datetime,
+            null,
+            baseHankeEntity
+        )
         val hankeYhteystietoEntity3 = HankeYhteystietoEntity(
-                ContactType.TOTEUTTAJA, "Suku3", "Etu3", "email3", "0103333333",
-                3, "org3", "osasto3",
-                "3", datetime, "33", datetime, null, baseHankeEntity)
+            ContactType.TOTEUTTAJA,
+            "Suku3",
+            "Etu3",
+            "email3",
+            "0103333333",
+            3,
+            "org3",
+            "osasto3",
+            "3",
+            datetime,
+            "33",
+            datetime,
+            null,
+            baseHankeEntity
+        )
 
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity1)
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity2)
@@ -186,19 +275,56 @@ class HankeRepositoryITests @Autowired constructor(
         val datetime = LocalDateTime.of(2020, 2, 20, 20, 20, 20)
         val date = datetime.toLocalDate()
         // Setup test fields
-        val baseHankeEntity = HankeEntity(SaveType.DRAFT, "ABC-124", "nimi", "kuvaus",
-                date, date, Vaihe.SUUNNITTELU, SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS, true,
-                1, null, null, null, null)
+        val baseHankeEntity = HankeEntity(
+            SaveType.DRAFT,
+            "ABC-124",
+            "nimi",
+            "kuvaus",
+            date,
+            date,
+            Vaihe.SUUNNITTELU,
+            SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS,
+            true,
+            1,
+            null,
+            null,
+            null,
+            null
+        )
 
         // Note, leaving id and hanke fields unset on purpose (Hibernate should set them as needed)
         val hankeYhteystietoEntity1 = HankeYhteystietoEntity(
-                ContactType.OMISTAJA, "Suku1", "Etu1", "email1", "0101111111",
-                1, "org1", "osasto1",
-                "1", datetime, "11", datetime, null, baseHankeEntity)
+            ContactType.OMISTAJA,
+            "Suku1",
+            "Etu1",
+            "email1",
+            "0101111111",
+            1,
+            "org1",
+            "osasto1",
+            "1",
+            datetime,
+            "11",
+            datetime,
+            null,
+            baseHankeEntity
+        )
         val hankeYhteystietoEntity2 = HankeYhteystietoEntity(
-                ContactType.ARVIOIJA, "Suku2", "Etu2", "email2", "0102222222",
-                2, "org2", "osasto2",
-                "2", datetime, "22", datetime, null, baseHankeEntity)
+            ContactType.ARVIOIJA,
+            "Suku2",
+            "Etu2",
+            "email2",
+            "0102222222",
+            2,
+            "org2",
+            "osasto2",
+            "2",
+            datetime,
+            "22",
+            datetime,
+            null,
+            baseHankeEntity
+        )
 
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity1)
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity2)
@@ -214,7 +340,8 @@ class HankeRepositoryITests @Autowired constructor(
         assertThat(loadedHanke!!.listOfHankeYhteystieto).isNotNull
         assertThat(loadedHanke.listOfHankeYhteystieto).hasSize(2)
 
-        // Remove the first yhteystieto, and save again; (also record the other one's organisaatioId for later confirmation):
+        // Remove the first yhteystieto, and save again; (also record the other one's organisaatioId
+        // for later confirmation):
         val loadedHankeYhteystietoEntity1 = loadedHanke.listOfHankeYhteystieto[0]
         val loadedHankeYhteystietoEntity2 = loadedHanke.listOfHankeYhteystieto[1]
         val loadedHankeYhteystietoOrgId2 = loadedHankeYhteystietoEntity2.organisaatioId
@@ -233,14 +360,5 @@ class HankeRepositoryITests @Autowired constructor(
         assertThat(loadedHanke2.listOfHankeYhteystieto[0].organisaatioId).isEqualTo(loadedHankeYhteystietoOrgId2)
     }
 
-
     // TODO: more tests (when more functions appear)
-
-
-
-
-
-
-
-
 }

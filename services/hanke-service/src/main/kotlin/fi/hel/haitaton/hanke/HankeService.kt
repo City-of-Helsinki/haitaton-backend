@@ -25,5 +25,4 @@ interface HankeService {
     fun updateHankeStateFlags(hanke: Hanke)
 
     fun loadAllHanke(hankeSearch: HankeSearch? = null): List<Hanke>
-
 }
