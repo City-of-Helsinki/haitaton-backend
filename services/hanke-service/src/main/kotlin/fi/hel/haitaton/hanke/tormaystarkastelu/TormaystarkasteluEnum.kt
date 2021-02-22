@@ -23,6 +23,11 @@ enum class RaitiovaunuTormaysLuokittelu(s: String) {
     EI_RAITIOVAUNULIIKENNETTA ( "Ei vaikuta raitiovaunuliikenteeseen")
 }
 enum class BussiTormaysLuokittelu(s: String) {
+
+    KESKEINEN_TAI_ISO_BUSSIVUOROMAARA ("Kamppi-Rautatientori -alue, Mannerheimintie, Kaisaniemenkatu, Hämeentie tai vuoromäärä yli 20 ruuhkatunnissa"),
+    RUNKOLINJA_TAI_KESKIKOKOINEN_BUSSIVUOROMAARA ("Runkolinja tai ruuhka-ajan vuoromäärä enintään 20 ruuhkatunnissa"),
+    RUNKOLINJAMAINEN_TAI_PIENI_BUSSIVUOROMAARA("Runkolinjamainen linja tai ruuhka-ajan vuoromäärä enintään 10 ruuhkatunnissa"),
+    EI_MERKITTAVAA_BUSSILIIKENNETTA( "Linjojen ruuhka-ajan vuoromäärä enintään 5 ruuhkatunnissa tai linjoja muuna aikana"), //does not matter for tormaystarkastelu
     EI_BUSSILIIKENNETTA( "Ei vaikuta linja-autoliikenteeseen")
 }
 

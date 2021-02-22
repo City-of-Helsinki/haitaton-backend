@@ -321,12 +321,51 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
         if (hankeGeometriatId == null)
             throw IllegalArgumentException("Hanke.geometriat should be set for hankeid ${hanke.id}")
         //TODO: implement bus rules here
-        return Luokittelutulos(
-            hankeGeometriatId,
-            LuokitteluType.BUSSILIIKENNE,
-            0,
-            BussiTormaysLuokittelu.EI_BUSSILIIKENNETTA.toString()
-        )
+
+        val criticalAreaTormays = tormaystarkasteluDao.bussiliikenteenKannaltaKriittinenAlue(hankeGeometriat)
+        if(hitsInCriticalAreaBus(criticalAreaTormays)){
+            //if critical_area matches ->  return 5
+            val arvoRivi = rajaArvot.bussiliikenneRajaArvot.first { rajaArvo -> rajaArvo.arvo == 5 }
+            return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
+        }
+
+        val bussesTormaystulos = tormaystarkasteluDao.bussit(hankeGeometriat)
+
+        // if no hits in buses -> 0
+        if( hitsInBusses(bussesTormaystulos) == false) {
+            val arvoRivi = rajaArvot.bussiliikenneRajaArvot.first { rajaArvo -> rajaArvo.minimumValue == -1 } //find zero
+            return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
+        }
+        //count sum of rush_hours
+
+        //if rush_hours >=21 -> 5
+
+        //if matchesTrunk=yes -> 4
+
+        //if rush_hours 11-20 -> 4
+
+        //if matchesAlmost=yes -> 3
+
+        //if rush_hours 5-10 -> 3
+
+        //if rush_hours 0-4 -> 2
+
+        val arvoRivi = rajaArvot.bussiliikenneRajaArvot.first { rajaArvo -> rajaArvo.minimumValue == -1 } //find zero
+        return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
+
+
+    }
+
+    private fun hitsInBusses(bussesTormaystulos: Map<Int, Set<TormaystarkasteluBussireitti>>): Any {
+        if (bussesTormaystulos.isNotEmpty())
+            return true
+        return false
+    }
+
+    private fun hitsInCriticalAreaBus(criticalAreaTormays: Map<Int, Boolean>): Boolean {
+        if (criticalAreaTormays.isNotEmpty())
+            return true
+        return false
     }
 
     private fun getRaitiovaunuLuokitteluTulos(hanke: Hanke): Luokittelutulos {
