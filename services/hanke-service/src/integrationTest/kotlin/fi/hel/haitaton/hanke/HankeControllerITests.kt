@@ -41,7 +41,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     private val mockedHankeTunnus = "HAI21-1"
 
     @Autowired
-    lateinit var hankeService: HankeService  //faking these calls
+    lateinit var hankeService: HankeService  // faking these calls
 
     @Autowired
     lateinit var hankeGeometriatService: HankeGeometriatService
@@ -52,9 +52,20 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // faking the service call
         every { hankeService.loadHanke(any()) }.returns(
             Hanke(
-                123, mockedHankeTunnus, true, "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
-                getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
-                1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT
+                123,
+                mockedHankeTunnus,
+                true,
+                "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
+                getDatetimeAlku(),
+                getDatetimeLoppu(),
+                Vaihe.OHJELMOINTI,
+                null,
+                1,
+                "Risto",
+                getCurrentTimeUTC(),
+                null,
+                null,
+                SaveType.DRAFT
             )
         )
 
@@ -94,18 +105,27 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                     SaveType.DRAFT
                 ),
                 Hanke(
-                    444, "hanketunnus2", true, "Esplanadin viemäröinti", "lorem ipsum dolor sit amet...",
-                    getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
-                    1, "Risto", getCurrentTimeUTC(), null, null, SaveType.DRAFT
+                    444,
+                    "hanketunnus2",
+                    true,
+                    "Esplanadin viemäröinti",
+                    "lorem ipsum dolor sit amet...",
+                    getDatetimeAlku(),
+                    getDatetimeLoppu(),
+                    Vaihe.OHJELMOINTI,
+                    null,
+                    1,
+                    "Risto",
+                    getCurrentTimeUTC(),
+                    null,
+                    null,
+                    SaveType.DRAFT
                 )
             )
         )
 
         // we check that we get the two hankeTunnus we expect
-        mockMvc.perform(
-            get("/hankkeet")
-                .accept(MediaType.APPLICATION_JSON)
-        )
+        mockMvc.perform(get("/hankkeet").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$[0].hankeTunnus").value(mockedHankeTunnus))
@@ -142,10 +162,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         )
 
         // we check that we get the two hankeTunnus and geometriat we expect
-        mockMvc.perform(
-            get("/hankkeet?geometry=true")
-                .accept(MediaType.APPLICATION_JSON)
-        )
+        mockMvc.perform(get("/hankkeet?geometry=true").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$[0].hankeTunnus").value(mockedHankeTunnus))
@@ -189,7 +206,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         mockMvc.perform(
             post("/hankkeet")
-                .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+                .content(content)
                 .with(csrf())
                 .accept(MediaType.APPLICATION_JSON)
         )
@@ -232,7 +251,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         mockMvc.perform(
             put("/hankkeet/idHankkeelle123")
-                .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+                .content(content)
                 .with(csrf())
                 .accept(MediaType.APPLICATION_JSON)
         )
@@ -268,10 +289,18 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // HankeYhteystieto Omistaja added
         hankeToBeMocked.omistajat = arrayListOf(
             HankeYhteystieto(
-                null, "Pekkanen", "Pekka",
-                "pekka@pekka.fi", "3212312", null,
-                "Kaivuri ja mies", null, null, null,
-                null, null
+                null,
+                "Pekkanen",
+                "Pekka",
+                "pekka@pekka.fi",
+                "3212312",
+                null,
+                "Kaivuri ja mies",
+                null,
+                null,
+                null,
+                null,
+                null
             )
         )
 
@@ -290,7 +319,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val expectedContent = expectedHanke.toJsonString()
         mockMvc.perform(
             post("/hankkeet")
-                .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+                .content(content)
                 .with(csrf())
                 .accept(MediaType.APPLICATION_JSON)
         )
@@ -301,7 +332,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         verify { hankeService.createHanke(any()) }
     }
 
-    @Disabled //TODO: removed from run because at the moment mandatory checks for omistajat has been removed and this will not return validation error
+    @Disabled // TODO: removed from run because at the moment mandatory checks for omistajat has been removed and this will not return validation error
     @Test
     fun `Try add with invalid data and get validation error (POST)`() {
 
@@ -328,25 +359,43 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // HankeYhteystieto Omistaja added
         hankeInvalid.omistajat = arrayListOf(
             HankeYhteystieto(
-                null, "", "",
-                "", "3212312", null,
-                "Kaivuri ja mies", null, null, null,
-                null, null
+                null,
+                "",
+                "",
+                "",
+                "3212312",
+                null,
+                "Kaivuri ja mies",
+                null,
+                null,
+                null,
+                null,
+                null
             )
         )
         // HankeYhteystieto Omistaja added
         hankeInvalid.toteuttajat = arrayListOf(
             HankeYhteystieto(
-                null, "", "",
-                "", "3212312", null,
-                "Kaivuri ja toteuttaja", null, null, null,
-                null, null
+                null,
+                "",
+                "",
+                "",
+                "3212312",
+                null,
+                "Kaivuri ja toteuttaja",
+                null,
+                null,
+                null,
+                null,
+                null
             )
         )
 
         mockMvc.perform(
             post("/hankkeet")
-                .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(hankeInvalid.toJsonString())
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+                .content(hankeInvalid.toJsonString())
                 .with(csrf())
                 .accept(MediaType.APPLICATION_JSON)
         )
@@ -407,7 +456,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // Call it and check results
         mockMvc.perform(
             put("/hankkeet/idHankkeelle123")
-                .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+                .content(content)
                 .with(csrf())
                 .accept(MediaType.APPLICATION_JSON)
         )
@@ -478,7 +529,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // Call it and check results
         mockMvc.perform(
             post("/hankkeet")
-                .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+                .content(content)
                 .with(csrf())
                 .accept(MediaType.APPLICATION_JSON)
         )
@@ -563,7 +616,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // Call it and check results
         mockMvc.perform(
             put("/hankkeet/idHankkeelle123")
-                .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+                .content(content)
                 .with(csrf())
                 .accept(MediaType.APPLICATION_JSON)
         )

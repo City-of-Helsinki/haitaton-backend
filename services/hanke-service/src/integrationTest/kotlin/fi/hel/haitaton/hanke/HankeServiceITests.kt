@@ -105,10 +105,8 @@ class HankeServiceITests {
 
         assertThat(returnedHanke.version).isZero
         assertThat(returnedHanke.createdAt).isNotNull
-        assertThat(returnedHanke.createdAt!!.toEpochSecond() - currentDatetime.toEpochSecond()).isBetween(
-            -600,
-            600
-        ) // +/-10 minutes
+        assertThat(returnedHanke.createdAt!!.toEpochSecond() - currentDatetime.toEpochSecond())
+            .isBetween(-600, 600) // +/-10 minutes
         assertThat(returnedHanke.createdBy).isNotNull
         assertThat(returnedHanke.createdBy).isEqualTo(USER_NAME)
         assertThat(returnedHanke.modifiedAt).isNull()
@@ -136,10 +134,8 @@ class HankeServiceITests {
         assertThat(ryt1.id).isNotNull
         val firstId = ryt1.id!!
         assertThat(ryt1.createdAt).isNotNull
-        assertThat(ryt1.createdAt!!.toEpochSecond() - currentDatetime.toEpochSecond()).isBetween(
-            -600,
-            600
-        ) // +/-10 minutes
+        assertThat(ryt1.createdAt!!.toEpochSecond() - currentDatetime.toEpochSecond())
+            .isBetween(-600, 600) // +/-10 minutes
         assertThat(ryt1.createdBy).isNotNull
         assertThat(ryt1.createdBy).isEqualTo(USER_NAME)
 
@@ -246,10 +242,8 @@ class HankeServiceITests {
         assertThat(returnedHanke2.createdAt).isEqualTo(returnedHanke.createdAt)
         assertThat(returnedHanke2.createdBy).isEqualTo(returnedHanke.createdBy)
         assertThat(returnedHanke2.modifiedAt).isNotNull
-        assertThat(returnedHanke2.modifiedAt!!.toEpochSecond() - currentDatetime.toEpochSecond()).isBetween(
-            -600,
-            600
-        ) // +/-10 minutes
+        assertThat(returnedHanke2.modifiedAt!!.toEpochSecond() - currentDatetime.toEpochSecond())
+            .isBetween(-600, 600) // +/-10 minutes
         assertThat(returnedHanke2.modifiedBy).isNotNull
         assertThat(returnedHanke2.modifiedBy).isEqualTo(USER_NAME)
 
@@ -289,10 +283,8 @@ class HankeServiceITests {
         assertThat(returnedHanke3.omistajat[0].createdAt).isEqualTo(returnedHanke.omistajat[0].createdAt)
         assertThat(returnedHanke3.omistajat[0].createdBy).isEqualTo(returnedHanke.omistajat[0].createdBy)
         assertThat(returnedHanke3.omistajat[0].modifiedAt).isNotNull
-        assertThat(returnedHanke3.omistajat[0].modifiedAt!!.toEpochSecond() - currentDatetime.toEpochSecond()).isBetween(
-            -600,
-            600
-        ) // +/-10 minutes
+        assertThat(returnedHanke3.omistajat[0].modifiedAt!!.toEpochSecond() - currentDatetime.toEpochSecond())
+            .isBetween(-600, 600) // +/-10 minutes
         assertThat(returnedHanke3.omistajat[0].modifiedBy).isNotNull
         assertThat(returnedHanke3.omistajat[0].modifiedBy).isEqualTo(USER_NAME)
     }
@@ -776,9 +768,13 @@ class HankeServiceITests {
     private fun getATestYhteystieto(intValue: Int): HankeYhteystieto {
         return HankeYhteystieto(
             null,
-            "suku$intValue", "etu$intValue", "email$intValue",
+            "suku$intValue",
+            "etu$intValue",
+            "email$intValue",
             "010$intValue$intValue$intValue$intValue$intValue$intValue$intValue",
-            intValue, "org$intValue", "osasto$intValue"
+            intValue,
+            "org$intValue",
+            "osasto$intValue"
         )
     }
 }

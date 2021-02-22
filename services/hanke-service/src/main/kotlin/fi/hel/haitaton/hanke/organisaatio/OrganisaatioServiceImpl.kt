@@ -14,7 +14,6 @@ class OrganisaatioServiceImpl(@Autowired val organisaatioRepository: Organisaati
             organisaatioEntity.id,
             organisaatioEntity.organisaatioTunnus,
             organisaatioEntity.nimi
-
         )
     }
 }

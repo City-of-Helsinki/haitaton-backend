@@ -70,5 +70,4 @@ open class HankeGeometriatServiceImpl(
         if (hankeGeometriat.featureCollection?.features.isNullOrEmpty()) return false
         return true
     }
-
 }

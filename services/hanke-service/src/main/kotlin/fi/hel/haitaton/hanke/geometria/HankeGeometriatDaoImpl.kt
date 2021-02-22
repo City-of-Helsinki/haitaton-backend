@@ -20,8 +20,9 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
         private fun saveHankeGeometriaRows(hankeGeometriat: HankeGeometriat, jdbcOperations: JdbcOperations) {
             val arguments: List<Array<Any>>? = hankeGeometriat.featureCollection?.features?.map { feature ->
                 arrayOf(
-                    hankeGeometriat.id!!, feature.geometry.toJsonString(), feature.properties?.toJsonString()
-                        ?: "null"
+                    hankeGeometriat.id!!,
+                    feature.geometry.toJsonString(),
+                    feature.properties?.toJsonString() ?: "null"
                 )
             }
             val argumentTypes = intArrayOf(Types.INTEGER, Types.VARCHAR, Types.OTHER)
@@ -81,13 +82,17 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                 hankeGeometriat.hankeId,
                 hankeGeometriat.version ?: 0,
                 hankeGeometriat.createdByUserId,
-                if (hankeGeometriat.createdAt != null) Timestamp(
-                    hankeGeometriat.createdAt!!.toInstant().toEpochMilli()
-                ) else null,
+                if (hankeGeometriat.createdAt != null) {
+                    Timestamp(hankeGeometriat.createdAt!!.toInstant().toEpochMilli())
+                } else {
+                    null
+                },
                 hankeGeometriat.modifiedByUserId,
-                if (hankeGeometriat.modifiedAt != null) Timestamp(
-                    hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli()
-                ) else null
+                if (hankeGeometriat.modifiedAt != null) {
+                    Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli())
+                } else {
+                    null
+                }
             )
             hankeGeometriat.id = id
             saveHankeGeometriaRows(hankeGeometriat, this)

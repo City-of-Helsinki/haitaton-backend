@@ -8,7 +8,7 @@ enum class LuokitteluType {
     BUSSILIIKENNE,
     RAITIOVAUNULIIKENNE
 
-    //TODO: add types that come from hanke "text data"
+    // TODO: add types that come from hanke "text data"
 }
 
 enum class PyorailyTormaysLuokittelu(s: String) {
