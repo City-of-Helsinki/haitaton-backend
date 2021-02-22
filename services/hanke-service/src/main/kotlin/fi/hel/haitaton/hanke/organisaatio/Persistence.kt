@@ -2,9 +2,14 @@ package fi.hel.haitaton.hanke.organisaatio
 
 import org.springframework.data.jpa.repository.JpaRepository
 import java.time.LocalDateTime
-import javax.persistence.*
+import javax.persistence.Entity
+import javax.persistence.GeneratedValue
+import javax.persistence.GenerationType
+import javax.persistence.Id
+import javax.persistence.Table
 
-@Entity @Table(name = "organisaatio")
+@Entity
+@Table(name = "organisaatio")
 class OrganisaatioEntity(
     var organisaatioTunnus: String? = null,
     var nimi: String? = null,

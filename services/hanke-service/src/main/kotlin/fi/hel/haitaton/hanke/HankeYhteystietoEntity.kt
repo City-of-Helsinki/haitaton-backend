@@ -9,7 +9,6 @@ enum class ContactType {
     TOTEUTTAJA // implementor or builder
 }
 
-
 @Entity
 @Table(name = "hankeyhteystieto")
 class HankeYhteystietoEntity (
@@ -75,5 +74,4 @@ class HankeYhteystietoEntity (
         result = 31 * result + (osasto?.hashCode() ?: 0)
         return result
     }
-
 }

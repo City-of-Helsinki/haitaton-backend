@@ -120,15 +120,13 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
 
         val hanketunnus = hanketunnusService.newHanketunnus()
         entity.hankeTunnus = hanketunnus
-
-        logger.info {
-            "Creating Hanke with new hanketunnus $hanketunnus: ${hanke.toJsonString()}"
+        logger.debug {
+            "Creating Hanke ${hanke.hankeTunnus}: ${hanke.toLogString()}"
         }
         hankeRepository.save(entity)
-        logger.info {
-            "Created Hanke ${entity.hankeTunnus}"
+        logger.debug {
+            "Created Hanke ${hanke.hankeTunnus}."
         }
-
         // Creating a new domain object for the return value; it will have the updated values from the database,
         // e.g. the main date values truncated to midnight, and the added id and hanketunnus.
         return createHankeDomainObjectFromEntity(entity)
@@ -153,12 +151,12 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         entity.modifiedByUserId = userid
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
 
-        logger.info {
-            "Saving  Hanke ${hanke.hankeTunnus}: ${hanke.toJsonString()}"
+        logger.debug {
+            "Saving Hanke ${hanke.hankeTunnus}: ${hanke.toLogString()}"
         }
         hankeRepository.save(entity)
-        logger.info {
-            "Saved  Hanke ${hanke.hankeTunnus}"
+        logger.debug {
+            "Saved Hanke ${hanke.hankeTunnus}."
         }
 
         // Creating a new domain object for the return value; it will have the updated values from the database,
@@ -167,15 +165,15 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
     }
 
     override fun updateHankeStateFlags(hanke: Hanke) {
-        if (hanke.hankeTunnus == null)
+        if (hanke.hankeTunnus == null) {
             error("Somehow got here with hanke without hanke-tunnus")
+        }
         // Both checks that the hanke already exists, and get its old fields to transfer data into
         val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
                 ?: throw HankeNotFoundException(hanke.hankeTunnus)
         copyStateFlagsToEntity(hanke, entity)
         hankeRepository.save(entity)
     }
-
 
     // ======================================================================
 
@@ -474,5 +472,4 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
             // If the entry was left in the existingYTs, it will get deleted.
         }
     }
-
 }

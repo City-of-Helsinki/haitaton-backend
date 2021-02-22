@@ -22,11 +22,11 @@ class HelloHtmlController {
 
     @GetMapping("/", MediaType.TEXT_HTML_VALUE)
     @ResponseBody
-    fun hello() : String {
-        return if (counter.incrementAndGet() < 2L)
+    fun hello(): String {
+        return if (counter.incrementAndGet() < 2L) {
             "<html>\n<header><title>Hello</title></header>\n<body>\nHello alive (counter $counter)\n</body>\n</html>"
-        else
+        } else {
             "<html>\n<header><title>Hello</title></header>\n<body>\nHello still alive (counter $counter)\n</body>\n</html>"
+        }
     }
-
 }

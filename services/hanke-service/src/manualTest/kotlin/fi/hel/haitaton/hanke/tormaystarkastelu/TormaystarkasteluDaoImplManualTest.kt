@@ -16,7 +16,8 @@ internal class TormaystarkasteluDaoImplManualTest {
     companion object {
         fun dataSource(): DataSource {
             return PGSimpleDataSource().apply {
-                // these values are ONLY for local docker-compose-based testing. Do not change here any other values (or at least do not commit those other values)
+                // these values are ONLY for local docker-compose-based testing.
+                // Do not change here any other values (or at least do not commit those other values)
                 this.setURL("jdbc:postgresql://localhost/haitaton")
                 this.user = "haitaton_user"
                 this.password = "haitaton"

@@ -5,23 +5,23 @@ import java.time.ZonedDateTime
 
 // e.g. omistaja, arvioija, toteuttaja
 data class HankeYhteystieto(
-        var id: Int?,
+    var id: Int?,
 
-        // must have contact information fields:
-        var sukunimi: String,
-        var etunimi: String,
-        var email: String,
-        var puhelinnumero: String,
+    // must have contact information fields:
+    var sukunimi: String,
+    var etunimi: String,
+    var email: String,
+    var puhelinnumero: String,
 
-        // organisaatio (optional)
-        var organisaatioId: Int?,
-        var organisaatioNimi: String?,
-        var osasto: String?,
+    // organisaatio (optional)
+    var organisaatioId: Int?,
+    var organisaatioNimi: String?,
+    var osasto: String?,
 
-        var createdBy: String? = null,
-        var createdAt: ZonedDateTime? = null,
-        var modifiedBy: String? = null,
-        var modifiedAt: ZonedDateTime? = null
+    var createdBy: String? = null,
+    var createdAt: ZonedDateTime? = null,
+    var modifiedBy: String? = null,
+    var modifiedAt: ZonedDateTime? = null
 ) {
 
     /**
@@ -37,8 +37,7 @@ data class HankeYhteystieto(
      */
     @JsonIgnore
     fun isAnyMandatoryFieldSet(): Boolean {
-        return sukunimi.isNotBlank() || etunimi.isNotBlank()
-                || email.isNotBlank() || puhelinnumero.isNotBlank()
+        return sukunimi.isNotBlank() || etunimi.isNotBlank() || email.isNotBlank() || puhelinnumero.isNotBlank()
     }
 
     /**
@@ -46,13 +45,6 @@ data class HankeYhteystieto(
      */
     @JsonIgnore
     fun isValid(): Boolean {
-        return sukunimi.isNotBlank() && etunimi.isNotBlank()
-                && email.isNotBlank() && puhelinnumero.isNotBlank()
+        return sukunimi.isNotBlank() && etunimi.isNotBlank() && email.isNotBlank() && puhelinnumero.isNotBlank()
     }
-
 }
-
-
-
-
-

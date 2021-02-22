@@ -8,7 +8,11 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.domain.Hanke
-import io.mockk.*
+import io.mockk.every
+import io.mockk.just
+import io.mockk.mockk
+import io.mockk.runs
+import io.mockk.verify
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.fail
 
@@ -29,7 +33,8 @@ internal class HankeGeometriatServiceImplTest {
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
         hankeGeometriat.modifiedAt = null
-        val oldHankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
+        val oldHankeGeometriat =
+            "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
         oldHankeGeometriat.hankeId = hankeId
         oldHankeGeometriat.version = 0
 
@@ -98,6 +103,7 @@ internal class HankeGeometriatServiceImplTest {
             service.saveGeometriat(hankeTunnus, hankeGeometriat)
             fail("Should have thrown HankeNotFoundException")
         } catch (e: HankeNotFoundException) {
+            // this should happen
         }
 
         verify { hankeService.loadHanke(hankeTunnus) }
@@ -137,10 +143,10 @@ internal class HankeGeometriatServiceImplTest {
             service.loadGeometriat(hankeTunnus)
             fail("Should have thrown HankeNotFoundException")
         } catch (e: HankeNotFoundException) {
+            // this should happen
         }
 
         verify { hankeService.loadHanke(hankeTunnus) }
         verify(exactly = 0) { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
     }
-
 }

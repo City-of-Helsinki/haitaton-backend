@@ -15,7 +15,7 @@ open class HanketunnusServiceImpl(private val idCounterRepository: IdCounterRepo
     override fun newHanketunnus(): String {
         val currentYear = currentYear()
         val nextId = nextId()
-        return "${HANKETUNNUS_PREFIX}${currentYear}-${nextId}"
+        return "${HANKETUNNUS_PREFIX}$currentYear-$nextId"
     }
 
     private fun currentYear(): String {

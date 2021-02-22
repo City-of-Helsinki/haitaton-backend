@@ -9,7 +9,7 @@ import kotlin.reflect.KClass
 @Constraint(validatedBy = [HankeGeometriatValidator::class])
 @MustBeDocumented
 annotation class ValidHankeGeometriat(
-        val message: String = "",
-        val groups: Array<KClass<*>> = [],
-        val payload: Array<KClass<out Payload>> = []
+    val message: String = "",
+    val groups: Array<KClass<*>> = [],
+    val payload: Array<KClass<out Payload>> = []
 )
