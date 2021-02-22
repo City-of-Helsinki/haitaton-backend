@@ -145,5 +145,4 @@ internal class HankeGeometriatServiceImplITest {
             }
         }
     }
-
 }

@@ -105,7 +105,10 @@ class HankeServiceITests {
 
         assertThat(returnedHanke.version).isZero
         assertThat(returnedHanke.createdAt).isNotNull
-        assertThat(returnedHanke.createdAt!!.toEpochSecond() - currentDatetime.toEpochSecond()).isBetween(-600, 600) // +/-10 minutes
+        assertThat(returnedHanke.createdAt!!.toEpochSecond() - currentDatetime.toEpochSecond()).isBetween(
+            -600,
+            600
+        ) // +/-10 minutes
         assertThat(returnedHanke.createdBy).isNotNull
         assertThat(returnedHanke.createdBy).isEqualTo(USER_NAME)
         assertThat(returnedHanke.modifiedAt).isNull()
@@ -133,7 +136,10 @@ class HankeServiceITests {
         assertThat(ryt1.id).isNotNull
         val firstId = ryt1.id!!
         assertThat(ryt1.createdAt).isNotNull
-        assertThat(ryt1.createdAt!!.toEpochSecond() - currentDatetime.toEpochSecond()).isBetween(-600, 600) // +/-10 minutes
+        assertThat(ryt1.createdAt!!.toEpochSecond() - currentDatetime.toEpochSecond()).isBetween(
+            -600,
+            600
+        ) // +/-10 minutes
         assertThat(ryt1.createdBy).isNotNull
         assertThat(ryt1.createdBy).isEqualTo(USER_NAME)
 
@@ -152,7 +158,6 @@ class HankeServiceITests {
         assertThat(returnedHanke.tilat.onViereisiaHankkeita).isFalse
         assertThat(returnedHanke.tilat.onAsiakasryhmia).isFalse
     }
-
 
     @Test
     fun `create Hanke with partial data set and update with full data set give correct state flags`() {
@@ -188,7 +193,6 @@ class HankeServiceITests {
         returnedHanke.tilat.onGeometrioita = true
         hankeService.updateHankeStateFlags(returnedHanke)
 
-
         // Call update
         val returnedHanke2 = hankeService.updateHanke(returnedHanke)
 
@@ -201,7 +205,6 @@ class HankeServiceITests {
         assertThat(returnedHanke2.tilat.onKaikkiPakollisetLuontiTiedot).isTrue
         assertThat(returnedHanke2.tilat.onTiedotLiikenneHaittaIndeksille).isTrue
     }
-
 
     @Test
     fun `test adding a new Yhteystieto to a group that already has one and to another group`() {
@@ -243,10 +246,12 @@ class HankeServiceITests {
         assertThat(returnedHanke2.createdAt).isEqualTo(returnedHanke.createdAt)
         assertThat(returnedHanke2.createdBy).isEqualTo(returnedHanke.createdBy)
         assertThat(returnedHanke2.modifiedAt).isNotNull
-        assertThat(returnedHanke2.modifiedAt!!.toEpochSecond() - currentDatetime.toEpochSecond()).isBetween(-600, 600) // +/-10 minutes
+        assertThat(returnedHanke2.modifiedAt!!.toEpochSecond() - currentDatetime.toEpochSecond()).isBetween(
+            -600,
+            600
+        ) // +/-10 minutes
         assertThat(returnedHanke2.modifiedBy).isNotNull
         assertThat(returnedHanke2.modifiedBy).isEqualTo(USER_NAME)
-
 
         // Check that all 3 Yhteystietos are there:
         assertThat(returnedHanke2.omistajat).hasSize(2)
@@ -284,7 +289,10 @@ class HankeServiceITests {
         assertThat(returnedHanke3.omistajat[0].createdAt).isEqualTo(returnedHanke.omistajat[0].createdAt)
         assertThat(returnedHanke3.omistajat[0].createdBy).isEqualTo(returnedHanke.omistajat[0].createdBy)
         assertThat(returnedHanke3.omistajat[0].modifiedAt).isNotNull
-        assertThat(returnedHanke3.omistajat[0].modifiedAt!!.toEpochSecond() - currentDatetime.toEpochSecond()).isBetween(-600, 600) // +/-10 minutes
+        assertThat(returnedHanke3.omistajat[0].modifiedAt!!.toEpochSecond() - currentDatetime.toEpochSecond()).isBetween(
+            -600,
+            600
+        ) // +/-10 minutes
         assertThat(returnedHanke3.omistajat[0].modifiedBy).isNotNull
         assertThat(returnedHanke3.omistajat[0].modifiedBy).isEqualTo(USER_NAME)
     }
@@ -457,10 +465,10 @@ class HankeServiceITests {
         assertThat(returnedHanke3.omistajat[0].sukunimi).isEqualTo("suku1")
     }
 
-
     @Test
     fun `test that sending the same Yhteystieto twice without id does not create duplicates`() {
-        // Old version of the Yhteystieto should get removed, id increases in response, get-operation returns the new one.
+        // Old version of the Yhteystieto should get removed, id increases in response,
+        // get-operation returns the new one.
         // NOTE: UI is not supposed to do that, but this situation came up during development/testing,
         // so it is a sort of regression test for the logic.
 
@@ -510,7 +518,6 @@ class HankeServiceITests {
         assertThat(returnedHanke3.omistajat[0].id).isEqualTo(ytid2)
     }
 
-
     @Test
     fun `loadAllHankeBetweenDates returns Hanke when alkuPvm is inside the given time period`() {
 
@@ -526,10 +533,10 @@ class HankeServiceITests {
         // Setup Hanke which is the one we want to be returned as it starts within the wanted time period
         val hankeExpected: Hanke = getATestHanke("wanted", 2)
 
-        //alkuPvm will be between the wanted search period
+        // alkuPvm will be between the wanted search period
         hankeExpected.alkuPvm = ZonedDateTime.of(2000, 2, 20, 23, 45, 56, 0, TZ_UTC)
-                .truncatedTo(ChronoUnit.MILLIS)
-        //Period will be 1.1.2000-31.12.2000
+            .truncatedTo(ChronoUnit.MILLIS)
+        // Period will be 1.1.2000-31.12.2000
         val periodStart = ZonedDateTime.of(2000, 1, 1, 1, 45, 56, 0, TZ_UTC).toLocalDate()
         val periodEnd = ZonedDateTime.of(2000, 12, 31, 1, 45, 56, 0, TZ_UTC).toLocalDate()
 
@@ -539,14 +546,14 @@ class HankeServiceITests {
         assertThat(returnedHankeWithWantedDate).isNotSameAs(hanke)
         assertThat(returnedHankeWithWantedDate.id).isNotNull
 
-        val criteria = HankeSearch (periodStart, periodEnd)
+        val criteria = HankeSearch(periodStart, periodEnd)
         // Use loadHanke and check it also returns only one entry
         val returnedHankeResult = hankeService.loadAllHanke(criteria)
         // General checks (because using another API action)
         assertThat(returnedHankeResult).isNotNull
-        //only one of the added hanke is between time period and should be returned
+        // only one of the added hanke is between time period and should be returned
         assertThat(returnedHankeResult.size).isEqualTo(1)
-        //couple of checks to make sure we got the wanted
+        // couple of checks to make sure we got the wanted
         assertThat(returnedHankeResult.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
         assertThat(returnedHankeResult.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
     }
@@ -566,12 +573,12 @@ class HankeServiceITests {
         // Setup Hanke which is the one we want to be returned as it starts and ends within the wanted time period
         val hankeExpected: Hanke = getATestHanke("wanted", 2)
 
-        //alkuPvm and loppuPvm will be between the wanted search period
+        // alkuPvm and loppuPvm will be between the wanted search period
         hankeExpected.alkuPvm = ZonedDateTime.of(2000, 2, 20, 23, 45, 56, 0, TZ_UTC)
-                .truncatedTo(ChronoUnit.MILLIS)
+            .truncatedTo(ChronoUnit.MILLIS)
         hankeExpected.loppuPvm = ZonedDateTime.of(2000, 5, 20, 23, 45, 56, 0, TZ_UTC)
-                .truncatedTo(ChronoUnit.MILLIS)
-        //Period will be 1.1.2000-31.12.2000
+            .truncatedTo(ChronoUnit.MILLIS)
+        // Period will be 1.1.2000-31.12.2000
         val periodStart = ZonedDateTime.of(2000, 1, 1, 1, 45, 56, 0, TZ_UTC).toLocalDate()
 
         val periodEnd = ZonedDateTime.of(2000, 12, 31, 1, 45, 56, 0, TZ_UTC).toLocalDate()
@@ -582,18 +589,16 @@ class HankeServiceITests {
         assertThat(returnedHankeWithWantedDate).isNotSameAs(hanke)
         assertThat(returnedHankeWithWantedDate.id).isNotNull
 
-
-        val criteria = HankeSearch (periodStart, periodEnd)
+        val criteria = HankeSearch(periodStart, periodEnd)
         // Use loadHanke and check it also returns only one entry
         val returnedHankeResult = hankeService.loadAllHanke(criteria)
         // General checks (because using another API action)
         assertThat(returnedHankeResult).isNotNull
-        //only one of the added hanke is between time period and should be returned
+        // only one of the added hanke is between time period and should be returned
         assertThat(returnedHankeResult.size).isEqualTo(1)
-        //couple of checks to make sure we got the wanted
+        // couple of checks to make sure we got the wanted
         assertThat(returnedHankeResult.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
         assertThat(returnedHankeResult.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
-
     }
 
     @Test
@@ -611,12 +616,12 @@ class HankeServiceITests {
         // Setup Hanke which is the one we want to be returned as it ends within the wanted time period
         val hankeExpected: Hanke = getATestHanke("wanted", 2)
 
-        //ending is  inside the period but we put starting before it
+        // ending is  inside the period but we put starting before it
         hankeExpected.alkuPvm = ZonedDateTime.of(1999, 5, 20, 23, 45, 56, 0, TZ_UTC)
-                .truncatedTo(ChronoUnit.MILLIS)
+            .truncatedTo(ChronoUnit.MILLIS)
         hankeExpected.loppuPvm = ZonedDateTime.of(2000, 5, 20, 23, 45, 56, 0, TZ_UTC)
-                .truncatedTo(ChronoUnit.MILLIS)
-        //Period will be 1.1.2000-31.12.2000
+            .truncatedTo(ChronoUnit.MILLIS)
+        // Period will be 1.1.2000-31.12.2000
         val periodStart = ZonedDateTime.of(2000, 1, 1, 1, 45, 56, 0, TZ_UTC).toLocalDate()
 
         val periodEnd = ZonedDateTime.of(2000, 12, 31, 1, 45, 56, 0, TZ_UTC).toLocalDate()
@@ -627,20 +632,20 @@ class HankeServiceITests {
         assertThat(returnedHankeWithWantedDate).isNotSameAs(hanke)
         assertThat(returnedHankeWithWantedDate.id).isNotNull()
 
-        val criteria = HankeSearch (periodStart, periodEnd)
+        val criteria = HankeSearch(periodStart, periodEnd)
         // Use loadHanke and check it also returns only one entry
         val returnedHankeResult = hankeService.loadAllHanke(criteria)
         // General checks (because using another API action)
         assertThat(returnedHankeResult).isNotNull
-        //only one of the added hanke is between time period and should be returned
+        // only one of the added hanke is between time period and should be returned
         assertThat(returnedHankeResult.size).isEqualTo(1)
-        //couple of checks to make sure we got the wanted
+        // couple of checks to make sure we got the wanted
         assertThat(returnedHankeResult.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
         assertThat(returnedHankeResult.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
     }
 
     @Test
-    fun `test that loadAllHankeBetweenDates returns hanke when alkuPvm is before the period and loppuPvm is after the period`() {
+    fun `loadAllHankeBetweenDates returns hanke when alkuPvm is before the period and loppuPvm is after the period`() {
 
         // Setup Hanke 1 that will not be returned in the result having too new alkuPvm and loppuPvm
         val hanke: Hanke = getATestHanke("yksi", 1)
@@ -654,13 +659,13 @@ class HankeServiceITests {
         // Setup Hanke which is the one we want to be returned as it is on going during the wanted time period
         val hankeExpected: Hanke = getATestHanke("wanted", 2)
 
-        //alkuPvm will be before the period
+        // alkuPvm will be before the period
         hankeExpected.alkuPvm = ZonedDateTime.of(1999, 2, 20, 23, 45, 56, 0, TZ_UTC)
-                .truncatedTo(ChronoUnit.MILLIS)
-        //we put hanke to end after the period
+            .truncatedTo(ChronoUnit.MILLIS)
+        // we put hanke to end after the period
         hankeExpected.loppuPvm = ZonedDateTime.of(2021, 5, 20, 23, 45, 56, 0, TZ_UTC)
-                .truncatedTo(ChronoUnit.MILLIS)
-        //Period will be 1.1.2000-31.12.2000
+            .truncatedTo(ChronoUnit.MILLIS)
+        // Period will be 1.1.2000-31.12.2000
         val periodStart = ZonedDateTime.of(2000, 1, 1, 1, 45, 56, 0, TZ_UTC).toLocalDate()
         val periodEnd = ZonedDateTime.of(2000, 12, 31, 1, 45, 56, 0, TZ_UTC).toLocalDate()
 
@@ -670,17 +675,16 @@ class HankeServiceITests {
         assertThat(returnedHankeWithWantedDate).isNotSameAs(hanke)
         assertThat(returnedHankeWithWantedDate.id).isNotNull()
 
-        val criteria = HankeSearch (periodStart, periodEnd)
+        val criteria = HankeSearch(periodStart, periodEnd)
         // Use loadHanke and check it also returns only one entry
         val returnedHankeResult = hankeService.loadAllHanke(criteria)
         // General checks (because using another API action)
         assertThat(returnedHankeResult).isNotNull
-        //only one of the added hanke is between time period and should be returned
+        // only one of the added hanke is between time period and should be returned
         assertThat(returnedHankeResult.size).isEqualTo(1)
-        //couple of checks to make sure we got the wanted
+        // couple of checks to make sure we got the wanted
         assertThat(returnedHankeResult.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
         assertThat(returnedHankeResult.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
-
     }
 
     @Test
@@ -703,23 +707,20 @@ class HankeServiceITests {
         val returnedHankeWithWantedDate = hankeService.createHanke(hankeExpected)
         assertThat(returnedHankeWithWantedDate).isNotNull
         assertThat(returnedHankeWithWantedDate).isNotSameAs(hanke)
-        assertThat(returnedHankeWithWantedDate.id).isNotNull()
+        assertThat(returnedHankeWithWantedDate.id).isNotNull
 
-
-        val criteria = HankeSearch (saveType = SaveType.SUBMIT)
+        val criteria = HankeSearch(saveType = SaveType.SUBMIT)
         // Use loadHanke and check it also returns only one entry
         val returnedHankeResult = hankeService.loadAllHanke(criteria)
 
         // General checks (because using another API action)
         assertThat(returnedHankeResult).isNotNull
-        //only one of the added hanke is between time period and should be returned
+        // only one of the added hanke is between time period and should be returned
         assertThat(returnedHankeResult.size).isEqualTo(1)
-        //couple of checks to make sure we got the wanted
+        // couple of checks to make sure we got the wanted
         assertThat(returnedHankeResult.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
         assertThat(returnedHankeResult.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
-
     }
-
 
     /**
      * Just fills a new Hanke domain object with some crap (excluding any Yhteystieto entries) and returns it.
@@ -732,12 +733,26 @@ class HankeServiceITests {
         val year = getCurrentTimeUTC().year + 1
 
         val dateAlku = ZonedDateTime.of(year, 2, 20, 23, 45, 56, 0, TZ_UTC)
-                .truncatedTo(ChronoUnit.MILLIS)
+            .truncatedTo(ChronoUnit.MILLIS)
         val dateLoppu = ZonedDateTime.of(year, 2, 21, 0, 12, 34, 0, TZ_UTC)
-                .truncatedTo(ChronoUnit.MILLIS)
-        val hanke = Hanke(id = null, hankeTunnus = null, nimi = "testihanke $stringValue", kuvaus = "lorem ipsum dolor sit amet...",
-                onYKTHanke = false, alkuPvm = dateAlku, loppuPvm = dateLoppu, vaihe = Vaihe.SUUNNITTELU, suunnitteluVaihe = SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS,
-                version = null, createdBy = null, createdAt = null, modifiedBy = null, modifiedAt = null, saveType = SaveType.DRAFT)
+            .truncatedTo(ChronoUnit.MILLIS)
+        val hanke = Hanke(
+            id = null,
+            hankeTunnus = null,
+            nimi = "testihanke $stringValue",
+            kuvaus = "lorem ipsum dolor sit amet...",
+            onYKTHanke = false,
+            alkuPvm = dateAlku,
+            loppuPvm = dateLoppu,
+            vaihe = Vaihe.SUUNNITTELU,
+            suunnitteluVaihe = SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS,
+            version = null,
+            createdBy = null,
+            createdAt = null,
+            modifiedBy = null,
+            modifiedAt = null,
+            saveType = SaveType.DRAFT
+        )
 
         hanke.tyomaaKatuosoite = "Testikatu $intValue"
         hanke.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
@@ -759,10 +774,11 @@ class HankeServiceITests {
      * The audit and id fields are left null.
      */
     private fun getATestYhteystieto(intValue: Int): HankeYhteystieto {
-        return HankeYhteystieto(null,
-                "suku$intValue", "etu$intValue", "email$intValue",
-                "010$intValue$intValue$intValue$intValue$intValue$intValue$intValue",
-                intValue, "org$intValue", "osasto$intValue")
+        return HankeYhteystieto(
+            null,
+            "suku$intValue", "etu$intValue", "email$intValue",
+            "010$intValue$intValue$intValue$intValue$intValue$intValue$intValue",
+            intValue, "org$intValue", "osasto$intValue"
+        )
     }
-
 }

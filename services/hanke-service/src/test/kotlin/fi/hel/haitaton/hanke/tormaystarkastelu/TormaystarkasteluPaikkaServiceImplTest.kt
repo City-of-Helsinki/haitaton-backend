@@ -416,5 +416,4 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         assertThat(result[1]).isEqualTo(Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.LIIKENNEMAARA, 3, "1 500-4999"))
         assertThat(result[2]).isEqualTo(Luokittelutulos(hanke.geometriat!!.id!!, LuokitteluType.PYORAILYN_PAAREITTI, 0, PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()))
     }
-
 }
