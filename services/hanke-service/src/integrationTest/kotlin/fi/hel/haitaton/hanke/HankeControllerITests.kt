@@ -50,24 +50,25 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `When hankeTunnus is given then return Hanke with it (GET)`() {
 
         // faking the service call
-        every { hankeService.loadHanke(any()) }.returns(
-            Hanke(
-                123,
-                mockedHankeTunnus,
-                true,
-                "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
-                getDatetimeAlku(),
-                getDatetimeLoppu(),
-                Vaihe.OHJELMOINTI,
-                null,
-                1,
-                "Risto",
-                getCurrentTimeUTC(),
-                null,
-                null,
-                SaveType.DRAFT
+        every { hankeService.loadHanke(any()) }
+            .returns(
+                Hanke(
+                    123,
+                    mockedHankeTunnus,
+                    true,
+                    "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
+                    getDatetimeAlku(),
+                    getDatetimeLoppu(),
+                    Vaihe.OHJELMOINTI,
+                    null,
+                    1,
+                    "Risto",
+                    getCurrentTimeUTC(),
+                    null,
+                    null,
+                    SaveType.DRAFT
+                )
             )
-        )
 
         mockMvc.perform(get("/hankkeet/$mockedHankeTunnus").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
@@ -85,44 +86,45 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // "empty" object for init and verify
         val criteria = HankeSearch()
         // faking the service call with two returned Hanke
-        every { hankeService.loadAllHanke(criteria) }.returns(
-            listOf(
-                Hanke(
-                    123,
-                    mockedHankeTunnus,
-                    true,
-                    "Hämeentien perusparannus ja katuvalot",
-                    "lorem ipsum dolor sit amet...",
-                    getDatetimeAlku().minusDays(500),
-                    getDatetimeLoppu().minusDays(450),
-                    Vaihe.OHJELMOINTI,
-                    null,
-                    1,
-                    "Risto",
-                    getCurrentTimeUTC(),
-                    null,
-                    null,
-                    SaveType.DRAFT
-                ),
-                Hanke(
-                    444,
-                    "hanketunnus2",
-                    true,
-                    "Esplanadin viemäröinti",
-                    "lorem ipsum dolor sit amet...",
-                    getDatetimeAlku(),
-                    getDatetimeLoppu(),
-                    Vaihe.OHJELMOINTI,
-                    null,
-                    1,
-                    "Risto",
-                    getCurrentTimeUTC(),
-                    null,
-                    null,
-                    SaveType.DRAFT
+        every { hankeService.loadAllHanke(criteria) }
+            .returns(
+                listOf(
+                    Hanke(
+                        123,
+                        mockedHankeTunnus,
+                        true,
+                        "Hämeentien perusparannus ja katuvalot",
+                        "lorem ipsum dolor sit amet...",
+                        getDatetimeAlku().minusDays(500),
+                        getDatetimeLoppu().minusDays(450),
+                        Vaihe.OHJELMOINTI,
+                        null,
+                        1,
+                        "Risto",
+                        getCurrentTimeUTC(),
+                        null,
+                        null,
+                        SaveType.DRAFT
+                    ),
+                    Hanke(
+                        444,
+                        "hanketunnus2",
+                        true,
+                        "Esplanadin viemäröinti",
+                        "lorem ipsum dolor sit amet...",
+                        getDatetimeAlku(),
+                        getDatetimeLoppu(),
+                        Vaihe.OHJELMOINTI,
+                        null,
+                        1,
+                        "Risto",
+                        getCurrentTimeUTC(),
+                        null,
+                        null,
+                        SaveType.DRAFT
+                    )
                 )
             )
-        )
 
         // we check that we get the two hankeTunnus we expect
         mockMvc.perform(get("/hankkeet").accept(MediaType.APPLICATION_JSON))
@@ -140,26 +142,29 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `When calling get with geometry=true then return all Hanke data with geometry`() {
         // faking the service call with two returned Hanke
         val criteria = HankeSearch(geometry = true)
-        every { hankeService.loadAllHanke(criteria) }.returns(
-            listOf(
-                Hanke(123, mockedHankeTunnus),
-                Hanke(444, "hanketunnus2")
+        every { hankeService.loadAllHanke(criteria) }
+            .returns(
+                listOf(
+                    Hanke(123, mockedHankeTunnus),
+                    Hanke(444, "hanketunnus2")
+                )
             )
-        )
-        every { hankeGeometriatService.loadGeometriat(Hanke(123, mockedHankeTunnus)) }.returns(
-            HankeGeometriat(
-                1,
-                123,
-                FeatureCollection()
+        every { hankeGeometriatService.loadGeometriat(Hanke(123, mockedHankeTunnus)) }
+            .returns(
+                HankeGeometriat(
+                    1,
+                    123,
+                    FeatureCollection()
+                )
             )
-        )
-        every { hankeGeometriatService.loadGeometriat(Hanke(444, "hanketunnus2")) }.returns(
-            HankeGeometriat(
-                2,
-                444,
-                FeatureCollection()
+        every { hankeGeometriatService.loadGeometriat(Hanke(444, "hanketunnus2")) }
+            .returns(
+                HankeGeometriat(
+                    2,
+                    444,
+                    FeatureCollection()
+                )
             )
-        )
 
         // we check that we get the two hankeTunnus and geometriat we expect
         mockMvc.perform(get("/hankkeet?geometry=true").accept(MediaType.APPLICATION_JSON))
