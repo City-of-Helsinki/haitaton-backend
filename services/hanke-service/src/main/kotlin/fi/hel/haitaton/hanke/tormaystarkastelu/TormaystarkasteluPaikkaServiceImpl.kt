@@ -323,7 +323,7 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
         //if no id -> let's get out of here
         if (hankeGeometriatId == null)
             throw IllegalArgumentException("Hanke.geometriat should be set for hankeid ${hanke.id}")
-
+        //TODO: implement bus rules here
         return Luokittelutulos(
             hankeGeometriatId,
             LuokitteluType.BUSSILIIKENNE,
@@ -342,7 +342,6 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
 
         val tormaystarkastelutulos = tormaystarkasteluDao.raitiotiet(hankeGeometriat)
         if (tormaystarkastelutulos.isEmpty()) {
-
             return Luokittelutulos(
                 hankeGeometriatId, LuokitteluType.RAITIOVAUNULIIKENNE, 0,
                 RaitiovaunuTormaysLuokittelu.EI_RAITIOVAUNULIIKENNETTA.toString()
@@ -354,7 +353,6 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
                 hankeGeometriatId, LuokitteluType.RAITIOVAUNULIIKENNE, 4,
                 RaitiovaunuTormaysLuokittelu.JAETTU_KAISTA.toString()
             )
-
         }
         //own lane for tram
         if (matchesOwnLane(tormaystarkastelutulos)) {
