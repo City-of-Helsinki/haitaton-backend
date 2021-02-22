@@ -3,7 +3,9 @@ package fi.hel.haitaton.hanke
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 
-object HaitatonPostgreSQLContainer : PostgreSQLContainer<HaitatonPostgreSQLContainer>(DockerImageName.parse("postgis/postgis:13-master").asCompatibleSubstituteFor("postgres")) {
+object HaitatonPostgreSQLContainer : PostgreSQLContainer<HaitatonPostgreSQLContainer>(
+    DockerImageName.parse("postgis/postgis:13-master").asCompatibleSubstituteFor("postgres")
+) {
 
     override fun start() {
         super.start()
@@ -13,6 +15,6 @@ object HaitatonPostgreSQLContainer : PostgreSQLContainer<HaitatonPostgreSQLConta
     }
 
     override fun stop() {
-        //do nothing, JVM handles shut down
+        // do nothing, JVM handles shut down
     }
 }

@@ -1,17 +1,14 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
+// we get arvo+selite per luokitteluType per hankeGeometriaId for hanke (hanke can have multiple geometria)
+data class Luokittelutulos(val hankeGeometriaId: Int, val luokitteluType: LuokitteluType, val arvo: Int, val explanation: String)
 
-//we get arvo+selite per luokitteluType per hankeGeometriaId for hanke (hanke can have multiple geometria)
-data class Luokittelutulos(val hankeGeometriaId: Int, val luokitteluType: LuokitteluType, val arvo: Int, val explanation: String) {
-}
+// one type's one arvo rule for minumum value
+data class RajaArvo(val luokitteluType: LuokitteluType, val arvo: Int, val minimumValue: Int, val explanation: String)
 
-//one type's one arvo rule for minumum value
-data class RajaArvo(val luokitteluType: LuokitteluType, val arvo: Int, val minimumValue: Int, val explanation: String) {
-}
-
-//TODO: these values must be digged from database eventually
+// TODO: these values must be digged from database eventually
 class LuokitteluRajaArvot {
-    val bussiliikenneRajaArvot = listOf<RajaArvo>(   //TODO: add explanations
+    val bussiliikenneRajaArvot = listOf<RajaArvo>(   // TODO: add explanations
             RajaArvo(LuokitteluType.BUSSILIIKENNE, 5, 21, ""),
             RajaArvo(LuokitteluType.BUSSILIIKENNE, 4, 11, ""),
             RajaArvo(LuokitteluType.BUSSILIIKENNE, 3, 5, ""),
@@ -28,4 +25,3 @@ class LuokitteluRajaArvot {
             RajaArvo(LuokitteluType.LIIKENNEMAARA, 0, 0, "Ei autoliikennettä") // no hits
     )
 }
-

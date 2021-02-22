@@ -20,8 +20,9 @@ val TZ_UTC: ZoneId = ZoneId.of("UTC")
 
 val DATABASE_TIMESTAMP_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
 
-// Note: database definition has no limit, so this is sort of important; must be quite long, but not excessive (considering database size etc.)
+// Note: database definition has no limit, so this is sort of important; must be quite long,
+// but not excessive (considering database size etc.)
 const val MAXIMUM_TYOMAAKATUOSOITE_LENGTH = 2000
-val MAXIMUM_DATE = ZonedDateTime.of(2099, 12, 31, 23, 59, 59, 999999999, TZ_UTC)
+val MAXIMUM_DATE: ZonedDateTime = ZonedDateTime.of(2099, 12, 31, 23, 59, 59, 999999999, TZ_UTC)
 
 const val HANKETUNNUS_PREFIX = "HAI"

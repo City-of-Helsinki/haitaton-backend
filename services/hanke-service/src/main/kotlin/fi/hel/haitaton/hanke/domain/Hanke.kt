@@ -106,4 +106,7 @@ data class Hanke(
         return true
     }
 
+    fun toLogString(): String {
+        return toString()
+    }
 }

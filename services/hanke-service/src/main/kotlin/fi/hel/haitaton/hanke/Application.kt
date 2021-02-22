@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
@@ -31,8 +30,6 @@ class Application {
         }
     }
 }
-
-private val logger = KotlinLogging.logger { }
 
 fun main(args: Array<String>) {
     runApplication<Application>(*args)

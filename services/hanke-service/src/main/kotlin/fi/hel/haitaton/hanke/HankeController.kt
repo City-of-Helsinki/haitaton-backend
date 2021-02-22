@@ -9,7 +9,15 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
 import javax.validation.ConstraintViolationException
 
 private val logger = KotlinLogging.logger { }
@@ -18,8 +26,8 @@ private val logger = KotlinLogging.logger { }
 @RequestMapping("/hankkeet")
 @Validated
 class HankeController(
-        @Autowired private val hankeService: HankeService,
-        @Autowired private val hankeGeometriatService: HankeGeometriatService
+    @Autowired private val hankeService: HankeService,
+    @Autowired private val hankeGeometriatService: HankeGeometriatService
 ) {
 
     /**
@@ -29,18 +37,22 @@ class HankeController(
      */
     @GetMapping("/{hankeTunnus}")
     fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String?): ResponseEntity<Any> {
+        logger.info {
+            "Getting Hanke $hankeTunnus..."
+        }
         if (hankeTunnus == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
         return try {
             val hanke = hankeService.loadHanke(hankeTunnus)
+            logger.info {
+                "Got Hanke $hankeTunnus: ${hanke?.toLogString()}"
+            }
             if (hanke == null) {
                 ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
             } else {
                 ResponseEntity.status(HttpStatus.OK).body(hanke)
             }
-        } catch (e:AccessDeniedException) {
-            throw e
         } catch (e: Exception) {
             logger.error(e) {
                 HankeError.HAI1004.toString()
@@ -49,15 +61,21 @@ class HankeController(
         }
     }
 
-
     @GetMapping
     fun getHankeList(hankeSearch: HankeSearch? = null): ResponseEntity<Any> {
+        logger.info {
+            "Searching Hankkeet: $hankeSearch"
+        }
         return try {
-
             val hankeList = hankeService.loadAllHanke(hankeSearch)
-
             if (hankeSearch != null && hankeSearch.includeGeometry()) {
                 includeGeometry(hankeList)
+            }
+            logger.info {
+                "Found Hankkeet: ${hankeList.size}"
+            }
+            logger.debug {
+                "Search results: ${hankeList.joinToString("\n") { it.toLogString() }}"
             }
             ResponseEntity.status(HttpStatus.OK).body(hankeList)
         } catch (e: Exception) {
@@ -80,7 +98,9 @@ class HankeController(
      */
     @PostMapping
     fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): ResponseEntity<Any> {
-        logger.info { "Entering createHanke ${hanke?.toJsonString()}" }
+        logger.info {
+            "Creating Hanke: ${hanke?.toLogString()}"
+        }
 
         if (hanke == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
@@ -88,6 +108,7 @@ class HankeController(
 
         return try {
             val createdHanke = hankeService.createHanke(hanke)
+            logger.info { "Created Hanke ${createdHanke.hankeTunnus}." }
             ResponseEntity.status(HttpStatus.OK).body(createdHanke)
         } catch (e: Exception) {
             logger.error(e) {
@@ -103,7 +124,9 @@ class HankeController(
      */
     @PutMapping("/{hankeTunnus}")
     fun updateHanke(@ValidHanke @RequestBody hanke: Hanke?, @PathVariable hankeTunnus: String?): ResponseEntity<Any> {
-        logger.info { "Entering update Hanke $hankeTunnus : ${hanke?.toJsonString()}" }
+        logger.info {
+            "Updating Hanke: ${hanke?.toLogString()}"
+        }
         if (hanke == null || hankeTunnus == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
@@ -112,8 +135,11 @@ class HankeController(
         }
 
         return try {
-            val createdHanke = hankeService.updateHanke(hanke)
-            ResponseEntity.status(HttpStatus.OK).body(createdHanke)
+            val updatedHanke = hankeService.updateHanke(hanke)
+            logger.info {
+                "Updated hanke ${updatedHanke.hankeTunnus}."
+            }
+            ResponseEntity.status(HttpStatus.OK).body(updatedHanke)
         } catch (e: Exception) {
             logger.error(e) {
                 HankeError.HAI1003.toString()
