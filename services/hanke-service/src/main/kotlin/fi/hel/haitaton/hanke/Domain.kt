@@ -21,7 +21,9 @@ enum class HankeError(
     HAI1013("Invalid coordinate system"),
     HAI1014("Internal error while loading Hanke geometry"),
     HAI1015("Hanke geometry not found"),
-    HAI1020("HankeYhteystieto not found");
+    HAI1020("HankeYhteystieto not found"),
+    HAI1030("Problem with classification of geometries"),
+    HAI1031("Invalid state: Missing needed data");
 
 
     val errorCode: String
@@ -45,3 +47,7 @@ class HankeNotFoundException(val hankeTunnus: String? = null) : RuntimeException
 class HankeYhteystietoNotFoundException(val hankeid: Int? = null, val ytId: Int? = null) : RuntimeException(HankeError.HAI1020.errorMessage)
 
 class DatabaseStateException(val context: String? = null) : RuntimeException(HankeError.HAI1005.errorMessage)
+
+class TormaysAnalyysiException(val context: String? = null) : RuntimeException(HankeError.HAI1030.errorMessage)
+
+class InvalidStateException(val context: String? = null) : RuntimeException(HankeError.HAI1031.errorMessage)

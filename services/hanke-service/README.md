@@ -102,6 +102,18 @@ If you need to change the build context, you can do so in .env.local file.
   docker-compose --env-file .env.local up haitaton-ui
 ```
 
+### GIS data import
+In order to run Törmäystarkastelus locally one needs to import GIS data. This can be done after docker-compose is up and running (at least `db`):
+```shell
+cd haitaton-backend
+sh scripts/laastari-import.sh
+```
+or in Windows:
+```shell
+cd haitaton-backend
+.\scripts\laastari-import.cmd
+```
+
 ## Authentication
 JWT/OIDC-based authentication using Keycloak and Spring Security. 
 
