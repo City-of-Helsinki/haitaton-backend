@@ -350,15 +350,15 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
         }
         //trams have shared lane with cars
         if (matchesSharedLane(tormaystarkastelutulos)) {
-            Luokittelutulos(
+            return Luokittelutulos(
                 hankeGeometriatId, LuokitteluType.RAITIOVAUNULIIKENNE, 4,
                 RaitiovaunuTormaysLuokittelu.JAETTU_KAISTA.toString()
             )
-        }
 
+        }
         //own lane for tram
         if (matchesOwnLane(tormaystarkastelutulos)) {
-            Luokittelutulos(
+            return Luokittelutulos(
                 hankeGeometriatId, LuokitteluType.RAITIOVAUNULIIKENNE, 3,
                 RaitiovaunuTormaysLuokittelu.OMA_KAISTA.toString()
             )
