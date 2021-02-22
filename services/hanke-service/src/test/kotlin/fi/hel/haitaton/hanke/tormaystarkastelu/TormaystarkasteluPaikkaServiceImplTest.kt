@@ -624,7 +624,6 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         Mockito.`when`(tormaysPaikkaDao.kantakaupunki(hanke.geometriat!!)).thenReturn(mutableMapOf())
 
         val exception = assertThrows(TormaysAnalyysiException::class.java) {
-
             TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(
                 hanke,
                 LuokitteluRajaArvot()
