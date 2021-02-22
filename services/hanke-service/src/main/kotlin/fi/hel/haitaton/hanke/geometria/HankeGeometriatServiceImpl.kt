@@ -4,7 +4,6 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.toJsonString
 import mu.KotlinLogging
 import java.time.ZonedDateTime
 import javax.transaction.Transactional
