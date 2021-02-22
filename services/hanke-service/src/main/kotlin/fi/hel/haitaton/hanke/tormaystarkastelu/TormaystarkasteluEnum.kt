@@ -17,6 +17,15 @@ enum class PyorailyTormaysLuokittelu(s: String) {
     EI_PYORAILUREITTI("Ei vaikuta pyöräliikenteeseen")
 }
 
+enum class RaitiovaunuTormaysLuokittelu(s: String) {
+    JAETTU_KAISTA( "Raitiovaunut samalla kaistalla autojen kanssa"),
+    OMA_KAISTA ( "Raitiovaunuilla oma kaista"),
+    EI_RAITIOVAUNULIIKENNETTA ( "Ei vaikuta raitiovaunuliikenteeseen")
+}
+enum class BussiTormaysLuokittelu(s: String) {
+    EI_BUSSILIIKENNETTA( "Ei vaikuta linja-autoliikenteeseen")
+}
+
 enum class KatuluokkaTormaysLuokittelu(s: String) {
     PAAKATU_MOOTTORIVAYLA("Pääkatu tai moottoriväylä"),
     ALUEELLINEN_KOKOOJA("Alueellinen kokoojakatu"),
