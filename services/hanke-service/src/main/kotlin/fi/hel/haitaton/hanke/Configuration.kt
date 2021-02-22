@@ -42,5 +42,4 @@ class Configuration {
     @Bean
     fun tormaystarkasteluDao(jdbcOperations: JdbcOperations): TormaystarkasteluDao =
             TormaystarkasteluDaoImpl(jdbcOperations)
-
 }

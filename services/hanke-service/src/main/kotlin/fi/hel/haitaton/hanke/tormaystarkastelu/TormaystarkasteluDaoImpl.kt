@@ -224,9 +224,10 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
         """.trimIndent(), { rs, _ ->
                     val lane = rs.getString(2)
                     Pair(
-                        TormaystarkasteluRaitiotiekaistatyyppi.valueOfKaistatyyppi(lane) ?: throw IllegalKatuluokkaException(
-                            lane
-                        ),
+                        TormaystarkasteluRaitiotiekaistatyyppi.valueOfKaistatyyppi(lane)
+                            ?: throw IllegalKatuluokkaException(
+                                lane
+                            ),
                         rs.getInt(3)
                     )
                 }, hankegeometriat.id!!

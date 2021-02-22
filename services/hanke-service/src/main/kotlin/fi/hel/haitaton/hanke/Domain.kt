@@ -9,7 +9,8 @@ Domain classes
 
 @JsonSerialize(using = HankeErrorSerializer::class)
 enum class HankeError(
-        val errorMessage: String) {
+    val errorMessage: String
+) {
     HAI0001("Access denied"),
     HAI1001("Hanke not found"),
     HAI1002("Invalid Hanke data"),
@@ -24,8 +25,6 @@ enum class HankeError(
     HAI1020("HankeYhteystieto not found"),
     HAI1030("Problem with classification of geometries"),
     HAI1031("Invalid state: Missing needed data");
-
-
     val errorCode: String
         get() = name
 
@@ -44,7 +43,8 @@ enum class HankeError(
 
 class HankeNotFoundException(val hankeTunnus: String? = null) : RuntimeException(HankeError.HAI1001.errorMessage)
 
-class HankeYhteystietoNotFoundException(val hankeid: Int? = null, val ytId: Int? = null) : RuntimeException(HankeError.HAI1020.errorMessage)
+class HankeYhteystietoNotFoundException(val hankeid: Int? = null, val ytId: Int? = null) :
+    RuntimeException(HankeError.HAI1020.errorMessage)
 
 class DatabaseStateException(val context: String? = null) : RuntimeException(HankeError.HAI1005.errorMessage)
 

@@ -5,8 +5,19 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import java.time.LocalDate
 import java.time.LocalDateTime
-import javax.persistence.*
-
+import javax.persistence.CascadeType
+import javax.persistence.CollectionTable
+import javax.persistence.ElementCollection
+import javax.persistence.Entity
+import javax.persistence.EnumType
+import javax.persistence.Enumerated
+import javax.persistence.FetchType
+import javax.persistence.GeneratedValue
+import javax.persistence.GenerationType
+import javax.persistence.Id
+import javax.persistence.JoinColumn
+import javax.persistence.OneToMany
+import javax.persistence.Table
 
 /*
 Hibernate/JPA Entity classes
@@ -153,6 +164,7 @@ class HankeEntity(
     // Checking for nearby other Hanke requires GIS database query.
 
     var tilaOnGeometrioita: Boolean = false
+
     //var tilaOnKaikkiPakollisetLuontiTiedot: Boolean = false
     //var tilaOnTiedotLiikenneHaittaIndeksille: Boolean = false
     //var tilaOnLiikenneHaittaIndeksi: Boolean = false
@@ -173,7 +185,6 @@ class HankeEntity(
             yhteystieto.hanke = null
         }
     }
-
 
 
     override fun equals(other: Any?): Boolean {

@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.geometria
 
-import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.domain.Hanke
 import org.geojson.FeatureCollection
 import java.time.ZonedDateTime
@@ -32,15 +31,10 @@ data class HankeGeometriat(
         }
     }
 
-    fun includeHankeProperties(hanke: HankeEntity) {
-        this.featureCollection?.let { featureCollection ->
-            featureCollection.features.forEach { feature ->
-                if (feature.properties == null) {
-                    feature.properties = mutableMapOf()
-                }
-                feature.properties["hankeTunnus"] = hanke.hankeTunnus
-                // Add here other properties when needed
-            }
-        }
+    /**
+     * @return log string containing id, version and the number of geometries
+     */
+    fun toLogString(): String {
+        return toString()
     }
 }

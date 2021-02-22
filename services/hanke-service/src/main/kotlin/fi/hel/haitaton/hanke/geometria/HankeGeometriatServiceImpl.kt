@@ -18,9 +18,6 @@ open class HankeGeometriatServiceImpl(
 
     @Transactional
     override fun saveGeometriat(hankeTunnus: String, hankeGeometriat: HankeGeometriat): HankeGeometriat {
-        logger.info {
-            "Saving Geometria for Hanke $hankeTunnus: ${hankeGeometriat.toJsonString()}"
-        }
         val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
         val now = ZonedDateTime.now(TZ_UTC)
         val oldHankeGeometriat = hankeGeometriaDao.retrieveHankeGeometriat(hanke.id!!)
@@ -36,7 +33,7 @@ open class HankeGeometriatServiceImpl(
             hankeGeometriat.hankeId = hanke.id
             hankeGeometriat.modifiedAt = now
             hankeGeometriaDao.createHankeGeometriat(hankeGeometriat)
-            logger.info {
+            logger.debug {
                 "Created new geometries for Hanke $hankeTunnus"
             }
             hankeGeometriat
@@ -49,7 +46,7 @@ open class HankeGeometriatServiceImpl(
             oldHankeGeometriat.modifiedAt = now
             oldHankeGeometriat.featureCollection = hankeGeometriat.featureCollection
             hankeGeometriaDao.updateHankeGeometriat(oldHankeGeometriat)
-            logger.info {
+            logger.debug {
                 "Updated geometries for Hanke $hankeTunnus"
             }
             oldHankeGeometriat

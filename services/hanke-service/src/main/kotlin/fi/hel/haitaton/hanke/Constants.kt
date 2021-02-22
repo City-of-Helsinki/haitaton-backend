@@ -22,6 +22,6 @@ val DATABASE_TIMESTAMP_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("
 
 // Note: database definition has no limit, so this is sort of important; must be quite long, but not excessive (considering database size etc.)
 const val MAXIMUM_TYOMAAKATUOSOITE_LENGTH = 2000
-val MAXIMUM_DATE = ZonedDateTime.of(2099, 12, 31, 23, 59, 59, 999999999, TZ_UTC)
+val MAXIMUM_DATE: ZonedDateTime = ZonedDateTime.of(2099, 12, 31, 23, 59, 59, 999999999, TZ_UTC)
 
 const val HANKETUNNUS_PREFIX = "HAI"

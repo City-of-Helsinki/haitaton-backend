@@ -28,4 +28,3 @@ class LuokitteluRajaArvot {
             RajaArvo(LuokitteluType.LIIKENNEMAARA, 0, 0, "Ei autoliikennettä") // no hits
     )
 }
-

@@ -34,7 +34,10 @@ interface TormaystarkasteluDao {
     /**
      * Collects all traffic counts ("liikennemäärä") for each Hanke geometry within given radius.
      */
-    fun liikennemaarat(hankegeometriat: HankeGeometriat, etaisyys: TormaystarkasteluLiikennemaaranEtaisyys): Map<Int, Set<Int>>
+    fun liikennemaarat(
+        hankegeometriat: HankeGeometriat,
+        etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
+    ): Map<Int, Set<Int>>
 
     /**
      * Checks which Hanke geometries are located on critical area for buses

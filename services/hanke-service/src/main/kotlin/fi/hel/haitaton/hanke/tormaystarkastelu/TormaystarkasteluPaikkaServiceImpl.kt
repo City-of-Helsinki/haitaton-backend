@@ -210,7 +210,4 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
             tormaystulosRivi.value.contains(TormaystarkasteluPyorailyreittiluokka.PRIORISOITU_REITTI)
         }
     }
-
-
 }
-
