@@ -995,7 +995,8 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
     fun calculateTormaystarkasteluLuokitteluTulos_WhenBusTrafficAmountMax() {
         val hanke = createHankeForTest()
         mockTormaysPaikkaDaoForBusClassification(hanke)
-        //hit in critical area for bus traffic
+
+        //count is top level for rush hour bus traffic
         Mockito.`when`(tormaysPaikkaDao.bussit(hanke.geometriat!!)).thenReturn(
             mutableMapOf(
                 Pair(
@@ -1023,13 +1024,14 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
             )
         )
     }
+
     @Test
     fun calculateTormaystarkasteluLuokitteluTulos_WhenBusLineTrunkYes() {
 
         val hanke = createHankeForTest()
         mockTormaysPaikkaDaoForBusClassification(hanke)
 
-        //hit in critical area for bus traffic
+        //trunk line hit for bus traffic
         Mockito.`when`(tormaysPaikkaDao.bussit(hanke.geometriat!!)).thenReturn(
             mutableMapOf(
                 Pair(
@@ -1037,7 +1039,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
                     setOf(
                         TormaystarkasteluBussireitti("12", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
                         TormaystarkasteluBussireitti("13", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
-                        TormaystarkasteluBussireitti("14", 1, 1, TormaystarkasteluBussiRunkolinja.ON),
+                        TormaystarkasteluBussireitti("14", 1, 1, TormaystarkasteluBussiRunkolinja.ON), //this matters
                         TormaystarkasteluBussireitti("15", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
                         TormaystarkasteluBussireitti("16", 1, 1, TormaystarkasteluBussiRunkolinja.EI)
                     )
@@ -1049,8 +1051,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
             hanke, LuokitteluRajaArvot()
         )
 
-        // var rajaArvot = LuokitteluRajaArvot()
-        val expected = LuokitteluRajaArvot().bussiliikenneRajaArvot.first { rajaArvot -> rajaArvot.arvo == 5 }
+        val expected = LuokitteluRajaArvot().bussiliikenneRajaArvot.first { rajaArvot -> rajaArvot.arvo == 4 }
         assertThat(result[4]).isEqualTo(
             Luokittelutulos(
                 hanke.geometriat!!.id!!, LuokitteluType.BUSSILIIKENNE, expected.arvo, expected.explanation

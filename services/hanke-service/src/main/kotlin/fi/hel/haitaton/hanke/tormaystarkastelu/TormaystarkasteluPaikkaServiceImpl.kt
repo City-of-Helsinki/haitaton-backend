@@ -316,7 +316,7 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
         //TODO: implement bus rules here
 
         val criticalAreaTormays = tormaystarkasteluDao.bussiliikenteenKannaltaKriittinenAlue(hankeGeometriat)
-        if(hitsInCriticalAreaBus(criticalAreaTormays)){
+        if (hitsInCriticalAreaBus(criticalAreaTormays)) {
             //if critical_area matches ->  return 5
             val arvoRivi = rajaArvot.bussiliikenneRajaArvot.first { rajaArvo -> rajaArvo.arvo == 5 }
             return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
@@ -325,7 +325,7 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
         val bussesTormaystulos = tormaystarkasteluDao.bussit(hankeGeometriat)
 
         // if no hits in buses -> 0
-        if( hitsInBusses(bussesTormaystulos) == false) {
+        if (hitsInBusses(bussesTormaystulos) == false) {
             val arvoRivi = getBussiRajaArvoWithClassification(rajaArvot, 0) //find zero
             return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
         }
@@ -334,23 +334,35 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
 
         //if rush_hours >=21 -> 5
         val arvoRiviTop = getBussiRajaArvoWithClassification(rajaArvot, 5)
-        if(countOfRushHourBuses >= arvoRiviTop.minimumValue){
+        if (countOfRushHourBuses >= arvoRiviTop.minimumValue) {
             return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRiviTop.arvo, arvoRiviTop.explanation)
         }
 
-        //if matchesTrunk=yes -> 4
+        val arvoRiviSecond = getBussiRajaArvoWithClassification(rajaArvot, 4)
+        //if matchesTrunk=yes -> 4 or if rush_hours 11-20 -> 4
+        if (matchesBusLineIsTrunkLine(bussesTormaystulos) || countOfRushHourBuses >= arvoRiviSecond.minimumValue) {
 
-        //if rush_hours 11-20 -> 4
+             return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRiviSecond.arvo, arvoRiviSecond.explanation)
+        }
 
-        //if matchesAlmost=yes -> 3
 
-        //if rush_hours 5-10 -> 3
+        //if matchesAlmost=yes -> 3 //TODo
 
-        //if rush_hours 0-4 -> 2
+        //if rush_hours 5-10 -> 3 //TODO
+
+        //if rush_hours 0-4 -> 2 //TODO
 
         val arvoRivi = getBussiRajaArvoWithClassification(rajaArvot, 0) //find zero
         return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
 
+    }
+
+    //There is one "Trunk" (=runkolinja in Finnish) in the analysis result
+    private fun matchesBusLineIsTrunkLine(bussesTormaystulos: Map<Int, Set<TormaystarkasteluBussireitti>>): Boolean {
+        var oneList = bussesTormaystulos.values.flatten()
+        return oneList.any { tormaystulosRivi ->
+            tormaystulosRivi.runkolinja == TormaystarkasteluBussiRunkolinja.ON
+        }
     }
 
     private fun getBussiRajaArvoWithClassification(rajaArvot: LuokitteluRajaArvot, arvo: Int) =
