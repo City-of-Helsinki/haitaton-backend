@@ -46,3 +46,19 @@ In order to make changes to the realm itself or the users in it one has to do fo
 
 
 TODO: desdribe how this image should be used in OpenShift environment (pass all the environment variables needed).
+
+## Customizing Keycloak
+There is `themes/haitaton` directory containing Keycloak theme configurations. This directory is included in builded Docker image when using regular Dockerfile (as is done with docker-compose).
+If you wish to customize the theme, you can do following:
+Build a Docker image without adding the theme directory (in auth-service directory):
+```shell
+docker build -t auth-service-custom -f Dockerfile-local .
+```
+Start the container with local volume:
+```shell
+docker run -v ./themes/haitaton:/opt/jboss/keycloak/themes/haitaton -p 8080:8080 -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -e KEYCLOAK_WELCOME_THEME=haitaton -e KEYCLOAK_DEFAULT_THEME=haitaton auth-service-custom
+```
+or with Windows (tested with GitBash inside `themes/haitaton` directory):
+```shell
+MSYS_NO_PATHCONV=1 docker run -v `pwd`:/opt/jboss/keycloak/themes/haitaton -p 8080:8080 -e KEYCLOAK_USER=admin -e KEYCLOAK_PASSWORD=admin -e KEYCLOAK_WELCOME_THEME=haitaton -e KEYCLOAK_DEFAULT_THEME=haitaton auth-service-custom
+```
