@@ -54,7 +54,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
             hanke, LuokitteluRajaArvot()
         )
 
-        assertThat(result.get(0)).isEqualTo(
+        assertThat(result[0]).isEqualTo(
             Luokittelutulos(
                 hanke.geometriat!!.id!!,
                 LuokitteluType.KATULUOKKA,
@@ -639,6 +639,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
+
         // hit in katuluokat
         val katuluokat =
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.TONTTIKATU_TAI_AJOYHTEYS)))
@@ -697,6 +698,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
+
         // hit in katuluokat
         val katuluokat =
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)))
@@ -755,6 +757,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
+
         // hit in katuluokat
         val katuluokat =
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)))
@@ -815,7 +818,9 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
+
         // hit in katuluokat
+
         val katuluokat =
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)))
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(katuluokat)
@@ -884,6 +889,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
             mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
         )
         // hit in katuluokat
+
         val katuluokat =
             mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)))
         Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(katuluokat)
@@ -939,4 +945,147 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
             )
         )
     }
+
+
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_WhenNoBusHits_ThenClassIsNoBusTraffic() {
+
+        val hanke = createHankeForTest()
+        mockTormaysPaikkaDaoForBusClassification(hanke)
+
+        //no initialization for buses -> no hits to any geometry
+
+        val result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(
+            hanke, LuokitteluRajaArvot()
+        )
+
+
+        val expected = LuokitteluRajaArvot().bussiliikenneRajaArvot.first { rajaArvot -> rajaArvot.arvo == 0 }
+        assertThat(result[4]).isEqualTo(
+            Luokittelutulos(
+                hanke.geometriat!!.id!!, LuokitteluType.BUSSILIIKENNE, expected.arvo, expected.explanation
+            )
+        )
+    }
+
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_WhenCriticalAreBusHits() {
+        val hanke = createHankeForTest()
+        mockTormaysPaikkaDaoForBusClassification(hanke)
+
+        //hit in critical area for bus traffic
+        Mockito.`when`(tormaysPaikkaDao.bussiliikenteenKannaltaKriittinenAlue(hanke.geometriat!!)).thenReturn(
+            mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
+        )
+
+        val result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(
+            hanke, LuokitteluRajaArvot()
+        )
+
+        // var rajaArvot = LuokitteluRajaArvot()
+        val expected = LuokitteluRajaArvot().bussiliikenneRajaArvot.first { rajaArvot -> rajaArvot.arvo == 5 }
+        assertThat(result[4]).isEqualTo(
+            Luokittelutulos(
+                hanke.geometriat!!.id!!, LuokitteluType.BUSSILIIKENNE, expected.arvo, expected.explanation
+            )
+        )
+    }
+
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_WhenBusTrafficAmountMax() {
+        val hanke = createHankeForTest()
+        mockTormaysPaikkaDaoForBusClassification(hanke)
+        //hit in critical area for bus traffic
+        Mockito.`when`(tormaysPaikkaDao.bussit(hanke.geometriat!!)).thenReturn(
+            mutableMapOf(
+                Pair(
+                    hanke.geometriat!!.id!!,
+                    setOf(
+                        TormaystarkasteluBussireitti("12", 1, 5, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("13", 1, 5, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("14", 1, 5, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("15", 1, 5, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("16", 1, 5, TormaystarkasteluBussiRunkolinja.EI)
+                    )
+                )
+            )
+        )
+
+        val result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(
+            hanke, LuokitteluRajaArvot()
+        )
+
+        // var rajaArvot = LuokitteluRajaArvot()
+        val expected = LuokitteluRajaArvot().bussiliikenneRajaArvot.first { rajaArvot -> rajaArvot.arvo == 5 }
+        assertThat(result[4]).isEqualTo(
+            Luokittelutulos(
+                hanke.geometriat!!.id!!, LuokitteluType.BUSSILIIKENNE, expected.arvo, expected.explanation
+            )
+        )
+    }
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_WhenBusLineTrunkYes() {
+
+        val hanke = createHankeForTest()
+        mockTormaysPaikkaDaoForBusClassification(hanke)
+
+        //hit in critical area for bus traffic
+        Mockito.`when`(tormaysPaikkaDao.bussit(hanke.geometriat!!)).thenReturn(
+            mutableMapOf(
+                Pair(
+                    hanke.geometriat!!.id!!,
+                    setOf(
+                        TormaystarkasteluBussireitti("12", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("13", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("14", 1, 1, TormaystarkasteluBussiRunkolinja.ON),
+                        TormaystarkasteluBussireitti("15", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("16", 1, 1, TormaystarkasteluBussiRunkolinja.EI)
+                    )
+                )
+            )
+        )
+
+        val result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(
+            hanke, LuokitteluRajaArvot()
+        )
+
+        // var rajaArvot = LuokitteluRajaArvot()
+        val expected = LuokitteluRajaArvot().bussiliikenneRajaArvot.first { rajaArvot -> rajaArvot.arvo == 5 }
+        assertThat(result[4]).isEqualTo(
+            Luokittelutulos(
+                hanke.geometriat!!.id!!, LuokitteluType.BUSSILIIKENNE, expected.arvo, expected.explanation
+            )
+        )
+    }
+
+    /**
+     * Sets other geometry classification mockings so that in bus test cases we can concentrate in
+     * setting the bus traffic cases
+     */
+    private fun mockTormaysPaikkaDaoForBusClassification(hanke: Hanke) {
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatuluokat(hanke.geometriat!!)).thenReturn(mutableMapOf())
+        Mockito.`when`(tormaysPaikkaDao.pyorailyreitit(hanke.geometriat!!)).thenReturn(mutableMapOf())
+
+        //hit in yleiset katualueet
+        Mockito.`when`(tormaysPaikkaDao.yleisetKatualueet(hanke.geometriat!!)).thenReturn(
+            mutableMapOf(Pair(hanke.geometriat!!.id!!, true))
+        )
+        //hit in katuluokat
+        val katuluokat =
+            mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)))
+        Mockito.`when`(tormaysPaikkaDao.katuluokat(hanke.geometriat!!)).thenReturn(katuluokat)
+
+        // NO hit in central_business_area -> kantakaupunki
+        Mockito.`when`(tormaysPaikkaDao.kantakaupunki(hanke.geometriat!!)).thenReturn(mutableMapOf())
+
+        // Liikennemaara maximum=3500, should use bigger buffered volumes
+        Mockito.`when`(
+            tormaysPaikkaDao.liikennemaarat(
+                hanke.geometriat!!,
+                TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30
+            )
+        ).thenReturn(mutableMapOf(Pair(hanke.geometriat!!.id!!, setOf(3500))))
+    }
+
 }
+

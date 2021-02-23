@@ -326,12 +326,17 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
 
         // if no hits in buses -> 0
         if( hitsInBusses(bussesTormaystulos) == false) {
-            val arvoRivi = rajaArvot.bussiliikenneRajaArvot.first { rajaArvo -> rajaArvo.minimumValue == -1 } //find zero
+            val arvoRivi = getBussiRajaArvoWithClassification(rajaArvot, 0) //find zero
             return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
         }
         //count sum of rush_hours
+        val countOfRushHourBuses = calculateCountOfRushHourBuses(bussesTormaystulos)
 
         //if rush_hours >=21 -> 5
+        val arvoRiviTop = getBussiRajaArvoWithClassification(rajaArvot, 5)
+        if(countOfRushHourBuses >= arvoRiviTop.minimumValue){
+            return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRiviTop.arvo, arvoRiviTop.explanation)
+        }
 
         //if matchesTrunk=yes -> 4
 
@@ -343,10 +348,22 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
 
         //if rush_hours 0-4 -> 2
 
-        val arvoRivi = rajaArvot.bussiliikenneRajaArvot.first { rajaArvo -> rajaArvo.minimumValue == -1 } //find zero
+        val arvoRivi = getBussiRajaArvoWithClassification(rajaArvot, 0) //find zero
         return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
 
+    }
 
+    private fun getBussiRajaArvoWithClassification(rajaArvot: LuokitteluRajaArvot, arvo: Int) =
+        rajaArvot.bussiliikenneRajaArvot.first { rajaArvo -> rajaArvo.arvo == arvo }
+
+    private fun calculateCountOfRushHourBuses(bussesTormaystulos: Map<Int, Set<TormaystarkasteluBussireitti>>): Int {
+        var countOfBuses = 0
+        var oneList = bussesTormaystulos.values.flatten()
+        oneList.forEach {
+            countOfBuses = countOfBuses + it.vuoromaaraRuuhkatunnissa
+        }
+
+        return countOfBuses
     }
 
     private fun hitsInBusses(bussesTormaystulos: Map<Int, Set<TormaystarkasteluBussireitti>>): Any {
