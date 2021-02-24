@@ -1,9 +1,14 @@
-.login-pf body {
-    background: url("../img/keycloak-bg.png") no-repeat center center fixed;
-    background-size: cover;
-    height: 100%;
+.login-pf {
+    background: #F1F1F1;
 }
 
+.login-pf body {  
+    height: 100%;
+    background: #F1F1F1 url(../img/bgLogin.jpg) no-repeat 50% 0;
+}
+.card-pf {
+    background: #F1F1F1;
+}
 /*IE compatibility*/
 .pf-c-form-control {
     font-size: 14px;
@@ -216,22 +221,6 @@ a#kc-current-locale-link::after {
 
 #kc-logo {
     width: 100%;
-}
-
-#kc-logo-wrapper {
-    background-image: url(../img/keycloak-logo-2.png);
-    background-repeat: no-repeat;
-    height: 63px;
-    width: 300px;
-    margin: 62px auto 0;
-}
-
-div.kc-logo-text {
-    background-image: url(../img/keycloak-logo-text.png);
-    background-repeat: no-repeat;
-    height: 63px;
-    width: 300px;
-    margin: 0 auto;
 }
 
 div.kc-logo-text span {
