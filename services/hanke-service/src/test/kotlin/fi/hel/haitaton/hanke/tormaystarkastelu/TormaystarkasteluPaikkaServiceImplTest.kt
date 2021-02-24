@@ -62,7 +62,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
                 KatuluokkaTormaysLuokittelu.EI_MOOTTORILIIKENNE_VAIK.toString()
             )
         )
-        assertThat(result.get(1)).isEqualTo(
+        assertThat(result[1]).isEqualTo(
             Luokittelutulos(
                 hanke.geometriat!!.id!!,
                 LuokitteluType.LIIKENNEMAARA,
@@ -70,7 +70,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
                 "Ei autoliikennettä"
             )
         )
-        assertThat(result.get(2)).isEqualTo(
+        assertThat(result[2]).isEqualTo(
             Luokittelutulos(
                 hanke.geometriat!!.id!!,
                 LuokitteluType.PYORAILYN_PAAREITTI,

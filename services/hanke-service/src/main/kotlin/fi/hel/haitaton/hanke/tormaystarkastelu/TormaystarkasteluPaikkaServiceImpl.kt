@@ -390,7 +390,7 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
         var countOfBuses = 0
         val oneList = bussesTormaystulos.values.flatten()
         oneList.forEach {
-            countOfBuses = countOfBuses + it.vuoromaaraRuuhkatunnissa
+            countOfBuses += it.vuoromaaraRuuhkatunnissa
         }
 
         return countOfBuses
