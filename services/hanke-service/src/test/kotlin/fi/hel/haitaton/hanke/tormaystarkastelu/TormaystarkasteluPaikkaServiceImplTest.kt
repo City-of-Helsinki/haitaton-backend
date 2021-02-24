@@ -1059,6 +1059,141 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         )
     }
 
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_WhenBusLineTrafficCountBigButNotMax() {
+
+        val hanke = createHankeForTest()
+        mockTormaysPaikkaDaoForBusClassification(hanke)
+
+        //traffic count between 11-20 for buses
+        Mockito.`when`(tormaysPaikkaDao.bussit(hanke.geometriat!!)).thenReturn(
+            mutableMapOf(
+                Pair(
+                    hanke.geometriat!!.id!!,
+                    setOf(
+                        TormaystarkasteluBussireitti("12", 1, 2, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("13", 1, 2, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("14", 1, 5, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("15", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("16", 1, 3, TormaystarkasteluBussiRunkolinja.EI)
+                    )
+                )
+            )
+        )
+
+        val result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(
+            hanke, LuokitteluRajaArvot()
+        )
+
+        val expected = LuokitteluRajaArvot().bussiliikenneRajaArvot.first { rajaArvot -> rajaArvot.arvo == 4 }
+        assertThat(result[4]).isEqualTo(
+            Luokittelutulos(
+                hanke.geometriat!!.id!!, LuokitteluType.BUSSILIIKENNE, expected.arvo, expected.explanation
+            )
+        )
+    }
+
+
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_WhenBusLineIsAlmostTrunkLine() {
+
+        val hanke = createHankeForTest()
+        mockTormaysPaikkaDaoForBusClassification(hanke)
+
+        //traffic count 6 for buses
+        Mockito.`when`(tormaysPaikkaDao.bussit(hanke.geometriat!!)).thenReturn(
+            mutableMapOf(
+                Pair(
+                    hanke.geometriat!!.id!!,
+                    setOf(
+                        TormaystarkasteluBussireitti("12", 1, 1, TormaystarkasteluBussiRunkolinja.LAHES), //this matters
+                        TormaystarkasteluBussireitti("14", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("15", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("16", 1, 1, TormaystarkasteluBussiRunkolinja.EI)
+                    )
+                )
+            )
+        )
+
+        val result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(
+            hanke, LuokitteluRajaArvot()
+        )
+
+        val expected = LuokitteluRajaArvot().bussiliikenneRajaArvot.first { rajaArvot -> rajaArvot.arvo == 3 }
+        assertThat(result[4]).isEqualTo(
+            Luokittelutulos(
+                hanke.geometriat!!.id!!, LuokitteluType.BUSSILIIKENNE, expected.arvo, expected.explanation
+            )
+        )
+    }
+
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_WhenBusLineTrafficAmountMedium() {
+
+        val hanke = createHankeForTest()
+        mockTormaysPaikkaDaoForBusClassification(hanke)
+
+        //traffic count 5-10 for buses
+        Mockito.`when`(tormaysPaikkaDao.bussit(hanke.geometriat!!)).thenReturn(
+            mutableMapOf(
+                Pair(
+                    hanke.geometriat!!.id!!,
+                    setOf(  //rush_hour sum is 7
+                        TormaystarkasteluBussireitti("12", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("14", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("17", 1, 3, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("15", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("16", 1, 1, TormaystarkasteluBussiRunkolinja.EI)
+                    )
+                )
+            )
+        )
+
+        val result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(
+            hanke, LuokitteluRajaArvot()
+        )
+
+        val expected = LuokitteluRajaArvot().bussiliikenneRajaArvot.first { rajaArvot -> rajaArvot.arvo == 3 }
+        assertThat(result[4]).isEqualTo(
+            Luokittelutulos(
+                hanke.geometriat!!.id!!, LuokitteluType.BUSSILIIKENNE, expected.arvo, expected.explanation
+            )
+        )
+    }
+
+    @Test
+    fun calculateTormaystarkasteluLuokitteluTulos_WhenBusLineTrafficAmountSmall() {
+
+        val hanke = createHankeForTest()
+        mockTormaysPaikkaDaoForBusClassification(hanke)
+
+        //traffic count 5-10 for buses
+        Mockito.`when`(tormaysPaikkaDao.bussit(hanke.geometriat!!)).thenReturn(
+            mutableMapOf(
+                Pair(
+                    hanke.geometriat!!.id!!,
+                    setOf(  //rush_hour sum is 4
+                        TormaystarkasteluBussireitti("12", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("14", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("15", 1, 1, TormaystarkasteluBussiRunkolinja.EI),
+                        TormaystarkasteluBussireitti("16", 1, 1, TormaystarkasteluBussiRunkolinja.EI)
+                    )
+                )
+            )
+        )
+
+        val result = TormaystarkasteluPaikkaServiceImpl(tormaysPaikkaDao).calculateTormaystarkasteluLuokitteluTulos(
+            hanke, LuokitteluRajaArvot()
+        )
+
+        val expected = LuokitteluRajaArvot().bussiliikenneRajaArvot.first { rajaArvot -> rajaArvot.arvo == 2 }
+        assertThat(result[4]).isEqualTo(
+            Luokittelutulos(
+                hanke.geometriat!!.id!!, LuokitteluType.BUSSILIIKENNE, expected.arvo, expected.explanation
+            )
+        )
+    }
+
     /**
      * Sets other geometry classification mockings so that in bus test cases we can concentrate in
      * setting the bus traffic cases
