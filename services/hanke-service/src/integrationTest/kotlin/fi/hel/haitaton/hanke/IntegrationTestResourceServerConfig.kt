@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.security.AccessRules
 import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Profile
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableResourceServer
@@ -9,6 +10,7 @@ import org.springframework.security.oauth2.config.annotation.web.configuration.R
 import org.springframework.security.oauth2.config.annotation.web.configurers.ResourceServerSecurityConfigurer
 
 @TestConfiguration
+@Profile("itest")
 @EnableResourceServer
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 class IntegrationTestResourceServerConfig : ResourceServerConfigurerAdapter() {
