@@ -57,6 +57,9 @@ class TormaystarkasteluController {
         tormaysResults.liikennehaittaIndeksi = LiikennehaittaIndeksiType()
         tormaysResults.liikennehaittaIndeksi!!.indeksi = 4.2
         tormaysResults.liikennehaittaIndeksi!!.type = IndeksiType.PYORAILYINDEKSI
+
+        //TODO: in the future this would contain "Viereiset hankkeet" too
+
         return tormaysResults
     }
 
@@ -71,16 +74,21 @@ class TormaystarkasteluController {
         }
 
         return try {
+
             //if(hanke.tilat.onTiedotLiikenneHaittaIndeksille)
             // then calculate:
-            // - call service to create tormays
-            // - service has saved tormaystulos to database and saved hanke.onLiikenneHaittaIndeksi=true
+            // - call service to create tormaystarkastelu -> you will get TormaystarkasteluTulos
+            // - service has saved tormaystulos to database and saved hanke.onLiikenneHaittaIndeksi=true (or is it services job to do that?)
             // - return hanke with tormaystulos
-            val hankeWithTormaysResults: Hanke = hanke.copy()
-            var dummyTulos = getDummyTormaystarkasteluTulos()
-            hankeWithTormaysResults.tormaystarkasteluTulos = dummyTulos
+
+            val hankeWithTormaysResults: Hanke = hanke.copy() //dummy code -> call service TormaystarkasteluLaskentaService
+            var dummyTulos = getDummyTormaystarkasteluTulos() //dummy code
 
             //miten törmäystulos? Onko se erikseen hankkeella?
+            // annetaanko TormaystarkasteluLaskentaService:lle koko hanke (tarvitsee  hankkeen tietoja) ja palauttaisiko se hankkeen, jota on
+            // täydennetty törmäystuloksilla?
+            hankeWithTormaysResults.liikennehaittaindeksi = dummyTulos.liikennehaittaIndeksi //tämä olisi hankkeelle tallennettavaa
+            hankeWithTormaysResults.tormaystarkasteluTulos = dummyTulos  //tässä mukana myös liikennehaittaindeksi, mutta myös muu tulos
 
             logger.info { "tormaystarkastelu created for Hanke ${hankeWithTormaysResults.hankeTunnus}." }
             ResponseEntity.status(HttpStatus.OK).body(hankeWithTormaysResults)
