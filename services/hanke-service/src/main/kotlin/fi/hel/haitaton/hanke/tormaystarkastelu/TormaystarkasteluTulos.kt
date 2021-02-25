@@ -1,17 +1,18 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-class TormaystarkasteluTulos {
+data class TormaystarkasteluTulos (val hankeTunnus:String){
+
     var hankeId : Int = 0
     var liikennehaittaIndeksi: LiikennehaittaIndeksiType? = null
-    var perusIndeksi: Double? = null
-    var pyorailyIndeksi: Double? = null
-    var joukkoliikenneIndeksi: Double? = null
+    var perusIndeksi: Float? = null
+    var pyorailyIndeksi: Float? = null
+    var joukkoliikenneIndeksi: Float? = null
 
 }
 
 class LiikennehaittaIndeksiType {
 
-    var indeksi: Double = 0.0
+    var indeksi: Float = 0.0f
     var type: IndeksiType? = null
 }
 

@@ -1,94 +1,67 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.validation.ValidHanke
 import mu.KotlinLogging
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
-import org.springframework.web.bind.annotation.*
-
-
+import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestMapping
 private val logger = KotlinLogging.logger { }
 
 @RestController
-@RequestMapping("/tormays")
+@RequestMapping("/hankkeet")
 @Validated
-class TormaystarkasteluController {
+class TormaystarkasteluController(@Autowired private val laskentaService: TormaystarkasteluLaskentaService) {
 
-    @GetMapping("/{hankeTunnus}")
+    @GetMapping("/{hankeTunnus}/tormaystarkastelu")
     fun getTormaysTarkastelu(@PathVariable(name = "hankeTunnus") hankeTunnus: String?): ResponseEntity<Any> {
         logger.info {
-            "Creating tormaystarkastelu for hanke: ${hankeTunnus}"
+            "Creating tormaystarkastelu for hanke: $hankeTunnus"
         }
 
         if (hankeTunnus == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002) //TODO: own error code?
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
 
         return try {
-            //call service
+            // call service to get tormaystarkastelu
+            val tormaysResults = laskentaService.getTormaystarkastelu(hankeTunnus)
 
-            val tormaysResults = getDummyTormaystarkasteluTulos()
-
-
-            // has saved tormaystulos to database
-            //return hanke with tormaystulos
-            logger.info { "tormaystarkastelu created for Hanke ${hankeTunnus}." }
+            logger.info { "tormaystarkastelu created for Hanke $hankeTunnus." }
             ResponseEntity.status(HttpStatus.OK).body(tormaysResults)
         } catch (e: Exception) {
-            logger.error(e) {
-
-                HankeError.HAI1006.toString()
-
-            }
+            logger.error(e) { HankeError.HAI1006.toString() }
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1006)
         }
     }
 
-    private fun getDummyTormaystarkasteluTulos(): TormaystarkasteluTulos {
-        val tormaysResults = TormaystarkasteluTulos()
-        tormaysResults.hankeId = 2 //TODO: selvitettävä jostain
-        tormaysResults.joukkoliikenneIndeksi = 3.4
-        tormaysResults.pyorailyIndeksi = 4.2
-        tormaysResults.perusIndeksi = 2.1
 
-        tormaysResults.liikennehaittaIndeksi = LiikennehaittaIndeksiType()
-        tormaysResults.liikennehaittaIndeksi!!.indeksi = 4.2
-        tormaysResults.liikennehaittaIndeksi!!.type = IndeksiType.PYORAILYINDEKSI
-
-        //TODO: in the future this would contain "Viereiset hankkeet" too
-
-        return tormaysResults
-    }
-
-    @PostMapping
-    fun createTormaysTarkasteluForHanke(@ValidHanke @RequestBody hanke: Hanke?): ResponseEntity<Any> {
+    @PostMapping("/{hankeTunnus}/tormaystarkastelu")
+    fun createTormaysTarkasteluForHanke(@PathVariable(name = "hankeTunnus") hankeTunnus: String?): ResponseEntity<Any> {
         logger.info {
-            "Creating tormaystarkastelu for hanke: ${hanke?.toLogString()}"
+            "Creating tormaystarkastelu for hanke: $hankeTunnus"
         }
 
-        if (hanke == null) {
+        if (hankeTunnus == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
 
         return try {
 
-            //if(hanke.tilat.onTiedotLiikenneHaittaIndeksille)
+            // if(hanke.tilat.onTiedotLiikenneHaittaIndeksille)
             // then calculate:
             // - call service to create tormaystarkastelu -> you will get TormaystarkasteluTulos
             // - service has saved tormaystulos to database and saved hanke.onLiikenneHaittaIndeksi=true (or is it services job to do that?)
             // - return hanke with tormaystulos
 
-            val hankeWithTormaysResults: Hanke = hanke.copy() //dummy code -> call service TormaystarkasteluLaskentaService
-            var dummyTulos = getDummyTormaystarkasteluTulos() //dummy code
+            // call service TormaystarkasteluLaskentaService
+            var hankeWithTormaysResults = laskentaService.calculateTormaystarkastelu(hankeTunnus)
 
-            //miten törmäystulos? Onko se erikseen hankkeella?
-            // annetaanko TormaystarkasteluLaskentaService:lle koko hanke (tarvitsee  hankkeen tietoja) ja palauttaisiko se hankkeen, jota on
-            // täydennetty törmäystuloksilla?
-            hankeWithTormaysResults.liikennehaittaindeksi = dummyTulos.liikennehaittaIndeksi //tämä olisi hankkeelle tallennettavaa
-            hankeWithTormaysResults.tormaystarkasteluTulos = dummyTulos  //tässä mukana myös liikennehaittaindeksi, mutta myös muu tulos
 
             logger.info { "tormaystarkastelu created for Hanke ${hankeWithTormaysResults.hankeTunnus}." }
             ResponseEntity.status(HttpStatus.OK).body(hankeWithTormaysResults)
@@ -101,6 +74,5 @@ class TormaystarkasteluController {
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1006)
         }
     }
-
 
 }
