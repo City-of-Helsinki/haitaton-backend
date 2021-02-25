@@ -247,7 +247,7 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
             )
         }
 
-        return tormaystulos.values.flatten().max()
+        return tormaystulos.values.flatten().maxOrNull()
     }
 
     private fun shouldUseWiderRadiusVolumes(katuluokkaLuokittelu: Luokittelutulos?) =
@@ -309,16 +309,111 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
     private fun getBussiLuokitteluTulos(hanke: Hanke, rajaArvot: LuokitteluRajaArvot): Luokittelutulos {
         val hankeGeometriat = hanke.geometriat
         val hankeGeometriatId = hankeGeometriat?.id
-            ?: throw IllegalArgumentException("Hanke.geometriat should be set for hankeid ${hanke.id}")
-        // TODO: implement bus rules here
-        return Luokittelutulos(
-            hankeGeometriatId,
-            LuokitteluType.BUSSILIIKENNE,
-            0,
-            BussiTormaysLuokittelu.EI_BUSSILIIKENNETTA.toString()
-        )
+
+        //if no id -> let's get out of here
+        if (hankeGeometriatId == null)
+            throw IllegalArgumentException("Hanke.geometriat should be set for hankeid ${hanke.id}")
+        //TODO: implement bus rules here
+
+        val criticalAreaTormays = tormaystarkasteluDao.bussiliikenteenKannaltaKriittinenAlue(hankeGeometriat)
+        if (hitsInCriticalAreaBus(criticalAreaTormays)) {
+            //if critical_area matches ->  return 5
+            val arvoRivi = rajaArvot.bussiliikenneRajaArvot.first { rajaArvo -> rajaArvo.arvo == 5 }
+            return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
+        }
+
+        val bussesTormaystulos = tormaystarkasteluDao.bussit(hankeGeometriat)
+
+        // if no hits in buses -> 0
+        if (hitsInBusses(bussesTormaystulos) == false) {
+            val arvoRivi = getBussiRajaArvoWithClassification(rajaArvot, 0) //find zero
+            return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
+        }
+        //count sum of rush_hours
+        val countOfRushHourBuses = calculateCountOfRushHourBuses(bussesTormaystulos)
+
+        //if rush_hours >=21 -> 5
+        val arvoRiviTop = getBussiRajaArvoWithClassification(rajaArvot, 5)
+        if (countOfRushHourBuses >= arvoRiviTop.minimumValue) {
+            return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRiviTop.arvo, arvoRiviTop.explanation)
+        }
+
+
+        //if matchesTrunk=yes -> 4 or if rush_hours 11-20 -> 4
+        val arvoRiviSecond = getBussiRajaArvoWithClassification(rajaArvot, 4)
+        if (matchesBusLineIsTrunkLine(bussesTormaystulos) || countOfRushHourBuses >= arvoRiviSecond.minimumValue) {
+            return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRiviSecond.arvo, arvoRiviSecond.explanation)
+        }
+
+
+        //if matchesAlmost=yes -> 3 or if rush_hour count 5-10 -> 3
+        val arvoRiviMiddle = getBussiRajaArvoWithClassification(rajaArvot, 3)
+        if (matchesBusLineIsAlmostTrunkLine(bussesTormaystulos) || countOfRushHourBuses >= arvoRiviMiddle.minimumValue) {
+            return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRiviMiddle.arvo, arvoRiviMiddle.explanation)
+        }
+
+        //if rush_hours 0-4 -> 2
+        val arvoRiviSmall = getBussiRajaArvoWithClassification(rajaArvot, 2)
+        if (matchesBusLineIsAlmostTrunkLine(bussesTormaystulos) || countOfRushHourBuses >= arvoRiviSmall.minimumValue) {
+            return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRiviSmall.arvo, arvoRiviSmall.explanation)
+        }
+
+        //should not end here, but for safety
+
+        val arvoRivi = getBussiRajaArvoWithClassification(rajaArvot, 0) //find zero
+        return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
+
     }
 
+    //There is at least one "Almost trunk" (=runkolinjamainen linja in Finnish) in the analysis result
+    private fun matchesBusLineIsAlmostTrunkLine(bussesTormaystulos: Map<Int, Set<TormaystarkasteluBussireitti>>): Boolean {
+        val oneList = bussesTormaystulos.values.flatten()
+        return oneList.any { tormaystulosRivi ->
+            tormaystulosRivi.runkolinja == TormaystarkasteluBussiRunkolinja.LAHES
+        }
+    }
+
+    //There is at least one "Trunk" (=runkolinja in Finnish) in the analysis result
+    private fun matchesBusLineIsTrunkLine(bussesTormaystulos: Map<Int, Set<TormaystarkasteluBussireitti>>): Boolean {
+        val oneList = bussesTormaystulos.values.flatten()
+        return oneList.any { tormaystulosRivi ->
+            tormaystulosRivi.runkolinja == TormaystarkasteluBussiRunkolinja.ON
+        }
+    }
+
+    // Helper method for getting correct rajaArvo classification for certain arvo
+    private fun getBussiRajaArvoWithClassification(rajaArvot: LuokitteluRajaArvot, arvo: Int) =
+        rajaArvot.bussiliikenneRajaArvot.first { rajaArvo -> rajaArvo.arvo == arvo }
+
+    // How many rush_hour bus lines there are?
+    private fun calculateCountOfRushHourBuses(bussesTormaystulos: Map<Int, Set<TormaystarkasteluBussireitti>>): Int {
+        var countOfBuses = 0
+        val oneList = bussesTormaystulos.values.flatten()
+        oneList.forEach {
+            countOfBuses += it.vuoromaaraRuuhkatunnissa
+        }
+
+        return countOfBuses
+    }
+
+    // Are there any rush_hour bus lines?
+    private fun hitsInBusses(bussesTormaystulos: Map<Int, Set<TormaystarkasteluBussireitti>>): Any {
+        if (bussesTormaystulos.isNotEmpty())
+            return true
+        return false
+    }
+
+    // Are there critical areas for buses?
+    private fun hitsInCriticalAreaBus(criticalAreaTormays: Map<Int, Boolean>): Boolean {
+        if (criticalAreaTormays.isNotEmpty())
+            return true
+        return false
+
+    }
+
+    /**
+     * Returns classification for tram trafic comparison in Luokittelutulos.
+     */
     private fun getRaitiovaunuLuokitteluTulos(hanke: Hanke): Luokittelutulos {
 
         val hankeGeometriat = hanke.geometriat
@@ -356,6 +451,7 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
         )
     }
 
+    //Do trams have shared lane with cars?
     private fun matchesSharedLane(tormaystulos: Map<Int, Set<TormaystarkasteluRaitiotiekaistatyyppi>>): Boolean {
         // if contains any rows with ("mixed")
         return tormaystulos.any { tormaystulosRivi ->
@@ -363,6 +459,7 @@ class TormaystarkasteluPaikkaServiceImpl(private val tormaystarkasteluDao: Torma
         }
     }
 
+    //Do trams have their own dedicated lane in streets?
     private fun matchesOwnLane(tormaystulos: Map<Int, Set<TormaystarkasteluRaitiotiekaistatyyppi>>): Boolean {
         // if contains any rows with ("dedicated")
         return tormaystulos.any { tormaystulosRivi ->
