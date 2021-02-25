@@ -22,9 +22,6 @@ enum class RaitiovaunuTormaysLuokittelu(s: String) {
     OMA_KAISTA ( "Raitiovaunuilla oma kaista"),
     EI_RAITIOVAUNULIIKENNETTA ( "Ei vaikuta raitiovaunuliikenteeseen")
 }
-enum class BussiTormaysLuokittelu(s: String) {
-    EI_BUSSILIIKENNETTA( "Ei vaikuta linja-autoliikenteeseen")
-}
 
 enum class KatuluokkaTormaysLuokittelu(s: String) {
     PAAKATU_MOOTTORIVAYLA("Pääkatu tai moottoriväylä"),
@@ -35,11 +32,3 @@ enum class KatuluokkaTormaysLuokittelu(s: String) {
     EI_MOOTTORILIIKENNE_VAIK("Ei vaikuta moottoriajoneuvoliikenteeseen")
 }
 
-enum class LiikenneMaaraTormaysLuokittelu(s: String) {
-    FIVE("10 000 tai enemmän"),
-    FOUR("5 000-9 999"),
-    THREE("1 500-4 999"),
-    TWO("500 - 1 499"),
-    ONE("Alle 500"),
-    ZERO("Ei autoliikennettä")
-}
