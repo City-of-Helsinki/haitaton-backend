@@ -14,13 +14,6 @@ class HankeGeometriatValidator : ConstraintValidator<ValidHankeGeometriat, Hanke
             return false
         }
         var ok = true
-        if (featureCollection.features.isNullOrEmpty()) {
-            context.buildConstraintViolationWithTemplate(HankeError.HAI1011.name)
-                .addPropertyNode("featureCollection")
-                .addPropertyNode("features")
-                .addConstraintViolation()
-            ok = false
-        }
         when {
             featureCollection.crs == null -> {
                 context.buildConstraintViolationWithTemplate(HankeError.HAI1011.name)

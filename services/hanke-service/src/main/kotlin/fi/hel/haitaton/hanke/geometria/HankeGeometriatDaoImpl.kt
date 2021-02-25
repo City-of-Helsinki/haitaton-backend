@@ -99,39 +99,6 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
         }
     }
 
-    override fun updateHankeGeometriat(hankeGeometriat: HankeGeometriat) {
-        with(jdbcOperations) {
-            update(
-                """
-                UPDATE HankeGeometriat
-                SET
-                    version = ?,
-                    modifiedByUserId = ?,
-                    modifiedAt = ?
-                WHERE
-                    id = ?
-            """.trimIndent()
-            ) { ps ->
-                ps.setInt(1, hankeGeometriat.version!!)
-                if (hankeGeometriat.modifiedByUserId != null) {
-                    ps.setString(2, hankeGeometriat.modifiedByUserId!!)
-                } else {
-                    ps.setNull(2, Types.INTEGER)
-                }
-                if (hankeGeometriat.modifiedAt != null) {
-                    ps.setTimestamp(3, Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli()))
-                } else {
-                    ps.setNull(3, Types.TIMESTAMP)
-                }
-                ps.setInt(4, hankeGeometriat.id!!)
-            }
-            // delete old geometry rows
-            deleteHankeGeometriaRows(hankeGeometriat, this)
-            // save new geometry rows
-            saveHankeGeometriaRows(hankeGeometriat, this)
-        }
-    }
-
     override fun retrieveHankeGeometriat(hankeId: Int): HankeGeometriat? {
         with(jdbcOperations) {
             val hankeGeometriat = query(
@@ -184,5 +151,69 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                 }
             }, hankeGeometriatId
         )
+    }
+
+    override fun updateHankeGeometriat(hankeGeometriat: HankeGeometriat) {
+        with(jdbcOperations) {
+            update(
+                """
+                UPDATE HankeGeometriat
+                SET
+                    version = ?,
+                    modifiedByUserId = ?,
+                    modifiedAt = ?
+                WHERE
+                    id = ?
+            """.trimIndent()
+            ) { ps ->
+                ps.setInt(1, hankeGeometriat.version!!)
+                if (hankeGeometriat.modifiedByUserId != null) {
+                    ps.setString(2, hankeGeometriat.modifiedByUserId!!)
+                } else {
+                    ps.setNull(2, Types.INTEGER)
+                }
+                if (hankeGeometriat.modifiedAt != null) {
+                    ps.setTimestamp(3, Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli()))
+                } else {
+                    ps.setNull(3, Types.TIMESTAMP)
+                }
+                ps.setInt(4, hankeGeometriat.id!!)
+            }
+            // delete old geometry rows
+            deleteHankeGeometriaRows(hankeGeometriat, this)
+            // save new geometry rows
+            saveHankeGeometriaRows(hankeGeometriat, this)
+        }
+    }
+
+    override fun deleteHankeGeometriat(hankeGeometriat: HankeGeometriat) {
+        with(jdbcOperations) {
+            update(
+                """
+                UPDATE HankeGeometriat
+                SET
+                    version = ?,
+                    modifiedByUserId = ?,
+                    modifiedAt = ?
+                WHERE
+                    id = ?
+            """.trimIndent()
+            ) { ps ->
+                ps.setInt(1, hankeGeometriat.version!!)
+                if (hankeGeometriat.modifiedByUserId != null) {
+                    ps.setString(2, hankeGeometriat.modifiedByUserId!!)
+                } else {
+                    ps.setNull(2, Types.INTEGER)
+                }
+                if (hankeGeometriat.modifiedAt != null) {
+                    ps.setTimestamp(3, Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli()))
+                } else {
+                    ps.setNull(3, Types.TIMESTAMP)
+                }
+                ps.setInt(4, hankeGeometriat.id!!)
+            }
+            // delete old geometry rows
+            deleteHankeGeometriaRows(hankeGeometriat, this)
+        }
     }
 }

@@ -6,7 +6,10 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isTrue
-import fi.hel.haitaton.hanke.*
+import fi.hel.haitaton.hanke.DATABASE_TIMESTAMP_FORMAT
+import fi.hel.haitaton.hanke.HaitatonPostgreSQLContainer
+import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.domain.Hanke
 import org.geojson.Point
 import org.junit.jupiter.api.BeforeEach
@@ -32,9 +35,9 @@ internal class HankeGeometriatServiceImplITest {
     companion object {
         @Container
         var container: HaitatonPostgreSQLContainer = HaitatonPostgreSQLContainer
-                .withExposedPorts(5433) // use non-default port
-                .withPassword("test")
-                .withUsername("test")
+            .withExposedPorts(5433) // use non-default port
+            .withPassword("test")
+            .withUsername("test")
 
         @JvmStatic
         @DynamicPropertySource
@@ -65,9 +68,10 @@ internal class HankeGeometriatServiceImplITest {
 
     @Test
     fun `save and load and update`() {
-        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
-        hankeGeometriat.createdByUserId = "1111"
-        hankeGeometriat.modifiedByUserId = "2222"
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource(HankeGeometriat::class.java)
+        hankeGeometriat.createdByUserId = "test"
+        hankeGeometriat.modifiedByUserId = "test"
 
         // For FK constraints we need a Hanke in database
         // Using hankeService to create the dummy hanke into database causes
@@ -88,7 +92,6 @@ internal class HankeGeometriatServiceImplITest {
         assertThat(updatedHanke).isNotNull()
         assertThat(updatedHanke!!.tilat.onGeometrioita).isTrue()
 
-
         // load
         var loadedHankeGeometriat = hankeGeometriatService.loadGeometriat(hankeTunnus)
         val createdAt = loadedHankeGeometriat!!.createdAt!!
@@ -103,7 +106,8 @@ internal class HankeGeometriatServiceImplITest {
             val loadedPoint = loadedHankeGeometriat!!.featureCollection!!.features[0].geometry as Point
             val point = hankeGeometriat.featureCollection!!.features[0].geometry as Point
             assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
-            assertThat(loadedHankeGeometriat!!.featureCollection!!.features[0].properties["hankeTunnus"]).isEqualTo(hankeTunnus)
+            assertThat(loadedHankeGeometriat!!.featureCollection!!.features[0].properties["hankeTunnus"])
+                .isEqualTo(hankeTunnus)
         }
 
         // update
@@ -121,7 +125,11 @@ internal class HankeGeometriatServiceImplITest {
             assertThat(loadedHankeGeometriat!!.hankeId).isEqualTo(hankeGeometriat.hankeId)
             assertThat(loadedHankeGeometriat.version).isEqualTo(1) // this has increased
             assertThat(loadedHankeGeometriat.createdByUserId).isEqualTo(hankeGeometriat.createdByUserId)
-            assertThat(loadedHankeGeometriat.createdAt!!.format(DATABASE_TIMESTAMP_FORMAT)).isEqualTo(createdAt.format(DATABASE_TIMESTAMP_FORMAT))
+            assertThat(loadedHankeGeometriat.createdAt!!.format(DATABASE_TIMESTAMP_FORMAT)).isEqualTo(
+                createdAt.format(
+                    DATABASE_TIMESTAMP_FORMAT
+                )
+            )
             assertThat(loadedHankeGeometriat.modifiedAt!!.isAfter(modifiedAt)) // this has changed
             assertThat(loadedHankeGeometriat.modifiedByUserId).isEqualTo(hankeGeometriat.modifiedByUserId)
             assertThat(loadedHankeGeometriat.featureCollection!!.features.size).isEqualTo(3) // this has increased
@@ -129,12 +137,15 @@ internal class HankeGeometriatServiceImplITest {
             val loadedPoint = loadedHankeGeometriat.featureCollection!!.features[0].geometry as Point
             val point = hankeGeometriat.featureCollection!!.features[0].geometry as Point
             assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
-            assertThat(loadedHankeGeometriat.featureCollection!!.features[0].properties["hankeTunnus"]).isEqualTo(hankeTunnus)
+            assertThat(loadedHankeGeometriat.featureCollection!!.features[0].properties["hankeTunnus"]).isEqualTo(
+                hankeTunnus
+            )
         }
 
         // check database too to make sure there is everything correctly
         assertAll {
-            assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometriat") { rs, _ -> rs.getInt(1) }).isEqualTo(1)
+            assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometriat") { rs, _ -> rs.getInt(1) })
+                .isEqualTo(1)
             val ids = jdbcTemplate.query("SELECT id, hankegeometriatid FROM HankeGeometria") { rs, _ ->
                 Pair(rs.getInt(1), rs.getInt(2))
             }
