@@ -594,7 +594,7 @@ internal class TormaystarkasteluPaikkaServiceImplTest {
         )
 
         // adding geometry
-        hanke.geometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
+        hanke.geometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
         hanke.geometriat!!.id = 1
         return hanke
     }
