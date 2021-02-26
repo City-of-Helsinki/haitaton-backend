@@ -32,7 +32,7 @@ import java.time.temporal.ChronoUnit
  *
  * This class should test only the weblayer (both HTTP server and context to be auto-mocked).
  */
-@WebMvcTest
+@WebMvcTest(HankeController::class)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @WithMockUser("test", roles = ["haitaton-user"])
