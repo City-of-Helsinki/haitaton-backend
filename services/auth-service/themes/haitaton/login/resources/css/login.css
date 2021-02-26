@@ -1,21 +1,3 @@
-/*
-@font-face {
-    font-family: HelsinkiGrotesk;
-    src: url('../../../common/resources/lib/zocial/HelsinkiGrotesk-Regular.otf') format('opentype');
-}
-
-@font-face {
-    font-family: HelsinkiGrotesk;
-    font-weight: 500;
-    src: url('../../../common/resources/lib/zocial/HelsinkiGrotesk-Medium.otf') format('opentype');
-}
-
-@font-face {
-    font-family: HelsinkiGrotesk;
-    font-weight: bold;
-    src: url('../../../common/resources/lib/zocial/HelsinkiGrotesk-Bold.otf') format('opentype');
-}
-*/
 html.login-pf {
     background: #F1F1F1;
     min-height: 100%;
@@ -29,7 +11,12 @@ html.login-pf body {
     position: relative;
     font-family: sans-serif !important;
 }
+html.login-pf .login-pf-page-header{
+    padding:10px 0 25px 0;
+    margin: 0;
+}
 .login-pf-page-header svg{
+    
     width: 150px;
     margin: auto;
 }
@@ -37,19 +24,38 @@ h1 {
     color: #FFFFFF;
     font-weight: 500;
     font-size: 32px;
-    margin-top:40px;
+    margin:20px 0 0 0;
 }
 h2 {
     font-size: 16px;
     font-weight: bold;
+    margin-top: 0;
+}
+.form-group:last-child {
+    margin-bottom: 0;
 }
 label.pf-c-form__label-text {
     font-size: 12px;
     font-weight: bold;
+    display: block;
 }
+.pf-c-form__helper-text.pf-m-error {
+    display:block;
+}
+.pf-c-form-control {
+    border: solid 1px #000000;
+    padding: 5px;
+    width: 240px;
+}
+.pf-c-button.pf-m-primary {
+    background: #0072C6;
+    padding: 8px 20px;
+    width: auto;
+}
+
 .card-pf {
     background: #F1F1F1;
-    width: 600px;
+    width: 400px;
     margin: auto;
 }
 .login-pf-page {
@@ -60,6 +66,7 @@ label.pf-c-form__label-text {
 }
 .login-pf-page .card-pf {
     margin-bottom: 100px;
+    background: #FFFFFF;
 }
 footer {
     position: absolute;
