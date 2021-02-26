@@ -67,6 +67,7 @@ label.pf-c-form__label-text {
 .login-pf-page .card-pf {
     margin-bottom: 100px;
     background: #FFFFFF;
+    padding: 20px;
 }
 footer {
     position: absolute;
