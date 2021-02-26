@@ -23,7 +23,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-@WebMvcTest
+@WebMvcTest(HankeGeometriaController::class)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @WithMockUser("test", roles = ["haitaton-user"])
