@@ -2,11 +2,8 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import fi.hel.haitaton.hanke.*
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import io.mockk.every
 import io.mockk.verify
-import org.assertj.core.api.Assertions
-import org.junit.Assert
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -21,7 +18,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
-@WebMvcTest
+@WebMvcTest(TormaystarkasteluController::class)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @WithMockUser("test", roles = ["haitaton-user"])
