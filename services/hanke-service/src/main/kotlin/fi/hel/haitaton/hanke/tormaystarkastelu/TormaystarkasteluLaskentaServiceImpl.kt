@@ -44,7 +44,14 @@ open class TormaystarkasteluLaskentaServiceImpl(
         return hanke
     }
 
-    override fun getTormaystarkastelu(hankeTunnus: String): TormaystarkasteluTulos {
+    override fun getTormaystarkastelu(hankeTunnus: String): TormaystarkasteluTulos? {
+
+        val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
+
+        if (!hanke.tilat.onLiikenneHaittaIndeksi) {
+            return null
+        }
+        //check if hanke.tilaOn -> tormaystarkastelu not exists -> return null
         //get from database tormays
         // if we have tormaystarkastelu, return
 

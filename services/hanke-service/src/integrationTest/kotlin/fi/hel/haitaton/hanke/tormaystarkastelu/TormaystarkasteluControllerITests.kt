@@ -5,6 +5,8 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import io.mockk.every
 import io.mockk.verify
+import org.assertj.core.api.Assertions
+import org.junit.Assert
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -32,6 +34,41 @@ class TormaystarkasteluIControllerTests(@Autowired val mockMvc: MockMvc) {
 
     @Autowired
     lateinit var laskentaService: TormaystarkasteluLaskentaService
+
+    @Test
+    fun `When tormaystarkastelu is called for hanke which does not have TormaystarkasteluTulos`() {
+
+        // faking the service call
+        every { hankeService.loadHanke(any()) }
+            .returns(
+                Hanke(
+                    123,
+                    mockedHankeTunnus,
+                    true,
+                    "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
+                    ZonedDateTime.of(2020, 2, 20, 23, 45, 56, 0, TZ_UTC)
+                        .truncatedTo(ChronoUnit.MILLIS),
+                    ZonedDateTime.of(2030, 2, 20, 23, 45, 56, 0, TZ_UTC)
+                        .truncatedTo(ChronoUnit.MILLIS),
+                    Vaihe.OHJELMOINTI,
+                    null,
+                    1,
+                    "Risto",
+                    getCurrentTimeUTC(),
+                    null,
+                    null,
+                    SaveType.DRAFT
+                )
+            )
+        every { laskentaService.getTormaystarkastelu(any()) }.returns(null)
+
+        mockMvc.perform(
+            MockMvcRequestBuilders.get("/hankkeet/$mockedHankeTunnus/tormaystarkastelu")
+                .accept(MediaType.APPLICATION_JSON)
+        ).andExpect(MockMvcResultMatchers.status().isNotFound)
+
+        verify { laskentaService.getTormaystarkastelu(any()) }
+    }
 
     @Test
     fun `When tormaystarkastelu is called for hanke with existing TormaystarkasteluTulos`() {

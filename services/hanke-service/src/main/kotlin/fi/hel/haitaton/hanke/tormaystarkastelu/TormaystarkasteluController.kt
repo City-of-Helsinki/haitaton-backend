@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+
 private val logger = KotlinLogging.logger { }
 
 @RestController
@@ -21,7 +22,7 @@ class TormaystarkasteluController(@Autowired private val laskentaService: Tormay
     @GetMapping("/{hankeTunnus}/tormaystarkastelu")
     fun getTormaysTarkastelu(@PathVariable(name = "hankeTunnus") hankeTunnus: String?): ResponseEntity<Any> {
         logger.info {
-            "Creating tormaystarkastelu for hanke: $hankeTunnus"
+            "Fetching existing tormaystarkastelu for hanke: $hankeTunnus"
         }
 
         if (hankeTunnus == null) {
@@ -31,9 +32,13 @@ class TormaystarkasteluController(@Autowired private val laskentaService: Tormay
         return try {
             // call service to get tormaystarkastelu
             val tormaysResults = laskentaService.getTormaystarkastelu(hankeTunnus)
-
-            logger.info { "tormaystarkastelu created for Hanke $hankeTunnus." }
-            ResponseEntity.status(HttpStatus.OK).body(tormaysResults)
+            if (tormaysResults == null) {
+                logger.info { "Tormaystarkastelu does not exist for Hanke $hankeTunnus." }
+                ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1007)
+            } else {
+                logger.info { "Tormaystarkastelu fetched for Hanke $hankeTunnus." }
+                ResponseEntity.status(HttpStatus.OK).body(tormaysResults)
+            }
         } catch (e: Exception) {
             logger.error(e) { HankeError.HAI1006.toString() }
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1006)

@@ -18,6 +18,7 @@ enum class HankeError(
     HAI1004("Internal error while loading Hanke"),
     HAI1005("Database state invalid"),
     HAI1006("Internal error while creating tormaystarkastelu for Hanke"),
+    HAI1007("Tormaystarkastelu not found"),
     HAI1011("Invalid Hanke geometry"),
     HAI1012("Internal error while saving Hanke geometry"),
     HAI1013("Invalid coordinate system"),

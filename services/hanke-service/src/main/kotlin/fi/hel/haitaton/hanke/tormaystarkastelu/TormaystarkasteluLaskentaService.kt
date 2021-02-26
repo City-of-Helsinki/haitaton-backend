@@ -6,5 +6,5 @@ interface TormaystarkasteluLaskentaService {
 
     fun calculateTormaystarkastelu(hankeTunnus: String): Hanke
 
-    fun getTormaystarkastelu(hankeTunnus: String): TormaystarkasteluTulos
+    fun getTormaystarkastelu(hankeTunnus: String): TormaystarkasteluTulos?
 }
