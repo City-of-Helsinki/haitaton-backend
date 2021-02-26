@@ -53,6 +53,33 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
             return this.crs?.properties?.get("name")?.toString()?.split("::")?.get(1)?.toInt() ?: SRID
         }
 
+        private fun updateHankeGeometriat(hankeGeometriat: HankeGeometriat, jdbcOperations: JdbcOperations) {
+            jdbcOperations.update(
+                """
+                UPDATE HankeGeometriat
+                SET
+                    version = ?,
+                    modifiedByUserId = ?,
+                    modifiedAt = ?
+                WHERE
+                    id = ?
+            """.trimIndent()
+            ) { ps ->
+                ps.setInt(1, hankeGeometriat.version!!)
+                if (hankeGeometriat.modifiedByUserId != null) {
+                    ps.setString(2, hankeGeometriat.modifiedByUserId!!)
+                } else {
+                    ps.setNull(2, Types.INTEGER)
+                }
+                if (hankeGeometriat.modifiedAt != null) {
+                    ps.setTimestamp(3, Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli()))
+                } else {
+                    ps.setNull(3, Types.TIMESTAMP)
+                }
+                ps.setInt(4, hankeGeometriat.id!!)
+            }
+        }
+
         private fun deleteHankeGeometriaRows(hankeGeometriat: HankeGeometriat, jdbcOperations: JdbcOperations) {
             jdbcOperations.execute("DELETE FROM HankeGeometria WHERE hankeGeometriatId = ${hankeGeometriat.id}")
         }
@@ -155,30 +182,8 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
 
     override fun updateHankeGeometriat(hankeGeometriat: HankeGeometriat) {
         with(jdbcOperations) {
-            update(
-                """
-                UPDATE HankeGeometriat
-                SET
-                    version = ?,
-                    modifiedByUserId = ?,
-                    modifiedAt = ?
-                WHERE
-                    id = ?
-            """.trimIndent()
-            ) { ps ->
-                ps.setInt(1, hankeGeometriat.version!!)
-                if (hankeGeometriat.modifiedByUserId != null) {
-                    ps.setString(2, hankeGeometriat.modifiedByUserId!!)
-                } else {
-                    ps.setNull(2, Types.INTEGER)
-                }
-                if (hankeGeometriat.modifiedAt != null) {
-                    ps.setTimestamp(3, Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli()))
-                } else {
-                    ps.setNull(3, Types.TIMESTAMP)
-                }
-                ps.setInt(4, hankeGeometriat.id!!)
-            }
+            // update master row
+            updateHankeGeometriat(hankeGeometriat, this)
             // delete old geometry rows
             deleteHankeGeometriaRows(hankeGeometriat, this)
             // save new geometry rows
@@ -188,30 +193,8 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
 
     override fun deleteHankeGeometriat(hankeGeometriat: HankeGeometriat) {
         with(jdbcOperations) {
-            update(
-                """
-                UPDATE HankeGeometriat
-                SET
-                    version = ?,
-                    modifiedByUserId = ?,
-                    modifiedAt = ?
-                WHERE
-                    id = ?
-            """.trimIndent()
-            ) { ps ->
-                ps.setInt(1, hankeGeometriat.version!!)
-                if (hankeGeometriat.modifiedByUserId != null) {
-                    ps.setString(2, hankeGeometriat.modifiedByUserId!!)
-                } else {
-                    ps.setNull(2, Types.INTEGER)
-                }
-                if (hankeGeometriat.modifiedAt != null) {
-                    ps.setTimestamp(3, Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli()))
-                } else {
-                    ps.setNull(3, Types.TIMESTAMP)
-                }
-                ps.setInt(4, hankeGeometriat.id!!)
-            }
+            // update master row
+            updateHankeGeometriat(hankeGeometriat, this)
             // delete old geometry rows
             deleteHankeGeometriaRows(hankeGeometriat, this)
         }
