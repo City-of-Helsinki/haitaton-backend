@@ -80,15 +80,16 @@ class HankeGeometriaControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     // ---------- POST /hankkeet/{hankeTunnus}/geometriat ----------
 
     private fun performPostHankkeetTunnusGeometriat(): ResultActions {
-        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource(HankeGeometriat::class.java)
         hankeGeometriat.hankeId = null
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
         hankeGeometriat.modifiedAt = null
         val hankeTunnus = "1234567"
         val hankeId = 1
-        val savedHankeGeometriat =
-                "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
+        val savedHankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource(HankeGeometriat::class.java)
         savedHankeGeometriat.hankeId = hankeId
         savedHankeGeometriat.version = 1
 
@@ -107,7 +108,8 @@ class HankeGeometriaControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
 
     private fun performGetHankkeetTunnusGeometriat(): ResultActions {
         val hankeTunnus = "1234567"
-        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource(HankeGeometriat::class.java)
 
         every { hankeGeometriatService.loadGeometriat(hankeTunnus) } returns hankeGeometriat
 
@@ -116,5 +118,4 @@ class HankeGeometriaControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
                         .accept(MediaType.APPLICATION_JSON)
         )
     }
-
 }
