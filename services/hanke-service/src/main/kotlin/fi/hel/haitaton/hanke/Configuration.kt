@@ -44,14 +44,14 @@ class Configuration {
         TormaystarkasteluDaoImpl(jdbcOperations)
 
     @Bean
-    fun tormaystarkasteluLaskentaService(
-        hankeService: HankeService,
-        tormaystarkasteluPaikkaService: TormaystarkasteluPaikkaService
-    ): TormaystarkasteluLaskentaService = TormaystarkasteluLaskentaServiceImpl(hankeService, tormaystarkasteluPaikkaService)
+    fun tormaystarkasteluPaikkaService(
+        tormaystarkasteluDao: TormaystarkasteluDao
+    ): TormaystarkasteluPaikkaService = TormaystarkasteluPaikkaServiceImpl(tormaystarkasteluDao)
 
     @Bean
-    fun tormaystarkasteluPaikkaService(
-       tormaystarkasteluDao: TormaystarkasteluDao
-    ): TormaystarkasteluPaikkaService = TormaystarkasteluPaikkaServiceImpl(tormaystarkasteluDao)
+    fun tormaystarkasteluLaskentaService(
+        hankeService: HankeService,
+        paikkaService: TormaystarkasteluPaikkaService
+    ): TormaystarkasteluLaskentaService = TormaystarkasteluLaskentaServiceImpl(hankeService, paikkaService)
 
 }
