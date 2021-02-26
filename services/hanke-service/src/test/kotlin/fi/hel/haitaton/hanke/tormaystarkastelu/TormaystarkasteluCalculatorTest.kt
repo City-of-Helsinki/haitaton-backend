@@ -19,4 +19,33 @@ internal class TormaystarkasteluCalculatorTest {
         val result = TormaystarkasteluCalculator().calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), luokittelut)
         assertThat(result.pyorailyIndeksi).isEqualTo(1.0f)
     }
+
+    @Test
+    fun calculateAllIndeksit_whenIsPyorailynPaareittiOrPriority() {
+        //TODO: other classifications to be passed to not cause any errors?
+
+        // 4th case:
+        var luokittelut = mutableListOf(
+            Luokittelutulos(
+                1,
+                LuokitteluType.PYORAILYN_PAAREITTI,
+                4,
+                PyorailyTormaysLuokittelu.PAAREITTI.toString()
+            )
+        )
+        var result = TormaystarkasteluCalculator().calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), luokittelut)
+        assertThat(result.pyorailyIndeksi).isEqualTo(3.0f)
+
+        // top case:
+       luokittelut = mutableListOf(
+            Luokittelutulos(
+                1,
+                LuokitteluType.PYORAILYN_PAAREITTI,
+                5,
+                PyorailyTormaysLuokittelu.PRIORISOITU_REITTI.toString()
+            )
+        )
+        result = TormaystarkasteluCalculator().calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), luokittelut)
+        assertThat(result.pyorailyIndeksi).isEqualTo(3.0f)
+    }
 }
