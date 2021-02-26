@@ -18,26 +18,19 @@ open class TormaystarkasteluLaskentaServiceImpl(
         if (hanke.tilat.onTiedotLiikenneHaittaIndeksille) {
             // then calculate:
             // get rajaArvot for luokittelu
+            //TODO some interface which can later be replaced with database calling.. this is now too hard coded?
+            val rajaArvot = LuokitteluRajaArvot()
             // call service paikkaService to get luokittelu with rajaArvot and hankeGeometries
-            // - call something to create tormaystarkastelu with that luokittelu
-            // - save tormaysTulos to database
-            // - call hankeservice to save liikennehaittaindeksi of tormaystulos to database
-                // and saved hanke.onLiikenneHaittaIndeksi=true (or is it services job to do that?)
-            // - return hanke with tormaystulos
-
-
-            // has saved tormaystulos to database
-            // return hanke with tormaystulos
-
-            // miten törmäystulos? Onko se erikseen hankkeella?
-            // annetaanko TormaystarkasteluLaskentaService:lle koko hanke (tarvitsee  hankkeen tietoja) ja palauttaisiko se hankkeen, jota on
-            // täydennetty törmäystuloksilla?
-            //    hankeWithTormaysResults.liikennehaittaindeksi = dummyTulos.liikennehaittaIndeksi //tämä olisi hankkeelle tallennettavaa
-            //    hankeWithTormaysResults.tormaystarkasteluTulos = dummyTulos  //tässä mukana myös liikennehaittaindeksi, mutta myös muu tulos
+            val luokittelutulos = paikkaService.calculateTormaystarkasteluLuokitteluTulos(hanke, rajaArvot)
+            // - call something to create tormaystarkastelu with that luokittelu //TODO
+            // - save tormaysTulos to database //TODO
+            // - call hankeservice to save liikennehaittaindeksi of tormaystulos to database //TODO
+            // and saved hanke.onLiikenneHaittaIndeksi=true (or is it services job to do that?) //TODO:
+            // - return hanke with tormaystulos //TODO
 
             hanke.tormaystarkasteluTulos = getDummyTormaystarkasteluTulos()    //TODO: replace with real implementation
         } else {
-            //handle missing data situation?
+            //TODO: handle missing data situation? we can not calculate
         }
 
         // return hanke with tormaystulos
