@@ -8,6 +8,8 @@ import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 
 import java.time.ZonedDateTime
 
@@ -44,6 +46,10 @@ data class Hanke(
 
     constructor(id: Int) : this(id, null, null, null, null, null, null, null, null, null, null, null, null, null)
     constructor(id: Int, hankeTunnus: String) : this(id, hankeTunnus, null, null, null, null, null, null, null, null, null, null, null, null)
+
+    // -------------- Tormaystarkastelu -------------
+    var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
+    var liikennehaittaindeksi: LiikennehaittaIndeksiType? = null
 
     // --------------- Yhteystiedot -----------------
     var omistajat = mutableListOf<HankeYhteystieto>()
