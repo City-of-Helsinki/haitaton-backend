@@ -48,4 +48,28 @@ internal class TormaystarkasteluCalculatorTest {
         result = TormaystarkasteluCalculator().calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), luokittelut)
         assertThat(result.pyorailyIndeksi).isEqualTo(3.0f)
     }
+
+    @Test
+    fun calculateAllIndeksit_whenIsNotOnRaitiovaunuOrBusLine() {
+        //TODO: other classifications to be passed to not cause any errors?
+        val luokittelut = mutableListOf(
+            Luokittelutulos(
+                1,
+                LuokitteluType.PYORAILYN_PAAREITTI,
+                0,
+                PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()
+            ),
+            Luokittelutulos(
+                1,
+                LuokitteluType.RAITIOVAUNULIIKENNE,
+                0,
+                RaitiovaunuTormaysLuokittelu.EI_RAITIOVAUNULIIKENNETTA.toString()
+            ),
+            Luokittelutulos(1, LuokitteluType.BUSSILIIKENNE,0, "",   )
+        )
+        val result = TormaystarkasteluCalculator().calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), luokittelut)
+        assertThat(result.pyorailyIndeksi).isEqualTo(1.0f)
+        assertThat(result.joukkoliikenneIndeksi).isEqualTo(1.0f)
+    }
+
 }
