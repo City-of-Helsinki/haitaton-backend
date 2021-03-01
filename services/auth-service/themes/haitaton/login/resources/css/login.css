@@ -69,6 +69,20 @@ label.pf-c-form__label-text {
     background: #FFFFFF;
     padding: 20px;
 }
+.login-pf-page .login-pf-settings {
+    display: block;
+}
+.login-pf-page .login-pf-signup {
+    text-align: left;
+    font-size: 13px;
+    padding-top: 15px;
+}
+.login-pf-page .login-pf-signup a {
+    margin-left: 0;
+}
+#kc-form-options {
+    padding-bottom: 10px;
+}
 footer {
     position: absolute;
     bottom: 0;
