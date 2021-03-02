@@ -4,11 +4,13 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import org.springframework.beans.factory.annotation.Autowired
 
 open class TormaystarkasteluLaskentaServiceImpl(
     @Autowired private val hankeService: HankeService,
-    @Autowired private val paikkaService: TormaystarkasteluPaikkaService
+    @Autowired private val paikkaService: TormaystarkasteluPaikkaService,
+    @Autowired private val geometriatService: HankeGeometriatService
 ) : TormaystarkasteluLaskentaService {
 
     /**
@@ -17,6 +19,7 @@ open class TormaystarkasteluLaskentaServiceImpl(
     override fun calculateTormaystarkastelu(hankeTunnus: String): Hanke {
         // load data with hankeTunnus
         val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
+        hanke.geometriat = geometriatService.loadGeometriat(hanke)
 
         if (hanke.tilat.onTiedotLiikenneHaittaIndeksille) {
 
