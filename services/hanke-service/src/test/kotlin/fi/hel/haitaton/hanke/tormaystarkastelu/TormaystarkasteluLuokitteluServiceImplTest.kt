@@ -8,6 +8,8 @@ import org.junit.Assert.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.mockito.Mockito
 import java.time.ZonedDateTime
 
@@ -21,82 +23,18 @@ internal class TormaystarkasteluLuokitteluServiceImplTest {
         Mockito.clearInvocations(tormaysPaikkaDao)
     }
 
-    @Test
-    fun `haitta-aika 1 day`() {
+    @ParameterizedTest(name = "{0} days from 2021-03-02 will give 'haitta-ajan kesto' classification of {1}")
+    @CsvSource("0,1", "12,1", "13,3", "89,3", "90,5", "180,5")
+    fun haittaAjanKesto(days: Long, classficationValue: Int) {
         val hanke = Hanke(1, "HAI21-1").apply {
             haittaAlkuPvm = ZonedDateTime.of(2021, 3, 2, 0, 0, 0, 0, TZ_UTC)
-            haittaLoppuPvm = haittaAlkuPvm!!.plusDays(0)
+            haittaLoppuPvm = haittaAlkuPvm!!.plusDays(days)
         }
         val rajaArvot = LuokitteluRajaArvot()
 
         val haittaAjanKesto = TormaystarkasteluLuokitteluServiceImpl(tormaysPaikkaDao).haittaAjanKesto(hanke, rajaArvot)
 
-        assertThat(haittaAjanKesto.arvo).isEqualTo(1)
-    }
-
-    @Test
-    fun `haitta-aika less than 2 weeks`() {
-        val hanke = Hanke(1, "HAI21-1").apply {
-            haittaAlkuPvm = ZonedDateTime.of(2021, 3, 2, 0, 0, 0, 0, TZ_UTC)
-            haittaLoppuPvm = haittaAlkuPvm!!.plusDays(12)
-        }
-        val rajaArvot = LuokitteluRajaArvot()
-
-        val haittaAjanKesto = TormaystarkasteluLuokitteluServiceImpl(tormaysPaikkaDao).haittaAjanKesto(hanke, rajaArvot)
-
-        assertThat(haittaAjanKesto.arvo).isEqualTo(1)
-    }
-
-    @Test
-    fun `haitta-aika 2 weeks`() {
-        val hanke = Hanke(1, "HAI21-1").apply {
-            haittaAlkuPvm = ZonedDateTime.of(2021, 3, 2, 0, 0, 0, 0, TZ_UTC)
-            haittaLoppuPvm = haittaAlkuPvm!!.plusDays(13)
-        }
-        val rajaArvot = LuokitteluRajaArvot()
-
-        val haittaAjanKesto = TormaystarkasteluLuokitteluServiceImpl(tormaysPaikkaDao).haittaAjanKesto(hanke, rajaArvot)
-
-        assertThat(haittaAjanKesto.arvo).isEqualTo(3)
-    }
-
-    @Test
-    fun `haitta-aika 3 months`() {
-        val hanke = Hanke(1, "HAI21-1").apply {
-            haittaAlkuPvm = ZonedDateTime.of(2021, 3, 2, 0, 0, 0, 0, TZ_UTC)
-            haittaLoppuPvm = haittaAlkuPvm!!.plusDays(89)
-        }
-        val rajaArvot = LuokitteluRajaArvot()
-
-        val haittaAjanKesto = TormaystarkasteluLuokitteluServiceImpl(tormaysPaikkaDao).haittaAjanKesto(hanke, rajaArvot)
-
-        assertThat(haittaAjanKesto.arvo).isEqualTo(3)
-    }
-
-    @Test
-    fun `haitta-aika over 3 months`() {
-        val hanke = Hanke(1, "HAI21-1").apply {
-            haittaAlkuPvm = ZonedDateTime.of(2021, 3, 2, 0, 0, 0, 0, TZ_UTC)
-            haittaLoppuPvm = haittaAlkuPvm!!.plusDays(90)
-        }
-        val rajaArvot = LuokitteluRajaArvot()
-
-        val haittaAjanKesto = TormaystarkasteluLuokitteluServiceImpl(tormaysPaikkaDao).haittaAjanKesto(hanke, rajaArvot)
-
-        assertThat(haittaAjanKesto.arvo).isEqualTo(5)
-    }
-
-    @Test
-    fun `haitta-aika 6 months`() {
-        val hanke = Hanke(1, "HAI21-1").apply {
-            haittaAlkuPvm = ZonedDateTime.of(2021, 3, 2, 0, 0, 0, 0, TZ_UTC)
-            haittaLoppuPvm = haittaAlkuPvm!!.plusDays(180)
-        }
-        val rajaArvot = LuokitteluRajaArvot()
-
-        val haittaAjanKesto = TormaystarkasteluLuokitteluServiceImpl(tormaysPaikkaDao).haittaAjanKesto(hanke, rajaArvot)
-
-        assertThat(haittaAjanKesto.arvo).isEqualTo(5)
+        assertThat(haittaAjanKesto.arvo).isEqualTo(classficationValue)
     }
 
     @Test
