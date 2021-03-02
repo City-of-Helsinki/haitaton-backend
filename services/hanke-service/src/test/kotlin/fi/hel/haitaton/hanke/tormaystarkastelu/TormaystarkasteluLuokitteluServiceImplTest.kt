@@ -61,10 +61,10 @@ internal class TormaystarkasteluLuokitteluServiceImplTest {
     }
 
     @Test
-    fun `haitta-aika less than 3 months`() {
+    fun `haitta-aika 3 months`() {
         val hanke = Hanke(1, "HAI21-1").apply {
             haittaAlkuPvm = ZonedDateTime.of(2021, 3, 2, 0, 0, 0, 0, TZ_UTC)
-            haittaLoppuPvm = haittaAlkuPvm!!.plusDays(88)
+            haittaLoppuPvm = haittaAlkuPvm!!.plusDays(89)
         }
         val rajaArvot = LuokitteluRajaArvot()
 
@@ -74,10 +74,10 @@ internal class TormaystarkasteluLuokitteluServiceImplTest {
     }
 
     @Test
-    fun `haitta-aika 3 months`() {
+    fun `haitta-aika over 3 months`() {
         val hanke = Hanke(1, "HAI21-1").apply {
             haittaAlkuPvm = ZonedDateTime.of(2021, 3, 2, 0, 0, 0, 0, TZ_UTC)
-            haittaLoppuPvm = haittaAlkuPvm!!.plusDays(89)
+            haittaLoppuPvm = haittaAlkuPvm!!.plusDays(90)
         }
         val rajaArvot = LuokitteluRajaArvot()
 

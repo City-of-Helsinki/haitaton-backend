@@ -30,7 +30,7 @@ class LuokitteluRajaArvot {
         RajaArvo(
             LuokitteluType.HAITTA_AJAN_KESTO,
             5,
-            90,
+            91,
             "Kesto yli 3 kuukautta"
         ),
         RajaArvo(
