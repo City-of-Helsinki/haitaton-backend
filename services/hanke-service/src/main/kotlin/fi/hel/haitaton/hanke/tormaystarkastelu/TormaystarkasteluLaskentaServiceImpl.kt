@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired
 
 open class TormaystarkasteluLaskentaServiceImpl(
     @Autowired private val hankeService: HankeService,
-    @Autowired private val paikkaService: TormaystarkasteluPaikkaService
+    @Autowired private val luokitteluService: TormaystarkasteluLuokitteluService
 ) : TormaystarkasteluLaskentaService {
 
     /**
@@ -24,12 +24,12 @@ open class TormaystarkasteluLaskentaServiceImpl(
             //TODO some interface which can later be replaced with database calling.. this is now too hard coded?
             val rajaArvot = LuokitteluRajaArvot()
 
-            // call service paikkaService to get luokittelu with rajaArvot and hankeGeometries
-            val luokittelutulos = paikkaService.calculateTormaystarkasteluLuokitteluTulos(hanke, rajaArvot)
+            // call service to get luokittelu with rajaArvot and hankeGeometries
+            val luokittelutulos = luokitteluService.calculateTormaystarkasteluLuokitteluTulos(hanke, rajaArvot)
 
             // call something to create tormaystarkastelu with that luokittelu
             val laskentatulos =
-                TormaystarkasteluCalculator().calculateAllIndeksit(initTormaystarkasteluTulos(hanke), luokittelutulos)
+                TormaystarkasteluCalculator.calculateAllIndeksit(initTormaystarkasteluTulos(hanke), luokittelutulos)
 
             // - save tormaysTulos to database //TODO
             // - call hankeservice to save liikennehaittaindeksi of tormaystulos to database //TODO

@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.domain
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import fi.hel.haitaton.hanke.Haitta04
 import fi.hel.haitaton.hanke.Haitta13
 import fi.hel.haitaton.hanke.SaveType
@@ -10,8 +11,11 @@ import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import java.time.Duration
+import java.time.Period
 
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 
 /**
  *
@@ -74,6 +78,17 @@ data class Hanke(
      * See 'tilaOnGeometrioita' field.
      */
     var geometriat: HankeGeometriat? = null
+
+    /**
+     * Number of days between haittaAlkuPvm and haittaLoppuPvm (incl. both days)
+     */
+    val haittaAjanKesto: Long?
+        @JsonIgnore
+        get() = if (haittaAlkuPvm != null && haittaLoppuPvm != null) {
+            ChronoUnit.DAYS.between(haittaAlkuPvm!!, haittaLoppuPvm!!) + 1
+        } else {
+            null
+        }
 
     // --------------- State flags -------------------
     var tilat: HankeTilat = HankeTilat()

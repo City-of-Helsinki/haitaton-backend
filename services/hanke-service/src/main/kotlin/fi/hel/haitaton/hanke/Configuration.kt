@@ -8,7 +8,6 @@ import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioServiceImpl
 import fi.hel.haitaton.hanke.tormaystarkastelu.*
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
@@ -46,12 +45,12 @@ class Configuration {
     @Bean
     fun tormaystarkasteluPaikkaService(
         tormaystarkasteluDao: TormaystarkasteluDao
-    ): TormaystarkasteluPaikkaService = TormaystarkasteluPaikkaServiceImpl(tormaystarkasteluDao)
+    ): TormaystarkasteluLuokitteluService = TormaystarkasteluLuokitteluServiceImpl(tormaystarkasteluDao)
 
     @Bean
     fun tormaystarkasteluLaskentaService(
         hankeService: HankeService,
-        paikkaService: TormaystarkasteluPaikkaService
-    ): TormaystarkasteluLaskentaService = TormaystarkasteluLaskentaServiceImpl(hankeService, paikkaService)
+        luokitteluService: TormaystarkasteluLuokitteluService
+    ): TormaystarkasteluLaskentaService = TormaystarkasteluLaskentaServiceImpl(hankeService, luokitteluService)
 
 }

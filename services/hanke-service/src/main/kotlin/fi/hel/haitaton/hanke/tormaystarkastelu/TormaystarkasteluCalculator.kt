@@ -1,6 +1,16 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-class TormaystarkasteluCalculator {
+import kotlin.math.roundToInt
+
+object TormaystarkasteluCalculator {
+
+    val perusindeksiPainot = mapOf(
+        Pair(LuokitteluType.HAITTA_AJAN_KESTO, 0.1f),
+        Pair(LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN, 0.25f),
+        Pair(LuokitteluType.KAISTAJARJESTELYN_PITUUS, 0.2f),
+        Pair(LuokitteluType.KATULUOKKA, 0.2f),
+        Pair(LuokitteluType.LIIKENNEMAARA, 0.25f)
+    )
 
     val pyorailyPainot = mutableListOf(
         TulosPainotus(arvo = 0, tulos = 1.0f, painotus = 1.0f),
@@ -33,39 +43,66 @@ class TormaystarkasteluCalculator {
     )
 
     fun calculateAllIndeksit(
-        newTormaystarkasteluTulos: TormaystarkasteluTulos,
+        tormaystarkasteluTulos: TormaystarkasteluTulos,
         luokittelutulos: Map<LuokitteluType, Luokittelutulos>
     ): TormaystarkasteluTulos {
 
-        // TODO: call  calculatePerusIndeksi(luokittelutulos, newTormaystarkasteluTulos)
+        // all classification types has to be included
+        if (luokittelutulos.keys.size != LuokitteluType.values().size) {
+            throw IllegalArgumentException(
+                "Missing classification types: ${LuokitteluType.values().toSet() - luokittelutulos.keys}")
+        }
+
+        calculatePerusIndeksi(
+            luokittelutulos.getValue(LuokitteluType.HAITTA_AJAN_KESTO),
+            luokittelutulos.getValue(LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN),
+            luokittelutulos.getValue(LuokitteluType.KAISTAJARJESTELYN_PITUUS),
+            luokittelutulos.getValue(LuokitteluType.KATULUOKKA),
+            luokittelutulos.getValue(LuokitteluType.LIIKENNEMAARA),
+            tormaystarkasteluTulos
+        )
+
         calculatePyorailyIndeksi(
-            luokittelutulos.getOrElse(LuokitteluType.PYORAILYN_PAAREITTI) {
-                throw IllegalArgumentException("No value for ${LuokitteluType.PYORAILYN_PAAREITTI}")
-            },
-            newTormaystarkasteluTulos
+            luokittelutulos.getValue(LuokitteluType.PYORAILYN_PAAREITTI),
+            tormaystarkasteluTulos
         )
+
         calculateJoukkoliikenneIndeksi(
-            luokittelutulos.getOrElse(LuokitteluType.BUSSILIIKENNE) {
-                throw IllegalArgumentException("No value for ${LuokitteluType.BUSSILIIKENNE}")
-            },
-            luokittelutulos.getOrElse(LuokitteluType.RAITIOVAUNULIIKENNE) {
-                throw IllegalArgumentException("No value for ${LuokitteluType.RAITIOVAUNULIIKENNE}")
-            },
-            newTormaystarkasteluTulos
+            luokittelutulos.getValue(LuokitteluType.BUSSILIIKENNE),
+            luokittelutulos.getValue(LuokitteluType.RAITIOVAUNULIIKENNE),
+            tormaystarkasteluTulos
         )
-        return newTormaystarkasteluTulos
+
+        return tormaystarkasteluTulos
+    }
+
+    private fun calculatePerusIndeksi(
+        haittaAjanKesto: Luokittelutulos,
+        todennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin: Luokittelutulos,
+        kaistajarjestelynPituus: Luokittelutulos,
+        katuluokka: Luokittelutulos,
+        liikennemaara: Luokittelutulos,
+        tormaystarkasteluTulos: TormaystarkasteluTulos
+    ) {
+        var perusindeksi = haittaAjanKesto.arvo * perusindeksiPainot[LuokitteluType.HAITTA_AJAN_KESTO]!!
+        perusindeksi += todennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.arvo *
+                perusindeksiPainot[LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN]!!
+        perusindeksi += kaistajarjestelynPituus.arvo * perusindeksiPainot[LuokitteluType.KAISTAJARJESTELYN_PITUUS]!!
+        perusindeksi += katuluokka.arvo * perusindeksiPainot[LuokitteluType.KATULUOKKA]!!
+        perusindeksi += liikennemaara.arvo * perusindeksiPainot[LuokitteluType.LIIKENNEMAARA]!!
+        tormaystarkasteluTulos.perusIndeksi = (perusindeksi * 10).roundToInt() / 10.0f
     }
 
     private fun calculatePyorailyIndeksi(
         pyorailyLuokkaArvo: Luokittelutulos,
-        newTormaystarkasteluTulos: TormaystarkasteluTulos
+        tormaystarkasteluTulos: TormaystarkasteluTulos
     ) {
         val calculationRule = pyorailyPainot.firstOrNull { it.arvo == pyorailyLuokkaArvo.arvo }
 
         if (calculationRule == null) {
-            newTormaystarkasteluTulos.pyorailyIndeksi = 1.0f
+            tormaystarkasteluTulos.pyorailyIndeksi = 1.0f
         } else {
-            newTormaystarkasteluTulos.pyorailyIndeksi =
+            tormaystarkasteluTulos.pyorailyIndeksi =
                 calculationRule.tulos * calculationRule.painotus // TODO: 1 decimal precision?
         }
     }
@@ -73,7 +110,7 @@ class TormaystarkasteluCalculator {
     private fun calculateJoukkoliikenneIndeksi(
         bussiLuokkaArvo: Luokittelutulos,
         raitiovaunuLuokkaArvo: Luokittelutulos,
-        newTormaystarkasteluTulos: TormaystarkasteluTulos
+        tormaystarkasteluTulos: TormaystarkasteluTulos
     ) {
         val calculationRuleBussit = bussiPainot.firstOrNull { it.arvo == bussiLuokkaArvo.arvo }
 
@@ -90,15 +127,8 @@ class TormaystarkasteluCalculator {
         } // TODO: 1 decimal precision?
 
         // bigger of these matter so we will set that one
-        newTormaystarkasteluTulos.joukkoliikenneIndeksi = maxOf(bussiIndeksi, raitiovaunuIndeksi)
-    }
-
-    private fun calculatePerusIndeksi(
-        luokittelutulos: List<Luokittelutulos>,
-        newTormaystarkasteluTulos: TormaystarkasteluTulos
-    ) {
-        TODO("Not yet implemented")
+        tormaystarkasteluTulos.joukkoliikenneIndeksi = maxOf(bussiIndeksi, raitiovaunuIndeksi)
     }
 }
 
-class TulosPainotus(val arvo: Int, val tulos: Float, val painotus: Float)
+data class TulosPainotus(val arvo: Int, val tulos: Float, val painotus: Float)

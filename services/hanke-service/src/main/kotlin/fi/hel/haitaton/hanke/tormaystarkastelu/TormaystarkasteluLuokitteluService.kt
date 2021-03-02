@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import fi.hel.haitaton.hanke.domain.Hanke
 
-interface TormaystarkasteluPaikkaService {
+interface TormaystarkasteluLuokitteluService {
 
     /**
      * Returns luokittelutulos map for hanke based on its hankeGeometria comparison to the different map references
