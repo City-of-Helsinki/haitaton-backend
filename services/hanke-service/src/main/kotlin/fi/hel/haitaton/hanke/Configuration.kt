@@ -51,7 +51,9 @@ class Configuration {
     @Bean
     fun tormaystarkasteluLaskentaService(
         hankeService: HankeService,
-        paikkaService: TormaystarkasteluPaikkaService
-    ): TormaystarkasteluLaskentaService = TormaystarkasteluLaskentaServiceImpl(hankeService, paikkaService)
+        paikkaService: TormaystarkasteluPaikkaService,
+        geometriatService: HankeGeometriatService
+    ): TormaystarkasteluLaskentaService =
+        TormaystarkasteluLaskentaServiceImpl(hankeService, paikkaService, geometriatService)
 
 }
