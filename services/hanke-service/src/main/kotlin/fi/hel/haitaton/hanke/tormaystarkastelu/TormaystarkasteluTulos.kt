@@ -18,6 +18,9 @@ data class TormaystarkasteluTulos(val hankeTunnus: String) {
                 "joukkoliikenneIndeksi=$joukkoliikenneIndeksi)"
     }
 
+    /**
+     * Selects maximum of three indeksi and sets that to be LiikennehaittaIndeksi.
+     */
     fun calculateLiikennehaittaIndeksi() {
         val maxIndex = setOf(perusIndeksi!!, pyorailyIndeksi!!, joukkoliikenneIndeksi!!).maxOrNull()
             ?: throw IllegalStateException("perusIndeksi, pyorailyIndeksi and joukkoliikenneIndeksi cannot be null")

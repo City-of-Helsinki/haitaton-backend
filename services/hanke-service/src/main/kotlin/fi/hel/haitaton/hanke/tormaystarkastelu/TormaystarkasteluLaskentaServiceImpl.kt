@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.TormaysAnalyysiException
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,8 +20,11 @@ open class TormaystarkasteluLaskentaServiceImpl(
         // load data with hankeTunnus
         val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
 
-        if (hanke.tilat.onTiedotLiikenneHaittaIndeksille) {
+        if (hanke.tilat.onLiikenneHaittaIndeksi) {
+            throw TormaysAnalyysiException("Already has tormaysanalyysi calculated for $hankeTunnus")
+        }
 
+        if (hanke.tilat.onTiedotLiikenneHaittaIndeksille) {
             // load geometries for hanke to be able to classify the hits to traffic amount maps
             hanke.geometriat = geometriatService.loadGeometriat(hanke)
 
