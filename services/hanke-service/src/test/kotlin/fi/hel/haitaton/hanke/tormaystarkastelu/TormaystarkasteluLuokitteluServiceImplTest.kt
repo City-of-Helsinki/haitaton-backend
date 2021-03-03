@@ -1,8 +1,17 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.*
+import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.KaistajarjestelynPituus
+import fi.hel.haitaton.hanke.SaveType
+import fi.hel.haitaton.hanke.TZ_UTC
+import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
+import fi.hel.haitaton.hanke.TormaysAnalyysiException
+import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.getCurrentTimeUTC
+import java.time.ZonedDateTime
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.Assert.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -11,7 +20,6 @@ import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.mockito.Mockito
-import java.time.ZonedDateTime
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class TormaystarkasteluLuokitteluServiceImplTest {
@@ -35,6 +43,51 @@ internal class TormaystarkasteluLuokitteluServiceImplTest {
         val haittaAjanKesto = TormaystarkasteluLuokitteluServiceImpl(tormaysPaikkaDao).haittaAjanKesto(hanke, rajaArvot)
 
         assertThat(haittaAjanKesto.arvo).isEqualTo(classficationValue)
+    }
+
+    @ParameterizedTest(name = "Lane hindrance of {0} means classification of {1}")
+    @CsvSource(
+        "EI_VAIKUTA,1",
+        "VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,2",
+        "VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,3",
+        "VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_KAHDELLA_AJOSUUNNALLA,4",
+        "VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_LIITTYMIEN_ERI_SUUNNILLA,5"
+    )
+    fun todennakoinenHaittaPaaAjoratojenKaistajarjestelyihin(
+        kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin,
+        arvo: Int
+    ) {
+        val hanke = Hanke(1, "HAI21-1").apply {
+            this.kaistaHaitta = kaistaHaitta
+        }
+
+        val todennakoinenHaittaPaaAjoratojenKaistajarjestelyihin =
+            TormaystarkasteluLuokitteluServiceImpl(tormaysPaikkaDao)
+                .todennakoinenHaittaPaaAjoratojenKaistajarjestelyihin(hanke)
+
+        assertThat(todennakoinenHaittaPaaAjoratojenKaistajarjestelyihin.arvo).isEqualTo(arvo)
+    }
+
+    @ParameterizedTest(name = "Lane organization length of {0} means classification of {1}")
+    @CsvSource(
+        "EI_TARVITA,1",
+        "ENINTAAN_10M,2",
+        "ALKAEN_11M_PAATTYEN_100M,3",
+        "ALKAEN_101M_PAATTYEN_500M,4",
+        "YLI_500M,5"
+    )
+    fun kaistajarjestelynPituus(
+        kaistaPituusHaitta: KaistajarjestelynPituus,
+        arvo: Int
+    ) {
+        val hanke = Hanke(1, "HAI21-1").apply {
+            this.kaistaPituusHaitta = kaistaPituusHaitta
+        }
+
+        val kaistajarjestelynPituus =
+            TormaystarkasteluLuokitteluServiceImpl(tormaysPaikkaDao).kaistajarjestelynPituus(hanke)
+
+        assertThat(kaistajarjestelynPituus.arvo).isEqualTo(arvo)
     }
 
     @Test
@@ -601,6 +654,8 @@ internal class TormaystarkasteluLuokitteluServiceImplTest {
         ).apply {
             this.haittaAlkuPvm = this.alkuPvm
             this.haittaLoppuPvm = this.loppuPvm
+            this.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.EI_VAIKUTA
+            this.kaistaPituusHaitta = KaistajarjestelynPituus.EI_TARVITA
         }
 
         // adding geometry

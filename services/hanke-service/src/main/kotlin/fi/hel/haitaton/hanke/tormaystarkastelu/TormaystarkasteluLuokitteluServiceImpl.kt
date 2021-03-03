@@ -23,16 +23,10 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         val luokitteluTulosComplete = mutableMapOf<LuokitteluType, Luokittelutulos>()
 
         luokitteluTulosComplete[LuokitteluType.HAITTA_AJAN_KESTO] = haittaAjanKesto(hanke, rajaArvot)
-        // TODO get from Hanke:
         luokitteluTulosComplete[LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN] =
-            Luokittelutulos(
-                LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN,
-                0,
-                ""
-            )
-        // TODO get from Hanke:
+            todennakoinenHaittaPaaAjoratojenKaistajarjestelyihin(hanke)
         luokitteluTulosComplete[LuokitteluType.KAISTAJARJESTELYN_PITUUS] =
-            Luokittelutulos(LuokitteluType.KAISTAJARJESTELYN_PITUUS, 0, "")
+            kaistajarjestelynPituus(hanke)
         val katuluokkaLuokittelu = katuluokkaLuokittelu(hanke)
         luokitteluTulosComplete[LuokitteluType.KATULUOKKA] = katuluokkaLuokittelu
         luokitteluTulosComplete[LuokitteluType.LIIKENNEMAARA] =
@@ -48,6 +42,25 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         val kesto = hanke.haittaAjanKesto ?: throw IllegalArgumentException("Hanke has no start and/or end periods")
         val rajaArvo = rajaArvot.haittaAikaRajaArvot.first { it.minimumValue <= kesto }
         return Luokittelutulos(LuokitteluType.HAITTA_AJAN_KESTO, rajaArvo.arvo, rajaArvo.explanation)
+    }
+
+    internal fun todennakoinenHaittaPaaAjoratojenKaistajarjestelyihin(hanke: Hanke): Luokittelutulos {
+        val kaistaHaitta = hanke.kaistaHaitta ?: throw IllegalArgumentException("Hanke has no kaistaHaitta")
+        return Luokittelutulos(
+            LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN,
+            kaistaHaitta.arvo,
+            kaistaHaitta.kuvaus
+        )
+    }
+
+    internal fun kaistajarjestelynPituus(hanke: Hanke): Luokittelutulos {
+        val kaistajarjestelynPituus =
+            hanke.kaistaPituusHaitta ?: throw IllegalArgumentException("Hanke has no kaistaPituusHaitta")
+        return Luokittelutulos(
+            LuokitteluType.KAISTAJARJESTELYN_PITUUS,
+            kaistajarjestelynPituus.arvo,
+            kaistajarjestelynPituus.kuvaus
+        )
     }
 
     private fun katuluokkaLuokittelu(hanke: Hanke): Luokittelutulos {

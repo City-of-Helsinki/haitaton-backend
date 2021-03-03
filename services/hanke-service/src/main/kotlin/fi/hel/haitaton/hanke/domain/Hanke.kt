@@ -1,10 +1,11 @@
 package fi.hel.haitaton.hanke.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import fi.hel.haitaton.hanke.Haitta04
+import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.Haitta13
 import fi.hel.haitaton.hanke.SaveType
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
+import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
@@ -66,8 +67,8 @@ data class Hanke(
     // --------------- Hankkeen haitat -------------------
     var haittaAlkuPvm: ZonedDateTime? = null
     var haittaLoppuPvm: ZonedDateTime? = null
-    var kaistaHaitta: Haitta04? = null
-    var kaistaPituusHaitta: Haitta04? = null
+    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null
+    var kaistaPituusHaitta: KaistajarjestelynPituus? = null
     var meluHaitta: Haitta13? = null
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
