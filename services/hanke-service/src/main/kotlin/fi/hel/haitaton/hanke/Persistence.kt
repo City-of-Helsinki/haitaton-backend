@@ -83,12 +83,30 @@ enum class TyomaaKoko {
     LAAJA_TAI_USEA_KORTTELI
 }
 
-enum class Haitta04 {
-    EI_VAIKUTA,
-    YKSI,
-    KAKSI,
-    KOLME,
-    NELJA
+enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(val arvo: Int, val kuvaus: String) {
+    EI_VAIKUTA(
+        1,
+        "Ei vaikuta"),
+    VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA(
+        2,
+        "Vähentää kaistan yhdellä ajosuunnalla"),
+    VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA(
+        3,
+        "Vähentää samanaikaisesti kaistan kahdella ajosuunnalla"),
+    VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_KAHDELLA_AJOSUUNNALLA(
+        4,
+        "Vähentää samanaikaisesti useita kaistoja kahdella ajosuunnalla"),
+    VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_LIITTYMIEN_ERI_SUUNNILLA(
+        5,
+        "Vähentää samanaikaisesti useita kaistoja liittymien eri suunnilla")
+}
+
+enum class KaistajarjestelynPituus(val arvo: Int, val kuvaus: String) {
+    EI_TARVITA(1, "Ei tarvita"),
+    ENINTAAN_10M(2, "Enintään 10 m"),
+    ALKAEN_11M_PAATTYEN_100M(3, "11 - 100 m"),
+    ALKAEN_101M_PAATTYEN_500M(4, "101 - 500 m"),
+    YLI_500M(5, "Yli 500 m")
 }
 
 enum class Haitta13 {
@@ -149,8 +167,8 @@ class HankeEntity(
     var haittaLoppuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
 
     // These five fields have generic string values, so can just as well store them with the ordinal number.
-    var kaistaHaitta: Haitta04? = null
-    var kaistaPituusHaitta: Haitta04? = null
+    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null
+    var kaistaPituusHaitta: KaistajarjestelynPituus? = null
     var meluHaitta: Haitta13? = null
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null

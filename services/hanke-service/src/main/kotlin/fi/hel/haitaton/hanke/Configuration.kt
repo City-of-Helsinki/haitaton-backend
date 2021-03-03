@@ -7,8 +7,12 @@ import fi.hel.haitaton.hanke.geometria.HankeGeometriatServiceImpl
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioServiceImpl
-import fi.hel.haitaton.hanke.tormaystarkastelu.*
-import org.springframework.beans.factory.annotation.Autowired
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluDao
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluDaoImpl
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaServiceImpl
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLuokitteluService
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLuokitteluServiceImpl
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
@@ -46,14 +50,13 @@ class Configuration {
     @Bean
     fun tormaystarkasteluPaikkaService(
         tormaystarkasteluDao: TormaystarkasteluDao
-    ): TormaystarkasteluPaikkaService = TormaystarkasteluPaikkaServiceImpl(tormaystarkasteluDao)
+    ): TormaystarkasteluLuokitteluService = TormaystarkasteluLuokitteluServiceImpl(tormaystarkasteluDao)
 
     @Bean
     fun tormaystarkasteluLaskentaService(
         hankeService: HankeService,
-        paikkaService: TormaystarkasteluPaikkaService,
+        luokitteluService: TormaystarkasteluLuokitteluService,
         geometriatService: HankeGeometriatService
     ): TormaystarkasteluLaskentaService =
-        TormaystarkasteluLaskentaServiceImpl(hankeService, paikkaService, geometriatService)
-
+        TormaystarkasteluLaskentaServiceImpl(hankeService, luokitteluService, geometriatService)
 }
