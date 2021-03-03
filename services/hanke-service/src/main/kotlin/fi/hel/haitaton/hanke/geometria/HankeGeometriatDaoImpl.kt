@@ -148,7 +148,7 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                         rs.getString(4),
                         rs.getTimestamp(5).toInstant().atZone(TZ_UTC),
                         rs.getString(6),
-                        rs.getTimestamp(7).toInstant().atZone(TZ_UTC)
+                        rs.getTimestamp(7)?.toInstant()?.atZone(TZ_UTC)
                     )
                 }, hankeId
             ).getOrNull(0)
