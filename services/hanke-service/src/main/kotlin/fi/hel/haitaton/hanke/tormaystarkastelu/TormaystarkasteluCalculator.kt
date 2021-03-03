@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
+import fi.hel.haitaton.hanke.round
 import kotlin.math.roundToInt
 
 object TormaystarkasteluCalculator {
@@ -90,7 +91,7 @@ object TormaystarkasteluCalculator {
         perusindeksi += kaistajarjestelynPituus.arvo * perusindeksiPainot[LuokitteluType.KAISTAJARJESTELYN_PITUUS]!!
         perusindeksi += katuluokka.arvo * perusindeksiPainot[LuokitteluType.KATULUOKKA]!!
         perusindeksi += liikennemaara.arvo * perusindeksiPainot[LuokitteluType.LIIKENNEMAARA]!!
-        tormaystarkasteluTulos.perusIndeksi = (perusindeksi * 10).roundToInt() / 10.0f
+        tormaystarkasteluTulos.perusIndeksi = perusindeksi.round(1) // rounded to 1 decimal
     }
 
     private fun calculatePyorailyIndeksi(

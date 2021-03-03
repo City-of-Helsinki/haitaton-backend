@@ -11,8 +11,6 @@ import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
-import java.time.Duration
-import java.time.Period
 
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
