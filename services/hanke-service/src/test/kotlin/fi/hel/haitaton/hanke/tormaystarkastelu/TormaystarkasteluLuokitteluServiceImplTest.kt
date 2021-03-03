@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.SaveType
 import fi.hel.haitaton.hanke.TZ_UTC
@@ -700,7 +699,7 @@ internal class TormaystarkasteluLuokitteluServiceImplTest {
             )
         }
 
-        assertThat(exception).hasMessage(HankeError.HAI1030.errorMessage)
+        assertThat(exception).hasMessage("Liikennemaara comparison went wrong for hankeId=1")
     }
 
     @Test

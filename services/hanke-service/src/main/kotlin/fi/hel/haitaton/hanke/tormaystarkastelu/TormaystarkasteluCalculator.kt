@@ -73,6 +73,8 @@ object TormaystarkasteluCalculator {
             tormaystarkasteluTulos
         )
 
+        calculateLiikennehaittaIndeksi(tormaystarkasteluTulos)
+
         return tormaystarkasteluTulos
     }
 
@@ -128,6 +130,10 @@ object TormaystarkasteluCalculator {
 
         // bigger of these matter so we will set that one
         tormaystarkasteluTulos.joukkoliikenneIndeksi = maxOf(bussiIndeksi, raitiovaunuIndeksi)
+    }
+
+    private fun calculateLiikennehaittaIndeksi(tormaystarkasteluTulos: TormaystarkasteluTulos) {
+        tormaystarkasteluTulos.calculateLiikennehaittaIndeksi()
     }
 }
 
