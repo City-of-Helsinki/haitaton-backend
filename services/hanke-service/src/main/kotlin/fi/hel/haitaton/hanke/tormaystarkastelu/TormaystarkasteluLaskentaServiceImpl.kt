@@ -1,8 +1,10 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
 
+import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.InvalidStateException
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,9 +21,12 @@ open class TormaystarkasteluLaskentaServiceImpl(
     override fun calculateTormaystarkastelu(hankeTunnus: String): Hanke {
         // load data with hankeTunnus
         val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-        hanke.geometriat = geometriatService.loadGeometriat(hanke)
+
 
         if (hanke.tilat.onTiedotLiikenneHaittaIndeksille) {
+
+            //load geometries for hanke to be able to classify the hits to traffic amount maps
+            hanke.geometriat = geometriatService.loadGeometriat(hanke)
 
             // get rajaArvot for luokittelu
             //TODO some interface which can later be replaced with database calling.. this is now too hard coded?
@@ -41,7 +46,7 @@ open class TormaystarkasteluLaskentaServiceImpl(
             // return hanke with tormaystulos
             hanke.tormaystarkasteluTulos = laskentatulos
         } else {
-            //TODO: handle missing data situation? we can not calculate
+            throw InvalidStateException("hanke.tilat.onTiedotLiikenneHaittaIndeksille == false in calculateTormaystarkastelu()")
         }
 
         // return hanke with tormaystulos
@@ -71,8 +76,7 @@ open class TormaystarkasteluLaskentaServiceImpl(
             throw IllegalArgumentException("hankeTunnus non existent when trying to get TormaysTarkastelu")
 
         val tormaysResults = TormaystarkasteluTulos(hanke.hankeTunnus!!)
-        tormaysResults.hankeId = hanke.id!!//TODO: selvitettävä jostain
-
+        tormaysResults.hankeId = hanke.id!!
 
         //dummy code:
         tormaysResults.joukkoliikenneIndeksi = 2.4f
