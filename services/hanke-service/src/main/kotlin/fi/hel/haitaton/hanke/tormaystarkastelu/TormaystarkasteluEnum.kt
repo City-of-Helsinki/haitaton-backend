@@ -1,14 +1,14 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
 enum class LuokitteluType {
-
+    HAITTA_AJAN_KESTO,
+    TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN,
+    KAISTAJARJESTELYN_PITUUS,
     KATULUOKKA,
     LIIKENNEMAARA,
     PYORAILYN_PAAREITTI,
     BUSSILIIKENNE,
     RAITIOVAUNULIIKENNE
-
-    // TODO: add types that come from hanke "text data"
 }
 
 enum class PyorailyTormaysLuokittelu(s: String) {
@@ -18,9 +18,9 @@ enum class PyorailyTormaysLuokittelu(s: String) {
 }
 
 enum class RaitiovaunuTormaysLuokittelu(s: String) {
-    JAETTU_KAISTA( "Raitiovaunut samalla kaistalla autojen kanssa"),
-    OMA_KAISTA ( "Raitiovaunuilla oma kaista"),
-    EI_RAITIOVAUNULIIKENNETTA ( "Ei vaikuta raitiovaunuliikenteeseen")
+    JAETTU_KAISTA("Raitiovaunut samalla kaistalla autojen kanssa"),
+    OMA_KAISTA("Raitiovaunuilla oma kaista"),
+    EI_RAITIOVAUNULIIKENNETTA("Ei vaikuta raitiovaunuliikenteeseen")
 }
 
 enum class KatuluokkaTormaysLuokittelu(s: String) {
@@ -31,4 +31,3 @@ enum class KatuluokkaTormaysLuokittelu(s: String) {
     MUU_TONTTIKATU_ALUE("Muu tonttikatu tai alue"),
     EI_MOOTTORILIIKENNE_VAIK("Ei vaikuta moottoriajoneuvoliikenteeseen")
 }
-

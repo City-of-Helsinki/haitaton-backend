@@ -27,6 +27,7 @@ enum class HankeError(
     HAI1020("HankeYhteystieto not found"),
     HAI1030("Problem with classification of geometries"),
     HAI1031("Invalid state: Missing needed data");
+
     val errorCode: String
         get() = name
 
@@ -43,13 +44,13 @@ enum class HankeError(
     }
 }
 
-class HankeNotFoundException(val hankeTunnus: String? = null) : RuntimeException(HankeError.HAI1001.errorMessage)
+class HankeNotFoundException(val hankeTunnus: String) : RuntimeException("Hanke $hankeTunnus not found")
 
-class HankeYhteystietoNotFoundException(val hankeid: Int? = null, val ytId: Int? = null) :
-    RuntimeException(HankeError.HAI1020.errorMessage)
+class HankeYhteystietoNotFoundException(val hankeid: Int, private val ytId: Int) :
+    RuntimeException("HankeYhteystiedot $ytId not found for Hanke $hankeid")
 
-class DatabaseStateException(val context: String? = null) : RuntimeException(HankeError.HAI1005.errorMessage)
+class DatabaseStateException(message: String) : RuntimeException(message)
 
-class TormaysAnalyysiException(val context: String? = null) : RuntimeException(HankeError.HAI1030.errorMessage)
+class TormaysAnalyysiException(message: String) : RuntimeException(message)
 
-class InvalidStateException(val context: String? = null) : RuntimeException(HankeError.HAI1031.errorMessage)
+class InvalidStateException(message: String) : RuntimeException(message)

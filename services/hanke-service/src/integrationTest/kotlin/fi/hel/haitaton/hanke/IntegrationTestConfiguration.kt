@@ -40,13 +40,13 @@ class IntegrationTestConfiguration {
     fun tormaystarkasteluDao(jdbcOperations: JdbcOperations): TormaystarkasteluDao = mockk()
 
     @Bean
-    fun tormaystarkasteluPaikkaService(tormaystarkasteluDao: TormaystarkasteluDao): TormaystarkasteluPaikkaService =
+    fun tormaystarkasteluPaikkaService(tormaystarkasteluDao: TormaystarkasteluDao): TormaystarkasteluLuokitteluService =
         mockk()
 
     @Bean
     fun tormaystarkasteluLaskentaService(
         hankeService: HankeService,
-        paikkaService: TormaystarkasteluPaikkaService
+        luokitteluService: TormaystarkasteluLuokitteluService
     ): TormaystarkasteluLaskentaService = mockk()
 
 
