@@ -29,7 +29,7 @@ internal class TormaystarkasteluLaskentaServiceImplTest {
             this.tilat = HankeTilat(onTiedotLiikenneHaittaIndeksille = true)
         }
         every { hankeService.loadHanke("HAI21-1") } returns hanke
-        val hankeGeometriat = HankeGeometriat()
+        val hankeGeometriat = HankeGeometriat(1)
         every { geometriatService.loadGeometriat(hanke) } returns hankeGeometriat
         val luokittelutulos = LuokitteluType.values().associateWith { Luokittelutulos(it, 1, "") }
         every { luokitteluService.calculateTormaystarkasteluLuokitteluTulos(eq(hanke), any()) } returns luokittelutulos
@@ -38,6 +38,7 @@ internal class TormaystarkasteluLaskentaServiceImplTest {
         tormaystarkasteluLaskentaService.calculateTormaystarkastelu("HAI21-1")
 
         println(hanke.tormaystarkasteluTulos)
+        assertThat(hanke.tormaystarkasteluTulos!!.hankeGeometriatId).isEqualTo(1)
         assertThat(hanke.liikennehaittaindeksi).isEqualTo(
             LiikennehaittaIndeksiType(
                 1.0f,

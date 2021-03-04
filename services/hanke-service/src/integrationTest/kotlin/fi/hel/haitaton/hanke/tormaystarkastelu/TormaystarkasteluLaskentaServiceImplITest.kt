@@ -66,32 +66,8 @@ internal class TormaystarkasteluLaskentaServiceImplITest {
     @Test
     fun `calculateTormaystarkastelu happy case`() {
         // setup
-        val hankeGeometriat = HankeGeometriat(1, 1)
-        every {
-            hankeGeometriatDao.retrieveHankeGeometriat(1)
-        } returns hankeGeometriat
-        every {
-            tormaystarkasteluDao.yleisetKatualueet(hankeGeometriat)
-        } returns mapOf(Pair(1, true))
-        every {
-            tormaystarkasteluDao.yleisetKatuluokat(hankeGeometriat)
-        } returns mapOf(Pair(1, setOf(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)))
-        every {
-            tormaystarkasteluDao.katuluokat(hankeGeometriat)
-        } returns mapOf(Pair(1, setOf(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)))
-        every {
-            tormaystarkasteluDao.liikennemaarat(hankeGeometriat, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30)
-        } returns mapOf(Pair(1, setOf(1000)))
-        every {
-            tormaystarkasteluDao.pyorailyreitit(hankeGeometriat)
-        } returns mapOf(Pair(1, setOf(TormaystarkasteluPyorailyreittiluokka.PAAREITTI)))
-        every {
-            tormaystarkasteluDao.raitiotiet(hankeGeometriat)
-        } returns mapOf(Pair(1, setOf(TormaystarkasteluRaitiotiekaistatyyppi.JAETTU)))
-        every {
-            tormaystarkasteluDao.bussiliikenteenKannaltaKriittinenAlue(hankeGeometriat)
-        } returns mapOf(Pair(1, true))
-        val hanke = Hanke(1, "HAI21-1").apply {
+        val hanke = hankeService.createHanke(Hanke())
+        hanke.apply {
             alkuPvm = ZonedDateTime.of(2021, 3, 4, 0, 0, 0, 0, TZ_UTC)
             loppuPvm = alkuPvm!!.plusDays(7)
             haittaAlkuPvm = alkuPvm
@@ -100,14 +76,43 @@ internal class TormaystarkasteluLaskentaServiceImplITest {
             kaistaPituusHaitta = KaistajarjestelynPituus.EI_TARVITA
             tilat.onGeometrioita = true
         }
-        hankeService.createHanke(hanke)
+        hankeService.updateHanke(hanke)
         hankeService.updateHankeStateFlags(hanke)
+        val hankeId = hanke.id!!
+        val hankeTunnus = hanke.hankeTunnus!!
+        val hankeGeometriatId = 1
+        val hankeGeometriaId = 1
+        val hankeGeometriat = HankeGeometriat(hankeGeometriatId, hankeId)
+        every {
+            hankeGeometriatDao.retrieveHankeGeometriat(hankeId)
+        } returns hankeGeometriat
+        every {
+            tormaystarkasteluDao.yleisetKatualueet(hankeGeometriat)
+        } returns mapOf(Pair(hankeGeometriaId, true))
+        every {
+            tormaystarkasteluDao.yleisetKatuluokat(hankeGeometriat)
+        } returns mapOf(Pair(hankeGeometriaId, setOf(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)))
+        every {
+            tormaystarkasteluDao.katuluokat(hankeGeometriat)
+        } returns mapOf(Pair(hankeGeometriaId, setOf(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)))
+        every {
+            tormaystarkasteluDao.liikennemaarat(hankeGeometriat, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30)
+        } returns mapOf(Pair(hankeGeometriaId, setOf(1000)))
+        every {
+            tormaystarkasteluDao.pyorailyreitit(hankeGeometriat)
+        } returns mapOf(Pair(hankeGeometriaId, setOf(TormaystarkasteluPyorailyreittiluokka.PAAREITTI)))
+        every {
+            tormaystarkasteluDao.raitiotiet(hankeGeometriat)
+        } returns mapOf(Pair(hankeGeometriaId, setOf(TormaystarkasteluRaitiotiekaistatyyppi.JAETTU)))
+        every {
+            tormaystarkasteluDao.bussiliikenteenKannaltaKriittinenAlue(hankeGeometriat)
+        } returns mapOf(Pair(hankeGeometriaId, true))
 
-        // tested functionality
-        val tormaystarkasteluHanke = tormaystarkasteluLaskentaService.calculateTormaystarkastelu("HAI21-1")
+        // test the functionality
+        val tormaystarkasteluHanke = tormaystarkasteluLaskentaService.calculateTormaystarkastelu(hankeTunnus)
         println(tormaystarkasteluHanke.tormaystarkasteluTulos)
 
-        // assert results
+        // assert the results
         assertThat(tormaystarkasteluHanke.tormaystarkasteluTulos).isNotNull()
         assertThat(tormaystarkasteluHanke.tormaystarkasteluTulos!!.liikennehaittaIndeksi!!.type)
             .isEqualTo(IndeksiType.JOUKKOLIIKENNEINDEKSI)
