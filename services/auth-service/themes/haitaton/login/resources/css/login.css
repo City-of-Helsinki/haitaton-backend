@@ -69,6 +69,11 @@ label.pf-c-form__label-text {
     background: #FFFFFF;
     padding: 20px;
 }
+label.pf-c-form__label:after
+{
+    color:black;
+    content: " *";
+}
 .login-pf-page .login-pf-settings {
     display: block;
 }
