@@ -31,6 +31,10 @@ data class HankeGeometriat(
         }
     }
 
+    fun hasFeatures(): Boolean {
+        return !featureCollection?.features.isNullOrEmpty()
+    }
+
     /**
      * @return log string containing id, version and the number of geometries
      */

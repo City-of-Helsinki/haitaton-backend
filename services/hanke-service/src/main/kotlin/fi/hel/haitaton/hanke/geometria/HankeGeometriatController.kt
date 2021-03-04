@@ -38,10 +38,12 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriatSe
         }
         return try {
             val savedHankeGeometriat = service.saveGeometriat(hankeTunnus, hankeGeometriat)
-            logger.info {
-                "Saved Hanke Geometria for $hankeTunnus."
-            }
             ResponseEntity.ok(savedHankeGeometriat)
+        } catch (e: IllegalArgumentException) {
+            logger.error {
+                e.message
+            }
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         } catch (e: HankeNotFoundException) {
             logger.error {
                 e.message
@@ -62,9 +64,6 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriatSe
         }
         return try {
             val geometry = service.loadGeometriat(hankeTunnus)
-            logger.info {
-                "Got Hanke Geometria for $hankeTunnus: ${geometry?.toLogString()}"
-            }
             if (geometry == null) {
                 ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1015)
             } else {
