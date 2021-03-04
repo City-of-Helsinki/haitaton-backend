@@ -32,7 +32,7 @@ import java.time.temporal.ChronoUnit
  *
  * This class should test only the weblayer (both HTTP server and context to be auto-mocked).
  */
-@WebMvcTest
+@WebMvcTest(HankeController::class)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @WithMockUser("test", roles = ["haitaton-user"])
@@ -435,8 +435,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         hankeToBeUpdated.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
         hankeToBeUpdated.haittaAlkuPvm = getDatetimeAlku()
         hankeToBeUpdated.haittaLoppuPvm = getDatetimeLoppu()
-        hankeToBeUpdated.kaistaHaitta = Haitta04.KAKSI
-        hankeToBeUpdated.kaistaPituusHaitta = Haitta04.NELJA
+        hankeToBeUpdated.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
+        hankeToBeUpdated.kaistaPituusHaitta = KaistajarjestelynPituus.ALKAEN_101M_PAATTYEN_500M
         hankeToBeUpdated.meluHaitta = Haitta13.YKSI
         hankeToBeUpdated.polyHaitta = Haitta13.KAKSI
         hankeToBeUpdated.tarinaHaitta = Haitta13.KOLME
@@ -472,7 +472,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(content().json(expectedContent))
             // These might be redundant, but at least it is clear what we're checking here:
             .andExpect(jsonPath("$.tyomaaKatuosoite").value("Testikatu 1"))
-            .andExpect(jsonPath("$.kaistaHaitta").value("KAKSI")) // Note, here as string, not the enum.
+            .andExpect(jsonPath("$.kaistaHaitta").value(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA.name)) // Note, here as string, not the enum.
         verify { hankeService.updateHanke(any()) }
     }
 
@@ -591,8 +591,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         hankeToBeUpdated.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
         hankeToBeUpdated.haittaAlkuPvm = getDatetimeAlku()
         hankeToBeUpdated.haittaLoppuPvm = getDatetimeLoppu()
-        hankeToBeUpdated.kaistaHaitta = Haitta04.KAKSI
-        hankeToBeUpdated.kaistaPituusHaitta = Haitta04.NELJA
+        hankeToBeUpdated.kaistaHaitta =
+            TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
+        hankeToBeUpdated.kaistaPituusHaitta = KaistajarjestelynPituus.ALKAEN_101M_PAATTYEN_500M
         hankeToBeUpdated.meluHaitta = Haitta13.YKSI
         hankeToBeUpdated.polyHaitta = Haitta13.KAKSI
         hankeToBeUpdated.tarinaHaitta = Haitta13.KOLME
