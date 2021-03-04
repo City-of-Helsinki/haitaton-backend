@@ -139,7 +139,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
 
         // Both checks that the hanke already exists, and get its old fields to transfer data into
         val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
-                ?: throw HankeNotFoundException(hanke.hankeTunnus)
+                ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
         val userid = SecurityContextHolder.getContext().authentication.name
         // Transfer field values from domain object to entity object, and set relevant audit fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
@@ -170,7 +170,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         }
         // Both checks that the hanke already exists, and get its old fields to transfer data into
         val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
-                ?: throw HankeNotFoundException(hanke.hankeTunnus)
+                ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
         copyStateFlagsToEntity(hanke, entity)
         hankeRepository.save(entity)
     }
@@ -434,7 +434,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
             // Some sort of error situation;
             // - simultaneous edits to the same hanke by someone else (the Yhteystieto could have been removed in the database)
             // - the incoming ids are for different hanke (i.e. incorrect data in the incoming request)
-            throw HankeYhteystietoNotFoundException(hankeEntity.id, incomingId)
+            throw HankeYhteystietoNotFoundException(hankeEntity.id!!, incomingId)
         }
 
         if (validYhteystieto) {

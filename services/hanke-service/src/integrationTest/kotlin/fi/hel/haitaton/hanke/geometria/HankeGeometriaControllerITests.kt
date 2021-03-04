@@ -4,8 +4,10 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.toJsonString
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.verify
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -21,7 +23,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-@WebMvcTest
+@WebMvcTest(HankeGeometriaController::class)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @WithMockUser("test", roles = ["haitaton-user"])
@@ -30,17 +32,23 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
     @Autowired
     private lateinit var hankeGeometriatService: HankeGeometriatService
 
+    @BeforeEach
+    fun setUp() {
+        clearAllMocks()
+    }
+
     @Test
     fun `create Geometria OK`() {
-        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource(HankeGeometriat::class.java)
         hankeGeometriat.hankeId = null
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
         hankeGeometriat.modifiedAt = null
         val hankeTunnus = "1234567"
         val hankeId = 1
-        val savedHankeGeometriat =
-            "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
+        val savedHankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource(HankeGeometriat::class.java)
         savedHankeGeometriat.hankeId = hankeId
         savedHankeGeometriat.version = 1
         every { hankeGeometriatService.saveGeometriat(hankeTunnus, any()) } returns savedHankeGeometriat
@@ -60,7 +68,8 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `create Geometria with invalid HankeID`() {
-        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource(HankeGeometriat::class.java)
         hankeGeometriat.hankeId = null
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
@@ -83,7 +92,8 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `create Geometria with service failure`() {
-        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource(HankeGeometriat::class.java)
         hankeGeometriat.hankeId = null
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
@@ -111,7 +121,8 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `create Geometria without Geometria`() {
-        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource(HankeGeometriat::class.java)
         hankeGeometriat.featureCollection = null
         hankeGeometriat.hankeId = null
         hankeGeometriat.version = null
@@ -130,29 +141,9 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
     }
 
     @Test
-    fun `create Geometria without Geometria features`() {
-        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
-        hankeGeometriat.hankeId = null
-        hankeGeometriat.version = null
-        hankeGeometriat.createdAt = null
-        hankeGeometriat.modifiedAt = null
-        hankeGeometriat.featureCollection?.features = null
-        val hankeTunnus = "1234567"
-        mockMvc.perform(
-            post("/hankkeet/$hankeTunnus/geometriat")
-                .contentType(MediaType.APPLICATION_JSON)
-                .with(csrf())
-                .content(hankeGeometriat.toJsonString())
-                .accept(MediaType.APPLICATION_JSON)
-        )
-            .andExpect(status().isBadRequest)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1011"))
-            .andExpect(MockMvcResultMatchers.jsonPath("$.errorMessage").value("Invalid Hanke geometry"))
-    }
-
-    @Test
     fun `create Geometria without Geometria crs`() {
-        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource(HankeGeometriat::class.java)
         hankeGeometriat.hankeId = null
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
@@ -173,7 +164,8 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `create Geometria with invalid coordinate system`() {
-        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource(HankeGeometriat::class.java)
         hankeGeometriat.hankeId = null
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
@@ -195,9 +187,34 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
     }
 
     @Test
+    fun `delete Geometria`() {
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat-delete.json"
+            .asJsonResource(HankeGeometriat::class.java)
+        val hankeTunnus = "1234567"
+        val hankeId = 1
+        val savedHankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource(HankeGeometriat::class.java)
+        savedHankeGeometriat.hankeId = hankeId
+        savedHankeGeometriat.version = 1
+        every { hankeGeometriatService.saveGeometriat(hankeTunnus, any()) } returns savedHankeGeometriat
+        mockMvc.perform(
+            post("/hankkeet/$hankeTunnus/geometriat")
+                .contentType(MediaType.APPLICATION_JSON)
+                .with(csrf())
+                .content(hankeGeometriat.toJsonString())
+                .accept(MediaType.APPLICATION_JSON)
+        )
+            .andExpect(status().isOk)
+            .andExpect(content().string(savedHankeGeometriat.toJsonString()))
+
+        verify { hankeGeometriatService.saveGeometriat(hankeTunnus, any()) }
+    }
+
+    @Test
     fun `get Geometria OK`() {
         val hankeTunnus = "1234567"
-        val hankeGeometriat = "/fi/hel/haitaton/hanke/hankeGeometriat.json".asJsonResource(HankeGeometriat::class.java)
+        val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource(HankeGeometriat::class.java)
         every { hankeGeometriatService.loadGeometriat(hankeTunnus) } returns hankeGeometriat
         mockMvc.perform(
             get("/hankkeet/$hankeTunnus/geometriat")
