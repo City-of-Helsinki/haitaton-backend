@@ -76,25 +76,50 @@
     "notBefore" : 0,
     "groups" : [ ]
   }, {
-    "id" : "5e1c8300-1040-4b7a-b924-58c749559ffa",
-    "createdTimestamp" : 1612948559204,
-    "username" : "tiinatestaaja",
+    "id" : "6e12965b-27c9-4a32-a962-a079a6c4f429",
+    "createdTimestamp" : 1614784197354,
+    "username" : "tiinatestaaja@gofore.com",
     "enabled" : true,
     "totp" : false,
     "emailVerified" : true,
     "firstName" : "Tiina",
     "lastName" : "Testaaja",
-    "email" : "testaajatiina@hotmail.com",
+    "email" : "tiinatestaaja@gofore.com",
     "credentials" : [ {
-      "id" : "0130b6ff-57ec-41a9-bddf-aa3d80d8597d",
+      "id" : "fff0c100-0c3e-418b-b44f-f35b46a57a10",
       "type" : "password",
-      "createdDate" : 1612948889509,
-      "secretData" : "{\"value\":\"kNPA5bspuDH6Pg6h3aGHnAgKSL/XPBYpwyLGr/mNC0ei/Zo0v/sqy+NPAZPWbV7VHLW+4d7+KgMT2+gBwYc/ww==\",\"salt\":\"frEMMxxxTZJ+n7uRtR/OOw==\",\"additionalParameters\":{}}",
+      "createdDate" : 1614784210774,
+      "secretData" : "{\"value\":\"UyyEafYoNIywgYC7SlGbOuVIH25eqkBRgoF8UWSrU7qn1MPFF1NkjVyti+6oTkdYAccrEUN5kGW8qSMqqcph/g==\",\"salt\":\"wM/JMI33q2R87KjgRmyJIA==\",\"additionalParameters\":{}}",
       "credentialData" : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
     } ],
     "disableableCredentialTypes" : [ ],
     "requiredActions" : [ ],
     "realmRoles" : [ "haitaton-user", "uma_authorization", "offline_access" ],
+    "clientRoles" : {
+      "account" : [ "view-profile", "manage-account" ]
+    },
+    "notBefore" : 0,
+    "groups" : [ ]
+  }, {
+    "id" : "29a89a56-3578-4baa-a4fc-642c9ec30188",
+    "createdTimestamp" : 1614784095136,
+    "username" : "timotestaaja@gofore.com",
+    "enabled" : true,
+    "totp" : false,
+    "emailVerified" : true,
+    "firstName" : "Timo",
+    "lastName" : "Testaaja",
+    "email" : "timotestaaja@gofore.com",
+    "credentials" : [ {
+      "id" : "8f18ab42-2c84-4718-b6b8-12d93cb7e4aa",
+      "type" : "password",
+      "createdDate" : 1614784122225,
+      "secretData" : "{\"value\":\"4uIZYSyTqEU6XFNv5N3Vr/Tykab6AR/ooxA9A9OuIv+M6sU+LL+Y2agmj5+oT9F8yA23QlqP8rwDPU6iDT7ioQ==\",\"salt\":\"kJ8KLowC9n5XNRj7029tRQ==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "realmRoles" : [ "uma_authorization", "offline_access" ],
     "clientRoles" : {
       "account" : [ "view-profile", "manage-account" ]
     },
