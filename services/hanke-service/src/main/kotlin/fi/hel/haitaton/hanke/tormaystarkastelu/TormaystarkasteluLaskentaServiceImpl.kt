@@ -34,6 +34,7 @@ open class TormaystarkasteluLaskentaServiceImpl(
             // call something to create tormaystarkastelu with that luokittelu
             val laskentatulos =
                 TormaystarkasteluCalculator.calculateAllIndeksit(initTormaystarkasteluTulos(hanke), luokittelutulos)
+            laskentatulos.hankeGeometriatId = hanke.geometriat!!.id!!
 
             hanke.tormaystarkasteluTulos = laskentatulos
             hanke.liikennehaittaindeksi = laskentatulos.liikennehaittaIndeksi
