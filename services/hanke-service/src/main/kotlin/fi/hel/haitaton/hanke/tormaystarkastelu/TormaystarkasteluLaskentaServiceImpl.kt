@@ -74,11 +74,11 @@ open class TormaystarkasteluLaskentaServiceImpl(
             throw IllegalArgumentException("hankeTunnus non existent when trying to get TormaysTarkastelu")
         }
 
-        val tormaysResults = TormaystarkasteluTulos(hanke.hankeTunnus!!)
-        tormaysResults.hankeId = hanke.id!!
-
+        val laskentatulos = TormaystarkasteluTulos(hanke.hankeTunnus!!)
+        laskentatulos.hankeId = hanke.id!!
+        laskentatulos.hankeGeometriatId = hanke.geometriat!!.id!!
         // TODO: in the future this would contain "Viereiset hankkeet" too
 
-        return tormaysResults
+        return laskentatulos
     }
 }

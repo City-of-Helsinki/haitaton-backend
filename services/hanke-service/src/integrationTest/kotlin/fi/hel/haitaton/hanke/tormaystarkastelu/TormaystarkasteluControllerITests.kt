@@ -22,7 +22,7 @@ import java.time.temporal.ChronoUnit
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @WithMockUser("test", roles = ["haitaton-user"])
-class TormaystarkasteluIControllerTests(@Autowired val mockMvc: MockMvc) {
+class TormaystarkasteluControllerITests(@Autowired val mockMvc: MockMvc) {
 
     private val mockedHankeTunnus = "HAI21-T"
 

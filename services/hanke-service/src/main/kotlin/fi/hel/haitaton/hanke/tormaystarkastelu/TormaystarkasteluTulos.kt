@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 data class TormaystarkasteluTulos(val hankeTunnus: String) {
 
     var hankeId: Int = 0
+    var hankeGeometriatId: Int = 0
     var liikennehaittaIndeksi: LiikennehaittaIndeksiType? = null
     var perusIndeksi: Float? = null
     var pyorailyIndeksi: Float? = null
@@ -12,6 +13,7 @@ data class TormaystarkasteluTulos(val hankeTunnus: String) {
         return "TormaystarkasteluTulos(" +
                 "hankeTunnus='$hankeTunnus', " +
                 "hankeId=$hankeId, " +
+                "hankeGeometriatId=$hankeGeometriatId, " +
                 "liikennehaittaIndeksi=$liikennehaittaIndeksi, " +
                 "perusIndeksi=$perusIndeksi, " +
                 "pyorailyIndeksi=$pyorailyIndeksi, " +

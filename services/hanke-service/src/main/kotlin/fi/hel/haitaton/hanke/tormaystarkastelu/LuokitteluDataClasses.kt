@@ -7,21 +7,12 @@ data class Luokittelutulos(
 ) {
 
     // we get arvo+selite per luokitteluType per hankeGeometriaId for hanke (hanke can have multiple geometria)
+    // Note: This is not used at the moment until we have a geometry-specific Törmäystarkastelu
     var hankeGeometriaId: Int = 0
-
-    constructor(
-        hankeGeometriaId: Int,
-        luokitteluType: LuokitteluType,
-        arvo: Int,
-        explanation: String
-    ) : this(luokitteluType, arvo, explanation) {
-        this.hankeGeometriaId = hankeGeometriaId
-    }
 }
 
 // one type's one arvo rule for minumum value
 data class RajaArvo(val luokitteluType: LuokitteluType, val arvo: Int, val minimumValue: Int, val explanation: String)
-
 
 // TODO: these values must be digged from database eventually
 class LuokitteluRajaArvot {
