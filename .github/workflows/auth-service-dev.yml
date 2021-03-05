@@ -10,6 +10,7 @@ on:
       - dev
     paths:
       - services/auth-service/**
+      - .github/workflows/auth-service-dev.yml
 
 jobs:
   docker_build_and_push:
