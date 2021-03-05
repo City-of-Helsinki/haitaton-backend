@@ -126,11 +126,12 @@ internal class TormaystarkasteluCalculatorTest {
     fun calculateAllIndeksit_checkThatLiikenneHaittaIndeksiIsFromJoukkoliikenne() {
 
         classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
-            Luokittelutulos(1, LuokitteluType.PYORAILYN_PAAREITTI, 0, "")
+
+            Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 0, "")
         classifications[LuokitteluType.RAITIOVAUNULIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.RAITIOVAUNULIIKENNE, 2, "")
+            Luokittelutulos(LuokitteluType.RAITIOVAUNULIIKENNE, 2, "")
         classifications[LuokitteluType.BUSSILIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.BUSSILIIKENNE, 4, "")
+            Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 4, "")
 
         val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
         assertThat(result.pyorailyIndeksi).isEqualTo(1.0f)
@@ -144,11 +145,11 @@ internal class TormaystarkasteluCalculatorTest {
     fun calculateAllIndeksit_checkThatLiikenneHaittaIndeksiIsFromPyorailuIndeksi() {
 
         classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
-            Luokittelutulos(1, LuokitteluType.PYORAILYN_PAAREITTI, 4, "")
+            Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 4, "")
         classifications[LuokitteluType.RAITIOVAUNULIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.RAITIOVAUNULIIKENNE, 0, "")
+            Luokittelutulos(LuokitteluType.RAITIOVAUNULIIKENNE, 0, "")
         classifications[LuokitteluType.BUSSILIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.BUSSILIIKENNE, 2, "")
+            Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 2, "")
 
         val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
 
@@ -164,21 +165,24 @@ internal class TormaystarkasteluCalculatorTest {
 
         // perusindeksi will be: 5*0,2 + 5*0,25 + 5*0,1 + 5*0,25
         classifications[LuokitteluType.KATULUOKKA] =
-            Luokittelutulos(1, LuokitteluType.KATULUOKKA, 5, "")
+
+            Luokittelutulos(LuokitteluType.KATULUOKKA, 5, "")
         classifications[LuokitteluType.LIIKENNEMAARA] =
-            Luokittelutulos(1, LuokitteluType.LIIKENNEMAARA, 5, "")
+            Luokittelutulos(LuokitteluType.LIIKENNEMAARA, 5, "")
         classifications[LuokitteluType.HAITTA_AJAN_KESTO] =
-            Luokittelutulos(1, LuokitteluType.HAITTA_AJAN_KESTO, 5, "")
+            Luokittelutulos(LuokitteluType.HAITTA_AJAN_KESTO, 5, "")
         classifications[LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN] =
-            Luokittelutulos(1, LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN,
-                5, "")
+            Luokittelutulos(
+                LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN,
+                5, ""
+            )
 
         classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
-            Luokittelutulos(1, LuokitteluType.PYORAILYN_PAAREITTI, 2, "")
+            Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 2, "")
         classifications[LuokitteluType.RAITIOVAUNULIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.RAITIOVAUNULIIKENNE, 0, "")
+            Luokittelutulos(LuokitteluType.RAITIOVAUNULIIKENNE, 0, "")
         classifications[LuokitteluType.BUSSILIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.BUSSILIIKENNE, 2, "")
+            Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 2, "")
 
         val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
 
