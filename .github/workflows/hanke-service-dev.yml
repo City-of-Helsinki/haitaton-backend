@@ -77,3 +77,8 @@ jobs:
           tags: |
             ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:latest
             ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:dev
+      - uses: Azure/pipelines@v1
+        with:
+          azure-devops-project-url: 'https://dev.azure.com/City-of-Helsinki/haitaton'
+          azure-pipeline-name: 'City-of-Helsinki.haitaton-backend'
+          azure-devops-token: '${{ secrets.AZURE_DEVOPS_TOKEN }}'
