@@ -15,7 +15,7 @@ class ControllerExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun hankeNotFound(ex: HankeNotFoundException): HankeError {
         logger.warn {
-            "Hanke ${ex.hankeTunnus} not found"
+            ex.message
         }
         return HankeError.HAI1001
     }
@@ -24,7 +24,7 @@ class ControllerExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun hankeYhteystietoNotFound(ex: HankeYhteystietoNotFoundException): HankeError {
         logger.warn {
-            "Yhteystieto for Hanke ${ex.hankeid} not found"
+            ex.message
         }
         return HankeError.HAI1020
     }

@@ -120,6 +120,79 @@ internal class TormaystarkasteluCalculatorTest {
         assertThat(result.pyorailyIndeksi).isEqualTo(1.0f)
         assertThat(result.joukkoliikenneIndeksi).isEqualTo(4.0f)
     }
+
+
+    @Test
+    fun calculateAllIndeksit_checkThatLiikenneHaittaIndeksiIsFromJoukkoliikenne() {
+
+        classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
+
+            Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 0, "")
+        classifications[LuokitteluType.RAITIOVAUNULIIKENNE] =
+            Luokittelutulos(LuokitteluType.RAITIOVAUNULIIKENNE, 2, "")
+        classifications[LuokitteluType.BUSSILIIKENNE] =
+            Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 4, "")
+
+        val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
+        assertThat(result.pyorailyIndeksi).isEqualTo(1.0f)
+        assertThat(result.joukkoliikenneIndeksi).isEqualTo(4.0f)
+
+        assertThat(result.liikennehaittaIndeksi?.indeksi).isEqualTo(4.0f)
+        assertThat(result.liikennehaittaIndeksi?.type).isEqualTo(IndeksiType.JOUKKOLIIKENNEINDEKSI)
+    }
+
+    @Test
+    fun calculateAllIndeksit_checkThatLiikenneHaittaIndeksiIsFromPyorailuIndeksi() {
+
+        classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
+            Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 4, "")
+        classifications[LuokitteluType.RAITIOVAUNULIIKENNE] =
+            Luokittelutulos(LuokitteluType.RAITIOVAUNULIIKENNE, 0, "")
+        classifications[LuokitteluType.BUSSILIIKENNE] =
+            Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 2, "")
+
+        val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
+
+        assertThat(result.pyorailyIndeksi).isEqualTo(3.0f)
+        assertThat(result.joukkoliikenneIndeksi).isEqualTo(1.0f)
+
+        assertThat(result.liikennehaittaIndeksi?.indeksi).isEqualTo(3.0f)
+        assertThat(result.liikennehaittaIndeksi?.type).isEqualTo(IndeksiType.PYORAILYINDEKSI)
+    }
+
+    @Test
+    fun calculateAllIndeksit_checkThatLiikenneHaittaIndeksiIsFromPerusIndeksi() {
+
+        // perusindeksi will be: 5*0,2 + 5*0,25 + 5*0,1 + 5*0,25
+        classifications[LuokitteluType.KATULUOKKA] =
+
+            Luokittelutulos(LuokitteluType.KATULUOKKA, 5, "")
+        classifications[LuokitteluType.LIIKENNEMAARA] =
+            Luokittelutulos(LuokitteluType.LIIKENNEMAARA, 5, "")
+        classifications[LuokitteluType.HAITTA_AJAN_KESTO] =
+            Luokittelutulos(LuokitteluType.HAITTA_AJAN_KESTO, 5, "")
+        classifications[LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN] =
+            Luokittelutulos(
+                LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN,
+                5, ""
+            )
+
+        classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
+            Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 2, "")
+        classifications[LuokitteluType.RAITIOVAUNULIIKENNE] =
+            Luokittelutulos(LuokitteluType.RAITIOVAUNULIIKENNE, 0, "")
+        classifications[LuokitteluType.BUSSILIIKENNE] =
+            Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 2, "")
+
+        val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
+
+        assertThat(result.perusIndeksi).isEqualTo(4.0f)
+        assertThat(result.pyorailyIndeksi).isEqualTo(1.0f)
+        assertThat(result.joukkoliikenneIndeksi).isEqualTo(1.0f)
+
+        assertThat(result.liikennehaittaIndeksi?.indeksi).isEqualTo(4.0f)
+        assertThat(result.liikennehaittaIndeksi?.type).isEqualTo(IndeksiType.PERUSINDEKSI)
+    }
 }
 
 class LuokitteluMapAggregator : ArgumentsAggregator {

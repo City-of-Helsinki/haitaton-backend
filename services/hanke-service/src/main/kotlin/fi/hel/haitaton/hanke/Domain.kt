@@ -48,8 +48,8 @@ enum class HankeError(
 
 class HankeNotFoundException(val hankeTunnus: String) : RuntimeException("Hanke $hankeTunnus not found")
 
-class HankeYhteystietoNotFoundException(val hankeid: Int, private val ytId: Int) :
-    RuntimeException("HankeYhteystiedot $ytId not found for Hanke $hankeid")
+class HankeYhteystietoNotFoundException(val hankeId: Int, ytId: Int) :
+    RuntimeException("HankeYhteystiedot $ytId not found for Hanke $hankeId")
 
 class DatabaseStateException(message: String) : RuntimeException(message)
 
