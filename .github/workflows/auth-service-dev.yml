@@ -35,13 +35,11 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.CR_OWNER }}
           password: ${{ secrets.CR_PAT }}
-      - name: ls
-        run: ls -ltra ${{ env.MODULE_PATH }}
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
-          context: ${{ env.MODULE_PATH }}
-          file: Dockerfile
+          context: ./${{ env.MODULE_PATH }}
+          file: ./${{ env.MODULE_PATH }}/Dockerfile
           push: true
           tags: |
             ghcr.io/city-of-helsinki/haitaton/${{ env.ARTIFACT_NAME }}:latest
