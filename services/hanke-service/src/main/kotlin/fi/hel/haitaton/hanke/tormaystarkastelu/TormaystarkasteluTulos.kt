@@ -1,5 +1,10 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
+import javax.persistence.Column
+import javax.persistence.Embeddable
+import javax.persistence.EnumType
+import javax.persistence.Enumerated
+
 data class TormaystarkasteluTulos(val hankeTunnus: String) {
 
     var hankeId: Int = 0
@@ -37,10 +42,25 @@ data class TormaystarkasteluTulos(val hankeTunnus: String) {
     }
 }
 
-data class LiikennehaittaIndeksiType(var indeksi: Float, var type: IndeksiType)
+// This class is also used as part of entity-classes TormaystarkasteluTulosEntity and Hanke.
+// HankeEntity overrides the column names.
+@Embeddable
+data class LiikennehaittaIndeksiType(
+    @Column(name = "liikennehaitta")
+    var indeksi: Float,
+    @Column(name = "liikennehaittatyyppi")
+    @Enumerated(EnumType.STRING)
+    // TODO: pitäisikö tämän olla "tyyppi", kun "indeksi":kin on suomeksi, samoin kuin tämän arvot?
+    var type: IndeksiType
+)
 
 enum class IndeksiType {
     PERUSINDEKSI,
     PYORAILYINDEKSI,
     JOUKKOLIIKENNEINDEKSI
+}
+
+enum class TormaystarkasteluTulosTila {
+    VOIMASSA,
+    EI_VOIMASSA
 }
