@@ -126,6 +126,7 @@ internal class TormaystarkasteluCalculatorTest {
     fun calculateAllIndeksit_checkThatLiikenneHaittaIndeksiIsFromJoukkoliikenne() {
 
         classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
+
             Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 0, "")
         classifications[LuokitteluType.RAITIOVAUNULIIKENNE] =
             Luokittelutulos(LuokitteluType.RAITIOVAUNULIIKENNE, 2, "")
@@ -164,6 +165,7 @@ internal class TormaystarkasteluCalculatorTest {
 
         // perusindeksi will be: 5*0,2 + 5*0,25 + 5*0,1 + 5*0,25
         classifications[LuokitteluType.KATULUOKKA] =
+
             Luokittelutulos(LuokitteluType.KATULUOKKA, 5, "")
         classifications[LuokitteluType.LIIKENNEMAARA] =
             Luokittelutulos(LuokitteluType.LIIKENNEMAARA, 5, "")
