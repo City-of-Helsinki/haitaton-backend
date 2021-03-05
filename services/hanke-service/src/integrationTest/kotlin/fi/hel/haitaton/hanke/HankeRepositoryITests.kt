@@ -100,8 +100,8 @@ class HankeRepositoryITests @Autowired constructor(
         baseHankeEntity.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
         baseHankeEntity.haittaAlkuPvm = date
         baseHankeEntity.haittaLoppuPvm = date
-        baseHankeEntity.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
-        baseHankeEntity.kaistaPituusHaitta = KaistajarjestelynPituus.ALKAEN_11M_PAATTYEN_100M
+        baseHankeEntity.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
+        baseHankeEntity.kaistaPituusHaitta = KaistajarjestelynPituus.KOLME
         baseHankeEntity.meluHaitta = Haitta13.YKSI
         baseHankeEntity.polyHaitta = Haitta13.KAKSI
         baseHankeEntity.tarinaHaitta = Haitta13.KOLME
@@ -128,8 +128,8 @@ class HankeRepositoryITests @Autowired constructor(
         assertThat(loadedHanke.tyomaaKoko).isEqualTo(TyomaaKoko.LAAJA_TAI_USEA_KORTTELI)
         assertThat(loadedHanke.haittaAlkuPvm).isEqualTo(date)
         assertThat(loadedHanke.haittaLoppuPvm).isEqualTo(date)
-        assertThat(loadedHanke.kaistaHaitta).isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA)
-        assertThat(loadedHanke.kaistaPituusHaitta).isEqualTo(KaistajarjestelynPituus.ALKAEN_11M_PAATTYEN_100M)
+        assertThat(loadedHanke.kaistaHaitta).isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI)
+        assertThat(loadedHanke.kaistaPituusHaitta).isEqualTo(KaistajarjestelynPituus.KOLME)
         assertThat(loadedHanke.meluHaitta).isEqualTo(Haitta13.YKSI)
         assertThat(loadedHanke.polyHaitta).isEqualTo(Haitta13.KAKSI)
         assertThat(loadedHanke.tarinaHaitta).isEqualTo(Haitta13.KOLME)
