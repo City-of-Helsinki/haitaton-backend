@@ -36,7 +36,7 @@ internal class TormaystarkasteluCalculatorTest {
     @Test
     fun calculateAllIndeksit_whenIsNotPyorailyreitti() {
         classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
-            Luokittelutulos(1, LuokitteluType.PYORAILYN_PAAREITTI, 0, "")
+            Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 0, "")
 
         val result = TormaystarkasteluCalculator
             .calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
@@ -48,7 +48,7 @@ internal class TormaystarkasteluCalculatorTest {
     fun calculateAllIndeksit_whenIsPyorailynPaareittiOrPriority() {
         // 4th case:
         classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
-            Luokittelutulos(1, LuokitteluType.PYORAILYN_PAAREITTI, 4, "")
+            Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 4, "")
 
         var result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
 
@@ -56,7 +56,7 @@ internal class TormaystarkasteluCalculatorTest {
 
         // top case:
         classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
-            Luokittelutulos(1, LuokitteluType.PYORAILYN_PAAREITTI, 5, "")
+            Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 5, "")
 
         result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
 
@@ -66,9 +66,9 @@ internal class TormaystarkasteluCalculatorTest {
     @Test
     fun calculateAllIndeksit_whenIsNotOnRaitiovaunuOrBusLine() {
         classifications[LuokitteluType.RAITIOVAUNULIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.RAITIOVAUNULIIKENNE, 0, "")
+            Luokittelutulos(LuokitteluType.RAITIOVAUNULIIKENNE, 0, "")
         classifications[LuokitteluType.BUSSILIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.BUSSILIIKENNE, 0, "")
+            Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 0, "")
 
         val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
 
@@ -79,11 +79,11 @@ internal class TormaystarkasteluCalculatorTest {
     @Test
     fun calculateAllIndeksit_whenIsNotOnRaitiovaunuButIsOnBusLine() {
         classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
-            Luokittelutulos(1, LuokitteluType.PYORAILYN_PAAREITTI, 0, "")
+            Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 0, "")
         classifications[LuokitteluType.RAITIOVAUNULIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.RAITIOVAUNULIIKENNE, 0, "")
+            Luokittelutulos(LuokitteluType.RAITIOVAUNULIIKENNE, 0, "")
         classifications[LuokitteluType.BUSSILIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.BUSSILIIKENNE, 4, "")
+            Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 4, "")
 
         val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
 
@@ -94,11 +94,11 @@ internal class TormaystarkasteluCalculatorTest {
     @Test
     fun calculateAllIndeksit_whenIsOnRaitiovaunuAndIsLowerOnBusLine() {
         classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
-            Luokittelutulos(1, LuokitteluType.PYORAILYN_PAAREITTI, 0, "")
+            Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 0, "")
         classifications[LuokitteluType.RAITIOVAUNULIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.RAITIOVAUNULIIKENNE, 4, "")
+            Luokittelutulos(LuokitteluType.RAITIOVAUNULIIKENNE, 4, "")
         classifications[LuokitteluType.BUSSILIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.BUSSILIIKENNE, 2, "")
+            Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 2, "")
 
         val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
 
@@ -109,11 +109,11 @@ internal class TormaystarkasteluCalculatorTest {
     @Test
     fun calculateAllIndeksit_whenBothRaitiovaunuAndBusLinesAreOnTopClass() {
         classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
-            Luokittelutulos(1, LuokitteluType.PYORAILYN_PAAREITTI, 0, "")
+            Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 0, "")
         classifications[LuokitteluType.RAITIOVAUNULIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.RAITIOVAUNULIIKENNE, 5, "")
+            Luokittelutulos(LuokitteluType.RAITIOVAUNULIIKENNE, 5, "")
         classifications[LuokitteluType.BUSSILIIKENNE] =
-            Luokittelutulos(1, LuokitteluType.BUSSILIIKENNE, 5, "")
+            Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 5, "")
 
         val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
 
