@@ -3,7 +3,9 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
-import fi.hel.haitaton.hanke.tormaystarkastelu.*
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluDao
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLuokitteluService
 import io.mockk.mockk
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -48,6 +50,4 @@ class IntegrationTestConfiguration {
         hankeService: HankeService,
         luokitteluService: TormaystarkasteluLuokitteluService
     ): TormaystarkasteluLaskentaService = mockk()
-
-
 }

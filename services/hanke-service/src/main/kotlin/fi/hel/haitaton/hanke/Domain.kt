@@ -12,6 +12,8 @@ enum class HankeError(
     val errorMessage: String
 ) {
     HAI0001("Access denied"),
+    HAI0002("Internal error"),
+    HAI0003("Invalid data"),
     HAI1001("Hanke not found"),
     HAI1002("Invalid Hanke data"),
     HAI1003("Internal error while saving Hanke"),
@@ -52,5 +54,3 @@ class HankeYhteystietoNotFoundException(val hankeid: Int, private val ytId: Int)
 class DatabaseStateException(message: String) : RuntimeException(message)
 
 class TormaysAnalyysiException(message: String) : RuntimeException(message)
-
-class InvalidStateException(message: String) : RuntimeException(message)

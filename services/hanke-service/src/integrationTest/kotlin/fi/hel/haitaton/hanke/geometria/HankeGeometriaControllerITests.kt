@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.geometria
 
+import fi.hel.haitaton.hanke.ControllerExceptionHandler
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.asJsonResource
@@ -114,7 +115,7 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
                 .accept(MediaType.APPLICATION_JSON)
         )
             .andExpect(status().isInternalServerError)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1012"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI0002"))
 
         verify { hankeGeometriatService.saveGeometriat(hankeTunnus, any()) }
     }
@@ -136,6 +137,7 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
                 .content(hankeGeometriat.toJsonString())
                 .accept(MediaType.APPLICATION_JSON)
         )
+            .andDo { println(it.response.contentAsString) }
             .andExpect(status().isBadRequest)
             .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1011"))
     }
@@ -260,7 +262,7 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
                 .accept(MediaType.APPLICATION_JSON)
         )
             .andExpect(status().isInternalServerError)
-            .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1014"))
+            .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI0002"))
         verify { hankeGeometriatService.loadGeometriat(hankeTunnus) }
     }
 }

@@ -195,7 +195,9 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         return tormaystarkasteluYlreClasses.isNotEmpty()
     }
 
-    private fun hitsInStreetClasses(tormaystarkasteluStreetClasses: Map<Int, Set<TormaystarkasteluKatuluokka>>): Boolean {
+    private fun hitsInStreetClasses(
+        tormaystarkasteluStreetClasses: Map<Int, Set<TormaystarkasteluKatuluokka>>
+    ): Boolean {
         return tormaystarkasteluStreetClasses.isNotEmpty()
     }
 
@@ -216,9 +218,7 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
 
         // find maximum tormaystulos
         val maximum = getMaximumLiikennemaaraFromVolumes(hanke, katuluokkaLuokittelu)
-        if (maximum == null) {
-            throw TormaysAnalyysiException("Liikennemaara comparison went wrong for hankeId=${hanke.id}")
-        }
+            ?: throw TormaysAnalyysiException("Liikennemaara comparison went wrong for hankeId=${hanke.id}")
 
         // actual classification
         rajaArvot.liikennemaaraRajaArvot.forEach { rajaArvo ->
