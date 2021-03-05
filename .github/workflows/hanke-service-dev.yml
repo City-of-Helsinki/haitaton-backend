@@ -11,6 +11,7 @@ on:
       - dev
     paths:
       - services/hanke-service/**
+      - .github/workflows/hanke-service-dev.yml
 
 jobs:
   build:
