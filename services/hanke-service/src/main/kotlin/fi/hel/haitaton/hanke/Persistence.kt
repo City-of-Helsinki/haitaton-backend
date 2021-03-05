@@ -84,29 +84,29 @@ enum class TyomaaKoko {
 }
 
 enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(val arvo: Int, val kuvaus: String) {
-    EI_VAIKUTA(
+    YKSI(
         1,
         "Ei vaikuta"),
-    VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA(
+    KAKSI(
         2,
         "Vähentää kaistan yhdellä ajosuunnalla"),
-    VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA(
+    KOLME(
         3,
         "Vähentää samanaikaisesti kaistan kahdella ajosuunnalla"),
-    VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_KAHDELLA_AJOSUUNNALLA(
+    NELJA(
         4,
         "Vähentää samanaikaisesti useita kaistoja kahdella ajosuunnalla"),
-    VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_LIITTYMIEN_ERI_SUUNNILLA(
+    VIISI(
         5,
         "Vähentää samanaikaisesti useita kaistoja liittymien eri suunnilla")
 }
 
 enum class KaistajarjestelynPituus(val arvo: Int, val kuvaus: String) {
-    EI_TARVITA(1, "Ei tarvita"),
-    ENINTAAN_10M(2, "Enintään 10 m"),
-    ALKAEN_11M_PAATTYEN_100M(3, "11 - 100 m"),
-    ALKAEN_101M_PAATTYEN_500M(4, "101 - 500 m"),
-    YLI_500M(5, "Yli 500 m")
+    YKSI(1, "Ei tarvita"),
+    KAKSI(2, "Enintään 10 m"),
+    KOLME(3, "11 - 100 m"),
+    NELJA(4, "101 - 500 m"),
+    VIISI(5, "Yli 500 m")
 }
 
 enum class Haitta13 {

@@ -435,8 +435,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         hankeToBeUpdated.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
         hankeToBeUpdated.haittaAlkuPvm = getDatetimeAlku()
         hankeToBeUpdated.haittaLoppuPvm = getDatetimeLoppu()
-        hankeToBeUpdated.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
-        hankeToBeUpdated.kaistaPituusHaitta = KaistajarjestelynPituus.ALKAEN_101M_PAATTYEN_500M
+        hankeToBeUpdated.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
+        hankeToBeUpdated.kaistaPituusHaitta = KaistajarjestelynPituus.NELJA
         hankeToBeUpdated.meluHaitta = Haitta13.YKSI
         hankeToBeUpdated.polyHaitta = Haitta13.KAKSI
         hankeToBeUpdated.tarinaHaitta = Haitta13.KOLME
@@ -472,7 +472,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(content().json(expectedContent))
             // These might be redundant, but at least it is clear what we're checking here:
             .andExpect(jsonPath("$.tyomaaKatuosoite").value("Testikatu 1"))
-            .andExpect(jsonPath("$.kaistaHaitta").value(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA.name)) // Note, here as string, not the enum.
+            .andExpect(jsonPath("$.kaistaHaitta").value(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI.name)) // Note, here as string, not the enum.
         verify { hankeService.updateHanke(any()) }
     }
 
@@ -592,8 +592,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         hankeToBeUpdated.haittaAlkuPvm = getDatetimeAlku()
         hankeToBeUpdated.haittaLoppuPvm = getDatetimeLoppu()
         hankeToBeUpdated.kaistaHaitta =
-            TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
-        hankeToBeUpdated.kaistaPituusHaitta = KaistajarjestelynPituus.ALKAEN_101M_PAATTYEN_500M
+            TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
+        hankeToBeUpdated.kaistaPituusHaitta = KaistajarjestelynPituus.NELJA
         hankeToBeUpdated.meluHaitta = Haitta13.YKSI
         hankeToBeUpdated.polyHaitta = Haitta13.KAKSI
         hankeToBeUpdated.tarinaHaitta = Haitta13.KOLME
