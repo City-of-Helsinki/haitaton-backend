@@ -1,0 +1,104 @@
+html.login-pf {
+    background: #F1F1F1;
+    min-height: 100%;
+    height: auto;
+    font-family: sans-serif !important;
+}
+html.login-pf body {  
+    min-height: 100vh;
+    height: auto;
+    background: #F1F1F1 url(../img/bgLogin.jpg) no-repeat 50% 0;
+    position: relative;
+    font-family: sans-serif !important;
+}
+html.login-pf .login-pf-page-header{
+    padding:10px 0 25px 0;
+    margin: 0;
+}
+.login-pf-page-header svg{
+    
+    width: 150px;
+    margin: auto;
+}
+h1 {
+    color: #FFFFFF;
+    font-weight: 500;
+    font-size: 32px;
+    margin:20px 0 0 0;
+}
+h2 {
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 0;
+}
+.form-group:last-child {
+    margin-bottom: 0;
+}
+label.pf-c-form__label-text {
+    font-size: 12px;
+    font-weight: bold;
+    display: block;
+}
+.pf-c-form__helper-text.pf-m-error {
+    display:block;
+}
+.pf-c-form-control {
+    border: solid 1px #000000;
+    padding: 5px;
+    width: 240px;
+}
+.pf-c-button.pf-m-primary {
+    background: #0072C6;
+    padding: 8px 20px;
+    width: auto;
+}
+
+.card-pf {
+    background: #F1F1F1;
+    width: 400px;
+    margin: auto;
+}
+.login-pf-page {
+    position: relative;
+    padding-bottom: 60px;
+    min-height: calc(100vh - 75px);
+    margin: auto;
+}
+.login-pf-page .card-pf {
+    margin-bottom: 100px;
+    background: #FFFFFF;
+    padding: 20px;
+}
+label.pf-c-form__label:after
+{
+    color:black;
+    content: " *";
+}
+.login-pf-page .login-pf-settings {
+    display: block;
+}
+.login-pf-page .login-pf-signup {
+    text-align: left;
+    font-size: 13px;
+    padding-top: 15px;
+}
+.login-pf-page .login-pf-signup a {
+    margin-left: 0;
+}
+#kc-form-options {
+    padding-bottom: 10px;
+}
+footer {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+}
+footer p {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    padding: 0 0 0 10px;
+    margin: 0;
+    background: #ffc61e;
+}

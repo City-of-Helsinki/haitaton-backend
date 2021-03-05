@@ -4,8 +4,8 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.toJsonString
 import mu.KotlinLogging
+import org.springframework.security.core.context.SecurityContextHolder
 import java.time.ZonedDateTime
 import javax.transaction.Transactional
 
@@ -18,41 +18,63 @@ open class HankeGeometriatServiceImpl(
 
     @Transactional
     override fun saveGeometriat(hankeTunnus: String, hankeGeometriat: HankeGeometriat): HankeGeometriat {
-        logger.info {
-            "Saving Geometria for Hanke $hankeTunnus: ${hankeGeometriat.toJsonString()}"
-        }
         val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
         val now = ZonedDateTime.now(TZ_UTC)
         val oldHankeGeometriat = hankeGeometriaDao.retrieveHankeGeometriat(hanke.id!!)
-        // TODO: if the new geometry is empty, is it actually a removal?
-        val hasGeom = isGeometryNonEmpty(hankeGeometriat)
+        val hasFeatures = hankeGeometriat.hasFeatures()
+        if (oldHankeGeometriat == null && !hasFeatures) {
+            throw IllegalArgumentException("New HankeGeometriat does not contain any Features")
+        }
         // Set/update the state flag in hanke data and save it
-        hanke.tilat.onGeometrioita = hasGeom
+        hanke.tilat.onGeometrioita = hasFeatures
         hankeService.updateHankeStateFlags(hanke)
 
-        return if (oldHankeGeometriat == null) {
-            hankeGeometriat.createdAt = now
-            hankeGeometriat.version = 0
-            hankeGeometriat.hankeId = hanke.id
-            hankeGeometriat.modifiedAt = now
-            hankeGeometriaDao.createHankeGeometriat(hankeGeometriat)
-            logger.info {
-                "Created new geometries for Hanke $hankeTunnus"
+        val username = SecurityContextHolder.getContext().authentication.name
+
+        return when {
+            !hasFeatures -> {
+                // DELETE
+                hankeGeometriat.id = oldHankeGeometriat!!.id
+                hankeGeometriat.hankeId = oldHankeGeometriat.hankeId
+                hankeGeometriat.createdByUserId = oldHankeGeometriat.createdByUserId
+                hankeGeometriat.createdAt = oldHankeGeometriat.createdAt
+                hankeGeometriat.modifiedByUserId = username
+                hankeGeometriat.modifiedAt = now
+                hankeGeometriat.version = oldHankeGeometriat.version!! + 1
+                hankeGeometriaDao.deleteHankeGeometriat(hankeGeometriat)
+                logger.info {
+                    "Deleted geometries for Hanke $hankeTunnus"
+                }
+                hankeGeometriat
             }
-            hankeGeometriat
-        } else {
-            if (oldHankeGeometriat.version == null) {
-                error("There is an old HankeGeometriat for Hanke ${hanke.hankeTunnus} but it has no 'version'")
-            } else {
-                oldHankeGeometriat.version = oldHankeGeometriat.version!! + 1
+            oldHankeGeometriat == null -> {
+                // CREATE
+                hankeGeometriat.createdByUserId = username
+                hankeGeometriat.createdAt = now
+                hankeGeometriat.version = 0
+                hankeGeometriat.hankeId = hanke.id
+                hankeGeometriaDao.createHankeGeometriat(hankeGeometriat)
+                logger.info {
+                    "Created new geometries for Hanke $hankeTunnus"
+                }
+                hankeGeometriat
             }
-            oldHankeGeometriat.modifiedAt = now
-            oldHankeGeometriat.featureCollection = hankeGeometriat.featureCollection
-            hankeGeometriaDao.updateHankeGeometriat(oldHankeGeometriat)
-            logger.info {
-                "Updated geometries for Hanke $hankeTunnus"
+            else -> {
+                // UPDATE
+                if (oldHankeGeometriat.version == null) {
+                    error("There is an old HankeGeometriat for Hanke ${hanke.hankeTunnus} but it has no 'version'")
+                } else {
+                    oldHankeGeometriat.version = oldHankeGeometriat.version!! + 1
+                }
+                oldHankeGeometriat.modifiedByUserId = username
+                oldHankeGeometriat.modifiedAt = now
+                oldHankeGeometriat.featureCollection = hankeGeometriat.featureCollection
+                hankeGeometriaDao.updateHankeGeometriat(oldHankeGeometriat)
+                logger.info {
+                    "Updated geometries for Hanke $hankeTunnus"
+                }
+                oldHankeGeometriat
             }
-            oldHankeGeometriat
         }
     }
 
@@ -60,6 +82,9 @@ open class HankeGeometriatServiceImpl(
         val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
         val hankeGeometriat = hankeGeometriaDao.retrieveHankeGeometriat(hanke.id!!)
         hankeGeometriat?.includeHankeProperties(hanke)
+        logger.info {
+            "Loaded Hanke Geometria for $hankeTunnus: ${hankeGeometriat?.toLogString()}"
+        }
         return hankeGeometriat
     }
 
@@ -68,11 +93,4 @@ open class HankeGeometriatServiceImpl(
         hankeGeometriat?.includeHankeProperties(hanke)
         return hankeGeometriat
     }
-
-    private fun isGeometryNonEmpty(hankeGeometriat: HankeGeometriat): Boolean {
-        // TODO: might check deeper, and if so, there could be some multi-thread unsafe things hidden (though mostly theoretical)...
-        if (hankeGeometriat.featureCollection?.features.isNullOrEmpty()) return false
-        return true
-    }
-
 }

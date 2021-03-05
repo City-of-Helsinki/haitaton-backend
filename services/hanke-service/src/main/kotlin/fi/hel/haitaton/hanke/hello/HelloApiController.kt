@@ -22,11 +22,11 @@ class HelloApiController {
     val apiCallCounter = AtomicLong()
 
     @GetMapping("/")
-    fun hello() : ResponseEntity<Any> {
-        return if (apiCallCounter.incrementAndGet() < 2L)
+    fun hello(): ResponseEntity<Any> {
+        return if (apiCallCounter.incrementAndGet() < 2L) {
             ResponseEntity.ok(HelloResponse(apiCallCounter.get(), "Hello, world!"))
-        else
+        } else {
             ResponseEntity.ok(HelloResponse(apiCallCounter.get(), "Hi again, world!"))
+        }
     }
-
 }

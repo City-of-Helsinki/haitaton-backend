@@ -1,15 +1,20 @@
 package fi.hel.haitaton.hanke.domain
 
-import fi.hel.haitaton.hanke.Haitta04
+import com.fasterxml.jackson.annotation.JsonIgnore
+import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.Haitta13
 import fi.hel.haitaton.hanke.SaveType
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
+import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 
 /**
  *
@@ -44,6 +49,11 @@ data class Hanke(
 
     constructor(id: Int) : this(id, null, null, null, null, null, null, null, null, null, null, null, null, null)
     constructor(id: Int, hankeTunnus: String) : this(id, hankeTunnus, null, null, null, null, null, null, null, null, null, null, null, null)
+    constructor() : this(null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+
+    // -------------- Tormaystarkastelu -------------
+    var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
+    var liikennehaittaindeksi: LiikennehaittaIndeksiType? = null
 
     // --------------- Yhteystiedot -----------------
     var omistajat = mutableListOf<HankeYhteystieto>()
@@ -58,8 +68,8 @@ data class Hanke(
     // --------------- Hankkeen haitat -------------------
     var haittaAlkuPvm: ZonedDateTime? = null
     var haittaLoppuPvm: ZonedDateTime? = null
-    var kaistaHaitta: Haitta04? = null
-    var kaistaPituusHaitta: Haitta04? = null
+    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null
+    var kaistaPituusHaitta: KaistajarjestelynPituus? = null
     var meluHaitta: Haitta13? = null
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
@@ -68,6 +78,19 @@ data class Hanke(
      * See 'tilaOnGeometrioita' field.
      */
     var geometriat: HankeGeometriat? = null
+
+    /**
+     * Number of days between haittaAlkuPvm and haittaLoppuPvm (incl. both days)
+     */
+    // TODO This might need to be changed in the future to take into consideration that
+    //  months are not 30 days but calendar months
+    val haittaAjanKesto: Long?
+        @JsonIgnore
+        get() = if (haittaAlkuPvm != null && haittaLoppuPvm != null) {
+            ChronoUnit.DAYS.between(haittaAlkuPvm!!, haittaLoppuPvm!!) + 1
+        } else {
+            null
+        }
 
     // --------------- State flags -------------------
     var tilat: HankeTilat = HankeTilat()
@@ -106,4 +129,7 @@ data class Hanke(
         return true
     }
 
+    fun toLogString(): String {
+        return toString()
+    }
 }

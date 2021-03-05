@@ -8,7 +8,14 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
-import org.springframework.web.bind.annotation.*
+import org.springframework.web.bind.annotation.ExceptionHandler
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestBody
+import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.web.bind.annotation.RestController
 import javax.validation.ConstraintViolationException
 
 private val logger = KotlinLogging.logger { }
@@ -19,13 +26,24 @@ private val logger = KotlinLogging.logger { }
 class HankeGeometriaController(@Autowired private val service: HankeGeometriatService) {
 
     @PostMapping("/{hankeTunnus}/geometriat")
-    fun createGeometria(@PathVariable("hankeTunnus") hankeTunnus: String, @ValidHankeGeometriat @RequestBody hankeGeometriat: HankeGeometriat?): ResponseEntity<Any> {
+    fun createGeometria(
+        @PathVariable("hankeTunnus") hankeTunnus: String,
+        @ValidHankeGeometriat @RequestBody hankeGeometriat: HankeGeometriat?
+    ): ResponseEntity<Any> {
+        logger.info {
+            "Saving Hanke Geometria for $hankeTunnus..."
+        }
         if (hankeGeometriat == null) {
             return ResponseEntity.badRequest().body(HankeError.HAI1011)
         }
         return try {
             val savedHankeGeometriat = service.saveGeometriat(hankeTunnus, hankeGeometriat)
             ResponseEntity.ok(savedHankeGeometriat)
+        } catch (e: IllegalArgumentException) {
+            logger.error {
+                e.message
+            }
+            ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         } catch (e: HankeNotFoundException) {
             logger.error {
                 e.message
@@ -41,6 +59,9 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriatSe
 
     @GetMapping("/{hankeTunnus}/geometriat")
     fun getGeometria(@PathVariable("hankeTunnus") hankeTunnus: String): ResponseEntity<Any> {
+        logger.info {
+            "Getting Hanke Geometria for $hankeTunnus..."
+        }
         return try {
             val geometry = service.loadGeometriat(hankeTunnus)
             if (geometry == null) {

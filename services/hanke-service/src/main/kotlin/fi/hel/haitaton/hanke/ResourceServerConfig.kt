@@ -1,9 +1,9 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.security.AccessRules
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.http.HttpMethod
 import org.springframework.security.access.expression.SecurityExpressionHandler
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -15,7 +15,6 @@ import org.springframework.security.oauth2.provider.expression.OAuth2WebSecurity
 import org.springframework.security.oauth2.provider.token.TokenStore
 import org.springframework.security.oauth2.provider.token.store.jwk.JwkTokenStore
 import org.springframework.security.web.FilterInvocation
-
 
 @Configuration
 @EnableResourceServer
@@ -29,12 +28,7 @@ class ResourceServerConfig : ResourceServerConfigurerAdapter() {
     lateinit var urlJwk: String
 
     override fun configure(http: HttpSecurity) {
-        http.anonymous().and()
-            .authorizeRequests()
-            .mvcMatchers(HttpMethod.GET, "/organisaatiot").permitAll()
-            .mvcMatchers(HttpMethod.POST, "/hankkeet", "/hankkeet/**").hasRole("haitaton-user")
-            .mvcMatchers(HttpMethod.GET, "/hankkeet", "/hankkeet/**").hasRole("haitaton-user")
-            .mvcMatchers(HttpMethod.PUT, "/hankkeet/**").hasRole("haitaton-user")
+        AccessRules.configureHttpAccessRules(http)
     }
 
     override fun configure(resources: ResourceServerSecurityConfigurer) {

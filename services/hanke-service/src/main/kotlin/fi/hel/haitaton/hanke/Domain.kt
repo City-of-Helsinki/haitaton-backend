@@ -9,13 +9,16 @@ Domain classes
 
 @JsonSerialize(using = HankeErrorSerializer::class)
 enum class HankeError(
-        val errorMessage: String) {
+    val errorMessage: String
+) {
     HAI0001("Access denied"),
     HAI1001("Hanke not found"),
     HAI1002("Invalid Hanke data"),
     HAI1003("Internal error while saving Hanke"),
     HAI1004("Internal error while loading Hanke"),
     HAI1005("Database state invalid"),
+    HAI1006("Internal error while creating tormaystarkastelu for Hanke"),
+    HAI1007("Tormaystarkastelu not found"),
     HAI1011("Invalid Hanke geometry"),
     HAI1012("Internal error while saving Hanke geometry"),
     HAI1013("Invalid coordinate system"),
@@ -24,7 +27,6 @@ enum class HankeError(
     HAI1020("HankeYhteystieto not found"),
     HAI1030("Problem with classification of geometries"),
     HAI1031("Invalid state: Missing needed data");
-
 
     val errorCode: String
         get() = name
@@ -42,12 +44,12 @@ enum class HankeError(
     }
 }
 
-class HankeNotFoundException(val hankeTunnus: String? = null) : RuntimeException(HankeError.HAI1001.errorMessage)
+class HankeNotFoundException(val hankeTunnus: String) : RuntimeException("Hanke $hankeTunnus not found")
 
-class HankeYhteystietoNotFoundException(val hankeid: Int? = null, val ytId: Int? = null) : RuntimeException(HankeError.HAI1020.errorMessage)
+class HankeYhteystietoNotFoundException(val hankeid: Int, private val ytId: Int) :
+    RuntimeException("HankeYhteystiedot $ytId not found for Hanke $hankeid")
 
-class DatabaseStateException(val context: String? = null) : RuntimeException(HankeError.HAI1005.errorMessage)
+class DatabaseStateException(message: String) : RuntimeException(message)
 
-class TormaysAnalyysiException(val context: String? = null) : RuntimeException(HankeError.HAI1030.errorMessage)
+class TormaysAnalyysiException(message: String) : RuntimeException(message)
 
-class InvalidStateException(val context: String? = null) : RuntimeException(HankeError.HAI1031.errorMessage)

@@ -1,7 +1,12 @@
 package fi.hel.haitaton.hanke.hello
 
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.*
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.TestInstance.Lifecycle
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -64,5 +69,4 @@ class HelloApiControllerTests {
         assertThat(responsePayload.count).isEqualTo(2)
         assertThat(responsePayload.message).contains("again")
     }
-
 }
