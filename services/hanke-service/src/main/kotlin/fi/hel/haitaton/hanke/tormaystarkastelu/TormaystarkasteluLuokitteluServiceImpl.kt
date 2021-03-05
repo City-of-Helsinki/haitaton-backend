@@ -66,8 +66,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
     private fun katuluokkaLuokittelu(hanke: Hanke): Luokittelutulos {
 
         val hankeGeometriat = hanke.geometriat
-        // if no id let's get out of here
-        val hankeGeometriatId = hankeGeometriat?.id
             ?: throw IllegalArgumentException("Hanke.geometriat should be set for hankeid ${hanke.id}")
 
         val tormaystarkasteluYlreParts = tormaystarkasteluDao.yleisetKatualueet(hankeGeometriat)
@@ -75,7 +73,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
 
         if (!hitsInYlreParts(tormaystarkasteluYlreParts) && !hitsInYlreClass(tormaystarkasteluYlreClasses)) {
             return Luokittelutulos(
-                hankeGeometriatId,
                 LuokitteluType.KATULUOKKA,
                 0,
                 KatuluokkaTormaysLuokittelu.EI_MOOTTORILIIKENNE_VAIK.toString()
@@ -90,7 +87,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
                     .contains(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)
             ) {
                 return Luokittelutulos(
-                    hankeGeometriatId,
                     LuokitteluType.KATULUOKKA,
                     5,
                     KatuluokkaTormaysLuokittelu.PAAKATU_MOOTTORIVAYLA.toString()
@@ -100,7 +96,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
                     .contains(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)
             ) {
                 return Luokittelutulos(
-                    hankeGeometriatId,
                     LuokitteluType.KATULUOKKA,
                     4,
                     KatuluokkaTormaysLuokittelu.ALUEELLINEN_KOKOOJA.toString()
@@ -110,7 +105,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
                     .contains(TormaystarkasteluKatuluokka.PAIKALLINEN_KOKOOJAKATU)
             ) {
                 return Luokittelutulos(
-                    hankeGeometriatId,
                     LuokitteluType.KATULUOKKA,
                     3,
                     KatuluokkaTormaysLuokittelu.PAIKALLINEN_KOKOOJA.toString()
@@ -122,7 +116,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
             if (hitsInCentralBusinessArea(tormaystarkasteluCentralBusinessArea)) {
                 // arvo is 2 set, and leave
                 return Luokittelutulos(
-                    hankeGeometriatId,
                     LuokitteluType.KATULUOKKA,
                     2,
                     KatuluokkaTormaysLuokittelu.KANTAKAUPUNGIN_TONTTIKATU.toString()
@@ -130,7 +123,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
             } else {
                 // arvo is 1, set and leave
                 return Luokittelutulos(
-                    hankeGeometriatId,
                     LuokitteluType.KATULUOKKA,
                     1,
                     KatuluokkaTormaysLuokittelu.MUU_TONTTIKATU_ALUE.toString()
@@ -141,7 +133,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         if (!hitsInYlreClass(tormaystarkasteluYlreClasses)) {
             // ylre_parts yes but still no hit in any usable classification
             return Luokittelutulos(
-                hankeGeometriatId,
                 LuokitteluType.KATULUOKKA,
                 0,
                 KatuluokkaTormaysLuokittelu.EI_MOOTTORILIIKENNE_VAIK.toString()
@@ -152,7 +143,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
                     .contains(TormaystarkasteluKatuluokka.PAAKATU_TAI_MOOTTORIVAYLA)
             ) {
                 return Luokittelutulos(
-                    hankeGeometriatId,
                     LuokitteluType.KATULUOKKA,
                     5,
                     KatuluokkaTormaysLuokittelu.PAAKATU_MOOTTORIVAYLA.toString()
@@ -162,7 +152,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
                     .contains(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)
             ) {
                 return Luokittelutulos(
-                    hankeGeometriatId,
                     LuokitteluType.KATULUOKKA,
                     4,
                     KatuluokkaTormaysLuokittelu.ALUEELLINEN_KOKOOJA.toString()
@@ -172,7 +161,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
                     .contains(TormaystarkasteluKatuluokka.PAIKALLINEN_KOKOOJAKATU)
             ) {
                 return Luokittelutulos(
-                    hankeGeometriatId,
                     LuokitteluType.KATULUOKKA,
                     3,
                     KatuluokkaTormaysLuokittelu.PAIKALLINEN_KOKOOJA.toString()
@@ -184,7 +172,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
             if (hitsInCentralBusinessArea(tormaystarkasteluCentralBusinessArea)) {
                 // arvo is 2 set, and leave
                 return Luokittelutulos(
-                    hankeGeometriatId,
                     LuokitteluType.KATULUOKKA,
                     2,
                     KatuluokkaTormaysLuokittelu.KANTAKAUPUNGIN_TONTTIKATU.toString()
@@ -192,7 +179,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
             } else {
                 // arvo is 1, set and leave
                 return Luokittelutulos(
-                    hankeGeometriatId,
                     LuokitteluType.KATULUOKKA,
                     1,
                     KatuluokkaTormaysLuokittelu.MUU_TONTTIKATU_ALUE.toString()
@@ -225,7 +211,7 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
 
         // case when not a street -> no trafic -> leave
         if (katuluokkaLuokittelu?.arvo == 0) {
-            return getLiikenneMaaraLowestLuokittelu(hanke.geometriat!!.id!!, rajaArvot)
+            return getLiikenneMaaraLowestLuokittelu(rajaArvot)
         }
 
         // find maximum tormaystulos
@@ -238,7 +224,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         rajaArvot.liikennemaaraRajaArvot.forEach { rajaArvo ->
             if (rajaArvo.minimumValue <= maximum) { // check against max
                 return Luokittelutulos(
-                    hanke.geometriat!!.id!!,
                     LuokitteluType.LIIKENNEMAARA,
                     rajaArvo.arvo,
                     rajaArvo.explanation
@@ -247,15 +232,12 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         }
 
         // return value is needed here, but this should never be needed
-        return getLiikenneMaaraLowestLuokittelu(hanke.geometriat!!.id!!, rajaArvot)
+        return getLiikenneMaaraLowestLuokittelu(rajaArvot)
     }
 
-    private fun getLiikenneMaaraLowestLuokittelu(
-        hankeGeometriatId: Int,
-        rajaArvot: LuokitteluRajaArvot
-    ): Luokittelutulos {
+    private fun getLiikenneMaaraLowestLuokittelu(rajaArvot: LuokitteluRajaArvot): Luokittelutulos {
         val arvoRivi = rajaArvot.liikennemaaraRajaArvot.first { rajaArvo -> rajaArvo.minimumValue == 0 } // find zero
-        return Luokittelutulos(hankeGeometriatId, LuokitteluType.LIIKENNEMAARA, arvoRivi.arvo, arvoRivi.explanation)
+        return Luokittelutulos(LuokitteluType.LIIKENNEMAARA, arvoRivi.arvo, arvoRivi.explanation)
     }
 
     private fun getMaximumLiikennemaaraFromVolumes(hanke: Hanke, katuluokkaLuokittelu: Luokittelutulos?): Int? {
@@ -289,31 +271,27 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
     private fun pyorailyLuokittelu(hanke: Hanke): Luokittelutulos {
 
         val hankeGeometriat = hanke.geometriat
-        val hankeGeometriatId = hankeGeometriat?.id
             ?: throw IllegalArgumentException("Hanke.geometriat should be set for hankeid ${hanke.id}")
 
         val tormaystarkastelutulos = tormaystarkasteluDao.pyorailyreitit(hankeGeometriat)
 
-        when {
+        return when {
             matchesPriorityCycling(tormaystarkastelutulos) -> {
-                return Luokittelutulos(
-                    hankeGeometriatId,
+                Luokittelutulos(
                     LuokitteluType.PYORAILYN_PAAREITTI,
                     5,
                     PyorailyTormaysLuokittelu.PRIORISOITU_REITTI.toString()
                 )
             }
             matchesMainCycling(tormaystarkastelutulos) -> {
-                return Luokittelutulos(
-                    hankeGeometriatId,
+                Luokittelutulos(
                     LuokitteluType.PYORAILYN_PAAREITTI,
                     4,
                     PyorailyTormaysLuokittelu.PAAREITTI.toString()
                 )
             }
             else -> {
-                return Luokittelutulos(
-                    hankeGeometriatId,
+                Luokittelutulos(
                     LuokitteluType.PYORAILYN_PAAREITTI,
                     0,
                     PyorailyTormaysLuokittelu.EI_PYORAILUREITTI.toString()
@@ -338,14 +316,13 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
 
     private fun bussiLuokittelu(hanke: Hanke, rajaArvot: LuokitteluRajaArvot): Luokittelutulos {
         val hankeGeometriat = hanke.geometriat
-        val hankeGeometriatId = hankeGeometriat?.id
             ?: throw IllegalArgumentException("Hanke.geometriat should be set for hankeid ${hanke.id}")
 
         val criticalAreaTormays = tormaystarkasteluDao.bussiliikenteenKannaltaKriittinenAlue(hankeGeometriat)
         if (hitsInCriticalAreaBus(criticalAreaTormays)) {
             // if critical_area matches ->  return 5
             val arvoRivi = rajaArvot.bussiliikenneRajaArvot.first { rajaArvo -> rajaArvo.arvo == 5 }
-            return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
+            return Luokittelutulos(LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
         }
 
         val bussesTormaystulos = tormaystarkasteluDao.bussit(hankeGeometriat)
@@ -353,7 +330,7 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         // if no hits in buses -> 0
         if (!hitsInBusses(bussesTormaystulos)) {
             val arvoRivi = getBussiRajaArvoWithClassification(rajaArvot, 0) // find zero
-            return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
+            return Luokittelutulos(LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
         }
         // count sum of rush_hours
         val countOfRushHourBuses = calculateCountOfRushHourBuses(bussesTormaystulos)
@@ -362,7 +339,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         val arvoRiviTop = getBussiRajaArvoWithClassification(rajaArvot, 5)
         if (countOfRushHourBuses >= arvoRiviTop.minimumValue) {
             return Luokittelutulos(
-                hankeGeometriatId,
                 LuokitteluType.BUSSILIIKENNE,
                 arvoRiviTop.arvo,
                 arvoRiviTop.explanation
@@ -373,7 +349,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         val arvoRiviSecond = getBussiRajaArvoWithClassification(rajaArvot, 4)
         if (matchesBusLineIsTrunkLine(bussesTormaystulos) || countOfRushHourBuses >= arvoRiviSecond.minimumValue) {
             return Luokittelutulos(
-                hankeGeometriatId,
                 LuokitteluType.BUSSILIIKENNE,
                 arvoRiviSecond.arvo,
                 arvoRiviSecond.explanation
@@ -386,7 +361,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
             countOfRushHourBuses >= arvoRiviMiddle.minimumValue
         ) {
             return Luokittelutulos(
-                hankeGeometriatId,
                 LuokitteluType.BUSSILIIKENNE,
                 arvoRiviMiddle.arvo,
                 arvoRiviMiddle.explanation
@@ -397,7 +371,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         val arvoRiviSmall = getBussiRajaArvoWithClassification(rajaArvot, 2)
         if (matchesBusLineIsAlmostTrunkLine(bussesTormaystulos) || countOfRushHourBuses >= arvoRiviSmall.minimumValue) {
             return Luokittelutulos(
-                hankeGeometriatId,
                 LuokitteluType.BUSSILIIKENNE,
                 arvoRiviSmall.arvo,
                 arvoRiviSmall.explanation
@@ -407,7 +380,7 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         // should not end here, but for safety
 
         val arvoRivi = getBussiRajaArvoWithClassification(rajaArvot, 0) // find zero
-        return Luokittelutulos(hankeGeometriatId, LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
+        return Luokittelutulos(LuokitteluType.BUSSILIIKENNE, arvoRivi.arvo, arvoRivi.explanation)
     }
 
     // There is at least one "Almost trunk" (=runkolinjamainen linja in Finnish) in the analysis result
@@ -457,7 +430,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
     private fun raitiovaunuLuokittelu(hanke: Hanke): Luokittelutulos {
 
         val hankeGeometriat = hanke.geometriat
-        val hankeGeometriatId = hankeGeometriat?.id
             ?: throw IllegalArgumentException("Hanke.geometriat should be set for hankeid ${hanke.id}")
 
         val tormaystarkastelutulos = tormaystarkasteluDao.raitiotiet(hankeGeometriat)
@@ -465,22 +437,21 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         return when {
             // no trams
             tormaystarkastelutulos.isEmpty() -> Luokittelutulos(
-                hankeGeometriatId, LuokitteluType.RAITIOVAUNULIIKENNE, 0,
+                LuokitteluType.RAITIOVAUNULIIKENNE, 0,
                 RaitiovaunuTormaysLuokittelu.EI_RAITIOVAUNULIIKENNETTA.toString()
             )
             // trams have shared lane with cars
             matchesSharedLane(tormaystarkastelutulos) -> Luokittelutulos(
-                hankeGeometriatId, LuokitteluType.RAITIOVAUNULIIKENNE, 4,
+                LuokitteluType.RAITIOVAUNULIIKENNE, 4,
                 RaitiovaunuTormaysLuokittelu.JAETTU_KAISTA.toString()
             )
             // own lane for tram
             matchesOwnLane(tormaystarkastelutulos) -> Luokittelutulos(
-                hankeGeometriatId, LuokitteluType.RAITIOVAUNULIIKENNE, 3,
+                LuokitteluType.RAITIOVAUNULIIKENNE, 3,
                 RaitiovaunuTormaysLuokittelu.OMA_KAISTA.toString()
             )
             // else (should not have this situation?)
             else -> Luokittelutulos(
-                hankeGeometriatId,
                 LuokitteluType.RAITIOVAUNULIIKENNE,
                 0,
                 RaitiovaunuTormaysLuokittelu.EI_RAITIOVAUNULIIKENNETTA.toString()

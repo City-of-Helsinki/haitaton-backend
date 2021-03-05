@@ -49,6 +49,7 @@ data class Hanke(
 
     constructor(id: Int) : this(id, null, null, null, null, null, null, null, null, null, null, null, null, null)
     constructor(id: Int, hankeTunnus: String) : this(id, hankeTunnus, null, null, null, null, null, null, null, null, null, null, null, null)
+    constructor() : this(null, null, null, null, null, null, null, null, null, null, null, null, null, null)
 
     // -------------- Tormaystarkastelu -------------
     var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
