@@ -35,6 +35,8 @@ jobs:
           registry: ghcr.io
           username: ${{ secrets.CR_OWNER }}
           password: ${{ secrets.CR_PAT }}
+      - name: ls
+        run: ls -ltra ${{ env.MODULE_PATH }}
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
