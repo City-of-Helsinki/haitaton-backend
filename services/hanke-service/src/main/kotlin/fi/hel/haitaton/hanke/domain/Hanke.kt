@@ -51,10 +51,6 @@ data class Hanke(
     constructor(id: Int, hankeTunnus: String) : this(id, hankeTunnus, null, null, null, null, null, null, null, null, null, null, null, null)
     constructor() : this(null, null, null, null, null, null, null, null, null, null, null, null, null, null)
 
-    // -------------- Tormaystarkastelu -------------
-    var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
-    var liikennehaittaindeksi: LiikennehaittaIndeksiType? = null
-
     // --------------- Yhteystiedot -----------------
     var omistajat = mutableListOf<HankeYhteystieto>()
     var arvioijat = mutableListOf<HankeYhteystieto>()
@@ -91,6 +87,21 @@ data class Hanke(
         } else {
             null
         }
+
+    // -------------- Tormaystarkastelu -------------
+    /**
+     * Liikennehaittaindeksi is always available here if it has been calculated and is still valid.
+     * Might be around even if no longer valid.
+     * TODO: should the validity-state be part of this indeksitype, too? (I.e. would know that even
+     *  when not getting the full tulos-data (which does have that state).
+     */
+    var liikennehaittaindeksi: LiikennehaittaIndeksiType? = null
+
+    /**
+     * These are currently available only when Hanke is returned via Tormaystarkastelu controller/service.
+     * And if they have been calculated and are still valid.
+     */
+    var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
 
     // --------------- State flags -------------------
     var tilat: HankeTilat = HankeTilat()
