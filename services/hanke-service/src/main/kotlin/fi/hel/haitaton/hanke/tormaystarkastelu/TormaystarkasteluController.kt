@@ -67,12 +67,10 @@ class TormaystarkasteluController(@Autowired private val laskentaService: Tormay
             // call service TormaystarkasteluLaskentaService
             var hankeWithTormaysResults = laskentaService.calculateTormaystarkastelu(hankeTunnus)
 
-
             logger.info { "tormaystarkastelu created for Hanke ${hankeWithTormaysResults.hankeTunnus}." }
             ResponseEntity.status(HttpStatus.OK).body(hankeWithTormaysResults)
         } catch (e: Exception) {
             logger.error(e) {
-
                 HankeError.HAI1006.toString()
 
             }

@@ -53,4 +53,3 @@ class DatabaseStateException(message: String) : RuntimeException(message)
 
 class TormaysAnalyysiException(message: String) : RuntimeException(message)
 
-class InvalidStateException(message: String) : RuntimeException(message)
