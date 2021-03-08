@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - include:
+      file: db/changelog/changesets/create-initial-hanke-table.yml
+  - include:
+      file: db/changelog/changesets/add-hanke-tyomaatiedot-fields.yml
+  - include:
+      file: db/changelog/changesets/add-hanke-haitat-fields.yml
+  - include:
+      file: db/changelog/changesets/create-hankeyhteystieto-table.yml
+  - include:
+      file: db/changelog/changesets/create-organization-tables.yml
+  - include:
+      file: db/changelog/changesets/insert-organization-data.yml
+  - include:
+      file: db/changelog/changesets/create-hankegeometriat-tables.sql
+  - include:
+      file: db/changelog/changesets/create-idcounter-tables.yml
+  - include:
+      file: db/changelog/changesets/modify-userids-to-strings.yml
+  - include:
+      file: db/changelog/changesets/add-hanke-flag-fields.yml
+  - include:
+      file: db/changelog/changesets/set-defaults-to-hanke-flag-fields.yml
