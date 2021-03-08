@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-organization-tables
+      comment: Create organization tables
+      author: Anne-Mari Silvast
+      changes:
+        - createTable:
+            tableName: organisaatio
+            columns:
+              - column: { name: id, type: int, autoIncrement: true, constraints: { primaryKey: true, nullable: false }}
+              - column:
+                  name: organisaatiotunnus
+                  type: varchar(15)
+                  constraints:
+                    unique: true
+              - column: { name: nimi, type: varchar(100) }
+              - column: { name: createdat, type: timestamp }
+              - column: { name: modifiedat, type: timestamp }

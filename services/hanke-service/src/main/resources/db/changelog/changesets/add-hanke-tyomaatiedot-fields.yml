@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-hanke-tyomaatiedot-fields
+      comment: Add new fields for 'hanke lisätiedot' -page
+      author: Markku Hassinen
+      changes:
+        - addColumn:
+            tableName: hanke
+            columns:
+              - column: { name: tyomaakatuosoite, type: clob }
+              - column: { name: tyomaakoko, type: varchar(25) } # enum
+        # Hanke can have multiple tyomaatyyppi -values, so a separate table for them
+        - createTable:
+            tableName: hanketyomaatyyppi
+            columns:
+              - column: { name: id, type: int, autoIncrement: true, constraints: { primaryKey: true, nullable: false }}
+              - column: { name: hankeid, type: int, constraints: { foreignKeyName: fk_hanke_hanketyomaatyyppi, references: hanke(id), nullable: false } }
+              - column: { name: tyomaatyyppi, type: varchar(30) } # enum
+        - addUniqueConstraint:
+            tableName: hanketyomaatyyppi
+            columnNames: hankeid, tyomaatyyppi

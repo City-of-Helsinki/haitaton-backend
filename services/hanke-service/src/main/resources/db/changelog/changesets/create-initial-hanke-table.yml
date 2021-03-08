@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-initial-hanke-table
+      comment: Create hanke table with initial fields
+      author: Markku Hassinen
+      changes:
+        - createTable:
+            tableName: hanke
+            columns:
+              # This column is split on multiple lines just to show the different formatting styles.
+              - column:
+                  name: id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column: { name: savetype, type: varchar(10) }
+              - column: { name: hanketunnus, type: varchar(15) }
+              - column: { name: nimi, type: varchar(100) }
+              - column: { name: kuvaus, type: clob }
+              - column: { name: alkupvm, type: date }
+              - column: { name: loppupvm, type: date }
+              - column: { name: vaihe, type: varchar(30) }
+              - column: { name: suunnitteluvaihe, type: varchar(40) }
+              - column: { name: onykthanke, type: boolean }
+              - column: { name: version, type: int }
+              - column: { name: createdbyuserid, type: int } # Is pseudonymized personal info if access to rest of the data is restricted
+              - column: { name: createdat, type: timestamp }
+              - column: { name: modifiedbyuserid, type: int } # Is pseudonymized personal info if access to rest of the data is restricted
+              - column: { name: modifiedat, type: timestamp }
+        - addUniqueConstraint:
+            tableName: hanke
+            columnNames: savetype, hanketunnus
