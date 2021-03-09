@@ -24,12 +24,13 @@ class TormaysTarkasteluTulosRepositoryITests @Autowired constructor(
 ) {
 
     val DATETIME = LocalDateTime.of(2020, 2, 20, 20, 20, 20)
-    val TESTINDEXVALUE = 3.3f
+    val TEST_INDEX_VALUE = 3.3f
+    val TEST_HANKE_TUNNUS = "TEST-123"
 
     @Test
     fun `findByHankeId returns existing tulos and hanke`() {
         // Create parent Hanke (with mostly null data), and a tulos connected with it, persist both:
-        val hankeEntity = persistHanke(HankeEntity(hankeTunnus = "TEST-123"))
+        val hankeEntity = persistHanke(HankeEntity(hankeTunnus = TEST_HANKE_TUNNUS))
         val hankeId = hankeEntity.id!!
         val tulosEntity = prepareTulos(hankeEntity)
         entityManager.persist(tulosEntity)
@@ -46,7 +47,7 @@ class TormaysTarkasteluTulosRepositoryITests @Autowired constructor(
     @Test
     fun `findByHankeId does not return anything for non-existing hanke`() {
         // Create parent Hanke (with mostly null data), and a tulos connected with it, persist both:
-        val hankeEntity = persistHanke(HankeEntity(hankeTunnus = "TEST-123"))
+        val hankeEntity = persistHanke(HankeEntity(hankeTunnus = TEST_HANKE_TUNNUS))
         val hankeId = hankeEntity.id!!
         val tulosEntity = prepareTulos(hankeEntity)
         entityManager.persist(tulosEntity)
@@ -60,7 +61,7 @@ class TormaysTarkasteluTulosRepositoryITests @Autowired constructor(
     @Test
     fun `All fields are saved and loaded correctly`() {
         // Create parent Hanke (with mostly null data), and a tulos connected with it, persist hanke only:
-        val hankeEntity = persistHanke(HankeEntity(hankeTunnus = "TEST-123"))
+        val hankeEntity = persistHanke(HankeEntity(hankeTunnus = TEST_HANKE_TUNNUS))
         val tulosEntity = prepareTulos(hankeEntity)
 
         // Save it (using our Repository):
@@ -81,7 +82,7 @@ class TormaysTarkasteluTulosRepositoryITests @Autowired constructor(
     @Test
     fun `Removing tulos from hanke works`() {
         // Create parent Hanke (with mostly null data), and a tulos connected with it, persist both:
-        val hankeEntity = persistHanke(HankeEntity(hankeTunnus = "TEST-123"))
+        val hankeEntity = persistHanke(HankeEntity(hankeTunnus = TEST_HANKE_TUNNUS))
         val hankeId = hankeEntity.id!!
         val tulosEntity = prepareTulos(hankeEntity)
         entityManager.persist(tulosEntity)
@@ -132,10 +133,10 @@ class TormaysTarkasteluTulosRepositoryITests @Autowired constructor(
      */
     private fun prepareTulos(hankeEntity: HankeEntity): TormaystarkasteluTulosEntity {
         val tulosEntity = TormaystarkasteluTulosEntity()
-        tulosEntity.liikennehaitta = LiikennehaittaIndeksiType(TESTINDEXVALUE, IndeksiType.JOUKKOLIIKENNEINDEKSI)
+        tulosEntity.liikennehaitta = LiikennehaittaIndeksiType(TEST_INDEX_VALUE, IndeksiType.JOUKKOLIIKENNEINDEKSI)
         tulosEntity.perus = 1.1f
         tulosEntity.pyoraily = 2.2f
-        tulosEntity.joukkoliikenne = TESTINDEXVALUE
+        tulosEntity.joukkoliikenne = TEST_INDEX_VALUE
         tulosEntity.tila = TormaystarkasteluTulosTila.VOIMASSA
         tulosEntity.tilaChangedAt = null
         tulosEntity.createdAt = DATETIME
