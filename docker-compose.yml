@@ -57,8 +57,6 @@ services:
       - DB_DATABASE=keycloak
       - DB_SCHEMA=public
       - KEYCLOAK_IMPORT=/tmp/haitaton-realm-with-users.json
-      - KEYCLOAK_WELCOME_THEME=haitaton
-      - KEYCLOAK_DEFAULT_THEME=haitaton
     depends_on:
       - auth-db
     networks:
