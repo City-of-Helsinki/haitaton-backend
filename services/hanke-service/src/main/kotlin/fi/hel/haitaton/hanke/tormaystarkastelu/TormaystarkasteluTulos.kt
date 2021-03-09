@@ -50,14 +50,14 @@ data class LiikennehaittaIndeksiType(
     var indeksi: Float,
     @Column(name = "liikennehaittatyyppi")
     @Enumerated(EnumType.STRING)
-    // TODO: pitäisikö tämän olla "tyyppi", kun "indeksi":kin on suomeksi, samoin kuin tämän arvot?
-    var type: IndeksiType
+    var tyyppi: IndeksiType
 )
 
 enum class IndeksiType {
     PERUSINDEKSI,
     PYORAILYINDEKSI,
     JOUKKOLIIKENNEINDEKSI
+    // TODO: will likely need a new option "MONTA" or "USEITA".
 }
 
 enum class TormaystarkasteluTulosTila {

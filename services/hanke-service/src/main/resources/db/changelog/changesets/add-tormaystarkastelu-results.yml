@@ -26,4 +26,5 @@ databaseChangeLog:
               - column: { name: pyoraily, type: float }
               - column: { name: joukkoliikenne, type: float }
               - column: { name: tila, type: varchar(20) }
+              - column: { name: tilachangedat, type: timestamp }
               - column: { name: createdat, type: timestamp }
