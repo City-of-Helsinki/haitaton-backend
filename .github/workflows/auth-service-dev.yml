@@ -10,6 +10,7 @@ on:
       - dev
     paths:
       - services/auth-service/**
+      - .github/workflows/auth-service-dev.yml
 
 jobs:
   docker_build_and_push:
@@ -37,7 +38,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
-          context: .
+          context: ./${{ env.MODULE_PATH }}
           file: ./${{ env.MODULE_PATH }}/Dockerfile
           push: true
           tags: |

@@ -97,8 +97,8 @@ class HankeServiceITests {
         assertThat(returnedHanke.tyomaaKoko).isEqualTo(TyomaaKoko.LAAJA_TAI_USEA_KORTTELI)
         assertThat(returnedHanke.haittaAlkuPvm).isEqualTo(expectedDateAlku)
         assertThat(returnedHanke.haittaLoppuPvm).isEqualTo(expectedDateLoppu)
-        assertThat(returnedHanke.kaistaHaitta).isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA)
-        assertThat(returnedHanke.kaistaPituusHaitta).isEqualTo(KaistajarjestelynPituus.ALKAEN_101M_PAATTYEN_500M)
+        assertThat(returnedHanke.kaistaHaitta).isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI)
+        assertThat(returnedHanke.kaistaPituusHaitta).isEqualTo(KaistajarjestelynPituus.NELJA)
         assertThat(returnedHanke.meluHaitta).isEqualTo(Haitta13.YKSI)
         assertThat(returnedHanke.polyHaitta).isEqualTo(Haitta13.KAKSI)
         assertThat(returnedHanke.tarinaHaitta).isEqualTo(Haitta13.KOLME)
@@ -752,8 +752,8 @@ class HankeServiceITests {
         hanke.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
         hanke.haittaAlkuPvm = dateAlku
         hanke.haittaLoppuPvm = dateLoppu
-        hanke.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
-        hanke.kaistaPituusHaitta = KaistajarjestelynPituus.ALKAEN_101M_PAATTYEN_500M
+        hanke.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
+        hanke.kaistaPituusHaitta = KaistajarjestelynPituus.NELJA
         hanke.meluHaitta = Haitta13.YKSI
         hanke.polyHaitta = Haitta13.KAKSI
         hanke.tarinaHaitta = Haitta13.KOLME

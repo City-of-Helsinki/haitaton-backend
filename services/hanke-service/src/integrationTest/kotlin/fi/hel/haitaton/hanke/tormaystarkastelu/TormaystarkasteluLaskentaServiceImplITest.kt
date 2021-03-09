@@ -72,8 +72,8 @@ internal class TormaystarkasteluLaskentaServiceImplITest {
             loppuPvm = alkuPvm!!.plusDays(7)
             haittaAlkuPvm = alkuPvm
             haittaLoppuPvm = loppuPvm
-            kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.EI_VAIKUTA
-            kaistaPituusHaitta = KaistajarjestelynPituus.EI_TARVITA
+            kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.YKSI
+            kaistaPituusHaitta = KaistajarjestelynPituus.YKSI
             tilat.onGeometrioita = true
         }
         hankeService.updateHanke(hanke)
