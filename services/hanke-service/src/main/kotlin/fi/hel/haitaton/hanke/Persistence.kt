@@ -226,10 +226,8 @@ class HankeEntity(
     }
 
     fun addTormaystarkasteluTulos(tormaystarkasteluTulosEntity: TormaystarkasteluTulosEntity) {
-        if (tormaystarkasteluTulosEntity.hanke != null) {
-            if (tormaystarkasteluTulosEntity.hanke != this) {
-                throw IllegalStateException("Given TormaystarkasteluTulosEntity has already a different parent Hanke.")
-            }
+        if (tormaystarkasteluTulosEntity.hanke != null && tormaystarkasteluTulosEntity.hanke != this) {
+            throw IllegalStateException("Given TormaystarkasteluTulosEntity has already a different parent Hanke.")
         }
         tormaystarkasteluTulosEntity.hanke = this
         // Check that exactly same entity (with same id) is not added twice;
