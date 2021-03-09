@@ -114,7 +114,7 @@ internal class TormaystarkasteluLaskentaServiceImplITest {
 
         // assert the results
         assertThat(tormaystarkasteluHanke.tormaystarkasteluTulos).isNotNull()
-        assertThat(tormaystarkasteluHanke.tormaystarkasteluTulos!!.liikennehaittaIndeksi!!.type)
+        assertThat(tormaystarkasteluHanke.tormaystarkasteluTulos!!.liikennehaittaIndeksi!!.tyyppi)
             .isEqualTo(IndeksiType.JOUKKOLIIKENNEINDEKSI)
     }
 }

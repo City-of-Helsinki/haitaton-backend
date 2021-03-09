@@ -49,5 +49,7 @@ class IntegrationTestConfiguration {
         luokitteluService: TormaystarkasteluLuokitteluService
     ): TormaystarkasteluLaskentaService = mockk()
 
+    @Bean
+    fun tormaystarkasteluTulosRepository(): TormaystarkasteluTulosRepository = mockk()
 
 }

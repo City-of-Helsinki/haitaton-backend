@@ -199,18 +199,20 @@ class HankeEntity(
     @Embedded
     @AttributeOverrides(
         AttributeOverride(name = "indeksi", column = Column(name = "liikennehaittaindeksi")),
-        AttributeOverride(name = "type", column = Column(name = "liikennehaittaindeksityyppi"))
+        AttributeOverride(name = "tyyppi", column = Column(name = "liikennehaittaindeksityyppi"))
     )
     var liikennehaittaIndeksi: LiikennehaittaIndeksiType? = null
 
     // Made bidirectional relation mainly to allow cascaded delete.
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "hanke", cascade = [CascadeType.ALL], orphanRemoval = true)
-    var tormaystarkastelutulokset: MutableList<TormaystarkasteluTulosEntity>? = null
+    var tormaystarkasteluTulokset: MutableList<TormaystarkasteluTulosEntity> = mutableListOf()
 
 
     // ==================  Helper functions ================
 
     fun addYhteystieto(yhteystieto: HankeYhteystietoEntity) {
+        // TODO: should check that the given entity is not yet connected to another Hanke, or
+        // if already connected to this hanke (see addTormaystarkasteluTulos())
         listOfHankeYhteystieto.add(yhteystieto)
         yhteystieto.hanke = this
     }
@@ -222,6 +224,27 @@ class HankeEntity(
             yhteystieto.hanke = null
         }
     }
+
+    fun addTormaystarkasteluTulos(tormaystarkasteluTulosEntity: TormaystarkasteluTulosEntity) {
+        if (tormaystarkasteluTulosEntity.hanke != null) {
+            if (tormaystarkasteluTulosEntity.hanke != this) {
+                throw IllegalStateException("Given TormaystarkasteluTulosEntity has already a different parent Hanke.")
+            }
+        }
+        tormaystarkasteluTulosEntity.hanke = this
+        // Check that exactly same entity (with same id) is not added twice;
+        // another one with the same values but different id can be added.
+        if (!tormaystarkasteluTulokset.contains(tormaystarkasteluTulosEntity))
+            tormaystarkasteluTulokset.add(tormaystarkasteluTulosEntity)
+    }
+
+    fun removeTormaystarkasteluTulos(tormaystarkasteluTulosEntity: TormaystarkasteluTulosEntity) {
+        if (tormaystarkasteluTulokset.contains(tormaystarkasteluTulosEntity)) {
+            tormaystarkasteluTulokset.remove(tormaystarkasteluTulosEntity)
+            tormaystarkasteluTulosEntity.hanke = null
+        }
+    }
+
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
