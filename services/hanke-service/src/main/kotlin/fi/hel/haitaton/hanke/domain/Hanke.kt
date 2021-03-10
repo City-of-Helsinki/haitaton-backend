@@ -51,10 +51,6 @@ data class Hanke(
     constructor(id: Int, hankeTunnus: String) : this(id, hankeTunnus, null, null, null, null, null, null, null, null, null, null, null, null)
     constructor() : this(null, null, null, null, null, null, null, null, null, null, null, null, null, null)
 
-    // -------------- Tormaystarkastelu -------------
-    var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
-    var liikennehaittaindeksi: LiikennehaittaIndeksiType? = null
-
     // --------------- Yhteystiedot -----------------
     var omistajat = mutableListOf<HankeYhteystieto>()
     var arvioijat = mutableListOf<HankeYhteystieto>()
@@ -92,12 +88,28 @@ data class Hanke(
             null
         }
 
+    // -------------- Tormaystarkastelu -------------
+    /**
+     * Liikennehaittaindeksi is always available here if it has been calculated and is still valid.
+     * Might be around even if no longer valid.
+     * TODO: should the validity-state be part of this indeksitype, too? (I.e. would know that even
+     *  when not getting the full tulos-data (which does have that state).
+     */
+    var liikennehaittaindeksi: LiikennehaittaIndeksiType? = null
+
+    /**
+     * These are currently available only when Hanke is returned via Tormaystarkastelu controller/service.
+     * And if they have been calculated and are still valid.
+     */
+    var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
+
     // --------------- State flags -------------------
     var tilat: HankeTilat = HankeTilat()
 
     fun updateStateFlags() {
         updateStateFlagOnKaikkiPakollisetLuontiTiedot()
-        updateStateFlagTiedotLiikHaittaIndeksille()
+        updateStateFlagOnTiedotLiikHaittaIndeksille()
+        updateStateFlagOnLiikenneHaittaIndeksi()
     }
 
     fun updateStateFlagOnKaikkiPakollisetLuontiTiedot() {
@@ -114,12 +126,20 @@ data class Hanke(
                 && saveType == SaveType.SUBMIT
     }
 
-    fun updateStateFlagTiedotLiikHaittaIndeksille() {
+    fun updateStateFlagOnTiedotLiikHaittaIndeksille() {
         // Requires start date, stop date, geometry, and both kaista-related haittas.
         // (They don't have to be "valid", though, that is another thing.)
         tilat.onTiedotLiikenneHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null)
                 && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
                 && tilat.onGeometrioita == true
+    }
+
+    /**
+     * NOTE: does not consider whether the result has been invalidated or not,
+     * only that one exists.
+     */
+    fun updateStateFlagOnLiikenneHaittaIndeksi() {
+        tilat.onLiikenneHaittaIndeksi = (liikennehaittaindeksi != null)
     }
 
     private fun hasMandatoryVaiheValues(): Boolean {

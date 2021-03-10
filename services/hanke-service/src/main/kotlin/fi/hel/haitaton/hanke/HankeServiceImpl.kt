@@ -3,6 +3,8 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 
 import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContextHolder
@@ -110,6 +112,8 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         val entity = HankeEntity()
         copyNonNullHankeFieldsToEntity(hanke, entity)
         copyYhteystietosToEntity(hanke, entity, userid)
+        // NOTE: liikennehaittaindeksi and tormaystarkastelutulos are NOT
+        //  copied from incoming data. Use setTormaystarkasteluTulos() for that.
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = 0
@@ -144,6 +148,8 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         // Transfer field values from domain object to entity object, and set relevant audit fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
         copyYhteystietosToEntity(hanke, entity, userid)
+        // NOTE: liikennehaittaindeksi and tormaystarkastelutulos are NOT
+        //  copied from incoming data. Use setTormaystarkasteluTulos() for that.
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
         // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
         entity.version = entity.version?.inc() ?: 1
@@ -174,6 +180,41 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         copyStateFlagsToEntity(hanke, entity)
         hankeRepository.save(entity)
     }
+
+
+    override fun applyAndSaveTormaystarkasteluTulos(hanke: Hanke, tormaystarkasteluTulos: TormaystarkasteluTulos) {
+        if (hanke.hankeTunnus == null) {
+            error("Somehow got here with hanke without hanke-tunnus")
+        }
+        // Both checks that the hanke already exists, and get its old fields to transfer data into
+        val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
+                ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
+
+        // Set the values to the domain object and update flag
+        hanke.tormaystarkasteluTulos = tormaystarkasteluTulos
+        hanke.liikennehaittaindeksi = tormaystarkasteluTulos.liikennehaittaIndeksi
+        hanke.updateStateFlagOnLiikenneHaittaIndeksi()
+        // NOTE: the flag is not saved; the possible states are resolved from
+        // the relevant liikenneHaittaIndeksi-field and/or tormaystarkasteluTulos.
+        // null indeksi/tulos means the flag would be false; non-null means true;
+        // non-null with tila EI_VOIMASSA for an existing but obsolete result.
+
+        // Set the tulos to entity object (but first clear any possible old obsolete entries away)
+        entity.tormaystarkasteluTulokset.clear()
+        val tormaystarkasteluTulosEntity = copyTormaystarkasteluTulosToEntity(tormaystarkasteluTulos)
+        tormaystarkasteluTulosEntity.createdAt = getCurrentTimeUTCAsLocalTime()
+        entity.addTormaystarkasteluTulos(tormaystarkasteluTulosEntity)
+        // Set the entity liikenneHaittaIndeksi-field
+        entity.liikennehaittaIndeksi = hanke.liikennehaittaindeksi?.copy()
+
+        // Saves the tulos, too:
+        hankeRepository.save(entity)
+    }
+
+    // TODO: functions to remove, invalidate Hanke's tormaystarkastelu-data
+    //   At least invalidation can be done purely working on the particular
+    //   tormaystarkasteluTulosEntity and -Repository.
+    //   See TormaystarkasteluRepositoryITests for a way to remove.
 
     // ======================================================================
 
@@ -216,6 +257,10 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
             h.meluHaitta = hankeEntity.meluHaitta
             h.polyHaitta = hankeEntity.polyHaitta
             h.tarinaHaitta = hankeEntity.tarinaHaitta
+
+            h.liikennehaittaindeksi = hankeEntity.liikennehaittaIndeksi?.copy()
+            // tormaystarkasteluTulos is NOT copied over here (only when
+            // included in Hanke instance via TormaystarkasteluLaskentaService).
 
             copyStateFlagsFromEntity(h, hankeEntity)
             h.updateStateFlags()
@@ -316,7 +361,6 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         hanke.meluHaitta?.let { entity.meluHaitta = hanke.meluHaitta }
         hanke.polyHaitta?.let { entity.polyHaitta = hanke.polyHaitta }
         hanke.tarinaHaitta?.let { entity.tarinaHaitta = hanke.tarinaHaitta }
-
     }
 
     /**
@@ -472,4 +516,21 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
             // If the entry was left in the existingYTs, it will get deleted.
         }
     }
+
+    // TODO: this sort of should be in some more common place (useful
+    //  for e.g. other serviceimpl-classes), but currently there is no good
+    //  place..
+    private fun copyTormaystarkasteluTulosToEntity(ttt: TormaystarkasteluTulos):
+            TormaystarkasteluTulosEntity {
+        val tttEntity = TormaystarkasteluTulosEntity()
+        tttEntity.liikennehaitta = ttt.liikennehaittaIndeksi?.copy()
+        tttEntity.perus = ttt.perusIndeksi
+        tttEntity.pyoraily = ttt.pyorailyIndeksi
+        tttEntity.joukkoliikenne = ttt.joukkoliikenneIndeksi
+        tttEntity.tila = ttt.tila
+
+        return tttEntity
+    }
+
+
 }

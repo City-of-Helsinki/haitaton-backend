@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.HaitatonPostgreSQLContainer
@@ -58,6 +59,9 @@ internal class TormaystarkasteluLaskentaServiceImplITest {
     private lateinit var tormaystarkasteluDao: TormaystarkasteluDao
 
     @Autowired
+    private lateinit var tormaystarkasteluTulosRepository: TormaystarkasteluTulosRepository
+
+    @Autowired
     private lateinit var hankeService: HankeService
 
     @Autowired
@@ -65,7 +69,60 @@ internal class TormaystarkasteluLaskentaServiceImplITest {
 
     @Test
     fun `calculateTormaystarkastelu happy case`() {
-        // setup
+        val hanke = setupHappyCase()
+        val hankeTunnus = hanke.hankeTunnus!!
+
+        // test the functionality
+        val tormaystarkasteluHanke = tormaystarkasteluLaskentaService.calculateTormaystarkastelu(hankeTunnus)
+
+        // assert the results and that the returned hanke-instance contains the tulos
+        assertThat(tormaystarkasteluHanke.tormaystarkasteluTulos).isNotNull()
+        assertThat(tormaystarkasteluHanke.tormaystarkasteluTulos!!.liikennehaittaIndeksi!!.tyyppi)
+            .isEqualTo(IndeksiType.JOUKKOLIIKENNEINDEKSI)
+    }
+
+    @Test
+    fun `calculate happy case persists the result correctly and can be read afterwards`() {
+        val hanke = setupHappyCase()
+        val hankeTunnus = hanke.hankeTunnus!!
+
+        // Call calculate (which should save stuff...), ignore the returned hanke
+        tormaystarkasteluLaskentaService.calculateTormaystarkastelu(hankeTunnus)
+
+        // Load Hanke separately via its service, and check that it has the liikennehaittaindeksi
+        val hankeViaService = hankeService.loadHanke(hankeTunnus)
+        assertThat(hankeViaService).isNotNull()
+        assertThat(hankeViaService!!.liikennehaittaindeksi).isNotNull()
+        assertThat(hankeViaService.liikennehaittaindeksi!!.indeksi).isNotNull()
+        assertThat(hankeViaService.liikennehaittaindeksi!!.indeksi).isEqualTo(4.0f)
+
+        // Check that tormaystarkasteluTulos can be found via its Repository, and has some value
+        val tormaystarkasteluTulosEntityList = tormaystarkasteluTulosRepository.findByHankeId(hankeViaService.id!!)
+        assertThat(tormaystarkasteluTulosEntityList).isNotNull()
+        assertThat(tormaystarkasteluTulosEntityList).isNotEmpty()
+        assertThat(tormaystarkasteluTulosEntityList[0]).isNotNull()
+        assertThat(tormaystarkasteluTulosEntityList[0].liikennehaitta).isNotNull()
+        assertThat(tormaystarkasteluTulosEntityList[0].liikennehaitta!!.indeksi).isNotNull()
+        assertThat(tormaystarkasteluTulosEntityList[0].liikennehaitta!!.indeksi).isEqualTo(4.0f)
+    }
+
+    @Test
+    fun `calculate happy case result and can be read afterwards with getTormaystarkastelu`() {
+        val hanke = setupHappyCase()
+        val hankeTunnus = hanke.hankeTunnus!!
+
+        // Call calculate (which should save stuff...), ignore the returned hanke
+        tormaystarkasteluLaskentaService.calculateTormaystarkastelu(hankeTunnus)
+
+        val tormaystarkasteluTulos = tormaystarkasteluLaskentaService.getTormaystarkastelu(hankeTunnus)
+        assertThat(tormaystarkasteluTulos).isNotNull()
+        assertThat(tormaystarkasteluTulos!!.liikennehaittaIndeksi).isNotNull()
+        assertThat(tormaystarkasteluTulos.liikennehaittaIndeksi!!.indeksi).isNotNull()
+        assertThat(tormaystarkasteluTulos.liikennehaittaIndeksi!!.indeksi).isEqualTo(4.0f)
+    }
+
+
+    private fun setupHappyCase(): Hanke {
         val hanke = hankeService.createHanke(Hanke())
         hanke.apply {
             alkuPvm = ZonedDateTime.of(2021, 3, 4, 0, 0, 0, 0, TZ_UTC)
@@ -79,10 +136,10 @@ internal class TormaystarkasteluLaskentaServiceImplITest {
         hankeService.updateHanke(hanke)
         hankeService.updateHankeStateFlags(hanke)
         val hankeId = hanke.id!!
-        val hankeTunnus = hanke.hankeTunnus!!
         val hankeGeometriatId = 1
         val hankeGeometriaId = 1
         val hankeGeometriat = HankeGeometriat(hankeGeometriatId, hankeId)
+
         every {
             hankeGeometriatDao.retrieveHankeGeometriat(hankeId)
         } returns hankeGeometriat
@@ -108,13 +165,8 @@ internal class TormaystarkasteluLaskentaServiceImplITest {
             tormaystarkasteluDao.bussiliikenteenKannaltaKriittinenAlue(hankeGeometriat)
         } returns mapOf(Pair(hankeGeometriaId, true))
 
-        // test the functionality
-        val tormaystarkasteluHanke = tormaystarkasteluLaskentaService.calculateTormaystarkastelu(hankeTunnus)
-        println(tormaystarkasteluHanke.tormaystarkasteluTulos)
-
-        // assert the results
-        assertThat(tormaystarkasteluHanke.tormaystarkasteluTulos).isNotNull()
-        assertThat(tormaystarkasteluHanke.tormaystarkasteluTulos!!.liikennehaittaIndeksi!!.type)
-            .isEqualTo(IndeksiType.JOUKKOLIIKENNEINDEKSI)
+        return hanke
     }
+
+
 }
