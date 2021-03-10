@@ -44,7 +44,7 @@ open class TormaystarkasteluLaskentaServiceImpl(
             laskentatulos.tila = TormaystarkasteluTulosTila.VOIMASSA
 
             // Apply the result to hanke:
-            hankeService.setTormaystarkasteluTulos(hanke, laskentatulos)
+            hankeService.applyAndSaveTormaystarkasteluTulos(hanke, laskentatulos)
         } else {
             throw IllegalStateException("Hanke.tilat.onTiedotLiikenneHaittaIndeksille cannot be false here; hanke $hankeTunnus")
         }
@@ -65,6 +65,13 @@ open class TormaystarkasteluLaskentaServiceImpl(
             return null
         }
 
+        // TODO: this causes undesired extra db-traffic. In future each tulos should
+        //  have its own related geometriaid (note, "geometria", not "geometriat" with end t)
+        //  stored with the data in the database, so the injection, and thus this load
+        //  will not be needed.
+        // load geometries for hanke to be able to inject the geometriatid to tulos
+        hanke.geometriat = geometriatService.loadGeometriat(hanke)
+
         // Only the HankeEntity has the list of tulos lazy-loaded; domain object does not (yet..)
         // So, loading the tulos via TormaystarkasteluRepository
         val entityList = tormaystarkasteluTulosRepository.findByHankeId(hanke.id!!)
@@ -72,8 +79,8 @@ open class TormaystarkasteluLaskentaServiceImpl(
         if (entityList.isEmpty()) {
             throw IllegalStateException("Hanke.tilat.onLiikenneHaittaIndeksi was true, but no results found in database; hanke $hankeTunnus")
         }
-        var tormaystarkasteluTulosEntity = entityList[0]
-        var tormaystarkasteluTulos = initTormaystarkasteluTulos(hanke)
+        val tormaystarkasteluTulosEntity = entityList[0]
+        val tormaystarkasteluTulos = initTormaystarkasteluTulos(hanke)
         copyTormaystarkasteluTulosFromEntity(tormaystarkasteluTulosEntity, tormaystarkasteluTulos)
 
         return tormaystarkasteluTulos

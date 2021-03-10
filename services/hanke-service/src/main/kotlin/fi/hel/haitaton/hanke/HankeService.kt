@@ -29,7 +29,7 @@ interface HankeService {
     /**
      * Sets the values to the given domain object, sets the state flag, and persists the tulos.
      */
-    fun setTormaystarkasteluTulos(hanke: Hanke, tormaystarkasteluTulos: TormaystarkasteluTulos)
+    fun applyAndSaveTormaystarkasteluTulos(hanke: Hanke, tormaystarkasteluTulos: TormaystarkasteluTulos)
 
     fun loadAllHanke(hankeSearch: HankeSearch? = null): List<Hanke>
 }

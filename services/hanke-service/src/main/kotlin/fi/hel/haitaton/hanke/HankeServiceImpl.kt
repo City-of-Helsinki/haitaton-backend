@@ -182,7 +182,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
     }
 
 
-    override fun setTormaystarkasteluTulos(hanke: Hanke, tormaystarkasteluTulos: TormaystarkasteluTulos) {
+    override fun applyAndSaveTormaystarkasteluTulos(hanke: Hanke, tormaystarkasteluTulos: TormaystarkasteluTulos) {
         if (hanke.hankeTunnus == null) {
             error("Somehow got here with hanke without hanke-tunnus")
         }
