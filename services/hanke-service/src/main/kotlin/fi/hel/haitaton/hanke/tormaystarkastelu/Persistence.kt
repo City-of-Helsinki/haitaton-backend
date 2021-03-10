@@ -89,6 +89,11 @@ class TormaystarkasteluTulosEntity {
     }
 }
 
+/**
+ * Use HankeService/Entity/Repository to add/remove TormaystarkasteluTulos to/from a Hanke.
+ * This repository can be used to save modifications to a Tulos (e.g. invalidate it),
+ * or to find tulos instances.
+ */
 interface TormaystarkasteluTulosRepository: JpaRepository<TormaystarkasteluTulosEntity, Int> {
     /**
      * Note, as HankeEntity has lazy relation to the related set of tormaystarkastelutulos

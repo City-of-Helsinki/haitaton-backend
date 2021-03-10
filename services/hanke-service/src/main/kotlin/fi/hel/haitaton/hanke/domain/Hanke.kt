@@ -108,7 +108,8 @@ data class Hanke(
 
     fun updateStateFlags() {
         updateStateFlagOnKaikkiPakollisetLuontiTiedot()
-        updateStateFlagTiedotLiikHaittaIndeksille()
+        updateStateFlagOnTiedotLiikHaittaIndeksille()
+        updateStateFlagOnLiikenneHaittaIndeksi()
     }
 
     fun updateStateFlagOnKaikkiPakollisetLuontiTiedot() {
@@ -125,12 +126,20 @@ data class Hanke(
                 && saveType == SaveType.SUBMIT
     }
 
-    fun updateStateFlagTiedotLiikHaittaIndeksille() {
+    fun updateStateFlagOnTiedotLiikHaittaIndeksille() {
         // Requires start date, stop date, geometry, and both kaista-related haittas.
         // (They don't have to be "valid", though, that is another thing.)
         tilat.onTiedotLiikenneHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null)
                 && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
                 && tilat.onGeometrioita == true
+    }
+
+    /**
+     * NOTE: does not consider whether the result has been invalidated or not,
+     * only that one exists.
+     */
+    fun updateStateFlagOnLiikenneHaittaIndeksi() {
+        tilat.onLiikenneHaittaIndeksi = (liikennehaittaindeksi != null)
     }
 
     private fun hasMandatoryVaiheValues(): Boolean {

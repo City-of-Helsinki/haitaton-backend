@@ -5,6 +5,9 @@ import javax.persistence.Embeddable
 import javax.persistence.EnumType
 import javax.persistence.Enumerated
 
+// TODO: Only hankeTunnus to be used as part of equals(), hashCode() and copy() auto-implementations?
+//  For now we only have one result per hanke, so it is ok, but in future there can be multiple results
+//  for each hanke, and at least geometryId or something like that should be considered.
 data class TormaystarkasteluTulos(val hankeTunnus: String) {
 
     var hankeId: Int = 0
@@ -13,6 +16,7 @@ data class TormaystarkasteluTulos(val hankeTunnus: String) {
     var perusIndeksi: Float? = null
     var pyorailyIndeksi: Float? = null
     var joukkoliikenneIndeksi: Float? = null
+    var tila: TormaystarkasteluTulosTila? = null
 
     override fun toString(): String {
         return "TormaystarkasteluTulos(" +

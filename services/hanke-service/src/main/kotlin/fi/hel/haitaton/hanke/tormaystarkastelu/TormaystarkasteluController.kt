@@ -40,8 +40,8 @@ class TormaystarkasteluController(@Autowired private val laskentaService: Tormay
                 ResponseEntity.status(HttpStatus.OK).body(tormaysResults)
             }
         } catch (e: Exception) {
-            logger.error(e) { HankeError.HAI1006.toString() }
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1006)
+            logger.error(e) { HankeError.HAI1008.toString() }
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(HankeError.HAI1008)
         }
     }
 
@@ -57,15 +57,8 @@ class TormaystarkasteluController(@Autowired private val laskentaService: Tormay
         }
 
         return try {
-
-            // if(hanke.tilat.onTiedotLiikenneHaittaIndeksille)
-            // then calculate:
-            // - call service to create tormaystarkastelu -> you will get TormaystarkasteluTulos
-            // - service has saved tormaystulos to database and saved hanke.onLiikenneHaittaIndeksi=true (or is it services job to do that?)
-            // - return hanke with tormaystulos
-
             // call service TormaystarkasteluLaskentaService
-            var hankeWithTormaysResults = laskentaService.calculateTormaystarkastelu(hankeTunnus)
+            val hankeWithTormaysResults = laskentaService.calculateTormaystarkastelu(hankeTunnus)
 
             logger.info { "tormaystarkastelu created for Hanke ${hankeWithTormaysResults.hankeTunnus}." }
             ResponseEntity.status(HttpStatus.OK).body(hankeWithTormaysResults)

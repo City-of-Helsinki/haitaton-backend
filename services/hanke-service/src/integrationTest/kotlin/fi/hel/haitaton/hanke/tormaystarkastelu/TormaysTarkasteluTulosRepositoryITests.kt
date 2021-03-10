@@ -5,6 +5,7 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import org.junit.jupiter.api.Test
@@ -64,23 +65,67 @@ class TormaysTarkasteluTulosRepositoryITests @Autowired constructor(
         val hankeEntity = persistHanke(HankeEntity(hankeTunnus = TEST_HANKE_TUNNUS))
         val tulosEntity = prepareTulos(hankeEntity)
 
-        // Save it (using our Repository):
+        // Save it (using TormaystarkasteluTulosRepository):
         tormaystarkasteluTulosRepository.save(tulosEntity)
         val tulosId = tulosEntity.id
         assertThat(tulosId).isNotNull()
         entityManager.flush() // Make sure the stuff is run to database (though not necessarily committed)
         entityManager.clear() // Ensure the original entity is no longer in Hibernate's 1st level cache
 
-
         // Load it back to different entity and check the fields
         val testResultEntity = tormaystarkasteluTulosRepository.findById(tulosId!!).get()
         assertThat(testResultEntity).isNotNull()
-
         assertThat(testResultEntity).isEqualTo(tulosEntity) // Checks almost all fields
     }
 
     @Test
-    fun `Removing tulos from hanke works`() {
+    fun `Test that saving via TormaystarkasteluRepository works properly`() {
+        // Create parent Hanke (with mostly null data), and a tulos connected with it, persist hanke only:
+        val hankeEntity = persistHanke(HankeEntity(hankeTunnus = TEST_HANKE_TUNNUS))
+        val hankeId = hankeEntity.id
+        val tulosEntity = prepareTulos(hankeEntity)
+
+        // Save tulos using TormaystarkasteluTulosRepository:
+        tormaystarkasteluTulosRepository.save(tulosEntity)
+        val tulosId = tulosEntity.id
+        assertThat(tulosId).isNotNull()
+        entityManager.flush() // Make sure the stuff is run to database (though not necessarily committed)
+        entityManager.clear() // Ensure the original entity is no longer in Hibernate's 1st level cache
+
+        // Load the parent hanke entity and check that the tulos can be found there
+        val finalHankeEntity = hankeRepository.findById(hankeId!!).get()
+        assertThat(finalHankeEntity.tormaystarkasteluTulokset).hasSize(1)
+        // Load tulos directly with its repository:
+        val finalTormaystarkasteluTulosEntityList = tormaystarkasteluTulosRepository.findByHankeId(hankeId)
+        assertThat(finalTormaystarkasteluTulosEntityList).hasSize(1)
+    }
+
+    @Test
+    fun `Test that saving via HankeRepository works properly`() {
+        // Create parent Hanke (with mostly null data), and a tulos connected with it, persist hanke only:
+        val hankeEntity = persistHanke(HankeEntity(hankeTunnus = TEST_HANKE_TUNNUS))
+        val hankeId = hankeEntity.id
+        val tulosEntity = prepareTulos(hankeEntity)
+        assertThat(tulosEntity.id).isNull()
+
+        // Save tulos using HankeRepository:
+        hankeRepository.save(hankeEntity)
+        // Note, tulos should have gotten saved indirectly via saving the parent Hanke,
+        // and thus tulos should now have its own new id:
+        assertThat(hankeEntity.tormaystarkasteluTulokset[0].id).isNotNull()
+        entityManager.flush() // Make sure the stuff is run to database (though not necessarily committed)
+        entityManager.clear() // Ensure the original entity is no longer in Hibernate's 1st level cache
+
+        // Load the parent hanke entity and check that the tulos can be found there
+        val finalHankeEntity = hankeRepository.findById(hankeId!!).get()
+        assertThat(finalHankeEntity.tormaystarkasteluTulokset).hasSize(1)
+        // Load tulos directly with its repository:
+        val finalTormaystarkasteluTulosEntityList = tormaystarkasteluTulosRepository.findByHankeId(hankeId)
+        assertThat(finalTormaystarkasteluTulosEntityList).hasSize(1)
+    }
+
+    @Test
+    fun `Removing tulos from hanke using HankeRepository works`() {
         // Create parent Hanke (with mostly null data), and a tulos connected with it, persist both:
         val hankeEntity = persistHanke(HankeEntity(hankeTunnus = TEST_HANKE_TUNNUS))
         val hankeId = hankeEntity.id!!
@@ -98,7 +143,8 @@ class TormaysTarkasteluTulosRepositoryITests @Autowired constructor(
         // Remove tulos from the hanke
         val testResultEntitysParent = testResultEntity.hanke
         testResultEntity.removeFromHanke()
-        hankeRepository.save(testResultEntitysParent!!) // If only saving/deleting the tulos, the hanke-side may revive the data..
+        // If only saving/deleting the tulos, the hanke-side may in some cases revive the data.. so save parent hanke.
+        hankeRepository.save(testResultEntitysParent!!)
         // This delete call is optional; the saving of hanke will also update the tulos-table
         //tormaystarkasteluTulosRepository.deleteById(testResultEntity.id!!)
         entityManager.flush()
@@ -112,7 +158,8 @@ class TormaysTarkasteluTulosRepositoryITests @Autowired constructor(
 
 //    @Test
 //    fun `Removing hanke removes related tulos`() {
-//        // TODO
+//        // TODO (if the removal of single tulos via saving hanke works, this should work, too, but
+//        //   better to test it anyway.
 //    }
 
 
