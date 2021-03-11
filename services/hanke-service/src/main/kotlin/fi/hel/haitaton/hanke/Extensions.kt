@@ -25,6 +25,6 @@ internal fun ConstraintViolationException.toHankeError(default: HankeError): Han
     return if (violation != null) {
         HankeError.valueOf(violation)
     } else {
-        HankeError.HAI1011
+        default
     }
 }

@@ -59,6 +59,7 @@ class ControllerExceptionHandler {
     @ExceptionHandler(Throwable::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun throwable(ex: Throwable): HankeError {
+        // TODO would it be better to not catch these exceptions and let Sentry to catch and report them instead?
         logger.error(ex) {
             ex.message
         }
