@@ -22,6 +22,7 @@ enum class HankeError(
     HAI1006("Internal error while creating tormaystarkastelu for Hanke"),
     HAI1007("Tormaystarkastelu not found"),
     HAI1008("Internal error while loading tormaystarkastelu for Hanke"),
+    HAI1009("Tormaystarkastelu already calculated for Hanke"),
     HAI1011("Invalid Hanke geometry"),
     HAI1012("Internal error while saving Hanke geometry"),
     HAI1013("Invalid coordinate system"),
@@ -53,5 +54,7 @@ class HankeYhteystietoNotFoundException(val hankeId: Int, ytId: Int) :
     RuntimeException("HankeYhteystiedot $ytId not found for Hanke $hankeId")
 
 class DatabaseStateException(message: String) : RuntimeException(message)
+
+class TormaystarkasteluAlreadyCalculatedException(message: String) : RuntimeException(message)
 
 class TormaysAnalyysiException(message: String) : RuntimeException(message)
