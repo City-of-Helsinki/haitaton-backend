@@ -72,22 +72,18 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     // Without mock user, i.e. anonymous
     fun `status unauthorized (401) without authenticated user`() {
         performGetHankkeet()
-            .andDo { println(it.response.contentAsString) }
             .andExpect(unauthenticated())
             .andExpect(status().isUnauthorized)
             .andExpectHankeError(HankeError.HAI0001)
         performPostHankkeet()
-            .andDo { println(it.response.contentAsString) }
             .andExpect(unauthenticated())
             .andExpect(status().isUnauthorized)
             .andExpectHankeError(HankeError.HAI0001)
         performPutHankkeetTunnus()
-            .andDo { println(it.response.contentAsString) }
             .andExpect(unauthenticated())
             .andExpect(status().isUnauthorized)
             .andExpectHankeError(HankeError.HAI0001)
         performGetHankkeetTunnus()
-            .andDo { println(it.response.contentAsString) }
             .andExpect(unauthenticated())
             .andExpect(status().isUnauthorized)
             .andExpectHankeError(HankeError.HAI0001)
@@ -97,19 +93,15 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     @WithMockUser(username = "test7358", roles = ["bad role"])
     fun `status forbidden (403) with authenticated user with bad role`() {
         performGetHankkeet()
-            .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
             .andExpectHankeError(HankeError.HAI0001)
         performPostHankkeet()
-            .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
             .andExpectHankeError(HankeError.HAI0001)
         performPutHankkeetTunnus()
-            .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
             .andExpectHankeError(HankeError.HAI0001)
         performGetHankkeetTunnus()
-            .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
             .andExpectHankeError(HankeError.HAI0001)
     }
@@ -118,19 +110,15 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     @WithMockUser(username = "test7358", roles = [])
     fun `status forbidden (403) with authenticated user without roles`() {
         performGetHankkeet()
-            .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
             .andExpectHankeError(HankeError.HAI0001)
         performPostHankkeet()
-            .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
             .andExpectHankeError(HankeError.HAI0001)
         performPutHankkeetTunnus()
-            .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
             .andExpectHankeError(HankeError.HAI0001)
         performGetHankkeetTunnus()
-            .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
             .andExpectHankeError(HankeError.HAI0001)
     }
