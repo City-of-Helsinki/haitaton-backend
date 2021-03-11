@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluDao
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLuokitteluService
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosRepository
 import io.mockk.mockk
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
@@ -50,4 +51,7 @@ class IntegrationTestConfiguration {
         hankeService: HankeService,
         luokitteluService: TormaystarkasteluLuokitteluService
     ): TormaystarkasteluLaskentaService = mockk()
+
+    @Bean
+    fun tormaystarkasteluTulosRepository(): TormaystarkasteluTulosRepository = mockk()
 }

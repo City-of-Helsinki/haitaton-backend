@@ -67,7 +67,7 @@ label.pf-c-form__label-text {
 .login-pf-page .card-pf {
     margin-bottom: 100px;
     background: #FFFFFF;
-    padding: 20px;
+    padding: 32px;
 }
 label.pf-c-form__label:after
 {
@@ -81,6 +81,7 @@ label.pf-c-form__label:after
     text-align: left;
     font-size: 13px;
     padding-top: 15px;
+    margin-top: 0;
 }
 .login-pf-page .login-pf-signup a {
     margin-left: 0;
