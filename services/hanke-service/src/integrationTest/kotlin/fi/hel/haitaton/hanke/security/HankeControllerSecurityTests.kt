@@ -75,46 +75,22 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
             .andDo { println(it.response.contentAsString) }
             .andExpect(unauthenticated())
             .andExpect(status().isUnauthorized)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorCode")
-                    .value(HankeError.HAI0001.errorCode)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorMessage")
-                    .value(HankeError.HAI0001.errorMessage)
-            )
+            .andExpectHankeError(HankeError.HAI0001)
         performPostHankkeet()
             .andDo { println(it.response.contentAsString) }
             .andExpect(unauthenticated())
             .andExpect(status().isUnauthorized)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorCode")
-                    .value(HankeError.HAI0001.errorCode)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorMessage")
-                    .value(HankeError.HAI0001.errorMessage)
-            )
+            .andExpectHankeError(HankeError.HAI0001)
         performPutHankkeetTunnus()
             .andDo { println(it.response.contentAsString) }
             .andExpect(unauthenticated())
             .andExpect(status().isUnauthorized)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorCode")
-                    .value(HankeError.HAI0001.errorCode)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorMessage")
-                    .value(HankeError.HAI0001.errorMessage)
-            )
+            .andExpectHankeError(HankeError.HAI0001)
         performGetHankkeetTunnus()
             .andDo { println(it.response.contentAsString) }
             .andExpect(unauthenticated())
             .andExpect(status().isUnauthorized)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorCode")
-                    .value(HankeError.HAI0001.errorCode)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorMessage")
-                    .value(HankeError.HAI0001.errorMessage)
-            )
+            .andExpectHankeError(HankeError.HAI0001)
     }
 
     @Test
@@ -123,43 +99,19 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         performGetHankkeet()
             .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorCode")
-                    .value(HankeError.HAI0001.errorCode)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorMessage")
-                    .value(HankeError.HAI0001.errorMessage)
-            )
+            .andExpectHankeError(HankeError.HAI0001)
         performPostHankkeet()
             .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorCode")
-                    .value(HankeError.HAI0001.errorCode)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorMessage")
-                    .value(HankeError.HAI0001.errorMessage)
-            )
+            .andExpectHankeError(HankeError.HAI0001)
         performPutHankkeetTunnus()
             .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorCode")
-                    .value(HankeError.HAI0001.errorCode)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorMessage")
-                    .value(HankeError.HAI0001.errorMessage)
-            )
+            .andExpectHankeError(HankeError.HAI0001)
         performGetHankkeetTunnus()
             .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorCode")
-                    .value(HankeError.HAI0001.errorCode)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorMessage")
-                    .value(HankeError.HAI0001.errorMessage)
-            )
+            .andExpectHankeError(HankeError.HAI0001)
     }
 
     @Test
@@ -168,43 +120,19 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         performGetHankkeet()
             .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorCode")
-                    .value(HankeError.HAI0001.errorCode)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorMessage")
-                    .value(HankeError.HAI0001.errorMessage)
-            )
+            .andExpectHankeError(HankeError.HAI0001)
         performPostHankkeet()
             .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorCode")
-                    .value(HankeError.HAI0001.errorCode)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorMessage")
-                    .value(HankeError.HAI0001.errorMessage)
-            )
+            .andExpectHankeError(HankeError.HAI0001)
         performPutHankkeetTunnus()
             .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorCode")
-                    .value(HankeError.HAI0001.errorCode)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorMessage")
-                    .value(HankeError.HAI0001.errorMessage)
-            )
+            .andExpectHankeError(HankeError.HAI0001)
         performGetHankkeetTunnus()
             .andDo { println(it.response.contentAsString) }
             .andExpect(status().isForbidden)
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorCode")
-                    .value(HankeError.HAI0001.errorCode)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorMessage")
-                    .value(HankeError.HAI0001.errorMessage)
-            )
+            .andExpectHankeError(HankeError.HAI0001)
     }
 
     // --------- GET /hankkeet/ --------------
@@ -268,7 +196,6 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         )
     }
 
-
     // ===================== HELPERS ========================
 
     private fun getDatetimeAlku(): ZonedDateTime {
@@ -293,4 +220,13 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         )
     }
 
+    private fun ResultActions.andExpectHankeError(hankeError: HankeError): ResultActions {
+        return andExpect(
+            MockMvcResultMatchers.jsonPath("$.errorCode")
+                .value(hankeError.errorCode)
+        ).andExpect(
+            MockMvcResultMatchers.jsonPath("$.errorMessage")
+                .value(hankeError.errorMessage)
+        )
+    }
 }
