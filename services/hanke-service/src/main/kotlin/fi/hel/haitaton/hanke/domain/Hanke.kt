@@ -50,6 +50,28 @@ data class Hanke(
     constructor(id: Int) : this(id, null, null, null, null, null, null, null, null, null, null, null, null, null)
     constructor(id: Int, hankeTunnus: String) : this(id, hankeTunnus, null, null, null, null, null, null, null, null, null, null, null, null)
     constructor() : this(null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+    constructor(        nimi: String,
+        alkuPvm: ZonedDateTime?,
+        loppuPvm: ZonedDateTime?,
+        vaihe: Vaihe,
+        saveType: SaveType
+    ) : this(
+        null,
+        null,
+        null,
+        nimi,
+        null,
+        alkuPvm,
+        loppuPvm,
+        vaihe,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        saveType
+    )
 
     // --------------- Yhteystiedot -----------------
     var omistajat = mutableListOf<HankeYhteystieto>()

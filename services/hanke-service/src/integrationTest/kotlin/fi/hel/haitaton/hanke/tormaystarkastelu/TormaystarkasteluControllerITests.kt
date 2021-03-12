@@ -1,9 +1,18 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.*
+import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.IntegrationTestConfiguration
+import fi.hel.haitaton.hanke.SaveType
+import fi.hel.haitaton.hanke.TZ_UTC
+import fi.hel.haitaton.hanke.TormaystarkasteluAlreadyCalculatedException
+import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import io.mockk.every
 import io.mockk.verify
+import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -15,8 +24,6 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
-import java.time.ZonedDateTime
-import java.time.temporal.ChronoUnit
 
 @WebMvcTest(TormaystarkasteluController::class)
 @Import(IntegrationTestConfiguration::class)
@@ -117,7 +124,7 @@ class TormaystarkasteluControllerITests(@Autowired val mockMvc: MockMvc) {
     @Test
     fun `When createTormaystarkastelu is called for hanke without existing TormaystarkasteluTulos`() {
 
-        var hanke = Hanke(
+        val hanke = Hanke(
             123,
             mockedHankeTunnus,
             true,
@@ -142,7 +149,7 @@ class TormaystarkasteluControllerITests(@Autowired val mockMvc: MockMvc) {
         val tormaystulos = TormaystarkasteluTulos(mockedHankeTunnus)
         tormaystulos.perusIndeksi = 2.3f
 
-        //adding tormaystulos to hanke
+        // adding tormaystulos to hanke
         hanke.tormaystarkasteluTulos = tormaystulos
 
         every { laskentaService.calculateTormaystarkastelu(any()) }.returns(hanke)
@@ -165,4 +172,30 @@ class TormaystarkasteluControllerITests(@Autowired val mockMvc: MockMvc) {
         verify { laskentaService.calculateTormaystarkastelu(any()) }
     }
 
+    @Test
+    fun `When createTormaystarkastelu is called for hanke with existing TormaystarkasteluTulos`() {
+        every {
+            laskentaService.calculateTormaystarkastelu(any())
+        } throws TormaystarkasteluAlreadyCalculatedException(
+            "Already has tormaysanalyysi calculated for $mockedHankeTunnus"
+        )
+
+        mockMvc.perform(
+            MockMvcRequestBuilders.post("/hankkeet/$mockedHankeTunnus/tormaystarkastelu")
+                .characterEncoding("UTF-8")
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+                .accept(MediaType.APPLICATION_JSON)
+        )
+            .andDo { println(it.response.contentAsString) }
+            .andExpect(MockMvcResultMatchers.status().isInternalServerError)
+            .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(
+                MockMvcResultMatchers.jsonPath("$.errorCode")
+                    .value(HankeError.HAI1009.errorCode)
+            ).andExpect(
+                MockMvcResultMatchers.jsonPath("$.errorMessage")
+                    .value(HankeError.HAI1009.errorMessage)
+            )
+        verify { laskentaService.calculateTormaystarkastelu(any()) }
+    }
 }

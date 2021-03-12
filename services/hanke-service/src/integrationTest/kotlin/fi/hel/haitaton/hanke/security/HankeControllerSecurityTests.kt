@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.security
 
 import fi.hel.haitaton.hanke.HankeController
+import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
@@ -12,6 +13,8 @@ import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.every
+import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
@@ -27,10 +30,8 @@ import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.time.ZonedDateTime
-import java.time.temporal.ChronoUnit
-
 
 /**
  * Tests to ensure HankeController endpoints have correct authentication and
@@ -58,7 +59,6 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
 
     private val testHankeTunnus = "HAI21-TEST-1"
 
-
     @Test
     @WithMockUser(username = "test7358", roles = ["haitaton-user"])
     fun `status ok with authenticated user with correct role`() {
@@ -72,35 +72,55 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     // Without mock user, i.e. anonymous
     fun `status unauthorized (401) without authenticated user`() {
         performGetHankkeet()
-                .andExpect(unauthenticated())
-                .andExpect(status().isUnauthorized)
+            .andExpect(unauthenticated())
+            .andExpect(status().isUnauthorized)
+            .andExpectHankeError(HankeError.HAI0001)
         performPostHankkeet()
-                .andExpect(unauthenticated())
-                .andExpect(status().isUnauthorized)
+            .andExpect(unauthenticated())
+            .andExpect(status().isUnauthorized)
+            .andExpectHankeError(HankeError.HAI0001)
         performPutHankkeetTunnus()
-                .andExpect(unauthenticated())
-                .andExpect(status().isUnauthorized)
+            .andExpect(unauthenticated())
+            .andExpect(status().isUnauthorized)
+            .andExpectHankeError(HankeError.HAI0001)
         performGetHankkeetTunnus()
-                .andExpect(unauthenticated())
-                .andExpect(status().isUnauthorized)
+            .andExpect(unauthenticated())
+            .andExpect(status().isUnauthorized)
+            .andExpectHankeError(HankeError.HAI0001)
     }
 
     @Test
     @WithMockUser(username = "test7358", roles = ["bad role"])
     fun `status forbidden (403) with authenticated user with bad role`() {
-        performGetHankkeet().andExpect(status().isForbidden)
-        performPostHankkeet().andExpect(status().isForbidden)
-        performPutHankkeetTunnus().andExpect(status().isForbidden)
-        performGetHankkeetTunnus().andExpect(status().isForbidden)
+        performGetHankkeet()
+            .andExpect(status().isForbidden)
+            .andExpectHankeError(HankeError.HAI0001)
+        performPostHankkeet()
+            .andExpect(status().isForbidden)
+            .andExpectHankeError(HankeError.HAI0001)
+        performPutHankkeetTunnus()
+            .andExpect(status().isForbidden)
+            .andExpectHankeError(HankeError.HAI0001)
+        performGetHankkeetTunnus()
+            .andExpect(status().isForbidden)
+            .andExpectHankeError(HankeError.HAI0001)
     }
 
     @Test
     @WithMockUser(username = "test7358", roles = [])
     fun `status forbidden (403) with authenticated user without roles`() {
-        performGetHankkeet().andExpect(status().isForbidden)
-        performPostHankkeet().andExpect(status().isForbidden)
-        performPutHankkeetTunnus().andExpect(status().isForbidden)
-        performGetHankkeetTunnus().andExpect(status().isForbidden)
+        performGetHankkeet()
+            .andExpect(status().isForbidden)
+            .andExpectHankeError(HankeError.HAI0001)
+        performPostHankkeet()
+            .andExpect(status().isForbidden)
+            .andExpectHankeError(HankeError.HAI0001)
+        performPutHankkeetTunnus()
+            .andExpect(status().isForbidden)
+            .andExpectHankeError(HankeError.HAI0001)
+        performGetHankkeetTunnus()
+            .andExpect(status().isForbidden)
+            .andExpectHankeError(HankeError.HAI0001)
     }
 
     // --------- GET /hankkeet/ --------------
@@ -108,11 +128,16 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     private fun performGetHankkeet(): ResultActions {
         val criteria = HankeSearch()
         every { hankeService.loadAllHanke(criteria) }.returns(
-                listOf(Hanke(123, testHankeTunnus),
-                        Hanke(444, "HAI-TEST-2")))
+            listOf(
+                Hanke(123, testHankeTunnus),
+                Hanke(444, "HAI-TEST-2")
+            )
+        )
 
-        return mockMvc.perform(get("/hankkeet")
-                .accept(MediaType.APPLICATION_JSON))
+        return mockMvc.perform(
+            get("/hankkeet")
+                .accept(MediaType.APPLICATION_JSON)
+        )
     }
 
     // --------- POST /hankkeet/ --------------
@@ -123,10 +148,12 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
 
         every { hankeService.createHanke(any()) }.returns(hanke)
 
-        return mockMvc.perform(post("/hankkeet")
+        return mockMvc.perform(
+            post("/hankkeet")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
                 .with(SecurityMockMvcRequestPostProcessors.csrf())
-                .accept(MediaType.APPLICATION_JSON))
+                .accept(MediaType.APPLICATION_JSON)
+        )
     }
 
     // --------- PUT /hankkeet/{hankeTunnus} --------------
@@ -137,43 +164,57 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
 
         every { hankeService.updateHanke(any()) }.returns(hanke)
 
-        return mockMvc.perform(put("/hankkeet/$testHankeTunnus")
+        return mockMvc.perform(
+            put("/hankkeet/$testHankeTunnus")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
                 .with(SecurityMockMvcRequestPostProcessors.csrf())
-                .accept(MediaType.APPLICATION_JSON))
+                .accept(MediaType.APPLICATION_JSON)
+        )
     }
 
     // --------- GET /hankkeet/{hankeTunnus} --------------
 
     private fun performGetHankkeetTunnus(): ResultActions {
         every { hankeService.loadHanke(any()) }
-                .returns(Hanke(123, "HAI-TEST-1"))
+            .returns(Hanke(123, "HAI-TEST-1"))
 
-        return mockMvc.perform(get("/hankkeet/$testHankeTunnus")
-                .accept(MediaType.APPLICATION_JSON))
+        return mockMvc.perform(
+            get("/hankkeet/$testHankeTunnus")
+                .accept(MediaType.APPLICATION_JSON)
+        )
     }
-
 
     // ===================== HELPERS ========================
 
     private fun getDatetimeAlku(): ZonedDateTime {
         val year = getCurrentTimeUTC().year + 1
         return ZonedDateTime.of(year, 2, 20, 23, 45, 56, 0, TZ_UTC)
-                .truncatedTo(ChronoUnit.MILLIS)
+            .truncatedTo(ChronoUnit.MILLIS)
     }
 
     private fun getDatetimeLoppu(): ZonedDateTime {
         val year = getCurrentTimeUTC().year + 1
         return ZonedDateTime.of(year, 2, 21, 0, 12, 34, 0, TZ_UTC)
-                .truncatedTo(ChronoUnit.MILLIS)
+            .truncatedTo(ChronoUnit.MILLIS)
     }
 
     private fun getTestHanke(id: Int?, tunnus: String?): Hanke {
-        return Hanke(id, tunnus,
-                true, "Testihanke", "Testihankkeen kuvaus",
-                getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
-                1, "Risto", getCurrentTimeUTC(), null, null,
-                SaveType.DRAFT)
+        return Hanke(
+            id, tunnus,
+            true, "Testihanke", "Testihankkeen kuvaus",
+            getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
+            1, "Risto", getCurrentTimeUTC(), null, null,
+            SaveType.DRAFT
+        )
     }
 
+    private fun ResultActions.andExpectHankeError(hankeError: HankeError): ResultActions {
+        return andExpect(
+            MockMvcResultMatchers.jsonPath("$.errorCode")
+                .value(hankeError.errorCode)
+        ).andExpect(
+            MockMvcResultMatchers.jsonPath("$.errorMessage")
+                .value(hankeError.errorMessage)
+        )
+    }
 }
