@@ -1,14 +1,12 @@
 package fi.hel.haitaton.hanke.geometria
 
-import fi.hel.haitaton.hanke.ControllerExceptionHandler
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.toJsonString
-import io.mockk.clearAllMocks
+import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.verify
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -32,11 +30,6 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Autowired
     private lateinit var hankeGeometriatService: HankeGeometriatService
-
-    @BeforeEach
-    fun setUp() {
-        clearAllMocks()
-    }
 
     @Test
     fun `create Geometria OK`() {
@@ -166,6 +159,7 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `create Geometria with invalid coordinate system`() {
+        clearMocks(hankeGeometriatService)
         val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
             .asJsonResource(HankeGeometriat::class.java)
         hankeGeometriat.hankeId = null

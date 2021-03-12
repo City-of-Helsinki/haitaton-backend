@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import io.sentry.Sentry
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -17,6 +18,8 @@ class ControllerExceptionHandler {
         logger.warn {
             ex.message
         }
+        // notify Sentry
+        Sentry.captureException(ex)
         return HankeError.HAI1001
     }
 
@@ -26,6 +29,8 @@ class ControllerExceptionHandler {
         logger.warn {
             ex.message
         }
+        // notify Sentry
+        Sentry.captureException(ex)
         return HankeError.HAI1020
     }
 
@@ -35,6 +40,8 @@ class ControllerExceptionHandler {
         logger.warn {
             ex.message
         }
+        // notify Sentry
+        Sentry.captureException(ex)
         return HankeError.HAI1006
     }
 
@@ -53,16 +60,19 @@ class ControllerExceptionHandler {
         logger.error(ex) {
             ex.message
         }
+        // notify Sentry
+        Sentry.captureException(ex)
         return HankeError.HAI0003
     }
 
     @ExceptionHandler(Throwable::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun throwable(ex: Throwable): HankeError {
-        // TODO would it be better to not catch these exceptions and let Sentry to catch and report them instead?
         logger.error(ex) {
             ex.message
         }
+        // notify Sentry
+        Sentry.captureException(ex)
         return HankeError.HAI0002
     }
 }
