@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.TormaysAnalyysiException
 import fi.hel.haitaton.hanke.domain.Hanke
 
 class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: TormaystarkasteluDao) :
