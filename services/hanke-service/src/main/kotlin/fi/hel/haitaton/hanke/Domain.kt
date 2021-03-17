@@ -56,5 +56,3 @@ class HankeYhteystietoNotFoundException(val hankeId: Int, ytId: Int) :
 class DatabaseStateException(message: String) : RuntimeException(message)
 
 class TormaystarkasteluAlreadyCalculatedException(message: String) : RuntimeException(message)
-
-class TormaysAnalyysiException(message: String) : RuntimeException(message)
