@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.TormaysAnalyysiException
 import fi.hel.haitaton.hanke.TormaystarkasteluAlreadyCalculatedException
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService

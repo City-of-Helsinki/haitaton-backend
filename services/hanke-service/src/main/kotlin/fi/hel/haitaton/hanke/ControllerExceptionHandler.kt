@@ -34,17 +34,6 @@ class ControllerExceptionHandler {
         return HankeError.HAI1020
     }
 
-    @ExceptionHandler(TormaysAnalyysiException::class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun tormaysAnalyysiException(ex: TormaysAnalyysiException): HankeError {
-        logger.warn {
-            ex.message
-        }
-        // notify Sentry
-        Sentry.captureException(ex)
-        return HankeError.HAI1006
-    }
-
     @ExceptionHandler(TormaystarkasteluAlreadyCalculatedException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     fun tormaystarkasteluAlreadyCalculatedException(ex: TormaystarkasteluAlreadyCalculatedException): HankeError {
