@@ -1171,19 +1171,6 @@
     "xXSSProtection" : "1; mode=block",
     "strictTransportSecurity" : "max-age=31536000; includeSubDomains"
   },
-  "smtpServer" : {
-    "password" : "32a3ea0e84951f046125044e2484fd4a-d32d817f-f7fa101d",
-    "replyToDisplayName" : "Haitaton 2.0",
-    "starttls" : "true",
-    "auth" : "true",
-    "port" : "465",
-    "host" : "smtp.mailgun.org",
-    "replyTo" : "haitaton20@gofore.com",
-    "from" : "api@dev.hel.fi",
-    "fromDisplayName" : "Haitaton 2.0",
-    "ssl" : "true",
-    "user" : "api@dev.hel.fi"
-  },
   "loginTheme" : "haitaton",
   "accountTheme" : "haitaton",
   "adminTheme" : "haitaton",
