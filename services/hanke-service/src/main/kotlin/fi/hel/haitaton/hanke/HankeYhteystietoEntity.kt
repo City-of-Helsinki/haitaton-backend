@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import com.fasterxml.jackson.annotation.JsonView
 import java.time.LocalDateTime
 import javax.persistence.*
 
@@ -12,31 +13,45 @@ enum class ContactType {
 @Entity
 @Table(name = "hankeyhteystieto")
 class HankeYhteystietoEntity (
+        @JsonView(ChangeLogView::class)
         @Enumerated(EnumType.STRING)
         var contactType: ContactType,
 
         // must have contact information
+        @JsonView(ChangeLogView::class)
         var sukunimi: String,
+        @JsonView(ChangeLogView::class)
         var etunimi: String,
+        @JsonView(ChangeLogView::class)
         var email: String,
+        @JsonView(ChangeLogView::class)
         var puhelinnumero: String,
 
+        @JsonView(ChangeLogView::class)
         var organisaatioId: Int? = 0,
+        @JsonView(ChangeLogView::class)
         var organisaatioNimi: String? = null,
+        @JsonView(ChangeLogView::class)
         var osasto: String? = null,
 
         // NOTE: createdByUserId must be non-null for valid data, but to allow creating instances with
         // no-arg constructor and programming convenience, this class allows it to be null (temporarily).
+        @JsonView(NotInChangeLogView::class)
         var createdByUserId: String? = null,
+        @JsonView(NotInChangeLogView::class)
         var createdAt: LocalDateTime? = null,
+        @JsonView(NotInChangeLogView::class)
         var modifiedByUserId: String? = null,
+        @JsonView(NotInChangeLogView::class)
         var modifiedAt: LocalDateTime? = null,
         // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
         // can be a performance problem if there is a need to do bulk inserts.
         // Using SEQUENCE would allow getting multiple ids more efficiently.
+        @JsonView(NotInChangeLogView::class)
         @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
         var id: Int? = null,
 
+        @JsonView(NotInChangeLogView::class)
         @ManyToOne(fetch = FetchType.EAGER)
         @JoinColumn(name="hankeid")
         var hanke: HankeEntity? = null
@@ -74,4 +89,13 @@ class HankeYhteystietoEntity (
         result = 31 * result + (osasto?.hashCode() ?: 0)
         return result
     }
+
+
+    fun toChangeLogJsonString(): String =
+        OBJECT_MAPPER.writerWithView(ChangeLogView::class.java).writeValueAsString(this)
+
 }
+
+open class ChangeLogView {}
+
+class NotInChangeLogView : ChangeLogView() {}

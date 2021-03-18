@@ -1,0 +1,49 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-log-tables-for-personaldata
+      comment: Create schema and tables for personal data audit and change logs
+      author: Markku Hassinen
+      changes:
+        # NOTE: Liquibase does not support creating schemas with its normal elements, must use SQL
+        - sql:
+            comment: Separate schema for personal data logs
+            dbms: postgresql
+            sql: CREATE SCHEMA personaldatalogs
+        - createTable:
+            schemaName: personaldatalogs
+            tableName: auditlog
+            columns:
+              - column:
+                  name: id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column: { name: eventtime, type: timestamp } # when
+              - column: { name: userid, type: varchar(40) } # whodid; null if not done by a user
+              - column: { name: actor, type: varchar(80) } # any other source of action, e.g. an import integration
+              - column: { name: ipnear, type: varchar(40) } # near IP (the backwards first "remote" outside server's known IP chain)
+              - column: { name: ipfar, type: varchar(40) } # far IP (e.g. behind proxy)
+              # NOTE: not foreign key definition; keeping the connection loose on purpose
+              - column: { name: yhteystietoid, type: int } # target yhteystieto
+              - column: { name: description, type: varchar(250) } # action (e.g. as JSON string, or normal string, "changed field 'name'")
+        - createTable:
+            schemaName: personaldatalogs
+            tableName: changelog
+            columns:
+              - column:
+                  name: id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column: { name: eventtime, type: timestamp } # when
+              - column: { name: yhteystietoid, type: int } # target yhteystieto
+              # what was made (create, modify, delete) (no read actions are logged for now)
+              - column: { name: action, type: varchar(10) }
+              # old data (if applicable; null for create)
+              - column: { name: olddata, type: clob }
+              # new data (if applicable; null for delete or a failed action)
+              - column: { name: newdata, type: clob }

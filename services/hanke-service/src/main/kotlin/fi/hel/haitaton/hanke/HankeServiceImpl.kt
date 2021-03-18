@@ -3,6 +3,11 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.logging.AuditLogEntry
+import fi.hel.haitaton.hanke.logging.ChangeAction
+import fi.hel.haitaton.hanke.logging.ChangeLogEntry
+import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
+import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 
@@ -13,7 +18,12 @@ import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
 
-open class HankeServiceImpl(private val hankeRepository: HankeRepository, private val hanketunnusService: HanketunnusService) : HankeService {
+open class HankeServiceImpl(
+    private val hankeRepository: HankeRepository,
+    private val hanketunnusService: HanketunnusService,
+    private val personalDataAuditLogRepository: PersonalDataAuditLogRepository,
+    private val personalDataChangeLogRepository: PersonalDataChangeLogRepository
+) : HankeService {
 
 
     // TODO:
@@ -403,6 +413,7 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         //    The order of Yhteystietos does not matter(?), and removing things from e.g. array list
         //    gets inefficient. Since there are so few entries, this crude solution works, for now.
         for (hankeYht in existingYTs.values) {
+            // TODO: log the deletion
             entity.removeYhteystieto(hankeYht)
         }
     }
@@ -461,6 +472,16 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
                     null, // will be set by the database
                     hankeEntity) // reference back to parent hanke
             hankeEntity.addYhteystieto(hankeYhtEntity)
+
+            // TODO: would need to know that yhteystietoId now, before it has even been saved :P
+            //  -> need to store these create-events into a map or something, with the hankeYhtEntity as key.
+            //     After it all has been saved, see if the id has appeared, _then_ create these logs..
+//            val description = "created yhteystieto"
+//            val audit = AuditLogEntry(getCurrentTimeUTCAsLocalTime(), userid, null, null, null, 0, "")
+//            personalDataAuditLogRepository.save(audit)
+//            // TODO:
+//            val change = ChangeLogEntry(getCurrentTimeUTCAsLocalTime(), existingYT.id!!, ChangeAction.CREATE)
+//            personalDataChangeLogRepository.save(change)
         } else {
             // ... missing some mandatory fields, should not have gotten here. Log it and skip it.
             logger.error {
@@ -482,6 +503,10 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
         }
 
         if (validYhteystieto) {
+            // Record old data as JSON
+            //val oldData = "old stuff here"
+            val oldData = existingYT.toChangeLogJsonString()
+
             // All required fields found, so update existing entity fields:
             existingYT.sukunimi = hankeYht.sukunimi
             existingYT.etunimi = hankeYht.etunimi
@@ -495,6 +520,15 @@ open class HankeServiceImpl(private val hankeRepository: HankeRepository, privat
             existingYT.modifiedByUserId = userid
             existingYT.modifiedAt = getCurrentTimeUTCAsLocalTime()
             // (Not touching the id or hanke fields)
+
+            val description = "update hanke yhteystieto"
+            val audit = AuditLogEntry(getCurrentTimeUTCAsLocalTime(), userid, null, null, null, existingYT.id!!, description)
+            personalDataAuditLogRepository.save(audit) // TODO: should do this when saving the whole hanke..
+
+            //val newData = "new stuff here"
+            val newData = existingYT.toChangeLogJsonString()
+            val change = ChangeLogEntry(getCurrentTimeUTCAsLocalTime(), existingYT.id!!, ChangeAction.UPDATE, oldData, newData)
+            personalDataChangeLogRepository.save(change) // TODO: should do this when saving the whole hanke..
 
             // No need to add the existing Yhteystieto entity to the hanke's list; it is already in it.
             // Remove the corresponding entry from the map. (Afterwards, the entries remaining in the map
