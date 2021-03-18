@@ -282,11 +282,9 @@ class HankeServiceITests {
         // A small side-check here for audit fields handling on load:
         assertThat(returnedHanke3.omistajat[0].createdAt).isEqualTo(returnedHanke.omistajat[0].createdAt)
         assertThat(returnedHanke3.omistajat[0].createdBy).isEqualTo(returnedHanke.omistajat[0].createdBy)
-        assertThat(returnedHanke3.omistajat[0].modifiedAt).isNotNull
-        assertThat(returnedHanke3.omistajat[0].modifiedAt!!.toEpochSecond() - currentDatetime.toEpochSecond())
-            .isBetween(-600, 600) // +/-10 minutes
-        assertThat(returnedHanke3.omistajat[0].modifiedBy).isNotNull
-        assertThat(returnedHanke3.omistajat[0].modifiedBy).isEqualTo(USER_NAME)
+        // The original omistajat-entry was not modified, so modifiedXx-fields must not get values:
+        assertThat(returnedHanke3.omistajat[0].modifiedAt).isNull()
+        assertThat(returnedHanke3.omistajat[0].modifiedBy).isNull()
     }
 
     @Test
@@ -312,6 +310,9 @@ class HankeServiceITests {
 
         // Change a value:
         returnedHanke.omistajat[1].sukunimi = "Som Et Hing"
+
+        // For checking audit field datetimes (with some minutes of margin for test running delay):
+        val currentDatetime = getCurrentTimeUTC()
 
         // Call update, get the returned object, make some general checks:
         val returnedHanke2 = hankeService.updateHanke(returnedHanke)
@@ -341,6 +342,13 @@ class HankeServiceITests {
         assertThat(returnedHanke3.omistajat[1].id).isEqualTo(ytid2)
         assertThat(returnedHanke3.omistajat[0].sukunimi).isEqualTo("suku1")
         assertThat(returnedHanke3.omistajat[1].sukunimi).isEqualTo("Som Et Hing")
+
+        // Check that audit modifiedXx-fields got updated:
+        assertThat(returnedHanke3.omistajat[1].modifiedAt).isNotNull
+        assertThat(returnedHanke3.omistajat[1].modifiedAt!!.toEpochSecond() - currentDatetime.toEpochSecond())
+            .isBetween(-600, 600) // +/-10 minutes
+        assertThat(returnedHanke3.omistajat[1].modifiedBy).isNotNull
+        assertThat(returnedHanke3.omistajat[1].modifiedBy).isEqualTo(USER_NAME)
     }
 
     @Test

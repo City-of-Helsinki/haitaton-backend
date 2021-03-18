@@ -15,6 +15,7 @@ import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContextHolder
 import java.time.LocalDate
 import java.time.ZonedDateTime
+import javax.transaction.Transactional
 
 private val logger = KotlinLogging.logger { }
 
@@ -112,6 +113,7 @@ open class HankeServiceImpl(
     /**
      * @return a new Hanke instance with the added and possibly modified values.
      */
+    @Transactional
     override fun createHanke(hanke: Hanke): Hanke {
         // TODO: Only create that hanke-tunnus if a specific set of fields are non-empty/set.
         //   For now, hanke-tunnus is created as soon as this function is called, even for fully empty data.
@@ -138,13 +140,13 @@ open class HankeServiceImpl(
         logger.debug {
             "Creating Hanke ${hanke.hankeTunnus}: ${hanke.toLogString()}"
         }
-        hankeRepository.save(entity)
+        val savedHankeEntity = hankeRepository.save(entity)
         logger.debug {
             "Created Hanke ${hanke.hankeTunnus}."
         }
 
-        // Apply new id to possibly created new Yhteystietos, and save all the log entries
-        loggingEntryHolder.applyNewYhteystietoIds()
+        // Handle logging of possible created new Yhteystietos, and save all the log entries
+        loggingEntryHolder.addLogEntriesForNewYhteystietos(savedHankeEntity, userid)
         saveLogEntries(loggingEntryHolder)
 
         // Creating a new domain object for the return value; it will have the updated values from the database,
@@ -153,6 +155,7 @@ open class HankeServiceImpl(
     }
 
     // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO UPDATE A HANKE: @PreAuthorize("#hanke.createdBy == authentication.name")
+    @Transactional
     override fun updateHanke(hanke: Hanke): Hanke {
         if (hanke.hankeTunnus == null)
             error("Somehow got here with hanke without hanke-tunnus")
@@ -177,13 +180,13 @@ open class HankeServiceImpl(
         logger.debug {
             "Saving Hanke ${hanke.hankeTunnus}: ${hanke.toLogString()}"
         }
-        hankeRepository.save(entity)
+        val savedHankeEntity = hankeRepository.save(entity)
         logger.debug {
             "Saved Hanke ${hanke.hankeTunnus}."
         }
 
-        // Apply new id to possibly created new Yhteystietos, and save all the log entries
-        loggingEntryHolder.applyNewYhteystietoIds()
+        // Handle logging of possible created new Yhteystietos, and save all the log entries
+        loggingEntryHolder.addLogEntriesForNewYhteystietos(savedHankeEntity, userid)
         saveLogEntries(loggingEntryHolder)
 
         // Creating a new domain object for the return value; it will have the updated values from the database,
@@ -398,10 +401,12 @@ open class HankeServiceImpl(
         // YT = Yhteystieto
         val existingYTs: MutableMap<Int, HankeYhteystietoEntity> = mutableMapOf()
         for (existingYT in entity.listOfHankeYhteystieto) {
-            if (existingYT.id == null) {
+            val ytid = existingYT.id
+            if (ytid == null) {
                 throw DatabaseStateException("A persisted HankeYhteystietoEntity somehow missing id, Hanke id ${entity.id}")
             } else {
-                existingYTs[existingYT.id!!] = existingYT
+                existingYTs[ytid] = existingYT
+                loggingEntryHolder.previousYTids.add(ytid)
             }
         }
 
@@ -427,12 +432,13 @@ open class HankeServiceImpl(
             entity.removeYhteystieto(hankeYht)
 
             // Logging
+            val time = getCurrentTimeUTCAsLocalTime()
             val description = "delete hanke yhteystieto"
-            val audit = AuditLogEntry(getCurrentTimeUTCAsLocalTime(), userid, null, null, null, null, description)
-            loggingEntryHolder.auditLogEntries[hankeYht] = audit
+            val audit = AuditLogEntry(time, userid, null, null, null, hankeYht.id, description)
+            loggingEntryHolder.auditLogEntries.add(audit)
             val oldData = hankeYht.toChangeLogJsonString()
-            val change = ChangeLogEntry(getCurrentTimeUTCAsLocalTime(), null, ChangeAction.DELETE, oldData, null)
-            loggingEntryHolder.changeLogEntries[hankeYht] = change
+            val change = ChangeLogEntry(time, hankeYht.id, ChangeAction.DELETE, oldData, null)
+            loggingEntryHolder.changeLogEntries.add(change)
         }
     }
 
@@ -466,7 +472,7 @@ open class HankeServiceImpl(
             // Is the incoming Yhteystieto new (does not have id, create new) or old (has id, update existing)?
             if (hankeYht.id == null) {
                 // New Yhteystieto
-                processCreateYhteystieto(hankeYht, validYhteystieto, contactType, userid, hankeEntity, loggingEntryHolder)
+                processCreateYhteystieto(hankeYht, validYhteystieto, contactType, userid, hankeEntity)
             } else {
                 // Should be an existing Yhteystieto
                 processUpdateYhteystieto(hankeYht, existingYTs, someFieldsSet, validYhteystieto, userid, hankeEntity, loggingEntryHolder)
@@ -479,8 +485,7 @@ open class HankeServiceImpl(
         validYhteystieto: Boolean,
         contactType: ContactType,
         userid: String,
-        hankeEntity: HankeEntity,
-        loggingEntryHolder: YhteystietoLoggingEntryHolder
+        hankeEntity: HankeEntity
     ) {
         if (validYhteystieto) {
             // ... it is valid, so create a new Yhteystieto
@@ -501,14 +506,7 @@ open class HankeServiceImpl(
                     null, // will be set by the database
                     hankeEntity) // reference back to parent hanke
             hankeEntity.addYhteystieto(hankeYhtEntity)
-
-            // Logging
-            val description = "create new hanke yhteystieto"
-            val audit = AuditLogEntry(getCurrentTimeUTCAsLocalTime(), userid, null, null, null, null, description)
-            loggingEntryHolder.auditLogEntries[hankeYhtEntity] = audit
-            val newData = hankeYhtEntity.toChangeLogJsonString()
-            val change = ChangeLogEntry(getCurrentTimeUTCAsLocalTime(), null, ChangeAction.CREATE, null, newData)
-            loggingEntryHolder.changeLogEntries[hankeYhtEntity] = change
+            // Logging of creating new yhteystietos is done after the hanke gets saved.
         } else {
             // ... missing some mandatory fields, should not have gotten here. Log it and skip it.
             logger.error {
@@ -537,35 +535,39 @@ open class HankeServiceImpl(
         }
 
         if (validYhteystieto) {
-            // Record old data as JSON for change logging
-            val oldData = existingYT.toChangeLogJsonString()
+            // Check if anything actually changed (UI can send all data as is on every request)
+            if (!areEqualIncomingVsExistingYhteystietos(hankeYht, existingYT)) {
+                // Record old data as JSON for change logging
+                val oldData = existingYT.toChangeLogJsonString()
 
-            // All required fields found, so update existing entity fields:
-            existingYT.sukunimi = hankeYht.sukunimi
-            existingYT.etunimi = hankeYht.etunimi
-            existingYT.email = hankeYht.email
-            existingYT.puhelinnumero = hankeYht.puhelinnumero
-            existingYT.organisaatioId = hankeYht.organisaatioId
-            hankeYht.organisaatioNimi?.let { existingYT.organisaatioNimi = hankeYht.organisaatioNimi }
-            hankeYht.osasto?.let { existingYT.osasto = hankeYht.osasto }
+                // All required fields found, so update existing entity fields:
+                existingYT.sukunimi = hankeYht.sukunimi
+                existingYT.etunimi = hankeYht.etunimi
+                existingYT.email = hankeYht.email
+                existingYT.puhelinnumero = hankeYht.puhelinnumero
+                existingYT.organisaatioId = hankeYht.organisaatioId
+                hankeYht.organisaatioNimi?.let { existingYT.organisaatioNimi = hankeYht.organisaatioNimi }
+                hankeYht.osasto?.let { existingYT.osasto = hankeYht.osasto }
 
-            // (Not changing createdBy/At fields)
-            existingYT.modifiedByUserId = userid
-            existingYT.modifiedAt = getCurrentTimeUTCAsLocalTime()
-            // (Not touching the id or hanke fields)
+                // (Not changing createdBy/At fields)
+                existingYT.modifiedByUserId = userid
+                existingYT.modifiedAt = getCurrentTimeUTCAsLocalTime()
+                // (Not touching the id or hanke fields)
+
+                // Logging
+                val time = getCurrentTimeUTCAsLocalTime()
+                val description = "update hanke yhteystieto"
+                val audit = AuditLogEntry(time, userid, null, null, null, existingYT.id!!, description)
+                loggingEntryHolder.auditLogEntries.add(audit)
+                val newData = existingYT.toChangeLogJsonString()
+                val change = ChangeLogEntry(time, existingYT.id!!, ChangeAction.UPDATE, oldData, newData)
+                loggingEntryHolder.changeLogEntries.add(change)
+            }
 
             // No need to add the existing Yhteystieto entity to the hanke's list; it is already in it.
             // Remove the corresponding entry from the map. (Afterwards, the entries remaining in the map
             // were not in the incoming data, so should be removed from the database.)
             existingYTs.remove(incomingId)
-
-            // Logging
-            val description = "update hanke yhteystieto"
-            val audit = AuditLogEntry(getCurrentTimeUTCAsLocalTime(), userid, null, null, null, existingYT.id!!, description)
-            loggingEntryHolder.auditLogEntries[existingYT] = audit
-            val newData = existingYT.toChangeLogJsonString()
-            val change = ChangeLogEntry(getCurrentTimeUTCAsLocalTime(), existingYT.id!!, ChangeAction.UPDATE, oldData, newData)
-            loggingEntryHolder.changeLogEntries[existingYT] = change
         } else {
             // Trying to update an Yhteystieto with one or more empty mandatory data fields.
             // If we do not change anything, the response will send back to previous stored values.
@@ -581,6 +583,17 @@ open class HankeServiceImpl(
             }
             // If the entry was left in the existingYTs, it will get deleted.
         }
+    }
+
+    private fun areEqualIncomingVsExistingYhteystietos(incoming: HankeYhteystieto, existing: HankeYhteystietoEntity): Boolean {
+        if (incoming.etunimi != existing.etunimi) return false
+        if (incoming.sukunimi != existing.sukunimi) return false
+        if (incoming.email != existing.email) return false
+        if (incoming.puhelinnumero != existing.puhelinnumero) return false
+        if (incoming.organisaatioId != existing.organisaatioId) return false
+        if (incoming.organisaatioNimi != existing.organisaatioNimi) return false
+        if (incoming.osasto != existing.osasto) return false
+        return true
     }
 
     // TODO: this sort of should be in some more common place (useful
@@ -604,25 +617,38 @@ open class HankeServiceImpl(
      * and its any new yhteystietos have been saved (and thus received their ids).
      */
     class YhteystietoLoggingEntryHolder {
-        val auditLogEntries: MutableMap<HankeYhteystietoEntity, AuditLogEntry> = mutableMapOf()
-        val changeLogEntries: MutableMap<HankeYhteystietoEntity, ChangeLogEntry> = mutableMapOf()
+        val auditLogEntries: MutableList<AuditLogEntry> = mutableListOf()
+        val changeLogEntries: MutableList<ChangeLogEntry> = mutableListOf()
+
+        // Holds the ids of Yhteystietos that were in the Hanke before this request handling.
+        val previousYTids: HashSet<Int> = hashSetOf()
 
         /**
          * Goes through the entries that were new (have null yhteystietoid in the log entry,
          * but non-null in the entity), and copies the new ids into the corresponding log entries.
          */
-        fun applyNewYhteystietoIds() {
-            auditLogEntries.filterValues { entry -> entry.yhteystietoId == null }
-                .forEach { (entity, entry) -> entry.yhteystietoId = entity.id }
-            changeLogEntries.filterValues { entry -> entry.yhteystietoId == null }
-                    .forEach { (entity, entry) -> entry.yhteystietoId = entity.id }
+        fun addLogEntriesForNewYhteystietos(savedHankeEntity: HankeEntity, userid: String) {
+            // Go through the yhteystietos in the newly saved Hanke, filter
+            // for processing those that didn't exist before, and
+            // add log entries for them now, as their id's are now known:
+            savedHankeEntity.listOfHankeYhteystieto
+                .filter { it -> !previousYTids.contains(it.id) }
+                .forEach { newYhteystietoEntity ->
+                    // Audit (without personal data)
+                    val time = getCurrentTimeUTCAsLocalTime()
+                    val audit = AuditLogEntry(time, userid, null, null, null, newYhteystietoEntity.id, "create new hanke yhteystieto")
+                    auditLogEntries.add(audit)
+                    // Data change
+                    val newData = newYhteystietoEntity.toChangeLogJsonString()
+                    val change = ChangeLogEntry(time, newYhteystietoEntity.id, ChangeAction.CREATE, null, newData)
+                    changeLogEntries.add(change)
+                }
         }
-
     }
 
-    fun saveLogEntries(loggingEntryHolder: YhteystietoLoggingEntryHolder) {
-        loggingEntryHolder.auditLogEntries.values.forEach { entry -> personalDataAuditLogRepository.save(entry) }
-        loggingEntryHolder.changeLogEntries.values.forEach { entry -> personalDataChangeLogRepository.save(entry) }
+    private fun saveLogEntries(loggingEntryHolder: YhteystietoLoggingEntryHolder) {
+        loggingEntryHolder.auditLogEntries.forEach { entry -> personalDataAuditLogRepository.save(entry) }
+        loggingEntryHolder.changeLogEntries.forEach { entry -> personalDataChangeLogRepository.save(entry) }
     }
 
 }
