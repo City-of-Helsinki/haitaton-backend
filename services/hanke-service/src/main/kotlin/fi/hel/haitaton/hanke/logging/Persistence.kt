@@ -28,7 +28,8 @@ class AuditLogEntry (
     var actor: String? = null,
     var ipNear: String? = null,
     var ipFar: String? = null,
-    var yhteystietoId: Int = 0,
+    // Note, this can be briefly null during creation of a new YhteystietoEntity
+    var yhteystietoId: Int? = 0,
     var description: String? = null
 ) {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -39,7 +40,8 @@ class AuditLogEntry (
 @Table(schema = "personaldatalogs", name = "changelog" )
 class ChangeLogEntry (
     var eventTime: LocalDateTime? = null,
-    var yhteystietoId: Int = 0,
+    // Note, this can be briefly null during creation of a new YhteystietoEntity
+    var yhteystietoId: Int? = 0,
     @Enumerated(EnumType.STRING)
     var action: ChangeAction? = null,
     var oldData: String? = null,
