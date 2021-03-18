@@ -13,9 +13,15 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 
 import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.web.context.request.RequestContextHolder
 import java.time.LocalDate
 import java.time.ZonedDateTime
 import javax.transaction.Transactional
+import org.springframework.web.context.request.ServletRequestAttributes
+import java.util.*
+
+import kotlin.collections.HashSet
+
 
 private val logger = KotlinLogging.logger { }
 
@@ -644,9 +650,16 @@ open class HankeServiceImpl(
                     changeLogEntries.add(change)
                 }
         }
+        fun applyIPaddresses() {
+            val attribs = (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes?) ?: return
+            val request = attribs.request
+            val ip: String = Optional.ofNullable(request.getHeader("X-FORWARDED-FOR")).orElse(request.remoteAddr)
+            auditLogEntries.forEach{ logEntry -> logEntry.ipFar = ip; logEntry.ipNear = ip }
+        }
     }
 
     private fun saveLogEntries(loggingEntryHolder: YhteystietoLoggingEntryHolder) {
+        loggingEntryHolder.applyIPaddresses()
         loggingEntryHolder.auditLogEntries.forEach { entry -> personalDataAuditLogRepository.save(entry) }
         loggingEntryHolder.changeLogEntries.forEach { entry -> personalDataChangeLogRepository.save(entry) }
     }
