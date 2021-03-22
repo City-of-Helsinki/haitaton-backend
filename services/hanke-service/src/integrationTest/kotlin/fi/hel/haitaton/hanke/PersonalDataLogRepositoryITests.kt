@@ -28,7 +28,7 @@ import javax.persistence.EntityManager
  */
 // NOTE: using @DataJpaTest(properties = ["spring.liquibase.enabled=false"])
 //  fails; it seems the way it tries to use schemas is not compatible with H2.
-//  Thus, have to use the this test containers way, which uses the proper PostgreSQL.
+//  Thus, have to use this test containers -way, which uses the proper PostgreSQL.
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
