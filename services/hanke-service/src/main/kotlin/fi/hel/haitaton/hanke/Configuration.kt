@@ -4,6 +4,8 @@ import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDaoImpl
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatServiceImpl
+import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
+import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioServiceImpl
@@ -28,8 +30,13 @@ class Configuration {
         HanketunnusServiceImpl(idCounterRepository)
 
     @Bean
-    fun hankeService(hankeRepository: HankeRepository, hanketunnusService: HanketunnusService): HankeService =
-        HankeServiceImpl(hankeRepository, hanketunnusService)
+    fun hankeService(
+        hankeRepository: HankeRepository,
+        hanketunnusService: HanketunnusService,
+        personalDataAuditLogRepository: PersonalDataAuditLogRepository,
+        personalDataChangeLogRepository: PersonalDataChangeLogRepository
+    ): HankeService =
+        HankeServiceImpl(hankeRepository, hanketunnusService, personalDataAuditLogRepository, personalDataChangeLogRepository)
 
     @Bean
     fun organisaatioService(organisaatioRepository: OrganisaatioRepository): OrganisaatioService =

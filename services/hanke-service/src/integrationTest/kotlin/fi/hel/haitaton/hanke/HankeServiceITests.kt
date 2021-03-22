@@ -3,10 +3,16 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.logging.AuditLogEntry
+import fi.hel.haitaton.hanke.logging.Action
+import fi.hel.haitaton.hanke.logging.ChangeLogEntry
+import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
+import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.data.domain.Example
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
@@ -48,6 +54,11 @@ class HankeServiceITests {
 
     @Autowired
     private lateinit var hankeService: HankeService
+    @Autowired
+    private lateinit var personalDataAuditLogRepository: PersonalDataAuditLogRepository
+    @Autowired
+    private lateinit var personalDataChangeLogRepository: PersonalDataChangeLogRepository
+
 
     // Some tests also use and check loadHanke()'s return value because at one time the update action
     // was returning different set of data than loadHanke (bug), so it is a sort of regression test.
@@ -282,11 +293,9 @@ class HankeServiceITests {
         // A small side-check here for audit fields handling on load:
         assertThat(returnedHanke3.omistajat[0].createdAt).isEqualTo(returnedHanke.omistajat[0].createdAt)
         assertThat(returnedHanke3.omistajat[0].createdBy).isEqualTo(returnedHanke.omistajat[0].createdBy)
-        assertThat(returnedHanke3.omistajat[0].modifiedAt).isNotNull
-        assertThat(returnedHanke3.omistajat[0].modifiedAt!!.toEpochSecond() - currentDatetime.toEpochSecond())
-            .isBetween(-600, 600) // +/-10 minutes
-        assertThat(returnedHanke3.omistajat[0].modifiedBy).isNotNull
-        assertThat(returnedHanke3.omistajat[0].modifiedBy).isEqualTo(USER_NAME)
+        // The original omistajat-entry was not modified, so modifiedXx-fields must not get values:
+        assertThat(returnedHanke3.omistajat[0].modifiedAt).isNull()
+        assertThat(returnedHanke3.omistajat[0].modifiedBy).isNull()
     }
 
     @Test
@@ -312,6 +321,9 @@ class HankeServiceITests {
 
         // Change a value:
         returnedHanke.omistajat[1].sukunimi = "Som Et Hing"
+
+        // For checking audit field datetimes (with some minutes of margin for test running delay):
+        val currentDatetime = getCurrentTimeUTC()
 
         // Call update, get the returned object, make some general checks:
         val returnedHanke2 = hankeService.updateHanke(returnedHanke)
@@ -341,6 +353,13 @@ class HankeServiceITests {
         assertThat(returnedHanke3.omistajat[1].id).isEqualTo(ytid2)
         assertThat(returnedHanke3.omistajat[0].sukunimi).isEqualTo("suku1")
         assertThat(returnedHanke3.omistajat[1].sukunimi).isEqualTo("Som Et Hing")
+
+        // Check that audit modifiedXx-fields got updated:
+        assertThat(returnedHanke3.omistajat[1].modifiedAt).isNotNull
+        assertThat(returnedHanke3.omistajat[1].modifiedAt!!.toEpochSecond() - currentDatetime.toEpochSecond())
+            .isBetween(-600, 600) // +/-10 minutes
+        assertThat(returnedHanke3.omistajat[1].modifiedBy).isNotNull
+        assertThat(returnedHanke3.omistajat[1].modifiedBy).isEqualTo(USER_NAME)
     }
 
     @Test
@@ -546,8 +565,8 @@ class HankeServiceITests {
         // only one of the added hanke is between time period and should be returned
         assertThat(returnedHankeResult.size).isEqualTo(1)
         // couple of checks to make sure we got the wanted
-        assertThat(returnedHankeResult.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
-        assertThat(returnedHankeResult.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
+        assertThat(returnedHankeResult[0].id).isEqualTo(returnedHankeWithWantedDate.id)
+        assertThat(returnedHankeResult[0].nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
     }
 
     @Test
@@ -589,8 +608,8 @@ class HankeServiceITests {
         // only one of the added hanke is between time period and should be returned
         assertThat(returnedHankeResult.size).isEqualTo(1)
         // couple of checks to make sure we got the wanted
-        assertThat(returnedHankeResult.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
-        assertThat(returnedHankeResult.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
+        assertThat(returnedHankeResult[0].id).isEqualTo(returnedHankeWithWantedDate.id)
+        assertThat(returnedHankeResult[0].nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
     }
 
     @Test
@@ -632,8 +651,8 @@ class HankeServiceITests {
         // only one of the added hanke is between time period and should be returned
         assertThat(returnedHankeResult.size).isEqualTo(1)
         // couple of checks to make sure we got the wanted
-        assertThat(returnedHankeResult.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
-        assertThat(returnedHankeResult.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
+        assertThat(returnedHankeResult[0].id).isEqualTo(returnedHankeWithWantedDate.id)
+        assertThat(returnedHankeResult[0].nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
     }
 
     @Test
@@ -675,8 +694,8 @@ class HankeServiceITests {
         // only one of the added hanke is between time period and should be returned
         assertThat(returnedHankeResult.size).isEqualTo(1)
         // couple of checks to make sure we got the wanted
-        assertThat(returnedHankeResult.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
-        assertThat(returnedHankeResult.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
+        assertThat(returnedHankeResult[0].id).isEqualTo(returnedHankeWithWantedDate.id)
+        assertThat(returnedHankeResult[0].nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
     }
 
     @Test
@@ -710,9 +729,137 @@ class HankeServiceITests {
         // only one of the added hanke is between time period and should be returned
         assertThat(returnedHankeResult.size).isEqualTo(1)
         // couple of checks to make sure we got the wanted
-        assertThat(returnedHankeResult.get(0).id).isEqualTo(returnedHankeWithWantedDate.id)
-        assertThat(returnedHankeResult.get(0).nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
+        assertThat(returnedHankeResult[0].id).isEqualTo(returnedHankeWithWantedDate.id)
+        assertThat(returnedHankeResult[0].nimi).isEqualTo(returnedHankeWithWantedDate.nimi)
     }
+
+    @Test
+    fun `test personal data logging`() {
+        // Create hanke with two yhteystietos, save, check logs (creates in both logs, null old data)
+        // Setup Hanke with two Yhteystietos in the same group:
+        val hanke: Hanke = getATestHanke("yksi", 1)
+        val yt1 = getATestYhteystieto(1)
+        val yt2 = getATestYhteystieto(2)
+        hanke.omistajat = arrayListOf(yt1, yt2)
+        // Call create, get the return object, and make some general checks:
+        val returnedHanke = hankeService.createHanke(hanke)
+        assertThat(returnedHanke).isNotNull
+        assertThat(returnedHanke).isNotSameAs(hanke)
+        assertThat(returnedHanke.id).isNotNull
+        // Check and record the Yhteystieto ids, and to-be-changed field's value
+        assertThat(returnedHanke.omistajat).hasSize(2)
+        assertThat(returnedHanke.omistajat[0].id).isNotNull
+        assertThat(returnedHanke.omistajat[1].id).isNotNull
+        val ytid1 = returnedHanke.omistajat[0].id!!
+        val ytid2 = returnedHanke.omistajat[1].id!!
+        assertThat(returnedHanke.omistajat[1].sukunimi).isEqualTo("suku2")
+
+        // Prepare example for searching entries by yhteystietoid:
+        val sample1auditlog = Example.of(AuditLogEntry(yhteystietoId = ytid1))
+        val sample1changelog = Example.of(ChangeLogEntry(yhteystietoId = ytid1))
+        val sample2auditlog = Example.of(AuditLogEntry(yhteystietoId = ytid2))
+        val sample2changelog = Example.of(ChangeLogEntry(yhteystietoId = ytid2))
+
+        // Check logs...
+        // Both logs must have 2 entries (two yhteystietos were created):
+        assertThat(personalDataAuditLogRepository.count()).isEqualTo(2)
+        assertThat(personalDataChangeLogRepository.count()).isEqualTo(2)
+        // Check that each yhteystieto has single entry in each log:
+        var auditLogEntries1 = personalDataAuditLogRepository.findAll(sample1auditlog)
+        var changeLogEntries1 = personalDataChangeLogRepository.findAll(sample1changelog)
+        var auditLogEntries2 = personalDataAuditLogRepository.findAll(sample2auditlog)
+        var changeLogEntries2 = personalDataChangeLogRepository.findAll(sample2changelog)
+        assertThat(auditLogEntries1.size).isEqualTo(1)
+        assertThat(changeLogEntries1.size).isEqualTo(1)
+        assertThat(auditLogEntries2.size).isEqualTo(1)
+        assertThat(changeLogEntries2.size).isEqualTo(1)
+        // Check that each entry has correct data (action CREATE,
+        // new data contains "suku1" or "suku2", and userid is that of the test user).
+        assertThat(auditLogEntries1[0].action).isEqualTo(Action.CREATE)
+        assertThat(auditLogEntries1[0].userId).isEqualTo(USER_NAME)
+        assertThat(changeLogEntries1[0].action).isEqualTo(Action.CREATE)
+        assertThat(changeLogEntries1[0].newData).contains("suku1")
+        assertThat(auditLogEntries2[0].action).isEqualTo(Action.CREATE)
+        assertThat(auditLogEntries2[0].userId).isEqualTo(USER_NAME)
+        assertThat(changeLogEntries2[0].action).isEqualTo(Action.CREATE)
+        assertThat(changeLogEntries2[0].oldData).isNull()
+        assertThat(changeLogEntries2[0].newData).contains("suku2")
+
+        // Update the other yhteystieto (one update in both logs, both datas exist and with correct values)
+        // Change a value:
+        returnedHanke.omistajat[1].sukunimi = "Som Et Hing"
+        // Call update, get the returned object, make some general checks:
+        val returnedHanke2 = hankeService.updateHanke(returnedHanke)
+        assertThat(returnedHanke2).isNotNull
+        assertThat(returnedHanke2).isNotSameAs(hanke)
+        assertThat(returnedHanke2).isNotSameAs(returnedHanke)
+        assertThat(returnedHanke2.id).isNotNull
+        // Check that both entries kept their ids, and the only change is where expected
+        assertThat(returnedHanke2.omistajat).hasSize(2)
+        assertThat(returnedHanke2.omistajat[0].id).isEqualTo(ytid1)
+        assertThat(returnedHanke2.omistajat[1].id).isEqualTo(ytid2)
+        assertThat(returnedHanke2.omistajat[0].sukunimi).isEqualTo("suku1")
+        assertThat(returnedHanke2.omistajat[1].sukunimi).isEqualTo("Som Et Hing")
+
+        // Check logs...
+        // Check that only 1 entry was added to each log (about the updated yhteystieto)
+        assertThat(personalDataAuditLogRepository.count()).isEqualTo(3)
+        assertThat(personalDataChangeLogRepository.count()).isEqualTo(3)
+        // Check that the second yhteystieto got a single entry in each log (and the other didn't)
+        auditLogEntries1 = personalDataAuditLogRepository.findAll(sample1auditlog)
+        changeLogEntries1 = personalDataChangeLogRepository.findAll(sample1changelog)
+        auditLogEntries2 = personalDataAuditLogRepository.findAll(sample2auditlog)
+        changeLogEntries2 = personalDataChangeLogRepository.findAll(sample2changelog)
+        assertThat(auditLogEntries1.size).isEqualTo(1)
+        assertThat(changeLogEntries1.size).isEqualTo(1)
+        assertThat(auditLogEntries2.size).isEqualTo(2)
+        assertThat(changeLogEntries2.size).isEqualTo(2)
+        // Check that the new entry has correct data (action UPDATE,
+        // old data contains "suku2", new data "Som Et Hing", and userid is that of the test user).
+        assertThat(auditLogEntries2[1].action).isEqualTo(Action.UPDATE)
+        assertThat(auditLogEntries2[1].userId).isEqualTo(USER_NAME)
+        assertThat(changeLogEntries2[1].action).isEqualTo(Action.UPDATE)
+        assertThat(changeLogEntries2[1].oldData).contains("suku2")
+        assertThat(changeLogEntries2[1].newData).contains("Som Et Hing")
+
+        // Delete the other yhteystieto (one update in both logs, null new data)
+        returnedHanke2.omistajat[1].apply {
+            etunimi = ""
+            sukunimi = ""
+            puhelinnumero = ""
+            email = ""
+            organisaatioNimi = ""
+            osasto = ""
+        }
+        // Call update, get the returned object:
+        val returnedHanke3 = hankeService.updateHanke(returnedHanke2)
+        // Check that first yhteystieto remains, second one got removed:
+        assertThat(returnedHanke3.omistajat).hasSize(1)
+        assertThat(returnedHanke3.omistajat[0].id).isEqualTo(ytid1)
+        assertThat(returnedHanke3.omistajat[0].sukunimi).isEqualTo("suku1")
+
+        // Check logs...
+        // Check that only 1 entry was added to each log (about the deleted yhteystieto)
+        assertThat(personalDataAuditLogRepository.count()).isEqualTo(4)
+        assertThat(personalDataChangeLogRepository.count()).isEqualTo(4)
+        // Check that the second yhteystieto got a single entry in each log (and the other didn't)
+        auditLogEntries1 = personalDataAuditLogRepository.findAll(sample1auditlog)
+        changeLogEntries1 = personalDataChangeLogRepository.findAll(sample1changelog)
+        auditLogEntries2 = personalDataAuditLogRepository.findAll(sample2auditlog)
+        changeLogEntries2 = personalDataChangeLogRepository.findAll(sample2changelog)
+        assertThat(auditLogEntries1.size).isEqualTo(1)
+        assertThat(changeLogEntries1.size).isEqualTo(1)
+        assertThat(auditLogEntries2.size).isEqualTo(3)
+        assertThat(changeLogEntries2.size).isEqualTo(3)
+        // Check that the new entry has correct data (action DELETE,
+        // old data contains "Som Et Hing", new data is null, and userid is that of the test user).
+        assertThat(auditLogEntries2[2].action).isEqualTo(Action.DELETE)
+        assertThat(auditLogEntries2[2].userId).isEqualTo(USER_NAME)
+        assertThat(changeLogEntries2[2].action).isEqualTo(Action.DELETE)
+        assertThat(changeLogEntries2[2].oldData).contains("Som Et Hing")
+        assertThat(changeLogEntries2[2].newData).isNull()
+    }
+
 
     /**
      * Just fills a new Hanke domain object with some crap (excluding any Yhteystieto entries) and returns it.
