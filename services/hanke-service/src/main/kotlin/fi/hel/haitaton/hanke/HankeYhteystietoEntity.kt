@@ -90,12 +90,23 @@ class HankeYhteystietoEntity (
         return result
     }
 
+    /**
+     * Returns a new instance with the main fields copied.
+     * Main fields being the contact type, name, email, phone, organisation info.
+     */
+    fun cloneWithMainFields(): HankeYhteystietoEntity =
+        HankeYhteystietoEntity(
+            contactType, sukunimi, etunimi, email, puhelinnumero, organisaatioId, organisaatioNimi, osasto)
 
+    /**
+     * Serializes only the main personal data fields; not audit fields or the reference
+     * to the parent hanke.
+     */
     fun toChangeLogJsonString(): String =
         OBJECT_MAPPER.writerWithView(ChangeLogView::class.java).writeValueAsString(this)
-
 }
 
+// These marker classes are used to get a limited set of info for logging.
 open class ChangeLogView {}
 
 class NotInChangeLogView : ChangeLogView() {}

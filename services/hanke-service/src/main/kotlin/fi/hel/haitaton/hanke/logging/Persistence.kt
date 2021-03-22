@@ -10,10 +10,7 @@ import javax.persistence.GenerationType
 import javax.persistence.Id
 import javax.persistence.Table
 
-/**
- * Used in 'changelog'.
- */
-enum class ChangeAction {
+enum class Action {
     CREATE,
     READ,
     UPDATE,
@@ -30,6 +27,8 @@ class AuditLogEntry (
     var ipFar: String? = null,
     // Note, this can be briefly null during creation of a new YhteystietoEntity
     var yhteystietoId: Int? = 0,
+    @Enumerated(EnumType.STRING)
+    var action: Action? = null,
     var description: String? = null
 ) {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,7 +42,7 @@ class ChangeLogEntry (
     // Note, this can be briefly null during creation of a new YhteystietoEntity
     var yhteystietoId: Int? = 0,
     @Enumerated(EnumType.STRING)
-    var action: ChangeAction? = null,
+    var action: Action? = null,
     var oldData: String? = null,
     var newData: String? = null
 ) {
