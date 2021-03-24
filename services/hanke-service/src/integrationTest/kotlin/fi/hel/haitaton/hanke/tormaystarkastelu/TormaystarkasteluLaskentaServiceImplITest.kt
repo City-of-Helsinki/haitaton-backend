@@ -121,7 +121,6 @@ internal class TormaystarkasteluLaskentaServiceImplITest {
         assertThat(tormaystarkasteluTulos.liikennehaittaIndeksi!!.indeksi).isEqualTo(4.0f)
     }
 
-
     private fun setupHappyCase(): Hanke {
         val hanke = hankeService.createHanke(Hanke())
         hanke.apply {
