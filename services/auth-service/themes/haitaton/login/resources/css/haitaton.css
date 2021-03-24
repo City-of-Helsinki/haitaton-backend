@@ -7,7 +7,11 @@ html.login-pf {
 html.login-pf body {  
     min-height: 100vh;
     height: auto;
-    background: #F1F1F1 url(../img/bgLogin.jpg) no-repeat 50% 0;
+    background: #F1F1F1 url(../img/bgLogin.jpg) no-repeat 50% 0 fixed;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
     position: relative;
     font-family: sans-serif !important;
 }
