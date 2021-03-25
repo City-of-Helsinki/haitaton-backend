@@ -62,7 +62,7 @@ class PersonalDataLogRepositoryITests @Autowired constructor(
     fun `saving audit log entry works`() {
         // Create a log entry, save it, flush, clear caches:
         val datetime = LocalDateTime.of(2020, 2, 20, 20, 20, 20)
-        val audit = AuditLogEntry(datetime, "1234-1234", null, null, null, 333, Action.CREATE, "test create")
+        val audit = AuditLogEntry(datetime, "1234-1234", null, null, null, 333, Action.CREATE, false,"test create")
         val savedAudit = auditLogRepository.save(audit)
         val id = savedAudit.id
         entityManager.flush() // Make sure the stuff is run to database (though not necessarily committed)
@@ -79,7 +79,7 @@ class PersonalDataLogRepositoryITests @Autowired constructor(
     fun `saving change log entry works`() {
         // Create a log entry, save it, flush, clear caches:
         val datetime = LocalDateTime.of(2020, 2, 20, 20, 20, 20)
-        val audit = ChangeLogEntry(datetime, 444, Action.CREATE, "fake JSON", "new fake JSON")
+        val audit = ChangeLogEntry(datetime, 444, Action.CREATE, false, "fake JSON", "new fake JSON")
         val savedAudit = changeLogRepository.save(audit)
         val id = savedAudit.id
         entityManager.flush() // Make sure the stuff is run to database (though not necessarily committed)
