@@ -115,6 +115,7 @@ class HankeController(
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ConstraintViolationException::class)
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
+        logger.warn { ex.message }
         return ex.toHankeError(HankeError.HAI1002)
     }
 }
