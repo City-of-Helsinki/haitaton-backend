@@ -119,10 +119,20 @@ open class HankeServiceImpl(
 
         val entity = HankeEntity()
         val loggingEntryHolder = prepareLogging(entity)
+        val loggingEntryHolderForRestrictedActions = prepareLogging(entity)
 
         // Copy values from the incoming domain object, and set some internal fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
-        copyYhteystietosToEntity(hanke, entity, userid, loggingEntryHolder)
+        copyYhteystietosToEntity(hanke, entity, userid, loggingEntryHolder, loggingEntryHolderForRestrictedActions)
+
+        if (loggingEntryHolderForRestrictedActions.hasEntries()) {
+            logger.error {
+                "Somehow got restricted actions while creating a new hanke. Should not be possible. Handling as restricted action anyway."
+            }
+            // This will throw exception (after saving the entries)
+            postProcessAndSaveLogging(loggingEntryHolderForRestrictedActions)
+        }
+
         // NOTE: liikennehaittaindeksi and tormaystarkastelutulos are NOT
         //  copied from incoming data. Use setTormaystarkasteluTulos() for that.
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
@@ -162,10 +172,17 @@ open class HankeServiceImpl(
         val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
                 ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
         val loggingEntryHolder = prepareLogging(entity)
+        val loggingEntryHolderForRestrictedActions = prepareLogging(entity)
 
         // Transfer field values from domain object to entity object, and set relevant audit fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
-        copyYhteystietosToEntity(hanke, entity, userid, loggingEntryHolder)
+        copyYhteystietosToEntity(hanke, entity, userid, loggingEntryHolder, loggingEntryHolderForRestrictedActions)
+
+        if (loggingEntryHolderForRestrictedActions.hasEntries()) {
+            // This will throw exception (after saving the entries)
+            postProcessAndSaveLogging(loggingEntryHolderForRestrictedActions)
+        }
+
         // NOTE: liikennehaittaindeksi and tormaystarkastelutulos are NOT
         //  copied from incoming data. Use setTormaystarkasteluTulos() for that.
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
@@ -388,7 +405,11 @@ open class HankeServiceImpl(
      * Transfer yhteystieto fields from domain to (new or existing) entity object,
      * combine the three lists into one list, and set the audit fields as relevant.
      */
-    private fun copyYhteystietosToEntity(hanke: Hanke, entity: HankeEntity, userid: String, loggingEntryHolder: YhteystietoLoggingEntryHolder) {
+    private fun copyYhteystietosToEntity(
+        hanke: Hanke, entity: HankeEntity, userid: String,
+        loggingEntryHolder: YhteystietoLoggingEntryHolder,
+        loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder,
+    ) {
         // Note, if the incoming data indicates it is an already saved yhteystieto (id-field is set), should try
         // to transfer the business fields to the same old corresponding entity. Pretty much a must in order to
         // preserve createdBy and createdAt field values without having to rely on the client-side to hold
@@ -408,9 +429,15 @@ open class HankeServiceImpl(
 
         // Check each incoming yhteystieto (from three lists) for being new or an update to existing one,
         // and add to the main entity's single list if necessary:
-        processIncomingHankeYhteystietosOfSpecificTypeToEntity(hanke.omistajat, entity, ContactType.OMISTAJA, userid, existingYTs, loggingEntryHolder)
-        processIncomingHankeYhteystietosOfSpecificTypeToEntity(hanke.arvioijat, entity, ContactType.ARVIOIJA, userid, existingYTs, loggingEntryHolder)
-        processIncomingHankeYhteystietosOfSpecificTypeToEntity(hanke.toteuttajat, entity, ContactType.TOTEUTTAJA, userid, existingYTs, loggingEntryHolder)
+        processIncomingHankeYhteystietosOfSpecificTypeToEntity(
+            hanke.omistajat, entity, ContactType.OMISTAJA, userid, existingYTs,
+            loggingEntryHolder, loggingEntryHolderForRestrictedActions)
+        processIncomingHankeYhteystietosOfSpecificTypeToEntity(
+            hanke.arvioijat, entity, ContactType.ARVIOIJA, userid, existingYTs,
+            loggingEntryHolder, loggingEntryHolderForRestrictedActions)
+        processIncomingHankeYhteystietosOfSpecificTypeToEntity(
+            hanke.toteuttajat, entity, ContactType.TOTEUTTAJA, userid, existingYTs,
+            loggingEntryHolder, loggingEntryHolderForRestrictedActions)
 
         // TODO: this method of removing entries if they are missing in the incoming data is different to
         //     behavior of the other simpler fields, where missing or null field is considered "keep the existing value,
@@ -424,10 +451,20 @@ open class HankeServiceImpl(
         // TODO: Yhteystietos should not be in a list, but a "bag", or ensure it is e.g. linkedlist instead of arraylist (or similars).
         //    The order of Yhteystietos does not matter(?), and removing things from e.g. array list
         //    gets inefficient. Since there are so few entries, this crude solution works, for now.
-        for (hankeYht in existingYTs.values) {
-            entity.removeYhteystieto(hankeYht)
-            loggingEntryHolder.addLogEntriesForEvent(
-                Action.DELETE, "delete hanke yhteystieto", hankeYht, null, userid)
+        for (existingYT in existingYTs.values) {
+            // Check if personal data processing is restricted for this yhteystieto:
+            if (existingYT.dataLocked == true) {
+                loggingEntryHolderForRestrictedActions.addLogEntriesForEvent(
+                    Action.DELETE, true,
+                    "delete hanke yhteystieto BLOCKED by data processing restriction",
+                    existingYT, null, userid)
+            } else {
+                entity.removeYhteystieto(existingYT)
+                loggingEntryHolder.addLogEntriesForEvent(
+                    Action.DELETE, false,
+                    "delete hanke yhteystieto",
+                    existingYT, null, userid)
+            }
         }
     }
 
@@ -438,7 +475,8 @@ open class HankeServiceImpl(
         contactType: ContactType,
         userid: String,
         existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
-        loggingEntryHolder: YhteystietoLoggingEntryHolder
+        loggingEntryHolder: YhteystietoLoggingEntryHolder,
+        loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder
     ) {
         for (hankeYht in listOfHankeYhteystiedot) {
             val someFieldsSet = hankeYht.isAnyFieldSet()
@@ -464,7 +502,9 @@ open class HankeServiceImpl(
                 processCreateYhteystieto(hankeYht, validYhteystieto, contactType, userid, hankeEntity)
             } else {
                 // Should be an existing Yhteystieto
-                processUpdateYhteystieto(hankeYht, existingYTs, someFieldsSet, validYhteystieto, userid, hankeEntity, loggingEntryHolder)
+                processUpdateYhteystieto(
+                    hankeYht, existingYTs, someFieldsSet, validYhteystieto, userid, hankeEntity,
+                    loggingEntryHolder, loggingEntryHolderForRestrictedActions)
             }
         }
     }
@@ -487,6 +527,9 @@ open class HankeServiceImpl(
                     hankeYht.organisaatioId,
                     hankeYht.organisaatioNimi,
                     hankeYht.osasto,
+
+                    false,
+                    null,
 
                     userid, // createdByUserId
                     getCurrentTimeUTCAsLocalTime(), // createdAt
@@ -511,12 +554,13 @@ open class HankeServiceImpl(
         validYhteystieto: Boolean,
         userid: String,
         hankeEntity: HankeEntity,
-        loggingEntryHolder: YhteystietoLoggingEntryHolder
+        loggingEntryHolder: YhteystietoLoggingEntryHolder,
+        loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder
     ) {
         // If incoming Yhteystieto has id set, it _should_ be among the existing Yhteystietos, or some kind of error has happened.
         val incomingId: Int = hankeYht.id!!
-        val existingYT: HankeYhteystietoEntity? = existingYTs[incomingId]
-        if (existingYT == null) {
+        val persistedYT: HankeYhteystietoEntity? = existingYTs[incomingId]
+        if (persistedYT == null) {
             // Some sort of error situation;
             // - simultaneous edits to the same hanke by someone else (the Yhteystieto could have been removed in the database)
             // - the incoming ids are for different hanke (i.e. incorrect data in the incoming request)
@@ -524,27 +568,50 @@ open class HankeServiceImpl(
         }
 
         if (validYhteystieto) {
+            // All required fields found, continue with...
             // Check if anything actually changed (UI can send all data as is on every request)
-            if (!areEqualIncomingVsExistingYhteystietos(hankeYht, existingYT)) {
-                // Record old data as JSON for change logging
-                val previousEntity = existingYT.cloneWithMainFields()
+            if (!areEqualIncomingVsExistingYhteystietos(hankeYht, persistedYT)) {
+                // Check if personal data processing is restricted for this yhteystieto:
+                if (persistedYT.dataLocked == true) {
+                    val unsavedNewData = persistedYT.cloneWithMainFields()
+                    // copy the values to temporary unpersisted entity for logging:
+                    unsavedNewData.sukunimi = hankeYht.sukunimi
+                    unsavedNewData.etunimi = hankeYht.etunimi
+                    unsavedNewData.email = hankeYht.email
+                    unsavedNewData.puhelinnumero = hankeYht.puhelinnumero
+                    unsavedNewData.organisaatioId = hankeYht.organisaatioId
+                    hankeYht.organisaatioNimi?.let { unsavedNewData.organisaatioNimi = hankeYht.organisaatioNimi }
+                    hankeYht.osasto?.let { unsavedNewData.osasto = hankeYht.osasto }
 
-                // All required fields found, so update existing entity fields:
-                existingYT.sukunimi = hankeYht.sukunimi
-                existingYT.etunimi = hankeYht.etunimi
-                existingYT.email = hankeYht.email
-                existingYT.puhelinnumero = hankeYht.puhelinnumero
-                existingYT.organisaatioId = hankeYht.organisaatioId
-                hankeYht.organisaatioNimi?.let { existingYT.organisaatioNimi = hankeYht.organisaatioNimi }
-                hankeYht.osasto?.let { existingYT.osasto = hankeYht.osasto }
+                    // Audit log the failure:
+                    loggingEntryHolderForRestrictedActions.addLogEntriesForEvent(
+                        Action.UPDATE, true,
+                        "update hanke yhteystieto BLOCKED by data processing restriction",
+                        persistedYT, unsavedNewData, userid)
+                } else {
+                    // Record old data as JSON for change logging (and id for other purposes)
+                    val previousEntityData = persistedYT.cloneWithMainFields()
+                    previousEntityData.id = persistedYT.id
 
-                // (Not changing createdBy/At fields)
-                existingYT.modifiedByUserId = userid
-                existingYT.modifiedAt = getCurrentTimeUTCAsLocalTime()
-                // (Not touching the id or hanke fields)
+                    // Update values in the persisted entity:
+                    persistedYT.sukunimi = hankeYht.sukunimi
+                    persistedYT.etunimi = hankeYht.etunimi
+                    persistedYT.email = hankeYht.email
+                    persistedYT.puhelinnumero = hankeYht.puhelinnumero
+                    persistedYT.organisaatioId = hankeYht.organisaatioId
+                    hankeYht.organisaatioNimi?.let { persistedYT.organisaatioNimi = hankeYht.organisaatioNimi }
+                    hankeYht.osasto?.let { persistedYT.osasto = hankeYht.osasto }
 
-                loggingEntryHolder.addLogEntriesForEvent(
-                    Action.UPDATE, "update hanke yhteystieto", previousEntity, existingYT, userid)
+                    // (Not changing createdBy/At fields)
+                    persistedYT.modifiedByUserId = userid
+                    persistedYT.modifiedAt = getCurrentTimeUTCAsLocalTime()
+                    // (Not touching the id or hanke fields)
+
+                    loggingEntryHolder.addLogEntriesForEvent(
+                        Action.UPDATE, false,
+                        "update hanke yhteystieto",
+                        previousEntityData, persistedYT, userid)
+                }
             }
 
             // No need to add the existing Yhteystieto entity to the hanke's list; it is already in it.
@@ -602,6 +669,16 @@ open class HankeServiceImpl(
         val loggingEntryHolder = YhteystietoLoggingEntryHolder()
         loggingEntryHolder.initWithOldYhteystietos(entity.listOfHankeYhteystieto)
         return loggingEntryHolder
+    }
+
+    private fun postProcessAndSaveLogging(loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder) {
+        loggingEntryHolderForRestrictedActions.applyIPaddresses()
+        loggingEntryHolderForRestrictedActions.saveLogEntries(personalDataAuditLogRepository, personalDataChangeLogRepository)
+        val idList = StringBuilder()
+        loggingEntryHolderForRestrictedActions.auditLogEntries.forEach { idList.append(it.id).append(", ") }
+        if (idList.endsWith(", "))
+            idList.setLength(idList.length-2)
+        throw HankeYhteystietoProcessingRestrictedException("Can not modify/delete yhteystieto which has data processing restricted (id: $idList)")
     }
 
     /**

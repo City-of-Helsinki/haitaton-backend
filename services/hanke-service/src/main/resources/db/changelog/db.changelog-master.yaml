@@ -25,3 +25,7 @@ databaseChangeLog:
       file: db/changelog/changesets/add-tormaystarkastelu-results.yml
   - include:
       file: db/changelog/changesets/create-log-tables-for-personaldata.yml
+  - include:
+      file: db/changelog/changesets/add-personal-data-processing-restriction-support.yml
+  - include:
+      file: db/changelog/changesets/add-personal-data-logs-failed-field.yml

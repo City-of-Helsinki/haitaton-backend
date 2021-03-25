@@ -10,11 +10,13 @@ import javax.persistence.GenerationType
 import javax.persistence.Id
 import javax.persistence.Table
 
-enum class Action {
-    CREATE,
-    READ,
-    UPDATE,
-    DELETE
+enum class Action(val isChange: Boolean) {
+    CREATE(true),
+    READ(false),
+    UPDATE(true),
+    DELETE(true),
+    LOCK(false),
+    UNLOCK(false)
 }
 
 @Entity
@@ -29,6 +31,7 @@ class AuditLogEntry (
     var yhteystietoId: Int? = 0,
     @Enumerated(EnumType.STRING)
     var action: Action? = null,
+    var failed: Boolean? = null,
     var description: String? = null
 ) {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,6 +46,7 @@ class ChangeLogEntry (
     var yhteystietoId: Int? = 0,
     @Enumerated(EnumType.STRING)
     var action: Action? = null,
+    var failed: Boolean? = null,
     var oldData: String? = null,
     var newData: String? = null
 ) {
