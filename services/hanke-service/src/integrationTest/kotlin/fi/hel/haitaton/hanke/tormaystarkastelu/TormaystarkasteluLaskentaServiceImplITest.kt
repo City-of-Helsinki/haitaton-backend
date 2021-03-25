@@ -35,7 +35,7 @@ internal class TormaystarkasteluLaskentaServiceImplITest {
 
     companion object {
         @Container
-        var container: HaitatonPostgreSQLContainer = HaitatonPostgreSQLContainer
+        var container: HaitatonPostgreSQLContainer = HaitatonPostgreSQLContainer()
             .withExposedPorts(5433) // use non-default port
             .withPassword("test")
             .withUsername("test")
