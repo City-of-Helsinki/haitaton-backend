@@ -1,13 +1,19 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import java.time.LocalDate
 import java.time.LocalDateTime
+import javax.persistence.AttributeOverride
+import javax.persistence.AttributeOverrides
 import javax.persistence.CascadeType
 import javax.persistence.CollectionTable
+import javax.persistence.Column
 import javax.persistence.ElementCollection
+import javax.persistence.Embedded
 import javax.persistence.Entity
 import javax.persistence.EnumType
 import javax.persistence.Enumerated
@@ -181,16 +187,32 @@ class HankeEntity(
     // Checking geometry requires lookup into another database table.
     // Checking for nearby other Hanke requires GIS database query.
     var tilaOnGeometrioita: Boolean = false
-
     // var tilaOnKaikkiPakollisetLuontiTiedot: Boolean = false
     // var tilaOnTiedotLiikenneHaittaIndeksille: Boolean = false
     // var tilaOnLiikenneHaittaIndeksi: Boolean = false
     var tilaOnViereisiaHankkeita: Boolean = false
     var tilaOnAsiakasryhmia: Boolean = false
 
-    // ---------------  Helper functions -----------------
+    // --------------- Törmaystarkastelu -------------------
+    // NOTE: the type-field has column name "liikennehaittaindeksityyppi",
+    // whereas the combined object has type LiikenneHaittaIndeksiType in Kotlin-side.
+    @Embedded
+    @AttributeOverrides(
+        AttributeOverride(name = "indeksi", column = Column(name = "liikennehaittaindeksi")),
+        AttributeOverride(name = "tyyppi", column = Column(name = "liikennehaittaindeksityyppi"))
+    )
+    var liikennehaittaIndeksi: LiikennehaittaIndeksiType? = null
+
+    // Made bidirectional relation mainly to allow cascaded delete.
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "hanke", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var tormaystarkasteluTulokset: MutableList<TormaystarkasteluTulosEntity> = mutableListOf()
+
+
+    // ==================  Helper functions ================
 
     fun addYhteystieto(yhteystieto: HankeYhteystietoEntity) {
+        // TODO: should check that the given entity is not yet connected to another Hanke, or
+        // if already connected to this hanke (see addTormaystarkasteluTulos())
         listOfHankeYhteystieto.add(yhteystieto)
         yhteystieto.hanke = this
     }
@@ -202,6 +224,25 @@ class HankeEntity(
             yhteystieto.hanke = null
         }
     }
+
+    fun addTormaystarkasteluTulos(tormaystarkasteluTulosEntity: TormaystarkasteluTulosEntity) {
+        if (tormaystarkasteluTulosEntity.hanke != null && tormaystarkasteluTulosEntity.hanke != this) {
+            throw IllegalStateException("Given TormaystarkasteluTulosEntity has already a different parent Hanke.")
+        }
+        tormaystarkasteluTulosEntity.hanke = this
+        // Check that exactly same entity (with same id) is not added twice;
+        // another one with the same values but different id can be added.
+        if (!tormaystarkasteluTulokset.contains(tormaystarkasteluTulosEntity))
+            tormaystarkasteluTulokset.add(tormaystarkasteluTulosEntity)
+    }
+
+    fun removeTormaystarkasteluTulos(tormaystarkasteluTulosEntity: TormaystarkasteluTulosEntity) {
+        if (tormaystarkasteluTulokset.contains(tormaystarkasteluTulosEntity)) {
+            tormaystarkasteluTulokset.remove(tormaystarkasteluTulosEntity)
+            tormaystarkasteluTulosEntity.hanke = null
+        }
+    }
+
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

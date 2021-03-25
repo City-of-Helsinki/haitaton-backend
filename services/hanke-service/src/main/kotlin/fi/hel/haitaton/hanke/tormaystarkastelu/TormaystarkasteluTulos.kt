@@ -1,5 +1,13 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
+import javax.persistence.Column
+import javax.persistence.Embeddable
+import javax.persistence.EnumType
+import javax.persistence.Enumerated
+
+// TODO: Only hankeTunnus to be used as part of equals(), hashCode() and copy() auto-implementations?
+//  For now we only have one result per hanke, so it is ok, but in future there can be multiple results
+//  for each hanke, and at least geometryId or something like that should be considered.
 data class TormaystarkasteluTulos(val hankeTunnus: String) {
 
     var hankeId: Int = 0
@@ -8,6 +16,7 @@ data class TormaystarkasteluTulos(val hankeTunnus: String) {
     var perusIndeksi: Float? = null
     var pyorailyIndeksi: Float? = null
     var joukkoliikenneIndeksi: Float? = null
+    var tila: TormaystarkasteluTulosTila? = null
 
     override fun toString(): String {
         return "TormaystarkasteluTulos(" +
@@ -37,10 +46,25 @@ data class TormaystarkasteluTulos(val hankeTunnus: String) {
     }
 }
 
-data class LiikennehaittaIndeksiType(var indeksi: Float, var type: IndeksiType)
+// This class is also used as part of entity-classes TormaystarkasteluTulosEntity and Hanke.
+// HankeEntity overrides the column names.
+@Embeddable
+data class LiikennehaittaIndeksiType(
+    @Column(name = "liikennehaitta")
+    var indeksi: Float,
+    @Column(name = "liikennehaittatyyppi")
+    @Enumerated(EnumType.STRING)
+    var tyyppi: IndeksiType
+)
 
 enum class IndeksiType {
     PERUSINDEKSI,
     PYORAILYINDEKSI,
     JOUKKOLIIKENNEINDEKSI
+    // TODO: will likely need a new option "MONTA" or "USEITA".
+}
+
+enum class TormaystarkasteluTulosTila {
+    VOIMASSA,
+    EI_VOIMASSA
 }

@@ -21,3 +21,7 @@ databaseChangeLog:
       file: db/changelog/changesets/add-hanke-flag-fields.yml
   - include:
       file: db/changelog/changesets/set-defaults-to-hanke-flag-fields.yml
+  - include:
+      file: db/changelog/changesets/add-tormaystarkastelu-results.yml
+  - include:
+      file: db/changelog/changesets/create-log-tables-for-personaldata.yml

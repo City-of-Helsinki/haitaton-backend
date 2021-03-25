@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.TormaysAnalyysiException
+import fi.hel.haitaton.hanke.TormaystarkasteluAlreadyCalculatedException
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import org.springframework.beans.factory.annotation.Autowired
@@ -10,7 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired
 open class TormaystarkasteluLaskentaServiceImpl(
     @Autowired private val hankeService: HankeService,
     @Autowired private val luokitteluService: TormaystarkasteluLuokitteluService,
-    @Autowired private val geometriatService: HankeGeometriatService
+    @Autowired private val geometriatService: HankeGeometriatService,
+    @Autowired private val tormaystarkasteluTulosRepository: TormaystarkasteluTulosRepository
 ) : TormaystarkasteluLaskentaService {
 
     /**
@@ -21,7 +22,7 @@ open class TormaystarkasteluLaskentaServiceImpl(
         val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
 
         if (hanke.tilat.onLiikenneHaittaIndeksi) {
-            throw TormaysAnalyysiException("Already has tormaysanalyysi calculated for $hankeTunnus")
+            throw TormaystarkasteluAlreadyCalculatedException("Already has tormaysanalyysi calculated for $hankeTunnus")
         }
 
         if (hanke.tilat.onTiedotLiikenneHaittaIndeksille) {
@@ -35,16 +36,17 @@ open class TormaystarkasteluLaskentaServiceImpl(
             // call service to get luokittelu with rajaArvot and hankeGeometries
             val luokittelutulos = luokitteluService.calculateTormaystarkasteluLuokitteluTulos(hanke, rajaArvot)
 
-            // call something to create tormaystarkastelu with that luokittelu
+            // call the calculator to create tormaystarkastelu with that luokittelu
             val laskentatulos =
                 TormaystarkasteluCalculator.calculateAllIndeksit(initTormaystarkasteluTulos(hanke), luokittelutulos)
 
-            hanke.tormaystarkasteluTulos = laskentatulos
-            hanke.liikennehaittaindeksi = laskentatulos.liikennehaittaIndeksi
-            hanke.tilat.onLiikenneHaittaIndeksi = true
-            hankeService.updateHanke(hanke) // TODO updateHanke should save this new data? Or should it be a separate persistence service for that?
+            // All values calculated, this particular result is now valid (VOIMASSA):
+            laskentatulos.tila = TormaystarkasteluTulosTila.VOIMASSA
+
+            // Apply the result to hanke:
+            hankeService.applyAndSaveTormaystarkasteluTulos(hanke, laskentatulos)
         } else {
-            throw IllegalStateException("Hanke.tilat.onTiedotLiikenneHaittaIndeksille cannot be false here")
+            throw IllegalStateException("Hanke.tilat.onTiedotLiikenneHaittaIndeksille cannot be false here; hanke $hankeTunnus")
         }
 
         // return hanke with tormaystulos
@@ -63,10 +65,25 @@ open class TormaystarkasteluLaskentaServiceImpl(
             return null
         }
 
-        // TODO: get from database tormaystulokset
-        // if we have tormaystarkastelu, return
+        // TODO: this causes undesired extra db-traffic. In future each tulos should
+        //  have its own related geometriaid (note, "geometria", not "geometriat" with end t)
+        //  stored with the data in the database, so the injection, and thus this load
+        //  will not be needed.
+        // load geometries for hanke to be able to inject the geometriatid to tulos
+        hanke.geometriat = geometriatService.loadGeometriat(hanke)
 
-        return initTormaystarkasteluTulos(hanke)
+        // Only the HankeEntity has the list of tulos lazy-loaded; domain object does not (yet..)
+        // So, loading the tulos via TormaystarkasteluRepository
+        val entityList = tormaystarkasteluTulosRepository.findByHankeId(hanke.id!!)
+        // Get the first (for now the only) entry from the list
+        if (entityList.isEmpty()) {
+            throw IllegalStateException("Hanke.tilat.onLiikenneHaittaIndeksi was true, but no results found in database; hanke $hankeTunnus")
+        }
+        val tormaystarkasteluTulosEntity = entityList[0]
+        val tormaystarkasteluTulos = initTormaystarkasteluTulos(hanke)
+        copyTormaystarkasteluTulosFromEntity(tormaystarkasteluTulosEntity, tormaystarkasteluTulos)
+
+        return tormaystarkasteluTulos
     }
 
     private fun initTormaystarkasteluTulos(hanke: Hanke): TormaystarkasteluTulos {
@@ -81,4 +98,18 @@ open class TormaystarkasteluLaskentaServiceImpl(
 
         return laskentatulos
     }
+
+    private fun copyTormaystarkasteluTulosFromEntity(
+        tttEntity: TormaystarkasteluTulosEntity,
+        ttt: TormaystarkasteluTulos
+    ) {
+        ttt.liikennehaittaIndeksi = tttEntity.liikennehaitta?.copy()
+        ttt.perusIndeksi = tttEntity.perus
+        ttt.pyorailyIndeksi = tttEntity.pyoraily
+        ttt.joukkoliikenneIndeksi = tttEntity.joukkoliikenne
+        ttt.tila = tttEntity.tila
+        // TODO? domain object does not (yet?) have createdAt or tilaChangedAt fields?
+        //  But are they even needed/used there (yet?)
+    }
+
 }

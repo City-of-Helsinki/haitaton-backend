@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.TormaysAnalyysiException
 import fi.hel.haitaton.hanke.domain.Hanke
 
 class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: TormaystarkasteluDao) :
@@ -195,7 +194,9 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         return tormaystarkasteluYlreClasses.isNotEmpty()
     }
 
-    private fun hitsInStreetClasses(tormaystarkasteluStreetClasses: Map<Int, Set<TormaystarkasteluKatuluokka>>): Boolean {
+    private fun hitsInStreetClasses(
+        tormaystarkasteluStreetClasses: Map<Int, Set<TormaystarkasteluKatuluokka>>
+    ): Boolean {
         return tormaystarkasteluStreetClasses.isNotEmpty()
     }
 
@@ -216,9 +217,6 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
 
         // find maximum tormaystulos
         val maximum = getMaximumLiikennemaaraFromVolumes(hanke, katuluokkaLuokittelu)
-        if (maximum == null) {
-            throw TormaysAnalyysiException("Liikennemaara comparison went wrong for hankeId=${hanke.id}")
-        }
 
         // actual classification
         rajaArvot.liikennemaaraRajaArvot.forEach { rajaArvo ->
@@ -240,7 +238,7 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
         return Luokittelutulos(LuokitteluType.LIIKENNEMAARA, arvoRivi.arvo, arvoRivi.explanation)
     }
 
-    private fun getMaximumLiikennemaaraFromVolumes(hanke: Hanke, katuluokkaLuokittelu: Luokittelutulos?): Int? {
+    private fun getMaximumLiikennemaaraFromVolumes(hanke: Hanke, katuluokkaLuokittelu: Luokittelutulos?): Int {
 
         var tormaystulos: Map<Int, Set<Int>> = mutableMapOf()
 
@@ -259,7 +257,7 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
             )
         }
 
-        return tormaystulos.values.flatten().maxOrNull()
+        return tormaystulos.values.flatten().maxOrNull() ?: 0
     }
 
     private fun shouldUseWiderRadiusVolumes(katuluokkaLuokittelu: Luokittelutulos?) =

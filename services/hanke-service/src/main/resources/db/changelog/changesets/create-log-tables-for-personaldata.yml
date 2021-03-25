@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-log-tables-for-personaldata
+      comment: Create schema and tables for personal data audit and change logs
+      author: Markku Hassinen
+      changes:
+        # NOTE: Liquibase does not support creating schemas with its normal elements, must use SQL
+        - sql:
+            comment: Separate schema for personal data logs
+            dbms: 'postgresql, h2'
+            sql: CREATE SCHEMA personaldatalogs
+        - createTable:
+            schemaName: personaldatalogs
+            tableName: auditlog
+            columns:
+              - column:
+                  name: id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column: { name: eventtime, type: timestamp }
+              - column: { name: userid, type: varchar(40) }
+              # 'actor' is for any other source of action than logged-in user, e.g. an import integration
+              - column: { name: actor, type: varchar(80) }
+              # a useful IP nearest to the server
+              - column: { name: ipnear, type: varchar(40) }
+              # a useful IP furthermost from the server (usually the user's device's current IP)
+              - column: { name: ipfar, type: varchar(40) }
+              # NOTE: not foreign key definition; keeping the connection loose on purpose
+              - column: { name: yhteystietoid, type: int }
+              # what action was made (create, update, delete) (no read actions are logged for now)
+              - column: { name: action, type: varchar(10) }
+              # description of action (e.g. as JSON string, or normal string, "changed field 'name'")
+              - column: { name: description, type: varchar(250) }
+        - createTable:
+            schemaName: personaldatalogs
+            tableName: changelog
+            columns:
+              - column:
+                  name: id
+                  type: int
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column: { name: eventtime, type: timestamp }
+              # NOTE: not foreign key definition; keeping the connection loose on purpose
+              - column: { name: yhteystietoid, type: int }
+              # what action was made (create, update, delete) (no read actions are logged for now)
+              - column: { name: action, type: varchar(10) }
+              # old data (if applicable; null for create)
+              - column: { name: olddata, type: clob }
+              # new data (if applicable; null for delete or a failed but logged action)
+              - column: { name: newdata, type: clob }
