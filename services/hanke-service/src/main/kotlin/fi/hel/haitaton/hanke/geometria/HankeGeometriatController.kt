@@ -55,6 +55,7 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriatSe
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ConstraintViolationException::class)
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
+        logger.warn { ex.message }
         return ex.toHankeError(HankeError.HAI1011)
     }
 }

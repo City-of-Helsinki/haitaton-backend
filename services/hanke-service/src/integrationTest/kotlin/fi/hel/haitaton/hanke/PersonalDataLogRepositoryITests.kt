@@ -3,11 +3,13 @@ package fi.hel.haitaton.hanke
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
-import fi.hel.haitaton.hanke.logging.AuditLogEntry
 import fi.hel.haitaton.hanke.logging.Action
+import fi.hel.haitaton.hanke.logging.AuditLogEntry
 import fi.hel.haitaton.hanke.logging.ChangeLogEntry
 import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
 import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
+import java.time.LocalDateTime
+import javax.persistence.EntityManager
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -17,8 +19,6 @@ import org.springframework.test.context.DynamicPropertySource
 import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
-import java.time.LocalDateTime
-import javax.persistence.EntityManager
 
 /**
  * Testing the configurations and database setup for PersonalDataXxxxLogRepository classes
@@ -41,10 +41,10 @@ class PersonalDataLogRepositoryITests @Autowired constructor(
 
     companion object {
         @Container
-        var container: HaitatonPostgreSQLContainer = HaitatonPostgreSQLContainer
-                .withExposedPorts(5433) // use non-default port
-                .withPassword("test")
-                .withUsername("test")
+        var container: HaitatonPostgreSQLContainer = HaitatonPostgreSQLContainer()
+            .withExposedPorts(5433) // use non-default port
+            .withPassword("test")
+            .withUsername("test")
 
         @JvmStatic
         @DynamicPropertySource
