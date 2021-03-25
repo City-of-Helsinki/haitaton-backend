@@ -16,7 +16,6 @@ import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
@@ -140,8 +139,8 @@ internal class TormaystarkasteluDaoImplITest {
             tormaystarkasteluDao.liikennemaarat(hankeGeometriat, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30)
         println(liikennemaarat.toJsonPrettyString())
         assertThat(liikennemaarat.size).isEqualTo(1)
-        assertThat(liikennemaarat.values.first().size).isEqualTo(2)
-        assertThat(liikennemaarat.values.first()).containsOnly(17286, 1478)
+        assertThat(liikennemaarat.values.first().size).isEqualTo(3)
+        assertThat(liikennemaarat.values.first()).containsOnly(17566, 17286, 1478)
     }
 
     /*
