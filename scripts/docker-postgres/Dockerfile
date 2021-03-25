@@ -6,3 +6,4 @@ ENV LANG fi_FI.utf8
 
 COPY ./configure-database.sh /docker-entrypoint-initdb.d/
 COPY ./configure-postgres.sh /docker-entrypoint-initdb.d/
+COPY ./laastariaineisto-test.sql /docker-entrypoint-initdb.d/

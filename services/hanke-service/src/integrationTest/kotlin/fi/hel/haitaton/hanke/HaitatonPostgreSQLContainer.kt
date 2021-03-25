@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
 
-object HaitatonPostgreSQLContainer : PostgreSQLContainer<HaitatonPostgreSQLContainer>(
+class HaitatonPostgreSQLContainer : PostgreSQLContainer<HaitatonPostgreSQLContainer>(
     DockerImageName.parse("postgis/postgis:13-master").asCompatibleSubstituteFor("postgres")
 ) {
 

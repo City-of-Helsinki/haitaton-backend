@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-tormaystarkastelu-main-result-to-hanke-table
+      comment: Add main 'törmäystarkastelu' main result fields to hanke-table
+      author: Markku Hassinen
+      changes:
+        - addColumn:
+            tableName: hanke
+            columns:
+              - column: { name: liikennehaittaindeksi, type: float }
+              - column: { name: liikennehaittaindeksityyppi, type: varchar(30) }
+
+  - changeSet:
+      id: add-tormaystarkastelutulos-table
+      comment: Add 'törmäystarkastelu' results table
+      author: Markku Hassinen
+      changes:
+        - createTable:
+            tableName: tormaystarkastelutulos
+            columns:
+              - column: { name: id, type: int, autoIncrement: true, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: hankeid, type: int, constraints: { nullable: false, foreignKeyName: fk_hanke_tormaystarkastelutulos, references: hanke(id) } }
+              - column: { name: liikennehaitta, type: float }
+              - column: { name: liikennehaittatyyppi, type: varchar(30) }
+              - column: { name: perus, type: float }
+              - column: { name: pyoraily, type: float }
+              - column: { name: joukkoliikenne, type: float }
+              - column: { name: tila, type: varchar(20) }
+              - column: { name: tilachangedat, type: timestamp }
+              - column: { name: createdat, type: timestamp }

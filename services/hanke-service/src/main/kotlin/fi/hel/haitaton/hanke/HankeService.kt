@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeSearch
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 
 interface HankeService {
 
@@ -23,6 +24,12 @@ interface HankeService {
      * anything.
      */
     fun updateHankeStateFlags(hanke: Hanke)
+
+
+    /**
+     * Sets the values to the given domain object, sets the state flag, and persists the tulos.
+     */
+    fun applyAndSaveTormaystarkasteluTulos(hanke: Hanke, tormaystarkasteluTulos: TormaystarkasteluTulos)
 
     fun loadAllHanke(hankeSearch: HankeSearch? = null): List<Hanke>
 }

@@ -138,7 +138,7 @@ internal class TormaystarkasteluCalculatorTest {
         assertThat(result.joukkoliikenneIndeksi).isEqualTo(4.0f)
 
         assertThat(result.liikennehaittaIndeksi?.indeksi).isEqualTo(4.0f)
-        assertThat(result.liikennehaittaIndeksi?.type).isEqualTo(IndeksiType.JOUKKOLIIKENNEINDEKSI)
+        assertThat(result.liikennehaittaIndeksi?.tyyppi).isEqualTo(IndeksiType.JOUKKOLIIKENNEINDEKSI)
     }
 
     @Test
@@ -157,7 +157,7 @@ internal class TormaystarkasteluCalculatorTest {
         assertThat(result.joukkoliikenneIndeksi).isEqualTo(1.0f)
 
         assertThat(result.liikennehaittaIndeksi?.indeksi).isEqualTo(3.0f)
-        assertThat(result.liikennehaittaIndeksi?.type).isEqualTo(IndeksiType.PYORAILYINDEKSI)
+        assertThat(result.liikennehaittaIndeksi?.tyyppi).isEqualTo(IndeksiType.PYORAILYINDEKSI)
     }
 
     @Test
@@ -191,7 +191,7 @@ internal class TormaystarkasteluCalculatorTest {
         assertThat(result.joukkoliikenneIndeksi).isEqualTo(1.0f)
 
         assertThat(result.liikennehaittaIndeksi?.indeksi).isEqualTo(4.0f)
-        assertThat(result.liikennehaittaIndeksi?.type).isEqualTo(IndeksiType.PERUSINDEKSI)
+        assertThat(result.liikennehaittaIndeksi?.tyyppi).isEqualTo(IndeksiType.PERUSINDEKSI)
     }
 }
 

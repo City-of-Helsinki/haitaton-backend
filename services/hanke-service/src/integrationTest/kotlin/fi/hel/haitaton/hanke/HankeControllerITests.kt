@@ -640,4 +640,32 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("$.tilat.onAsiakasryhmia").value(false))
         verify { hankeService.updateHanke(any()) }
     }
+
+    @Test
+    fun `exception in Hanke creation causes a 500 Internal Server Error response with specific HankeError`() {
+        val hanke = Hanke(
+            "Testihanke",
+            ZonedDateTime.of(2021, 1, 1, 0, 0, 0, 0, TZ_UTC),
+            ZonedDateTime.of(2021, 12, 31, 0, 0, 0, 0, TZ_UTC),
+            Vaihe.OHJELMOINTI,
+            SaveType.AUTO
+        )
+        // faking the service call
+        every { hankeService.createHanke(any()) } throws RuntimeException("Some error")
+
+        // Call it and check results
+        mockMvc.perform(
+            post("/hankkeet")
+                .contentType(MediaType.APPLICATION_JSON)
+                .characterEncoding("UTF-8")
+                .content(hanke.toJsonString())
+                .with(csrf())
+                .accept(MediaType.APPLICATION_JSON)
+        )
+            .andExpect(status().isInternalServerError)
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(content().json(HankeError.HAI0002.toJsonString()))
+
+        verify { hankeService.createHanke(any()) }
+    }
 }
