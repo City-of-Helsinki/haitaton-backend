@@ -5,7 +5,7 @@
 trigger:
   branches:
     include:
-    - main
+    - NON_EXISTING_FOR_NOW
   paths:
     exclude:
     - README.md
