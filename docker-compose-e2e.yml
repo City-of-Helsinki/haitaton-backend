@@ -85,7 +85,9 @@ services:
           - haitaton-hanke
 
   haitaton-ui:
-    image: ghcr.io/city-of-helsinki/haitaton/ui:dev
+    build:
+      context: ${BUILD_ROOT}/haitaton-ui
+      dockerfile: ${FRONT_DOCKERFILE}
     container_name: haitaton-ui
     ports:
       - 8000:8000
