@@ -165,8 +165,14 @@ open class HankeServiceImpl(
                 ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
 
         val existingYTs = prepareMapOfExistingYhteystietos(entity)
+        logger.info {
+            "Checking processing restrictions. Have ${existingYTs.size} existing YTs."
+        }
         checkAndHandleDataProcessingRestrictions(hanke, entity, existingYTs, userid)
 
+        logger.info {
+            "No processing restrictions, processing hanke update."
+        }
         val loggingEntryHolder = prepareLogging(entity)
         // Transfer field values from domain object to entity object, and set relevant audit fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
@@ -362,9 +368,15 @@ open class HankeServiceImpl(
                 lockedExistingYTs[it.id!!] = it
             }
         }
+        logger.info {
+            "There are ${lockedExistingYTs.size} locked existing YTs."
+        }
         // If there are no existing locked yhteystietos, can proceed with the update:
         if (lockedExistingYTs.isEmpty())
             return
+        logger.info {
+            "There were locked YTs in existing hanke data, checking deeper..."
+        }
 
         val loggingEntryHolderForRestrictedActions = prepareLogging(persistedEntity)
         // Some is locked, check incoming data and compare, looking for changes or deletions.
@@ -381,6 +393,10 @@ open class HankeServiceImpl(
         // If no entries were blocked, and there is nothing left in the tempLockedExistingYts, all clear to proceed:
         if (!loggingEntryHolderForRestrictedActions.hasEntries() && tempLockedExistingYts.isEmpty())
             return
+
+        logger.info {
+            "There were changes or deletions to the locked YTs..."
+        }
 
         // Any remaining entries in the tempLockedExistingYts means those would be deleted, if not locked;
         // create audit log entries for them:
