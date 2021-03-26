@@ -17,11 +17,34 @@ import javax.persistence.Table
  * will not get an entry in the changelog (but can still get one in the auditlog).
  */
 enum class Action(val isChange: Boolean) {
+    /**
+     * When some new "business data" object is created.
+     */
     CREATE(true),
+    /**
+     * When some (sensitive) "business data" is read.
+     */
     READ(false),
+    /**
+     * When some "business data" is changed.
+     */
     UPDATE(true),
+    /**
+     * When some "business data" object is deleted. (Note, the whole object,
+     * not just one or more fields in it.)
+     */
     DELETE(true),
+    /**
+     * To record a change of the datalocked-field to "true". Not done by
+     * Haitaton itself (for now), so add a row with this action when manually
+     * setting that restriction flag.
+     */
     LOCK(false),
+    /**
+     * To record a change of the datalocked-field from "true" to "false".
+     * Not done by Haitaton itself (for now), so add a row with this action
+     * when manually setting that restriction flag.
+     */
     UNLOCK(false)
 }
 
