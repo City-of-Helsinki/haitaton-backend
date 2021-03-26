@@ -165,14 +165,8 @@ open class HankeServiceImpl(
                 ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
 
         val existingYTs = prepareMapOfExistingYhteystietos(entity)
-        logger.info {
-            "Checking processing restrictions. Have ${existingYTs.size} existing YTs."
-        }
         checkAndHandleDataProcessingRestrictions(hanke, entity, existingYTs, userid)
 
-        logger.info {
-            "No processing restrictions, processing hanke update."
-        }
         val loggingEntryHolder = prepareLogging(entity)
         // Transfer field values from domain object to entity object, and set relevant audit fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
@@ -361,6 +355,9 @@ open class HankeServiceImpl(
             existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
             userid: String
     ) {
+        logger.debug {
+            "Checking for processing restrictions. Have ${existingYTs.size} existing Yhteystietos."
+        }
         // Are there any locked yhteystietos? Very Likely not, so make that easy check first:
         val lockedExistingYTs: MutableMap<Int, HankeYhteystietoEntity> = mutableMapOf()
         existingYTs.values.forEach {
@@ -368,34 +365,35 @@ open class HankeServiceImpl(
                 lockedExistingYTs[it.id!!] = it
             }
         }
-        logger.info {
-            "There are ${lockedExistingYTs.size} locked existing YTs."
-        }
         // If there are no existing locked yhteystietos, can proceed with the update:
-        if (lockedExistingYTs.isEmpty())
+        if (lockedExistingYTs.isEmpty()) {
+            logger.debug {
+                "Yhteystietos of the Hanke have no processing restrictions. Hanke update can continue."
+            }
             return
-        logger.info {
-            "There were locked YTs in existing hanke data, checking deeper..."
         }
 
+        logger.debug {
+            "${lockedExistingYTs.size} of the existing Yhteystietos have processing restrictions. Checking for effects."
+        }
         val loggingEntryHolderForRestrictedActions = prepareLogging(persistedEntity)
         // Some is locked, check incoming data and compare, looking for changes or deletions.
         // A temporary copy, so that we can remove handled entries from it, leaving
         // certain deleted entries as remainder:
         val tempLockedExistingYts = lockedExistingYTs.toMutableMap()
-        findAndLogBlockedYhteystietoIds(
+        findAndLogAffectedBlockedYhteystietos(
             incomingHanke.omistajat, tempLockedExistingYts, loggingEntryHolderForRestrictedActions, userid)
-        findAndLogBlockedYhteystietoIds(
+        findAndLogAffectedBlockedYhteystietos(
             incomingHanke.arvioijat, tempLockedExistingYts, loggingEntryHolderForRestrictedActions, userid)
-        findAndLogBlockedYhteystietoIds(
+        findAndLogAffectedBlockedYhteystietos(
             incomingHanke.toteuttajat, tempLockedExistingYts, loggingEntryHolderForRestrictedActions, userid)
 
         // If no entries were blocked, and there is nothing left in the tempLockedExistingYts, all clear to proceed:
-        if (!loggingEntryHolderForRestrictedActions.hasEntries() && tempLockedExistingYts.isEmpty())
+        if (!loggingEntryHolderForRestrictedActions.hasEntries() && tempLockedExistingYts.isEmpty()) {
+            logger.debug {
+                "No actual changes to the restricted Yhteystietos. Hanke update can continue."
+            }
             return
-
-        logger.info {
-            "There were changes or deletions to the locked YTs..."
         }
 
         // Any remaining entries in the tempLockedExistingYts means those would be deleted, if not locked;
@@ -406,13 +404,13 @@ open class HankeServiceImpl(
                 "delete hanke yhteystieto BLOCKED by data processing restriction",
                 it, null, userid)
         }
-
-        logger.warn { "Hanke update with actions on processing restricted data, saving details to audit and change logs. Hanke id ${incomingHanke.id}" }
-        // This will throw exception (after saving the entries)
-        postProcessAndSaveLogging(loggingEntryHolderForRestrictedActions)
+        logger.warn { "Hanke update with actions on processing restricted data, saving details to audit and change logs. Hanke id ${incomingHanke.id} will be left unchanged" }
+        // This will throw exception (after saving the entries) and prevents
+        // the Hanke update from continuing to actual changes to it.
+        postProcessAndSaveLoggingForRestrictions(loggingEntryHolderForRestrictedActions)
     }
 
-    private fun findAndLogBlockedYhteystietoIds(
+    private fun findAndLogAffectedBlockedYhteystietos(
             incomingYts: MutableList<HankeYhteystieto>,
             tempLockedExistingYts: MutableMap<Int, HankeYhteystietoEntity>,
             loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder,
@@ -429,7 +427,7 @@ open class HankeServiceImpl(
                         "delete hanke yhteystieto BLOCKED by data processing restriction",
                         tempLockedExistingYts[yhteystieto.id], null, userid)
                 } else if (!areEqualIncomingVsExistingYhteystietos(yhteystieto, lockedExistingYt)) {
-                    // copy the values to temporary unpersisted entity for logging:
+                    // copy the values to temporary non-persisted entity for logging:
                     val unsavedNewData = lockedExistingYt.cloneWithMainFields()
                     unsavedNewData.sukunimi = yhteystieto.sukunimi
                     unsavedNewData.etunimi = yhteystieto.etunimi
@@ -528,12 +526,9 @@ open class HankeServiceImpl(
 
         // Check each incoming yhteystieto (from three lists) for being new or an update to existing one,
         // and add to the main entity's single list if necessary:
-        processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-            hanke.omistajat, entity, ContactType.OMISTAJA, userid, existingYTs, loggingEntryHolder)
-        processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-            hanke.arvioijat, entity, ContactType.ARVIOIJA, userid, existingYTs, loggingEntryHolder)
-        processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-            hanke.toteuttajat, entity, ContactType.TOTEUTTAJA, userid, existingYTs, loggingEntryHolder)
+        processIncomingHankeYhteystietosOfSpecificTypeToEntity(hanke.omistajat, entity, ContactType.OMISTAJA, userid, existingYTs, loggingEntryHolder)
+        processIncomingHankeYhteystietosOfSpecificTypeToEntity(hanke.arvioijat, entity, ContactType.ARVIOIJA, userid, existingYTs, loggingEntryHolder)
+        processIncomingHankeYhteystietosOfSpecificTypeToEntity(hanke.toteuttajat, entity, ContactType.TOTEUTTAJA, userid, existingYTs, loggingEntryHolder)
 
         // TODO: this method of removing entries if they are missing in the incoming data is different to
         //     behavior of the other simpler fields, where missing or null field is considered "keep the existing value,
@@ -547,12 +542,10 @@ open class HankeServiceImpl(
         // TODO: Yhteystietos should not be in a list, but a "bag", or ensure it is e.g. linkedlist instead of arraylist (or similars).
         //    The order of Yhteystietos does not matter(?), and removing things from e.g. array list
         //    gets inefficient. Since there are so few entries, this crude solution works, for now.
-        for (existingYT in existingYTs.values) {
-            entity.removeYhteystieto(existingYT)
+        for (hankeYht in existingYTs.values) {
+            entity.removeYhteystieto(hankeYht)
             loggingEntryHolder.addLogEntriesForEvent(
-                Action.DELETE, false,
-                "delete hanke yhteystieto",
-                existingYT, null, userid)
+                Action.DELETE, false, "delete hanke yhteystieto", hankeYht, null, userid)
         }
     }
 
@@ -589,8 +582,7 @@ open class HankeServiceImpl(
                 processCreateYhteystieto(hankeYht, validYhteystieto, contactType, userid, hankeEntity)
             } else {
                 // Should be an existing Yhteystieto
-                processUpdateYhteystieto(
-                    hankeYht, existingYTs, someFieldsSet, validYhteystieto, userid, hankeEntity, loggingEntryHolder)
+                processUpdateYhteystieto(hankeYht, existingYTs, someFieldsSet, validYhteystieto, userid, hankeEntity, loggingEntryHolder)
             }
         }
     }
@@ -644,8 +636,8 @@ open class HankeServiceImpl(
     ) {
         // If incoming Yhteystieto has id set, it _should_ be among the existing Yhteystietos, or some kind of error has happened.
         val incomingId: Int = hankeYht.id!!
-        val persistedYT: HankeYhteystietoEntity? = existingYTs[incomingId]
-        if (persistedYT == null) {
+        val existingYT: HankeYhteystietoEntity? = existingYTs[incomingId]
+        if (existingYT == null) {
             // Some sort of error situation;
             // - simultaneous edits to the same hanke by someone else (the Yhteystieto could have been removed in the database)
             // - the incoming ids are for different hanke (i.e. incorrect data in the incoming request)
@@ -653,31 +645,28 @@ open class HankeServiceImpl(
         }
 
         if (validYhteystieto) {
-            // All required fields found, continue with...
             // Check if anything actually changed (UI can send all data as is on every request)
-            if (!areEqualIncomingVsExistingYhteystietos(hankeYht, persistedYT)) {
+            if (!areEqualIncomingVsExistingYhteystietos(hankeYht, existingYT)) {
                 // Record old data as JSON for change logging (and id for other purposes)
-                val previousEntityData = persistedYT.cloneWithMainFields()
-                previousEntityData.id = persistedYT.id
+                val previousEntityData = existingYT.cloneWithMainFields()
+                previousEntityData.id = existingYT.id
 
                 // Update values in the persisted entity:
-                persistedYT.sukunimi = hankeYht.sukunimi
-                persistedYT.etunimi = hankeYht.etunimi
-                persistedYT.email = hankeYht.email
-                persistedYT.puhelinnumero = hankeYht.puhelinnumero
-                persistedYT.organisaatioId = hankeYht.organisaatioId
-                hankeYht.organisaatioNimi?.let { persistedYT.organisaatioNimi = hankeYht.organisaatioNimi }
-                hankeYht.osasto?.let { persistedYT.osasto = hankeYht.osasto }
+                existingYT.sukunimi = hankeYht.sukunimi
+                existingYT.etunimi = hankeYht.etunimi
+                existingYT.email = hankeYht.email
+                existingYT.puhelinnumero = hankeYht.puhelinnumero
+                existingYT.organisaatioId = hankeYht.organisaatioId
+                hankeYht.organisaatioNimi?.let { existingYT.organisaatioNimi = hankeYht.organisaatioNimi }
+                hankeYht.osasto?.let { existingYT.osasto = hankeYht.osasto }
 
                 // (Not changing createdBy/At fields)
-                persistedYT.modifiedByUserId = userid
-                persistedYT.modifiedAt = getCurrentTimeUTCAsLocalTime()
+                existingYT.modifiedByUserId = userid
+                existingYT.modifiedAt = getCurrentTimeUTCAsLocalTime()
                 // (Not touching the id or hanke fields)
 
                 loggingEntryHolder.addLogEntriesForEvent(
-                    Action.UPDATE, false,
-                    "update hanke yhteystieto",
-                    previousEntityData, persistedYT, userid)
+                    Action.UPDATE, false, "update hanke yhteystieto", previousEntityData, existingYT, userid)
             }
 
             // No need to add the existing Yhteystieto entity to the hanke's list; it is already in it.
@@ -737,7 +726,7 @@ open class HankeServiceImpl(
         return loggingEntryHolder
     }
 
-    private fun postProcessAndSaveLogging(loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder) {
+    private fun postProcessAndSaveLoggingForRestrictions(loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder) {
         loggingEntryHolderForRestrictedActions.applyIPaddresses()
         loggingEntryHolderForRestrictedActions.saveLogEntries(personalDataAuditLogRepository, personalDataChangeLogRepository)
         val idList = StringBuilder()

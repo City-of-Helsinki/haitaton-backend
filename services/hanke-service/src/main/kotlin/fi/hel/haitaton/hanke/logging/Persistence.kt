@@ -31,6 +31,7 @@ class AuditLogEntry (
     var yhteystietoId: Int? = 0,
     @Enumerated(EnumType.STRING)
     var action: Action? = null,
+    // null is to be considered equal to false
     var failed: Boolean? = null,
     var description: String? = null
 ) {
@@ -46,6 +47,7 @@ class ChangeLogEntry (
     var yhteystietoId: Int? = 0,
     @Enumerated(EnumType.STRING)
     var action: Action? = null,
+    // null is to be considered equal to false
     var failed: Boolean? = null,
     var oldData: String? = null,
     var newData: String? = null

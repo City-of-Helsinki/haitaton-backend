@@ -8,9 +8,13 @@ databaseChangeLog:
             schemaName: personaldatalogs
             tableName: auditlog
             columns:
-              - column: { name: failed, type: boolean }
+              # NOTE: default value purposefully left unset, but setting possibly existing rows to false
+              # (as existing entries would all get false if done after this change).
+              - column: { name: failed, type: boolean, valueBoolean: false }
         - addColumn:
             schemaName: personaldatalogs
             tableName: changelog
             columns:
-              - column: { name: failed, type: boolean }
+              # NOTE: default value purposefully left unset, but setting possibly existing rows to false
+              # (as existing entries would all get false if done after this change).
+              - column: { name: failed, type: boolean, valueBoolean: false }

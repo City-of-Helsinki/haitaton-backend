@@ -1,13 +1,9 @@
-package fi.hel.haitaton.hanke
+package fi.hel.haitaton.hanke.logging
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
-import fi.hel.haitaton.hanke.logging.Action
-import fi.hel.haitaton.hanke.logging.AuditLogEntry
-import fi.hel.haitaton.hanke.logging.ChangeLogEntry
-import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
-import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
+import fi.hel.haitaton.hanke.HaitatonPostgreSQLContainer
 import java.time.LocalDateTime
 import javax.persistence.EntityManager
 import org.junit.jupiter.api.Test

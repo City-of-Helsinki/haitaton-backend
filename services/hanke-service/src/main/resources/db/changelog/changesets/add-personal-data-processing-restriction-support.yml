@@ -8,6 +8,7 @@ databaseChangeLog:
             tableName: hankeyhteystieto
             columns:
               # If true, processing this particular personal data is forbidden (no changes, no delete)
-              - column: { name: datalocked, type: boolean }
+              # null value is allowed, it is considered the same as false.
+              - column: { name: datalocked, type: boolean, defaultValueBoolean: false, valueBoolean: false }
               # For recording any info about the processing restriction, e.g. date, reason, contact person for more info, etc.
               - column: { name: datalockinfo, type: varchar(1000) }
