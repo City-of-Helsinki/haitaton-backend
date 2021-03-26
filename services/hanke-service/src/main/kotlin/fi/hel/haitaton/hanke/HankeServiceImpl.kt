@@ -579,6 +579,8 @@ open class HankeServiceImpl(
             // Is the incoming Yhteystieto new (does not have id, create new) or old (has id, update existing)?
             if (hankeYht.id == null) {
                 // New Yhteystieto
+                // Note: don't need to (and can not) create audit-log entries during this create processing;
+                // they are done later, after the whole hanke has been saved and new yhteystietos got their db-ids.
                 processCreateYhteystieto(hankeYht, validYhteystieto, contactType, userid, hankeEntity)
             } else {
                 // Should be an existing Yhteystieto
