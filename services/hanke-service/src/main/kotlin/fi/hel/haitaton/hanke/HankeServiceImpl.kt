@@ -112,6 +112,8 @@ open class HankeServiceImpl(
      * @return a new Hanke instance with the added and possibly modified values.
      */
     override fun createHanke(hanke: Hanke): Hanke {
+        // TODO: Only create that hanke-tunnus if a specific set of fields are non-empty/set.
+
         val userid = SecurityContextHolder.getContext().authentication.name
 
         val entity = HankeEntity()
