@@ -14,7 +14,7 @@ data class Luokittelutulos(
 // one type's one arvo rule for minumum value
 data class RajaArvo(val luokitteluType: LuokitteluType, val arvo: Int, val minimumValue: Int, val explanation: String)
 
-// TODO: these values must be digged from database eventually
+// TODO: these values must be digged from database eventually, now they are hardcoded
 class LuokitteluRajaArvot {
 
     val haittaAikaRajaArvot = listOf(
