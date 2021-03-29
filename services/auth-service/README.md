@@ -29,7 +29,7 @@ In that case one has to manually delete `auth-db`'s PostgreSQL data directory (`
 
 ### Making changes to the realm
 
-**NOTICE! DO NOT INCLUDE ANY _PLAIN TEXT_ SENSITIVE INFORMATION IN EXPORTS - E.G. EMAIL SERVER AUTHENTICATION INFORMATION. AND DO NOT IMPORT JSON WITH USERS INTO ARO ENVIRONMENTS.**
+**NOTICE! DO NOT INCLUDE ANY SENSITIVE INFORMATION IN EXPORTS - E.G. EMAIL SERVER AUTHENTICATION INFORMATION. DEV/TEST USERS ARE OKAY BUT DO NOT IMPORT JSON WITH USERS INTO ARO ENVIRONMENTS - CRETE USERS THERE MANUALLY.**
 
 In order to make changes to the realm itself or the users in it one has to do following:
 * make sure that `auth-service` is running
