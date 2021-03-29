@@ -38,7 +38,7 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
     }
 
     internal fun haittaAjanKesto(hanke: Hanke, rajaArvot: LuokitteluRajaArvot): Luokittelutulos {
-        val kesto = hanke.haittaAjanKesto ?: throw IllegalArgumentException("Hanke has no start and/or end periods")
+        val kesto = hanke.haittaAjanKestoDays ?: throw IllegalArgumentException("Hanke has no start and/or end periods")
         val rajaArvo = rajaArvot.haittaAikaRajaArvot.first { it.minimumValue <= kesto }
         return Luokittelutulos(LuokitteluType.HAITTA_AJAN_KESTO, rajaArvo.arvo, rajaArvo.explanation)
     }

@@ -113,7 +113,6 @@ open class HankeServiceImpl(
      */
     override fun createHanke(hanke: Hanke): Hanke {
         // TODO: Only create that hanke-tunnus if a specific set of fields are non-empty/set.
-        //   For now, hanke-tunnus is created as soon as this function is called, even for fully empty data.
 
         val userid = SecurityContextHolder.getContext().authentication.name
 
