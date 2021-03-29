@@ -32,7 +32,8 @@ class HankeController(
 
     /**
      * Get one hanke with hankeTunnus.
-     *  TODO: validation for input parameter
+     *
+     * @return Hanke if found or 404 Not Found error if not found
      */
     @GetMapping("/{hankeTunnus}")
     fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String?): ResponseEntity<Any> {

@@ -6,7 +6,6 @@ import fi.hel.haitaton.hanke.TZ_UTC
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import java.time.LocalDate
-import java.time.ZonedDateTime
 
 internal class HankeTest {
 
@@ -16,7 +15,7 @@ internal class HankeTest {
         val hanke = Hanke(1, "HAI21-1")
         hanke.haittaAlkuPvm = startDate.atStartOfDay(TZ_UTC)
         hanke.haittaLoppuPvm = endDate.atStartOfDay(TZ_UTC)
-        val haittaAjanKesto = hanke.haittaAjanKesto
+        val haittaAjanKesto = hanke.haittaAjanKestoDays
         assertThat(haittaAjanKesto!!).isEqualTo(expectedNumberOfDays)
     }
 }

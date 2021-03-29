@@ -100,9 +100,7 @@ data class Hanke(
     /**
      * Number of days between haittaAlkuPvm and haittaLoppuPvm (incl. both days)
      */
-    // TODO This might need to be changed in the future to take into consideration that
-    //  months are not 30 days but calendar months
-    val haittaAjanKesto: Long?
+    val haittaAjanKestoDays: Long?
         @JsonIgnore
         get() = if (haittaAlkuPvm != null && haittaLoppuPvm != null) {
             ChronoUnit.DAYS.between(haittaAlkuPvm!!, haittaLoppuPvm!!) + 1

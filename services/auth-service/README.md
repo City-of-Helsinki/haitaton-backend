@@ -45,7 +45,8 @@ In order to make changes to the realm itself or the users in it one has to do fo
 * PS. if export commands create some new directories under `realms` please add them to `.gitignore` - they are not needed but in some cases JBoss (Keycloak) may create them
 
 
-TODO: desdribe how this image should be used in OpenShift environment (pass all the environment variables needed).
+## Configuring Keycloak
+See https://helsinkisolutionoffice.atlassian.net/wiki/spaces/HAI/pages/1515749379/Keycloak-konfigurointiohje
 
 ## Customizing Keycloak
 There is `themes/haitaton` directory containing Keycloak theme configurations. This directory is included in builded Docker image when using regular Dockerfile (as is done with docker-compose).
