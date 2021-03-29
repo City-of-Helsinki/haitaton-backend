@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import org.springframework.beans.factory.annotation.Autowired
 
+//TODO: in the future this would contain and return "Viereiset hankkeet" (nearby critical other sites) too
 open class TormaystarkasteluLaskentaServiceImpl(
     @Autowired private val hankeService: HankeService,
     @Autowired private val luokitteluService: TormaystarkasteluLuokitteluService,
@@ -30,7 +31,7 @@ open class TormaystarkasteluLaskentaServiceImpl(
             hanke.geometriat = geometriatService.loadGeometriat(hanke)
 
             // get rajaArvot for luokittelu
-            // TODO some interface which can later be replaced with database calling.. this is now too hard coded?
+            // TODO some interface which can later be replaced with database calling..
             val rajaArvot = LuokitteluRajaArvot()
 
             // call service to get luokittelu with rajaArvot and hankeGeometries
@@ -55,6 +56,7 @@ open class TormaystarkasteluLaskentaServiceImpl(
 
     /**
      * Existing tormaystarkasteluTulos can be called with this
+     *
      */
     override fun getTormaystarkastelu(hankeTunnus: String): TormaystarkasteluTulos? {
 
@@ -94,7 +96,7 @@ open class TormaystarkasteluLaskentaServiceImpl(
         val laskentatulos = TormaystarkasteluTulos(hanke.hankeTunnus!!)
         laskentatulos.hankeId = hanke.id!!
         laskentatulos.hankeGeometriatId = hanke.geometriat!!.id!!
-        // TODO: in the future this would contain "Viereiset hankkeet" too
+
 
         return laskentatulos
     }

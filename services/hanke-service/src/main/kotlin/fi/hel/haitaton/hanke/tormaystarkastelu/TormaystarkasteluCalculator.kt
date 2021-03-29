@@ -105,7 +105,7 @@ object TormaystarkasteluCalculator {
             tormaystarkasteluTulos.pyorailyIndeksi = 1.0f
         } else {
             tormaystarkasteluTulos.pyorailyIndeksi =
-                calculationRule.tulos * calculationRule.painotus // TODO: 1 decimal precision?
+                calculationRule.tulos * calculationRule.painotus
         }
     }
 
@@ -121,12 +121,12 @@ object TormaystarkasteluCalculator {
         var bussiIndeksi = 1.0f
         if (calculationRuleBussit != null) {
             bussiIndeksi = calculationRuleBussit.tulos * calculationRuleBussit.painotus
-        } // TODO: 1 decimal precision?
+        }
 
         var raitiovaunuIndeksi = 1.0f
         if (calculationRuleRaitio != null) {
             raitiovaunuIndeksi = calculationRuleRaitio.tulos * calculationRuleRaitio.painotus
-        } // TODO: 1 decimal precision?
+        }
 
         // bigger of these matter so we will set that one
         tormaystarkasteluTulos.joukkoliikenneIndeksi = maxOf(bussiIndeksi, raitiovaunuIndeksi)
