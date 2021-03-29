@@ -24,41 +24,6 @@ open class HankeServiceImpl(
     private val personalDataChangeLogRepository: PersonalDataChangeLogRepository
 ) : HankeService {
 
-
-    // TODO:
-    /*
-       - a structure to return a list of references to Hanke and their savetypes (i.e. can contain up to 3 saves for the same hanke)
-       -- there could be all 3 simultaneously, and any combination ...
-       -- UI should show about autosave if (autosave exists and is newer than draft/submit and is different from draft/submit);
-           it should show either a draft or submit, whichever is newest (if there is a draft, it should be newer than submit, since submit deletes drafts and autosaves)
-       - a method to query all hankkeet for a given user..
-            findAllHankeForUser(userId: String): SpecialListOf ...
-       - a method to query the current savestates for given hanke
-           getHankeSaves(hankeId: Long): SpecialListOf ...
-            getHankeSaves(hankeTunnus: String): SpecialListOf ...
-
-       - createHanke can do either autosave or draft, not submit (not enough data for that)
-       - updateHanke can do any save mode.
-
-       - change loadHanke(tunnus) to return latest non-autosave (either draft or submit)
-       - loadHanke(tunnus, savetype)
-       - loadHanke(id, savetype)
-     */
-
-    override fun loadAllHanke(hankeSearch: HankeSearch?): List<Hanke> {
-
-        // TODO: do we limit result for user own hanke?
-
-        return if (hankeSearch == null || hankeSearch.isEmpty()) {
-            loadAllHanke()
-        } else if (hankeSearch.saveType != null) {
-            loadAllHankeWithSavetype(hankeSearch.saveType)
-        } else {
-            //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
-            loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
-        }
-    }
-
     // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO LOAD A HANKE: @PostAuthorize("returnObject.createdBy == authentication.name")
     override fun loadHanke(hankeTunnus: String): Hanke? {
         // TODO: Find out all savetype matches and return the more recent draft vs. submit.
@@ -73,6 +38,21 @@ open class HankeServiceImpl(
         return createHankeDomainObjectFromEntity(entity)
     }
 
+    override fun loadAllHanke(hankeSearch: HankeSearch?): List<Hanke> {
+
+        // TODO: do we limit result by user (e.g. own hanke)?
+        // If so, should also apply to the internal loadAll-function variants.
+
+        return if (hankeSearch == null || hankeSearch.isEmpty()) {
+            loadAllHanke()
+        } else if (hankeSearch.saveType != null) {
+            loadAllHankeWithSavetype(hankeSearch.saveType)
+        } else {
+            //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
+            loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
+        }
+    }
+
 
     /**
      * Returns all the Hanke items from database for now
@@ -81,7 +61,6 @@ open class HankeServiceImpl(
      * TODO user information to limit what all Hanke items we get?
      */
     internal fun loadAllHanke(): List<Hanke> {
-
         return hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
     }
 
@@ -126,7 +105,7 @@ open class HankeServiceImpl(
         // NOTE: liikennehaittaindeksi and tormaystarkastelutulos are NOT
         //  copied from incoming data. Use setTormaystarkasteluTulos() for that.
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
-        // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
+        // Special fields; handled "manually"..
         entity.version = 0
         entity.createdByUserId = userid
         entity.createdAt = getCurrentTimeUTCAsLocalTime()
@@ -173,7 +152,7 @@ open class HankeServiceImpl(
         // NOTE: liikennehaittaindeksi and tormaystarkastelutulos are NOT
         //  copied from incoming data. Use setTormaystarkasteluTulos() for that.
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
-        // Special fields; handled "manually".. TODO: see if some framework could handle (some of) these for us automatically
+        // Special fields; handled "manually"..
         entity.version = entity.version?.inc() ?: 1
         // (Not changing createdBy/At fields.)
         entity.modifiedByUserId = userid
@@ -236,7 +215,7 @@ open class HankeServiceImpl(
         hankeRepository.save(entity)
     }
 
-    // TODO: functions to remove, invalidate Hanke's tormaystarkastelu-data
+    // TODO: functions to remove and invalidate Hanke's tormaystarkastelu-data
     //   At least invalidation can be done purely working on the particular
     //   tormaystarkasteluTulosEntity and -Repository.
     //   See TormaystarkasteluRepositoryITests for a way to remove.
@@ -549,11 +528,11 @@ open class HankeServiceImpl(
         //     For clarity, yhteystieto-entries should have separate action for removal (but then they should also
         //     have separate action for addition, i.e. own API endpoint in controller).
         //     So, consider the code below as "for now".
-        // If there is anything left in the existingYTs map, they have been removed in the incoming data,
-        // so remove them from the entity's list and make the back-reference null (and thus delete from the database).
         // TODO: Yhteystietos should not be in a list, but a "bag", or ensure it is e.g. linkedlist instead of arraylist (or similars).
         //    The order of Yhteystietos does not matter(?), and removing things from e.g. array list
         //    gets inefficient. Since there are so few entries, this crude solution works, for now.
+        // If there is anything left in the existingYTs map, they have been removed in the incoming data,
+        // so remove them from the entity's list and make the back-reference null (and thus delete from the database).
         for (hankeYht in existingYTs.values) {
             entity.removeYhteystieto(hankeYht)
             loggingEntryHolder.addLogEntriesForEvent(
@@ -573,16 +552,13 @@ open class HankeServiceImpl(
         for (hankeYht in listOfHankeYhteystiedot) {
             val someFieldsSet = hankeYht.isAnyFieldSet()
             var validYhteystieto = false
+            // TODO: yhteystietovalidation is as of now a mess, due to multiple reasons.
+            //   Just rethink it all everywhere before trying to implement something..
             // The UI has currently bigger problems implementing it so that Yhteystieto entries that haven't even been touched
             //   would not be sent to backend as a group of ""-fields, so the condition here is to make
             //   such fully-empty entry considered as non-existent (i.e. skip it).
-            //   Also, for now, if anything is given, it is checked that all 4 mandatory fields are given, or we log an error and skip it.
-            // Note, validator should have enforced that at least the four main fields are all set (or all of them are empty).
-            // TODO: Currently validator does allow through an entry with four mandatory fields empty, but organisation field(s) non-empty!
             // If any field is given (not empty and not only whitespace)...
             if (someFieldsSet) {
-                // TODO: Logic has been changed to allow saving the fields separately (or added one at a time)
-                //   Seems the process needs some more thinking through to ensure valid final situation.
                 validYhteystieto = hankeYht.isAnyFieldSet()
                 // Check if at least the 4 mandatory fields are given
                 //validYhteystieto = hankeYht.isValid()
@@ -690,10 +666,9 @@ open class HankeServiceImpl(
         } else {
             // Trying to update an Yhteystieto with one or more empty mandatory data fields.
             // If we do not change anything, the response will send back to previous stored values.
-            // TODO: Check if the above operation is ok?
             // However, checking one special case; all fields being empty. This corresponds to initial state,
             // where the corresponding Yhteystieto is not set. Therefore, for now, considering it as "please delete".
-            // (Handling it by reversed logic using the existingYTs map, see above.)
+            // (Handling it by reversed logic using the existingYTs map, see the comment above in the do-update -case.)
             if (someFieldsSet) {
                 logger.error {
                     "Got a new Yhteystieto object with one or more empty mandatory fields, skipping it. HankeId ${hankeEntity.id}"
@@ -715,9 +690,8 @@ open class HankeServiceImpl(
         return true
     }
 
-    // TODO: this sort of should be in some more common place (useful
-    //  for e.g. other serviceimpl-classes), but currently there is no good
-    //  place..
+    // TODO: this sort of should be in some more common place (useful for e.g.
+    //  other serviceimpl-classes), but currently there is no good  place..
     private fun copyTormaystarkasteluTulosToEntity(ttt: TormaystarkasteluTulos):
             TormaystarkasteluTulosEntity {
         val tttEntity = TormaystarkasteluTulosEntity()
