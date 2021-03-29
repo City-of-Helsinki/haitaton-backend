@@ -47,8 +47,7 @@ open class HankeServiceImpl(
 
     override fun loadAllHanke(hankeSearch: HankeSearch?): List<Hanke> {
 
-        // TODO: user token  from front?
-        // TODO: do we limit result for user own hanke?
+        // TODO: do we limit result for user own hanke at somepoint?
 
         return if (hankeSearch == null || hankeSearch.isEmpty()) {
             loadAllHanke()
