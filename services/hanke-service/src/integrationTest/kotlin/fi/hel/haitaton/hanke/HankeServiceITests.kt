@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.logging.ChangeLogEntry
 import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
 import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -58,6 +59,8 @@ class HankeServiceITests {
     private lateinit var personalDataAuditLogRepository: PersonalDataAuditLogRepository
     @Autowired
     private lateinit var personalDataChangeLogRepository: PersonalDataChangeLogRepository
+    @Autowired
+    private lateinit var hankeRepository: HankeRepository
 
 
     // Some tests also use and check loadHanke()'s return value because at one time the update action
@@ -784,6 +787,10 @@ class HankeServiceITests {
         assertThat(changeLogEntries2[0].action).isEqualTo(Action.CREATE)
         assertThat(changeLogEntries2[0].oldData).isNull()
         assertThat(changeLogEntries2[0].newData).contains("suku2")
+        assertThat(auditLogEntries1[0].failed).isFalse
+        assertThat(auditLogEntries2[0].failed).isFalse
+        assertThat(changeLogEntries1[0].failed).isFalse
+        assertThat(changeLogEntries2[0].failed).isFalse
 
         // Update the other yhteystieto (one update in both logs, both datas exist and with correct values)
         // Change a value:
@@ -821,6 +828,8 @@ class HankeServiceITests {
         assertThat(changeLogEntries2[1].action).isEqualTo(Action.UPDATE)
         assertThat(changeLogEntries2[1].oldData).contains("suku2")
         assertThat(changeLogEntries2[1].newData).contains("Som Et Hing")
+        assertThat(auditLogEntries2[1].failed).isFalse
+        assertThat(changeLogEntries2[1].failed).isFalse
 
         // Delete the other yhteystieto (one update in both logs, null new data)
         returnedHanke2.omistajat[1].apply {
@@ -858,6 +867,118 @@ class HankeServiceITests {
         assertThat(changeLogEntries2[2].action).isEqualTo(Action.DELETE)
         assertThat(changeLogEntries2[2].oldData).contains("Som Et Hing")
         assertThat(changeLogEntries2[2].newData).isNull()
+        assertThat(auditLogEntries2[2].failed).isFalse
+        assertThat(changeLogEntries2[2].failed).isFalse
+    }
+
+    @Test
+    fun `test personal data processing restriction`() {
+        // Setup Hanke with two Yhteystietos in different groups (will only manipulate the non-owner):
+        val hanke: Hanke = getATestHanke("yksi", 1)
+        val yt1 = getATestYhteystieto(1)
+        val yt2 = getATestYhteystieto(2)
+        hanke.omistajat = arrayListOf(yt1)
+        hanke.arvioijat = arrayListOf(yt2)
+        // Call create, get the return object:
+        val returnedHanke = hankeService.createHanke(hanke)
+        // Check logs...
+        // Both logs must have 2 entries (two yhteystietos were created):
+        assertThat(personalDataAuditLogRepository.count()).isEqualTo(2)
+        assertThat(personalDataChangeLogRepository.count()).isEqualTo(2)
+
+        // Get the non-owner yhteystieto,
+        // and set the processing restriction (i.e. locked) -flag (must be done via entities):
+        // (Fetching the yhteystieto is kind of clumsy as we don't have separate YhteystietoRepository.)
+        val hankeId = returnedHanke.id
+        var hankeEntity = hankeRepository.findById(hankeId!!).get()
+        var yhteystietos = hankeEntity.listOfHankeYhteystieto
+        var yhteystietoEntity = yhteystietos.filter { it.contactType == ContactType.ARVIOIJA }[0]
+        val ytid = yhteystietoEntity.id
+        yhteystietoEntity.dataLocked = true
+        // (Not setting the info field, or adding audit log entry, since the idea
+        // is to only test that the locking actually prevents processing.)
+        // Saving the hanke will save the yhteystieto in it, too:
+        hankeRepository.save(hankeEntity)
+
+        // Try to update the yhteystieto; should fail and add audit and change log entries:
+        val hankeWithLockedYT = hankeService.loadHanke(returnedHanke.hankeTunnus!!)
+        hankeWithLockedYT!!.arvioijat[0].etunimi = "Muhaha-Evil-Change"
+
+        assertThatExceptionOfType(HankeYhteystietoProcessingRestrictedException::class.java).isThrownBy {
+            hankeService.updateHanke(hankeWithLockedYT)
+        }
+        // Check logs
+        // The initial create has created two entries to each log, and now
+        // the failed update should have added one more to each log.
+        assertThat(personalDataAuditLogRepository.count()).isEqualTo(3)
+        assertThat(personalDataChangeLogRepository.count()).isEqualTo(3)
+        val sampleauditlog = Example.of(AuditLogEntry(yhteystietoId = ytid))
+        val samplechangelog = Example.of(ChangeLogEntry(yhteystietoId = ytid))
+        var auditLogEntries = personalDataAuditLogRepository.findAll(sampleauditlog)
+        var changeLogEntries = personalDataChangeLogRepository.findAll(samplechangelog)
+        // For the second yhteystieto, 1 entry for the earlier creation, another for this failed update:
+        assertThat(auditLogEntries.size).isEqualTo(2)
+        assertThat(changeLogEntries.size).isEqualTo(2)
+        assertThat(auditLogEntries[1].action).isEqualTo(Action.UPDATE)
+        assertThat(auditLogEntries[1].userId).isEqualTo(USER_NAME)
+        assertThat(changeLogEntries[1].action).isEqualTo(Action.UPDATE)
+        assertThat(changeLogEntries[1].oldData).contains("suku2")
+        assertThat(changeLogEntries[1].newData).contains("Muhaha-Evil-Change")
+        assertThat(auditLogEntries[1].failed).isTrue
+        assertThat(changeLogEntries[1].failed).isTrue
+
+        // Try to delete the yhteystieto; should fail and add only audit log entry (nothing to change log):
+        hankeWithLockedYT.arvioijat[0].apply {
+            etunimi = ""
+            sukunimi = ""
+            puhelinnumero = ""
+            email = ""
+            organisaatioNimi = ""
+            osasto = ""
+        }
+        assertThatExceptionOfType(HankeYhteystietoProcessingRestrictedException::class.java).isThrownBy {
+            hankeService.updateHanke(hankeWithLockedYT)
+        }
+        // Check logs (should have one more entry in the audit log)
+        assertThat(personalDataAuditLogRepository.count()).isEqualTo(4)
+        assertThat(personalDataChangeLogRepository.count()).isEqualTo(3)
+        auditLogEntries = personalDataAuditLogRepository.findAll(sampleauditlog)
+        changeLogEntries = personalDataChangeLogRepository.findAll(samplechangelog)
+        // For the second yhteystieto, 1 more audit log entry for this failed deletion:
+        assertThat(auditLogEntries.size).isEqualTo(3)
+        assertThat(changeLogEntries.size).isEqualTo(2)
+        assertThat(auditLogEntries[2].action).isEqualTo(Action.DELETE)
+        assertThat(auditLogEntries[2].userId).isEqualTo(USER_NAME)
+        assertThat(auditLogEntries[2].failed).isTrue
+
+        // Check that both yhteystietos still exist and the values have not gotten changed:
+        val returnedHankeAfterBlockedActions = hankeService.loadHanke(returnedHanke.hankeTunnus!!)
+        val arvioijat = returnedHankeAfterBlockedActions!!.arvioijat
+        assertThat(arvioijat).hasSize(1)
+        assertThat(arvioijat[0].etunimi).isEqualTo("etu2")
+
+        // Unset the processing restriction flag:
+        hankeEntity = hankeRepository.findById(hankeId).get()
+        yhteystietos = hankeEntity.listOfHankeYhteystieto
+        yhteystietoEntity = yhteystietos.filter { it.contactType == ContactType.ARVIOIJA }[0]
+        yhteystietoEntity.dataLocked = false
+        hankeRepository.save(hankeEntity)
+
+        // Updating the yhteystieto should now work:
+        val hankeWithUnlockedYT = hankeService.loadHanke(returnedHanke.hankeTunnus!!)
+        hankeWithUnlockedYT!!.arvioijat[0].etunimi = "Hopefully-Not-Evil-Change"
+        val finalHanke = hankeService.updateHanke(hankeWithUnlockedYT)
+
+        // Check that the change went through:
+        assertThat(finalHanke.arvioijat[0].etunimi).isEqualTo("Hopefully-Not-Evil-Change")
+        // Check logs (should have one more entry in both logs)
+        assertThat(personalDataAuditLogRepository.count()).isEqualTo(5)
+        assertThat(personalDataChangeLogRepository.count()).isEqualTo(4)
+        auditLogEntries = personalDataAuditLogRepository.findAll(sampleauditlog)
+        changeLogEntries = personalDataChangeLogRepository.findAll(samplechangelog)
+        // For the second yhteystieto, 1 more entry in both logs:
+        assertThat(auditLogEntries.size).isEqualTo(4)
+        assertThat(changeLogEntries.size).isEqualTo(3)
     }
 
 
