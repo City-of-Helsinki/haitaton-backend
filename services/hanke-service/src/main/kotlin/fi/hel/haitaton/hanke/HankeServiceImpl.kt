@@ -742,16 +742,6 @@ open class HankeServiceImpl(
         return loggingEntryHolder
     }
 
-    private fun postProcessAndSaveLoggingForRestrictions(loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder) {
-        loggingEntryHolderForRestrictedActions.applyIPaddresses()
-        loggingEntryHolderForRestrictedActions.saveLogEntries(personalDataAuditLogRepository, personalDataChangeLogRepository)
-        val idList = StringBuilder()
-        loggingEntryHolderForRestrictedActions.auditLogEntries.forEach { idList.append(it.id).append(", ") }
-        if (idList.endsWith(", "))
-            idList.setLength(idList.length-2)
-        throw HankeYhteystietoProcessingRestrictedException("Can not modify/delete yhteystieto which has data processing restricted (id: $idList)")
-    }
-
     /**
      * Handles post-processing of logging entries about restricted actions.
      * Applies request's IP to all given logging entries, saves them, and creates
