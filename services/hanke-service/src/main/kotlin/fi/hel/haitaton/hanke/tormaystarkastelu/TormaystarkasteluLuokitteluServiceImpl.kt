@@ -367,7 +367,7 @@ class TormaystarkasteluLuokitteluServiceImpl(private val tormaystarkasteluDao: T
 
         // if rush_hours 0-4 -> 2
         val arvoRiviSmall = getBussiRajaArvoWithClassification(rajaArvot, 2)
-        if (matchesBusLineIsAlmostTrunkLine(bussesTormaystulos) || countOfRushHourBuses >= arvoRiviSmall.minimumValue) {
+        if (countOfRushHourBuses >= arvoRiviSmall.minimumValue) {
             return Luokittelutulos(
                 LuokitteluType.BUSSILIIKENNE,
                 arvoRiviSmall.arvo,
