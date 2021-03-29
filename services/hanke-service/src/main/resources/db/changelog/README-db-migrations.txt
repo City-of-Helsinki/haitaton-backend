@@ -8,19 +8,12 @@ The liquibase auto-running can be disabled, and quite a few other things..
     https://www.baeldung.com/liquibase-refactor-schema-of-java-app
 
 
-
 DOCUMENTATION
 
     https://docs.liquibase.com/concepts/basic/home.html
 
 BEST PRACTICES:
 
-    TODO: list here a combination of the sources and what is chosen by us..
-
-
+    Nothing was specifically chosen, so for examples:
     https://www.liquibase.org/get-started/best-practices
     https://reflectoring.io/database-migration-spring-boot-liquibase/
-
-
-
-

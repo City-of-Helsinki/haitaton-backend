@@ -8,7 +8,7 @@ databaseChangeLog:
             tableName: hanke
             columns:
               - column: { name: liikennehaittaindeksi, type: float }
-              - column: { name: liikennehaittaindeksityyppi, type: varchar(30) }
+              - column: { name: liikennehaittaindeksityyppi, type: varchar(30) } # enum
 
   - changeSet:
       id: add-tormaystarkastelutulos-table
@@ -21,10 +21,10 @@ databaseChangeLog:
               - column: { name: id, type: int, autoIncrement: true, constraints: { primaryKey: true, nullable: false } }
               - column: { name: hankeid, type: int, constraints: { nullable: false, foreignKeyName: fk_hanke_tormaystarkastelutulos, references: hanke(id) } }
               - column: { name: liikennehaitta, type: float }
-              - column: { name: liikennehaittatyyppi, type: varchar(30) }
+              - column: { name: liikennehaittatyyppi, type: varchar(30) } # enum
               - column: { name: perus, type: float }
               - column: { name: pyoraily, type: float }
               - column: { name: joukkoliikenne, type: float }
-              - column: { name: tila, type: varchar(20) }
+              - column: { name: tila, type: varchar(20) } # enum
               - column: { name: tilachangedat, type: timestamp }
               - column: { name: createdat, type: timestamp }

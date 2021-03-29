@@ -15,14 +15,14 @@ databaseChangeLog:
                   constraints:
                     primaryKey: true
                     nullable: false
-              - column: { name: savetype, type: varchar(10) }
+              - column: { name: savetype, type: varchar(10) } # enum
               - column: { name: hanketunnus, type: varchar(15) }
               - column: { name: nimi, type: varchar(100) }
               - column: { name: kuvaus, type: clob }
               - column: { name: alkupvm, type: date }
               - column: { name: loppupvm, type: date }
-              - column: { name: vaihe, type: varchar(30) }
-              - column: { name: suunnitteluvaihe, type: varchar(40) }
+              - column: { name: vaihe, type: varchar(30) } # enum
+              - column: { name: suunnitteluvaihe, type: varchar(40) } # enum
               - column: { name: onykthanke, type: boolean }
               - column: { name: version, type: int }
               - column: { name: createdbyuserid, type: int } # Is pseudonymized personal info if access to rest of the data is restricted
