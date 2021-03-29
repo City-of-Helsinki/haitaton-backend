@@ -24,6 +24,7 @@ import java.time.temporal.ChronoUnit
 // Current way causes a lot of bloat in test methods, yet gives no real benefit.
 // The original thinking was that the constructor has the first page fields, which are
 // mandatory... but e.g. audit fields are internal stuff, should be outside of constructor.
+// The added constructors help a bit with the above, but have limited options.
 data class Hanke(
 
         var id: Int?, // Can be used for e.g. autosaving before hankeTunnus has been given (optional future stuff)
@@ -100,9 +101,7 @@ data class Hanke(
     /**
      * Number of days between haittaAlkuPvm and haittaLoppuPvm (incl. both days)
      */
-    // TODO This might need to be changed in the future to take into consideration that
-    //  months are not 30 days but calendar months
-    val haittaAjanKesto: Long?
+    val haittaAjanKestoDays: Long?
         @JsonIgnore
         get() = if (haittaAlkuPvm != null && haittaLoppuPvm != null) {
             ChronoUnit.DAYS.between(haittaAlkuPvm!!, haittaLoppuPvm!!) + 1
@@ -141,8 +140,6 @@ data class Hanke(
                 && !kuvaus.isNullOrBlank()
                 && (alkuPvm != null) && (loppuPvm != null)
                 && hasMandatoryVaiheValues()
-                // TODO: Not certain if this is required; remove/uncomment later once it gets decided
-                // && !tyomaaKatuosoite.isNullOrBlank()
                 && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
                 && tilat.onGeometrioita == true
                 && saveType == SaveType.SUBMIT

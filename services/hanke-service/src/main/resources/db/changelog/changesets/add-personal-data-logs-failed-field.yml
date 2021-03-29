@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-field-for-indicating-failed-action-to-personal-data-log-tables
+      comment: Add a new field to personal data log tables, for indicating when a the logged action failed (due to error or blocked action etc.)
+      author: Markku Hassinen
+      changes:
+        - addColumn:
+            schemaName: personaldatalogs
+            tableName: auditlog
+            columns:
+              # NOTE: default value purposefully left unset, but setting possibly existing rows to false
+              # (as existing entries would all get false if done after this change).
+              - column: { name: failed, type: boolean, valueBoolean: false }
+        - addColumn:
+            schemaName: personaldatalogs
+            tableName: changelog
+            columns:
+              # NOTE: default value purposefully left unset, but setting possibly existing rows to false
+              # (as existing entries would all get false if done after this change).
+              - column: { name: failed, type: boolean, valueBoolean: false }

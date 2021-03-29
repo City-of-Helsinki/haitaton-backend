@@ -43,6 +43,19 @@ class ControllerExceptionHandler {
         return HankeError.HAI1009
     }
 
+    @ExceptionHandler(HankeYhteystietoProcessingRestrictedException::class)
+    // Using 451 (since the restriction is typically due to legal reasons.
+    // However, in some cases 403 forbidden might be considered correct response, too.
+    @ResponseStatus(HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS)
+    fun hankeYhteystietoProcessingRestricted(ex: HankeYhteystietoProcessingRestrictedException): HankeError {
+        logger.warn {
+            ex.message
+        }
+        // TODO: the response body SHOULD include an explanation and link to server;
+        //  left as future exercise. See https://tools.ietf.org/html/rfc7725
+        return HankeError.HAI1029
+    }
+
     @ExceptionHandler(IllegalArgumentException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun illegalArgumentException(ex: IllegalArgumentException): HankeError {

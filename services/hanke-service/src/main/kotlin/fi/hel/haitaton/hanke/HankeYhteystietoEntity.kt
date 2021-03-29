@@ -34,6 +34,12 @@ class HankeYhteystietoEntity (
         @JsonView(ChangeLogView::class)
         var osasto: String? = null,
 
+        // Personal data processing restriction (or other needs to prevent changes)
+        @JsonView(NotInChangeLogView::class)
+        var dataLocked: Boolean? = false,
+        @JsonView(NotInChangeLogView::class)
+        var dataLockInfo: String? = null,
+
         // NOTE: createdByUserId must be non-null for valid data, but to allow creating instances with
         // no-arg constructor and programming convenience, this class allows it to be null (temporarily).
         @JsonView(NotInChangeLogView::class)

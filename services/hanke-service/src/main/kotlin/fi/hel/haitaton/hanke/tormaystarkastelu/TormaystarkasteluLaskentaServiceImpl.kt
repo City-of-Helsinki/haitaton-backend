@@ -30,7 +30,7 @@ open class TormaystarkasteluLaskentaServiceImpl(
             hanke.geometriat = geometriatService.loadGeometriat(hanke)
 
             // get rajaArvot for luokittelu
-            // TODO some interface which can later be replaced with database calling.. this is now too hard coded?
+            // TODO some interface which can later be replaced with database calling
             val rajaArvot = LuokitteluRajaArvot()
 
             // call service to get luokittelu with rajaArvot and hankeGeometries

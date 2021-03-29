@@ -58,7 +58,7 @@
             ></path>
         </svg>
 
-            <h1>Haitaton 2.0</h1>
+            <h1>Haitaton Beta</h1>
 
 
         </div>
