@@ -31,7 +31,7 @@ databaseChangeLog:
               # NOTE: not foreign key definition; keeping the connection loose on purpose
               - column: { name: yhteystietoid, type: int }
               # what action was made (create, update, delete) (no read actions are logged for now)
-              - column: { name: action, type: varchar(10) }
+              - column: { name: action, type: varchar(10) } # enum
               # description of action (e.g. as JSON string, or normal string, "changed field 'name'")
               - column: { name: description, type: varchar(250) }
         - createTable:
@@ -49,7 +49,7 @@ databaseChangeLog:
               # NOTE: not foreign key definition; keeping the connection loose on purpose
               - column: { name: yhteystietoid, type: int }
               # what action was made (create, update, delete) (no read actions are logged for now)
-              - column: { name: action, type: varchar(10) }
+              - column: { name: action, type: varchar(10) } # enum
               # old data (if applicable; null for create)
               - column: { name: olddata, type: clob }
               # new data (if applicable; null for delete or a failed but logged action)
