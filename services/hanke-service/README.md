@@ -20,7 +20,7 @@ However, that will only run the tests under "test"; manual build is needed for i
 
 Building the service with both unit and integration tests:
 ```
-$ ./gradlew :services:hanke-service:clean build integrationTest
+$ ./gradlew :services:hanke-service:clean :services:hanke-service:build :services:hanke-service:integrationTest
 ```
 Starting the application/services can be done afterwards with command line at haitaton-backend root directory:
 ```
