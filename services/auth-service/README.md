@@ -28,6 +28,9 @@ Notice that `KEYCLOAK_IMPORT` is ignored if there already exists `haitaton` real
 In that case one has to manually delete `auth-db`'s PostgreSQL data directory (`~/haitaton-auth-data`) and restart `auth-service`
 
 ### Making changes to the realm
+
+**NOTICE! DO NOT INCLUDE ANY _PLAIN TEXT_ SENSITIVE INFORMATION IN EXPORTS - E.G. EMAIL SERVER AUTHENTICATION INFORMATION. AND DO NOT IMPORT JSON WITH USERS INTO ARO ENVIRONMENTS.**
+
 In order to make changes to the realm itself or the users in it one has to do following:
 * make sure that `auth-service` is running
 * log in Keycloak at http://localhost:3030/auth/
