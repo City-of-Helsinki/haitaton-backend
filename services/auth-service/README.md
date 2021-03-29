@@ -28,6 +28,9 @@ Notice that `KEYCLOAK_IMPORT` is ignored if there already exists `haitaton` real
 In that case one has to manually delete `auth-db`'s PostgreSQL data directory (`~/haitaton-auth-data`) and restart `auth-service`
 
 ### Making changes to the realm
+
+**NOTICE! DO NOT INCLUDE ANY SENSITIVE INFORMATION IN EXPORTS - E.G. EMAIL SERVER AUTHENTICATION INFORMATION. DEV/TEST USERS ARE OKAY BUT DO NOT IMPORT JSON WITH USERS INTO ARO ENVIRONMENTS - CRETE USERS THERE MANUALLY.**
+
 In order to make changes to the realm itself or the users in it one has to do following:
 * make sure that `auth-service` is running
 * log in Keycloak at http://localhost:3030/auth/
@@ -45,7 +48,8 @@ In order to make changes to the realm itself or the users in it one has to do fo
 * PS. if export commands create some new directories under `realms` please add them to `.gitignore` - they are not needed but in some cases JBoss (Keycloak) may create them
 
 
-TODO: desdribe how this image should be used in OpenShift environment (pass all the environment variables needed).
+## Configuring Keycloak
+See https://helsinkisolutionoffice.atlassian.net/wiki/spaces/HAI/pages/1515749379/Keycloak-konfigurointiohje
 
 ## Customizing Keycloak
 There is `themes/haitaton` directory containing Keycloak theme configurations. This directory is included in builded Docker image when using regular Dockerfile (as is done with docker-compose).

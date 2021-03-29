@@ -68,7 +68,7 @@ dependencies {
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	implementation("de.grundid.opendatalab:geojson-jackson:$geoJsonJacksonVersion")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-	implementation("org.liquibase:liquibase-core")								// TODO: do we need org.springframework:spring-dao ?
+	implementation("org.liquibase:liquibase-core")
 
 	implementation("org.postgresql:postgresql:$postgreSQLVersion")
 	// H2 is used as embedded db for some simple low level Entity and Repository class testing
