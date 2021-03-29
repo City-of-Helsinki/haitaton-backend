@@ -168,6 +168,8 @@ class HankeRepositoryITests @Autowired constructor(
             1,
             "org1",
             "osasto1",
+            false,
+            null,
             "1",
             datetime,
             "11",
@@ -184,6 +186,8 @@ class HankeRepositoryITests @Autowired constructor(
             2,
             "org2",
             "osasto2",
+            false,
+            null,
             "2",
             datetime,
             "22",
@@ -200,6 +204,8 @@ class HankeRepositoryITests @Autowired constructor(
             3,
             "org3",
             "osasto3",
+            false,
+            null,
             "3",
             datetime,
             "33",
@@ -302,6 +308,8 @@ class HankeRepositoryITests @Autowired constructor(
             1,
             "org1",
             "osasto1",
+            false,
+            null,
             "1",
             datetime,
             "11",
@@ -318,6 +326,8 @@ class HankeRepositoryITests @Autowired constructor(
             2,
             "org2",
             "osasto2",
+            false,
+            null,
             "2",
             datetime,
             "22",
@@ -360,5 +370,4 @@ class HankeRepositoryITests @Autowired constructor(
         assertThat(loadedHanke2.listOfHankeYhteystieto[0].organisaatioId).isEqualTo(loadedHankeYhteystietoOrgId2)
     }
 
-    // TODO: more tests (when more functions appear)
 }

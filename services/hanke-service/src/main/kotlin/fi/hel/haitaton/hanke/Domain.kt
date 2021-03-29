@@ -29,6 +29,7 @@ enum class HankeError(
     HAI1014("Internal error while loading Hanke geometry"),
     HAI1015("Hanke geometry not found"),
     HAI1020("HankeYhteystieto not found"),
+    HAI1029("HankeYhteystieto personal data processing restricted"),
     HAI1030("Problem with classification of geometries"),
     HAI1031("Invalid state: Missing needed data");
 
@@ -56,3 +57,5 @@ class HankeYhteystietoNotFoundException(val hankeId: Int, ytId: Int) :
 class DatabaseStateException(message: String) : RuntimeException(message)
 
 class TormaystarkasteluAlreadyCalculatedException(message: String) : RuntimeException(message)
+
+class HankeYhteystietoProcessingRestrictedException(message: String) : RuntimeException(message)
