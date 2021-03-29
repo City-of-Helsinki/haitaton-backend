@@ -7,6 +7,9 @@ import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 import kotlin.collections.HashSet
 
+
+const val PERSONAL_DATA_LOGGING_MAX_IP_LENGTH = 40
+
 /**
  * Used to hold the maps of yhteystieto entities to logging entries during
  * processing, so that new yhteystietos' ids can be applied after they have
@@ -24,9 +27,6 @@ import kotlin.collections.HashSet
  *    wipe some of the older data away, because Reasons...)
  */
 class YhteystietoLoggingEntryHolder {
-
-    // To Constants?
-    val PERSONAL_DATA_LOGGING_MAX_IP_LENGTH = 40
 
     val auditLogEntries: MutableList<AuditLogEntry> = mutableListOf()
     val changeLogEntries: MutableList<ChangeLogEntry> = mutableListOf()
