@@ -2,12 +2,6 @@
 Haitaton 2.0 project API for "hanke" data.
 
 ## Requirements
-TODO: IntelliJ IDEA, with the initialized project dependencies, has things built-in or fetches almost
-everything automatically, except separate OpenJDK (for manual running). But would be nice to test
-and document what is needed for a fully manual command line build from these sources. (And needed for
-CI, too).
-
-TODO: document versions (once we settle with them).
 
 Using IDEA:
 * IntelliJ IDEA
@@ -19,10 +13,10 @@ Manual build
 * Gradle
 
 ## How to compile, build and run
-TODO: Seems IntelliJ IDEA will basically automatically fetch dependencies, compile, and build
+
+IntelliJ IDEA will basically automatically fetch dependencies, compile, and build
 most of this stuff with default settings as soon as it sees the relevant gradle stuff and correct module setting.\
-However, there are some steps left (runtime stuff?)..\
-Also, do check what are the manual steps needed to do the same?
+However, that will only run the tests under "test"; manual build is needed for integration tests, see below.
 
 Building the service with both unit and integration tests:
 ```
@@ -33,17 +27,16 @@ Starting the application/services can be done afterwards with command line at ha
 $ ./gradlew :services:hanke-service:bootRun
 ```
 
-After the application has started, the services should be available at URLs (see Swagger UI (below) for full API description):
+After the application has started, the services should be available at URLs (see Swagger UI (below) 
+for full API description) (and other sub-URLs similarly):
 > http://localhost:8080/hankkeet/<id> \
-> http://localhost:8080/hankkeet/<id>/geometriat \
-> http://localhost:8080/ \
-> http://localhost:8080/api/hello/
+> http://localhost:8080/hankkeet/<id>/geometriat
 
-Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON):
+Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON). Note though that the swagger
+setup can not currently support authentication, so can not test the actions with it.
 > http://localhost:8080/swagger-ui.html \
 > http://localhost:8080/v3/api-docs
 
-At least Firefox seems to be able to show the REST JSON results in a nice way directly.
 
 ## PostgreSQL + PostGis locally
 The repository includes support for local development with a docker-postgres
