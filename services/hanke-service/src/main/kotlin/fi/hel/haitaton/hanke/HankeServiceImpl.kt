@@ -348,6 +348,21 @@ open class HankeServiceImpl(
 
     // --------------- Helpers for data transfer towards database ------------
 
+
+    /**
+     * Checks if some to be changed or deleted yhteystieto has "datalocked" field set
+     * in the currently persisted entry.
+     * If so, creates audit- and changelog-entries and throws an exception.
+     * The exception prevents any other changes to the Hanke or other yhteystietos
+     * to be saved. (The restricted yhteystietos would need to be left as is in order
+     * to make any other changes to Hanke data). (NOTE: the current implementation may
+     * have insufficient feedback in the UI about the situation.)
+     *
+     * The datalocked field can be used e.g. to handle GDPR "personal data processing
+     * restriction" requirement. It can be used for other "prevent changes" purposes,
+     * too, but current implementation has been done with GDPR mostly in mind, so
+     * e.g. some messages/comments/log entry info could be misleading for other uses.
+     */
     private fun checkAndHandleDataProcessingRestrictions(
             incomingHanke: Hanke,
             persistedEntity: HankeEntity,
@@ -578,6 +593,8 @@ open class HankeServiceImpl(
             // Is the incoming Yhteystieto new (does not have id, create new) or old (has id, update existing)?
             if (hankeYht.id == null) {
                 // New Yhteystieto
+                // Note: don't need to (and can not) create audit-log entries during this create processing;
+                // they are done later, after the whole hanke has been saved and new yhteystietos got their db-ids.
                 processCreateYhteystieto(hankeYht, validYhteystieto, contactType, userid, hankeEntity)
             } else {
                 // Should be an existing Yhteystieto
@@ -736,8 +753,26 @@ open class HankeServiceImpl(
     }
 
     /**
+     * Handles post-processing of logging entries about restricted actions.
+     * Applies request's IP to all given logging entries, saves them, and creates
+     * and throws an exception which indicates that restricted yhteystietos
+     * can not be changed/deleted.
+     */
+    private fun postProcessAndSaveLoggingForRestrictions(loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder) {
+        loggingEntryHolderForRestrictedActions.applyIPaddresses()
+        loggingEntryHolderForRestrictedActions.saveLogEntries(personalDataAuditLogRepository, personalDataChangeLogRepository)
+        val idList = StringBuilder()
+        loggingEntryHolderForRestrictedActions.auditLogEntries.forEach { idList.append(it.id).append(", ") }
+        if (idList.endsWith(", "))
+            idList.setLength(idList.length-2)
+        throw HankeYhteystietoProcessingRestrictedException("Can not modify/delete yhteystieto which has data processing restricted (id: $idList)")
+    }
+
+    /**
      * Handles logging of all newly created Yhteystietos, applies request's IP to all log entries,
      * and saves all the log entries.
+     * Do not use this for the "restricted action" log events; see
+     * postProcessAndSaveLoggingForRestrictions() for that.
      */
     private fun postProcessAndSaveLogging(
         loggingEntryHolder: YhteystietoLoggingEntryHolder,
