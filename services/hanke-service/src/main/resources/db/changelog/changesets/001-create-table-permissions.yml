@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-table-permissions
+      comment: Create table permissions
+      author: Janne Heikkilä
+      changes:
+        - createTable:
+            tableName: permissions
+            columns:
+              - column: { name: id, type: integer, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: userid, type: varchar(40), constraints: { nullable: false } }
+              - column: { name: hankeid, type: integer, constraints: { references: hanke(id), foreignKeyName: fk_permissions_hanke, nullable: false }}
+              - column: { name: permissionCode, type: bigint, constraints: { nullable: false } }
+        - addAutoIncrement: { tableName: permissions, columnName: id, columnDataType: integer, generationType: ALWAYS }
