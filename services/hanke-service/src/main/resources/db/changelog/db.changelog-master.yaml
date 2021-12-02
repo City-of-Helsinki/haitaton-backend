@@ -29,3 +29,5 @@ databaseChangeLog:
       file: db/changelog/changesets/add-personal-data-processing-restriction-support.yml
   - include:
       file: db/changelog/changesets/add-personal-data-logs-failed-field.yml
+  - include:
+      file: db/changelog/changesets/001-create-table-permissions.yml
