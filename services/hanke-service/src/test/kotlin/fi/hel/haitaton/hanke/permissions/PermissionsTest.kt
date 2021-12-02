@@ -9,7 +9,7 @@ class PermissionsTest {
     inline fun <reified T: Any> mock() = Mockito.mock(T::class.java)
 
     @Test
-    fun `combinePermissionCodes() permissionCodeToCodes() should round-trip`() {
+    fun combinePermissionCodesAndPermissionCodeToCodesShouldRoundTrip() {
         val repo: PermissionRepository = mock()
         val service = PermissionService(repo)
         val expectedPermissions = listOf(PermissionCode.VIEW, PermissionCode.EDIT, PermissionCode.REMOVE_EDIT)
