@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
@@ -26,9 +27,11 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @EnableAutoConfiguration
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
+@Disabled
 class ActuatorEndpointITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
+    @Disabled
     fun readiness() {
         mockMvc
             .perform(get("/actuator/health/readiness"))
@@ -38,6 +41,7 @@ class ActuatorEndpointITests(@Autowired val mockMvc: MockMvc) {
     }
 
     @Test
+    @Disabled
     fun liveness() {
         mockMvc
             .perform(get("/actuator/health/liveness"))
@@ -47,6 +51,7 @@ class ActuatorEndpointITests(@Autowired val mockMvc: MockMvc) {
     }
 
     @Test
+    @Disabled
     fun info() {
         mockMvc
             .perform(get("/actuator/info"))
