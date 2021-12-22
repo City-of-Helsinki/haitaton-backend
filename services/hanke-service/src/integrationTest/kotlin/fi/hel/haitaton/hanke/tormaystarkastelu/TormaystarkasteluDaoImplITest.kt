@@ -37,9 +37,9 @@ internal class TormaystarkasteluDaoImplITest {
             .withUsername("test")
             .withCopyFileToContainer(
                 MountableFile.forClasspathResource(
-                    "/fi/hel/haitaton/hanke/tormaystarkastelu/laastariaineisto-test.sql"
+                    "/fi/hel/haitaton/hanke/tormaystarkastelu/HEL-GIS-data-test.sql"
                 ),
-                "/docker-entrypoint-initdb.d/laastariaineisto-test.sql"
+                "/docker-entrypoint-initdb.d/HEL-GIS-data-test.sql"
             )
 
         @JvmStatic
