@@ -32,4 +32,6 @@ interface HankeService {
     fun applyAndSaveTormaystarkasteluTulos(hanke: Hanke, tormaystarkasteluTulos: TormaystarkasteluTulos)
 
     fun loadAllHanke(hankeSearch: HankeSearch? = null): List<Hanke>
+
+    fun loadHankkeetByIds(ids: List<Int>): List<Hanke>
 }

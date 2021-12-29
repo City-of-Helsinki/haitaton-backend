@@ -5,6 +5,10 @@ import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.permissions.Permission
+import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.permissions.PermissionProfiles
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.mockk.every
 import io.mockk.verify
 import org.geojson.FeatureCollection
@@ -42,6 +46,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Autowired
     lateinit var hankeService: HankeService  // faking these calls
+
+    @Autowired
+    lateinit var permissionService: PermissionService
 
     @Autowired
     lateinit var hankeGeometriatService: HankeGeometriatService
@@ -85,8 +92,23 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // because test call has limitation and automatically creates object for call, we need to create
         // "empty" object for init and verify
         val criteria = HankeSearch()
+        val hankeIds = listOf(123,444)
+        val permissions = listOf(
+            Permission(
+                1,
+                "test",
+                123,
+                PermissionProfiles.HANKE_OWNER_PERMISSIONS
+            ),
+            Permission(
+                44,
+                "test",
+                444,
+                listOf(PermissionCode.VIEW)
+            )
+        )
         // faking the service call with two returned Hanke
-        every { hankeService.loadAllHanke(criteria) }
+        every { hankeService.loadHankkeetByIds(hankeIds) }
             .returns(
                 listOf(
                     Hanke(
@@ -125,6 +147,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                     )
                 )
             )
+        every { permissionService.getPermissionsByUserId("test") }.returns(permissions)
 
         // we check that we get the two hankeTunnus we expect
         mockMvc.perform(get("/hankkeet").accept(MediaType.APPLICATION_JSON))
@@ -135,14 +158,29 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("$[0].geometriat").doesNotExist())
             .andExpect(jsonPath("$[1].geometriat").doesNotExist())
 
-        verify { hankeService.loadAllHanke(criteria) }
+        verify { hankeService.loadHankkeetByIds(hankeIds) }
     }
 
     @Test
     fun `When calling get with geometry=true then return all Hanke data with geometry`() {
         // faking the service call with two returned Hanke
         val criteria = HankeSearch(geometry = true)
-        every { hankeService.loadAllHanke(criteria) }
+        val hankeIds = listOf(123,444)
+        val permissions = listOf(
+            Permission(
+                1,
+                "test",
+                123,
+                PermissionProfiles.HANKE_OWNER_PERMISSIONS
+            ),
+            Permission(
+                2,
+                "test",
+                444,
+                listOf(PermissionCode.VIEW)
+            )
+        )
+        every { hankeService.loadHankkeetByIds(hankeIds) }
             .returns(
                 listOf(
                     Hanke(123, mockedHankeTunnus),
@@ -165,6 +203,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                     FeatureCollection()
                 )
             )
+        every { permissionService.getPermissionsByUserId("test") }.returns(permissions)
 
         // we check that we get the two hankeTunnus and geometriat we expect
         mockMvc.perform(get("/hankkeet?geometry=true").accept(MediaType.APPLICATION_JSON))
@@ -175,7 +214,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("$[0].geometriat.id").value(1))
             .andExpect(jsonPath("$[1].geometriat.id").value(2))
 
-        verify { hankeService.loadAllHanke(criteria) }
+        verify { hankeService.loadHankkeetByIds(hankeIds) }
         verify { hankeGeometriatService.loadGeometriat(Hanke(123, mockedHankeTunnus)) }
         verify { hankeGeometriatService.loadGeometriat(Hanke(444, "hanketunnus2")) }
     }
@@ -185,7 +224,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val hankeName = "Mannerheimintien remontti remonttinen"
 
         val hankeToBeMocked = Hanke(
-            id = null,
+            id = 12,
             hankeTunnus = null,
             nimi = hankeName,
             kuvaus = "lorem ipsum dolor sit amet...",
@@ -195,15 +234,22 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             vaihe = Vaihe.OHJELMOINTI,
             suunnitteluVaihe = null,
             version = null,
-            createdBy = "Tiina",
+            createdBy = "test",
             createdAt = null,
             modifiedBy = null,
             modifiedAt = null,
             saveType = SaveType.DRAFT
         )
+        val permission = Permission(
+            1,
+            "test",
+            12,
+            PermissionProfiles.HANKE_OWNER_PERMISSIONS
+        )
 
         // faking the service call
         every { hankeService.createHanke(any()) }.returns(hankeToBeMocked)
+        every { permissionService.setPermission(any(), any(), PermissionProfiles.HANKE_OWNER_PERMISSIONS) }.returns(permission)
 
         val content = hankeToBeMocked.toJsonString()
 
@@ -319,7 +365,14 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 omistajat[0].id = 3
             }
 
-        // faking the service call
+        val permission = Permission(
+            1,
+            "Tiina",
+            12,
+            PermissionProfiles.HANKE_OWNER_PERMISSIONS
+        )
+        // faking the service calls
+        every { permissionService.setPermission(any(), any(), PermissionProfiles.HANKE_OWNER_PERMISSIONS) }.returns(permission)
         every { hankeService.createHanke(any()) }.returns(expectedHanke)
         val expectedContent = expectedHanke.toJsonString()
         mockMvc.perform(
