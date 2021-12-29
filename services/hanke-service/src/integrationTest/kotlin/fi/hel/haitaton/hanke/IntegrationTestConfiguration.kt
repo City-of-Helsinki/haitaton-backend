@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluDao
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLuokitteluService
@@ -42,6 +43,9 @@ class IntegrationTestConfiguration {
 
     @Bean
     fun hankeService(): HankeService = mockk()
+
+    @Bean
+    fun permissionService(): PermissionService = mockk()
 
     @Bean
     fun organisaatioService(): OrganisaatioService = mockk()

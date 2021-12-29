@@ -9,13 +9,15 @@ enum class PermissionCode(val code: Long) {
     VIEW(1),
     EDIT(2),
 
-    ADD_VIEW(4),
-    ADD_EDIT(8),
+    MODIFY_VIEW_PERMISSIONS(4),
+    MODIFY_EDIT_PERMISSIONS(8),
+}
 
-    REMOVE_VIEW(16),
-    REMOVE_EDIT(32),
-
-    SET_OWNER(64)
+class PermissionProfiles {
+    companion object {
+        @JvmField
+        val HANKE_OWNER_PERMISSIONS = PermissionCode.values().asList()
+    }
 }
 
 @Service
