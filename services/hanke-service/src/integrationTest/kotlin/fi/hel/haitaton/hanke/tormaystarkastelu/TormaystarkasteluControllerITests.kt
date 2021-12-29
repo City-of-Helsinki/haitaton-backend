@@ -5,7 +5,6 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.SaveType
 import fi.hel.haitaton.hanke.TZ_UTC
-import fi.hel.haitaton.hanke.TormaystarkasteluAlreadyCalculatedException
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
@@ -75,53 +74,6 @@ class TormaystarkasteluControllerITests(@Autowired val mockMvc: MockMvc) {
     }
 
     @Test
-    fun `When tormaystarkastelu is called for hanke with existing TormaystarkasteluTulos`() {
-
-        // faking the service call
-        every { hankeService.loadHanke(any()) }
-            .returns(
-                Hanke(
-                    123,
-                    mockedHankeTunnus,
-                    true,
-                    "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
-                    ZonedDateTime.of(2020, 2, 20, 23, 45, 56, 0, TZ_UTC)
-                        .truncatedTo(ChronoUnit.MILLIS),
-                    ZonedDateTime.of(2030, 2, 20, 23, 45, 56, 0, TZ_UTC)
-                        .truncatedTo(ChronoUnit.MILLIS),
-                    Vaihe.OHJELMOINTI,
-                    null,
-                    1,
-                    "Risto",
-                    getCurrentTimeUTC(),
-                    null,
-                    null,
-                    SaveType.DRAFT
-                )
-            )
-
-        // faking the service call
-        val tormaystulos = TormaystarkasteluTulos(mockedHankeTunnus)
-        tormaystulos.perusIndeksi = 2.3f
-        every { laskentaService.getTormaystarkastelu(any()) }.returns(tormaystulos)
-
-        mockMvc.perform(
-            MockMvcRequestBuilders.get("/hankkeet/$mockedHankeTunnus/tormaystarkastelu")
-                .accept(MediaType.APPLICATION_JSON)
-        )
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.hankeTunnus")
-                    .value(mockedHankeTunnus)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.perusIndeksi")
-                    .value(2.3f)
-            )
-        verify { laskentaService.getTormaystarkastelu(any()) }
-    }
-
-    @Test
     fun `When createTormaystarkastelu is called for hanke without existing TormaystarkasteluTulos`() {
 
         val hanke = Hanke(
@@ -172,30 +124,4 @@ class TormaystarkasteluControllerITests(@Autowired val mockMvc: MockMvc) {
         verify { laskentaService.calculateTormaystarkastelu(any()) }
     }
 
-    @Test
-    fun `When createTormaystarkastelu is called for hanke with existing TormaystarkasteluTulos`() {
-        every {
-            laskentaService.calculateTormaystarkastelu(any())
-        } throws TormaystarkasteluAlreadyCalculatedException(
-            "Already has tormaysanalyysi calculated for $mockedHankeTunnus"
-        )
-
-        mockMvc.perform(
-            MockMvcRequestBuilders.post("/hankkeet/$mockedHankeTunnus/tormaystarkastelu")
-                .characterEncoding("UTF-8")
-                .with(SecurityMockMvcRequestPostProcessors.csrf())
-                .accept(MediaType.APPLICATION_JSON)
-        )
-            .andDo { println(it.response.contentAsString) }
-            .andExpect(MockMvcResultMatchers.status().isInternalServerError)
-            .andExpect(MockMvcResultMatchers.content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorCode")
-                    .value(HankeError.HAI1009.errorCode)
-            ).andExpect(
-                MockMvcResultMatchers.jsonPath("$.errorMessage")
-                    .value(HankeError.HAI1009.errorMessage)
-            )
-        verify { laskentaService.calculateTormaystarkastelu(any()) }
-    }
 }

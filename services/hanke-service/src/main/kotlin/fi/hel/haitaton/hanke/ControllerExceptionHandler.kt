@@ -34,15 +34,6 @@ class ControllerExceptionHandler {
         return HankeError.HAI1020
     }
 
-    @ExceptionHandler(TormaystarkasteluAlreadyCalculatedException::class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    fun tormaystarkasteluAlreadyCalculatedException(ex: TormaystarkasteluAlreadyCalculatedException): HankeError {
-        logger.warn {
-            ex.message
-        }
-        return HankeError.HAI1009
-    }
-
     @ExceptionHandler(HankeYhteystietoProcessingRestrictedException::class)
     // Using 451 (since the restriction is typically due to legal reasons.
     // However, in some cases 403 forbidden might be considered correct response, too.
