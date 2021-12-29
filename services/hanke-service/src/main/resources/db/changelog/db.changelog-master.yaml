@@ -31,3 +31,5 @@ databaseChangeLog:
       file: db/changelog/changesets/add-personal-data-logs-failed-field.yml
   - include:
       file: db/changelog/changesets/001-create-table-permissions.yml
+  - include:
+      file: db/changelog/changesets/002-rename-column-permissions-permissionCode.yml
