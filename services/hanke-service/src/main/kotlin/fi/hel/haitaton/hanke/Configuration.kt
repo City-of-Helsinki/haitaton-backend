@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioServiceImpl
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluDao
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluDaoImpl
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
@@ -34,7 +35,8 @@ class Configuration {
         hankeRepository: HankeRepository,
         hanketunnusService: HanketunnusService,
         personalDataAuditLogRepository: PersonalDataAuditLogRepository,
-        personalDataChangeLogRepository: PersonalDataChangeLogRepository
+        personalDataChangeLogRepository: PersonalDataChangeLogRepository,
+        permissionService: PermissionService
     ): HankeService =
         HankeServiceImpl(hankeRepository, hanketunnusService, personalDataAuditLogRepository, personalDataChangeLogRepository)
 

@@ -3,12 +3,20 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.permissions.Permission
+import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.permissions.PermissionProfiles
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.validation.ValidHanke
 import javax.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.context.SecurityContext
+import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
@@ -27,7 +35,8 @@ private val logger = KotlinLogging.logger { }
 @Validated
 class HankeController(
     @Autowired private val hankeService: HankeService,
-    @Autowired private val hankeGeometriatService: HankeGeometriatService
+    @Autowired private val hankeGeometriatService: HankeGeometriatService,
+    @Autowired private val permissionService: PermissionService
 ) {
 
     /**
@@ -56,16 +65,18 @@ class HankeController(
 
     @GetMapping
     fun getHankeList(hankeSearch: HankeSearch? = null): ResponseEntity<Any> {
-        logger.info {
-            "Searching Hankkeet: $hankeSearch"
-        }
-        val hankeList = hankeService.loadAllHanke(hankeSearch)
+        val userid = SecurityContextHolder.getContext().authentication.name
+
+        val hankeIdsWithViewPermissions = permissionService.getPermissionsByUserId(userid)
+            .filter { it.permissions.contains(PermissionCode.VIEW) }
+            .map { it.hankeId }
+
+        val hankeList = hankeService.loadHankkeetByIds(hankeIdsWithViewPermissions)
+
         if (hankeSearch != null && hankeSearch.includeGeometry()) {
             includeGeometry(hankeList)
         }
-        logger.info {
-            "Found Hankkeet: ${hankeList.size}"
-        }
+
         logger.debug {
             "Search results: ${hankeList.joinToString("\n") { it.toLogString() }}"
         }
@@ -87,11 +98,13 @@ class HankeController(
         logger.info {
             "Creating Hanke: ${hanke?.toLogString()}"
         }
+
         if (hanke == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
         val createdHanke = hankeService.createHanke(hanke)
-        logger.info { "Created Hanke ${createdHanke.hankeTunnus}." }
+
+        permissionService.setPermission(createdHanke.id!!, createdHanke.createdBy!!, PermissionProfiles.HANKE_OWNER_PERMISSIONS)
         return ResponseEntity.status(HttpStatus.OK).body(createdHanke)
     }
 

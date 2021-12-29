@@ -11,6 +11,10 @@ import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
+import fi.hel.haitaton.hanke.permissions.Permission
+import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.permissions.PermissionProfiles
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.every
 import java.time.ZonedDateTime
@@ -56,6 +60,9 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
 
     @Autowired
     private lateinit var hankeService: HankeService
+
+    @Autowired
+    lateinit var permissionService: PermissionService
 
     private val testHankeTunnus = "HAI21-TEST-1"
 
@@ -126,13 +133,30 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     // --------- GET /hankkeet/ --------------
 
     private fun performGetHankkeet(): ResultActions {
-        val criteria = HankeSearch()
-        every { hankeService.loadAllHanke(criteria) }.returns(
+        val hankeIds = listOf(123,444)
+        every { hankeService.loadHankkeetByIds(hankeIds) }.returns(
             listOf(
                 Hanke(123, testHankeTunnus),
                 Hanke(444, "HAI-TEST-2")
             )
         )
+        every { permissionService.getPermissionsByUserId("test7358") }.returns(
+            listOf(
+                Permission(
+                1,
+                "test7358",
+                123,
+                PermissionProfiles.HANKE_OWNER_PERMISSIONS
+            ),
+                Permission(
+                    1,
+                    "test7358",
+                    444,
+                    listOf(PermissionCode.VIEW)
+                )
+            )
+        )
+
 
         return mockMvc.perform(
             get("/hankkeet")
@@ -143,11 +167,18 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     // --------- POST /hankkeet/ --------------
 
     private fun performPostHankkeet(): ResultActions {
-        val hanke = getTestHanke(null, null)
+        val hanke = getTestHanke(12, null)
         val content = hanke.toJsonString()
 
         every { hankeService.createHanke(any()) }.returns(hanke)
-
+        every { permissionService.setPermission(12, "test7358", PermissionProfiles.HANKE_OWNER_PERMISSIONS) }.returns(
+            Permission(
+                1,
+                "test7358",
+                12,
+                PermissionProfiles.HANKE_OWNER_PERMISSIONS
+            )
+        )
         return mockMvc.perform(
             post("/hankkeet")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)
@@ -203,7 +234,7 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
             id, tunnus,
             true, "Testihanke", "Testihankkeen kuvaus",
             getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
-            1, "Risto", getCurrentTimeUTC(), null, null,
+            1, "test7358", getCurrentTimeUTC(), null, null,
             SaveType.DRAFT
         )
     }

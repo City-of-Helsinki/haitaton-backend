@@ -21,7 +21,7 @@ open class HankeServiceImpl(
     private val hankeRepository: HankeRepository,
     private val hanketunnusService: HanketunnusService,
     private val personalDataAuditLogRepository: PersonalDataAuditLogRepository,
-    private val personalDataChangeLogRepository: PersonalDataChangeLogRepository
+    private val personalDataChangeLogRepository: PersonalDataChangeLogRepository,
 ) : HankeService {
 
     // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO LOAD A HANKE: @PostAuthorize("returnObject.createdBy == authentication.name")
@@ -51,6 +51,11 @@ open class HankeServiceImpl(
             //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
             loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
         }
+    }
+
+    override fun loadHankkeetByIds(ids: List<Int>): List<Hanke> {
+        return hankeRepository.findAllById(ids)
+            .map { createHankeDomainObjectFromEntity(it) }
     }
 
 
