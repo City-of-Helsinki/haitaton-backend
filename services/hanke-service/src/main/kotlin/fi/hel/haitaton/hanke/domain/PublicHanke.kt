@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.domain
 
 import fi.hel.haitaton.hanke.*
+import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import org.geojson.FeatureCollection
 import org.springframework.beans.factory.annotation.Autowired
@@ -10,9 +11,33 @@ import org.springframework.web.bind.annotation.RestController
 import java.time.ZonedDateTime
 
 data class PublicHankeYhteystieto(
-        var organisaatioId: Int?,
-        var organisaatioNimi: String?,
-        var osasto: String?
+        val organisaatioId: Int?,
+        val organisaatioNimi: String?,
+        val osasto: String?
+)
+
+fun hankeYhteystietoToPublic(yhteystieto: HankeYhteystieto) = PublicHankeYhteystieto(
+        yhteystieto.organisaatioId,
+        yhteystieto.organisaatioNimi,
+        yhteystieto.osasto
+)
+
+data class PublicHankeGeometriat(
+        val id: Int,
+        val version: Int,
+        val hankeId: Int,
+        val createdAt: ZonedDateTime,
+        val modifiedAt: ZonedDateTime?,
+        val featureCollection: FeatureCollection?
+)
+
+fun hankeGeometriatToPublic(geometriat: HankeGeometriat) = PublicHankeGeometriat(
+        geometriat.id!!,
+        geometriat.version!!,
+        geometriat.hankeId!!,
+        geometriat.createdAt!!,
+        geometriat.modifiedAt,
+        geometriat.featureCollection
 )
 
 data class PublicHanke(
@@ -26,21 +51,16 @@ data class PublicHanke(
         val suunnitteluVaihe: SuunnitteluVaihe?,
         val tyomaaTyyppi: MutableSet<TyomaaTyyppi>,
         val omistajat: List<PublicHankeYhteystieto>,
-        val featureCollection: FeatureCollection?
+        val geometriat: PublicHankeGeometriat?
 )
 
-fun hankeYhteystietoToPublic(yhteystieto: HankeYhteystieto) : PublicHankeYhteystieto {
-    return PublicHankeYhteystieto(
-            yhteystieto.organisaatioId,
-            yhteystieto.organisaatioNimi,
-            yhteystieto.osasto
-    )
-}
-
-fun hankeToPublic(hanke: Hanke) : PublicHanke {
+fun hankeToPublic(hanke: Hanke): PublicHanke {
     val omistajat = hanke.omistajat
             .filter { it.organisaatioNimi != null || it.organisaatioId != null }
             .map { hankeYhteystietoToPublic(it) }
+
+    val geometriat = hanke.geometriat
+    val publicGeometriat = if (geometriat != null) hankeGeometriatToPublic(geometriat) else null
 
     return PublicHanke(
             hanke.id!!,
@@ -53,9 +73,11 @@ fun hankeToPublic(hanke: Hanke) : PublicHanke {
             hanke.suunnitteluVaihe,
             hanke.tyomaaTyyppi,
             omistajat,
-            hanke.geometriat?.featureCollection
+            publicGeometriat
     )
 }
+
+
 
 @RestController
 @RequestMapping("/public-hankkeet")
