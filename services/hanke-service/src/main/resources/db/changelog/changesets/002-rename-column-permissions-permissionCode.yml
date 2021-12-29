@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-rename-column-permissions-permissionCode
+      comment: Rename permissionCode to permissioncode
+      author: Janne Heikkilä
+      changes:
+        - renameColumn:
+            tableName: permissions
+            oldColumnName: permissionCode
+            newColumnName: permissioncode
