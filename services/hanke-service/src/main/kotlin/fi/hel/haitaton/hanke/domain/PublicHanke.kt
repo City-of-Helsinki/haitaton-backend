@@ -89,7 +89,7 @@ class PublicHankeController(
     @GetMapping
     fun getAll(): List<PublicHanke> {
         val hankkeet = hankeService.loadAllHanke()
-                .filter { it.tilat.onLiikenneHaittaIndeksi }
+                .filter { it.tormaystarkasteluTulos != null }
         hankkeet.forEach { it.geometriat = hankeGeometriatService.loadGeometriat(it) }
         return hankkeet.map { hankeToPublic(it) }
     }

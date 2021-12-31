@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeSearch
+import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import fi.hel.haitaton.hanke.permissions.Permission
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -63,6 +64,9 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
 
     @Autowired
     lateinit var permissionService: PermissionService
+
+    @Autowired
+    private lateinit var hankeGeometriatService: HankeGeometriatService
 
     private val testHankeTunnus = "HAI21-TEST-1"
 
@@ -179,6 +183,8 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
                 PermissionProfiles.HANKE_OWNER_PERMISSIONS
             )
         )
+        every { hankeGeometriatService.loadGeometriat(any()) }.returns(null)
+
         return mockMvc.perform(
             post("/hankkeet")
                 .contentType(MediaType.APPLICATION_JSON).characterEncoding("UTF-8").content(content)

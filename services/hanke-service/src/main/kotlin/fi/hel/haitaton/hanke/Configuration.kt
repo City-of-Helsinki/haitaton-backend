@@ -16,7 +16,6 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaServiceImpl
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLuokitteluService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLuokitteluServiceImpl
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosRepository
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
@@ -33,12 +32,14 @@ class Configuration {
     @Bean
     fun hankeService(
         hankeRepository: HankeRepository,
+        tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
         hanketunnusService: HanketunnusService,
         personalDataAuditLogRepository: PersonalDataAuditLogRepository,
         personalDataChangeLogRepository: PersonalDataChangeLogRepository,
         permissionService: PermissionService
     ): HankeService =
-        HankeServiceImpl(hankeRepository, hanketunnusService, personalDataAuditLogRepository, personalDataChangeLogRepository)
+        HankeServiceImpl(hankeRepository, tormaystarkasteluLaskentaService,
+                hanketunnusService, personalDataAuditLogRepository, personalDataChangeLogRepository)
 
     @Bean
     fun organisaatioService(organisaatioRepository: OrganisaatioRepository): OrganisaatioService =
@@ -49,9 +50,8 @@ class Configuration {
 
     @Bean
     fun hankeGeometriatService(
-        hankeService: HankeService,
         hankeGeometriatDao: HankeGeometriatDao
-    ): HankeGeometriatService = HankeGeometriatServiceImpl(hankeService, hankeGeometriatDao)
+    ): HankeGeometriatService = HankeGeometriatServiceImpl(hankeGeometriatDao)
 
     @Bean
     fun tormaystarkasteluDao(jdbcOperations: JdbcOperations): TormaystarkasteluDao =
@@ -64,10 +64,6 @@ class Configuration {
 
     @Bean
     fun tormaystarkasteluLaskentaService(
-        hankeService: HankeService,
-        luokitteluService: TormaystarkasteluLuokitteluService,
-        geometriatService: HankeGeometriatService,
-        tormaystarkasteluTulosRepository: TormaystarkasteluTulosRepository
-    ): TormaystarkasteluLaskentaService =
-        TormaystarkasteluLaskentaServiceImpl(hankeService, luokitteluService, geometriatService, tormaystarkasteluTulosRepository)
+        luokitteluService: TormaystarkasteluLuokitteluService
+    ): TormaystarkasteluLaskentaService = TormaystarkasteluLaskentaServiceImpl(luokitteluService)
 }

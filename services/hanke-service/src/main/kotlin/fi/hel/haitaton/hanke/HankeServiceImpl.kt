@@ -3,10 +3,12 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.logging.Action
 import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
 import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 
@@ -19,6 +21,7 @@ private val logger = KotlinLogging.logger { }
 
 open class HankeServiceImpl(
     private val hankeRepository: HankeRepository,
+    private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
     private val hanketunnusService: HanketunnusService,
     private val personalDataAuditLogRepository: PersonalDataAuditLogRepository,
     private val personalDataChangeLogRepository: PersonalDataChangeLogRepository,
@@ -154,14 +157,17 @@ open class HankeServiceImpl(
         copyNonNullHankeFieldsToEntity(hanke, entity)
         copyYhteystietosToEntity(hanke, entity, userid, loggingEntryHolder, existingYTs)
 
-        // NOTE: liikennehaittaindeksi and tormaystarkastelutulos are NOT
-        //  copied from incoming data. Use setTormaystarkasteluTulos() for that.
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
         // Special fields; handled "manually"..
         entity.version = entity.version?.inc() ?: 1
         // (Not changing createdBy/At fields.)
         entity.modifiedByUserId = userid
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
+
+        tormaystarkasteluService.calculateTormaystarkastelu(hanke)?.let { tulos ->
+            val tulosEntity = copyTormaystarkasteluTulosToEntity(tulos)
+            copyTormaystarkasteluTulosToHankeEntity(tulosEntity, entity)
+        }
 
         // Save changes:
         logger.debug {
@@ -179,7 +185,7 @@ open class HankeServiceImpl(
         return createHankeDomainObjectFromEntity(entity)
     }
 
-    override fun updateHankeStateFlags(hanke: Hanke) {
+    fun updateHankeStateFlags(hanke: Hanke) {
         if (hanke.hankeTunnus == null) {
             error("Somehow got here with hanke without hanke-tunnus")
         }
@@ -187,36 +193,6 @@ open class HankeServiceImpl(
         val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
                 ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
         copyStateFlagsToEntity(hanke, entity)
-        hankeRepository.save(entity)
-    }
-
-
-    override fun applyAndSaveTormaystarkasteluTulos(hanke: Hanke, tormaystarkasteluTulos: TormaystarkasteluTulos) {
-        if (hanke.hankeTunnus == null) {
-            error("Somehow got here with hanke without hanke-tunnus")
-        }
-        // Both checks that the hanke already exists, and get its old fields to transfer data into
-        val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
-                ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
-
-        // Set the values to the domain object and update flag
-        hanke.tormaystarkasteluTulos = tormaystarkasteluTulos
-        hanke.liikennehaittaindeksi = tormaystarkasteluTulos.liikennehaittaIndeksi
-        hanke.updateStateFlagOnLiikenneHaittaIndeksi()
-        // NOTE: the flag is not saved; the possible states are resolved from
-        // the relevant liikenneHaittaIndeksi-field and/or tormaystarkasteluTulos.
-        // null indeksi/tulos means the flag would be false; non-null means true;
-        // non-null with tila EI_VOIMASSA for an existing but obsolete result.
-
-        // Set the tulos to entity object (but first clear any possible old obsolete entries away)
-        entity.tormaystarkasteluTulokset.clear()
-        val tormaystarkasteluTulosEntity = copyTormaystarkasteluTulosToEntity(tormaystarkasteluTulos)
-        tormaystarkasteluTulosEntity.createdAt = getCurrentTimeUTCAsLocalTime()
-        entity.addTormaystarkasteluTulos(tormaystarkasteluTulosEntity)
-        // Set the entity liikenneHaittaIndeksi-field
-        entity.liikennehaittaIndeksi = hanke.liikennehaittaindeksi?.copy()
-
-        // Saves the tulos, too:
         hankeRepository.save(entity)
     }
 
@@ -268,8 +244,18 @@ open class HankeServiceImpl(
             h.tarinaHaitta = hankeEntity.tarinaHaitta
 
             h.liikennehaittaindeksi = hankeEntity.liikennehaittaIndeksi?.copy()
-            // tormaystarkasteluTulos is NOT copied over here (only when
-            // included in Hanke instance via TormaystarkasteluLaskentaService).
+
+            if (!hankeEntity.tormaystarkasteluTulokset.isEmpty()) {
+                val tttE = hankeEntity.tormaystarkasteluTulokset.get(0)
+                val ttt = TormaystarkasteluTulos(hankeEntity.hankeTunnus!!)
+                ttt.hankeId = h.id!!
+                ttt.liikennehaittaIndeksi = tttE.liikennehaitta?.copy()
+                ttt.perusIndeksi = tttE.perus
+                ttt.joukkoliikenneIndeksi = tttE.joukkoliikenne
+                ttt.pyorailyIndeksi = tttE.pyoraily
+                ttt.tila = tttE.tila
+                h.tormaystarkasteluTulos = ttt
+            }
 
             copyStateFlagsFromEntity(h, hankeEntity)
             h.updateStateFlags()
@@ -322,7 +308,6 @@ open class HankeServiceImpl(
         }
 
         private fun copyStateFlagsFromEntity(h: Hanke, entity: HankeEntity) {
-            h.tilat.onGeometrioita = entity.tilaOnGeometrioita
             h.tilat.onViereisiaHankkeita = entity.tilaOnViereisiaHankkeita
             h.tilat.onAsiakasryhmia = entity.tilaOnAsiakasryhmia
         }
@@ -443,7 +428,6 @@ open class HankeServiceImpl(
     }
 
     private fun copyStateFlagsToEntity(hanke: Hanke, entity: HankeEntity) {
-        entity.tilaOnGeometrioita = hanke.tilat.onGeometrioita
         entity.tilaOnViereisiaHankkeita = hanke.tilat.onViereisiaHankkeita
         entity.tilaOnAsiakasryhmia = hanke.tilat.onAsiakasryhmia
     }
@@ -695,18 +679,21 @@ open class HankeServiceImpl(
         return true
     }
 
-    // TODO: this sort of should be in some more common place (useful for e.g.
-    //  other serviceimpl-classes), but currently there is no good  place..
-    private fun copyTormaystarkasteluTulosToEntity(ttt: TormaystarkasteluTulos):
-            TormaystarkasteluTulosEntity {
+    private fun copyTormaystarkasteluTulosToEntity(ttt: TormaystarkasteluTulos): TormaystarkasteluTulosEntity {
         val tttEntity = TormaystarkasteluTulosEntity()
         tttEntity.liikennehaitta = ttt.liikennehaittaIndeksi?.copy()
         tttEntity.perus = ttt.perusIndeksi
         tttEntity.pyoraily = ttt.pyorailyIndeksi
         tttEntity.joukkoliikenne = ttt.joukkoliikenneIndeksi
         tttEntity.tila = ttt.tila
-
+        tttEntity.createdAt = getCurrentTimeUTCAsLocalTime()
         return tttEntity
+    }
+
+    private fun copyTormaystarkasteluTulosToHankeEntity(ttte: TormaystarkasteluTulosEntity, hankeEntity: HankeEntity) {
+        hankeEntity.liikennehaittaIndeksi = ttte.liikennehaitta?.copy()
+        hankeEntity.tormaystarkasteluTulokset.clear()
+        hankeEntity.addTormaystarkasteluTulos(ttte)
     }
 
     /**

@@ -184,9 +184,6 @@ class HankeEntity(
     // Some flags are saved to database in order to reduce processing overhead e.g. when fetching
     // lots of Hanke-objects for showing a list. (Those that are not saved are left in comments
     // as reference; see Hanke domain-object.)
-    // Checking geometry requires lookup into another database table.
-    // Checking for nearby other Hanke requires GIS database query.
-    var tilaOnGeometrioita: Boolean = false
     // var tilaOnKaikkiPakollisetLuontiTiedot: Boolean = false
     // var tilaOnTiedotLiikenneHaittaIndeksille: Boolean = false
     // var tilaOnLiikenneHaittaIndeksi: Boolean = false

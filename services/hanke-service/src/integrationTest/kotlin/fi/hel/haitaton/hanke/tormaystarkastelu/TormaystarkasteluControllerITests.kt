@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.SaveType
@@ -9,7 +8,6 @@ import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import io.mockk.every
-import io.mockk.verify
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import org.junit.jupiter.api.Test
@@ -40,37 +38,32 @@ class TormaystarkasteluControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     fun `When tormaystarkastelu is called for hanke which does not have TormaystarkasteluTulos`() {
+        val hanke = Hanke(
+                123,
+                mockedHankeTunnus,
+                true,
+                "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
+                ZonedDateTime.of(2020, 2, 20, 23, 45, 56, 0, TZ_UTC)
+                        .truncatedTo(ChronoUnit.MILLIS),
+                ZonedDateTime.of(2030, 2, 20, 23, 45, 56, 0, TZ_UTC)
+                        .truncatedTo(ChronoUnit.MILLIS),
+                Vaihe.OHJELMOINTI,
+                null,
+                1,
+                "Risto",
+                getCurrentTimeUTC(),
+                null,
+                null,
+                SaveType.DRAFT
+        )
 
         // faking the service call
-        every { hankeService.loadHanke(any()) }
-            .returns(
-                Hanke(
-                    123,
-                    mockedHankeTunnus,
-                    true,
-                    "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
-                    ZonedDateTime.of(2020, 2, 20, 23, 45, 56, 0, TZ_UTC)
-                        .truncatedTo(ChronoUnit.MILLIS),
-                    ZonedDateTime.of(2030, 2, 20, 23, 45, 56, 0, TZ_UTC)
-                        .truncatedTo(ChronoUnit.MILLIS),
-                    Vaihe.OHJELMOINTI,
-                    null,
-                    1,
-                    "Risto",
-                    getCurrentTimeUTC(),
-                    null,
-                    null,
-                    SaveType.DRAFT
-                )
-            )
-        every { laskentaService.getTormaystarkastelu(any()) }.returns(null)
+        every { hankeService.loadHanke(any()) }.returns(hanke)
 
         mockMvc.perform(
             MockMvcRequestBuilders.get("/hankkeet/$mockedHankeTunnus/tormaystarkastelu")
                 .accept(MediaType.APPLICATION_JSON)
         ).andExpect(MockMvcResultMatchers.status().isNotFound)
-
-        verify { laskentaService.getTormaystarkastelu(any()) }
     }
 
     @Test
@@ -104,7 +97,7 @@ class TormaystarkasteluControllerITests(@Autowired val mockMvc: MockMvc) {
         // adding tormaystulos to hanke
         hanke.tormaystarkasteluTulos = tormaystulos
 
-        every { laskentaService.calculateTormaystarkastelu(any()) }.returns(hanke)
+        every { laskentaService.calculateTormaystarkastelu(any()) }.returns(tormaystulos)
 
         mockMvc.perform(
             MockMvcRequestBuilders.post("/hankkeet/$mockedHankeTunnus/tormaystarkastelu")
@@ -121,7 +114,6 @@ class TormaystarkasteluControllerITests(@Autowired val mockMvc: MockMvc) {
                 MockMvcResultMatchers.jsonPath("$.tormaystarkasteluTulos.perusIndeksi")
                     .value(2.3f)
             )
-        verify { laskentaService.calculateTormaystarkastelu(any()) }
     }
 
 }
