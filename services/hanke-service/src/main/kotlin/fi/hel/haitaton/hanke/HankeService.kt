@@ -16,22 +16,8 @@ interface HankeService {
 
     fun updateHanke(hanke: Hanke): Hanke
 
-    /**
-     * Meant for internal use only (do not reveal in controller or other public end-point).
-     * Only saves the flag-fields from the given hanke-object, and caller needs to
-     * make sure the flags in the given hanke instance have not come from "outside".
-     * Does not change version or modifiedAt/By fields, and does not return
-     * anything.
-     */
-    fun updateHankeStateFlags(hanke: Hanke)
-
-
-    /**
-     * Sets the values to the given domain object, sets the state flag, and persists the tulos.
-     */
-    fun applyAndSaveTormaystarkasteluTulos(hanke: Hanke, tormaystarkasteluTulos: TormaystarkasteluTulos)
-
     fun loadAllHanke(hankeSearch: HankeSearch? = null): List<Hanke>
 
     fun loadHankkeetByIds(ids: List<Int>): List<Hanke>
+
 }

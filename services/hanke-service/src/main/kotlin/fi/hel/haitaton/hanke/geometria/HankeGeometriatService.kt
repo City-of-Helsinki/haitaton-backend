@@ -6,7 +6,6 @@ interface HankeGeometriatService {
     /**
      * Creates a new or updates an existing HankeGeometriat
      */
-    fun saveGeometriat(hankeTunnus: String, hankeGeometriat: HankeGeometriat): HankeGeometriat
-    fun loadGeometriat(hankeTunnus: String): HankeGeometriat?
+    fun saveGeometriat(hanke: Hanke, hankeGeometriat: HankeGeometriat): HankeGeometriat
     fun loadGeometriat(hanke: Hanke): HankeGeometriat?
 }

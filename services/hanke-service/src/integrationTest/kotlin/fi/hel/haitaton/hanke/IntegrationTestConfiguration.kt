@@ -8,8 +8,6 @@ import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluDao
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLuokitteluService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosRepository
-import io.mockk.Runs
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -69,9 +67,6 @@ class IntegrationTestConfiguration {
         hankeService: HankeService,
         luokitteluService: TormaystarkasteluLuokitteluService
     ): TormaystarkasteluLaskentaService = mockk()
-
-    @Bean
-    fun tormaystarkasteluTulosRepository(): TormaystarkasteluTulosRepository = mockk()
 
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {
