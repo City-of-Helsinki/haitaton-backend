@@ -12,22 +12,17 @@ import javax.transaction.Transactional
 private val logger = KotlinLogging.logger { }
 
 open class HankeGeometriatServiceImpl(
-    private val hankeService: HankeService,
     private val hankeGeometriaDao: HankeGeometriatDao
 ) : HankeGeometriatService {
 
     @Transactional
-    override fun saveGeometriat(hankeTunnus: String, hankeGeometriat: HankeGeometriat): HankeGeometriat {
-        val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
+    override fun saveGeometriat(hanke: Hanke, hankeGeometriat: HankeGeometriat): HankeGeometriat {
         val now = ZonedDateTime.now(TZ_UTC)
         val oldHankeGeometriat = hankeGeometriaDao.retrieveHankeGeometriat(hanke.id!!)
         val hasFeatures = hankeGeometriat.hasFeatures()
         if (oldHankeGeometriat == null && !hasFeatures) {
             throw IllegalArgumentException("New HankeGeometriat does not contain any Features")
         }
-        // Set/update the state flag in hanke data and save it
-        hanke.tilat.onGeometrioita = hasFeatures
-        hankeService.updateHankeStateFlags(hanke)
 
         val username = SecurityContextHolder.getContext().authentication.name
 
@@ -43,7 +38,7 @@ open class HankeGeometriatServiceImpl(
                 hankeGeometriat.version = oldHankeGeometriat.version!! + 1
                 hankeGeometriaDao.deleteHankeGeometriat(hankeGeometriat)
                 logger.info {
-                    "Deleted geometries for Hanke $hankeTunnus"
+                    "Deleted geometries for Hanke ${hanke.hankeTunnus}"
                 }
                 hankeGeometriat
             }
@@ -55,7 +50,7 @@ open class HankeGeometriatServiceImpl(
                 hankeGeometriat.hankeId = hanke.id
                 hankeGeometriaDao.createHankeGeometriat(hankeGeometriat)
                 logger.info {
-                    "Created new geometries for Hanke $hankeTunnus"
+                    "Created new geometries for Hanke ${hanke.hankeTunnus}"
                 }
                 hankeGeometriat
             }
@@ -71,21 +66,11 @@ open class HankeGeometriatServiceImpl(
                 oldHankeGeometriat.featureCollection = hankeGeometriat.featureCollection
                 hankeGeometriaDao.updateHankeGeometriat(oldHankeGeometriat)
                 logger.info {
-                    "Updated geometries for Hanke $hankeTunnus"
+                    "Updated geometries for Hanke ${hanke.hankeTunnus}"
                 }
                 oldHankeGeometriat
             }
         }
-    }
-
-    override fun loadGeometriat(hankeTunnus: String): HankeGeometriat? {
-        val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-        val hankeGeometriat = hankeGeometriaDao.retrieveHankeGeometriat(hanke.id!!)
-        hankeGeometriat?.includeHankeProperties(hanke)
-        logger.info {
-            "Loaded Hanke Geometria for $hankeTunnus: ${hankeGeometriat?.toLogString()}"
-        }
-        return hankeGeometriat
     }
 
     override fun loadGeometriat(hanke: Hanke): HankeGeometriat? {

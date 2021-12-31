@@ -1,12 +1,10 @@
 package fi.hel.haitaton.hanke.security
 
-import fi.hel.haitaton.hanke.IntegrationTestConfiguration
-import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
-import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.*
+import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.geometria.HankeGeometriaController
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
-import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.every
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -41,6 +39,9 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @ActiveProfiles("itest")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class HankeGeometriaControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
+
+    @Autowired
+    private lateinit var hankeService: HankeService
 
     @Autowired
     private lateinit var hankeGeometriatService: HankeGeometriatService
@@ -88,12 +89,14 @@ class HankeGeometriaControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         hankeGeometriat.modifiedAt = null
         val hankeTunnus = "1234567"
         val hankeId = 1
+        val hanke = Hanke(hankeId, hankeTunnus)
         val savedHankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
             .asJsonResource(HankeGeometriat::class.java)
         savedHankeGeometriat.hankeId = hankeId
         savedHankeGeometriat.version = 1
 
-        every { hankeGeometriatService.saveGeometriat(hankeTunnus, any()) } returns savedHankeGeometriat
+        every { hankeService.loadHanke(hankeTunnus) }.returns(hanke)
+        every { hankeGeometriatService.saveGeometriat(hanke, any()) } returns savedHankeGeometriat
 
         return mockMvc.perform(
                 post("/hankkeet/$hankeTunnus/geometriat")
@@ -108,10 +111,12 @@ class HankeGeometriaControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
 
     private fun performGetHankkeetTunnusGeometriat(): ResultActions {
         val hankeTunnus = "1234567"
+        val hankeId = 1
+        val hanke = Hanke(hankeId, hankeTunnus)
         val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
             .asJsonResource(HankeGeometriat::class.java)
 
-        every { hankeGeometriatService.loadGeometriat(hankeTunnus) } returns hankeGeometriat
+        every { hankeGeometriatService.loadGeometriat(hanke) } returns hankeGeometriat
 
         return mockMvc.perform(
                 get("/hankkeet/$hankeTunnus/geometriat")

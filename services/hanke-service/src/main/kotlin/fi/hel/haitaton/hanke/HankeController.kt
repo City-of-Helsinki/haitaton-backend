@@ -119,6 +119,7 @@ class HankeController(
         if (hanke == null || hankeTunnus == null || hankeTunnus != hanke.hankeTunnus) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
         }
+        hanke.geometriat = hankeGeometriatService.loadGeometriat(hanke)
         val updatedHanke = hankeService.updateHanke(hanke)
         logger.info {
             "Updated hanke ${updatedHanke.hankeTunnus}."

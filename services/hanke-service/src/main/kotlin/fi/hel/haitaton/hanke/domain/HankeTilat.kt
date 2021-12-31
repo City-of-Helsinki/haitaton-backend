@@ -7,10 +7,7 @@ package fi.hel.haitaton.hanke.domain
  * or call relevant updateStateFlag..() function in the Hanke domain instance.
  */
 data class HankeTilat(
-    var onGeometrioita: Boolean = false, // Use updateHankeStateFlags()
     var onKaikkiPakollisetLuontiTiedot: Boolean = false, // Not saved to database
-    var onTiedotLiikenneHaittaIndeksille: Boolean = false, // Not saved to database
-    var onLiikenneHaittaIndeksi: Boolean = false, // Not saved to database
     var onViereisiaHankkeita: Boolean = false, // Use updateHankeStateFlags()
     var onAsiakasryhmia: Boolean = false
 )

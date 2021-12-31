@@ -297,6 +297,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         // faking the service call
         every { hankeService.updateHanke(any()) }.returns(hankeToBeUpdated)
+        every { hankeGeometriatService.loadGeometriat(any()) }.returns(null)
 
         val content = hankeToBeUpdated.toJsonString()
 
@@ -439,6 +440,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         // faking the service call
         every { hankeService.updateHanke(any()) }.returns(expectedHanke)
+        every { hankeGeometriatService.loadGeometriat(any()) }.returns(null)
 
         // Call it and check results
         mockMvc.perform(
@@ -592,7 +594,6 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 haittaAlkuPvm = expectedDateAlku
                 haittaLoppuPvm = expectedDateLoppu
                 // Faking that it has geometries:
-                tilat.onGeometrioita = true
             }
         // Updating flags as per other field values allow to simulate what the service would do:
         expectedHanke.updateStateFlags()
@@ -600,6 +601,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         // faking the service call
         every { hankeService.updateHanke(any()) }.returns(expectedHanke)
+        every { hankeGeometriatService.loadGeometriat(any()) }.returns(null)
 
         // Call it and check results
         mockMvc.perform(
@@ -614,10 +616,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(content().json(expectedContent))
             // The actual beef of this test function:
-            .andExpect(jsonPath("$.tilat.onGeometrioita").value(true))
             .andExpect(jsonPath("$.tilat.onKaikkiPakollisetLuontiTiedot").value(true))
-            .andExpect(jsonPath("$.tilat.onTiedotLiikenneHaittaIndeksille").value(true))
-            .andExpect(jsonPath("$.tilat.onLiikenneHaittaIndeksi").value(false))
             .andExpect(jsonPath("$.tilat.onViereisiaHankkeita").value(false))
             .andExpect(jsonPath("$.tilat.onAsiakasryhmia").value(false))
         verify { hankeService.updateHanke(any()) }

@@ -4,7 +4,9 @@ import fi.hel.haitaton.hanke.domain.Hanke
 
 interface TormaystarkasteluLaskentaService {
 
-    fun calculateTormaystarkastelu(hankeTunnus: String): Hanke
+    /**
+     * @return null if it can't be calculated; missing required information
+     */
+    fun calculateTormaystarkastelu(hanke: Hanke): TormaystarkasteluTulos?
 
-    fun getTormaystarkastelu(hankeTunnus: String): TormaystarkasteluTulos?
 }

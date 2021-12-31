@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.geometria
 
 import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.toHankeError
 import javax.validation.ConstraintViolationException
 import mu.KotlinLogging
@@ -22,7 +23,9 @@ private val logger = KotlinLogging.logger { }
 @RestController
 @RequestMapping("/hankkeet")
 @Validated
-class HankeGeometriaController(@Autowired private val service: HankeGeometriatService) {
+class HankeGeometriaController(
+        @Autowired private val hankeService: HankeService,
+        @Autowired private val geometryService: HankeGeometriatService) {
 
     @PostMapping("/{hankeTunnus}/geometriat")
     fun createGeometria(
@@ -35,7 +38,9 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriatSe
         if (hankeGeometriat == null) {
             return ResponseEntity.badRequest().body(HankeError.HAI1011)
         }
-        val savedHankeGeometriat = service.saveGeometriat(hankeTunnus, hankeGeometriat)
+        val hanke = hankeService.loadHanke(hankeTunnus)
+                ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
+        val savedHankeGeometriat = geometryService.saveGeometriat(hanke, hankeGeometriat)
         return ResponseEntity.ok(savedHankeGeometriat)
     }
 
@@ -44,12 +49,11 @@ class HankeGeometriaController(@Autowired private val service: HankeGeometriatSe
         logger.info {
             "Getting Hanke Geometria for $hankeTunnus..."
         }
-        val geometry = service.loadGeometriat(hankeTunnus)
-        return if (geometry == null) {
-            ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1015)
-        } else {
-            ResponseEntity.ok(geometry)
-        }
+        val hanke = hankeService.loadHanke(hankeTunnus)
+                ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
+        val geometry = geometryService.loadGeometriat(hanke)
+                ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1015)
+        return ResponseEntity.ok(geometry)
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
