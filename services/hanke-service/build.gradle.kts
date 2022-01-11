@@ -52,11 +52,11 @@ springBoot {
 plugins {
 	id("org.springframework.boot") version "2.3.4.RELEASE"
 	id("io.spring.dependency-management") version "1.0.10.RELEASE"
-	kotlin("jvm") version "1.4.20"
+	kotlin("jvm") version "1.6.10"
 	// Gives kotlin-allopen, which auto-opens classes with certain annotations
-	kotlin("plugin.spring") version "1.4.20"
+	kotlin("plugin.spring") version "1.6.10"
 	// Gives kotlin-noarg for @Entity, @Embeddable
-	kotlin("plugin.jpa") version "1.4.20"
+	kotlin("plugin.jpa") version "1.6.10"
 	idea
 }
 
@@ -69,6 +69,7 @@ dependencies {
 	implementation("de.grundid.opendatalab:geojson-jackson:$geoJsonJacksonVersion")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.liquibase:liquibase-core")
+	implementation("com.github.blagerweij:liquibase-sessionlock:1.4.0")
 
 	implementation("org.postgresql:postgresql:$postgreSQLVersion")
 	// H2 is used as embedded db for some simple low level Entity and Repository class testing
