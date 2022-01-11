@@ -3,6 +3,8 @@ package fi.hel.haitaton.hanke.domain
 import fi.hel.haitaton.hanke.*
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import org.geojson.FeatureCollection
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.GetMapping
@@ -50,6 +52,8 @@ data class PublicHanke(
         val vaihe: Vaihe,
         val suunnitteluVaihe: SuunnitteluVaihe?,
         val tyomaaTyyppi: MutableSet<TyomaaTyyppi>,
+        val liikennehaittaindeksi: LiikennehaittaIndeksiType,
+        val tormaystarkasteluTulos: TormaystarkasteluTulos,
         val omistajat: List<PublicHankeYhteystieto>,
         val geometriat: PublicHankeGeometriat?
 )
@@ -72,6 +76,8 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
             hanke.vaihe!!,
             hanke.suunnitteluVaihe,
             hanke.tyomaaTyyppi,
+            hanke.liikennehaittaindeksi!!,
+            hanke.tormaystarkasteluTulos!!,
             omistajat,
             publicGeometriat
     )
