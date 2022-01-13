@@ -18,9 +18,7 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
                 hankegeometria
             WHERE
                 hankegeometria.hankegeometriatid = ? AND
-                (st_overlaps(tormays_ylre_parts_polys.geom, hankegeometria.geometria) OR
-                st_within(tormays_ylre_parts_polys.geom, hankegeometria.geometria) OR
-                st_within(hankegeometria.geometria, tormays_ylre_parts_polys.geom))
+                ST_Intersects(tormays_ylre_parts_polys.geom, hankegeometria.geometria)
         """.trimIndent(), { rs, _ ->
                     Pair(
                         rs.getInt(2) == 1,
@@ -45,9 +43,7 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
                 hankegeometria
             WHERE
                 hankegeometria.hankegeometriatid = ? AND
-                (st_overlaps(tormays_ylre_classes_polys.geom, hankegeometria.geometria) OR
-                st_within(tormays_ylre_classes_polys.geom, hankegeometria.geometria) OR
-                st_within(hankegeometria.geometria, tormays_ylre_classes_polys.geom))
+                ST_Intersects(tormays_ylre_classes_polys.geom, hankegeometria.geometria)
         """.trimIndent(), { rs, _ ->
                     val ylreClass = rs.getString(2)
                     Pair(
@@ -78,9 +74,7 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
                 hankegeometria
             WHERE
                 hankegeometria.hankegeometriatid = ? AND
-                (st_overlaps(tormays_street_classes_polys.geom, hankegeometria.geometria) OR
-                st_within(tormays_street_classes_polys.geom, hankegeometria.geometria) OR
-                st_within(hankegeometria.geometria, tormays_street_classes_polys.geom))
+                ST_Intersects(tormays_street_classes_polys.geom, hankegeometria.geometria)
         """.trimIndent(), { rs, _ ->
                     val ylreClass = rs.getString(2)
                     Pair(
@@ -110,9 +104,7 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
                 hankegeometria
             WHERE
                 hankegeometria.hankegeometriatid = ? AND
-                (st_overlaps(tormays_central_business_area_polys.geom, hankegeometria.geometria) OR
-                st_within(tormays_central_business_area_polys.geom, hankegeometria.geometria) OR
-                st_within(hankegeometria.geometria, tormays_central_business_area_polys.geom))
+                ST_Intersects(tormays_central_business_area_polys.geom, hankegeometria.geometria)
         """.trimIndent(), { rs, _ ->
                     Pair(
                         rs.getInt(2) == 1,
@@ -141,9 +133,7 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
                  hankegeometria
             WHERE
                 hankegeometria.hankegeometriatid = ? AND
-                (st_overlaps($tableName.geom, hankegeometria.geometria) OR
-                st_within($tableName.geom, hankegeometria.geometria) OR
-                st_within(hankegeometria.geometria, $tableName.geom))
+                ST_Intersects($tableName.geom, hankegeometria.geometria)
         """.trimIndent(), { rs, _ ->
                     Pair(
                         rs.getInt(2),
@@ -170,9 +160,7 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
                 hankegeometria
             WHERE
                 hankegeometria.hankegeometriatid = ? AND
-                (st_overlaps(tormays_critical_area_polys.geom, hankegeometria.geometria) OR
-                st_within(tormays_critical_area_polys.geom, hankegeometria.geometria) OR
-                st_within(hankegeometria.geometria, tormays_critical_area_polys.geom))
+                ST_Intersects(tormays_critical_area_polys.geom, hankegeometria.geometria)
         """.trimIndent(), { rs, _ ->
                     Pair(
                         rs.getInt(2) == 1,
@@ -200,9 +188,7 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
                     hankegeometria
                 WHERE
                     hankegeometria.hankegeometriatid = ? AND
-                    (st_overlaps(tormays_buses_polys.geom, hankegeometria.geometria) OR
-                    st_within(tormays_buses_polys.geom, hankegeometria.geometria) OR
-                    st_within(hankegeometria.geometria, tormays_buses_polys.geom))
+                    ST_Intersects(tormays_buses_polys.geom, hankegeometria.geometria)
                 """.trimIndent(), { rs, _ ->
                     val geometriaId = rs.getInt(6)
                     val buses = results.computeIfAbsent(geometriaId) { mutableSetOf() }
@@ -234,9 +220,7 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
                 hankegeometria
             WHERE
                 hankegeometria.hankegeometriatid = ? AND
-                (st_overlaps(tormays_trams_polys.geom, hankegeometria.geometria) OR
-                st_within(tormays_trams_polys.geom, hankegeometria.geometria) OR
-                st_within(hankegeometria.geometria, tormays_trams_polys.geom))
+                ST_Intersects(tormays_trams_polys.geom, hankegeometria.geometria)
         """.trimIndent(), { rs, _ ->
                     val lane = rs.getString(2)
                     Pair(
@@ -266,9 +250,7 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
                 hankegeometria
             WHERE
                 hankegeometria.hankegeometriatid = ? AND
-                (st_overlaps(tormays_cycleways_priority_polys.geom, hankegeometria.geometria) OR 
-                st_within(tormays_cycleways_priority_polys.geom, hankegeometria.geometria) OR
-                st_within(hankegeometria.geometria, tormays_cycleways_priority_polys.geom))
+                ST_Intersects(tormays_cycleways_priority_polys.geom, hankegeometria.geometria)
             UNION
             SELECT 
                 tormays_cycleways_main_polys.fid,
@@ -279,9 +261,7 @@ class TormaystarkasteluDaoImpl(private val jdbcOperations: JdbcOperations) : Tor
                 hankegeometria
             WHERE
                 hankegeometria.hankegeometriatid = ? AND
-                (st_overlaps(tormays_cycleways_main_polys.geom, hankegeometria.geometria) OR 
-                st_within(tormays_cycleways_main_polys.geom, hankegeometria.geometria) OR
-                st_within(hankegeometria.geometria, tormays_cycleways_main_polys.geom))
+                ST_Intersects(tormays_cycleways_main_polys.geom, hankegeometria.geometria)
         """.trimIndent(), { rs, _ ->
                     Pair(
                         TormaystarkasteluPyorailyreittiluokka.valueOfPyorailyvayla(rs.getString(2))
