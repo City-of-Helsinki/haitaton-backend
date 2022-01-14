@@ -45,6 +45,8 @@ fun hankeGeometriatToPublic(geometriat: HankeGeometriat) = PublicHankeGeometriat
 data class PublicHanke(
         val id: Int,
         val hankeTunnus: String,
+        val nimi: String,
+        val kuvaus: String,
         val alkuPvm: ZonedDateTime,
         val loppuPvm: ZonedDateTime,
         val haittaAlkuPvm: ZonedDateTime,
@@ -69,6 +71,8 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
     return PublicHanke(
             hanke.id!!,
             hanke.hankeTunnus!!,
+            hanke.nimi!!,
+            hanke.kuvaus!!,
             hanke.alkuPvm!!,
             hanke.loppuPvm!!,
             hanke.haittaAlkuPvm!!,
