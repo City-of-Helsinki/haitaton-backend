@@ -11,6 +11,8 @@ enum class PermissionCode(val code: Long) {
 
     MODIFY_VIEW_PERMISSIONS(4),
     MODIFY_EDIT_PERMISSIONS(8),
+
+    DELETE(16),
 }
 
 class PermissionProfiles {

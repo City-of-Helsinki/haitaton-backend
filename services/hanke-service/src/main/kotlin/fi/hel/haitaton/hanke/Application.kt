@@ -25,7 +25,7 @@ class Application {
             override fun addCorsMappings(registry: CorsRegistry) {
                 registry.addMapping("/public-hankkeet").allowedMethods("GET").allowedOrigins(allowedOrigins)
                 registry.addMapping("/hankkeet").allowedMethods("POST", "GET").allowedOrigins(allowedOrigins)
-                registry.addMapping("/hankkeet/**").allowedMethods("POST", "GET", "PUT").allowedOrigins(allowedOrigins)
+                registry.addMapping("/hankkeet/**").allowedMethods("POST", "GET", "PUT", "DELETE").allowedOrigins(allowedOrigins)
                 registry.addMapping("/organisaatiot").allowedMethods("GET").allowedOrigins(allowedOrigins)
             }
         }

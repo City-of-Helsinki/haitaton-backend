@@ -16,6 +16,8 @@ interface HankeService {
 
     fun updateHanke(hanke: Hanke): Hanke
 
+    fun deleteHanke(id: Int)
+
     fun loadAllHanke(hankeSearch: HankeSearch? = null): List<Hanke>
 
     fun loadHankkeetByIds(ids: List<Int>): List<Hanke>
