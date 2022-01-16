@@ -185,6 +185,10 @@ open class HankeServiceImpl(
         return createHankeDomainObjectFromEntity(entity)
     }
 
+    override fun deleteHanke(id: Int) {
+        hankeRepository.deleteById(id)
+    }
+
     fun updateHankeStateFlags(hanke: Hanke) {
         if (hanke.hankeTunnus == null) {
             error("Somehow got here with hanke without hanke-tunnus")
