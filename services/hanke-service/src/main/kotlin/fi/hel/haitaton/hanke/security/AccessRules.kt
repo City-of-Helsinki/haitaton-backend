@@ -19,6 +19,7 @@ object AccessRules {
             .mvcMatchers(HttpMethod.POST, "/hankkeet", "/hankkeet/**").hasRole("haitaton-user")
             .mvcMatchers(HttpMethod.GET, "/hankkeet", "/hankkeet/**").hasRole("haitaton-user")
             .mvcMatchers(HttpMethod.PUT, "/hankkeet/**").hasRole("haitaton-user")
+            .mvcMatchers(HttpMethod.DELETE, "/hankkeet/**").hasRole("haitaton-user")
             .and().exceptionHandling().accessDeniedHandler { request, response, accessDeniedException ->
                 logger.warn {
                     "User ${request.userPrincipal?.name} is not authorized " +

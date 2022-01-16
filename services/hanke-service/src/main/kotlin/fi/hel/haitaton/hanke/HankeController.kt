@@ -18,15 +18,7 @@ import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.validation.annotation.Validated
-import org.springframework.web.bind.annotation.ExceptionHandler
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.PutMapping
-import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.ResponseStatus
-import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.bind.annotation.*
 
 private val logger = KotlinLogging.logger { }
 
@@ -125,6 +117,25 @@ class HankeController(
             "Updated hanke ${updatedHanke.hankeTunnus}."
         }
         return ResponseEntity.status(HttpStatus.OK).body(updatedHanke)
+    }
+
+    @DeleteMapping("/{hankeTunnus}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    fun deleteHanke(@PathVariable hankeTunnus: String) {
+        logger.info { "Deleting hanke: $hankeTunnus" }
+
+        val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
+        val hankeId = hanke.id!!
+
+        val userid = SecurityContextHolder.getContext().authentication.name
+        val permissions = permissionService.getPermissionByHankeIdAndUserId(hankeId, userid)
+        if (permissions == null || permissions.permissions.contains(PermissionCode.DELETE)) {
+            throw HankeNotFoundException(hankeTunnus)
+        }
+
+        hankeService.deleteHanke(hankeId)
+
+        logger.info { "Deleted Hanke: ${hanke.toLogString()}" }
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
