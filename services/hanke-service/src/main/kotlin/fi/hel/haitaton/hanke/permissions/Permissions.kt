@@ -44,10 +44,10 @@ class PermissionService(private val repo : PermissionRepository) {
     }
 
     internal fun combinePermissionCodes(codes: List<PermissionCode>) : Long =
-            codes.fold(0) { mask, permission -> mask and permission.code }
+            codes.fold(0) { mask, permission -> mask or permission.code }
 
     internal fun permissionCodeToCodes(code: Long) : List<PermissionCode> =
-            PermissionCode.values().filter { it.code and code == 0L }
+            PermissionCode.values().filter { it.code and code != 0L }
 
     internal fun entityToDto(e: PermissionEntity) =
             Permission(e.id, e.userId, e.hankeId, permissionCodeToCodes(e.permissionCode))
