@@ -33,3 +33,5 @@ databaseChangeLog:
       file: db/changelog/changesets/001-create-table-permissions.yml
   - include:
       file: db/changelog/changesets/002-rename-column-permissions-permissionCode.yml
+  - include:
+      file: db/changelog/changesets/003-update-permissions-to-creator.sql
