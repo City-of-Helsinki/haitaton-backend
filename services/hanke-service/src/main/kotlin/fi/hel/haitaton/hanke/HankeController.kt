@@ -68,11 +68,11 @@ class HankeController(
     fun getHankeList(hankeSearch: HankeSearch? = null): ResponseEntity<Any> {
         val userid = SecurityContextHolder.getContext().authentication.name
 
-        val hankeIdsWithViewPermissions = permissionService.getPermissionsByUserId(userid)
-            .filter { it.permissions.contains(PermissionCode.VIEW) }
-            .map { it.hankeId }
+        val userPermissions = permissionService.getPermissionsByUserId(userid)
+                .filter { it.permissions.contains(PermissionCode.VIEW) }
 
-        val hankeList = hankeService.loadHankkeetByIds(hankeIdsWithViewPermissions)
+        val hankeList = hankeService.loadHankkeetByIds(userPermissions.map { it.hankeId })
+        includePermissions(hankeList, userPermissions)
 
         if (hankeSearch != null && hankeSearch.includeGeometry()) {
             includeGeometry(hankeList)
@@ -82,6 +82,11 @@ class HankeController(
             "Search results: ${hankeList.joinToString("\n") { it.toLogString() }}"
         }
         return ResponseEntity.status(HttpStatus.OK).body(hankeList)
+    }
+
+    private fun includePermissions(hankeList: List<Hanke>, userPermissions: List<Permission>) {
+        val permissionsByHankeId = userPermissions.associateBy { it.hankeId }
+        hankeList.forEach { it.permissions = permissionsByHankeId.get(it.id!!)?.permissions }
     }
 
     private fun includeGeometry(hankeList: List<Hanke>) {
