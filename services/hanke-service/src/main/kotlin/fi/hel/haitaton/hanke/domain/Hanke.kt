@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 
@@ -97,6 +98,8 @@ data class Hanke(
      * See 'tilaOnGeometrioita' field.
      */
     var geometriat: HankeGeometriat? = null
+
+    var permissions: List<PermissionCode>? = null
 
     /**
      * Number of days between haittaAlkuPvm and haittaLoppuPvm (incl. both days)
