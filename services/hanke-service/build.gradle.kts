@@ -20,28 +20,18 @@ sourceSets {
 		compileClasspath += main.get().output + test.get().output
 		runtimeClasspath += main.get().output + test.get().output
 	}
-	create("manualTest") {
-		compileClasspath += main.get().output + test.get().output
-		runtimeClasspath += main.get().output + test.get().output
-	}
 }
 
 val integrationTestImplementation: Configuration by configurations.getting {
 	extendsFrom(configurations.testImplementation.get())
 }
-val manualTestImplementation: Configuration by configurations.getting {
-	extendsFrom(configurations.testImplementation.get())
-}
 
 configurations["integrationTestRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
-configurations["manualTestRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
 
 idea {
 	module {
 		testSourceDirs = testSourceDirs + sourceSets["integrationTest"].withConvention(KotlinSourceSet::class) { kotlin.srcDirs }
 		testResourceDirs = testResourceDirs + sourceSets["integrationTest"].resources.srcDirs
-		testSourceDirs = testSourceDirs + sourceSets["manualTest"].withConvention(KotlinSourceSet::class) { kotlin.srcDirs }
-		testResourceDirs = testResourceDirs + sourceSets["manualTest"].resources.srcDirs
 	}
 }
 
@@ -125,13 +115,4 @@ tasks {
 		outputs.upToDateWhen { false }
 	}
 
-	create("manualTest", Test::class) {
-		useJUnitPlatform()
-		group = "verification"
-		systemProperty("spring.profiles.active", "manualTest")
-		testClassesDirs = sourceSets["manualTest"].output.classesDirs
-		classpath = sourceSets["manualTest"].runtimeClasspath
-		outputs.upToDateWhen { false }
-		exclude("**/*ManualTest")
-	}
 }
