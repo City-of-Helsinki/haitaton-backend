@@ -115,7 +115,7 @@ class HankeControllerTest {
                 "user",
                 50,
                 listOf(
-                    PermissionCode.VIEW
+                    PermissionCode.VIEW, PermissionCode.EDIT
                 )
             )
         )
@@ -171,6 +171,8 @@ class HankeControllerTest {
         assertThat(responseList.body?.get(1)?.nimi).isEqualTo("Hämeenlinnanväylän uudistus")
         assertThat(responseList.body?.get(0)?.geometriat).isNull()
         assertThat(responseList.body?.get(1)?.geometriat).isNull()
+        assertThat(responseList.body?.get(0)?.permissions).isEqualTo(listOf(PermissionCode.VIEW))
+        assertThat(responseList.body?.get(1)?.permissions).isEqualTo(listOf(PermissionCode.VIEW, PermissionCode.EDIT))
     }
 
 

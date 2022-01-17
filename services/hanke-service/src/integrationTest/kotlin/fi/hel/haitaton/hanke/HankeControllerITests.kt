@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.mockk.every
 import io.mockk.verify
 import org.geojson.FeatureCollection
+import org.hamcrest.Matchers.hasSize
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -155,8 +156,14 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$[0].hankeTunnus").value(mockedHankeTunnus))
             .andExpect(jsonPath("$[1].hankeTunnus").value("hanketunnus2"))
+            .andExpect(jsonPath("$[0].id").value(123))
+            .andExpect(jsonPath("$[1].id").value(444))
             .andExpect(jsonPath("$[0].geometriat").doesNotExist())
             .andExpect(jsonPath("$[1].geometriat").doesNotExist())
+            .andExpect(jsonPath("$[0].permissions").isArray)
+            .andExpect(jsonPath("$[0].permissions").value(hasSize<Array<Any>>(PermissionProfiles.HANKE_OWNER_PERMISSIONS.size)))
+            .andExpect(jsonPath("$[1].permissions").isArray)
+            .andExpect(jsonPath("$[1].permissions").value(hasSize<Array<Any>>(1)))
 
         verify { hankeService.loadHankkeetByIds(hankeIds) }
     }
@@ -211,8 +218,15 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$[0].hankeTunnus").value(mockedHankeTunnus))
             .andExpect(jsonPath("$[1].hankeTunnus").value("hanketunnus2"))
+            .andExpect(jsonPath("$[0].id").value(123))
+            .andExpect(jsonPath("$[1].id").value(444))
             .andExpect(jsonPath("$[0].geometriat.id").value(1))
             .andExpect(jsonPath("$[1].geometriat.id").value(2))
+            .andExpect(jsonPath("$[0].permissions").isArray)
+            .andExpect(jsonPath("$[0].permissions").value(hasSize<Array<Any>>(PermissionProfiles.HANKE_OWNER_PERMISSIONS.size)))
+            .andExpect(jsonPath("$[1].permissions").isArray)
+            .andExpect(jsonPath("$[1].permissions").value(hasSize<Array<Any>>(1)))
+
 
         verify { hankeService.loadHankkeetByIds(hankeIds) }
         verify { hankeGeometriatService.loadGeometriat(Hanke(123, mockedHankeTunnus)) }
