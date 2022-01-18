@@ -1,13 +1,9 @@
 package fi.hel.haitaton.hanke
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize
+import com.fasterxml.jackson.annotation.JsonFormat
 import javax.validation.ConstraintViolation
 
-/*
-Domain classes
- */
-
-@JsonSerialize(using = HankeErrorSerializer::class)
+@JsonFormat(shape = JsonFormat.Shape.OBJECT)
 enum class HankeError(
     val errorMessage: String
 ) {

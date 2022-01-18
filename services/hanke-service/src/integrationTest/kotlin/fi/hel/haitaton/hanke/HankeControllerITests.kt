@@ -659,7 +659,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         )
             .andExpect(status().isInternalServerError)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(content().json(HankeError.HAI0002.toJsonString()))
+            .andExpect(content().json("""{"errorCode": "HAI0002", "errorMessage": "Internal error"}"""))
 
         verify { hankeService.createHanke(any()) }
     }
