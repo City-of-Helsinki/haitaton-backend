@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
@@ -13,7 +12,6 @@ import io.mockk.every
 import io.mockk.verify
 import org.geojson.FeatureCollection
 import org.hamcrest.Matchers.hasSize
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -58,7 +56,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `When hankeTunnus is given then return Hanke with it (GET)`() {
 
         // faking the service call
-        every { hankeService.loadHanke(any()) }
+        every { hankeService.loadHanke(mockedHankeTunnus) }
             .returns(
                 Hanke(
                     123,
@@ -85,14 +83,13 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 jsonPath("$.nimi")
                     .value("Hämeentien perusparannus ja katuvalot")
             )
-        verify { hankeService.loadHanke(any()) }
+        verify { hankeService.loadHanke(mockedHankeTunnus) }
     }
 
     @Test
     fun `When calling get without parameters then return all Hanke data without geometry`() {
         // because test call has limitation and automatically creates object for call, we need to create
         // "empty" object for init and verify
-        val criteria = HankeSearch()
         val hankeIds = listOf(123,444)
         val permissions = listOf(
             Permission(
@@ -171,7 +168,6 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @Test
     fun `When calling get with geometry=true then return all Hanke data with geometry`() {
         // faking the service call with two returned Hanke
-        val criteria = HankeSearch(geometry = true)
         val hankeIds = listOf(123,444)
         val permissions = listOf(
             Permission(
