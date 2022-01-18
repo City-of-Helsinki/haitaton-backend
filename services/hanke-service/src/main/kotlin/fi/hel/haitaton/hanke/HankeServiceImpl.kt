@@ -1,9 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.logging.Action
 import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
 import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
@@ -14,7 +12,6 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 
 import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContextHolder
-import java.time.LocalDate
 import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
@@ -41,58 +38,11 @@ open class HankeServiceImpl(
         return createHankeDomainObjectFromEntity(entity)
     }
 
-    override fun loadAllHanke(hankeSearch: HankeSearch?): List<Hanke> {
-
-        // TODO: do we limit result by user (e.g. own hanke)?
-        // If so, should also apply to the internal loadAll-function variants.
-
-        return if (hankeSearch == null || hankeSearch.isEmpty()) {
-            loadAllHanke()
-        } else if (hankeSearch.saveType != null) {
-            loadAllHankeWithSavetype(hankeSearch.saveType)
-        } else {
-            //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
-            loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
-        }
-    }
-
-    override fun loadHankkeetByIds(ids: List<Int>): List<Hanke> {
-        return hankeRepository.findAllById(ids)
+    override fun loadAllHanke() = hankeRepository.findAll()
             .map { createHankeDomainObjectFromEntity(it) }
-    }
 
-
-    /**
-     * Returns all the Hanke items from database for now
-     *
-     * Returns empty list if no items to return
-     * TODO user information to limit what all Hanke items we get?
-     */
-    internal fun loadAllHanke(): List<Hanke> {
-        return hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
-    }
-
-    /**
-     * Returns all the Hanke items for which the hanke period overlaps with the given period.
-     *
-     * Returns empty list if no items to return
-     * TODO user information to limit what all Hanke items we get?
-     */
-    internal fun loadAllHankeBetweenDates(periodBegin: LocalDate, periodEnd: LocalDate): List<Hanke> {
-
-        //Hanke ends must be after period start and hanke starts before period ends (that's the reason for parameters going in reversed)
-        return hankeRepository.findAllByAlkuPvmIsBeforeAndLoppuPvmIsAfter(periodEnd, periodBegin).map { createHankeDomainObjectFromEntity(it) }
-    }
-
-    /**
-     * Returns all the Hanke items for which the saveType is the wanted
-     *
-     * Returns empty list if no items to return
-     * TODO user information to limit what all Hanke items we get?
-     */
-    internal fun loadAllHankeWithSavetype(saveType: SaveType): List<Hanke> {
-        return hankeRepository.findAllBySaveType(saveType).map { createHankeDomainObjectFromEntity(it) }
-    }
+    override fun loadHankkeetByIds(ids: List<Int>) = hankeRepository.findAllById(ids)
+            .map { createHankeDomainObjectFromEntity(it) }
 
     /**
      * @return a new Hanke instance with the added and possibly modified values.

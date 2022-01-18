@@ -1,8 +1,6 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeSearch
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 
 interface HankeService {
 
@@ -18,7 +16,7 @@ interface HankeService {
 
     fun deleteHanke(id: Int)
 
-    fun loadAllHanke(hankeSearch: HankeSearch? = null): List<Hanke>
+    fun loadAllHanke(): List<Hanke>
 
     fun loadHankkeetByIds(ids: List<Int>): List<Hanke>
 
