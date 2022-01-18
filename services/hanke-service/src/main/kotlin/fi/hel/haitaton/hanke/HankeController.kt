@@ -38,8 +38,18 @@ class HankeController(
 ) {
 
     @GetMapping("/{hankeTunnus}")
-    fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String): Hanke =
-            hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
+    fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String): Hanke {
+        val hanke = hankeService.loadHanke(hankeTunnus)
+                ?: throw HankeNotFoundException(hankeTunnus)
+
+        val userid = SecurityContextHolder.getContext().authentication.name
+        val permission = permissionService.getPermissionByHankeIdAndUserId(hanke.id!!, userid)
+        if (permission == null || !permission.permissions.contains(PermissionCode.VIEW)) {
+            throw HankeNotFoundException(hankeTunnus)
+        }
+
+        return hanke
+    }
 
     @GetMapping
     fun getHankeList(@RequestParam geometry: Boolean = false): List<Hanke> {
