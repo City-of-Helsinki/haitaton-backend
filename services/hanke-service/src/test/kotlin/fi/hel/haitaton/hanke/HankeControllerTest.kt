@@ -66,10 +66,14 @@ class HankeControllerTest {
 
     @Test
     fun `test that the getHankebyTunnus returns ok`() {
+        val hankeId = 1234
+        val permission = Permission(1, "user", hankeId, listOf(PermissionCode.VIEW))
+
+        Mockito.`when`(permissionService.getPermissionByHankeIdAndUserId(hankeId, "user")).thenReturn(permission)
         Mockito.`when`(hankeService.loadHanke(mockedHankeTunnus))
             .thenReturn(
                 Hanke(
-                    1234,
+                    hankeId,
                     mockedHankeTunnus,
                     true,
                     "Mannerheimintien remontti remonttinen",

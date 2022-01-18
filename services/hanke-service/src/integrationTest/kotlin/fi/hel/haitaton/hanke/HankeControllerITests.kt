@@ -52,29 +52,47 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @Autowired
     lateinit var hankeGeometriatService: HankeGeometriatService
 
+    private fun createDummyHanke(hankeId: Int, userId: String): Hanke {
+        return Hanke(
+                hankeId,
+                mockedHankeTunnus,
+                true,
+                "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
+                getDatetimeAlku(),
+                getDatetimeLoppu(),
+                Vaihe.OHJELMOINTI,
+                null,
+                1,
+                userId,
+                getCurrentTimeUTC(),
+                null,
+                null,
+                SaveType.DRAFT
+        )
+    }
+
     @Test
-    fun `When hankeTunnus is given then return Hanke with it (GET)`() {
+    fun whenUserHasNoViewPermissionReturnNotFound() {
+        val hankeId = 123
+        val userId = "Risto"
 
         // faking the service call
-        every { hankeService.loadHanke(mockedHankeTunnus) }
-            .returns(
-                Hanke(
-                    123,
-                    mockedHankeTunnus,
-                    true,
-                    "Hämeentien perusparannus ja katuvalot", "lorem ipsum dolor sit amet...",
-                    getDatetimeAlku(),
-                    getDatetimeLoppu(),
-                    Vaihe.OHJELMOINTI,
-                    null,
-                    1,
-                    "Risto",
-                    getCurrentTimeUTC(),
-                    null,
-                    null,
-                    SaveType.DRAFT
-                )
-            )
+        every { hankeService.loadHanke(mockedHankeTunnus) }.returns(createDummyHanke(hankeId, userId))
+        every { permissionService.getPermissionByHankeIdAndUserId(any(), any()) }.returns(null)
+
+        mockMvc.perform(get("/hankkeet/$mockedHankeTunnus").accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun `When hankeTunnus is given then return Hanke with it (GET)`() {
+        val hankeId = 123
+        val userId = "test"
+        val permission = Permission(55, userId, hankeId, listOf(PermissionCode.VIEW, PermissionCode.VIEW))
+
+        // faking the service call
+        every { hankeService.loadHanke(mockedHankeTunnus) }.returns(createDummyHanke(hankeId, userId))
+        every { permissionService.getPermissionByHankeIdAndUserId(hankeId, userId) }.returns(permission)
 
         mockMvc.perform(get("/hankkeet/$mockedHankeTunnus").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
