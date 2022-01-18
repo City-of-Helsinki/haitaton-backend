@@ -24,19 +24,8 @@ open class HankeServiceImpl(
     private val personalDataChangeLogRepository: PersonalDataChangeLogRepository,
 ) : HankeService {
 
-    // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO LOAD A HANKE: @PostAuthorize("returnObject.createdBy == authentication.name")
-    override fun loadHanke(hankeTunnus: String): Hanke? {
-        // TODO: Find out all savetype matches and return the more recent draft vs. submit.
-        val entity = hankeRepository.findByHankeTunnus(hankeTunnus)
-        if (entity == null)
-            return null
-
-        if (entity.id == null) {
-            throw DatabaseStateException(hankeTunnus)
-        }
-
-        return createHankeDomainObjectFromEntity(entity)
-    }
+    override fun loadHanke(hankeTunnus: String) = hankeRepository.findByHankeTunnus(hankeTunnus)
+            ?.let { createHankeDomainObjectFromEntity(it) }
 
     override fun loadAllHanke() = hankeRepository.findAll()
             .map { createHankeDomainObjectFromEntity(it) }

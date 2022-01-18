@@ -213,6 +213,8 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     private fun performGetHankkeetTunnus(): ResultActions {
         every { hankeService.loadHanke(any()) }
             .returns(Hanke(123, "HAI-TEST-1"))
+        every { permissionService.getPermissionByHankeIdAndUserId(123, "test7358") }
+            .returns(Permission(1, "test7358", 123, PermissionProfiles.HANKE_OWNER_PERMISSIONS))
 
         return mockMvc.perform(
             get("/hankkeet/$testHankeTunnus")
