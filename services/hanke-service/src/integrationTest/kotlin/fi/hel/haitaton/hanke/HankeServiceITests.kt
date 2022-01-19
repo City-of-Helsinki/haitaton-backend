@@ -158,11 +158,6 @@ class HankeServiceITests {
         assertThat(ryt2.id).isNotEqualTo(firstId)
         assertThat(ryt3.id).isNotEqualTo(firstId)
         assertThat(ryt3.id).isNotEqualTo(ryt2.id)
-
-        // Check state flag fields; all false in this case (because geometry has not been given):
-        assertThat(returnedHanke.tilat.onKaikkiPakollisetLuontiTiedot).isFalse
-        assertThat(returnedHanke.tilat.onViereisiaHankkeita).isFalse
-        assertThat(returnedHanke.tilat.onAsiakasryhmia).isFalse
     }
 
     @Test
@@ -181,7 +176,7 @@ class HankeServiceITests {
         assertThat(returnedHanke.id).isNotNull
 
         // Check certain flags for false state:
-        assertThat(returnedHanke.tilat.onKaikkiPakollisetLuontiTiedot).isFalse
+        assertThat(returnedHanke.onKaikkiPakollisetLuontiTiedot()).isFalse
 
         // Fill the values and give proper save type:
         returnedHanke.tyomaaKatuosoite = "Testikatu 1 A 1"
@@ -202,7 +197,7 @@ class HankeServiceITests {
         assertThat(returnedHanke2.id).isNotNull
 
         // Check those flags to be true now with full data available:
-        assertThat(returnedHanke2.tilat.onKaikkiPakollisetLuontiTiedot).isTrue
+        assertThat(returnedHanke2.onKaikkiPakollisetLuontiTiedot()).isTrue
     }
 
     @Test
