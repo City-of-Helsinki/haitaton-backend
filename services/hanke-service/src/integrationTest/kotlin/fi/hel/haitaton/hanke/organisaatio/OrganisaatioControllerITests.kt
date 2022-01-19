@@ -30,8 +30,7 @@ class OrganisaatioControllerITests(@Autowired val mockMvc: MockMvc) {
             Organisaatio(1, "DNA", "DNA Oy"),
             Organisaatio(2, "WELHO", "DNA WELHO Oy")
         )
-
-        every { organisaatioService.getOrganisaatiot() }.returns(organisations)
+        every { organisaatioService.getAll() }.returns(organisations)
 
         mockMvc
             .perform(get("/organisaatiot/"))
