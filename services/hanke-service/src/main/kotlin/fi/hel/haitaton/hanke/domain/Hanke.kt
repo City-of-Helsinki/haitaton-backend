@@ -127,23 +127,12 @@ data class Hanke(
      */
     var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
 
-    // --------------- State flags -------------------
-    var tilat: HankeTilat = HankeTilat()
-
-    fun updateStateFlags() {
-        updateStateFlagOnKaikkiPakollisetLuontiTiedot()
-    }
-
-    fun updateStateFlagOnKaikkiPakollisetLuontiTiedot() {
-        // All mandatory fields have been given... (though their validity should be checked elsewhere)
-        //  and saveType is submit, not just draft?
-        tilat.onKaikkiPakollisetLuontiTiedot = !nimi.isNullOrBlank()
+    fun onKaikkiPakollisetLuontiTiedot() = !nimi.isNullOrBlank()
                 && !kuvaus.isNullOrBlank()
                 && (alkuPvm != null) && (loppuPvm != null)
                 && hasMandatoryVaiheValues()
                 && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
                 && saveType == SaveType.SUBMIT
-    }
 
     private fun hasMandatoryVaiheValues(): Boolean {
         // Vaihe must be given, but suunnitteluVaihe is mandatory only if vaihe is "SUUNNITTELU".

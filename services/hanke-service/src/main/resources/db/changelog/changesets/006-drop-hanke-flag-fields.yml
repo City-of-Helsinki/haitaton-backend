@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-drop-hanke-flag-fields
+      comment: Drop fields for various state/flag info
+      author: Janne Heikkilä
+      changes:
+        - dropColumn:
+            tableName: hanke
+            columns:
+              - column:
+                  name: tilaongeometrioita
+              - column:
+                  name: tilaonviereisiahankkeita
+              - column:
+                  name: tilaonasiakasryhmia
