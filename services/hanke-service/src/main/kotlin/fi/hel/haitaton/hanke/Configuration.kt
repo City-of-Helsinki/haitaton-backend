@@ -8,7 +8,6 @@ import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
 import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
-import fi.hel.haitaton.hanke.organisaatio.OrganisaatioServiceImpl
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluDao
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluDaoImpl
@@ -43,7 +42,7 @@ class Configuration {
 
     @Bean
     fun organisaatioService(organisaatioRepository: OrganisaatioRepository): OrganisaatioService =
-        OrganisaatioServiceImpl(organisaatioRepository)
+        OrganisaatioService(organisaatioRepository)
 
     @Bean
     fun hankeGeometriatDao(jdbcOperations: JdbcOperations): HankeGeometriatDao = HankeGeometriatDaoImpl(jdbcOperations)
