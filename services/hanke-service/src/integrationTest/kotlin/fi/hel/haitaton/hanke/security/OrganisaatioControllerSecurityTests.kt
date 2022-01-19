@@ -61,7 +61,7 @@ class OrganisaatioControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
                 Organisaatio(2, "WELHO", "DNA WELHO Oy")
         )
 
-        every { organisaatioService.getOrganisaatiot() }.returns(organisations)
+        every { organisaatioService.getAll() }.returns(organisations)
 
         return mockMvc.perform(get("/organisaatiot/"))
     }
