@@ -179,17 +179,6 @@ class HankeEntity(
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
 
-    // --------------- State flags -------------------
-    // NOTE: need to be careful with these to not end up with inconsistent database state.
-    // Some flags are saved to database in order to reduce processing overhead e.g. when fetching
-    // lots of Hanke-objects for showing a list. (Those that are not saved are left in comments
-    // as reference; see Hanke domain-object.)
-    // var tilaOnKaikkiPakollisetLuontiTiedot: Boolean = false
-    // var tilaOnTiedotLiikenneHaittaIndeksille: Boolean = false
-    // var tilaOnLiikenneHaittaIndeksi: Boolean = false
-    var tilaOnViereisiaHankkeita: Boolean = false
-    var tilaOnAsiakasryhmia: Boolean = false
-
     // --------------- Törmaystarkastelu -------------------
     // NOTE: the type-field has column name "liikennehaittaindeksityyppi",
     // whereas the combined object has type LiikenneHaittaIndeksiType in Kotlin-side.

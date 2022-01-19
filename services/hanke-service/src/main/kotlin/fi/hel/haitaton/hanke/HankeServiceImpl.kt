@@ -128,17 +128,6 @@ open class HankeServiceImpl(
         hankeRepository.deleteById(id)
     }
 
-    fun updateHankeStateFlags(hanke: Hanke) {
-        if (hanke.hankeTunnus == null) {
-            error("Somehow got here with hanke without hanke-tunnus")
-        }
-        // Both checks that the hanke already exists, and get its old fields to transfer data into
-        val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
-                ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
-        copyStateFlagsToEntity(hanke, entity)
-        hankeRepository.save(entity)
-    }
-
     // TODO: functions to remove and invalidate Hanke's tormaystarkastelu-data
     //   At least invalidation can be done purely working on the particular
     //   tormaystarkasteluTulosEntity and -Repository.
@@ -200,9 +189,6 @@ open class HankeServiceImpl(
                 h.tormaystarkasteluTulos = ttt
             }
 
-            copyStateFlagsFromEntity(h, hankeEntity)
-            h.updateStateFlags()
-
             return h
         }
 
@@ -248,11 +234,6 @@ open class HankeServiceImpl(
                     createdAt = createdAt,
                     modifiedAt = modifiedAt
             )
-        }
-
-        private fun copyStateFlagsFromEntity(h: Hanke, entity: HankeEntity) {
-            h.tilat.onViereisiaHankkeita = entity.tilaOnViereisiaHankkeita
-            h.tilat.onAsiakasryhmia = entity.tilaOnAsiakasryhmia
         }
 
     }
@@ -368,11 +349,6 @@ open class HankeServiceImpl(
                 tempLockedExistingYts.remove(yhteystieto.id!!)
             }
         }
-    }
-
-    private fun copyStateFlagsToEntity(hanke: Hanke, entity: HankeEntity) {
-        entity.tilaOnViereisiaHankkeita = hanke.tilat.onViereisiaHankkeita
-        entity.tilaOnAsiakasryhmia = hanke.tilat.onAsiakasryhmia
     }
 
     /**
