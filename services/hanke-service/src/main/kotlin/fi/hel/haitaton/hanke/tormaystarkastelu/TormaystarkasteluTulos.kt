@@ -1,70 +1,72 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import javax.persistence.Column
-import javax.persistence.Embeddable
-import javax.persistence.EnumType
-import javax.persistence.Enumerated
+import fi.hel.haitaton.hanke.HankeEntity
+import javax.persistence.*
 
-// TODO: Only hankeTunnus to be used as part of equals(), hashCode() and copy() auto-implementations?
-//  For now we only have one result per hanke, so it is ok, but in future there can be multiple results
-//  for each hanke, and at least geometryId or something like that should be considered.
-data class TormaystarkasteluTulos(val hankeTunnus: String) {
+data class TormaystarkasteluTulos(
+        val perusIndeksi: Float,
+        val pyorailyIndeksi: Float,
+        val joukkoliikenneIndeksi: Float) {
 
-    var hankeId: Int = 0
-    var hankeGeometriatId: Int = 0
-    var liikennehaittaIndeksi: LiikennehaittaIndeksiType? = null
-    var perusIndeksi: Float? = null
-    var pyorailyIndeksi: Float? = null
-    var joukkoliikenneIndeksi: Float? = null
-    var tila: TormaystarkasteluTulosTila? = null
-
-    override fun toString(): String {
-        return "TormaystarkasteluTulos(" +
-                "hankeTunnus='$hankeTunnus', " +
-                "hankeId=$hankeId, " +
-                "hankeGeometriatId=$hankeGeometriatId, " +
-                "liikennehaittaIndeksi=$liikennehaittaIndeksi, " +
-                "perusIndeksi=$perusIndeksi, " +
-                "pyorailyIndeksi=$pyorailyIndeksi, " +
-                "joukkoliikenneIndeksi=$joukkoliikenneIndeksi)"
-    }
-
-    /**
-     * Selects maximum of three indeksi and sets that to be LiikennehaittaIndeksi.
-     */
-    fun calculateLiikennehaittaIndeksi() {
-        val maxIndex = setOf(perusIndeksi!!, pyorailyIndeksi!!, joukkoliikenneIndeksi!!).maxOrNull()
-            ?: throw IllegalStateException("perusIndeksi, pyorailyIndeksi and joukkoliikenneIndeksi cannot be null")
-        liikennehaittaIndeksi = when (maxIndex) {
-            joukkoliikenneIndeksi -> LiikennehaittaIndeksiType(
-                joukkoliikenneIndeksi!!,
-                IndeksiType.JOUKKOLIIKENNEINDEKSI
-            )
-            perusIndeksi -> LiikennehaittaIndeksiType(perusIndeksi!!, IndeksiType.PERUSINDEKSI)
-            else -> LiikennehaittaIndeksiType(pyorailyIndeksi!!, IndeksiType.PYORAILYINDEKSI)
+    val liikennehaittaIndeksi: LiikennehaittaIndeksiType by lazy {
+        val maxIndex = setOf(perusIndeksi, pyorailyIndeksi, joukkoliikenneIndeksi).maxOrNull()
+                ?: throw IllegalStateException("perusIndeksi, pyorailyIndeksi and joukkoliikenneIndeksi cannot be null")
+        when (maxIndex) {
+            joukkoliikenneIndeksi ->
+                LiikennehaittaIndeksiType(joukkoliikenneIndeksi, IndeksiType.JOUKKOLIIKENNEINDEKSI)
+            perusIndeksi ->
+                LiikennehaittaIndeksiType(perusIndeksi, IndeksiType.PERUSINDEKSI)
+            else ->
+                LiikennehaittaIndeksiType(pyorailyIndeksi, IndeksiType.PYORAILYINDEKSI)
         }
     }
+
 }
 
-// This class is also used as part of entity-classes TormaystarkasteluTulosEntity and Hanke.
-// HankeEntity overrides the column names.
-@Embeddable
-data class LiikennehaittaIndeksiType(
-    @Column(name = "liikennehaitta")
-    var indeksi: Float,
-    @Column(name = "liikennehaittatyyppi")
-    @Enumerated(EnumType.STRING)
-    var tyyppi: IndeksiType
-)
+data class LiikennehaittaIndeksiType(val indeksi: Float, val tyyppi: IndeksiType)
 
 enum class IndeksiType {
     PERUSINDEKSI,
     PYORAILYINDEKSI,
     JOUKKOLIIKENNEINDEKSI
-    // TODO: will likely need a new option "MONTA" or "USEITA".
 }
 
-enum class TormaystarkasteluTulosTila {
-    VOIMASSA,
-    EI_VOIMASSA
+@Entity
+@Table(name = "tormaystarkastelutulos")
+class TormaystarkasteluTulosEntity(
+        val perus: Float,
+        val pyoraily: Float,
+        val joukkoliikenne: Float,
+        @ManyToOne(optional = false, fetch = FetchType.LAZY)
+        @JoinColumn(name = "hankeid")
+        val hanke: HankeEntity,
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        val id: Int = 0
+) {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is TormaystarkasteluTulosEntity) return false
+
+        // For persisted entities, checking id match is enough
+        if (id != other.id) return false
+
+        // For non-persisted, have to compare almost everything
+        if (hanke != other.hanke) return false
+        if (perus != other.perus) return false
+        if (pyoraily != other.pyoraily) return false
+        if (joukkoliikenne != other.joukkoliikenne) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id.hashCode()
+        result = 31 * result + (hanke.hashCode())
+        result = 31 * result + (perus.hashCode())
+        result = 31 * result + (pyoraily.hashCode())
+        result = 31 * result + (joukkoliikenne.hashCode())
+        return result
+    }
 }

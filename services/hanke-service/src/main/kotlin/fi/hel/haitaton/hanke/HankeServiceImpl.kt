@@ -103,9 +103,14 @@ open class HankeServiceImpl(
         entity.modifiedByUserId = userid
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
 
-        tormaystarkasteluService.calculateTormaystarkastelu(hanke)?.let { tulos ->
-            val tulosEntity = copyTormaystarkasteluTulosToEntity(tulos)
-            copyTormaystarkasteluTulosToHankeEntity(tulosEntity, entity)
+        tormaystarkasteluService.calculateTormaystarkastelu(hanke)?.let {
+            entity.tormaystarkasteluTulokset.clear()
+            val tte = TormaystarkasteluTulosEntity(
+                    it.perusIndeksi,
+                    it.pyorailyIndeksi,
+                    it.joukkoliikenneIndeksi,
+                    entity)
+            entity.tormaystarkasteluTulokset.add(tte)
         }
 
         // Save changes:
@@ -175,19 +180,8 @@ open class HankeServiceImpl(
             h.polyHaitta = hankeEntity.polyHaitta
             h.tarinaHaitta = hankeEntity.tarinaHaitta
 
-            h.liikennehaittaindeksi = hankeEntity.liikennehaittaIndeksi?.copy()
-
-            if (!hankeEntity.tormaystarkasteluTulokset.isEmpty()) {
-                val tttE = hankeEntity.tormaystarkasteluTulokset.get(0)
-                val ttt = TormaystarkasteluTulos(hankeEntity.hankeTunnus!!)
-                ttt.hankeId = h.id!!
-                ttt.liikennehaittaIndeksi = tttE.liikennehaitta?.copy()
-                ttt.perusIndeksi = tttE.perus
-                ttt.joukkoliikenneIndeksi = tttE.joukkoliikenne
-                ttt.pyorailyIndeksi = tttE.pyoraily
-                ttt.tila = tttE.tila
-                h.tormaystarkasteluTulos = ttt
-            }
+            hankeEntity.tormaystarkasteluTulokset.firstOrNull()
+                ?.let { h.tormaystarkasteluTulos = TormaystarkasteluTulos(it.perus, it.pyoraily, it.joukkoliikenne) }
 
             return h
         }
@@ -596,23 +590,6 @@ open class HankeServiceImpl(
         if (incoming.organisaatioNimi != existing.organisaatioNimi) return false
         if (incoming.osasto != existing.osasto) return false
         return true
-    }
-
-    private fun copyTormaystarkasteluTulosToEntity(ttt: TormaystarkasteluTulos): TormaystarkasteluTulosEntity {
-        val tttEntity = TormaystarkasteluTulosEntity()
-        tttEntity.liikennehaitta = ttt.liikennehaittaIndeksi?.copy()
-        tttEntity.perus = ttt.perusIndeksi
-        tttEntity.pyoraily = ttt.pyorailyIndeksi
-        tttEntity.joukkoliikenne = ttt.joukkoliikenneIndeksi
-        tttEntity.tila = ttt.tila
-        tttEntity.createdAt = getCurrentTimeUTCAsLocalTime()
-        return tttEntity
-    }
-
-    private fun copyTormaystarkasteluTulosToHankeEntity(ttte: TormaystarkasteluTulosEntity, hankeEntity: HankeEntity) {
-        hankeEntity.liikennehaittaIndeksi = ttte.liikennehaitta?.copy()
-        hankeEntity.tormaystarkasteluTulokset.clear()
-        hankeEntity.addTormaystarkasteluTulos(ttte)
     }
 
     /**

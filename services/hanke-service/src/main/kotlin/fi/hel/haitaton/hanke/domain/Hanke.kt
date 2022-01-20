@@ -112,19 +112,10 @@ data class Hanke(
             null
         }
 
-    // -------------- Tormaystarkastelu -------------
-    /**
-     * Liikennehaittaindeksi is always available here if it has been calculated and is still valid.
-     * Might be around even if no longer valid.
-     * TODO: should the validity-state be part of this indeksitype, too? (I.e. would know that even
-     *  when not getting the full tulos-data (which does have that state).
-     */
-    var liikennehaittaindeksi: LiikennehaittaIndeksiType? = null
+    val liikennehaittaindeksi: LiikennehaittaIndeksiType? by lazy {
+        tormaystarkasteluTulos?.liikennehaittaIndeksi
+    }
 
-    /**
-     * These are currently available only when Hanke is returned via Tormaystarkastelu controller/service.
-     * And if they have been calculated and are still valid.
-     */
     var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
 
     fun onKaikkiPakollisetLuontiTiedot() = !nimi.isNullOrBlank()
