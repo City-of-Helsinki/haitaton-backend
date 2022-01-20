@@ -179,16 +179,6 @@ class HankeEntity(
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
 
-    // --------------- Törmaystarkastelu -------------------
-    // NOTE: the type-field has column name "liikennehaittaindeksityyppi",
-    // whereas the combined object has type LiikenneHaittaIndeksiType in Kotlin-side.
-    @Embedded
-    @AttributeOverrides(
-        AttributeOverride(name = "indeksi", column = Column(name = "liikennehaittaindeksi")),
-        AttributeOverride(name = "tyyppi", column = Column(name = "liikennehaittaindeksityyppi"))
-    )
-    var liikennehaittaIndeksi: LiikennehaittaIndeksiType? = null
-
     // Made bidirectional relation mainly to allow cascaded delete.
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "hanke", cascade = [CascadeType.ALL], orphanRemoval = true)
     var tormaystarkasteluTulokset: MutableList<TormaystarkasteluTulosEntity> = mutableListOf()
@@ -210,25 +200,6 @@ class HankeEntity(
             yhteystieto.hanke = null
         }
     }
-
-    fun addTormaystarkasteluTulos(tormaystarkasteluTulosEntity: TormaystarkasteluTulosEntity) {
-        if (tormaystarkasteluTulosEntity.hanke != null && tormaystarkasteluTulosEntity.hanke != this) {
-            throw IllegalStateException("Given TormaystarkasteluTulosEntity has already a different parent Hanke.")
-        }
-        tormaystarkasteluTulosEntity.hanke = this
-        // Check that exactly same entity (with same id) is not added twice;
-        // another one with the same values but different id can be added.
-        if (!tormaystarkasteluTulokset.contains(tormaystarkasteluTulosEntity))
-            tormaystarkasteluTulokset.add(tormaystarkasteluTulosEntity)
-    }
-
-    fun removeTormaystarkasteluTulos(tormaystarkasteluTulosEntity: TormaystarkasteluTulosEntity) {
-        if (tormaystarkasteluTulokset.contains(tormaystarkasteluTulosEntity)) {
-            tormaystarkasteluTulokset.remove(tormaystarkasteluTulosEntity)
-            tormaystarkasteluTulosEntity.hanke = null
-        }
-    }
-
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

@@ -28,7 +28,7 @@ internal class TormaystarkasteluCalculatorTest {
         }
 
         val result = TormaystarkasteluCalculator
-            .calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), this.classifications)
+            .calculateAllIndeksit(this.classifications)
 
         assertThat(result.perusIndeksi).isEqualTo(expectedIndex)
     }
@@ -39,7 +39,7 @@ internal class TormaystarkasteluCalculatorTest {
             Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 0, "")
 
         val result = TormaystarkasteluCalculator
-            .calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
+            .calculateAllIndeksit(classifications)
 
         assertThat(result.pyorailyIndeksi).isEqualTo(1.0f)
     }
@@ -50,7 +50,7 @@ internal class TormaystarkasteluCalculatorTest {
         classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
             Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 4, "")
 
-        var result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
+        var result = TormaystarkasteluCalculator.calculateAllIndeksit(classifications)
 
         assertThat(result.pyorailyIndeksi).isEqualTo(3.0f)
 
@@ -58,7 +58,7 @@ internal class TormaystarkasteluCalculatorTest {
         classifications[LuokitteluType.PYORAILYN_PAAREITTI] =
             Luokittelutulos(LuokitteluType.PYORAILYN_PAAREITTI, 5, "")
 
-        result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
+        result = TormaystarkasteluCalculator.calculateAllIndeksit(classifications)
 
         assertThat(result.pyorailyIndeksi).isEqualTo(3.0f)
     }
@@ -70,7 +70,7 @@ internal class TormaystarkasteluCalculatorTest {
         classifications[LuokitteluType.BUSSILIIKENNE] =
             Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 0, "")
 
-        val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
+        val result = TormaystarkasteluCalculator.calculateAllIndeksit(classifications)
 
         assertThat(result.pyorailyIndeksi).isEqualTo(1.0f)
         assertThat(result.joukkoliikenneIndeksi).isEqualTo(1.0f)
@@ -85,7 +85,7 @@ internal class TormaystarkasteluCalculatorTest {
         classifications[LuokitteluType.BUSSILIIKENNE] =
             Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 4, "")
 
-        val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
+        val result = TormaystarkasteluCalculator.calculateAllIndeksit(classifications)
 
         assertThat(result.pyorailyIndeksi).isEqualTo(1.0f)
         assertThat(result.joukkoliikenneIndeksi).isEqualTo(4.0f)
@@ -100,7 +100,7 @@ internal class TormaystarkasteluCalculatorTest {
         classifications[LuokitteluType.BUSSILIIKENNE] =
             Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 2, "")
 
-        val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
+        val result = TormaystarkasteluCalculator.calculateAllIndeksit(classifications)
 
         assertThat(result.pyorailyIndeksi).isEqualTo(1.0f)
         assertThat(result.joukkoliikenneIndeksi).isEqualTo(4.0f)
@@ -115,7 +115,7 @@ internal class TormaystarkasteluCalculatorTest {
         classifications[LuokitteluType.BUSSILIIKENNE] =
             Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 5, "")
 
-        val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
+        val result = TormaystarkasteluCalculator.calculateAllIndeksit(classifications)
 
         assertThat(result.pyorailyIndeksi).isEqualTo(1.0f)
         assertThat(result.joukkoliikenneIndeksi).isEqualTo(4.0f)
@@ -133,12 +133,12 @@ internal class TormaystarkasteluCalculatorTest {
         classifications[LuokitteluType.BUSSILIIKENNE] =
             Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 4, "")
 
-        val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
+        val result = TormaystarkasteluCalculator.calculateAllIndeksit(classifications)
         assertThat(result.pyorailyIndeksi).isEqualTo(1.0f)
         assertThat(result.joukkoliikenneIndeksi).isEqualTo(4.0f)
 
-        assertThat(result.liikennehaittaIndeksi?.indeksi).isEqualTo(4.0f)
-        assertThat(result.liikennehaittaIndeksi?.tyyppi).isEqualTo(IndeksiType.JOUKKOLIIKENNEINDEKSI)
+        assertThat(result.liikennehaittaIndeksi.indeksi).isEqualTo(4.0f)
+        assertThat(result.liikennehaittaIndeksi.tyyppi).isEqualTo(IndeksiType.JOUKKOLIIKENNEINDEKSI)
     }
 
     @Test
@@ -151,13 +151,13 @@ internal class TormaystarkasteluCalculatorTest {
         classifications[LuokitteluType.BUSSILIIKENNE] =
             Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 2, "")
 
-        val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
+        val result = TormaystarkasteluCalculator.calculateAllIndeksit(classifications)
 
         assertThat(result.pyorailyIndeksi).isEqualTo(3.0f)
         assertThat(result.joukkoliikenneIndeksi).isEqualTo(1.0f)
 
-        assertThat(result.liikennehaittaIndeksi?.indeksi).isEqualTo(3.0f)
-        assertThat(result.liikennehaittaIndeksi?.tyyppi).isEqualTo(IndeksiType.PYORAILYINDEKSI)
+        assertThat(result.liikennehaittaIndeksi.indeksi).isEqualTo(3.0f)
+        assertThat(result.liikennehaittaIndeksi.tyyppi).isEqualTo(IndeksiType.PYORAILYINDEKSI)
     }
 
     @Test
@@ -184,14 +184,14 @@ internal class TormaystarkasteluCalculatorTest {
         classifications[LuokitteluType.BUSSILIIKENNE] =
             Luokittelutulos(LuokitteluType.BUSSILIIKENNE, 2, "")
 
-        val result = TormaystarkasteluCalculator.calculateAllIndeksit(TormaystarkasteluTulos("TUNNUS"), classifications)
+        val result = TormaystarkasteluCalculator.calculateAllIndeksit(classifications)
 
         assertThat(result.perusIndeksi).isEqualTo(4.0f)
         assertThat(result.pyorailyIndeksi).isEqualTo(1.0f)
         assertThat(result.joukkoliikenneIndeksi).isEqualTo(1.0f)
 
-        assertThat(result.liikennehaittaIndeksi?.indeksi).isEqualTo(4.0f)
-        assertThat(result.liikennehaittaIndeksi?.tyyppi).isEqualTo(IndeksiType.PERUSINDEKSI)
+        assertThat(result.liikennehaittaIndeksi.indeksi).isEqualTo(4.0f)
+        assertThat(result.liikennehaittaIndeksi.tyyppi).isEqualTo(IndeksiType.PERUSINDEKSI)
     }
 }
 

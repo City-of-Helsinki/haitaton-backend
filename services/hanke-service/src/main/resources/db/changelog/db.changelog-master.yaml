@@ -41,3 +41,5 @@ databaseChangeLog:
       file: db/changelog/changesets/005-add-delete-permission-to-creator.sql
   - include:
       file: db/changelog/changesets/006-drop-hanke-flag-fields.yml
+  - include:
+      file: db/changelog/changesets/007-drop-liikennehaittaindeksi.yml
