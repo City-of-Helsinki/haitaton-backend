@@ -53,8 +53,12 @@ plugins {
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
+	implementation("com.fasterxml.jackson.core:jackson-databind")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+	implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
 	implementation("io.github.microutils:kotlin-logging:1.12.0")
+	implementation("ch.qos.logback:logback-access")
+	implementation("net.logstash.logback:logstash-logback-encoder:6.5")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	implementation("de.grundid.opendatalab:geojson-jackson:$geoJsonJacksonVersion")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
