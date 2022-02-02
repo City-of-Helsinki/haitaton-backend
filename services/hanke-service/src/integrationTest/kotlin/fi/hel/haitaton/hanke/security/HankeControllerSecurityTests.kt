@@ -70,8 +70,8 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     private val testHankeTunnus = "HAI21-TEST-1"
 
     @Test
-    @WithMockUser(username = "test7358", roles = ["haitaton-user"])
-    fun `status ok with authenticated user with correct role`() {
+    @WithMockUser(username = "test7358", roles = [])
+    fun `status ok with authenticated user with or without any role`() {
         performGetHankkeet().andExpect(status().isOk)
         performPostHankkeet().andExpect(status().isOk)
         performPutHankkeetTunnus().andExpect(status().isOk)
@@ -96,40 +96,6 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         performGetHankkeetTunnus()
             .andExpect(unauthenticated())
             .andExpect(status().isUnauthorized)
-            .andExpectHankeError(HankeError.HAI0001)
-    }
-
-    @Test
-    @WithMockUser(username = "test7358", roles = ["bad role"])
-    fun `status forbidden (403) with authenticated user with bad role`() {
-        performGetHankkeet()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-        performPostHankkeet()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-        performPutHankkeetTunnus()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-        performGetHankkeetTunnus()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-    }
-
-    @Test
-    @WithMockUser(username = "test7358", roles = [])
-    fun `status forbidden (403) with authenticated user without roles`() {
-        performGetHankkeet()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-        performPostHankkeet()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-        performPutHankkeetTunnus()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-        performGetHankkeetTunnus()
-            .andExpect(status().isForbidden)
             .andExpectHankeError(HankeError.HAI0001)
     }
 
