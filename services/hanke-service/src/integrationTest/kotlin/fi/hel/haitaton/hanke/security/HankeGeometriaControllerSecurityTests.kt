@@ -47,8 +47,8 @@ class HankeGeometriaControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     private lateinit var hankeGeometriatService: HankeGeometriatService
 
     @Test
-    @WithMockUser(username = "test7358", roles = ["haitaton-user"])
-    fun `status ok with authenticated user with correct role`() {
+    @WithMockUser(username = "test7358", roles = [])
+    fun `status ok with authenticated user with or without any role`() {
         performPostHankkeetTunnusGeometriat().andExpect(status().isOk)
         performGetHankkeetTunnusGeometriat().andExpect(status().isOk)
     }
@@ -62,20 +62,6 @@ class HankeGeometriaControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         performGetHankkeetTunnusGeometriat()
                 .andExpect(unauthenticated())
                 .andExpect(status().isUnauthorized)
-    }
-
-    @Test
-    @WithMockUser(username = "test7358", roles = ["bad role"])
-    fun `status forbidden (403) with authenticated user with bad role`() {
-        performPostHankkeetTunnusGeometriat().andExpect(status().isForbidden)
-        performGetHankkeetTunnusGeometriat().andExpect(status().isForbidden)
-    }
-
-    @Test
-    @WithMockUser(username = "test7358", roles = [])
-    fun `status forbidden (403) with authenticated user without roles`() {
-        performPostHankkeetTunnusGeometriat().andExpect(status().isForbidden)
-        performGetHankkeetTunnusGeometriat().andExpect(status().isForbidden)
     }
 
     // ---------- POST /hankkeet/{hankeTunnus}/geometriat ----------
