@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.HaitatonPostgreSQLContainer
@@ -56,7 +55,7 @@ internal class TormaystarkasteluLaskentaServiceImplITest {
     private lateinit var hankeGeometriatDao: HankeGeometriatDao
 
     @MockkBean
-    private lateinit var tormaystarkasteluDao: TormaystarkasteluDao
+    private lateinit var tormaystarkasteluDao: TormaystarkasteluTormaysService
 
     @Autowired
     private lateinit var hankeService: HankeService
@@ -99,26 +98,29 @@ internal class TormaystarkasteluLaskentaServiceImplITest {
             hankeGeometriatDao.retrieveHankeGeometriat(hankeId)
         } returns hankeGeometriat
         every {
-            tormaystarkasteluDao.yleisetKatualueet(hankeGeometriat)
-        } returns mapOf(Pair(hankeGeometriaId, true))
+            tormaystarkasteluDao.anyIntersectsYleinenKatuosa(hankeGeometriat)
+        } returns true
         every {
-            tormaystarkasteluDao.yleisetKatuluokat(hankeGeometriat)
-        } returns mapOf(Pair(hankeGeometriaId, setOf(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)))
+            tormaystarkasteluDao.maxIntersectingYleinenkatualueKatuluokka(hankeGeometriat)
+        } returns TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value
         every {
-            tormaystarkasteluDao.katuluokat(hankeGeometriat)
-        } returns mapOf(Pair(hankeGeometriaId, setOf(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)))
+            tormaystarkasteluDao.maxIntersectingLiikenteellinenKatuluokka(hankeGeometriat)
+        } returns TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value
         every {
-            tormaystarkasteluDao.liikennemaarat(hankeGeometriat, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30)
-        } returns mapOf(Pair(hankeGeometriaId, setOf(1000)))
+            tormaystarkasteluDao.maxLiikennemaara(hankeGeometriat, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30)
+        } returns 1000
         every {
-            tormaystarkasteluDao.pyorailyreitit(hankeGeometriat)
-        } returns mapOf(Pair(hankeGeometriaId, setOf(TormaystarkasteluPyorailyreittiluokka.PAAREITTI)))
+            tormaystarkasteluDao.anyIntersectsWithCyclewaysPriority(hankeGeometriat)
+        } returns false
         every {
-            tormaystarkasteluDao.raitiotiet(hankeGeometriat)
-        } returns mapOf(Pair(hankeGeometriaId, setOf(TormaystarkasteluRaitiotiekaistatyyppi.JAETTU)))
+            tormaystarkasteluDao.anyIntersectsWithCyclewaysMain(hankeGeometriat)
+        } returns true
         every {
-            tormaystarkasteluDao.bussiliikenteenKannaltaKriittinenAlue(hankeGeometriat)
-        } returns mapOf(Pair(hankeGeometriaId, true))
+            tormaystarkasteluDao.maxIntersectingTramByLaneType(hankeGeometriat)
+        } returns TormaystarkasteluRaitiotiekaistatyyppi.JAETTU.value
+        every {
+            tormaystarkasteluDao.anyIntersectsCriticalBusRoutes(hankeGeometriat)
+        } returns true
 
         return hanke
     }

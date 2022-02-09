@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 import assertk.assertThat
 import assertk.assertions.containsOnly
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.HaitatonPostgreSQLContainer
 import fi.hel.haitaton.hanke.HankeEntity
@@ -10,7 +11,6 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
-import fi.hel.haitaton.hanke.toJsonPrettyString
 import javax.transaction.Transactional
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -27,7 +27,7 @@ import org.testcontainers.utility.MountableFile
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
 @Transactional
-internal class TormaystarkasteluDaoImplITest {
+internal class TormaystarkasteluTormaysServicePGITest {
 
     companion object {
         @Container
@@ -67,17 +67,14 @@ internal class TormaystarkasteluDaoImplITest {
     }
 
     @Autowired
-    private lateinit var tormaystarkasteluDao: TormaystarkasteluDao
+    private lateinit var tormaysService: TormaystarkasteluTormaysService
 
     /*
-    Test manually whether Hanke geometries are located on general street area ("yleinen katualue", ylre_parts)
+    Test manually whether Hanke geometries are located on general street area ("yleinen katuosa", ylre_parts)
      */
     @Test
-    fun yleisetKatualueet() {
-        val yleisetKatualueet = tormaystarkasteluDao.yleisetKatualueet(hankeGeometriat)
-        println(yleisetKatualueet.toJsonPrettyString())
-        assertThat(yleisetKatualueet.size).isEqualTo(1)
-        assertThat(yleisetKatualueet.values.first()).isTrue()
+    fun yleisetKatuosat() {
+        assertThat(tormaysService.anyIntersectsYleinenKatuosa(hankeGeometriat)).isTrue()
     }
 
     /*
@@ -85,12 +82,8 @@ internal class TormaystarkasteluDaoImplITest {
      */
     @Test
     fun yleisetKatuluokat() {
-        val yleisetKatuluokat = tormaystarkasteluDao.yleisetKatuluokat(hankeGeometriat)
-        println(yleisetKatuluokat.toJsonPrettyString())
-        assertThat(yleisetKatuluokat.size).isEqualTo(1)
-        assertThat(yleisetKatuluokat.values.first().size).isEqualTo(1)
-        assertThat(yleisetKatuluokat.values.first().first())
-            .isEqualTo(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)
+        assertThat(tormaysService.maxIntersectingYleinenkatualueKatuluokka(hankeGeometriat))
+            .isEqualTo(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value)
     }
 
     /*
@@ -98,12 +91,8 @@ internal class TormaystarkasteluDaoImplITest {
      */
     @Test
     fun katuluokat() {
-        val katuluokat = tormaystarkasteluDao.katuluokat(hankeGeometriat)
-        println(katuluokat.toJsonPrettyString())
-        assertThat(katuluokat.size).isEqualTo(1)
-        assertThat(katuluokat.values.first().size).isEqualTo(1)
-        assertThat(katuluokat.values.first().first())
-            .isEqualTo(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU)
+        assertThat(tormaysService.maxIntersectingLiikenteellinenKatuluokka(hankeGeometriat))
+            .isEqualTo(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value)
     }
 
     /*
@@ -111,10 +100,7 @@ internal class TormaystarkasteluDaoImplITest {
      */
     @Test
     fun kantakaupunki() {
-        val kantakaupunki = tormaystarkasteluDao.kantakaupunki(hankeGeometriat)
-        println(kantakaupunki.toJsonPrettyString())
-        assertThat(kantakaupunki.size).isEqualTo(1)
-        assertThat(kantakaupunki.values.first()).isTrue()
+        assertThat(tormaysService.anyIntersectsWithKantakaupunki(hankeGeometriat)).isTrue()
     }
 
     /*
@@ -122,12 +108,9 @@ internal class TormaystarkasteluDaoImplITest {
      */
     @Test
     fun liikennemaarat15() {
-        val liikennemaarat =
-            tormaystarkasteluDao.liikennemaarat(hankeGeometriat, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15)
-        println(liikennemaarat.toJsonPrettyString())
-        assertThat(liikennemaarat.size).isEqualTo(1)
-        assertThat(liikennemaarat.values.first().size).isEqualTo(3)
-        assertThat(liikennemaarat.values.first()).containsOnly(17566, 17286, 1478)
+        assertThat(
+                tormaysService.maxLiikennemaara(hankeGeometriat, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15)
+        ).isEqualTo(17566)
     }
 
     /*
@@ -135,12 +118,9 @@ internal class TormaystarkasteluDaoImplITest {
      */
     @Test
     fun liikennemaarat30() {
-        val liikennemaarat =
-            tormaystarkasteluDao.liikennemaarat(hankeGeometriat, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30)
-        println(liikennemaarat.toJsonPrettyString())
-        assertThat(liikennemaarat.size).isEqualTo(1)
-        assertThat(liikennemaarat.values.first().size).isEqualTo(3)
-        assertThat(liikennemaarat.values.first()).containsOnly(17566, 17286, 1478)
+        assertThat(
+            tormaysService.maxLiikennemaara(hankeGeometriat, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30)
+        ).isEqualTo(17566)
     }
 
     /*
@@ -148,10 +128,7 @@ internal class TormaystarkasteluDaoImplITest {
      */
     @Test
     fun bussiliikenteenKannaltaKriittinenAlue() {
-        val bussiliikenteenKannaltaKriittinenAlue =
-            tormaystarkasteluDao.bussiliikenteenKannaltaKriittinenAlue(hankeGeometriat)
-        println(bussiliikenteenKannaltaKriittinenAlue.toJsonPrettyString())
-        assertThat(bussiliikenteenKannaltaKriittinenAlue.size).isEqualTo(0)
+        assertThat(tormaysService.anyIntersectsCriticalBusRoutes(hankeGeometriat)).isFalse()
     }
 
     /*
@@ -159,11 +136,9 @@ internal class TormaystarkasteluDaoImplITest {
      */
     @Test
     fun bussit() {
-        val bussit = tormaystarkasteluDao.bussit(hankeGeometriat)
-        println(bussit.toJsonPrettyString())
-        assertThat(bussit.size).isEqualTo(1)
-        assertThat(bussit.values.first().size).isEqualTo(3)
-        assertThat(bussit.values.first().map { it.reittiId }).containsOnly("1016", "1023N")
+        val bussit = tormaysService.getIntersectingBusRoutes(hankeGeometriat)
+        assertThat(bussit.size).isEqualTo(3)
+        assertThat(bussit.map { it.reittiId }).containsOnly("1016", "1023N")
     }
 
     /*
@@ -171,11 +146,8 @@ internal class TormaystarkasteluDaoImplITest {
      */
     @Test
     fun raitiotiet() {
-        val raitiotiet = tormaystarkasteluDao.raitiotiet(hankeGeometriat)
-        println(raitiotiet.toJsonPrettyString())
-        assertThat(raitiotiet.size).isEqualTo(1)
-        assertThat(raitiotiet.values.first().size).isEqualTo(1)
-        assertThat(raitiotiet.values.first().first()).isEqualTo(TormaystarkasteluRaitiotiekaistatyyppi.JAETTU)
+        assertThat(tormaysService.maxIntersectingTramByLaneType(hankeGeometriat))
+                .isEqualTo(TormaystarkasteluRaitiotiekaistatyyppi.JAETTU.value)
     }
 
     /*
@@ -183,12 +155,7 @@ internal class TormaystarkasteluDaoImplITest {
      */
     @Test
     fun pyorailyreitit() {
-        val pyorailyreitit = tormaystarkasteluDao.pyorailyreitit(hankeGeometriat)
-        println(pyorailyreitit.toJsonPrettyString())
-        assertThat(pyorailyreitit.size).isEqualTo(1)
-        assertThat(pyorailyreitit.values.first()).containsOnly(
-            TormaystarkasteluPyorailyreittiluokka.PRIORISOITU_REITTI,
-            TormaystarkasteluPyorailyreittiluokka.PAAREITTI
-        )
+        assertThat(tormaysService.anyIntersectsWithCyclewaysPriority(hankeGeometriat)).isTrue()
+        assertThat(tormaysService.anyIntersectsWithCyclewaysMain(hankeGeometriat)).isTrue()
     }
 }
