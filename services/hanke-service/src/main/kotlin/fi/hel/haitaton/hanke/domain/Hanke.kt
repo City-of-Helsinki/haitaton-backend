@@ -104,10 +104,10 @@ data class Hanke(
     /**
      * Number of days between haittaAlkuPvm and haittaLoppuPvm (incl. both days)
      */
-    val haittaAjanKestoDays: Long?
+    val haittaAjanKestoDays: Int?
         @JsonIgnore
         get() = if (haittaAlkuPvm != null && haittaLoppuPvm != null) {
-            ChronoUnit.DAYS.between(haittaAlkuPvm!!, haittaLoppuPvm!!) + 1
+            ChronoUnit.DAYS.between(haittaAlkuPvm!!, haittaLoppuPvm!!).toInt() + 1
         } else {
             null
         }
