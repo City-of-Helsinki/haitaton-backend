@@ -5,9 +5,9 @@ import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluDao
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLuokitteluService
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -56,17 +56,11 @@ class IntegrationTestConfiguration {
         mockk()
 
     @Bean
-    fun tormaystarkasteluDao(jdbcOperations: JdbcOperations): TormaystarkasteluDao = mockk()
+    fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService =
+            TormaystarkasteluTormaysServicePG(jdbcOperations)
 
     @Bean
-    fun tormaystarkasteluPaikkaService(tormaystarkasteluDao: TormaystarkasteluDao): TormaystarkasteluLuokitteluService =
-        mockk()
-
-    @Bean
-    fun tormaystarkasteluLaskentaService(
-        hankeService: HankeService,
-        luokitteluService: TormaystarkasteluLuokitteluService
-    ): TormaystarkasteluLaskentaService = mockk()
+    fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
 
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {

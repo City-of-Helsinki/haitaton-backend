@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
+import fi.hel.haitaton.hanke.tormaystarkastelu.Luokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
@@ -89,7 +90,7 @@ enum class TyomaaKoko {
     LAAJA_TAI_USEA_KORTTELI
 }
 
-enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(val arvo: Int, val kuvaus: String) {
+enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(override val value: Int, override val explanation: String) : Luokittelu {
     YKSI(
         1,
         "Ei vaikuta"),
@@ -107,7 +108,7 @@ enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(val arvo: Int, v
         "Vähentää samanaikaisesti useita kaistoja liittymien eri suunnilla")
 }
 
-enum class KaistajarjestelynPituus(val arvo: Int, val kuvaus: String) {
+enum class KaistajarjestelynPituus(override val value: Int, override val explanation: String) : Luokittelu {
     YKSI(1, "Ei tarvita"),
     KAKSI(2, "Enintään 10 m"),
     KOLME(3, "11 - 100 m"),

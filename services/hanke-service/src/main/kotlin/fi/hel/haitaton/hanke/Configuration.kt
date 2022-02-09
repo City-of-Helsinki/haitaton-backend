@@ -9,12 +9,7 @@ import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluDao
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluDaoImpl
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaServiceImpl
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLuokitteluService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLuokitteluServiceImpl
+import fi.hel.haitaton.hanke.tormaystarkastelu.*
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
@@ -53,16 +48,19 @@ class Configuration {
     ): HankeGeometriatService = HankeGeometriatServiceImpl(hankeGeometriatDao)
 
     @Bean
-    fun tormaystarkasteluDao(jdbcOperations: JdbcOperations): TormaystarkasteluDao =
-        TormaystarkasteluDaoImpl(jdbcOperations)
+    fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService =
+        TormaystarkasteluTormaysServicePG(jdbcOperations)
 
     @Bean
-    fun tormaystarkasteluPaikkaService(
-        tormaystarkasteluDao: TormaystarkasteluDao
-    ): TormaystarkasteluLuokitteluService = TormaystarkasteluLuokitteluServiceImpl(tormaystarkasteluDao)
+    fun perusIndeksiPainotService(): PerusIndeksiPainotService = PerusIndeksiPainotServiceHardCoded()
+
+    @Bean
+    fun luokitteluRajaArvotService(): LuokitteluRajaArvotService = LuokitteluRajaArvotServiceHardCoded()
 
     @Bean
     fun tormaystarkasteluLaskentaService(
-        luokitteluService: TormaystarkasteluLuokitteluService
-    ): TormaystarkasteluLaskentaService = TormaystarkasteluLaskentaServiceImpl(luokitteluService)
+            luokitteluRajaArvotService: LuokitteluRajaArvotService,
+            perusIndeksiPainotService: PerusIndeksiPainotService,
+            tormaystarkasteluDao: TormaystarkasteluTormaysService): TormaystarkasteluLaskentaService =
+            TormaystarkasteluLaskentaService(luokitteluRajaArvotService, perusIndeksiPainotService, tormaystarkasteluDao)
 }
