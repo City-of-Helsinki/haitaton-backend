@@ -10,6 +10,7 @@ val geoJsonJacksonVersion = "1.14"
 val mockkVersion = "1.10.2"
 val springmockkVersion = "2.0.3"
 val assertkVersion = "0.23"
+val jtsVersion = "1.18.2"
 
 repositories {
 	mavenCentral()
@@ -64,6 +65,8 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.liquibase:liquibase-core")
 	implementation("com.github.blagerweij:liquibase-sessionlock:1.4.0")
+	implementation("org.locationtech.jts:jts-core:$jtsVersion")
+	implementation("org.locationtech.jts:jts-io:$jtsVersion")
 
 	implementation("org.postgresql:postgresql:$postgreSQLVersion")
 	// H2 is used as embedded db for some simple low level Entity and Repository class testing
