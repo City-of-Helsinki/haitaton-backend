@@ -10,7 +10,6 @@ val geoJsonJacksonVersion = "1.14"
 val mockkVersion = "1.10.2"
 val springmockkVersion = "2.0.3"
 val assertkVersion = "0.23"
-val jtsVersion = "1.18.2"
 
 repositories {
 	mavenCentral()
@@ -53,6 +52,7 @@ plugins {
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
+	implementation("org.springframework.boot:spring-boot-starter-webflux")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation("com.fasterxml.jackson.core:jackson-databind")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -65,8 +65,6 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.liquibase:liquibase-core")
 	implementation("com.github.blagerweij:liquibase-sessionlock:1.4.0")
-	implementation("org.locationtech.jts:jts-core:$jtsVersion")
-	implementation("org.locationtech.jts:jts-io:$jtsVersion")
 
 	implementation("org.postgresql:postgresql:$postgreSQLVersion")
 	// H2 is used as embedded db for some simple low level Entity and Repository class testing
@@ -81,6 +79,9 @@ dependencies {
 	testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
 	testImplementation("org.testcontainers:junit-jupiter:1.15.2")
 	testImplementation("org.testcontainers:postgresql:1.15.2")
+	testImplementation("com.squareup.okhttp3:okhttp:4.9.3")
+	testImplementation("com.squareup.okhttp3:mockwebserver:4.9.3")
+
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	// Spring Security
