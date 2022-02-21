@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.application
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNull
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.geojson.Crs
@@ -9,15 +10,14 @@ import org.geojson.GeometryCollection
 import org.geojson.LngLatAlt
 import org.geojson.Polygon
 import org.junit.jupiter.api.*
-import org.springframework.boot.test.json.BasicJsonTester
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import java.time.ZonedDateTime
 
 class CableReportServiceAlluITests {
 
-    val json = BasicJsonTester(CableReportServiceAlluITests::class.java)
     lateinit var mockWebServer: MockWebServer
     lateinit var service: CableReportServiceAllu
 
@@ -65,20 +65,17 @@ class CableReportServiceAlluITests {
                 .setBody("""[{"errorMessage":"Cable report should have one orderer contact","additionalInfo":"customerWithContacts"}]""")
         mockWebServer.enqueue(applicationIdResponse)
 
-        val exception = assertThrows<AlluException> { service.create(getTestApplication()) }
-        assertThat { exception.errors.size }.isEqualTo(1)
-        assertThat { exception.errors[0].errorMessage }.isEqualTo("Cable report should have one orderer contact")
-        assertThat { exception.errors[0].additionalInfo }.isEqualTo("customerWithContacts")
+        assertThrows<WebClientResponseException.BadRequest> { service.create(getTestApplication()) }
 
         val loginRequest = mockWebServer.takeRequest()
         assertThat(loginRequest.method).isEqualTo("POST")
         assertThat(loginRequest.path).isEqualTo("/v2/login")
+        assertThat(loginRequest.getHeader("Authorization")).isNull()
 
-        val req = mockWebServer.takeRequest()
-
-        assertThat(req.method).isEqualTo("POST")
-        assertThat(req.path).isEqualTo("/v2/cablereports")
-        assertThat(req.getHeader("Authorization")).isEqualTo("Bearer " + stubbedBearer)
+        val createRequest = mockWebServer.takeRequest()
+        assertThat(createRequest.method).isEqualTo("POST")
+        assertThat(createRequest.path).isEqualTo("/v2/cablereports")
+        assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer " + stubbedBearer)
     }
 
     private fun addStubbedLoginResponse(): String {
