@@ -2,13 +2,19 @@ package fi.hel.haitaton.hanke.application
 
 import java.time.ZonedDateTime
 
-data class ApplicationHistory(val applicationId: Int, val events: List<ApplicationStatusEvent>)
+data class ApplicationHistorySearch(val applicationIds: List<Int>, val eventsAfter: ZonedDateTime?)
+
+data class ApplicationHistory(
+        val applicationId: Int,
+        val events: List<ApplicationStatusEvent>,
+        val supervisionEvents: List<SupervisionEvent>
+)
 
 data class ApplicationStatusEvent(
         val eventTime: ZonedDateTime,
         val newStatus: ApplicationStatus,
         val applicationIdentifier: String,
-        val targetStatus: ApplicationStatus // Tells next status (DECISION, OPERATIONAL_CONDITION or FINISHED) if current status is DECISIONMAKING
+        val targetStatus: ApplicationStatus? // Tells next status (DECISION, OPERATIONAL_CONDITION or FINISHED) if current status is DECISIONMAKING
 )
 
 enum class ApplicationStatus {
@@ -27,4 +33,28 @@ enum class ApplicationStatus {
     FINISHED, // Application finished
     CANCELLED, // // Application cancelled
     ARCHIVED; // Application archived
+}
+
+data class SupervisionEvent(
+        val eventTime: ZonedDateTime,
+        val type: SupervisionTaskType,
+        val status: SupervisionTaskStatusType,
+        val comment: String? // This might be non-nullable
+)
+
+enum class SupervisionTaskType {
+    PRELIMINARY_SUPERVISION,
+    OPERATIONAL_CONDITION,
+    SUPERVISION,
+    WORK_TIME_SUPERVISION,
+    FINAL_SUPERVISION,
+    WARRANTY,
+    TERMINATION
+}
+
+enum class SupervisionTaskStatusType {
+    APPROVED,
+    REJECTED,
+    OPEN,
+    CANCELLED
 }
