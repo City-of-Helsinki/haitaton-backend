@@ -12,7 +12,7 @@ private val logger = KotlinLogging.logger { }
 
 object AccessRules {
     fun configureHttpAccessRules(http: HttpSecurity) {
-        http.authorizeRequests().mvcMatchers(HttpMethod.GET, "/organisaatiot").permitAll().and()
+        http.authorizeRequests().mvcMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/liveness", "/actuator/health/readiness").permitAll().and()
             .authorizeRequests().anyRequest().authenticated().and()
             .exceptionHandling().authenticationEntryPoint { request, response, authenticationException ->
                 logger.warn {
