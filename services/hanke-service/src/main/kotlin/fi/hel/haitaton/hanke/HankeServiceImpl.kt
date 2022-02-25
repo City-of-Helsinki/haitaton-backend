@@ -49,17 +49,12 @@ open class HankeServiceImpl(
         val existingYTs = prepareMapOfExistingYhteystietos(entity)
         copyYhteystietosToEntity(hanke, entity, userid, loggingEntryHolder, existingYTs)
 
-        // NOTE: liikennehaittaindeksi and tormaystarkastelutulos are NOT
-        //  copied from incoming data. Use setTormaystarkasteluTulos() for that.
-        // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
-        // Special fields; handled "manually"..
         entity.version = 0
         entity.createdByUserId = userid
         entity.createdAt = getCurrentTimeUTCAsLocalTime()
         entity.modifiedByUserId = null
         entity.modifiedAt = null
 
-        // Create a new hanketunnus for it and save it:
         val hanketunnus = hanketunnusService.newHanketunnus()
         entity.hankeTunnus = hanketunnus
         logger.debug {
@@ -132,11 +127,6 @@ open class HankeServiceImpl(
     override fun deleteHanke(id: Int) {
         hankeRepository.deleteById(id)
     }
-
-    // TODO: functions to remove and invalidate Hanke's tormaystarkastelu-data
-    //   At least invalidation can be done purely working on the particular
-    //   tormaystarkasteluTulosEntity and -Repository.
-    //   See TormaystarkasteluRepositoryITests for a way to remove.
 
     // ======================================================================
 
