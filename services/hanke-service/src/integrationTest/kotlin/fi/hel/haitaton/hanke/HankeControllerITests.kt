@@ -10,7 +10,9 @@ import fi.hel.haitaton.hanke.permissions.PermissionProfiles
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.mockk.every
 import io.mockk.verify
+import org.geojson.Feature
 import org.geojson.FeatureCollection
+import org.geojson.Point
 import org.hamcrest.Matchers.hasSize
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -90,17 +92,82 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val userId = "test"
         val permission = Permission(55, userId, hankeId, listOf(PermissionCode.VIEW, PermissionCode.VIEW))
 
-        // faking the service call
-        every { hankeService.loadHanke(mockedHankeTunnus) }.returns(createDummyHanke(hankeId, userId))
-        every { permissionService.getPermissionByHankeIdAndUserId(hankeId, userId) }.returns(permission)
+        val dummyHanke = createDummyHanke(hankeId, userId)
 
-        mockMvc.perform(get("/hankkeet/$mockedHankeTunnus").accept(MediaType.APPLICATION_JSON))
+        // faking the service call
+        every { hankeService.loadHanke(mockedHankeTunnus) } returns dummyHanke
+        every { permissionService.getPermissionByHankeIdAndUserId(hankeId, userId) } returns permission
+        every { hankeGeometriatService.loadGeometriat(dummyHanke) } returns null
+
+        mockMvc.perform(get("/hankkeet/$mockedHankeTunnus")
+            .accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-            .andExpect(
-                jsonPath("$.nimi")
-                    .value("Hämeentien perusparannus ja katuvalot")
-            )
+            .andExpect(jsonPath("$.nimi").value("Hämeentien perusparannus ja katuvalot"))
+            .andExpect(jsonPath("$.geometriat").doesNotExist())
+
+        verify { hankeService.loadHanke(mockedHankeTunnus) }
+    }
+
+    @Test
+    fun `When hankeTunnus is given then return Hanke with it plus the geometry (GET)`() {
+        val hankeId = 123
+        val userId = "test"
+        val permission = Permission(55, userId, hankeId, listOf(PermissionCode.VIEW, PermissionCode.VIEW))
+
+        val dummy = createDummyHanke(hankeId, userId)
+        val f = Feature()
+        f.geometry = Point(10.0, 5.0)
+        val fc = FeatureCollection()
+        fc.add(f)
+
+        val geometriat = HankeGeometriat(
+                id = 1,
+                hankeId = 123,
+                featureCollection = fc,
+                version = 1,
+                createdByUserId = userId,
+                createdAt = ZonedDateTime.now(),
+                modifiedByUserId = null,
+                modifiedAt = null
+        )
+
+        // faking the service call
+        every { hankeService.loadHanke(mockedHankeTunnus) } returns dummy
+        every { permissionService.getPermissionByHankeIdAndUserId(hankeId, userId) } returns permission
+        every { hankeGeometriatService.loadGeometriat(dummy) } returns geometriat
+
+        mockMvc.perform(get("/hankkeet/$mockedHankeTunnus")
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk)
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.nimi").value("Hämeentien perusparannus ja katuvalot"))
+                .andExpect(jsonPath("$.geometriat").exists())
+
+        verify { hankeService.loadHanke(mockedHankeTunnus) }
+    }
+
+    @Test
+    fun `When hankeTunnus is given but geometry is denied then return Hanke without geometry`() {
+        val hankeId = 123
+        val userId = "test"
+        val permission = Permission(55, userId, hankeId, listOf(PermissionCode.VIEW, PermissionCode.VIEW))
+
+        val dummy = createDummyHanke(hankeId, userId)
+        val geometriat = HankeGeometriat()
+
+        // faking the service call
+        every { hankeService.loadHanke(mockedHankeTunnus) } returns dummy
+        every { permissionService.getPermissionByHankeIdAndUserId(hankeId, userId) } returns permission
+        every { hankeGeometriatService.loadGeometriat(dummy) } returns geometriat
+
+        mockMvc.perform(get("/hankkeet/$mockedHankeTunnus?geometry=false")
+                .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk)
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.nimi").value("Hämeentien perusparannus ja katuvalot"))
+                .andExpect(jsonPath("$.geometriat").doesNotExist())
+
         verify { hankeService.loadHanke(mockedHankeTunnus) }
     }
 
@@ -323,9 +390,12 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             saveType = SaveType.DRAFT
         )
 
-        // faking the service call
-        every { hankeService.updateHanke(any()) }.returns(hankeToBeUpdated)
-        every { hankeGeometriatService.loadGeometriat(any()) }.returns(null)
+        // faking the service calls
+        every { hankeService.loadHanke(any()) } returns hankeToBeUpdated
+        val permission = Permission(1, "", 1, listOf(PermissionCode.EDIT))
+        every { permissionService.getPermissionByHankeIdAndUserId(hankeToBeUpdated.id!!, "test") } returns permission
+        every { hankeService.updateHanke(any()) } returns hankeToBeUpdated
+        every { hankeGeometriatService.loadGeometriat(any()) } returns null
 
         val content = hankeToBeUpdated.toJsonString()
 
@@ -466,7 +536,10 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             }
         val expectedContent = expectedHanke.toJsonString()
 
-        // faking the service call
+        // faking the service calls
+        every { hankeService.loadHanke(any()) } returns hankeToBeUpdated
+        val permission = Permission(0, "", 0, listOf(PermissionCode.EDIT))
+        every { permissionService.getPermissionByHankeIdAndUserId(hankeToBeUpdated.id!!, "test") } returns permission
         every { hankeService.updateHanke(any()) }.returns(expectedHanke)
         every { hankeGeometriatService.loadGeometriat(any()) }.returns(null)
 

@@ -16,8 +16,9 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
-import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.context.SecurityContext
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
@@ -94,7 +95,7 @@ class HankeControllerTest {
         val response = hankeController.getHankeByTunnus(mockedHankeTunnus)
 
         assertThat(response).isNotNull
-        assertThat(response.nimi).isNotEmpty()
+        assertThat(response.nimi).isNotEmpty
     }
 
     @WithMockUser
@@ -168,9 +169,13 @@ class HankeControllerTest {
 
     @Test
     fun `test that the updateHanke can be called with hanke data and response will be 200`() {
+        val id = 123
+        val hankeTunnus = "id123"
+        val userid = "Tiina"
+
         val partialHanke = Hanke(
-            id = 123,
-            hankeTunnus = "id123",
+            id = id,
+            hankeTunnus = hankeTunnus,
             nimi = "hankkeen nimi",
             kuvaus = "lorem ipsum dolor sit amet...",
             onYKTHanke = false,
@@ -179,26 +184,31 @@ class HankeControllerTest {
             vaihe = Vaihe.SUUNNITTELU,
             suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
             version = 1,
-            createdBy = "Tiina",
+            createdBy = userid,
             createdAt = getCurrentTimeUTC(),
             modifiedBy = null,
             modifiedAt = null,
             saveType = SaveType.DRAFT
         )
 
-        // mock HankeService response
+        val permission = Permission(1, userid, id, listOf(PermissionCode.EDIT))
+
+        val auth = Mockito.mock(Authentication::class.java)
+        Mockito.`when`(auth.name).thenReturn(userid)
+        val securityCtx = Mockito.mock(SecurityContext::class.java)
+        Mockito.`when`(securityCtx.authentication).thenReturn(auth)
+        SecurityContextHolder.setContext(securityCtx)
+
+        Mockito.`when`(hankeService.loadHanke(hankeTunnus)).thenReturn(partialHanke)
+        Mockito.`when`(permissionService.getPermissionByHankeIdAndUserId(id, userid))
+                .thenReturn(permission)
+
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
 
         // Actual call
-        val response: ResponseEntity<Any> = hankeController.updateHanke(partialHanke, "id123")
+        val actual = hankeController.updateHanke(partialHanke, hankeTunnus)
 
-        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(response.body).isNotNull
-        // If the status is ok, we expect ResponseEntity<Hanke>
-        @Suppress("UNCHECKED_CAST")
-        val responseHanke = response as ResponseEntity<Hanke>
-        assertThat(responseHanke.body).isNotNull
-        assertThat(responseHanke.body?.nimi).isEqualTo("hankkeen nimi")
+        assertThat(actual.nimi).isEqualTo("hankkeen nimi")
     }
 
     @Test
@@ -277,21 +287,15 @@ class HankeControllerTest {
         Mockito.`when`(hankeService.createHanke(hanke)).thenReturn(mockedHanke)
 
         // Actual call
-        val response: ResponseEntity<Any> = hankeController.createHanke(hanke)
+        val actual = hankeController.createHanke(hanke)
 
-        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(response.body).isNotNull
-        // If the status is ok, we expect ResponseEntity<Hanke>
-        @Suppress("UNCHECKED_CAST")
-        val responseHanke = response as ResponseEntity<Hanke>
-        assertThat(responseHanke.body).isNotNull
-        assertThat(responseHanke.body?.id).isEqualTo(12)
-        assertThat(responseHanke.body?.hankeTunnus).isEqualTo("JOKU12")
-        assertThat(responseHanke.body?.nimi).isEqualTo("hankkeen nimi")
-        assertThat(responseHanke.body?.omistajat).isNotNull
-        assertThat(responseHanke.body?.omistajat).hasSize(1)
-        assertThat(responseHanke.body?.omistajat!![0].id).isEqualTo(1)
-        assertThat(responseHanke.body?.omistajat!![0].sukunimi).isEqualTo("Pekkanen")
+        assertThat(actual.id).isEqualTo(12)
+        assertThat(actual.hankeTunnus).isEqualTo("JOKU12")
+        assertThat(actual.nimi).isEqualTo("hankkeen nimi")
+        assertThat(actual.omistajat).isNotNull
+        assertThat(actual.omistajat).hasSize(1)
+        assertThat(actual.omistajat[0].id).isEqualTo(1)
+        assertThat(actual.omistajat[0].sukunimi).isEqualTo("Pekkanen")
     }
 
     @Test
@@ -349,12 +353,9 @@ class HankeControllerTest {
 
         Mockito.`when`(hankeService.createHanke(hanke)).thenReturn(mockedHanke)
 
-        val response: ResponseEntity<Any> = hankeController.createHanke(hanke)
+        hankeController.createHanke(hanke)
 
         Mockito.verify(permissionService).setPermission(12, hanke.createdBy!!, PermissionProfiles.HANKE_OWNER_PERMISSIONS)
-
-        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(response.body).isNotNull
     }
 
     private fun getDatetimeAlku(): ZonedDateTime {
