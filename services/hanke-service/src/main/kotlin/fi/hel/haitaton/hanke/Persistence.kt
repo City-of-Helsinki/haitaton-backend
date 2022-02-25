@@ -137,6 +137,7 @@ class HankeEntity(
     var loppuPvm: LocalDate? = null, // NOTE: stored and handled in UTC, not in "local" time
     @Enumerated(EnumType.STRING)
     var vaihe: Vaihe? = null,
+    @Enumerated(EnumType.STRING)
     var suunnitteluVaihe: SuunnitteluVaihe? = null,
     var onYKTHanke: Boolean? = false,
     var version: Int? = 0,
