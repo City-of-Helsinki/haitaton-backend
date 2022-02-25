@@ -222,24 +222,9 @@ class HankeEntity(
 }
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
+
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
 
-    override fun findAll(): List<HankeEntity>
-
-    // search with date range
-    fun findAllByAlkuPvmIsBeforeAndLoppuPvmIsAfter(endAlkuPvm: LocalDate, startLoppuPvm: LocalDate): List<HankeEntity>
-
-    // search with saveType
-    fun findAllBySaveType(saveType: SaveType): List<HankeEntity>
-
-    /*
-        // search with date range, example with query:
-        @Query("select h from HankeEntity h "+
-                " where (alkupvm >= :periodBegin and alkupvm <= :periodEnd) " +
-                " or (loppupvm >= :periodBegin and loppupvm <= :periodEnd) " +
-                " or (alkupvm <= :periodBegin and loppupvm >= :periodEnd)")
-        fun getAllDataHankeBetweenTimePeriod(periodBegin: LocalDate, periodEnd: LocalDate): List<HankeEntity>
-    */
 }
 
 enum class CounterType {
