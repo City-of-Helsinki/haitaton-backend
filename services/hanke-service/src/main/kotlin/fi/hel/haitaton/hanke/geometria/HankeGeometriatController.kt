@@ -44,18 +44,6 @@ class HankeGeometriaController(
         return ResponseEntity.ok(savedHankeGeometriat)
     }
 
-    @GetMapping("/{hankeTunnus}/geometriat")
-    fun getGeometria(@PathVariable("hankeTunnus") hankeTunnus: String): ResponseEntity<Any> {
-        logger.info {
-            "Getting Hanke Geometria for $hankeTunnus..."
-        }
-        val hanke = hankeService.loadHanke(hankeTunnus)
-                ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
-        val geometry = geometryService.loadGeometriat(hanke)
-                ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1015)
-        return ResponseEntity.ok(geometry)
-    }
-
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ConstraintViolationException::class)
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {

@@ -18,7 +18,6 @@ import org.springframework.security.test.web.servlet.response.SecurityMockMvcRes
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.ResultActions
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -50,16 +49,12 @@ class HankeGeometriaControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     @WithMockUser(username = "test7358", roles = [])
     fun `status ok with authenticated user with or without any role`() {
         performPostHankkeetTunnusGeometriat().andExpect(status().isOk)
-        performGetHankkeetTunnusGeometriat().andExpect(status().isOk)
     }
 
     @Test
     // Without mock user, i.e. anonymous
     fun `status unauthorized (401) without authenticated user`() {
         performPostHankkeetTunnusGeometriat()
-                .andExpect(unauthenticated())
-                .andExpect(status().isUnauthorized)
-        performGetHankkeetTunnusGeometriat()
                 .andExpect(unauthenticated())
                 .andExpect(status().isUnauthorized)
     }
@@ -93,20 +88,4 @@ class HankeGeometriaControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         )
     }
 
-    // ---------- GET /hankkeet/{hankeTunnus}/geometriat ----------
-
-    private fun performGetHankkeetTunnusGeometriat(): ResultActions {
-        val hankeTunnus = "1234567"
-        val hankeId = 1
-        val hanke = Hanke(hankeId, hankeTunnus)
-        val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
-            .asJsonResource(HankeGeometriat::class.java)
-
-        every { hankeGeometriatService.loadGeometriat(hanke) } returns hankeGeometriat
-
-        return mockMvc.perform(
-                get("/hankkeet/$hankeTunnus/geometriat")
-                        .accept(MediaType.APPLICATION_JSON)
-        )
-    }
 }
