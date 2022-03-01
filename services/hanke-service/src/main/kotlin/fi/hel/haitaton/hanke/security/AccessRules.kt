@@ -12,14 +12,15 @@ private val logger = KotlinLogging.logger { }
 
 object AccessRules {
     fun configureHttpAccessRules(http: HttpSecurity) {
-        http.authorizeRequests().mvcMatchers(HttpMethod.GET,
-                "/actuator/health",
-                "/actuator/health/liveness",
-                "/actuator/health/readiness",
-                "/status"
-            ).permitAll().and()
-            .authorizeRequests().anyRequest().authenticated().and()
-            .exceptionHandling().authenticationEntryPoint { request, response, authenticationException ->
+        http.authorizeRequests()
+            .mvcMatchers(HttpMethod.GET, "/organisaatiot").authenticated()
+            .mvcMatchers(HttpMethod.GET, "/public-hankkeet").authenticated()
+            .mvcMatchers(HttpMethod.GET, "/hankkeet", "/hankkeet/**").authenticated()
+            .mvcMatchers(HttpMethod.POST, "/hankkeet", "/hankkeet/**").authenticated()
+            .mvcMatchers(HttpMethod.PUT, "/hankkeet/**").authenticated()
+            .mvcMatchers(HttpMethod.DELETE, "/hankkeet/**").authenticated()
+            .and().anonymous()
+            .and().exceptionHandling().authenticationEntryPoint { request, response, authenticationException ->
                 logger.warn {
                     "User has to be authenticated " +
                             "to access ${request.method} ${request.requestURI}"
