@@ -45,3 +45,5 @@ databaseChangeLog:
       file: db/changelog/changesets/007-drop-liikennehaittaindeksi.yml
   - include:
       file: db/changelog/changesets/008-suunnitteluvaihe-enumtype-string.sql
+  - include:
+      file: db/changelog/changesets/009-create-table-applications.yml

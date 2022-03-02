@@ -92,6 +92,10 @@ dependencies {
 	// Sentry
 	implementation("io.sentry:sentry-spring-boot-starter:4.0.0")
 	implementation("io.sentry:sentry-logback:4.0.0")
+
+	implementation("io.sentry:sentry-logback:4.0.0")
+
+	implementation("com.vladmihalcea:hibernate-types-52:2.14.0")
 }
 
 //tasks.withType<Test> {
