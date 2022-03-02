@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDaoImpl
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
@@ -18,6 +20,9 @@ import org.springframework.jdbc.core.JdbcOperations
 @Configuration
 @Profile("default")
 class Configuration {
+
+    @Bean
+    fun applicationService(applicationRepository: ApplicationRepository) : ApplicationService = ApplicationService(applicationRepository)
 
     @Bean
     fun hanketunnusService(idCounterRepository: IdCounterRepository): HanketunnusService =
