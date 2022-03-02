@@ -65,6 +65,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.liquibase:liquibase-core")
 	implementation("com.github.blagerweij:liquibase-sessionlock:1.4.0")
+	implementation("com.vladmihalcea:hibernate-types-52:2.14.0")
 
 	implementation("org.postgresql:postgresql:$postgreSQLVersion")
 	// H2 is used as embedded db for some simple low level Entity and Repository class testing
@@ -92,10 +93,6 @@ dependencies {
 	// Sentry
 	implementation("io.sentry:sentry-spring-boot-starter:4.0.0")
 	implementation("io.sentry:sentry-logback:4.0.0")
-
-	implementation("io.sentry:sentry-logback:4.0.0")
-
-	implementation("com.vladmihalcea:hibernate-types-52:2.14.0")
 }
 
 //tasks.withType<Test> {
