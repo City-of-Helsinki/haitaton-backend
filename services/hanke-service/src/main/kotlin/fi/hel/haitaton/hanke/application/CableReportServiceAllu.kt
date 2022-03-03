@@ -144,7 +144,7 @@ class CableReportServiceAllu(
     override fun getDecisionPDF(applicationId: Int): ByteArray {
         val token = login()!!
         return webClient.get()
-                .uri("/v2/cablereports/{applicationId}/decision", applicationId)
+                .uri(baseUrl + "/v2/cablereports/{applicationId}/decision", applicationId)
                 .accept(MediaType.APPLICATION_PDF)
                 .headers { it.setBearerAuth(token) }
                 .exchange()
