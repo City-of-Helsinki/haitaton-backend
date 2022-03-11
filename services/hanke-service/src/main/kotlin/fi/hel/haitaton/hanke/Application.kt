@@ -26,6 +26,8 @@ class Application {
                 registry.addMapping("/public-hankkeet").allowedMethods("GET").allowedOrigins(allowedOrigins)
                 registry.addMapping("/hankkeet").allowedMethods("POST", "GET").allowedOrigins(allowedOrigins)
                 registry.addMapping("/hankkeet/**").allowedMethods("POST", "GET", "PUT", "DELETE").allowedOrigins(allowedOrigins)
+                registry.addMapping("/hakemukset/**").allowedMethods("POST", "GET", "PUT", "DELETE").allowedOrigins(allowedOrigins)
+                registry.addMapping("/hakemukset").allowedMethods("POST", "GET").allowedOrigins(allowedOrigins)
                 registry.addMapping("/organisaatiot").allowedMethods("GET").allowedOrigins(allowedOrigins)
             }
         }
