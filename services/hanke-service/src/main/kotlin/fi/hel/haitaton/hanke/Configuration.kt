@@ -14,12 +14,16 @@ import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.tormaystarkastelu.*
+import io.netty.handler.ssl.SslContextBuilder
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
+import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.web.reactive.function.client.WebClient
+import reactor.netty.http.client.HttpClient
 
 @Configuration
 @Profile("default")
@@ -31,15 +35,27 @@ class Configuration {
     lateinit var alluUsername : String
     @Value("\${haitaton.allu.password}")
     lateinit var alluPassword : String
+    @Value("\${haitaton.allu.insecure}")
+    var alluTrustInsecure: Boolean = false
 
     @Bean
-    fun cableReportServiceAllu() : CableReportServiceAllu {
-        return CableReportServiceAllu(
-            WebClient.create(), AlluProperties(
-            baseUrl = alluBaseUrl,
-            username = alluUsername,
-            password = alluPassword
-        ))
+    fun cableReportServiceAllu(): CableReportServiceAllu {
+        val webClient = if (alluTrustInsecure) createInsecureTrustingWebClient() else WebClient.create()
+        val alluProps = AlluProperties(
+                baseUrl = alluBaseUrl,
+                username = alluUsername,
+                password = alluPassword
+        )
+        return CableReportServiceAllu(webClient, alluProps)
+    }
+
+    private fun createInsecureTrustingWebClient(): WebClient {
+        val sslContext = SslContextBuilder
+                .forClient()
+                .trustManager(InsecureTrustManagerFactory.INSTANCE)
+                .build()
+        val httpClient = HttpClient.create().secure { t -> t.sslContext(sslContext) }
+        return WebClient.builder().clientConnector(ReactorClientHttpConnector(httpClient)).build()
     }
 
     @Bean
