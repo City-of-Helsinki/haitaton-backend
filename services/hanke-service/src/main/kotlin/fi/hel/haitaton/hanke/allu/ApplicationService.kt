@@ -6,8 +6,20 @@ import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Repository
+import java.lang.IllegalArgumentException
 
-class ApplicationService(private val repo : ApplicationRepository, private val cableReportService : CableReportServiceAllu) {
+class ApplicationService(
+        private val repo : ApplicationRepository,
+        private val cableReportService : CableReportServiceAllu
+) {
+
+    fun getAllApplicationsForCurrentUser() : List<ApplicationDTO> {
+        val userId = SecurityContextHolder.getContext().authentication.name
+        return repo.getAllByUserId(userId).map { applicationToDto(it) }
+    }
+
+    fun getApplicationById(id: Long) = getById(id)?.let { applicationToDto(it) }
+
     fun create(application: ApplicationDTO) : ApplicationDTO {
         val userId = SecurityContextHolder.getContext().authentication.name
         val alluApplication = repo.save(AlluApplication(
@@ -17,50 +29,68 @@ class ApplicationService(private val repo : ApplicationRepository, private val c
                 applicationType = application.applicationType,
                 applicationData = application.applicationData
         ))
+        trySendingPendingApplicationToAllu(alluApplication)
         return applicationToDto(alluApplication)
     }
 
-    fun getApplicationById(id: Long) : ApplicationDTO? {
-        val userId = SecurityContextHolder.getContext().authentication.name
-        return repo.findOneByIdAndUserId(id, userId)?.let { applicationToDto(it) }
-    }
+    fun updateApplicationData(id: Long, newApplicationData: JsonNode): ApplicationDTO? {
+        val application = getById(id) ?: return null
 
-    fun getAllApplicationsForCurrentUser() : List<ApplicationDTO> {
-        val userId = SecurityContextHolder.getContext().authentication.name
-        return repo.getAllByUserId(userId).map { applicationToDto(it) }
-    }
-
-    fun updateApplicationData(id: Long, newApplicationData: JsonNode): Pair<Int, Any> {
-        val currentUser = SecurityContextHolder.getContext().authentication.name
-        val applicationToUpdate = repo.findOneByIdAndUserId(id, currentUser) ?: return Pair(404, "Application not found")
-
-        if(applicationToUpdate.alluid != null){
-            return Pair(403, "Application already sent")
+        if (!isUpdatable(application)) {
+            throw IllegalArgumentException("Application already sent")
         }
 
-        applicationToUpdate.applicationData = newApplicationData
-        return Pair(200, applicationToDto(repo.save(applicationToUpdate)))
+        application.applicationData = newApplicationData
+        trySendingPendingApplicationToAllu(application)
+
+        return applicationToDto(repo.save(application))
     }
 
-    /**
-     * @return desired http status code. could also throw exceptions or create some enum for return type
-     */
-    fun sendApplication(id: Long): Pair<Int, Any> {
-        val currentUser = SecurityContextHolder.getContext().authentication.name
-        val application = repo.findOneByIdAndUserId(id, currentUser) ?: return Pair(404, "Application not found")
-
-        if(application.alluid != null){
-            return Pair(403, "Application already sent")
+    fun sendApplication(id: Long): ApplicationDTO? {
+        val application = getById(id) ?: return null
+        if (!isUpdatable(application)) {
+            throw IllegalArgumentException("Application already sent")
         }
+        sendApplicationToAllu(application, pendingOnClient = false)
+        return applicationToDto(repo.save(application))
+    }
 
+    private fun getById(id: Long): AlluApplication? {
+        val userId = SecurityContextHolder.getContext().authentication.name
+        return repo.findOneByIdAndUserId(id, userId)
+    }
+
+    private fun isUpdatable(application: AlluApplication): Boolean {
+        if (application.alluid == null) {
+            return true
+        }
+        // TODO: Check ALLU if current status is updatable
+        return false
+    }
+
+    private fun trySendingPendingApplicationToAllu(application: AlluApplication) {
+        try {
+            sendApplicationToAllu(application, pendingOnClient = true)
+        } catch (ignore: Exception) {
+            // Just ignore it, maybe applicationData is missing something required which is fine
+        }
+    }
+
+    private fun sendApplicationToAllu(application: AlluApplication, pendingOnClient: Boolean) {
         when (application.applicationType) {
             ApplicationType.CABLE_REPORT -> {
-                val cableReportApplication: CableReportApplication =
-                        OBJECT_MAPPER.treeToValue(application.applicationData) ?: return Pair(400, "Json parsing error")
-                application.alluid = cableReportService.create(cableReportApplication)
+                sendCableReport(application, pendingOnClient)
             }
         }
-        return Pair(200, applicationToDto(repo.save(application)))
+    }
+
+    private fun sendCableReport(application: AlluApplication, pendingOnClient: Boolean) {
+        val cableReportApplication: CableReportApplication = OBJECT_MAPPER.treeToValue(application.applicationData)!!
+        cableReportApplication.pendingOnClient = pendingOnClient
+        val alluid = cableReportService.create(cableReportApplication)
+        application.alluid = alluid
+        // Make sure pendingOnClient is up-to-date
+        application.applicationData = OBJECT_MAPPER.valueToTree(cableReportApplication)
     }
 
 }
