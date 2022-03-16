@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.application
+package fi.hel.haitaton.hanke.allu
 
 data class CustomerWithContacts(val customer: Customer, val contacts: List<Contact>)
 

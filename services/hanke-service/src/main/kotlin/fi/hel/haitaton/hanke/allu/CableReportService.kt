@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.application
+package fi.hel.haitaton.hanke.allu
 
 import java.time.ZonedDateTime
 

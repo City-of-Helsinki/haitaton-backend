@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.application
+package fi.hel.haitaton.hanke.allu
 
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType
