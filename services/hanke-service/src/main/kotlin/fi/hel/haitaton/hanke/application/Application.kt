@@ -12,11 +12,12 @@ enum class ApplicationType{
 
 data class ApplicationDTO(
     val id: Long?,
+    val alluid: Int?,
     val applicationType: ApplicationType,
     val applicationData: JsonNode
 )
 
-fun applicationToDto(a: AlluApplication) = ApplicationDTO(a.id, a.applicationType, a.applicationData)
+fun applicationToDto(a: AlluApplication) = ApplicationDTO(a.id, a.alluid, a.applicationType, a.applicationData)
 
 @Entity
 @Table(name="applications")
@@ -24,6 +25,7 @@ fun applicationToDto(a: AlluApplication) = ApplicationDTO(a.id, a.applicationTyp
 class AlluApplication(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long?,
+    var alluid: Int?,
     var userId: String?,
     @Enumerated(EnumType.STRING)
     val applicationType: ApplicationType,
