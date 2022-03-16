@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.application
+package fi.hel.haitaton.hanke.allu
 
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
