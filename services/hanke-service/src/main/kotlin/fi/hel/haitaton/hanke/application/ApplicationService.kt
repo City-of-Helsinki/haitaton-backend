@@ -7,11 +7,12 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Repository
 
-class ApplicationService(private val repo : ApplicationRepository) {
+class ApplicationService(private val repo : ApplicationRepository, private val cableReportService : CableReportServiceAllu) {
     fun create(application: ApplicationDTO) : ApplicationDTO {
         val userId = SecurityContextHolder.getContext().authentication.name
         val alluApplication = repo.save(AlluApplication(
                 id = null,
+                alluid = null,
                 userId = userId,
                 applicationType = application.applicationType,
                 applicationData = application.applicationData
@@ -29,32 +30,37 @@ class ApplicationService(private val repo : ApplicationRepository) {
         return repo.getAllByUserId(userId).map { applicationToDto(it) }
     }
 
-    fun updateApplicationData(id: Long, newApplicationData: JsonNode): ApplicationDTO? {
+    fun updateApplicationData(id: Long, newApplicationData: JsonNode): Pair<Int, Any> {
         val currentUser = SecurityContextHolder.getContext().authentication.name
-        val applicationToUpdate = repo.findOneByIdAndUserId(id, currentUser) ?: return null
+        val applicationToUpdate = repo.findOneByIdAndUserId(id, currentUser) ?: return Pair(404, "Application not found")
+
+        if(applicationToUpdate.alluid != null){
+            return Pair(403, "Application already sent")
+        }
+
         applicationToUpdate.applicationData = newApplicationData
-        return applicationToDto(repo.save(applicationToUpdate))
+        return Pair(200, applicationToDto(repo.save(applicationToUpdate)))
     }
 
     /**
      * @return desired http status code. could also throw exceptions or create some enum for return type
      */
-    fun sendApplication(id: Long): Int {
+    fun sendApplication(id: Long): Pair<Int, Any> {
         val currentUser = SecurityContextHolder.getContext().authentication.name
-        val application = repo.findOneByIdAndUserId(id, currentUser) ?: return 404
+        val application = repo.findOneByIdAndUserId(id, currentUser) ?: return Pair(404, "Application not found")
 
-        // TODO: Make sure we haven't sent the application yet
+        if(application.alluid != null){
+            return Pair(403, "Application already sent")
+        }
 
         when (application.applicationType) {
             ApplicationType.CABLE_REPORT -> {
                 val cableReportApplication: CableReportApplication =
-                        OBJECT_MAPPER.treeToValue(application.applicationData) ?: return 400
-                // TODO: Try to send the application to ALLU
+                        OBJECT_MAPPER.treeToValue(application.applicationData) ?: return Pair(400, "Json parsing error")
+                application.alluid = cableReportService.create(cableReportApplication)
             }
         }
-
-        // TODO: Mark application as sent, disallow further updates on the application
-        return 200
+        return Pair(200, applicationToDto(repo.save(application)))
     }
 
 }
