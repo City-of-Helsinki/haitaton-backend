@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.allu
 
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
@@ -12,33 +11,24 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/hakemukset")
-class ApplicationController(
-    @Autowired private val applicationService: ApplicationService,
-) {
-    @PostMapping
-    fun createApplication(@RequestBody application: ApplicationDTO): ApplicationDTO =
-            applicationService.create(application);
+class ApplicationController(@Autowired private val service: ApplicationService) {
 
     @GetMapping
-    fun getApplications(): List<ApplicationDTO> =
-            applicationService.getAllApplicationsForCurrentUser()
+    fun getAll() = service.getAllApplicationsForCurrentUser()
 
     @GetMapping("/{id}")
-    fun getApplicationById(@PathVariable(name = "id") id : Long): ApplicationDTO? =
-            applicationService.getApplicationById(id)
+    fun getById(@PathVariable(name = "id") id: Long) = service.getApplicationById(id)
+
+    @PostMapping
+    fun create(@RequestBody application: ApplicationDTO) = service.create(application)
 
     @PutMapping("/{id}")
-    fun updateApplication(
-            @PathVariable(name = "id") id : Long,
+    fun update(
+            @PathVariable(name = "id") id: Long,
             @RequestBody application: ApplicationDTO
-    ): ResponseEntity<Any> {
-        val (httpCode, data) = applicationService.updateApplicationData(id, application.applicationData)
-        return ResponseEntity.status(httpCode).body(data)
-    }
+    ): ApplicationDTO? = service.updateApplicationData(id, application.applicationData)
 
     @PostMapping("/{id}/send-application")
-    fun sendApplication(@PathVariable(name = "id") id : Long): ResponseEntity<Any> {
-        val (httpCode, data) = applicationService.sendApplication(id)
-        return ResponseEntity.status(httpCode).body(data)
-    }
+    fun sendApplication(@PathVariable(name = "id") id: Long) = service.sendApplication(id)
+
 }
