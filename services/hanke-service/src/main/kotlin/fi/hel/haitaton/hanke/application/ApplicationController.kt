@@ -31,11 +31,14 @@ class ApplicationController(
     fun updateApplication(
             @PathVariable(name = "id") id : Long,
             @RequestBody application: ApplicationDTO
-    ): ApplicationDTO? = applicationService.updateApplicationData(id, application.applicationData)
+    ): ResponseEntity<Any> {
+        val (httpCode, data) = applicationService.updateApplicationData(id, application.applicationData)
+        return ResponseEntity.status(httpCode).body(data)
+    }
 
     @PostMapping("/{id}/send-application")
     fun sendApplication(@PathVariable(name = "id") id : Long): ResponseEntity<Any> {
-        val status = applicationService.sendApplication(id)
-        return ResponseEntity.status(status).build()
+        val (httpCode, data) = applicationService.sendApplication(id)
+        return ResponseEntity.status(httpCode).body(data)
     }
 }

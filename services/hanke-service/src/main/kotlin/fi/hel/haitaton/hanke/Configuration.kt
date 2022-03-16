@@ -1,7 +1,9 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.application.AlluProperties
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationService
+import fi.hel.haitaton.hanke.application.CableReportServiceAllu
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDaoImpl
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
@@ -12,17 +14,37 @@ import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.tormaystarkastelu.*
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.jdbc.core.JdbcOperations
+import org.springframework.web.reactive.function.client.WebClient
 
 @Configuration
 @Profile("default")
 class Configuration {
 
+    @Value("\${haitaton.allu.baseUrl}")
+    lateinit var alluBaseUrl : String
+    @Value("\${haitaton.allu.username}")
+    lateinit var alluUsername : String
+    @Value("\${haitaton.allu.password}")
+    lateinit var alluPassword : String
+
     @Bean
-    fun applicationService(applicationRepository: ApplicationRepository) : ApplicationService = ApplicationService(applicationRepository)
+    fun cableReportServiceAllu() : CableReportServiceAllu {
+        return CableReportServiceAllu(
+            WebClient.create(), AlluProperties(
+            baseUrl = alluBaseUrl,
+            username = alluUsername,
+            password = alluPassword
+        ))
+    }
+
+    @Bean
+    fun applicationService(applicationRepository: ApplicationRepository, cableReportServiceAllu: CableReportServiceAllu) : ApplicationService = ApplicationService(applicationRepository, cableReportServiceAllu)
+
 
     @Bean
     fun hanketunnusService(idCounterRepository: IdCounterRepository): HanketunnusService =
