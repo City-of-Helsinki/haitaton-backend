@@ -38,6 +38,10 @@ services:
       HAITATON_OAUTH2_CLIENT_ID: https://api.hel.fi/auth/haitatonapidev
       HAITATON_OAUTH2_USER_INFO_URI: https://tunnistamo.test.hel.ninja/openid/userinfo
 #      HAITATON_CORS_ALLOWED_ORIGINS: http://localhost:8000
+      ALLU_BASEURL: ${ALLU_BASEURL}
+      ALLU_USERNAME: ${ALLU_USERNAME}
+      ALLU_PASSWORD: ${ALLU_PASSWORD}
+      ALLU_INSECURE: ${ALLU_INSECURE}
     depends_on:
       - db
     command: [ "./wait-for-it.sh", "-t", "30", "--strict", "db:5432", "--", "java", "-jar", "haitaton.jar" ]
