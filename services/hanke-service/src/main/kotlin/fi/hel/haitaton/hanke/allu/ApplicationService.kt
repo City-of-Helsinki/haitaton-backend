@@ -10,7 +10,7 @@ import java.lang.IllegalArgumentException
 
 class ApplicationService(
         private val repo : ApplicationRepository,
-        private val cableReportService : CableReportServiceAllu
+        private val cableReportService : CableReportService
 ) {
 
     fun getAllApplicationsForCurrentUser() : List<ApplicationDTO> {
@@ -22,21 +22,22 @@ class ApplicationService(
 
     fun create(application: ApplicationDTO) : ApplicationDTO {
         val userId = SecurityContextHolder.getContext().authentication.name
-        val alluApplication = repo.save(AlluApplication(
+        val application = AlluApplication(
                 id = null,
                 alluid = null,
                 userId = userId,
                 applicationType = application.applicationType,
                 applicationData = application.applicationData
-        ))
-        trySendingPendingApplicationToAllu(alluApplication)
-        return applicationToDto(alluApplication)
+        )
+        trySendingPendingApplicationToAllu(application)
+
+        return applicationToDto(repo.save(application))
     }
 
     fun updateApplicationData(id: Long, newApplicationData: JsonNode): ApplicationDTO? {
         val application = getById(id) ?: return null
 
-        if (!isUpdatable(application)) {
+        if (!isStillPending(application)) {
             throw IllegalArgumentException("Application already sent")
         }
 
@@ -48,7 +49,7 @@ class ApplicationService(
 
     fun sendApplication(id: Long): ApplicationDTO? {
         val application = getById(id) ?: return null
-        if (!isUpdatable(application)) {
+        if (!isStillPending(application)) {
             throw IllegalArgumentException("Application already sent")
         }
         sendApplicationToAllu(application, pendingOnClient = false)
@@ -60,12 +61,16 @@ class ApplicationService(
         return repo.findOneByIdAndUserId(id, userId)
     }
 
-    private fun isUpdatable(application: AlluApplication): Boolean {
-        if (application.alluid == null) {
-            return true
-        }
-        // TODO: Check ALLU if current status is updatable
-        return false
+    private fun isStillPending(application: AlluApplication): Boolean {
+        // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)
+        val id = application.alluid ?: return true
+
+        // If we already have an id but there's no status available then the application is still pendingOnClient
+        // because ALLU doesn't report status events for applications that are in the "meta state" pendingOnClient
+        val currentStatus = cableReportService.getCurrentStatus(id) ?: return true
+
+        // We've already sent this application with pendingOnClient: false
+        return currentStatus == ApplicationStatus.PENDING
     }
 
     private fun trySendingPendingApplicationToAllu(application: AlluApplication) {
@@ -86,11 +91,17 @@ class ApplicationService(
 
     private fun sendCableReport(application: AlluApplication, pendingOnClient: Boolean) {
         val cableReportApplication: CableReportApplication = OBJECT_MAPPER.treeToValue(application.applicationData)!!
-        cableReportApplication.pendingOnClient = pendingOnClient
-        val alluid = cableReportService.create(cableReportApplication)
-        application.alluid = alluid
-        // Make sure pendingOnClient is up-to-date
-        application.applicationData = OBJECT_MAPPER.valueToTree(cableReportApplication)
+        if (cableReportApplication.pendingOnClient != pendingOnClient) {
+            cableReportApplication.pendingOnClient = pendingOnClient
+            application.applicationData = OBJECT_MAPPER.valueToTree(cableReportApplication)
+        }
+
+        val alluId = application.alluid
+        if (alluId == null) {
+            application.alluid = cableReportService.create(cableReportApplication)
+        } else {
+            cableReportService.update(alluId, cableReportApplication)
+        }
     }
 
 }
