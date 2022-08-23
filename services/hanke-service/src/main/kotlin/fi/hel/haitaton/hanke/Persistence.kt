@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
+import fi.hel.haitaton.hanke.tormaystarkastelu.Luokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
@@ -89,7 +90,7 @@ enum class TyomaaKoko {
     LAAJA_TAI_USEA_KORTTELI
 }
 
-enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(val arvo: Int, val kuvaus: String) {
+enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(override val value: Int, override val explanation: String) : Luokittelu {
     YKSI(
         1,
         "Ei vaikuta"),
@@ -107,7 +108,7 @@ enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(val arvo: Int, v
         "Vähentää samanaikaisesti useita kaistoja liittymien eri suunnilla")
 }
 
-enum class KaistajarjestelynPituus(val arvo: Int, val kuvaus: String) {
+enum class KaistajarjestelynPituus(override val value: Int, override val explanation: String) : Luokittelu {
     YKSI(1, "Ei tarvita"),
     KAKSI(2, "Enintään 10 m"),
     KOLME(3, "11 - 100 m"),
@@ -136,6 +137,7 @@ class HankeEntity(
     var loppuPvm: LocalDate? = null, // NOTE: stored and handled in UTC, not in "local" time
     @Enumerated(EnumType.STRING)
     var vaihe: Vaihe? = null,
+    @Enumerated(EnumType.STRING)
     var suunnitteluVaihe: SuunnitteluVaihe? = null,
     var onYKTHanke: Boolean? = false,
     var version: Int? = 0,
@@ -179,30 +181,6 @@ class HankeEntity(
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
 
-    // --------------- State flags -------------------
-    // NOTE: need to be careful with these to not end up with inconsistent database state.
-    // Some flags are saved to database in order to reduce processing overhead e.g. when fetching
-    // lots of Hanke-objects for showing a list. (Those that are not saved are left in comments
-    // as reference; see Hanke domain-object.)
-    // Checking geometry requires lookup into another database table.
-    // Checking for nearby other Hanke requires GIS database query.
-    var tilaOnGeometrioita: Boolean = false
-    // var tilaOnKaikkiPakollisetLuontiTiedot: Boolean = false
-    // var tilaOnTiedotLiikenneHaittaIndeksille: Boolean = false
-    // var tilaOnLiikenneHaittaIndeksi: Boolean = false
-    var tilaOnViereisiaHankkeita: Boolean = false
-    var tilaOnAsiakasryhmia: Boolean = false
-
-    // --------------- Törmaystarkastelu -------------------
-    // NOTE: the type-field has column name "liikennehaittaindeksityyppi",
-    // whereas the combined object has type LiikenneHaittaIndeksiType in Kotlin-side.
-    @Embedded
-    @AttributeOverrides(
-        AttributeOverride(name = "indeksi", column = Column(name = "liikennehaittaindeksi")),
-        AttributeOverride(name = "tyyppi", column = Column(name = "liikennehaittaindeksityyppi"))
-    )
-    var liikennehaittaIndeksi: LiikennehaittaIndeksiType? = null
-
     // Made bidirectional relation mainly to allow cascaded delete.
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "hanke", cascade = [CascadeType.ALL], orphanRemoval = true)
     var tormaystarkasteluTulokset: MutableList<TormaystarkasteluTulosEntity> = mutableListOf()
@@ -224,25 +202,6 @@ class HankeEntity(
             yhteystieto.hanke = null
         }
     }
-
-    fun addTormaystarkasteluTulos(tormaystarkasteluTulosEntity: TormaystarkasteluTulosEntity) {
-        if (tormaystarkasteluTulosEntity.hanke != null && tormaystarkasteluTulosEntity.hanke != this) {
-            throw IllegalStateException("Given TormaystarkasteluTulosEntity has already a different parent Hanke.")
-        }
-        tormaystarkasteluTulosEntity.hanke = this
-        // Check that exactly same entity (with same id) is not added twice;
-        // another one with the same values but different id can be added.
-        if (!tormaystarkasteluTulokset.contains(tormaystarkasteluTulosEntity))
-            tormaystarkasteluTulokset.add(tormaystarkasteluTulosEntity)
-    }
-
-    fun removeTormaystarkasteluTulos(tormaystarkasteluTulosEntity: TormaystarkasteluTulosEntity) {
-        if (tormaystarkasteluTulokset.contains(tormaystarkasteluTulosEntity)) {
-            tormaystarkasteluTulokset.remove(tormaystarkasteluTulosEntity)
-            tormaystarkasteluTulosEntity.hanke = null
-        }
-    }
-
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

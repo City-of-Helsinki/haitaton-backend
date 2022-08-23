@@ -1,0 +1,46 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-add-on-delete-to-hanke-fkeys
+      comment: Add ON DELETE CASCADE to hanke foreign keys that didn't already have it
+      author: Janne Heikkilä
+      changes:
+        - dropForeignKeyConstraint:
+            constraintName: fk_hanke_hanketyomaatyyppi
+            baseTableName: hanketyomaatyyppi
+        - addForeignKeyConstraint:
+            constraintName: fk_hanke_hanketyomaatyyppi
+            baseTableName: hanketyomaatyyppi
+            baseColumnNames: hankeid
+            referencedTableName: hanke
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - dropForeignKeyConstraint:
+            constraintName: fk_hanke_hankeyhteystieto
+            baseTableName: hankeyhteystieto
+        - addForeignKeyConstraint:
+            constraintName: fk_hanke_hankeyhteystieto
+            baseTableName: hankeyhteystieto
+            baseColumnNames: hankeid
+            referencedTableName: hanke
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - dropForeignKeyConstraint:
+            constraintName: fk_hanke_tormaystarkastelutulos
+            baseTableName: tormaystarkastelutulos
+        - addForeignKeyConstraint:
+            constraintName: fk_hanke_tormaystarkastelutulos
+            baseTableName: tormaystarkastelutulos
+            baseColumnNames: hankeid
+            referencedTableName: hanke
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - dropForeignKeyConstraint:
+            constraintName: fk_permissions_hanke
+            baseTableName: permissions
+        - addForeignKeyConstraint:
+            constraintName: fk_permissions_hanke
+            baseTableName: permissions
+            baseColumnNames: hankeid
+            referencedTableName: hanke
+            referencedColumnNames: id
+            onDelete: CASCADE

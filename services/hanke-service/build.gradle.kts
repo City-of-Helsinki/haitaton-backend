@@ -20,28 +20,18 @@ sourceSets {
 		compileClasspath += main.get().output + test.get().output
 		runtimeClasspath += main.get().output + test.get().output
 	}
-	create("manualTest") {
-		compileClasspath += main.get().output + test.get().output
-		runtimeClasspath += main.get().output + test.get().output
-	}
 }
 
 val integrationTestImplementation: Configuration by configurations.getting {
 	extendsFrom(configurations.testImplementation.get())
 }
-val manualTestImplementation: Configuration by configurations.getting {
-	extendsFrom(configurations.testImplementation.get())
-}
 
 configurations["integrationTestRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
-configurations["manualTestRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
 
 idea {
 	module {
 		testSourceDirs = testSourceDirs + sourceSets["integrationTest"].withConvention(KotlinSourceSet::class) { kotlin.srcDirs }
 		testResourceDirs = testResourceDirs + sourceSets["integrationTest"].resources.srcDirs
-		testSourceDirs = testSourceDirs + sourceSets["manualTest"].withConvention(KotlinSourceSet::class) { kotlin.srcDirs }
-		testResourceDirs = testResourceDirs + sourceSets["manualTest"].resources.srcDirs
 	}
 }
 
@@ -52,23 +42,30 @@ springBoot {
 plugins {
 	id("org.springframework.boot") version "2.3.4.RELEASE"
 	id("io.spring.dependency-management") version "1.0.10.RELEASE"
-	kotlin("jvm") version "1.4.20"
+	kotlin("jvm") version "1.6.10"
 	// Gives kotlin-allopen, which auto-opens classes with certain annotations
-	kotlin("plugin.spring") version "1.4.20"
+	kotlin("plugin.spring") version "1.6.10"
 	// Gives kotlin-noarg for @Entity, @Embeddable
-	kotlin("plugin.jpa") version "1.4.20"
+	kotlin("plugin.jpa") version "1.6.10"
 	idea
 }
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
+	implementation("org.springframework.boot:spring-boot-starter-webflux")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
+	implementation("com.fasterxml.jackson.core:jackson-databind")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+	implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
 	implementation("io.github.microutils:kotlin-logging:1.12.0")
+	implementation("ch.qos.logback:logback-access")
+	implementation("net.logstash.logback:logstash-logback-encoder:6.5")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	implementation("de.grundid.opendatalab:geojson-jackson:$geoJsonJacksonVersion")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.liquibase:liquibase-core")
+	implementation("com.github.blagerweij:liquibase-sessionlock:1.4.0")
+	implementation("com.vladmihalcea:hibernate-types-52:2.14.0")
 
 	implementation("org.postgresql:postgresql:$postgreSQLVersion")
 	// H2 is used as embedded db for some simple low level Entity and Repository class testing
@@ -83,14 +80,15 @@ dependencies {
 	testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
 	testImplementation("org.testcontainers:junit-jupiter:1.15.2")
 	testImplementation("org.testcontainers:postgresql:1.15.2")
+	testImplementation("com.squareup.okhttp3:okhttp:4.9.3")
+	testImplementation("com.squareup.okhttp3:mockwebserver:4.9.3")
+
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
-	// Spring Security
+	// Spring Security (pre-Spring 2.4.x)
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.cloud:spring-cloud-starter-oauth2:2.2.4.RELEASE")
-	implementation("org.springframework.security:spring-security-data")
 	implementation("org.springframework.security:spring-security-oauth2-resource-server:5.3.6.RELEASE")
-	implementation("org.springframework.security:spring-security-oauth2-jose:5.3.6.RELEASE")
 	testImplementation("org.springframework.security:spring-security-test")
 	// Sentry
 	implementation("io.sentry:sentry-spring-boot-starter:4.0.0")
@@ -124,13 +122,4 @@ tasks {
 		outputs.upToDateWhen { false }
 	}
 
-	create("manualTest", Test::class) {
-		useJUnitPlatform()
-		group = "verification"
-		systemProperty("spring.profiles.active", "manualTest")
-		testClassesDirs = sourceSets["manualTest"].output.classesDirs
-		classpath = sourceSets["manualTest"].runtimeClasspath
-		outputs.upToDateWhen { false }
-		exclude("**/*ManualTest")
-	}
 }

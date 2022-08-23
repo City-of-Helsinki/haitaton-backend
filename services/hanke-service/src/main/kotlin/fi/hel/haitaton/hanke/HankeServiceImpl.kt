@@ -1,90 +1,37 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.logging.Action
 import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
 import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 
 import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContextHolder
-import java.time.LocalDate
 import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
 
 open class HankeServiceImpl(
     private val hankeRepository: HankeRepository,
+    private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
     private val hanketunnusService: HanketunnusService,
     private val personalDataAuditLogRepository: PersonalDataAuditLogRepository,
-    private val personalDataChangeLogRepository: PersonalDataChangeLogRepository
+    private val personalDataChangeLogRepository: PersonalDataChangeLogRepository,
 ) : HankeService {
 
-    // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO LOAD A HANKE: @PostAuthorize("returnObject.createdBy == authentication.name")
-    override fun loadHanke(hankeTunnus: String): Hanke? {
-        // TODO: Find out all savetype matches and return the more recent draft vs. submit.
-        val entity = hankeRepository.findByHankeTunnus(hankeTunnus)
-        if (entity == null)
-            return null
+    override fun loadHanke(hankeTunnus: String) = hankeRepository.findByHankeTunnus(hankeTunnus)
+            ?.let { createHankeDomainObjectFromEntity(it) }
 
-        if (entity.id == null) {
-            throw DatabaseStateException(hankeTunnus)
-        }
+    override fun loadAllHanke() = hankeRepository.findAll()
+            .map { createHankeDomainObjectFromEntity(it) }
 
-        return createHankeDomainObjectFromEntity(entity)
-    }
-
-    override fun loadAllHanke(hankeSearch: HankeSearch?): List<Hanke> {
-
-        // TODO: do we limit result by user (e.g. own hanke)?
-        // If so, should also apply to the internal loadAll-function variants.
-
-        return if (hankeSearch == null || hankeSearch.isEmpty()) {
-            loadAllHanke()
-        } else if (hankeSearch.saveType != null) {
-            loadAllHankeWithSavetype(hankeSearch.saveType)
-        } else {
-            //  Get all hanke datas within time period (= either or both of alkuPvm and loppuPvm are inside the requested period)
-            loadAllHankeBetweenDates(hankeSearch.periodBegin!!, hankeSearch.periodEnd!!)
-        }
-    }
-
-
-    /**
-     * Returns all the Hanke items from database for now
-     *
-     * Returns empty list if no items to return
-     * TODO user information to limit what all Hanke items we get?
-     */
-    internal fun loadAllHanke(): List<Hanke> {
-        return hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
-    }
-
-    /**
-     * Returns all the Hanke items for which the hanke period overlaps with the given period.
-     *
-     * Returns empty list if no items to return
-     * TODO user information to limit what all Hanke items we get?
-     */
-    internal fun loadAllHankeBetweenDates(periodBegin: LocalDate, periodEnd: LocalDate): List<Hanke> {
-
-        //Hanke ends must be after period start and hanke starts before period ends (that's the reason for parameters going in reversed)
-        return hankeRepository.findAllByAlkuPvmIsBeforeAndLoppuPvmIsAfter(periodEnd, periodBegin).map { createHankeDomainObjectFromEntity(it) }
-    }
-
-    /**
-     * Returns all the Hanke items for which the saveType is the wanted
-     *
-     * Returns empty list if no items to return
-     * TODO user information to limit what all Hanke items we get?
-     */
-    internal fun loadAllHankeWithSavetype(saveType: SaveType): List<Hanke> {
-        return hankeRepository.findAllBySaveType(saveType).map { createHankeDomainObjectFromEntity(it) }
-    }
+    override fun loadHankkeetByIds(ids: List<Int>) = hankeRepository.findAllById(ids)
+            .map { createHankeDomainObjectFromEntity(it) }
 
     /**
      * @return a new Hanke instance with the added and possibly modified values.
@@ -149,14 +96,22 @@ open class HankeServiceImpl(
         copyNonNullHankeFieldsToEntity(hanke, entity)
         copyYhteystietosToEntity(hanke, entity, userid, loggingEntryHolder, existingYTs)
 
-        // NOTE: liikennehaittaindeksi and tormaystarkastelutulos are NOT
-        //  copied from incoming data. Use setTormaystarkasteluTulos() for that.
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
         // Special fields; handled "manually"..
         entity.version = entity.version?.inc() ?: 1
         // (Not changing createdBy/At fields.)
         entity.modifiedByUserId = userid
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
+
+        tormaystarkasteluService.calculateTormaystarkastelu(hanke)?.let {
+            entity.tormaystarkasteluTulokset.clear()
+            val tte = TormaystarkasteluTulosEntity(
+                    it.perusIndeksi,
+                    it.pyorailyIndeksi,
+                    it.joukkoliikenneIndeksi,
+                    entity)
+            entity.tormaystarkasteluTulokset.add(tte)
+        }
 
         // Save changes:
         logger.debug {
@@ -174,45 +129,8 @@ open class HankeServiceImpl(
         return createHankeDomainObjectFromEntity(entity)
     }
 
-    override fun updateHankeStateFlags(hanke: Hanke) {
-        if (hanke.hankeTunnus == null) {
-            error("Somehow got here with hanke without hanke-tunnus")
-        }
-        // Both checks that the hanke already exists, and get its old fields to transfer data into
-        val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
-                ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
-        copyStateFlagsToEntity(hanke, entity)
-        hankeRepository.save(entity)
-    }
-
-
-    override fun applyAndSaveTormaystarkasteluTulos(hanke: Hanke, tormaystarkasteluTulos: TormaystarkasteluTulos) {
-        if (hanke.hankeTunnus == null) {
-            error("Somehow got here with hanke without hanke-tunnus")
-        }
-        // Both checks that the hanke already exists, and get its old fields to transfer data into
-        val entity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
-                ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
-
-        // Set the values to the domain object and update flag
-        hanke.tormaystarkasteluTulos = tormaystarkasteluTulos
-        hanke.liikennehaittaindeksi = tormaystarkasteluTulos.liikennehaittaIndeksi
-        hanke.updateStateFlagOnLiikenneHaittaIndeksi()
-        // NOTE: the flag is not saved; the possible states are resolved from
-        // the relevant liikenneHaittaIndeksi-field and/or tormaystarkasteluTulos.
-        // null indeksi/tulos means the flag would be false; non-null means true;
-        // non-null with tila EI_VOIMASSA for an existing but obsolete result.
-
-        // Set the tulos to entity object (but first clear any possible old obsolete entries away)
-        entity.tormaystarkasteluTulokset.clear()
-        val tormaystarkasteluTulosEntity = copyTormaystarkasteluTulosToEntity(tormaystarkasteluTulos)
-        tormaystarkasteluTulosEntity.createdAt = getCurrentTimeUTCAsLocalTime()
-        entity.addTormaystarkasteluTulos(tormaystarkasteluTulosEntity)
-        // Set the entity liikenneHaittaIndeksi-field
-        entity.liikennehaittaIndeksi = hanke.liikennehaittaindeksi?.copy()
-
-        // Saves the tulos, too:
-        hankeRepository.save(entity)
+    override fun deleteHanke(id: Int) {
+        hankeRepository.deleteById(id)
     }
 
     // TODO: functions to remove and invalidate Hanke's tormaystarkastelu-data
@@ -262,12 +180,8 @@ open class HankeServiceImpl(
             h.polyHaitta = hankeEntity.polyHaitta
             h.tarinaHaitta = hankeEntity.tarinaHaitta
 
-            h.liikennehaittaindeksi = hankeEntity.liikennehaittaIndeksi?.copy()
-            // tormaystarkasteluTulos is NOT copied over here (only when
-            // included in Hanke instance via TormaystarkasteluLaskentaService).
-
-            copyStateFlagsFromEntity(h, hankeEntity)
-            h.updateStateFlags()
+            hankeEntity.tormaystarkasteluTulokset.firstOrNull()
+                ?.let { h.tormaystarkasteluTulos = TormaystarkasteluTulos(it.perus, it.pyoraily, it.joukkoliikenne) }
 
             return h
         }
@@ -314,12 +228,6 @@ open class HankeServiceImpl(
                     createdAt = createdAt,
                     modifiedAt = modifiedAt
             )
-        }
-
-        private fun copyStateFlagsFromEntity(h: Hanke, entity: HankeEntity) {
-            h.tilat.onGeometrioita = entity.tilaOnGeometrioita
-            h.tilat.onViereisiaHankkeita = entity.tilaOnViereisiaHankkeita
-            h.tilat.onAsiakasryhmia = entity.tilaOnAsiakasryhmia
         }
 
     }
@@ -435,12 +343,6 @@ open class HankeServiceImpl(
                 tempLockedExistingYts.remove(yhteystieto.id!!)
             }
         }
-    }
-
-    private fun copyStateFlagsToEntity(hanke: Hanke, entity: HankeEntity) {
-        entity.tilaOnGeometrioita = hanke.tilat.onGeometrioita
-        entity.tilaOnViereisiaHankkeita = hanke.tilat.onViereisiaHankkeita
-        entity.tilaOnAsiakasryhmia = hanke.tilat.onAsiakasryhmia
     }
 
     /**
@@ -688,20 +590,6 @@ open class HankeServiceImpl(
         if (incoming.organisaatioNimi != existing.organisaatioNimi) return false
         if (incoming.osasto != existing.osasto) return false
         return true
-    }
-
-    // TODO: this sort of should be in some more common place (useful for e.g.
-    //  other serviceimpl-classes), but currently there is no good  place..
-    private fun copyTormaystarkasteluTulosToEntity(ttt: TormaystarkasteluTulos):
-            TormaystarkasteluTulosEntity {
-        val tttEntity = TormaystarkasteluTulosEntity()
-        tttEntity.liikennehaitta = ttt.liikennehaittaIndeksi?.copy()
-        tttEntity.perus = ttt.perusIndeksi
-        tttEntity.pyoraily = ttt.pyorailyIndeksi
-        tttEntity.joukkoliikenne = ttt.joukkoliikenneIndeksi
-        tttEntity.tila = ttt.tila
-
-        return tttEntity
     }
 
     /**

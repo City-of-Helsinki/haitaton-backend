@@ -9,8 +9,12 @@ import fi.hel.haitaton.hanke.SaveType
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeSearch
+import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
+import fi.hel.haitaton.hanke.permissions.Permission
+import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.permissions.PermissionProfiles
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.every
 import java.time.ZonedDateTime
@@ -57,11 +61,17 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     @Autowired
     private lateinit var hankeService: HankeService
 
+    @Autowired
+    lateinit var permissionService: PermissionService
+
+    @Autowired
+    private lateinit var hankeGeometriatService: HankeGeometriatService
+
     private val testHankeTunnus = "HAI21-TEST-1"
 
     @Test
-    @WithMockUser(username = "test7358", roles = ["haitaton-user"])
-    fun `status ok with authenticated user with correct role`() {
+    @WithMockUser(username = "test7358", roles = [])
+    fun `status ok with authenticated user with or without any role`() {
         performGetHankkeet().andExpect(status().isOk)
         performPostHankkeet().andExpect(status().isOk)
         performPutHankkeetTunnus().andExpect(status().isOk)
@@ -89,50 +99,33 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
             .andExpectHankeError(HankeError.HAI0001)
     }
 
-    @Test
-    @WithMockUser(username = "test7358", roles = ["bad role"])
-    fun `status forbidden (403) with authenticated user with bad role`() {
-        performGetHankkeet()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-        performPostHankkeet()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-        performPutHankkeetTunnus()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-        performGetHankkeetTunnus()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-    }
-
-    @Test
-    @WithMockUser(username = "test7358", roles = [])
-    fun `status forbidden (403) with authenticated user without roles`() {
-        performGetHankkeet()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-        performPostHankkeet()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-        performPutHankkeetTunnus()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-        performGetHankkeetTunnus()
-            .andExpect(status().isForbidden)
-            .andExpectHankeError(HankeError.HAI0001)
-    }
-
     // --------- GET /hankkeet/ --------------
 
     private fun performGetHankkeet(): ResultActions {
-        val criteria = HankeSearch()
-        every { hankeService.loadAllHanke(criteria) }.returns(
+        val hankeIds = listOf(123,444)
+        every { hankeService.loadHankkeetByIds(hankeIds) }.returns(
             listOf(
                 Hanke(123, testHankeTunnus),
                 Hanke(444, "HAI-TEST-2")
             )
         )
+        every { permissionService.getPermissionsByUserId("test7358") }.returns(
+            listOf(
+                Permission(
+                1,
+                "test7358",
+                123,
+                PermissionProfiles.HANKE_OWNER_PERMISSIONS
+            ),
+                Permission(
+                    1,
+                    "test7358",
+                    444,
+                    listOf(PermissionCode.VIEW)
+                )
+            )
+        )
+
 
         return mockMvc.perform(
             get("/hankkeet")
@@ -143,10 +136,19 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     // --------- POST /hankkeet/ --------------
 
     private fun performPostHankkeet(): ResultActions {
-        val hanke = getTestHanke(null, null)
+        val hanke = getTestHanke(12, null)
         val content = hanke.toJsonString()
 
         every { hankeService.createHanke(any()) }.returns(hanke)
+        every { permissionService.setPermission(12, "test7358", PermissionProfiles.HANKE_OWNER_PERMISSIONS) }.returns(
+            Permission(
+                1,
+                "test7358",
+                12,
+                PermissionProfiles.HANKE_OWNER_PERMISSIONS
+            )
+        )
+        every { hankeGeometriatService.loadGeometriat(any()) }.returns(null)
 
         return mockMvc.perform(
             post("/hankkeet")
@@ -177,6 +179,8 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     private fun performGetHankkeetTunnus(): ResultActions {
         every { hankeService.loadHanke(any()) }
             .returns(Hanke(123, "HAI-TEST-1"))
+        every { permissionService.getPermissionByHankeIdAndUserId(123, "test7358") }
+            .returns(Permission(1, "test7358", 123, PermissionProfiles.HANKE_OWNER_PERMISSIONS))
 
         return mockMvc.perform(
             get("/hankkeet/$testHankeTunnus")
@@ -203,7 +207,7 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
             id, tunnus,
             true, "Testihanke", "Testihankkeen kuvaus",
             getDatetimeAlku(), getDatetimeLoppu(), Vaihe.OHJELMOINTI, null,
-            1, "Risto", getCurrentTimeUTC(), null, null,
+            1, "test7358", getCurrentTimeUTC(), null, null,
             SaveType.DRAFT
         )
     }

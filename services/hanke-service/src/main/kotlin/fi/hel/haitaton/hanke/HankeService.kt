@@ -1,8 +1,6 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeSearch
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 
 interface HankeService {
 
@@ -16,20 +14,10 @@ interface HankeService {
 
     fun updateHanke(hanke: Hanke): Hanke
 
-    /**
-     * Meant for internal use only (do not reveal in controller or other public end-point).
-     * Only saves the flag-fields from the given hanke-object, and caller needs to
-     * make sure the flags in the given hanke instance have not come from "outside".
-     * Does not change version or modifiedAt/By fields, and does not return
-     * anything.
-     */
-    fun updateHankeStateFlags(hanke: Hanke)
+    fun deleteHanke(id: Int)
 
+    fun loadAllHanke(): List<Hanke>
 
-    /**
-     * Sets the values to the given domain object, sets the state flag, and persists the tulos.
-     */
-    fun applyAndSaveTormaystarkasteluTulos(hanke: Hanke, tormaystarkasteluTulos: TormaystarkasteluTulos)
+    fun loadHankkeetByIds(ids: List<Int>): List<Hanke>
 
-    fun loadAllHanke(hankeSearch: HankeSearch? = null): List<Hanke>
 }

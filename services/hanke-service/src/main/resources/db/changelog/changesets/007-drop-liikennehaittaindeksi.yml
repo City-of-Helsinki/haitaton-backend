@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-drop-liikennehaittaindeksi
+      comment: Drop columns liikennehaittaindeksi, liikennehaittaindeksityyppi
+      author: Janne Heikkilä
+      changes:
+        - dropColumn:
+            tableName: hanke
+            columns:
+              - column:
+                  name: liikennehaittaindeksi
+              - column:
+                  name: liikennehaittaindeksityyppi
+        - dropColumn:
+            tableName: tormaystarkastelutulos
+            columns:
+              - column:
+                  name: liikennehaitta
+              - column:
+                  name: liikennehaittatyyppi
