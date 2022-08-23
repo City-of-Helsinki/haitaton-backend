@@ -21,49 +21,6 @@ services:
         aliases:
           - haitaton-db
 
-  auth-db:
-    image: postgres:11.6
-    container_name: haitaton-auth-db
-    environment:
-      - POSTGRES_DB=keycloak
-      - POSTGRES_USER=keycloak
-      - POSTGRES_PASSWORD=password
-    ports:
-      - 5433:5432
-    volumes:
-      - ${AUTH_DB_VOLUME}:/var/lib/postgresql/data
-    networks:
-      backbone:
-        aliases:
-          - auth-db
-
-  auth-service:
-    build:
-      context: ${BUILD_ROOT}/haitaton-backend/services/auth-service
-      dockerfile: Dockerfile
-    container_name: haitaton-auth-service
-    ports:
-      - 3030:8080
-    volumes:
-      - ./services/auth-service/realms:/tmp
-    hostname: auth-service
-    environment:
-      - KEYCLOAK_USER=admin
-      - KEYCLOAK_PASSWORD=admin
-      - DB_VENDOR=POSTGRES
-      - DB_ADDR=auth-db
-      - DB_USER=keycloak
-      - DB_PASSWORD=password
-      - DB_DATABASE=keycloak
-      - DB_SCHEMA=public
-      - KEYCLOAK_IMPORT=/tmp/haitaton-realm-with-users.json
-    depends_on:
-      - auth-db
-    networks:
-      backbone:
-        aliases:
-          - auth-service
-
   haitaton-hanke:
     build:
       context: ${BUILD_ROOT}/haitaton-backend
@@ -78,11 +35,15 @@ services:
       HAITATON_PORT: 5432
       HAITATON_USER: haitaton_user
       HAITATON_PASSWORD: haitaton
-      HAITATON_AUTH_OIDC_CERTS_ENDPOINT: http://auth-service:8080/auth/realms/haitaton/protocol/openid-connect/certs
+      HAITATON_OAUTH2_CLIENT_ID: https://api.hel.fi/auth/haitatonapidev
+      HAITATON_OAUTH2_USER_INFO_URI: https://tunnistamo.test.hel.ninja/openid/userinfo
 #      HAITATON_CORS_ALLOWED_ORIGINS: http://localhost:8000
+      ALLU_BASEURL: ${ALLU_BASEURL}
+      ALLU_USERNAME: ${ALLU_USERNAME}
+      ALLU_PASSWORD: ${ALLU_PASSWORD}
+      ALLU_INSECURE: ${ALLU_INSECURE}
     depends_on:
       - db
-      - auth-service
     command: [ "./wait-for-it.sh", "-t", "30", "--strict", "db:5432", "--", "java", "-jar", "haitaton.jar" ]
     networks:
       backbone:
@@ -114,13 +75,11 @@ services:
     ports:
       - 3001:80
     depends_on:
-      - auth-service
       - haitaton-hanke
       - haitaton-ui
     networks:
       - backbone
     links:
-      - auth-service
       - haitaton-hanke
       - haitaton-ui
 

@@ -1,21 +1,24 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeSearch
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.permissions.Permission
+import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.permissions.PermissionProfiles
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
-import org.mockito.MockitoAnnotations
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
 import java.time.ZonedDateTime
@@ -24,6 +27,7 @@ import javax.validation.ConstraintViolationException
 
 @ExtendWith(SpringExtension::class)
 @Import(HankeControllerTest.TestConfiguration::class)
+@WithMockUser
 class HankeControllerTest {
 
     @Configuration
@@ -39,10 +43,14 @@ class HankeControllerTest {
         fun hankeGeometriatService(): HankeGeometriatService = Mockito.mock(HankeGeometriatService::class.java)
 
         @Bean
+        fun permissionService(): PermissionService = Mockito.mock(PermissionService::class.java)
+
+        @Bean
         fun hankeController(
             hankeService: HankeService,
-            hankeGeometriatService: HankeGeometriatService
-        ): HankeController = HankeController(hankeService, hankeGeometriatService)
+            hankeGeometriatService: HankeGeometriatService,
+            permissionService: PermissionService
+        ): HankeController = HankeController(hankeService, hankeGeometriatService, permissionService)
     }
 
     private val mockedHankeTunnus = "AFC1234"
@@ -51,14 +59,21 @@ class HankeControllerTest {
     private lateinit var hankeService: HankeService
 
     @Autowired
+    private lateinit var permissionService: PermissionService
+
+    @Autowired
     private lateinit var hankeController: HankeController
 
     @Test
     fun `test that the getHankebyTunnus returns ok`() {
+        val hankeId = 1234
+        val permission = Permission(1, "user", hankeId, listOf(PermissionCode.VIEW))
+
+        Mockito.`when`(permissionService.getPermissionByHankeIdAndUserId(hankeId, "user")).thenReturn(permission)
         Mockito.`when`(hankeService.loadHanke(mockedHankeTunnus))
             .thenReturn(
                 Hanke(
-                    1234,
+                    hankeId,
                     mockedHankeTunnus,
                     true,
                     "Mannerheimintien remontti remonttinen",
@@ -76,17 +91,33 @@ class HankeControllerTest {
                 )
             )
 
-        val response: ResponseEntity<Any> = hankeController.getHankeByTunnus(mockedHankeTunnus)
+        val response = hankeController.getHankeByTunnus(mockedHankeTunnus)
 
-        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(response.body).isNotNull
-        // Some compilation/build-setups apparently do not allow this .isNotEmpty without ()
-        assertThat((response.body as Hanke).nimi).isNotEmpty()
+        assertThat(response).isNotNull
+        assertThat(response.nimi).isNotEmpty()
     }
 
+    @WithMockUser
     @Test
     fun `test when called without parameters then getHankeList returns ok and two items without geometry`() {
-
+        val permissions = listOf(
+            Permission(
+                1,
+                "user",
+                1234,
+                listOf(
+                    PermissionCode.VIEW
+                )
+            ),
+            Permission(
+                2,
+                "user",
+                50,
+                listOf(
+                    PermissionCode.VIEW, PermissionCode.EDIT
+                )
+            )
+        )
         val listOfHanke = listOf(
             Hanke(
                 1234,
@@ -122,81 +153,17 @@ class HankeControllerTest {
                 SaveType.SUBMIT
             )
         )
+        Mockito.`when`(permissionService.getPermissionsByUserId("user")).thenReturn(permissions)
+        Mockito.`when`(hankeService.loadHankkeetByIds(listOf(1234,50))).thenReturn(listOfHanke)
 
-        Mockito.`when`(hankeService.loadAllHanke()).thenReturn(listOfHanke)
+        val hankeList = hankeController.getHankeList(false)
 
-        val response: ResponseEntity<Any> = hankeController.getHankeList()
-
-        // basic checks for getting a response
-        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(response.body).isNotNull
-
-        // If the status is ok, we expect ResponseEntity<List<Hanke>>
-        @Suppress("UNCHECKED_CAST")
-        val responseList = response as ResponseEntity<List<Hanke>>
-
-        assertThat(responseList.body?.get(0)?.nimi).isEqualTo("Mannerheimintien remontti remonttinen")
-        assertThat(responseList.body?.get(1)?.nimi).isEqualTo("Hämeenlinnanväylän uudistus")
-        assertThat(responseList.body?.get(0)?.geometriat).isNull()
-        assertThat(responseList.body?.get(1)?.geometriat).isNull()
-    }
-
-    @Test
-    fun `when called with saveType parameter then getHankeList returns ok and two items`() {
-        MockitoAnnotations.initMocks(this)
-
-        // both hanke with wanted saveType
-        val listOfHanke = listOf(
-            Hanke(
-                1234,
-                mockedHankeTunnus,
-                true,
-                "Mannerheimintien remontti remonttinen", "Lorem ipsum dolor sit amet...",
-                getDatetimeAlku(),
-                getDatetimeLoppu(),
-                Vaihe.OHJELMOINTI,
-                null,
-                1,
-                "Risto",
-                getCurrentTimeUTC(),
-                null,
-                null,
-                SaveType.SUBMIT
-            ),
-            Hanke(
-                50,
-                "HAME50",
-                true,
-                "Hämeenlinnanväylän uudistus",
-                "Lorem ipsum dolor sit amet...",
-                getDatetimeAlku(),
-                getDatetimeLoppu(),
-                Vaihe.SUUNNITTELU,
-                SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
-                1,
-                "Paavo",
-                getCurrentTimeUTC(),
-                null,
-                null,
-                SaveType.SUBMIT
-            )
-        )
-
-        val searchCriteria = HankeSearch(saveType = SaveType.SUBMIT)
-        Mockito.`when`(hankeService.loadAllHanke(searchCriteria)).thenReturn(listOfHanke)
-
-        val response: ResponseEntity<Any> = hankeController.getHankeList(searchCriteria)
-
-        // basic checks for getting a response
-        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
-        assertThat(response.body).isNotNull
-
-        // If the status is ok, we expect ResponseEntity<List<Hanke>>
-        @Suppress("UNCHECKED_CAST")
-        val responseList = response as ResponseEntity<List<Hanke>>
-
-        assertThat(responseList.body?.get(0)?.nimi).isEqualTo("Mannerheimintien remontti remonttinen")
-        assertThat(responseList.body?.get(1)?.nimi).isEqualTo("Hämeenlinnanväylän uudistus")
+        assertThat(hankeList[0].nimi).isEqualTo("Mannerheimintien remontti remonttinen")
+        assertThat(hankeList[1].nimi).isEqualTo("Hämeenlinnanväylän uudistus")
+        assertThat(hankeList[0].geometriat).isNull()
+        assertThat(hankeList[1].geometriat).isNull()
+        assertThat(hankeList[0].permissions).isEqualTo(listOf(PermissionCode.VIEW))
+        assertThat(hankeList[1].permissions).isEqualTo(listOf(PermissionCode.VIEW, PermissionCode.EDIT))
     }
 
     @Test
@@ -354,6 +321,40 @@ class HankeControllerTest {
             hankeController.updateHanke(partialHanke, "id123")
         }.withMessageContaining("updateHanke.hanke.vaihe: " + HankeError.HAI1002.toString())
             .withMessageContaining("updateHanke.hanke.saveType: " + HankeError.HAI1002.toString())
+    }
+
+    @Test
+    fun `test that creating a Hanke also adds owner permissions for creating user`() {
+        val hanke = Hanke(
+            id = null,
+            hankeTunnus = null,
+            nimi = "hankkeen nimi",
+            kuvaus = "lorem ipsum dolor sit amet...",
+            onYKTHanke = false,
+            alkuPvm = getDatetimeAlku(),
+            loppuPvm = getDatetimeLoppu(),
+            vaihe = Vaihe.OHJELMOINTI,
+            suunnitteluVaihe = null,
+            version = 1,
+            createdBy = "Tiina",
+            createdAt = getCurrentTimeUTC(),
+            modifiedBy = null,
+            modifiedAt = null,
+            saveType = SaveType.DRAFT
+        )
+
+        val mockedHanke = hanke.copy()
+        mockedHanke.id = 12
+        mockedHanke.hankeTunnus = "JOKU12"
+
+        Mockito.`when`(hankeService.createHanke(hanke)).thenReturn(mockedHanke)
+
+        val response: ResponseEntity<Any> = hankeController.createHanke(hanke)
+
+        Mockito.verify(permissionService).setPermission(12, hanke.createdBy!!, PermissionProfiles.HANKE_OWNER_PERMISSIONS)
+
+        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+        assertThat(response.body).isNotNull
     }
 
     private fun getDatetimeAlku(): ZonedDateTime {

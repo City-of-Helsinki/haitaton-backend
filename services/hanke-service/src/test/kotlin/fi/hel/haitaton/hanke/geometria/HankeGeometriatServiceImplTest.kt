@@ -29,7 +29,7 @@ internal class HankeGeometriatServiceImplTest {
 
     private val hankeGeometriatDao: HankeGeometriatDao = mockk()
 
-    private val service = HankeGeometriatServiceImpl(hankeService, hankeGeometriatDao)
+    private val service = HankeGeometriatServiceImpl(hankeGeometriatDao)
 
     companion object {
 
@@ -62,9 +62,9 @@ internal class HankeGeometriatServiceImplTest {
         every { hankeService.loadHanke(hankeTunnus) } returns Hanke(hankeId, hankeTunnus)
         every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns oldHankeGeometriat
         every { hankeGeometriatDao.updateHankeGeometriat(any()) } just runs
-        every { hankeService.updateHankeStateFlags(any()) } just runs
 
-        val savedHankeGeometria = service.saveGeometriat(hankeTunnus, hankeGeometriat)
+        val hanke = hankeService.loadHanke(hankeTunnus)
+        val savedHankeGeometria = service.saveGeometriat(hanke!!, hankeGeometriat)
 
         verify { hankeService.loadHanke(hankeTunnus) }
         verify { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
@@ -93,9 +93,9 @@ internal class HankeGeometriatServiceImplTest {
         every { hankeService.loadHanke(hankeTunnus) } returns Hanke(hankeId, hankeTunnus)
         every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns null
         every { hankeGeometriatDao.createHankeGeometriat(any()) } just runs
-        every { hankeService.updateHankeStateFlags(any()) } just runs
 
-        val savedHankeGeometria = service.saveGeometriat(hankeTunnus, hankeGeometriat)
+        val hanke = hankeService.loadHanke(hankeTunnus)
+        val savedHankeGeometria = service.saveGeometriat(hanke!!, hankeGeometriat)
 
         verify { hankeService.loadHanke(hankeTunnus) }
         verify { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
@@ -123,9 +123,9 @@ internal class HankeGeometriatServiceImplTest {
         every { hankeService.loadHanke(hankeTunnus) } returns Hanke(hankeId, hankeTunnus)
         every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns oldHankeGeometriat
         every { hankeGeometriatDao.deleteHankeGeometriat(any()) } just runs
-        every { hankeService.updateHankeStateFlags(any()) } just runs
 
-        val savedHankeGeometria = service.saveGeometriat(hankeTunnus, hankeGeometriat)
+        val hanke = hankeService.loadHanke(hankeTunnus)
+        val savedHankeGeometria = service.saveGeometriat(hanke!!, hankeGeometriat)
 
         verify { hankeService.loadHanke(hankeTunnus) }
         verify { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
@@ -159,9 +159,9 @@ internal class HankeGeometriatServiceImplTest {
         every { hankeService.loadHanke(hankeTunnus) } returns Hanke(hankeId, hankeTunnus)
         every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns oldHankeGeometriat
         every { hankeGeometriatDao.updateHankeGeometriat(any()) } just runs
-        every { hankeService.updateHankeStateFlags(any()) } just runs
 
-        val savedHankeGeometria = service.saveGeometriat(hankeTunnus, hankeGeometriat)
+        val hanke = hankeService.loadHanke(hankeTunnus)
+        val savedHankeGeometria = service.saveGeometriat(hanke!!, hankeGeometriat)
 
         verify { hankeService.loadHanke(hankeTunnus) }
         verify { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
@@ -179,31 +179,6 @@ internal class HankeGeometriatServiceImplTest {
     }
 
     @Test
-    fun `save HankeGeometriat - no Hanke`() {
-        val hankeTunnus = "1234567"
-        val hankeId = 1
-        val hankeGeometriat = "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
-            .asJsonResource(HankeGeometriat::class.java)
-        hankeGeometriat.hankeId = null
-        hankeGeometriat.version = null
-        hankeGeometriat.createdAt = null
-        hankeGeometriat.modifiedAt = null
-
-        every { hankeService.loadHanke(hankeTunnus) } returns null
-
-        try {
-            service.saveGeometriat(hankeTunnus, hankeGeometriat)
-            fail("Should have thrown HankeNotFoundException")
-        } catch (e: HankeNotFoundException) {
-            // this should happen
-        }
-
-        verify { hankeService.loadHanke(hankeTunnus) }
-        verify(exactly = 0) { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
-        verify(exactly = 0) { hankeGeometriatDao.createHankeGeometriat(any()) }
-    }
-
-    @Test
     fun `load HankeGeometriat OK`() {
         val hankeTunnus = "1234567"
         val hankeId = 1
@@ -212,7 +187,8 @@ internal class HankeGeometriatServiceImplTest {
         every { hankeService.loadHanke(hankeTunnus) } returns Hanke(hankeId, hankeTunnus)
         every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns hankeGeometriat
 
-        val loadedHankeGeometriat = service.loadGeometriat(hankeTunnus)
+        val hanke = hankeService.loadHanke(hankeTunnus)
+        val loadedHankeGeometriat = service.loadGeometriat(hanke!!)
 
         verify { hankeService.loadHanke(hankeTunnus) }
         verify { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
@@ -226,20 +202,4 @@ internal class HankeGeometriatServiceImplTest {
         }
     }
 
-    @Test
-    fun `load HankeGeometriat - no Hanke`() {
-        val hankeTunnus = "1234567"
-        val hankeId = 1
-        every { hankeService.loadHanke(hankeTunnus) } returns null
-
-        try {
-            service.loadGeometriat(hankeTunnus)
-            fail("Should have thrown HankeNotFoundException")
-        } catch (e: HankeNotFoundException) {
-            // this should happen
-        }
-
-        verify { hankeService.loadHanke(hankeTunnus) }
-        verify(exactly = 0) { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) }
-    }
 }

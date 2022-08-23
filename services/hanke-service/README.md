@@ -99,12 +99,12 @@ If you need to change the build context, you can do so in .env.local file.
 In order to run Törmäystarkastelus locally one needs to import GIS data. This can be done after docker-compose is up and running (at least `db`):
 ```shell
 cd haitaton-backend
-sh scripts/laastari-import.sh
+sh scripts/HEL-GIS-data-import.sh
 ```
 or in Windows:
 ```shell
 cd haitaton-backend
-.\scripts\laastari-import.cmd
+.\scripts\HEL-GIS-data-import.cmd
 ```
 
 ## Authentication

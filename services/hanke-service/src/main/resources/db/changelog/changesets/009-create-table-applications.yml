@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-create-table-applications
+      comment: Create table applications
+      author: Joni Strömberg
+      changes:
+        - createTable:
+            tableName: applications
+            columns:
+              - column: { name: id, type: bigint, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: userid, type: varchar(40), constraints: { nullable: false } }
+              - column: { name: alluid, type: int, constraints: { nullable: true } }
+              - column: { name: applicationtype, type: varchar(40), constraints: { nullable: false } }
+              - column: { name: applicationdata, type: jsonb, constraints: { nullable: true } }
+        - addAutoIncrement: { tableName: applications, columnName: id, columnDataType: bigint, generationType: ALWAYS }

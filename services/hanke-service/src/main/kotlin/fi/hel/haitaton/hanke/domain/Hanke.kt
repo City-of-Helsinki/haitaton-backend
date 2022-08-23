@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 
@@ -98,68 +99,31 @@ data class Hanke(
      */
     var geometriat: HankeGeometriat? = null
 
+    var permissions: List<PermissionCode>? = null
+
     /**
      * Number of days between haittaAlkuPvm and haittaLoppuPvm (incl. both days)
      */
-    val haittaAjanKestoDays: Long?
+    val haittaAjanKestoDays: Int?
         @JsonIgnore
         get() = if (haittaAlkuPvm != null && haittaLoppuPvm != null) {
-            ChronoUnit.DAYS.between(haittaAlkuPvm!!, haittaLoppuPvm!!) + 1
+            ChronoUnit.DAYS.between(haittaAlkuPvm!!, haittaLoppuPvm!!).toInt() + 1
         } else {
             null
         }
 
-    // -------------- Tormaystarkastelu -------------
-    /**
-     * Liikennehaittaindeksi is always available here if it has been calculated and is still valid.
-     * Might be around even if no longer valid.
-     * TODO: should the validity-state be part of this indeksitype, too? (I.e. would know that even
-     *  when not getting the full tulos-data (which does have that state).
-     */
-    var liikennehaittaindeksi: LiikennehaittaIndeksiType? = null
-
-    /**
-     * These are currently available only when Hanke is returned via Tormaystarkastelu controller/service.
-     * And if they have been calculated and are still valid.
-     */
-    var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
-
-    // --------------- State flags -------------------
-    var tilat: HankeTilat = HankeTilat()
-
-    fun updateStateFlags() {
-        updateStateFlagOnKaikkiPakollisetLuontiTiedot()
-        updateStateFlagOnTiedotLiikHaittaIndeksille()
-        updateStateFlagOnLiikenneHaittaIndeksi()
+    val liikennehaittaindeksi: LiikennehaittaIndeksiType? by lazy {
+        tormaystarkasteluTulos?.liikennehaittaIndeksi
     }
 
-    fun updateStateFlagOnKaikkiPakollisetLuontiTiedot() {
-        // All mandatory fields have been given... (though their validity should be checked elsewhere)
-        //  and saveType is submit, not just draft?
-        tilat.onKaikkiPakollisetLuontiTiedot = !nimi.isNullOrBlank()
+    var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
+
+    fun onKaikkiPakollisetLuontiTiedot() = !nimi.isNullOrBlank()
                 && !kuvaus.isNullOrBlank()
                 && (alkuPvm != null) && (loppuPvm != null)
                 && hasMandatoryVaiheValues()
                 && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
-                && tilat.onGeometrioita == true
                 && saveType == SaveType.SUBMIT
-    }
-
-    fun updateStateFlagOnTiedotLiikHaittaIndeksille() {
-        // Requires start date, stop date, geometry, and both kaista-related haittas.
-        // (They don't have to be "valid", though, that is another thing.)
-        tilat.onTiedotLiikenneHaittaIndeksille = (alkuPvm != null) && (loppuPvm != null)
-                && (kaistaHaitta != null) && (kaistaPituusHaitta != null)
-                && tilat.onGeometrioita == true
-    }
-
-    /**
-     * NOTE: does not consider whether the result has been invalidated or not,
-     * only that one exists.
-     */
-    fun updateStateFlagOnLiikenneHaittaIndeksi() {
-        tilat.onLiikenneHaittaIndeksi = (liikennehaittaindeksi != null)
-    }
 
     private fun hasMandatoryVaiheValues(): Boolean {
         // Vaihe must be given, but suunnitteluVaihe is mandatory only if vaihe is "SUUNNITTELU".

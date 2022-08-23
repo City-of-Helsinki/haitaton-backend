@@ -20,7 +20,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 /**
  * Tests to ensure OrganisaatioController has correct authentication and
- * authorization restrictions and handling. (Currently not restricted at all.)
+ * authorization restrictions and handling.
  */
 @WebMvcTest(OrganisaatioController::class)
 @Import(IntegrationTestConfiguration::class, IntegrationTestResourceServerConfig::class)
@@ -39,8 +39,8 @@ class OrganisaatioControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     // Without mock user, i.e. anonymous
-    fun `status ok without authenticated user`() {
-        performGetOrganisaatiot().andExpect(status().isOk)
+    fun `status unauthorized without authenticated user`() {
+        performGetOrganisaatiot().andExpect(status().isUnauthorized)
     }
 
     @Test
@@ -61,7 +61,7 @@ class OrganisaatioControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
                 Organisaatio(2, "WELHO", "DNA WELHO Oy")
         )
 
-        every { organisaatioService.getOrganisaatiot() }.returns(organisations)
+        every { organisaatioService.getAll() }.returns(organisations)
 
         return mockMvc.perform(get("/organisaatiot/"))
     }

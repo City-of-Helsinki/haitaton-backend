@@ -29,3 +29,21 @@ databaseChangeLog:
       file: db/changelog/changesets/add-personal-data-processing-restriction-support.yml
   - include:
       file: db/changelog/changesets/add-personal-data-logs-failed-field.yml
+  - include:
+      file: db/changelog/changesets/001-create-table-permissions.yml
+  - include:
+      file: db/changelog/changesets/002-rename-column-permissions-permissionCode.yml
+  - include:
+      file: db/changelog/changesets/003-update-permissions-to-creator.sql
+  - include:
+      file: db/changelog/changesets/004-add-on-delete-to-hanke-fkeys.yml
+  - include:
+      file: db/changelog/changesets/005-add-delete-permission-to-creator.sql
+  - include:
+      file: db/changelog/changesets/006-drop-hanke-flag-fields.yml
+  - include:
+      file: db/changelog/changesets/007-drop-liikennehaittaindeksi.yml
+  - include:
+      file: db/changelog/changesets/008-suunnitteluvaihe-enumtype-string.sql
+  - include:
+      file: db/changelog/changesets/009-create-table-applications.yml
