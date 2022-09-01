@@ -78,7 +78,7 @@ dependencies {
 	testImplementation("io.mockk:mockk:$mockkVersion")
 	testImplementation("com.ninja-squad:springmockk:$springmockkVersion")
 	testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
-	testImplementation("org.testcontainers:junit-jupiter:1.15.2")
+	testImplementation("org.testcontainers:junit-jupiter:1.15.3")
 	testImplementation("org.testcontainers:postgresql:1.15.2")
 	testImplementation("com.squareup.okhttp3:okhttp:4.9.3")
 	testImplementation("com.squareup.okhttp3:mockwebserver:4.9.3")
