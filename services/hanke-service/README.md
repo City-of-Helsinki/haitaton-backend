@@ -39,10 +39,39 @@ setup can not currently support authentication, so can not test the actions with
 > http://localhost:8080/swagger-ui.html \
 > http://localhost:8080/v3/api-docs
 
+### Spotless formatter
+
+The Spotless Gradle plugin checks during the build stage that all code is formatted with ktfmt. If
+the code is not formatted correctly, the build will fail.
+
+Only code changed since the origin/dev branch will be checked and formatted. When a file is touched,
+the whole file needs to be reformatted, though.
+
+The formatting can be checked with:
+```
+./gradlew spotlessCheck`
+```
+And the code can be reformatted with:
+```
+./gradlew spotlessApply
+```
+
+Installing the ktfmt plugin to IDEA is recommended.
+
+If you really, really need to format something manually, you can disable Spotless for a code block:
+```
+// spotless: off
+val table = arrayOf(
+     0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+    10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    )
+// spotless: on
+```
 
 ## PostgreSQL + PostGis locally
+
 The repository includes support for local development with a docker-postgres
- without the need to install postgres locally. 
+without the need to install postgres locally.
 
 To run the postgres in localhost
 ```

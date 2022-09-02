@@ -34,38 +34,32 @@ import reactor.netty.http.client.HttpClient
 @Profile("default")
 class Configuration {
 
-    @Value("\${haitaton.allu.baseUrl}")
-    lateinit var alluBaseUrl : String
-    @Value("\${haitaton.allu.username}")
-    lateinit var alluUsername : String
-    @Value("\${haitaton.allu.password}")
-    lateinit var alluPassword : String
-    @Value("\${haitaton.allu.insecure}")
-    var alluTrustInsecure: Boolean = false
+    @Value("\${haitaton.allu.baseUrl}") lateinit var alluBaseUrl: String
+    @Value("\${haitaton.allu.username}") lateinit var alluUsername: String
+    @Value("\${haitaton.allu.password}") lateinit var alluPassword: String
+    @Value("\${haitaton.allu.insecure}") var alluTrustInsecure: Boolean = false
 
     @Bean
     fun cableReportServiceAllu(): CableReportServiceAllu {
-        val webClient = if (alluTrustInsecure) createInsecureTrustingWebClient() else WebClient.create()
-        val alluProps = AlluProperties(
-                baseUrl = alluBaseUrl,
-                username = alluUsername,
-                password = alluPassword
-        )
+        val webClient =
+            if (alluTrustInsecure) createInsecureTrustingWebClient() else WebClient.create()
+        val alluProps =
+            AlluProperties(baseUrl = alluBaseUrl, username = alluUsername, password = alluPassword)
         return CableReportServiceAllu(webClient, alluProps)
     }
 
     private fun createInsecureTrustingWebClient(): WebClient {
-        val sslContext = SslContextBuilder
-                .forClient()
-                .trustManager(InsecureTrustManagerFactory.INSTANCE)
-                .build()
+        val sslContext =
+            SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build()
         val httpClient = HttpClient.create().secure { t -> t.sslContext(sslContext) }
         return WebClient.builder().clientConnector(ReactorClientHttpConnector(httpClient)).build()
     }
 
     @Bean
-    fun applicationService(applicationRepository: ApplicationRepository, cableReportServiceAllu: CableReportServiceAllu) : ApplicationService = ApplicationService(applicationRepository, cableReportServiceAllu)
-
+    fun applicationService(
+        applicationRepository: ApplicationRepository,
+        cableReportServiceAllu: CableReportServiceAllu
+    ): ApplicationService = ApplicationService(applicationRepository, cableReportServiceAllu)
 
     @Bean
     fun hanketunnusService(idCounterRepository: IdCounterRepository): HanketunnusService =
@@ -79,34 +73,46 @@ class Configuration {
         auditLogRepository: AuditLogRepository,
         permissionService: PermissionService
     ): HankeService =
-        HankeServiceImpl(hankeRepository, tormaystarkasteluLaskentaService, hanketunnusService, auditLogRepository)
+        HankeServiceImpl(
+            hankeRepository,
+            tormaystarkasteluLaskentaService,
+            hanketunnusService,
+            auditLogRepository
+        )
 
     @Bean
     fun organisaatioService(organisaatioRepository: OrganisaatioRepository): OrganisaatioService =
         OrganisaatioService(organisaatioRepository)
 
     @Bean
-    fun hankeGeometriatDao(jdbcOperations: JdbcOperations): HankeGeometriatDao = HankeGeometriatDaoImpl(jdbcOperations)
+    fun hankeGeometriatDao(jdbcOperations: JdbcOperations): HankeGeometriatDao =
+        HankeGeometriatDaoImpl(jdbcOperations)
 
     @Bean
-    fun hankeGeometriatService(
-        hankeGeometriatDao: HankeGeometriatDao
-    ): HankeGeometriatService = HankeGeometriatServiceImpl(hankeGeometriatDao)
+    fun hankeGeometriatService(hankeGeometriatDao: HankeGeometriatDao): HankeGeometriatService =
+        HankeGeometriatServiceImpl(hankeGeometriatDao)
 
     @Bean
     fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService =
         TormaystarkasteluTormaysServicePG(jdbcOperations)
 
     @Bean
-    fun perusIndeksiPainotService(): PerusIndeksiPainotService = PerusIndeksiPainotServiceHardCoded()
+    fun perusIndeksiPainotService(): PerusIndeksiPainotService =
+        PerusIndeksiPainotServiceHardCoded()
 
     @Bean
-    fun luokitteluRajaArvotService(): LuokitteluRajaArvotService = LuokitteluRajaArvotServiceHardCoded()
+    fun luokitteluRajaArvotService(): LuokitteluRajaArvotService =
+        LuokitteluRajaArvotServiceHardCoded()
 
     @Bean
     fun tormaystarkasteluLaskentaService(
-            luokitteluRajaArvotService: LuokitteluRajaArvotService,
-            perusIndeksiPainotService: PerusIndeksiPainotService,
-            tormaystarkasteluDao: TormaystarkasteluTormaysService): TormaystarkasteluLaskentaService =
-            TormaystarkasteluLaskentaService(luokitteluRajaArvotService, perusIndeksiPainotService, tormaystarkasteluDao)
+        luokitteluRajaArvotService: LuokitteluRajaArvotService,
+        perusIndeksiPainotService: PerusIndeksiPainotService,
+        tormaystarkasteluDao: TormaystarkasteluTormaysService
+    ): TormaystarkasteluLaskentaService =
+        TormaystarkasteluLaskentaService(
+            luokitteluRajaArvotService,
+            perusIndeksiPainotService,
+            tormaystarkasteluDao
+        )
 }

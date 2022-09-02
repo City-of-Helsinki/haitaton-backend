@@ -22,9 +22,9 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
 /**
- * Testing the configurations and database setup for AuditLogRepository class
- * with a database. The repositories have no additional code over the base
- * JPARepository, so only the configs/setups get indirectly tested.
+ * Testing the configurations and database setup for AuditLogRepository class with a database. The
+ * repositories have no additional code over the base JPARepository, so only the configs/setups get
+ * indirectly tested.
  */
 // NOTE: using @DataJpaTest(properties = ["spring.liquibase.enabled=false"])
 //  fails; it seems the way it tries to use schemas is not compatible with H2.
@@ -33,17 +33,20 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
 @Transactional
-class PersonalDataLogRepositoryITests @Autowired constructor(
+class PersonalDataLogRepositoryITests
+@Autowired
+constructor(
     val entityManager: EntityManager,
     val auditLogRepository: AuditLogRepository,
 ) {
 
     companion object {
         @Container
-        var container: HaitatonPostgreSQLContainer = HaitatonPostgreSQLContainer()
-            .withExposedPorts(5433) // use non-default port
-            .withPassword("test")
-            .withUsername("test")
+        var container: HaitatonPostgreSQLContainer =
+            HaitatonPostgreSQLContainer()
+                .withExposedPorts(5433) // use non-default port
+                .withPassword("test")
+                .withUsername("test")
 
         @JvmStatic
         @DynamicPropertySource
@@ -58,7 +61,7 @@ class PersonalDataLogRepositoryITests @Autowired constructor(
     }
 
     fun Assert<OffsetDateTime?>.isRecent(offset: TemporalAmount) = given { actual ->
-        if(actual == null) return
+        if (actual == null) return
         val now = OffsetDateTime.now()
         if (actual.isBefore(now) && actual.isAfter(now.minus(offset))) return
         expected("after:${show(now.minus(offset))} but was:${show(actual)}")
@@ -67,18 +70,21 @@ class PersonalDataLogRepositoryITests @Autowired constructor(
     @Test
     fun `saving audit log entry works`() {
         // Create a log entry, save it, flush, clear caches:
-        val auditLogEntry = AuditLogEntry(
-            userId = "1234-1234",
-            action = Action.CREATE,
-            status = Status.SUCCESS,
-            objectType = ObjectType.YHTEYSTIETO,
-            objectId = 333,
-            objectAfter = "fake JSON"
-        )
+        val auditLogEntry =
+            AuditLogEntry(
+                userId = "1234-1234",
+                action = Action.CREATE,
+                status = Status.SUCCESS,
+                objectType = ObjectType.YHTEYSTIETO,
+                objectId = 333,
+                objectAfter = "fake JSON"
+            )
         val savedAuditLogEntry = auditLogRepository.save(auditLogEntry)
         val id = savedAuditLogEntry.id
-        entityManager.flush() // Make sure the stuff is run to database (though not necessarily committed)
-        entityManager.clear() // Ensure the original entity is no longer in Hibernate's 1st level cache
+        // Make sure the stuff is run to database (though not necessarily committed)
+        entityManager.flush()
+        // Ensure the original entity is no longer in Hibernate's 1st level cache
+        entityManager.clear()
 
         // Check it is there (using something else than the repository):
         val foundAuditLogEntry = entityManager.find(AuditLogEntry::class.java, id)
