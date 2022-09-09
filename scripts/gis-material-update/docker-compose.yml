@@ -1,0 +1,25 @@
+version: "3"
+services:
+  gis-db:
+    build:
+      context: database
+      dockerfile: Dockerfile
+    container_name: haitaton-gis-prepare-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - 15432:5432
+    volumes:
+      - ./haitaton-gis-db:/var/lib/postgresql/data
+  gis-fetch:
+    build:
+      context: fetch
+      dockerfile: Dockerfile
+    container_name: haitaton-gis-fetch
+
+  gis-process:
+    build:
+      context: process
+      dockerfile: Dockerfile
+    container_name: haitaton-gis-process

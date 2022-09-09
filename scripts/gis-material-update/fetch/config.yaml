@@ -1,0 +1,28 @@
+hsl:
+  addr: "https://infopalvelut.storage.hsldev.com/gtfs/hsl.zip"
+  local_file: "/downloads/hsl.zip"
+maka_autoliikennemaarat:
+  addr: "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
+  layer: "avoindata:Ajoneuvoliikenne_liikennemaarat_viiva"
+  local_file: "/downloads/maka_autoliikennemaarat.gpkg"
+ylre_katualue:
+  addr: "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
+  layer: "avoindata:YLRE_Katualue_alue"
+  local_file: "/downloads/ylre_katualue_alue.gpkg"
+ylre_katuosat:
+  addr: "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
+  layer: "avoindata:YLRE_Katuosat_alue"
+  local_file: "/downloads/ylre_katuosa_alue.gpkg"
+osm:
+  addr: "https://download.geofabrik.de/europe/finland-latest.osm.pbf"
+  local_file: "/downloads/finland-latest.osm.pbf"
+
+# pyynnöstä toimitetut
+bussiliikenne_kriittinen:
+pienalueet_kantakaupunki_yleiskaava:
+polkupyora_prioriteetti:
+polkupyora_paareitti:
+liikennevaylat:
+
+# manuaalisesti ladattavat
+kuntarajat:
