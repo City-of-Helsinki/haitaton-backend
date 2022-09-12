@@ -15,11 +15,11 @@ services:
   gis-fetch:
     build:
       context: fetch
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.fetch
     container_name: haitaton-gis-fetch
 
   gis-process:
     build:
-      context: process
-      dockerfile: Dockerfile
+      context: fetch
+      dockerfile: Dockerfile.process
     container_name: haitaton-gis-process
