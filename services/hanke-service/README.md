@@ -7,10 +7,12 @@ Using IDEA:
 * IntelliJ IDEA
    * it contains its own JDK, gradle, etc.
 * OpenJDK (version 11+) - for running things after they have been built
+* Docker
 
 Manual build
 * OpenJDK (version 11+)
 * Gradle
+* Docker
 
 ## How to compile, build and run
 
@@ -63,12 +65,12 @@ You can also run the whole haitaton stack with docker compose. Due to the
 ```
 
 In addition, an environment file is needed to set the build root. You can
- either set it in your own environment beforehand or just use the syntaks
-  with env file stated as in the steps below. 
+either set it in your own environment beforehand or just use the syntax
+with env file stated as in the steps below.
   
 If you need to change the build context, you can do so in .env.local file.   
   
-### How tu run docker-compose
+### How to run docker-compose
 
 - Install [docker-compose](https://docs.docker.com/compose/install/)  according
  to your operating system instructions. 
@@ -96,7 +98,8 @@ If you need to change the build context, you can do so in .env.local file.
 ```
 
 ### GIS data import
-In order to run Törmäystarkastelus locally one needs to import GIS data. This can be done after docker-compose is up and running (at least `db`):
+In order to run Törmäystarkastelus locally one needs to import GIS data. This can be done after docker-compose is up and running (at least `db`).
+Maintenance VPN (`huolto.hel.fi`) is needed to access the files.
 ```shell
 cd haitaton-backend
 sh scripts/HEL-GIS-data-import.sh

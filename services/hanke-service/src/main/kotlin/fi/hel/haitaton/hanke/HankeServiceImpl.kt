@@ -3,16 +3,14 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.logging.Action
-import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
-import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
+import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
-
+import java.time.ZonedDateTime
 import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContextHolder
-import java.time.ZonedDateTime
 
 private val logger = KotlinLogging.logger { }
 
@@ -20,8 +18,7 @@ open class HankeServiceImpl(
     private val hankeRepository: HankeRepository,
     private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
     private val hanketunnusService: HanketunnusService,
-    private val personalDataAuditLogRepository: PersonalDataAuditLogRepository,
-    private val personalDataChangeLogRepository: PersonalDataChangeLogRepository,
+    private val auditLogRepository: AuditLogRepository,
 ) : HankeService {
 
     override fun loadHanke(hankeTunnus: String) = hankeRepository.findByHankeTunnus(hankeTunnus)
@@ -299,9 +296,13 @@ open class HankeServiceImpl(
         // create audit log entries for them:
         tempLockedExistingYts.values.forEach {
             loggingEntryHolderForRestrictedActions.addLogEntriesForEvent(
-                Action.DELETE, true,
-                "delete hanke yhteystieto BLOCKED by data processing restriction",
-                it, null, userid)
+                action = Action.DELETE,
+                failed = true,
+                failureDescription = "delete hanke yhteystieto BLOCKED by data processing restriction",
+                oldEntity = it,
+                newEntity = null,
+                userId = userid,
+            )
         }
         logger.warn { "Hanke update with actions on processing restricted data, saving details to audit and change logs. Hanke id ${incomingHanke.id} will be left unchanged" }
         // This will throw exception (after saving the entries) and prevents
@@ -322,9 +323,13 @@ open class HankeServiceImpl(
                 // otherwise check if any of the fields have changes compared to existing values.
                 if (!yhteystieto.isAnyFieldSet()) {
                     loggingEntryHolderForRestrictedActions.addLogEntriesForEvent(
-                        Action.DELETE, true,
-                        "delete hanke yhteystieto BLOCKED by data processing restriction",
-                        tempLockedExistingYts[yhteystieto.id], null, userid)
+                        action = Action.DELETE,
+                        failed = true,
+                        failureDescription = "delete hanke yhteystieto BLOCKED by data processing restriction",
+                        oldEntity = tempLockedExistingYts[yhteystieto.id],
+                        newEntity = null,
+                        userId = userid,
+                    )
                 } else if (!areEqualIncomingVsExistingYhteystietos(yhteystieto, lockedExistingYt)) {
                     // copy the values to temporary non-persisted entity for logging:
                     val unsavedNewData = lockedExistingYt.cloneWithMainFields()
@@ -336,9 +341,13 @@ open class HankeServiceImpl(
                     yhteystieto.organisaatioNimi?.let { unsavedNewData.organisaatioNimi = it }
                     yhteystieto.osasto?.let { unsavedNewData.osasto = it }
                     loggingEntryHolderForRestrictedActions.addLogEntriesForEvent(
-                        Action.UPDATE, true,
-                        "update hanke yhteystieto BLOCKED by data processing restriction",
-                        lockedExistingYt, unsavedNewData, userid)
+                        action = Action.UPDATE,
+                        failed = true,
+                        failureDescription = "update hanke yhteystieto BLOCKED by data processing restriction",
+                        oldEntity = lockedExistingYt,
+                        newEntity = unsavedNewData,
+                        userId = userid,
+                    )
                 }
                 tempLockedExistingYts.remove(yhteystieto.id!!)
             }
@@ -438,7 +447,11 @@ open class HankeServiceImpl(
         for (hankeYht in existingYTs.values) {
             entity.removeYhteystieto(hankeYht)
             loggingEntryHolder.addLogEntriesForEvent(
-                Action.DELETE, false, "delete hanke yhteystieto", hankeYht, null, userid)
+                action = Action.DELETE,
+                oldEntity = hankeYht,
+                newEntity = null,
+                userId = userid,
+            )
         }
     }
 
@@ -558,7 +571,11 @@ open class HankeServiceImpl(
                 // (Not touching the id or hanke fields)
 
                 loggingEntryHolder.addLogEntriesForEvent(
-                    Action.UPDATE, false, "update hanke yhteystieto", previousEntityData, existingYT, userid)
+                    action = Action.UPDATE,
+                    oldEntity = previousEntityData,
+                    newEntity = existingYT,
+                    userId = userid,
+                )
             }
 
             // No need to add the existing Yhteystieto entity to the hanke's list; it is already in it.
@@ -609,12 +626,9 @@ open class HankeServiceImpl(
      * can not be changed/deleted.
      */
     private fun postProcessAndSaveLoggingForRestrictions(loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder) {
-        loggingEntryHolderForRestrictedActions.applyIPaddresses()
-        loggingEntryHolderForRestrictedActions.saveLogEntries(personalDataAuditLogRepository, personalDataChangeLogRepository)
-        val idList = StringBuilder()
-        loggingEntryHolderForRestrictedActions.auditLogEntries.forEach { idList.append(it.id).append(", ") }
-        if (idList.endsWith(", "))
-            idList.setLength(idList.length-2)
+        loggingEntryHolderForRestrictedActions.applyIpAddresses()
+        loggingEntryHolderForRestrictedActions.saveLogEntries(auditLogRepository)
+        val idList = loggingEntryHolderForRestrictedActions.idList()
         throw HankeYhteystietoProcessingRestrictedException("Can not modify/delete yhteystieto which has data processing restricted (id: $idList)")
     }
 
@@ -635,7 +649,7 @@ open class HankeServiceImpl(
         // access in its own separate service and do the logging there independently...
         // So, the current way of doing things should be good enough for now.
         loggingEntryHolder.addLogEntriesForNewYhteystietos(savedHankeEntity.listOfHankeYhteystieto, userid)
-        loggingEntryHolder.applyIPaddresses()
-        loggingEntryHolder.saveLogEntries(personalDataAuditLogRepository, personalDataChangeLogRepository)
+        loggingEntryHolder.applyIpAddresses()
+        loggingEntryHolder.saveLogEntries(auditLogRepository)
     }
 }

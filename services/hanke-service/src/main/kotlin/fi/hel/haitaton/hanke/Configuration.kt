@@ -8,12 +8,17 @@ import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDaoImpl
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatServiceImpl
-import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
-import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
+import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.tormaystarkastelu.*
+import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotService
+import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotServiceHardCoded
+import fi.hel.haitaton.hanke.tormaystarkastelu.PerusIndeksiPainotService
+import fi.hel.haitaton.hanke.tormaystarkastelu.PerusIndeksiPainotServiceHardCoded
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -71,12 +76,10 @@ class Configuration {
         hankeRepository: HankeRepository,
         tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
         hanketunnusService: HanketunnusService,
-        personalDataAuditLogRepository: PersonalDataAuditLogRepository,
-        personalDataChangeLogRepository: PersonalDataChangeLogRepository,
+        auditLogRepository: AuditLogRepository,
         permissionService: PermissionService
     ): HankeService =
-        HankeServiceImpl(hankeRepository, tormaystarkasteluLaskentaService,
-                hanketunnusService, personalDataAuditLogRepository, personalDataChangeLogRepository)
+        HankeServiceImpl(hankeRepository, tormaystarkasteluLaskentaService, hanketunnusService, auditLogRepository)
 
     @Bean
     fun organisaatioService(organisaatioRepository: OrganisaatioRepository): OrganisaatioService =
