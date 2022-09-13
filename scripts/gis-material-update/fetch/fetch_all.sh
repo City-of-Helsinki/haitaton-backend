@@ -2,5 +2,5 @@
 
 for o in $*
 do
-    sh fetch_data.sh $o
+    sh /haitaton-gis/fetch_data.sh $o
 done

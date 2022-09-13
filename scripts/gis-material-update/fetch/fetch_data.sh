@@ -1,6 +1,6 @@
 #!/bin/sh
 
-config_yaml="/config.yaml"
+config_yaml="/haitaton-gis/config.yaml"
 
 # Parse configuration YAML
 # Built using:
@@ -42,6 +42,7 @@ local_file=$(parse_config $(cfg_local_file $data_object))
 
 case $data_object in
 hsl|osm)
+    echo wget -O "$local_file $addr"
     wget -O "$local_file" "$addr"
     ;;
 ylre_katualue|ylre_katuosat|maka_autoliikennemaarat)

@@ -1,4 +1,9 @@
 version: "3"
+volumes:
+  haitaton_gis_prepare:
+    external: true
+  haitaton_gis_db:
+    external: true
 services:
   gis-db:
     build:
@@ -11,15 +16,26 @@ services:
     ports:
       - 15432:5432
     volumes:
-      - ./haitaton-gis-db:/var/lib/postgresql/data
+      - haitaton_gis_db:/var/lib/postgresql/data
   gis-fetch:
     build:
-      context: fetch
-      dockerfile: Dockerfile.fetch
+      context: .
+      dockerfile: fetch/Dockerfile.fetch
     container_name: haitaton-gis-fetch
+    volumes:
+      - haitaton_gis_prepare:/haitaton-gis
+      - ./haitaton-downloads:/downloads
 
   gis-process:
     build:
-      context: fetch
-      dockerfile: Dockerfile.process
+      context: .
+      dockerfile: fetch/Dockerfile.process
     container_name: haitaton-gis-process
+    volumes:
+      - haitaton_gis_prepare:/haitaton-gis
+      - ./haitaton-downloads:/downloads
+  
+  # docker volume create --name haitaton_gis_prepare
+  # docker volume create --name haitaton_gis_db
+  # docker volume rm haitaton_gis_prepare
+  # docker volume rm haitaton_gis_db
