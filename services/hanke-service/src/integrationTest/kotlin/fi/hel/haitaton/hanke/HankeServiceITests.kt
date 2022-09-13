@@ -2,11 +2,13 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.logging.AuditLogEntry
 import fi.hel.haitaton.hanke.logging.Action
-import fi.hel.haitaton.hanke.logging.ChangeLogEntry
-import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
-import fi.hel.haitaton.hanke.logging.PersonalDataChangeLogRepository
+import fi.hel.haitaton.hanke.logging.AuditLogEntry
+import fi.hel.haitaton.hanke.logging.AuditLogRepository
+import fi.hel.haitaton.hanke.logging.ObjectType
+import fi.hel.haitaton.hanke.logging.Status
+import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.Test
@@ -20,8 +22,6 @@ import org.springframework.test.context.DynamicPropertySource
 import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
-import java.time.ZonedDateTime
-import java.time.temporal.ChronoUnit
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -54,10 +54,10 @@ class HankeServiceITests {
 
     @Autowired
     private lateinit var hankeService: HankeService
+
     @Autowired
-    private lateinit var personalDataAuditLogRepository: PersonalDataAuditLogRepository
-    @Autowired
-    private lateinit var personalDataChangeLogRepository: PersonalDataChangeLogRepository
+    private lateinit var auditLogRepository: AuditLogRepository
+
     @Autowired
     private lateinit var hankeRepository: HankeRepository
 
@@ -521,98 +521,90 @@ class HankeServiceITests {
         // Create hanke with two yhteystietos, save, check logs (creates in both logs, null old data)
         // Setup Hanke with two Yhteystietos in the same group:
         val hanke: Hanke = getATestHanke("yksi", 1)
-        val yt1 = getATestYhteystieto(1)
-        val yt2 = getATestYhteystieto(2)
-        hanke.omistajat = arrayListOf(yt1, yt2)
+        val yhteystieto1 = getATestYhteystieto(1)
+        val yhteystieto2 = getATestYhteystieto(2)
+        hanke.omistajat = arrayListOf(yhteystieto1, yhteystieto2)
         // Call create, get the return object, and make some general checks:
-        val returnedHanke = hankeService.createHanke(hanke)
-        assertThat(returnedHanke).isNotNull
-        assertThat(returnedHanke).isNotSameAs(hanke)
-        assertThat(returnedHanke.id).isNotNull
+        val createdHanke = hankeService.createHanke(hanke)
+        assertThat(createdHanke).isNotNull
+        assertThat(createdHanke).isNotSameAs(hanke)
+        assertThat(createdHanke.id).isNotNull
         // Check and record the Yhteystieto ids, and to-be-changed field's value
-        assertThat(returnedHanke.omistajat).hasSize(2)
-        assertThat(returnedHanke.omistajat[0].id).isNotNull
-        assertThat(returnedHanke.omistajat[1].id).isNotNull
-        val ytid1 = returnedHanke.omistajat[0].id!!
-        val ytid2 = returnedHanke.omistajat[1].id!!
-        assertThat(returnedHanke.omistajat[1].sukunimi).isEqualTo("suku2")
+        assertThat(createdHanke.omistajat).hasSize(2)
+        assertThat(createdHanke.omistajat[0].id).isNotNull
+        assertThat(createdHanke.omistajat[1].id).isNotNull
+        val yhteystietoId1 = createdHanke.omistajat[0].id!!
+        val yhteystietoId2 = createdHanke.omistajat[1].id!!
+        assertThat(createdHanke.omistajat[1].sukunimi).isEqualTo("suku2")
 
-        // Prepare example for searching entries by yhteystietoid:
-        val sample1auditlog = Example.of(AuditLogEntry(yhteystietoId = ytid1))
-        val sample1changelog = Example.of(ChangeLogEntry(yhteystietoId = ytid1))
-        val sample2auditlog = Example.of(AuditLogEntry(yhteystietoId = ytid2))
-        val sample2changelog = Example.of(ChangeLogEntry(yhteystietoId = ytid2))
+        // Prepare example for searching entries by yhteystietoId:
+        val exampleForYhteystieto1 = Example.of(AuditLogEntry(id = null, eventTime = null, objectId = yhteystietoId1))
+        val exampleForYhteystieto2 = Example.of(AuditLogEntry(id = null, eventTime = null, objectId = yhteystietoId2))
 
         // Check logs...
-        // Both logs must have 2 entries (two yhteystietos were created):
-        assertThat(personalDataAuditLogRepository.count()).isEqualTo(2)
-        assertThat(personalDataChangeLogRepository.count()).isEqualTo(2)
-        // Check that each yhteystieto has single entry in each log:
-        var auditLogEntries1 = personalDataAuditLogRepository.findAll(sample1auditlog)
-        var changeLogEntries1 = personalDataChangeLogRepository.findAll(sample1changelog)
-        var auditLogEntries2 = personalDataAuditLogRepository.findAll(sample2auditlog)
-        var changeLogEntries2 = personalDataChangeLogRepository.findAll(sample2changelog)
+        // The log must have 2 entries (two yhteystietos were created):
+        assertThat(auditLogRepository.count()).isEqualTo(2)
+
+        // Check that each yhteystieto has single entry in log:
+        var auditLogEntries1 = auditLogRepository.findAll(exampleForYhteystieto1)
+        var auditLogEntries2 = auditLogRepository.findAll(exampleForYhteystieto2)
         assertThat(auditLogEntries1.size).isEqualTo(1)
-        assertThat(changeLogEntries1.size).isEqualTo(1)
         assertThat(auditLogEntries2.size).isEqualTo(1)
-        assertThat(changeLogEntries2.size).isEqualTo(1)
+
         // Check that each entry has correct data (action CREATE,
         // new data contains "suku1" or "suku2", and userid is that of the test user).
         assertThat(auditLogEntries1[0].action).isEqualTo(Action.CREATE)
         assertThat(auditLogEntries1[0].userId).isEqualTo(USER_NAME)
-        assertThat(changeLogEntries1[0].action).isEqualTo(Action.CREATE)
-        assertThat(changeLogEntries1[0].newData).contains("suku1")
+        assertThat(auditLogEntries1[0].status).isEqualTo(Status.SUCCESS)
+        assertThat(auditLogEntries1[0].failureDescription).isNull()
+        assertThat(auditLogEntries1[0].objectType).isEqualTo(ObjectType.YHTEYSTIETO)
+        assertThat(auditLogEntries1[0].objectBefore).isNull()
+        assertThat(auditLogEntries1[0].objectAfter).contains("suku1")
+
         assertThat(auditLogEntries2[0].action).isEqualTo(Action.CREATE)
         assertThat(auditLogEntries2[0].userId).isEqualTo(USER_NAME)
-        assertThat(changeLogEntries2[0].action).isEqualTo(Action.CREATE)
-        assertThat(changeLogEntries2[0].oldData).isNull()
-        assertThat(changeLogEntries2[0].newData).contains("suku2")
-        assertThat(auditLogEntries1[0].failed).isFalse
-        assertThat(auditLogEntries2[0].failed).isFalse
-        assertThat(changeLogEntries1[0].failed).isFalse
-        assertThat(changeLogEntries2[0].failed).isFalse
+        assertThat(auditLogEntries2[0].status).isEqualTo(Status.SUCCESS)
+        assertThat(auditLogEntries2[0].failureDescription).isNull()
+        assertThat(auditLogEntries2[0].objectType).isEqualTo(ObjectType.YHTEYSTIETO)
+        assertThat(auditLogEntries2[0].objectBefore).isNull()
+        assertThat(auditLogEntries2[0].objectAfter).contains("suku2")
 
-        // Update the other yhteystieto (one update in both logs, both datas exist and with correct values)
+        // Update the other yhteystieto (one update in logs, both datas exist and with correct values)
         // Change a value:
-        returnedHanke.omistajat[1].sukunimi = "Som Et Hing"
+        createdHanke.omistajat[1].sukunimi = "Som Et Hing"
         // Call update, get the returned object, make some general checks:
-        val returnedHanke2 = hankeService.updateHanke(returnedHanke)
-        assertThat(returnedHanke2).isNotNull
-        assertThat(returnedHanke2).isNotSameAs(hanke)
-        assertThat(returnedHanke2).isNotSameAs(returnedHanke)
-        assertThat(returnedHanke2.id).isNotNull
+        val hankeAfterUpdate = hankeService.updateHanke(createdHanke)
+        assertThat(hankeAfterUpdate).isNotNull
+        assertThat(hankeAfterUpdate).isNotSameAs(hanke)
+        assertThat(hankeAfterUpdate).isNotSameAs(createdHanke)
+        assertThat(hankeAfterUpdate.id).isNotNull
         // Check that both entries kept their ids, and the only change is where expected
-        assertThat(returnedHanke2.omistajat).hasSize(2)
-        assertThat(returnedHanke2.omistajat[0].id).isEqualTo(ytid1)
-        assertThat(returnedHanke2.omistajat[1].id).isEqualTo(ytid2)
-        assertThat(returnedHanke2.omistajat[0].sukunimi).isEqualTo("suku1")
-        assertThat(returnedHanke2.omistajat[1].sukunimi).isEqualTo("Som Et Hing")
+        assertThat(hankeAfterUpdate.omistajat).hasSize(2)
+        assertThat(hankeAfterUpdate.omistajat[0].id).isEqualTo(yhteystietoId1)
+        assertThat(hankeAfterUpdate.omistajat[1].id).isEqualTo(yhteystietoId2)
+        assertThat(hankeAfterUpdate.omistajat[0].sukunimi).isEqualTo("suku1")
+        assertThat(hankeAfterUpdate.omistajat[1].sukunimi).isEqualTo("Som Et Hing")
 
         // Check logs...
-        // Check that only 1 entry was added to each log (about the updated yhteystieto)
-        assertThat(personalDataAuditLogRepository.count()).isEqualTo(3)
-        assertThat(personalDataChangeLogRepository.count()).isEqualTo(3)
-        // Check that the second yhteystieto got a single entry in each log (and the other didn't)
-        auditLogEntries1 = personalDataAuditLogRepository.findAll(sample1auditlog)
-        changeLogEntries1 = personalDataChangeLogRepository.findAll(sample1changelog)
-        auditLogEntries2 = personalDataAuditLogRepository.findAll(sample2auditlog)
-        changeLogEntries2 = personalDataChangeLogRepository.findAll(sample2changelog)
+        // Check that only 1 entry was added to log (about the updated yhteystieto)
+        assertThat(auditLogRepository.count()).isEqualTo(3)
+        // Check that the second yhteystieto got a single entry in log (and the other didn't)
+        auditLogEntries1 = auditLogRepository.findAll(exampleForYhteystieto1)
+        auditLogEntries2 = auditLogRepository.findAll(exampleForYhteystieto2)
         assertThat(auditLogEntries1.size).isEqualTo(1)
-        assertThat(changeLogEntries1.size).isEqualTo(1)
         assertThat(auditLogEntries2.size).isEqualTo(2)
-        assertThat(changeLogEntries2.size).isEqualTo(2)
         // Check that the new entry has correct data (action UPDATE,
         // old data contains "suku2", new data "Som Et Hing", and userid is that of the test user).
         assertThat(auditLogEntries2[1].action).isEqualTo(Action.UPDATE)
         assertThat(auditLogEntries2[1].userId).isEqualTo(USER_NAME)
-        assertThat(changeLogEntries2[1].action).isEqualTo(Action.UPDATE)
-        assertThat(changeLogEntries2[1].oldData).contains("suku2")
-        assertThat(changeLogEntries2[1].newData).contains("Som Et Hing")
-        assertThat(auditLogEntries2[1].failed).isFalse
-        assertThat(changeLogEntries2[1].failed).isFalse
+        assertThat(auditLogEntries2[1].status).isEqualTo(Status.SUCCESS)
+        assertThat(auditLogEntries2[1].failureDescription).isNull()
+        assertThat(auditLogEntries2[1].objectType).isEqualTo(ObjectType.YHTEYSTIETO)
+        assertThat(auditLogEntries2[1].objectBefore).contains("suku2")
+        assertThat(auditLogEntries2[1].objectAfter).contains("Som Et Hing")
 
         // Delete the other yhteystieto (one update in both logs, null new data)
-        returnedHanke2.omistajat[1].apply {
+        hankeAfterUpdate.omistajat[1].apply {
             etunimi = ""
             sukunimi = ""
             puhelinnumero = ""
@@ -621,50 +613,44 @@ class HankeServiceITests {
             osasto = ""
         }
         // Call update, get the returned object:
-        val returnedHanke3 = hankeService.updateHanke(returnedHanke2)
+        val hankeAfterDelete = hankeService.updateHanke(hankeAfterUpdate)
         // Check that first yhteystieto remains, second one got removed:
-        assertThat(returnedHanke3.omistajat).hasSize(1)
-        assertThat(returnedHanke3.omistajat[0].id).isEqualTo(ytid1)
-        assertThat(returnedHanke3.omistajat[0].sukunimi).isEqualTo("suku1")
+        assertThat(hankeAfterDelete.omistajat).hasSize(1)
+        assertThat(hankeAfterDelete.omistajat[0].id).isEqualTo(yhteystietoId1)
+        assertThat(hankeAfterDelete.omistajat[0].sukunimi).isEqualTo("suku1")
 
         // Check logs...
-        // Check that only 1 entry was added to each log (about the deleted yhteystieto)
-        assertThat(personalDataAuditLogRepository.count()).isEqualTo(4)
-        assertThat(personalDataChangeLogRepository.count()).isEqualTo(4)
-        // Check that the second yhteystieto got a single entry in each log (and the other didn't)
-        auditLogEntries1 = personalDataAuditLogRepository.findAll(sample1auditlog)
-        changeLogEntries1 = personalDataChangeLogRepository.findAll(sample1changelog)
-        auditLogEntries2 = personalDataAuditLogRepository.findAll(sample2auditlog)
-        changeLogEntries2 = personalDataChangeLogRepository.findAll(sample2changelog)
+        // Check that only 1 entry was added to log (about the deleted yhteystieto)
+        assertThat(auditLogRepository.count()).isEqualTo(4)
+        // Check that the second yhteystieto got a single entry in log (and the other didn't)
+        auditLogEntries1 = auditLogRepository.findAll(exampleForYhteystieto1)
+        auditLogEntries2 = auditLogRepository.findAll(exampleForYhteystieto2)
         assertThat(auditLogEntries1.size).isEqualTo(1)
-        assertThat(changeLogEntries1.size).isEqualTo(1)
         assertThat(auditLogEntries2.size).isEqualTo(3)
-        assertThat(changeLogEntries2.size).isEqualTo(3)
         // Check that the new entry has correct data (action DELETE,
         // old data contains "Som Et Hing", new data is null, and userid is that of the test user).
         assertThat(auditLogEntries2[2].action).isEqualTo(Action.DELETE)
         assertThat(auditLogEntries2[2].userId).isEqualTo(USER_NAME)
-        assertThat(changeLogEntries2[2].action).isEqualTo(Action.DELETE)
-        assertThat(changeLogEntries2[2].oldData).contains("Som Et Hing")
-        assertThat(changeLogEntries2[2].newData).isNull()
-        assertThat(auditLogEntries2[2].failed).isFalse
-        assertThat(changeLogEntries2[2].failed).isFalse
+        assertThat(auditLogEntries2[2].status).isEqualTo(Status.SUCCESS)
+        assertThat(auditLogEntries2[2].failureDescription).isNull()
+        assertThat(auditLogEntries2[2].objectType).isEqualTo(ObjectType.YHTEYSTIETO)
+        assertThat(auditLogEntries2[2].objectBefore).contains("Som Et Hing")
+        assertThat(auditLogEntries2[2].objectAfter).isNull()
     }
 
     @Test
     fun `test personal data processing restriction`() {
         // Setup Hanke with two Yhteystietos in different groups (will only manipulate the non-owner):
         val hanke: Hanke = getATestHanke("yksi", 1)
-        val yt1 = getATestYhteystieto(1)
-        val yt2 = getATestYhteystieto(2)
-        hanke.omistajat = arrayListOf(yt1)
-        hanke.arvioijat = arrayListOf(yt2)
+        val omistaja = getATestYhteystieto(1)
+        val arvioija = getATestYhteystieto(2)
+        hanke.omistajat = arrayListOf(omistaja)
+        hanke.arvioijat = arrayListOf(arvioija)
         // Call create, get the return object:
         val returnedHanke = hankeService.createHanke(hanke)
         // Check logs...
-        // Both logs must have 2 entries (two yhteystietos were created):
-        assertThat(personalDataAuditLogRepository.count()).isEqualTo(2)
-        assertThat(personalDataChangeLogRepository.count()).isEqualTo(2)
+        // Logs must have 2 entries (two yhteystietos were created):
+        assertThat(auditLogRepository.count()).isEqualTo(2)
 
         // Get the non-owner yhteystieto,
         // and set the processing restriction (i.e. locked) -flag (must be done via entities):
@@ -672,9 +658,9 @@ class HankeServiceITests {
         val hankeId = returnedHanke.id
         var hankeEntity = hankeRepository.findById(hankeId!!).get()
         var yhteystietos = hankeEntity.listOfHankeYhteystieto
-        var yhteystietoEntity = yhteystietos.filter { it.contactType == ContactType.ARVIOIJA }[0]
-        val ytid = yhteystietoEntity.id
-        yhteystietoEntity.dataLocked = true
+        var arvioijaEntity = yhteystietos.filter { it.contactType == ContactType.ARVIOIJA }[0]
+        val arvioijaId = arvioijaEntity.id
+        arvioijaEntity.dataLocked = true
         // (Not setting the info field, or adding audit log entry, since the idea
         // is to only test that the locking actually prevents processing.)
         // Saving the hanke will save the yhteystieto in it, too:
@@ -688,24 +674,20 @@ class HankeServiceITests {
             hankeService.updateHanke(hankeWithLockedYT)
         }
         // Check logs
-        // The initial create has created two entries to each log, and now
-        // the failed update should have added one more to each log.
-        assertThat(personalDataAuditLogRepository.count()).isEqualTo(3)
-        assertThat(personalDataChangeLogRepository.count()).isEqualTo(3)
-        val sampleauditlog = Example.of(AuditLogEntry(yhteystietoId = ytid))
-        val samplechangelog = Example.of(ChangeLogEntry(yhteystietoId = ytid))
-        var auditLogEntries = personalDataAuditLogRepository.findAll(sampleauditlog)
-        var changeLogEntries = personalDataChangeLogRepository.findAll(samplechangelog)
+        // The initial create has created two entries to the log, and now
+        // the failed update should have added one more.
+        assertThat(auditLogRepository.count()).isEqualTo(3)
+        val exampleForArvioija = Example.of(AuditLogEntry(id = null, eventTime = null, objectId = arvioijaId))
+        var auditLogEntries = auditLogRepository.findAll(exampleForArvioija)
         // For the second yhteystieto, 1 entry for the earlier creation, another for this failed update:
         assertThat(auditLogEntries.size).isEqualTo(2)
-        assertThat(changeLogEntries.size).isEqualTo(2)
         assertThat(auditLogEntries[1].action).isEqualTo(Action.UPDATE)
         assertThat(auditLogEntries[1].userId).isEqualTo(USER_NAME)
-        assertThat(changeLogEntries[1].action).isEqualTo(Action.UPDATE)
-        assertThat(changeLogEntries[1].oldData).contains("suku2")
-        assertThat(changeLogEntries[1].newData).contains("Muhaha-Evil-Change")
-        assertThat(auditLogEntries[1].failed).isTrue
-        assertThat(changeLogEntries[1].failed).isTrue
+        assertThat(auditLogEntries[1].status).isEqualTo(Status.FAILED)
+        assertThat(auditLogEntries[1].failureDescription).isEqualTo("update hanke yhteystieto BLOCKED by data processing restriction")
+        assertThat(auditLogEntries[1].objectType).isEqualTo(ObjectType.YHTEYSTIETO)
+        assertThat(auditLogEntries[1].objectBefore).contains("suku2")
+        assertThat(auditLogEntries[1].objectAfter).contains("Muhaha-Evil-Change")
 
         // Try to delete the yhteystieto; should fail and add only audit log entry (nothing to change log):
         hankeWithLockedYT.arvioijat[0].apply {
@@ -720,16 +702,17 @@ class HankeServiceITests {
             hankeService.updateHanke(hankeWithLockedYT)
         }
         // Check logs (should have one more entry in the audit log)
-        assertThat(personalDataAuditLogRepository.count()).isEqualTo(4)
-        assertThat(personalDataChangeLogRepository.count()).isEqualTo(3)
-        auditLogEntries = personalDataAuditLogRepository.findAll(sampleauditlog)
-        changeLogEntries = personalDataChangeLogRepository.findAll(samplechangelog)
+        assertThat(auditLogRepository.count()).isEqualTo(4)
+        auditLogEntries = auditLogRepository.findAll(exampleForArvioija)
         // For the second yhteystieto, 1 more audit log entry for this failed deletion:
         assertThat(auditLogEntries.size).isEqualTo(3)
-        assertThat(changeLogEntries.size).isEqualTo(2)
         assertThat(auditLogEntries[2].action).isEqualTo(Action.DELETE)
         assertThat(auditLogEntries[2].userId).isEqualTo(USER_NAME)
-        assertThat(auditLogEntries[2].failed).isTrue
+        assertThat(auditLogEntries[2].status).isEqualTo(Status.FAILED)
+        assertThat(auditLogEntries[2].failureDescription).isEqualTo("delete hanke yhteystieto BLOCKED by data processing restriction")
+        assertThat(auditLogEntries[2].objectType).isEqualTo(ObjectType.YHTEYSTIETO)
+        assertThat(auditLogEntries[2].objectBefore).contains("suku2")
+        assertThat(auditLogEntries[2].objectAfter).isNull()
 
         // Check that both yhteystietos still exist and the values have not gotten changed:
         val returnedHankeAfterBlockedActions = hankeService.loadHanke(returnedHanke.hankeTunnus!!)
@@ -740,8 +723,8 @@ class HankeServiceITests {
         // Unset the processing restriction flag:
         hankeEntity = hankeRepository.findById(hankeId).get()
         yhteystietos = hankeEntity.listOfHankeYhteystieto
-        yhteystietoEntity = yhteystietos.filter { it.contactType == ContactType.ARVIOIJA }[0]
-        yhteystietoEntity.dataLocked = false
+        arvioijaEntity = yhteystietos.filter { it.contactType == ContactType.ARVIOIJA }[0]
+        arvioijaEntity.dataLocked = false
         hankeRepository.save(hankeEntity)
 
         // Updating the yhteystieto should now work:
@@ -751,14 +734,11 @@ class HankeServiceITests {
 
         // Check that the change went through:
         assertThat(finalHanke.arvioijat[0].etunimi).isEqualTo("Hopefully-Not-Evil-Change")
-        // Check logs (should have one more entry in both logs)
-        assertThat(personalDataAuditLogRepository.count()).isEqualTo(5)
-        assertThat(personalDataChangeLogRepository.count()).isEqualTo(4)
-        auditLogEntries = personalDataAuditLogRepository.findAll(sampleauditlog)
-        changeLogEntries = personalDataChangeLogRepository.findAll(samplechangelog)
-        // For the second yhteystieto, 1 more entry in both logs:
+        // Check logs (should have one more entry in the log)
+        assertThat(auditLogRepository.count()).isEqualTo(5)
+        auditLogEntries = auditLogRepository.findAll(exampleForArvioija)
+        // For the second yhteystieto, 1 more entry in the log:
         assertThat(auditLogEntries.size).isEqualTo(4)
-        assertThat(changeLogEntries.size).isEqualTo(3)
     }
 
 

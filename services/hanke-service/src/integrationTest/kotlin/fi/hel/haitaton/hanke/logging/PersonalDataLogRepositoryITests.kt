@@ -1,10 +1,15 @@
 package fi.hel.haitaton.hanke.logging
 
+import assertk.Assert
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import assertk.assertions.support.expected
+import assertk.assertions.support.show
 import fi.hel.haitaton.hanke.HaitatonPostgreSQLContainer
-import java.time.LocalDateTime
+import java.time.Duration
+import java.time.OffsetDateTime
+import java.time.temporal.TemporalAmount
 import javax.persistence.EntityManager
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -17,10 +22,9 @@ import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
 /**
- * Testing the configurations and database setup for PersonalDataXxxxLogRepository classes
- * with a database.
- * The repositories have no additional code over the base JPARepository, so
- * only the configs/setups get indirectly tested.
+ * Testing the configurations and database setup for AuditLogRepository class
+ * with a database. The repositories have no additional code over the base
+ * JPARepository, so only the configs/setups get indirectly tested.
  */
 // NOTE: using @DataJpaTest(properties = ["spring.liquibase.enabled=false"])
 //  fails; it seems the way it tries to use schemas is not compatible with H2.
@@ -31,8 +35,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @Transactional
 class PersonalDataLogRepositoryITests @Autowired constructor(
     val entityManager: EntityManager,
-    val auditLogRepository: PersonalDataAuditLogRepository,
-    val changeLogRepository: PersonalDataChangeLogRepository
+    val auditLogRepository: AuditLogRepository,
 ) {
 
     companion object {
@@ -54,38 +57,38 @@ class PersonalDataLogRepositoryITests @Autowired constructor(
         }
     }
 
+    fun Assert<OffsetDateTime?>.isRecent(offset: TemporalAmount) = given { actual ->
+        if(actual == null) return
+        val now = OffsetDateTime.now()
+        if (actual.isBefore(now) && actual.isAfter(now.minus(offset))) return
+        expected("after:${show(now.minus(offset))} but was:${show(actual)}")
+    }
+
     @Test
     fun `saving audit log entry works`() {
         // Create a log entry, save it, flush, clear caches:
-        val datetime = LocalDateTime.of(2020, 2, 20, 20, 20, 20)
-        val audit = AuditLogEntry(datetime, "1234-1234", null, null, null, 333, Action.CREATE, false,"test create")
-        val savedAudit = auditLogRepository.save(audit)
-        val id = savedAudit.id
+        val auditLogEntry = AuditLogEntry(
+            userId = "1234-1234",
+            action = Action.CREATE,
+            status = Status.SUCCESS,
+            objectType = ObjectType.YHTEYSTIETO,
+            objectId = 333,
+            objectAfter = "fake JSON"
+        )
+        val savedAuditLogEntry = auditLogRepository.save(auditLogEntry)
+        val id = savedAuditLogEntry.id
         entityManager.flush() // Make sure the stuff is run to database (though not necessarily committed)
         entityManager.clear() // Ensure the original entity is no longer in Hibernate's 1st level cache
 
         // Check it is there (using something else than the repository):
-        val savedAudit2 = entityManager.find(AuditLogEntry::class.java, id)
-        assertThat(savedAudit2).isNotNull()
-        assertThat(savedAudit2.eventTime).isEqualTo(datetime)
-        assertThat(savedAudit2.userId).isEqualTo("1234-1234")
+        val foundAuditLogEntry = entityManager.find(AuditLogEntry::class.java, id)
+        assertThat(foundAuditLogEntry).isNotNull()
+        assertThat(foundAuditLogEntry.eventTime).isRecent(Duration.ofMinutes(1))
+        assertThat(foundAuditLogEntry.userId).isEqualTo("1234-1234")
+        assertThat(foundAuditLogEntry.action).isEqualTo(Action.CREATE)
+        assertThat(foundAuditLogEntry.status).isEqualTo(Status.SUCCESS)
+        assertThat(foundAuditLogEntry.objectType).isEqualTo(ObjectType.YHTEYSTIETO)
+        assertThat(foundAuditLogEntry.objectId).isEqualTo(333)
+        assertThat(foundAuditLogEntry.objectAfter).isEqualTo("fake JSON")
     }
-
-    @Test
-    fun `saving change log entry works`() {
-        // Create a log entry, save it, flush, clear caches:
-        val datetime = LocalDateTime.of(2020, 2, 20, 20, 20, 20)
-        val audit = ChangeLogEntry(datetime, 444, Action.CREATE, false, "fake JSON", "new fake JSON")
-        val savedAudit = changeLogRepository.save(audit)
-        val id = savedAudit.id
-        entityManager.flush() // Make sure the stuff is run to database (though not necessarily committed)
-        entityManager.clear() // Ensure the original entity is no longer in Hibernate's 1st level cache
-
-        // Check it is there (using something else than the repository):
-        val savedAudit2 = entityManager.find(ChangeLogEntry::class.java, id)
-        assertThat(savedAudit2).isNotNull()
-        assertThat(savedAudit2.eventTime).isEqualTo(datetime)
-        assertThat(savedAudit2.oldData).isEqualTo("fake JSON")
-    }
-
 }

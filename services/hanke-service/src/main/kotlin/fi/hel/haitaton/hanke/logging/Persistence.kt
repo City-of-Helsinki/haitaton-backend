@@ -1,20 +1,19 @@
 package fi.hel.haitaton.hanke.logging
 
-import org.springframework.data.jpa.repository.JpaRepository
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.util.*
+import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.EnumType
 import javax.persistence.Enumerated
-import javax.persistence.GeneratedValue
-import javax.persistence.GenerationType
 import javax.persistence.Id
 import javax.persistence.Table
+import org.springframework.data.jpa.repository.JpaRepository
 
 /**
  * Type of action/event.
- * isChange-value tells whether the action can or could have done changes
- * to the business data it is about. Those that can not change such data
- * will not get an entry in the changelog (but can still get one in the auditlog).
+ *
+ * @param isChange tells whether the action can change the business data
  */
 enum class Action(val isChange: Boolean) {
     /**
@@ -35,60 +34,57 @@ enum class Action(val isChange: Boolean) {
      */
     DELETE(true),
     /**
-     * To record a change of the datalocked-field to "true". Not done by
+     * To record a change of the data locked -field to "true". Not done by
      * Haitaton itself (for now), so add a row with this action when manually
      * setting that restriction flag.
      */
     LOCK(false),
     /**
-     * To record a change of the datalocked-field from "true" to "false".
+     * To record a change of the data locked -field from "true" to "false".
      * Not done by Haitaton itself (for now), so add a row with this action
      * when manually setting that restriction flag.
      */
     UNLOCK(false)
 }
 
+enum class Status {
+    SUCCESS, FAILED
+}
+
+enum class ObjectType {
+    YHTEYSTIETO
+}
+
 @Entity
-@Table(schema = "personaldatalogs", name = "auditlog" )
-class AuditLogEntry (
-    var eventTime: LocalDateTime? = null,
+@Table(name = "audit_log")
+class AuditLogEntry(
+    @Id
+    var id: UUID? = UUID.randomUUID(),
+    @Column(name = "event_time")
+    var eventTime: OffsetDateTime? = OffsetDateTime.now(),
+    @Column(name = "user_id")
     var userId: String? = null,
-    var actor: String? = null,
+    @Column(name = "ip_near")
     var ipNear: String? = null,
+    @Column(name = "ip_far")
     var ipFar: String? = null,
-    // Note, this can be briefly null during creation of a new YhteystietoEntity
-    var yhteystietoId: Int? = 0,
     @Enumerated(EnumType.STRING)
     var action: Action? = null,
-    // null is to be considered equal to false
-    var failed: Boolean? = null,
-    var description: String? = null
-) {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Int? = null
-}
-
-@Entity
-@Table(schema = "personaldatalogs", name = "changelog" )
-class ChangeLogEntry (
-    var eventTime: LocalDateTime? = null,
-    // Note, this can be briefly null during creation of a new YhteystietoEntity
-    var yhteystietoId: Int? = 0,
     @Enumerated(EnumType.STRING)
-    var action: Action? = null,
-    // null is to be considered equal to false
-    var failed: Boolean? = null,
-    var oldData: String? = null,
-    var newData: String? = null
-) {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Int? = null
-}
+    var status: Status? = null,
+    @Column(name = "failure_description")
+    var failureDescription: String? = null,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "object_type")
+    var objectType: ObjectType? = null,
+    @Column(name = "object_id")
+    var objectId: Int? = null,
+    @Column(name = "object_before")
+    var objectBefore: String? = null,
+    @Column(name = "object_after")
+    var objectAfter: String? = null
+)
 
-interface PersonalDataAuditLogRepository : JpaRepository<AuditLogEntry, Int> {
-    // No need for additional functions. Only adding entries from Haitaton app.
-}
-
-interface PersonalDataChangeLogRepository : JpaRepository<ChangeLogEntry, Int> {
+interface AuditLogRepository : JpaRepository<AuditLogEntry, UUID> {
     // No need for additional functions. Only adding entries from Haitaton app.
 }

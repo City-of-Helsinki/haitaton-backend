@@ -2,11 +2,11 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
-import fi.hel.haitaton.hanke.logging.PersonalDataAuditLogRepository
+import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
 import io.mockk.every
 import io.mockk.mockk
@@ -31,10 +31,7 @@ class IntegrationTestConfiguration {
     fun hankeRepository(): HankeRepository = mockk()
 
     @Bean
-    fun personalDataAuditLogRepository(): PersonalDataAuditLogRepository = mockk()
-
-    @Bean
-    fun personalDataChangeLogRepository(): PersonalDataAuditLogRepository = mockk()
+    fun auditLogRepository(): AuditLogRepository = mockk()
 
     @Bean
     fun hanketunnusService(): HanketunnusService = mockk()
