@@ -7,9 +7,4 @@ RUN apt-get update && \
 RUN add-apt-repository ppa:rmescandon/yq
 RUN apt install yq
 
-#RUN mkdir /haitaton-gis
-#COPY ./fetch/fetch_all.sh /haitaton-gis
-#COPY ./fetch/fetch_data.sh /haitaton-gis
-#COPY ./config.yaml /haitaton-gis
-
 ENTRYPOINT [ "sh", "/haitaton-gis/fetch_all.sh" ]

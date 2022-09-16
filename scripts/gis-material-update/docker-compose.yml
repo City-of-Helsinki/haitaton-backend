@@ -20,7 +20,7 @@ services:
   gis-fetch:
     build:
       context: .
-      dockerfile: fetch/Dockerfile.fetch
+      dockerfile: fetch/Dockerfile
     container_name: haitaton-gis-fetch
     volumes:
       - haitaton_gis_prepare:/haitaton-gis
@@ -29,7 +29,7 @@ services:
   gis-process:
     build:
       context: .
-      dockerfile: fetch/Dockerfile.process
+      dockerfile: process/Dockerfile
     container_name: haitaton-gis-process
     volumes:
       - haitaton_gis_prepare:/haitaton-gis

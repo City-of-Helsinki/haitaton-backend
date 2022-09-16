@@ -1,6 +1,0 @@
-FROM python:3.10
-
-RUN mkdir /haitaton-gis
-COPY ./process/process_data.sh /haitaton-gis
-
-ENTRYPOINT [ "sh", "/haitaton-gis/process_data.sh" ]

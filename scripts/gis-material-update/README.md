@@ -29,7 +29,7 @@ Local directory bind mount is visible to data fetch and data processing containe
 ## Running data fetch
 
 ```
-docker-compose run gis-fetch <source_1> ... <source_N>
+docker-compose run --rm gis-fetch <source_1> ... <source_N>
 ```
 Where `<source>` is one of:
 * `hsl`
@@ -43,7 +43,7 @@ Data is downloaded to ./haitaton-downloads -directory
 ## Processing
 
 ```
-docker-compose run gis-process <source>
+docker-compose run --rm gis-process <source>
 ```
 
 # Maintenance process

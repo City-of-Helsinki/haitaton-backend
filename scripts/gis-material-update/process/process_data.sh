@@ -1,5 +1,6 @@
 #!/bin/sh
 
-echo "Processing data."
-echo "First argument: $1"
-echo "Second argument: $2"
+for o in $*
+do
+    /opt/venv/bin/python /haitaton-gis/process_data.py $o
+done
