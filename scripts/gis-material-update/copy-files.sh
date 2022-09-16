@@ -5,6 +5,8 @@ docker cp fetch/fetch_data.sh dummy://haitaton-gis
 docker cp fetch/fetch_all.sh dummy://haitaton-gis
 
 docker cp process/process_data.sh dummy://haitaton-gis
+docker cp process/process_data.py dummy://haitaton-gis
+docker cp process/modules/. dummy://haitaton-gis/modules
 
 docker cp config.yaml dummy://haitaton-gis
 
