@@ -6,14 +6,14 @@ import fi.hel.haitaton.hanke.getCurrentTimeUTC
 object HankeYhteystietoFactory : Factory<HankeYhteystieto>() {
 
     /** Create a test yhteystieto with values in all fields. */
-    fun create(): HankeYhteystieto {
+    fun create(id: Int? = 1, organisaatioId: Int? = 1): HankeYhteystieto {
         return HankeYhteystieto(
-            id = 1,
+            id = id,
             sukunimi = "Testihenkilö",
             etunimi = "Teppo",
             email = "teppo@example.test",
-            puhelinnumero = "1234",
-            organisaatioId = 1,
+            puhelinnumero = "04012345678",
+            organisaatioId = organisaatioId,
             organisaatioNimi = "Organisaatio",
             osasto = "Osasto",
             createdBy = "test7358",
@@ -29,21 +29,26 @@ object HankeYhteystietoFactory : Factory<HankeYhteystieto>() {
      */
     fun createDifferentiated(intValue: Int): HankeYhteystieto {
         return HankeYhteystieto(
-            null,
-            "suku$intValue",
-            "etu$intValue",
-            "email$intValue",
-            "010$intValue$intValue$intValue$intValue$intValue$intValue$intValue",
-            intValue,
-            "org$intValue",
-            "osasto$intValue"
+            id = null,
+            sukunimi = "suku$intValue",
+            etunimi = "etu$intValue",
+            email = "email$intValue",
+            puhelinnumero = "010$intValue$intValue$intValue$intValue$intValue$intValue$intValue",
+            organisaatioId = intValue,
+            organisaatioNimi = "org$intValue",
+            osasto = "osasto$intValue"
         )
     }
 
     /**
      * Create a list of test yhteystiedot. The values of the created yhteystiedot are differentiated
      * by the given integers.
+     *
+     * You can provide a lambda for mutating the generated yhteystieto after creation.
      */
-    fun createDifferentiated(intValues: List<Int>): MutableList<HankeYhteystieto> =
-        intValues.map { createDifferentiated(it) }.toMutableList()
+    fun createDifferentiated(
+        intValues: List<Int>,
+        mutator: (HankeYhteystieto) -> Unit = {}
+    ): MutableList<HankeYhteystieto> =
+        intValues.map { createDifferentiated(it).mutate(mutator) }.toMutableList()
 }

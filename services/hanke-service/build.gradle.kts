@@ -5,7 +5,7 @@ group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_11
 val postgreSQLVersion = "42.2.18"
-val springDocVersion = "1.4.8"
+val springDocVersion = "1.6.12"
 val geoJsonJacksonVersion = "1.14"
 val mockkVersion = "1.10.2"
 val springmockkVersion = "2.0.3"
@@ -80,7 +80,8 @@ dependencies {
 	implementation("org.postgresql:postgresql:$postgreSQLVersion")
 	// H2 is used as embedded db for some simple low level Entity and Repository class testing
 	runtimeOnly("com.h2database:h2")
-	runtimeOnly("org.springdoc:springdoc-openapi-ui:$springDocVersion")
+	implementation("org.springdoc:springdoc-openapi-kotlin:$springDocVersion")
+	implementation("org.springdoc:springdoc-openapi-ui:$springDocVersion")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test") {
 		exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
