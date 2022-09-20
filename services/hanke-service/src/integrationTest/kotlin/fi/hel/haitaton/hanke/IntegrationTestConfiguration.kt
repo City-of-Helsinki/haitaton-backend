@@ -24,40 +24,33 @@ import org.springframework.jdbc.core.JdbcOperations
 @Profile("itest")
 class IntegrationTestConfiguration {
 
-    @Bean
-    fun jdbcOperations(): JdbcOperations = mockk()
+    @Bean fun jdbcOperations(): JdbcOperations = mockk()
+
+    @Bean fun hankeRepository(): HankeRepository = mockk()
+
+    @Bean fun auditLogRepository(): AuditLogRepository = mockk()
+
+    @Bean fun hanketunnusService(): HanketunnusService = mockk()
+
+    @Bean fun hankeService(): HankeService = mockk()
+
+    @Bean fun permissionService(): PermissionService = mockk()
+
+    @Bean fun organisaatioService(): OrganisaatioService = mockk()
+
+    @Bean fun hankeGeometriatDao(jdbcOperations: JdbcOperations): HankeGeometriatDao = mockk()
 
     @Bean
-    fun hankeRepository(): HankeRepository = mockk()
-
-    @Bean
-    fun auditLogRepository(): AuditLogRepository = mockk()
-
-    @Bean
-    fun hanketunnusService(): HanketunnusService = mockk()
-
-    @Bean
-    fun hankeService(): HankeService = mockk()
-
-    @Bean
-    fun permissionService(): PermissionService = mockk()
-
-    @Bean
-    fun organisaatioService(): OrganisaatioService = mockk()
-
-    @Bean
-    fun hankeGeometriatDao(jdbcOperations: JdbcOperations): HankeGeometriatDao = mockk()
-
-    @Bean
-    fun hankeGeometriatService(service: HankeService, hankeGeometriatDao: HankeGeometriatDao): HankeGeometriatService =
-        mockk()
+    fun hankeGeometriatService(
+        service: HankeService,
+        hankeGeometriatDao: HankeGeometriatDao
+    ): HankeGeometriatService = mockk()
 
     @Bean
     fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService =
-            TormaystarkasteluTormaysServicePG(jdbcOperations)
+        TormaystarkasteluTormaysServicePG(jdbcOperations)
 
-    @Bean
-    fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
+    @Bean fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
 
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {

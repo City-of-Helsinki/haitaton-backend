@@ -39,9 +39,19 @@ springBoot {
 	buildInfo()
 }
 
+spotless {
+	ratchetFrom("origin/dev") // only format files which have changed since origin/dev
+
+	kotlin {
+		ktfmt("0.39").kotlinlangStyle()
+		toggleOffOn()
+	}
+}
+
 plugins {
 	id("org.springframework.boot") version "2.3.4.RELEASE"
 	id("io.spring.dependency-management") version "1.0.10.RELEASE"
+	id("com.diffplug.spotless") version "6.10.0"
 	kotlin("jvm") version "1.6.10"
 	// Gives kotlin-allopen, which auto-opens classes with certain annotations
 	kotlin("plugin.spring") version "1.6.10"
