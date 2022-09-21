@@ -1,15 +1,22 @@
 # Intro
 
-How to download and process Haitaton spatial material (laastariaineisto)
+Download and process Haitaton spatial material (laastariaineisto).
 
 # Architecture, general description
 
-Data is fetched from data sources with a custom built container.
+Data is fetched from data sources and processed accordingly with a custom built containers.
 
-Local development database is set up.
+## haitaton-gis-fetch
 
-Processing is done with a custom built container. Results are saved to disk
-and also to local development database.
+Downloads the requested data.
+
+## haitaton-gis-process
+
+Process data. Actual processing requirements are data dependent.
+
+## database
+
+Local development database is set up with PostGIS spatial support.
 
 ## Volume mappings
 
@@ -28,10 +35,12 @@ External volumes are set up
 * haitaton_gis_db
 
 Initialize volumes:
+
 ```
 docker volume create --name=haitaton_gis_prepare
 docker volume create --name=haitaton_gis_db
 ```
+N.b. haitaton_gis_prepare volume mapping is automatically generated durin data copying script use.
 
 Removal of external volumes (destructive):
 ```
@@ -67,20 +76,24 @@ copying in `Dockerfile`s and avoid explicit copying.
 ```
 docker-compose run --rm gis-fetch <source_1> ... <source_N>
 ```
-Where `<source>` is one of:
+Where `<source>` is currently one of:
 * `hsl`
 * `osm`
 * `ylre_katualue`
 * `ylre_katuosat`
 * `maka_autoliikennemaarat`
 
-Data files are downloaded to ./haitaton-downloads -directory
+Data files are downloaded to ./haitaton-downloads -directory.
 
 ## Processing
+
+Data processing interface is similar to data fetch.
 
 ```
 docker-compose run --rm gis-process <source>
 ```
+
+Actual processing functionality will be added later.
 
 # Maintenance process
 
@@ -94,6 +107,9 @@ Basic principle is the following:
 * add relevant configuration section to configuration YAML file
 * implement download support to data fetch script
 * implement support in processing script
+* build containers (if required)
+* copy files to external volume
+* run fetch and process
 
 ### Adding support to data fetch
 
