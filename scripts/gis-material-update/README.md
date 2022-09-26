@@ -1,6 +1,21 @@
 # Intro
 
-Download and process Haitaton spatial material (laastariaineisto).
+Download and process Haitaton spatial material (previously known as _laastariaineisto_).
+
+# Quickstart
+
+In order to get started, following steps need to be taken.
+
+Actual details to be taken are described in following sections later in this document.
+
+* build *fetch* and *process* images
+* copy necessary script files to external volume. Volume is created during file copying process.
+* run *fetch* container
+* optional: inspect external volume contents
+* optional: run *processing* container (skeleton only)
+* optional: initialize volume for database
+* optional: start database service
+
 
 # Architecture, general description
 
@@ -40,7 +55,7 @@ Initialize volumes:
 docker volume create --name=haitaton_gis_prepare
 docker volume create --name=haitaton_gis_db
 ```
-N.b. haitaton_gis_prepare volume mapping is automatically generated durin data copying script use.
+N.b. haitaton_gis_prepare volume is automatically generated during data copying script use.
 
 Removal of external volumes (destructive):
 ```
@@ -50,6 +65,17 @@ docker volume rm haitaton_gis_db
 
 Local directory bind mount is visible to data fetch and data processing containers:
 * ./haitaton-downloads
+
+### Inspect *haitaton_gis_prepare* volume contents
+
+Run:
+
+```sh
+sh inspect-disk.sh
+```
+Container is created, and volume contents can be found in directory: `/haitaton-gis`.
+
+When done, leave shell with `exit` command.
 
 ## Build images
 
@@ -71,7 +97,7 @@ sh copy-files.sh
 After active development phase it might be more practical to handle file
 copying in `Dockerfile`s and avoid explicit copying.
 
-## Running data fetch
+## Run data fetch
 
 ```
 docker-compose run --rm gis-fetch <source_1> ... <source_N>
@@ -85,7 +111,7 @@ Where `<source>` is currently one of:
 
 Data files are downloaded to ./haitaton-downloads -directory.
 
-## Processing
+## Run processing
 
 Data processing interface is similar to data fetch.
 
