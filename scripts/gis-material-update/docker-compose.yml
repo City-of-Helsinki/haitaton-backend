@@ -1,0 +1,52 @@
+version: "3"
+volumes:
+  haitaton_gis_prepare:
+    external: true
+  haitaton_gis_db:
+    external: true
+services:
+  gis-db:
+    container_name: haitaton-gis-prepare-db
+    image: kartoza/postgis:13.0
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      HAITATON_USER: ${HAITATON_USER}
+      HAITATON_USER_PW: ${HAITATON_USER_PW}
+      HAITATON_DB: ${HAITATON_DB}
+      POSTGRES_MULTIPLE_EXTENSIONS: postgis
+      DEFAULT_CTYPE: 'fi_FI.UTF8'
+      DEFAULT_COLLATION: 'fi_FI.UTF8'
+      TZ: Europe/Helsinki
+      PASSWORD_AUTHENTICATION: "md5"
+    volumes:
+      - ./database/inits/00-init-users.sh:/docker-entrypoint-initdb.d/00-init-users.sh
+      - ./database/inits/01-init-db.sh:/docker-entrypoint-initdb.d/01-init-db.sh
+      - ./database/inits/02-schemas.sql:/docker-entrypoint-initdb.d/02-schemas.sql
+      - haitaton_gis_db:/var/lib/postgresql/data
+    ports:
+      - "${GIS_DATABASE_PORT}:5432"
+    restart: on-failure
+    healthcheck:
+     test: "exit 0"
+    shm_size: 1g
+
+  gis-fetch:
+    container_name: haitaton-gis-fetch
+    build:
+      context: .
+      dockerfile: fetch/Dockerfile
+    volumes:
+      - haitaton_gis_prepare:/haitaton-gis
+      - ./haitaton-downloads:/downloads
+
+  gis-process:
+    container_name: haitaton-gis-process
+    build:
+      context: .
+      dockerfile: process/Dockerfile
+    volumes:
+      - haitaton_gis_prepare:/haitaton-gis
+      - ./haitaton-downloads:/downloads
+  
