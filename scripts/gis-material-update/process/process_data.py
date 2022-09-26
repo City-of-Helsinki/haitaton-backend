@@ -15,7 +15,8 @@ def process_item(item : str):
 def instantiate_processor(item : str) -> GisProcessor:
     """Instantiate correct class for processing data."""
     if item == "hsl":
-        return HslBuses()
+        # TODO: Do not validate feed during development (save time)
+        return HslBuses(validate_gtfs=False)
     else:
         raise Exception(f"Configuration not recognized: {item}")
 
