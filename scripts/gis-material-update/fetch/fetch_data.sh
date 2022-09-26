@@ -45,7 +45,6 @@ local_file=${download_dir}/$(parse_config $(cfg_local_file $data_object))
 
 case $data_object in
 hsl|osm)
-    echo wget -O "$local_file $addr"
     wget -O "$local_file" "$addr"
     ;;
 ylre_katualue|ylre_katuosat|maka_autoliikennemaarat)
