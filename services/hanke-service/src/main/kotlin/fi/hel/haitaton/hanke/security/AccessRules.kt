@@ -8,21 +8,31 @@ import mu.KotlinLogging
 import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 
-private val logger = KotlinLogging.logger { }
+private val logger = KotlinLogging.logger {}
 
 object AccessRules {
     fun configureHttpAccessRules(http: HttpSecurity) {
-        http.authorizeRequests().mvcMatchers(HttpMethod.GET,
+        http
+            .authorizeRequests()
+            .mvcMatchers(
+                HttpMethod.GET,
                 "/actuator/health",
                 "/actuator/health/liveness",
                 "/actuator/health/readiness",
-                "/status"
-            ).permitAll().and()
-            .authorizeRequests().anyRequest().authenticated().and()
-            .exceptionHandling().authenticationEntryPoint { request, response, authenticationException ->
+                "/status",
+                "/public-hankkeet",
+            )
+            .permitAll()
+            .and()
+            .authorizeRequests()
+            .anyRequest()
+            .authenticated()
+            .and()
+            .exceptionHandling()
+            .authenticationEntryPoint { request, response, authenticationException ->
                 logger.warn {
                     "User has to be authenticated " +
-                            "to access ${request.method} ${request.requestURI}"
+                        "to access ${request.method} ${request.requestURI}"
                 }
                 Sentry.captureException(authenticationException)
                 response.writer.print(OBJECT_MAPPER.writeValueAsString(HankeError.HAI0001))
