@@ -1,3 +1,4 @@
+# Needs maintenance VPN to access the fileshare.
 start=`date +%s`
 echo Importing tormays_buses_polys.gpkg...
 docker run --rm --network=haitaton-backend_backbone osgeo/gdal:alpine-small-latest ogr2ogr -overwrite -f PostgreSQL PG:"dbname='haitaton' host='db' port='5432' user='haitaton_user' password='haitaton'" http://haitaton-fileshare-dev.internal.apps.arodevtest.hel.fi/tormays_buses_polys.gpkg

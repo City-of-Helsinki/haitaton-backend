@@ -1,0 +1,62 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-create-table-for-audit-logging
+      comment: Create a table for unified audit logs
+      author: Topias Heinonen
+      changes:
+        - createTable:
+            tableName: audit_log
+            remarks: "Table for caching audit logs before sending them to a centralized logging service"
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                  remarks: "Unique ID for this log row"
+              - column:
+                  name: event_time
+                  type: "timestamp with time zone"
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  remarks: "Time of the event"
+              - column:
+                  name: user_id
+                  type: varchar(40)
+                  remarks: "ID of the user who performed the action"
+              - column:
+                  name: ip_near
+                  type: varchar(40)
+                  remarks: "A useful IP nearest to the server"
+              - column:
+                  name: ip_far
+                  type: varchar(40)
+                  remarks: "a useful IP furthermost from the server (usually the user's device's current IP)"
+              - column:
+                  name: action
+                  type: varchar(10) # enum
+                  remarks: "What action was made (CREATE / UPDATE / READ / DELETE / LOCK / UNLOCK)"
+              - column:
+                  name: status
+                  type: varchar(10) # enum
+                  remarks: "Whether the action was successful or not (SUCCESS / FAILURE), with room for expansion"
+              - column:
+                  name: failure_description
+                  type: varchar
+                  remarks: "Description of the failure, if one is available"
+              - column:
+                  name: object_type
+                  type: varchar(250) # enum
+                  remarks: "What type of object the target is"
+              - column:
+                  name: object_id
+                  type: int
+                  remarks: "ID of the target object"
+              - column:
+                  name: object_before
+                  type: clob
+                  remarks: "JSON representation of the object before it was changed, null for new objects"
+              - column:
+                  name: object_after
+                  type: clob
+                  remarks: "JSON representation of the object after it was changed, null for reads and deletes. If the operation fails, this shows how the object would have been if it had succeeded."
