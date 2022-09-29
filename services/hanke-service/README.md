@@ -7,10 +7,12 @@ Using IDEA:
 * IntelliJ IDEA
    * it contains its own JDK, gradle, etc.
 * OpenJDK (version 11+) - for running things after they have been built
+* Docker
 
 Manual build
 * OpenJDK (version 11+)
 * Gradle
+* Docker
 
 ## How to compile, build and run
 
@@ -37,10 +39,39 @@ setup can not currently support authentication, so can not test the actions with
 > http://localhost:8080/swagger-ui.html \
 > http://localhost:8080/v3/api-docs
 
+### Spotless formatter
+
+The Spotless Gradle plugin checks during the build stage that all code is formatted with ktfmt. If
+the code is not formatted correctly, the build will fail.
+
+Only code changed since the origin/dev branch will be checked and formatted. When a file is touched,
+the whole file needs to be reformatted, though.
+
+The formatting can be checked with:
+```
+./gradlew spotlessCheck`
+```
+And the code can be reformatted with:
+```
+./gradlew spotlessApply
+```
+
+Installing the ktfmt plugin to IDEA is recommended.
+
+If you really, really need to format something manually, you can disable Spotless for a code block:
+```
+// spotless: off
+val table = arrayOf(
+     0,  1,  2,  3,  4,  5,  6,  7,  8,  9,
+    10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+    )
+// spotless: on
+```
 
 ## PostgreSQL + PostGis locally
+
 The repository includes support for local development with a docker-postgres
- without the need to install postgres locally. 
+without the need to install postgres locally.
 
 To run the postgres in localhost
 ```
@@ -63,12 +94,12 @@ You can also run the whole haitaton stack with docker compose. Due to the
 ```
 
 In addition, an environment file is needed to set the build root. You can
- either set it in your own environment beforehand or just use the syntaks
-  with env file stated as in the steps below. 
+either set it in your own environment beforehand or just use the syntax
+with env file stated as in the steps below.
   
 If you need to change the build context, you can do so in .env.local file.   
   
-### How tu run docker-compose
+### How to run docker-compose
 
 - Install [docker-compose](https://docs.docker.com/compose/install/)  according
  to your operating system instructions. 
@@ -96,7 +127,8 @@ If you need to change the build context, you can do so in .env.local file.
 ```
 
 ### GIS data import
-In order to run Törmäystarkastelus locally one needs to import GIS data. This can be done after docker-compose is up and running (at least `db`):
+In order to run Törmäystarkastelus locally one needs to import GIS data. This can be done after docker-compose is up and running (at least `db`).
+Maintenance VPN (`huolto.hel.fi`) is needed to access the files.
 ```shell
 cd haitaton-backend
 sh scripts/HEL-GIS-data-import.sh
