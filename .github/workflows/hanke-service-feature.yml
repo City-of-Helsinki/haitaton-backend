@@ -10,7 +10,7 @@ on:
       - hai*
     paths:
       - services/hanke-service/**
-
+      - .github/workflows/hanke-service-feature.yml
 jobs:
   build:
     name: Gradle Build
