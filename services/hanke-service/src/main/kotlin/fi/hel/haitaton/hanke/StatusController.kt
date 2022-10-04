@@ -16,26 +16,24 @@ private val logger = KotlinLogging.logger {}
 class StatusController(@Autowired private val jdbcOperations: JdbcOperations) {
 
     companion object {
-        const val QUERY = "SELECT COUNT(*) FROM tormays_central_business_area_polys LIMIT 1"
-        const val SUCCESS = 1
-        const val ERROR = 0
+        const val QUERY = "SELECT EXISTS(SELECT 1 FROM tormays_central_business_area_polys LIMIT 1)"
     }
 
     @GetMapping
     fun getStatus(): ResponseEntity<Void> {
-        val count = getCount()
-        return if (count == SUCCESS) {
+        return if (canConnectToDatabase()) {
             ResponseEntity.ok().build()
         } else {
-            logger.error { "Unexpected count from central business area polys. count=$count" }
+            logger.error { "Central business area polys not found." }
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
     }
-    private fun getCount() =
+
+    private fun canConnectToDatabase() =
         try {
-            with(jdbcOperations) { queryForObject(QUERY, Int::class.java) ?: ERROR }
+            with(jdbcOperations) { queryForObject(QUERY, Boolean::class.java) ?: false }
         } catch (e: Throwable) {
             logger.error(e) { "Error while checking database connection for status endpoint." }
-            ERROR
+            false
         }
 }
