@@ -6,8 +6,8 @@ env:
 on:
   push:
     branches:
-      - HAI*
-      - hai*
+      - HAI**
+      - hai**
     paths:
       - services/hanke-service/**
       - .github/workflows/hanke-service-feature.yml
