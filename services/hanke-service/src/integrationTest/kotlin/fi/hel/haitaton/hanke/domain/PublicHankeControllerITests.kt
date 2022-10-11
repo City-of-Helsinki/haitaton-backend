@@ -4,13 +4,13 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.mutate
 import fi.hel.haitaton.hanke.factory.HankeFactory.withHaitta
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import io.mockk.clearAllMocks
 import io.mockk.every
-import mu.KotlinLogging
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -25,8 +25,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 
-private val logger = KotlinLogging.logger {}
-
 @WebMvcTest(PublicHankeController::class)
 @Import(IntegrationTestConfiguration::class, IntegrationTestResourceServerConfig::class)
 @ActiveProfiles("itest")
@@ -36,8 +34,6 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @Autowired private lateinit var hankeService: HankeService
 
     @Autowired private lateinit var hankeGeometriatService: HankeGeometriatService
-
-    private val testHankeTunnus = "HAI21-TEST-1"
 
     @AfterEach
     fun cleanup() {
@@ -55,8 +51,10 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `only returns hankkeet with tormaystarkasteluTulos`() {
         performGetHankkeet(
                 listOf(
-                    getTestHanke(123, testHankeTunnus, getTestTormaystarkasteluTulos()),
-                    getTestHanke(444, "HAI-TEST-2", null)
+                    HankeFactory.create().withHaitta().mutate {
+                        it.tormaystarkasteluTulos = TormaystarkasteluTulos(1f, 1f, 1f)
+                    },
+                    HankeFactory.create(id = 444, hankeTunnus = "HAI-TEST-2").withHaitta()
                 )
             )
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -69,7 +67,11 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
     // Without mock user, i.e. anonymous
     fun `doesn't return personal information from yhteystiedot`() {
         performGetHankkeet(
-                listOf(getTestHanke(123, testHankeTunnus, getTestTormaystarkasteluTulos()))
+                listOf(
+                    HankeFactory.create().withHaitta().withYhteystiedot().mutate {
+                        it.tormaystarkasteluTulos = TormaystarkasteluTulos(1f, 1f, 1f)
+                    }
+                )
             )
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(jsonPath("[0]").exists())
@@ -91,19 +93,5 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
         return mockMvc.perform(
             MockMvcRequestBuilders.get("/public-hankkeet").accept(MediaType.APPLICATION_JSON)
         )
-    }
-
-    private fun getTestHanke(
-        id: Int?,
-        tunnus: String?,
-        tormaystarkasteluTulos: TormaystarkasteluTulos?
-    ): Hanke {
-        val hanke = HankeFactory.create(id, hankeTunnus = tunnus).withHaitta().withYhteystiedot()
-        hanke.tormaystarkasteluTulos = tormaystarkasteluTulos
-        return hanke
-    }
-
-    private fun getTestTormaystarkasteluTulos(): TormaystarkasteluTulos {
-        return TormaystarkasteluTulos(1f, 1f, 1f)
     }
 }
