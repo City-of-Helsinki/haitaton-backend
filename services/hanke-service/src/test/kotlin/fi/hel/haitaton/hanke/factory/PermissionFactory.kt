@@ -8,14 +8,14 @@ object PermissionFactory {
     const val defaultId = 1
 
     /**
-     * Creates a new permission with default values. The default values can be overridden with named parameters.
+     * Creates a new permission with default values. The default values can be overridden with named
+     * parameters.
      *
      * Examples:
      * ```
      * PermissionFactory.create()
      * PermissionFactory.create(hankeId = 12, userId = "testuser")
      * ```
-     *
      */
     fun create(
         id: Int = defaultId,
