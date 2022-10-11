@@ -2,12 +2,19 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.factory.DateFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedArvioija
+import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedArvioijat
+import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistajat
+import fi.hel.haitaton.hanke.factory.HankeFactory.withHaitta
+import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
 import fi.hel.haitaton.hanke.logging.Action
 import fi.hel.haitaton.hanke.logging.AuditLogEntry
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Status
-import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -69,13 +76,7 @@ class HankeServiceITests {
         // NOTE: times sent in and returned are expected to be in UTC ("Z" or +00:00 offset)
 
         // Setup Hanke with one Yhteystieto of each type:
-        val hanke: Hanke = getATestHanke("yksi", 1)
-        val yt1 = getATestYhteystieto(1)
-        val yt2 = getATestYhteystieto(2)
-        val yt3 = getATestYhteystieto(3)
-        hanke.omistajat = arrayListOf(yt1)
-        hanke.arvioijat = arrayListOf(yt2)
-        hanke.toteuttajat = arrayListOf(yt3)
+        val hanke: Hanke = getATestHanke().withYhteystiedot()
 
         val datetimeAlku = hanke.alkuPvm // nextyear.2.20 23:45:56Z
         val datetimeLoppu = hanke.loppuPvm // nextyear.2.21 0:12:34Z
@@ -98,7 +99,7 @@ class HankeServiceITests {
             datetimeLoppu!!.truncatedTo(ChronoUnit.DAYS)
 
         assertThat(returnedHanke.saveType).isEqualTo(SaveType.DRAFT)
-        assertThat(returnedHanke.nimi).isEqualTo("testihanke yksi")
+        assertThat(returnedHanke.nimi).isEqualTo("Hämeentien perusparannus ja katuvalot")
         assertThat(returnedHanke.kuvaus).isEqualTo("lorem ipsum dolor sit amet...")
         assertThat(returnedHanke.alkuPvm).isEqualTo(expectedDateAlku)
         assertThat(returnedHanke.loppuPvm).isEqualTo(expectedDateLoppu)
@@ -164,7 +165,7 @@ class HankeServiceITests {
     @Test
     fun `create Hanke with partial data set and update with full data set give correct state flags`() {
         // Setup Hanke (without any yhteystieto):
-        val hanke: Hanke = getATestHanke("yksi", 1)
+        val hanke: Hanke = getATestHanke()
         // Also null one mandatory simple field:
         hanke.tyomaaKatuosoite = null
 
@@ -181,12 +182,7 @@ class HankeServiceITests {
 
         // Fill the values and give proper save type:
         returnedHanke.tyomaaKatuosoite = "Testikatu 1 A 1"
-        val yt1 = getATestYhteystieto(1)
-        val yt2 = getATestYhteystieto(2)
-        val yt3 = getATestYhteystieto(3)
-        returnedHanke.omistajat = arrayListOf(yt1)
-        returnedHanke.arvioijat = arrayListOf(yt2)
-        returnedHanke.toteuttajat = arrayListOf(yt3)
+        returnedHanke.withYhteystiedot()
         returnedHanke.saveType = SaveType.SUBMIT
 
         // Call update
@@ -206,9 +202,7 @@ class HankeServiceITests {
         // Also tests how update affects audit fields.
 
         // Setup Hanke with one Yhteystieto:
-        val hanke: Hanke = getATestHanke("yksi", 1)
-        val yt1 = getATestYhteystieto(1)
-        hanke.omistajat = arrayListOf(yt1)
+        val hanke: Hanke = getATestHanke().withGeneratedOmistaja(1)
 
         // Call create, get the return object, and make some general checks:
         val returnedHanke = hankeService.createHanke(hanke)
@@ -221,10 +215,7 @@ class HankeServiceITests {
         val ytid = returnedHanke.omistajat[0].id!!
 
         // Add a new Yhteystieto to the omistajat-group, and another to arvioijat-group:
-        val yt2 = getATestYhteystieto(2)
-        val yt3 = getATestYhteystieto(3)
-        returnedHanke.omistajat.add(yt2)
-        returnedHanke.arvioijat = arrayListOf(yt3)
+        returnedHanke.withGeneratedOmistaja(2).withGeneratedArvioija(3)
 
         // For checking audit field datetimes (with some minutes of margin for test running delay):
         val currentDatetime = getCurrentTimeUTC()
@@ -292,10 +283,7 @@ class HankeServiceITests {
     @Test
     fun `test changing one existing Yhteystieto in a group with two`() {
         // Setup Hanke with two Yhteystietos in the same group:
-        val hanke: Hanke = getATestHanke("yksi", 1)
-        val yt1 = getATestYhteystieto(1)
-        val yt2 = getATestYhteystieto(2)
-        hanke.omistajat = arrayListOf(yt1, yt2)
+        val hanke: Hanke = getATestHanke().withGeneratedOmistajat(1, 2)
 
         // Call create, get the return object, and make some general checks:
         val returnedHanke = hankeService.createHanke(hanke)
@@ -359,10 +347,7 @@ class HankeServiceITests {
     @Test
     fun `test that existing Yhteystieto that is sent fully empty gets removed`() {
         // Setup Hanke with two Yhteystietos in the same group:
-        val hanke: Hanke = getATestHanke("yksi", 1)
-        val yt1 = getATestYhteystieto(1)
-        val yt2 = getATestYhteystieto(2)
-        hanke.omistajat = arrayListOf(yt1, yt2)
+        val hanke: Hanke = getATestHanke().withGeneratedOmistajat(1, 2)
 
         // Call create, get the return object, and make some general checks:
         val returnedHanke = hankeService.createHanke(hanke)
@@ -414,11 +399,7 @@ class HankeServiceITests {
     @Test
     fun `test adding identical Yhteystietos in different groups and removing the other`() {
         // Setup Hanke with two identical Yhteystietos in different group:
-        val hanke: Hanke = getATestHanke("yksi", 1)
-        val yt1 = getATestYhteystieto(1)
-        val yt2 = getATestYhteystieto(1)
-        hanke.omistajat = arrayListOf(yt1)
-        hanke.arvioijat = arrayListOf(yt2)
+        val hanke: Hanke = getATestHanke().withGeneratedOmistaja(1).withGeneratedArvioijat(1)
 
         // Call create, get the return object, and make some general checks:
         val returnedHanke = hankeService.createHanke(hanke)
@@ -480,9 +461,7 @@ class HankeServiceITests {
         // development/testing, so it is a sort of regression test for the logic.
 
         // Setup Hanke with one Yhteystieto:
-        val hanke: Hanke = getATestHanke("yksi", 1)
-        val yt1 = getATestYhteystieto(1)
-        hanke.omistajat = arrayListOf(yt1)
+        val hanke: Hanke = getATestHanke().withGeneratedOmistaja(1)
 
         // Call create, get the return object, and make some general checks:
         val returnedHanke = hankeService.createHanke(hanke)
@@ -530,10 +509,8 @@ class HankeServiceITests {
         // Create hanke with two yhteystietos, save and check logs. There should be two rows and the
         // objectBefore fields should be null in them.
         // Setup Hanke with two Yhteystietos in the same group:
-        val hanke: Hanke = getATestHanke("yksi", 1)
-        val yhteystieto1 = getATestYhteystieto(1)
-        val yhteystieto2 = getATestYhteystieto(2)
-        hanke.omistajat = arrayListOf(yhteystieto1, yhteystieto2)
+        val hanke: Hanke = getATestHanke().withGeneratedOmistajat(1, 2)
+
         // Call create, get the return object, and make some general checks:
         val createdHanke = hankeService.createHanke(hanke)
         assertThat(createdHanke).isNotNull
@@ -650,11 +627,7 @@ class HankeServiceITests {
     fun `test personal data processing restriction`() {
         // Setup Hanke with two Yhteystietos in different groups. The test will only manipulate the
         // arvioija.
-        val hanke: Hanke = getATestHanke("yksi", 1)
-        val omistaja = getATestYhteystieto(1)
-        val arvioija = getATestYhteystieto(2)
-        hanke.omistajat = arrayListOf(omistaja)
-        hanke.arvioijat = arrayListOf(arvioija)
+        val hanke: Hanke = getATestHanke().withGeneratedOmistaja(1).withGeneratedArvioija(2)
         // Call create, get the return object:
         val returnedHanke = hankeService.createHanke(hanke)
         // Logs must have 2 entries (two yhteystietos were created):
@@ -756,66 +729,17 @@ class HankeServiceITests {
      * Fills a new Hanke domain object with test values and returns it. The audit and id/tunnus
      * fields are left at null. No Yhteystieto entries are created.
      */
-    private fun getATestHanke(stringValue: String, intValue: Int): Hanke {
-        // These time values should reveal possible timezone shifts, and not get affected by
-        // database time rounding.
-        // That is, if timezone handling causes even 1-hour shift one way or the other, either the
-        // start or end time will flip over to the previous or next day with the date-truncation
-        // effect done in the service.
-        val year = getCurrentTimeUTC().year + 1
-
-        val dateAlku =
-            ZonedDateTime.of(year, 2, 20, 23, 45, 56, 0, TZ_UTC).truncatedTo(ChronoUnit.MILLIS)
-        val dateLoppu =
-            ZonedDateTime.of(year, 2, 21, 0, 12, 34, 0, TZ_UTC).truncatedTo(ChronoUnit.MILLIS)
-        val hanke =
-            Hanke(
+    private fun getATestHanke(): Hanke =
+        HankeFactory.create(
                 id = null,
                 hankeTunnus = null,
-                nimi = "testihanke $stringValue",
-                kuvaus = "lorem ipsum dolor sit amet...",
-                onYKTHanke = false,
-                alkuPvm = dateAlku,
-                loppuPvm = dateLoppu,
+                alkuPvm = DateFactory.getStartDatetime(),
+                loppuPvm = DateFactory.getEndDatetime(),
                 vaihe = Vaihe.SUUNNITTELU,
                 suunnitteluVaihe = SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS,
                 version = null,
                 createdBy = null,
                 createdAt = null,
-                modifiedBy = null,
-                modifiedAt = null,
-                saveType = SaveType.DRAFT
             )
-
-        hanke.tyomaaKatuosoite = "Testikatu $intValue"
-        hanke.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
-        hanke.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
-        hanke.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
-        hanke.haittaAlkuPvm = dateAlku
-        hanke.haittaLoppuPvm = dateLoppu
-        hanke.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
-        hanke.kaistaPituusHaitta = KaistajarjestelynPituus.NELJA
-        hanke.meluHaitta = Haitta13.YKSI
-        hanke.polyHaitta = Haitta13.KAKSI
-        hanke.tarinaHaitta = Haitta13.KOLME
-
-        return hanke
-    }
-
-    /**
-     * Returns a new Yhteystieto with values set to include the given integer value. The audit and
-     * id fields are left null.
-     */
-    private fun getATestYhteystieto(intValue: Int): HankeYhteystieto {
-        return HankeYhteystieto(
-            null,
-            "suku$intValue",
-            "etu$intValue",
-            "email$intValue",
-            "010$intValue$intValue$intValue$intValue$intValue$intValue$intValue",
-            intValue,
-            "org$intValue",
-            "osasto$intValue"
-        )
-    }
+            .withHaitta()
 }
