@@ -3,16 +3,15 @@ package fi.hel.haitaton.hanke.domain
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
-import fi.hel.haitaton.hanke.SaveType
-import fi.hel.haitaton.hanke.TZ_UTC
-import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.withHaitta
+import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
-import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import io.mockk.clearAllMocks
 import io.mockk.every
-import java.time.ZonedDateTime
-import java.time.temporal.ChronoUnit
 import mu.KotlinLogging
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,6 +38,11 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @Autowired private lateinit var hankeGeometriatService: HankeGeometriatService
 
     private val testHankeTunnus = "HAI21-TEST-1"
+
+    @AfterEach
+    fun cleanup() {
+        clearAllMocks()
+    }
 
     @Test
     // Without mock user, i.e. anonymous
@@ -94,61 +98,12 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
         tunnus: String?,
         tormaystarkasteluTulos: TormaystarkasteluTulos?
     ): Hanke {
-        val hanke =
-            Hanke(
-                id,
-                tunnus,
-                true,
-                "Testihanke",
-                "Testihankkeen kuvaus",
-                getDatetimeAlku(),
-                getDatetimeLoppu(),
-                Vaihe.OHJELMOINTI,
-                null,
-                1,
-                "test7358",
-                getCurrentTimeUTC(),
-                null,
-                null,
-                SaveType.DRAFT
-            )
-        hanke.haittaAlkuPvm = getDatetimeAlku()
-        hanke.haittaLoppuPvm = getDatetimeLoppu()
-        hanke.omistajat = mutableListOf(getTestYhteystieto(id))
-        hanke.arvioijat = mutableListOf(getTestYhteystieto(id))
-        hanke.toteuttajat = mutableListOf(getTestYhteystieto(id))
+        val hanke = HankeFactory.create(id, hankeTunnus = tunnus).withHaitta().withYhteystiedot()
         hanke.tormaystarkasteluTulos = tormaystarkasteluTulos
         return hanke
     }
 
     private fun getTestTormaystarkasteluTulos(): TormaystarkasteluTulos {
         return TormaystarkasteluTulos(1f, 1f, 1f)
-    }
-
-    private fun getTestYhteystieto(id: Int?): HankeYhteystieto {
-        return HankeYhteystieto(
-            id = id,
-            sukunimi = "Testihenkilö",
-            etunimi = "Teppo",
-            email = "teppo@example.test",
-            puhelinnumero = "1234",
-            organisaatioId = 1,
-            organisaatioNimi = "Organisaatio",
-            osasto = "Osasto",
-            createdBy = "test7358",
-            createdAt = getCurrentTimeUTC(),
-            modifiedBy = "test7358",
-            modifiedAt = getCurrentTimeUTC()
-        )
-    }
-
-    private fun getDatetimeAlku(): ZonedDateTime {
-        val year = getCurrentTimeUTC().year + 1
-        return ZonedDateTime.of(year, 2, 20, 23, 45, 56, 0, TZ_UTC).truncatedTo(ChronoUnit.MILLIS)
-    }
-
-    private fun getDatetimeLoppu(): ZonedDateTime {
-        val year = getCurrentTimeUTC().year + 1
-        return ZonedDateTime.of(year, 2, 21, 0, 12, 34, 0, TZ_UTC).truncatedTo(ChronoUnit.MILLIS)
     }
 }
