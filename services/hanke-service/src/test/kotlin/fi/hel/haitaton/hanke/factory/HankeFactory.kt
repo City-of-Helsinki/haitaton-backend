@@ -12,7 +12,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import java.time.ZonedDateTime
 
-object HankeFactory {
+object HankeFactory : Factory<Hanke>() {
 
     const val defaultHankeTunnus = "HAI21-1"
     const val defaultNimi = "Hämeentien perusparannus ja katuvalot"
