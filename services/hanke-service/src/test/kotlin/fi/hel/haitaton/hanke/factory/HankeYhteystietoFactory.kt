@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 
-object HankeYhteystietoFactory {
+object HankeYhteystietoFactory : Factory<HankeYhteystieto>() {
 
     /** Create a test yhteystieto with values in all fields. */
     fun create(): HankeYhteystieto {

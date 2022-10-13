@@ -4,7 +4,7 @@ import fi.hel.haitaton.hanke.permissions.Permission
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionProfiles
 
-object PermissionFactory {
+object PermissionFactory : Factory<Permission>() {
     const val defaultId = 1
 
     /**
