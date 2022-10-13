@@ -26,7 +26,7 @@ services:
       - ./database/inits/02-schemas.sql:/docker-entrypoint-initdb.d/02-schemas.sql
       - haitaton_gis_db:/var/lib/postgresql/data
     ports:
-      - "${GIS_DATABASE_PORT}:5432"
+      - ${GIS_DATABASE_PORT}:5432
     restart: on-failure
     healthcheck:
      test: "exit 0"

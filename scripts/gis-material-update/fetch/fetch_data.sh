@@ -47,8 +47,13 @@ case $data_object in
 hsl|osm)
     wget -O "$local_file" "$addr"
     ;;
+# plain WFS fetch
 ylre_katualue|ylre_katuosat|maka_autoliikennemaarat)
     ogr2ogr -f GPKG "$local_file" WFS:"$addr" "$layer"
+    ;;
+# WFS fetch with layer renaming and where condition
+hki)
+    ogr2ogr -f GPKG "$local_file" -nln "$dest_layer" -where "$where_query" WFS:"$addr" "$layer"
     ;;
 *)
     echo "Not supported"

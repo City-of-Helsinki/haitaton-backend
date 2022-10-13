@@ -16,6 +16,12 @@ ylre_katuosat:
 osm:
   addr: "https://download.geofabrik.de/europe/finland-latest.osm.pbf"
   local_file: "finland-latest.osm.pbf"
+hki:
+  addr: "https://geo.stat.fi/geoserver/tilastointialueet/wfs"
+  layer: "tilastointialueet:kunta4500k"
+  local_file: "helsinki_alue.gpkg"
+  dest_layer: "alue"
+  where_query: "kunta='091'"
 
 common:
   download_path: "/downloads"
@@ -29,3 +35,11 @@ liikennevaylat:
 
 # manuaalisesti ladattavat
 kuntarajat:
+
+database:
+  local_development:
+    port: 15432
+    host: localhost
+    username: haitaton
+    password: haitaton
+    database: haitaton

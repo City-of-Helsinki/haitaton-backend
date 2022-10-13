@@ -49,3 +49,28 @@ class Config:
             if cand_path.is_file():
                 return str(cand_path)
         return None
+
+    def pg_conn_string(self, deployment : str) -> str:
+        """Return connection string for database.
+        
+        deployment -parameter refers to deployment configuration."""
+        return "PG:'host={} dbname={} user={} password={} port={}'".format(
+            self._cfg.get("database").get(deployment).get("host"),
+            self._cfg.get("database").get(deployment).get("database"),
+            self._cfg.get("database").get(deployment).get("username"),
+            self._cfg.get("database").get(deployment).get("password"),
+            self._cfg.get("database").get(deployment).get("port")
+        )
+
+    def pg_conn_uri(self, deployment : str) -> str:
+        """Return PostgreSQL connect URI
+        
+        deployment -parameter refers to deployment in configuration"""
+        return "postgresql://{user}:{password}@{host}:{port}/{dbname}".format(
+            host=self._cfg.get("database").get(deployment).get("host"),
+            dbname=self._cfg.get("database").get(deployment).get("database"),
+            user=self._cfg.get("database").get(deployment).get("username"),
+            password=self._cfg.get("database").get(deployment).get("password"),
+            port=self._cfg.get("database").get(deployment).get("port")
+        )
+
