@@ -45,10 +45,15 @@ def create_gis_material(hsl : HslBuses, cfg : Config):
     trips_week = hsl.feed().trips[ind_trips_week]
     
     shps = hsl.feed().shapes.copy()
+    # form point objects from coordinate values
     shps['geometry'] = shps.apply(lambda r: Point(r.shape_pt_lon, r.shape_pt_lat), axis=1)
-    shapes_week_ind = shps['shape_id'].isin(trips_week['shape_id'].tolist())
-    shapes_week = shps[shapes_week_ind]
 
+    # pick all line geometries (shapes) that are driven within a given week
+    # sort by shape_id and shape sequence to ensure correct linestring
+    shapes_week_ind = shps['shape_id'].isin(trips_week['shape_id'].tolist())
+    shapes_week = shps[shapes_week_ind].sort_values(["shape_id", "shape_pt_sequence"])
+
+    # Create Linestring from points
     shapes_week_lines = gpd.GeoDataFrame(shapes_week.groupby(['shape_id'])['geometry'].apply(lambda x: LineString(x.tolist())), geometry="geometry")
     sw_tmp1 = shapes_week_lines.merge(stop_times_day, on="shape_id", how="left").fillna(0)
     tw_tmp1 = trips_week.drop_duplicates("shape_id")
@@ -58,12 +63,35 @@ def create_gis_material(hsl : HslBuses, cfg : Config):
     swa_tmp0 = sw_tmp4[~sw_tmp4.route_type.isin([0,1,4,109])]
     swa_tmp1 = hsl.add_trunk_descriptor(swa_tmp0)
 
+    # Pick columns and reproject to desired CRS
     shapes_with_attributes = swa_tmp1
     shapes_with_attributes["fid"] = shapes_with_attributes.reset_index().index
     shapes_with_attributes = shapes_with_attributes.loc[:, ["fid", "route_id", "direction_id", "rush_hour", "trunk", "geometry"]]
-    shapes_with_attributes = shapes_with_attributes.set_crs("EPSG:4326").to_crs("EPSG:3879")
-    shapes_with_attributes.to_postgis("shapes_with_attributes", connection, "public", if_exists="replace", index=True)
-    pass
+    shapes_with_attributes = shapes_with_attributes.set_crs("EPSG:4326").to_crs(cfg.crs())
+
+    # Only intersecting routes are important
+    # read Helsinki geographical region and reproject
+    helsinki_region_polygon = gpd.read_file(filename=cfg.local_file("hki")).to_crs(cfg.crs())
+    target_routes = shapes_with_attributes.sjoin(helsinki_region_polygon).loc[:, shapes_with_attributes.columns.tolist()].set_index("fid")
+
+    # Buffering configuration
+    buffers = cfg.buffer("hsl")
+    if len(buffers) > 1:
+        raise ValueError("Unkown number of buffer values")
+
+    # buffer lines
+    target_route_polys = target_routes
+    target_route_polys["geometry"] = target_route_polys.buffer(buffers[0])
+
+    # persist route lines to database
+    target_routes.to_postgis("bus_lines", connection, "public", if_exists="replace", index=True, index_label="fid")
+
+    # persist polygons to database
+    target_route_polys.to_postgis("bus_line_polys", connection, "public", if_exists="replace", index=True, index_label="fid")
+
+    # persist polygons to local file
+    target_buffer_file_name = cfg.target_buffer_file("hsl")
+    target_route_polys.to_file(target_buffer_file_name, driver="GPKG")
 
 if __name__ == "__main__":
     hsl = HslBuses(validate_gtfs=False)

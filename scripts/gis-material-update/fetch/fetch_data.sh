@@ -34,14 +34,23 @@ cfg_layer () {
     echo "${data_object}.layer"
 }
 
+cfg_dest_layer () {
+    echo "${data_object}.dest_layer"
+}
+
+cfg_where_query () {
+    echo "${data_object}.where_query"
+}
+
 # download path
 download_dir=$(parse_config "common.download_path")
 
-# if we have progressed this far, object is supported in configuration
-# now it remains to find out how to download files
+# initialize variables (from configuration YAML)
 addr=$(parse_config $(cfg_addr $data_object))
 layer=$(parse_config $(cfg_layer $data_object))
 local_file=${download_dir}/$(parse_config $(cfg_local_file $data_object))
+dest_layer=$(parse_config $(cfg_dest_layer $data_object))
+where_query=$(parse_config $(cfg_where_query $data_object))
 
 case $data_object in
 hsl|osm)

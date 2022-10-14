@@ -1,6 +1,10 @@
 hsl:
   addr: "https://infopalvelut.storage.hsldev.com/gtfs/hsl.zip"
   local_file: "hsl.zip"
+  target_file: "buses_lines.gpkg"
+  target_buffer_file: "tormays_buses_polys.gpkg"
+  buffer:
+    - 15
 maka_autoliikennemaarat:
   addr: "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:Ajoneuvoliikenne_liikennemaarat_viiva"
@@ -18,13 +22,15 @@ osm:
   local_file: "finland-latest.osm.pbf"
 hki:
   addr: "https://geo.stat.fi/geoserver/tilastointialueet/wfs"
-  layer: "tilastointialueet:kunta4500k"
+  layer: "tilastointialueet:kunta1000k"
   local_file: "helsinki_alue.gpkg"
   dest_layer: "alue"
   where_query: "kunta='091'"
 
 common:
   download_path: "/downloads"
+  gis_output_path: "/gis-output"
+  crs: "EPSG:3879"
 
 # pyynnöstä toimitetut
 bussiliikenne_kriittinen:

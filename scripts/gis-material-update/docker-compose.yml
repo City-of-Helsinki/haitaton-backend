@@ -40,6 +40,7 @@ services:
     volumes:
       - haitaton_gis_prepare:/haitaton-gis
       - ./haitaton-downloads:/downloads
+      - ./haitaton-gis-output:/gis-output
 
   gis-process:
     container_name: haitaton-gis-process
@@ -49,4 +50,5 @@ services:
     volumes:
       - haitaton_gis_prepare:/haitaton-gis
       - ./haitaton-downloads:/downloads
+      - ./haitaton-gis-output:/gis-output
   

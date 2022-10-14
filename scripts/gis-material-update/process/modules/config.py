@@ -29,24 +29,70 @@ class Config:
                 print(f"Not found: {error.filename}")
         return parsed
 
+    def file_directory(self, storage : str = "download") -> str:
+        """Obtain directory for input/output files. Detect running environment automatically.
+        
+        Supported storage parameter values:
+            download - directory for download files
+            gis-output - directory for gis output files."""
+
+        if storage == "download":
+            local_directory_name = "haitaton-downloads"
+            docker_directory_name = self._cfg.get("common").get("download_path")
+        elif storage == "gis-output":
+            local_directory_name = "haitaton-local-gis-output"
+            docker_directory_name = self._cfg.get("common").get("gis_output_path")
+        else:
+            raise ValueError("Storage type not detected!")
+        
+        candidate_paths = [
+            # local dev
+            Path(__file__).parent.parent.parent / local_directory_name,
+            # local via docker-compose
+            Path(docker_directory_name)
+            ]
+        for c_p in candidate_paths:
+            if c_p.is_dir() and c_p.exists():
+                return str(c_p)
+        return None
+
     def local_file(self, item : str) -> str:
         """Return local file name from configuration."""
-        return self._cfg.get(item, {}).get('local_file')
+        file_path = self.file_directory()
+        return "/".join([file_path, self._cfg.get(item, {}).get('local_file')])
+
+    def target_file(self, item : str) -> str:
+        """Return target file name from configuration."""
+        file_path = self.file_directory("gis-output")
+        return "/".join([file_path, self._cfg.get(item, {}).get('target_file')])
+
+    def target_buffer_file(self, item : str) -> str:
+        """Return target buffer file name from configuration."""
+        file_path = self.file_directory("gis-output")
+        return "/".join([file_path, self._cfg.get(item, {}).get('target_buffer_file')])
+
+    def crs(self) -> str:
+        """Return CRS information from config file."""
+        return self._cfg.get("common").get("crs")
 
     def layer(self, item : str) -> str:
         """Return layer name of source data from configuration."""
         return self._cfg.get(item, {}).get('layer')
 
-    def downloaded_file_name(self, data_descriptor : str) -> str:
+    def buffer(self, item : str) -> list[int]:
+        """Return buffer value list from configuration."""
+        return self._cfg.get(item, {}).get("buffer")
+
+    def downloaded_file_name(self, data_descriptor : str, file_desc : str = "local_file") -> str:
         """Return complete file path for further file access."""
-        candidate_file = self._cfg.get(data_descriptor).get("local_file")
+        candidate_file = self._cfg.get(data_descriptor).get(file_desc)
         candidate_paths = [
             Path(__file__).parent.parent.parent / "haitaton-downloads",
             self._cfg.get("common").get("download_path")
             ]
         for c_p in candidate_paths:
             cand_path = Path(c_p) / candidate_file
-            if cand_path.is_file():
+            if Path(c_p).is_dir():
                 return str(cand_path)
         return None
 
