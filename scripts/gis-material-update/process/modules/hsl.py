@@ -36,7 +36,7 @@ class HslBuses(GisProcessor):
     def __init__(self, cfg : Config, validate_gtfs : bool = True):
         self._cfg = cfg
         # TODO: how to obtain this string automatically?
-        file_name = cfg.downloaded_file_name("hsl")
+        file_name = cfg.local_file("hsl")
         self._feed = self._read_feed_data(file_name)
 
         if validate_gtfs:

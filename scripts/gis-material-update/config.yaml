@@ -55,3 +55,11 @@ database:
     username: haitaton
     password: haitaton
     database: haitaton
+
+storage:
+  local_development:
+    download_dir: "haitaton-downloads"
+    output_dir: "haitaton-local-gis-output"
+  local_docker_development:
+    download_dir: "/downloads"
+    output_dir: "/gis-output"

@@ -26,16 +26,16 @@ def instantiate_processor(item : str, cfg : Config) -> GisProcessor:
 
 if __name__ == "__main__":
 
-    database_profile = os.environ.get("TORMAYS_DB_PROFILE")
+    deployment_profile = os.environ.get("TORMAYS_DEPLOYMENT_PROFILE")
 
-    if database_profile in [ "local_docker_development", "local_development" ]:
-        use_db_profile = database_profile
+    if deployment_profile in [ "local_docker_development", "local_development" ]:
+        use_deployment_profile = deployment_profile
     else:
-        raise ValueError("Database profile not detected")
+        raise ValueError("Deployment profile not detected")
 
-    print("Using database configuration: '{}'".format(use_db_profile))
+    print("Using deployment profile: '{}'".format(use_deployment_profile))
 
-    cfg = Config().with_db_profile(use_db_profile)
+    cfg = Config().with_deployment_profile(use_deployment_profile)
 
     print("Processing data:")
 

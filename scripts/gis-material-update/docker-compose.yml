@@ -48,7 +48,7 @@ services:
       context: .
       dockerfile: process/Dockerfile
     environment:
-      TORMAYS_DB_PROFILE: ${TORMAYS_DB_PROFILE}
+      TORMAYS_DEPLOYMENT_PROFILE: ${TORMAYS_DEPLOYMENT_PROFILE}
     volumes:
       - haitaton_gis_prepare:/haitaton-gis
       - ./haitaton-downloads:/downloads
