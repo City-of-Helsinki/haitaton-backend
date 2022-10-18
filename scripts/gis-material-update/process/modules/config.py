@@ -8,6 +8,11 @@ class Config:
 
     def __init__(self):
         self._cfg = self._cfg_file()
+        self._db_profile = "local_development"
+
+    def with_db_profile(self, db_profile : str):
+        self._db_profile = db_profile
+        return self
 
     def _cfg_file(self) -> dict:
         """Try to find configuration file.
@@ -96,10 +101,13 @@ class Config:
                 return str(cand_path)
         return None
 
-    def pg_conn_string(self, deployment : str) -> str:
+    def pg_conn_string(self, deployment : str = None) -> str:
         """Return connection string for database.
         
         deployment -parameter refers to deployment configuration."""
+        if deployment is None:
+            deployment = self.db_profile()
+
         return "PG:'host={} dbname={} user={} password={} port={}'".format(
             self._cfg.get("database").get(deployment).get("host"),
             self._cfg.get("database").get(deployment).get("database"),
@@ -108,10 +116,13 @@ class Config:
             self._cfg.get("database").get(deployment).get("port")
         )
 
-    def pg_conn_uri(self, deployment : str) -> str:
+    def pg_conn_uri(self, deployment : str = None) -> str:
         """Return PostgreSQL connect URI
         
         deployment -parameter refers to deployment in configuration"""
+        if deployment is None:
+            deployment = self.db_profile()
+
         return "postgresql://{user}:{password}@{host}:{port}/{dbname}".format(
             host=self._cfg.get("database").get(deployment).get("host"),
             dbname=self._cfg.get("database").get(deployment).get("database"),
@@ -120,3 +131,5 @@ class Config:
             port=self._cfg.get("database").get(deployment).get("port")
         )
 
+    def db_profile(self) -> str:
+        return self._db_profile
