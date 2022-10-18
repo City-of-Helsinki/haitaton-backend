@@ -11,6 +11,11 @@ class Config:
         self._db_profile = "local_development"
 
     def with_db_profile(self, db_profile : str):
+        """Use database connection profile.
+        
+        Supported configurations:
+            - local_development
+            - local_docker_development"""
         self._db_profile = db_profile
         return self
 
