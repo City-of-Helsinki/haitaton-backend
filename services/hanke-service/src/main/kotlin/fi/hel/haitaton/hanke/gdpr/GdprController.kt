@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.server.ResponseStatusException
 
 private val logger = KotlinLogging.logger {}
 
@@ -72,7 +71,7 @@ class GdprController(
     )
     fun getByUserId(@PathVariable userId: String): CollectionNode {
         if (gdprDisabled) {
-            throw ResponseStatusException(HttpStatus.NOT_IMPLEMENTED)
+            throw NotImplementedError("/gdpr-api/$userId")
         }
 
         logger.info { "Finding GDPR information for user $userId" }
@@ -98,9 +97,19 @@ class GdprController(
     class UserNotFoundException(val userId: String) :
         RuntimeException("No data not found for user $userId")
 
+    class NotImplementedError(endpointName: String) :
+        RuntimeException("$endpointName called, but not yet implemented")
+
     @ExceptionHandler(UserNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun userNotFound(ex: UserNotFoundException) {
+        logger.warn { ex.message }
+        Sentry.captureException(ex)
+    }
+
+    @ExceptionHandler(NotImplementedError::class)
+    @ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
+    fun notImplemented(ex: NotImplementedError) {
         logger.warn { ex.message }
         Sentry.captureException(ex)
     }
