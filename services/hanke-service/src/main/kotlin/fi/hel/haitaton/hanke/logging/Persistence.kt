@@ -55,7 +55,7 @@ enum class ObjectType {
 
 @Entity
 @Table(name = "audit_log")
-class AuditLogEntry(
+data class AuditLogEntry(
     @Id var id: UUID? = UUID.randomUUID(),
     @Column(name = "event_time") var eventTime: OffsetDateTime? = OffsetDateTime.now(),
     @Column(name = "user_id") var userId: String? = null,

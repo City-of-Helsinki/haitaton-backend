@@ -41,7 +41,7 @@ open class HankeServiceImpl(
     override fun createHanke(hanke: Hanke): Hanke {
         // TODO: Only create that hanke-tunnus if a specific set of fields are non-empty/set.
 
-        val userid = SecurityContextHolder.getContext().authentication.name
+        val userId = SecurityContextHolder.getContext().authentication.name
 
         val entity = HankeEntity()
         val loggingEntryHolder = prepareLogging(entity)
@@ -49,14 +49,14 @@ open class HankeServiceImpl(
         // Copy values from the incoming domain object, and set some internal fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
         val existingYTs = prepareMapOfExistingYhteystietos(entity)
-        copyYhteystietosToEntity(hanke, entity, userid, loggingEntryHolder, existingYTs)
+        copyYhteystietosToEntity(hanke, entity, userId, loggingEntryHolder, existingYTs)
 
         // NOTE: liikennehaittaindeksi and tormaystarkastelutulos are NOT
         //  copied from incoming data. Use setTormaystarkasteluTulos() for that.
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
         // Special fields; handled "manually"..
         entity.version = 0
-        entity.createdByUserId = userid
+        entity.createdByUserId = userId
         entity.createdAt = getCurrentTimeUTCAsLocalTime()
         entity.modifiedByUserId = null
         entity.modifiedAt = null
@@ -68,7 +68,7 @@ open class HankeServiceImpl(
         val savedHankeEntity = hankeRepository.save(entity)
         logger.debug { "Created Hanke ${hanke.hankeTunnus}." }
 
-        postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userid)
+        postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
         // Creating a new domain object for the return value; it will have the updated values from
         // the database, e.g. the main date values truncated to midnight, and the added id and
@@ -199,16 +199,15 @@ open class HankeServiceImpl(
             hankeEntity: HankeEntity
         ) {
 
-            hankeEntity.listOfHankeYhteystieto.forEach { hankeYhteysEntity ->
+            hankeEntity.listOfHankeYhteystieto.forEach { hankeYhteystietoEntity ->
                 val hankeYhteystieto =
-                    createHankeYhteystietoDomainObjectFromEntity(hankeYhteysEntity)
+                    createHankeYhteystietoDomainObjectFromEntity(hankeYhteystietoEntity)
 
-                if (hankeYhteysEntity.contactType == ContactType.OMISTAJA)
-                    hanke.omistajat.add(hankeYhteystieto)
-                if (hankeYhteysEntity.contactType == ContactType.TOTEUTTAJA)
-                    hanke.toteuttajat.add(hankeYhteystieto)
-                if (hankeYhteysEntity.contactType == ContactType.ARVIOIJA)
-                    hanke.arvioijat.add(hankeYhteystieto)
+                when (hankeYhteystietoEntity.contactType) {
+                    ContactType.OMISTAJA -> hanke.omistajat.add(hankeYhteystieto)
+                    ContactType.TOTEUTTAJA -> hanke.toteuttajat.add(hankeYhteystieto)
+                    ContactType.ARVIOIJA -> hanke.arvioijat.add(hankeYhteystieto)
+                }
             }
         }
 
