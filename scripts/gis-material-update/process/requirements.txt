@@ -8,3 +8,5 @@ geoalchemy2
 pyjq
 ipykernel
 parse
+black
+isort
