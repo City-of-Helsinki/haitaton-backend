@@ -13,22 +13,19 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/hakemukset")
 class ApplicationController(@Autowired private val service: ApplicationService) {
 
-    @GetMapping
-    fun getAll() = service.getAllApplicationsForCurrentUser()
+    @GetMapping fun getAll() = service.getAllApplicationsForCurrentUser()
 
     @GetMapping("/{id}")
     fun getById(@PathVariable(name = "id") id: Long) = service.getApplicationById(id)
 
-    @PostMapping
-    fun create(@RequestBody application: ApplicationDTO) = service.create(application)
+    @PostMapping fun create(@RequestBody application: ApplicationDto) = service.create(application)
 
     @PutMapping("/{id}")
     fun update(
-            @PathVariable(name = "id") id: Long,
-            @RequestBody application: ApplicationDTO
-    ): ApplicationDTO? = service.updateApplicationData(id, application.applicationData)
+        @PathVariable(name = "id") id: Long,
+        @RequestBody application: ApplicationDto
+    ): ApplicationDto? = service.updateApplicationData(id, application.applicationData)
 
     @PostMapping("/{id}/send-application")
     fun sendApplication(@PathVariable(name = "id") id: Long) = service.sendApplication(id)
-
 }

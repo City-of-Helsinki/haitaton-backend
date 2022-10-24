@@ -1,10 +1,13 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.allu.ApplicationService
+import fi.hel.haitaton.hanke.gdpr.GdprJsonConverter
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
@@ -33,6 +36,12 @@ class IntegrationTestConfiguration {
     @Bean fun hanketunnusService(): HanketunnusService = mockk()
 
     @Bean fun hankeService(): HankeService = mockk()
+
+    @Bean fun applicationService(): ApplicationService = mockk()
+
+    @Bean fun profiiliClient(): ProfiiliClient = mockk()
+
+    @Bean fun gdprJsonConverter(): GdprJsonConverter = mockk()
 
     @Bean fun permissionService(): PermissionService = mockk()
 
