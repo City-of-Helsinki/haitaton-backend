@@ -2,7 +2,9 @@ FROM openjdk:11.0.9.1-jdk as builder
 USER root
 ADD . /builder
 WORKDIR /builder
-RUN ./gradlew build
+# Add GRADLE_OPTS to prevent JVM forking while building
+# Skip integration tests when building the local docker image
+RUN GRADLE_OPTS="-XX:MaxMetaspaceSize=256m -XX:+HeapDumpOnOutOfMemoryError -Xms256m -Xmx512m" ./gradlew build --no-daemon -x :services:hanke-service:integrationTest
 
 FROM openjdk:11
 WORKDIR /app

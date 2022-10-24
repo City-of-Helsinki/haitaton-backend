@@ -14,17 +14,16 @@ import org.springframework.test.context.junit.jupiter.SpringExtension
 @WithMockUser
 class ApplicationServiceTest {
 
-    @MockkBean
-    private lateinit var applicationRepo: ApplicationRepository
+    @MockkBean private lateinit var applicationRepo: ApplicationRepository
 
-    @MockkBean
-    private lateinit var cableReportService: CableReportService
+    @MockkBean private lateinit var cableReportService: CableReportService
 
     @Test
     fun test() {
         val service = ApplicationService(applicationRepo, cableReportService)
 
-        val json = """
+        val json =
+            """
         {
             "name":"test",
             "customerWithContacts":{
@@ -140,28 +139,29 @@ class ApplicationServiceTest {
         """.trimIndent()
 
         val applicationData = OBJECT_MAPPER.readTree(json)
-        val dto = ApplicationDTO(
+        val dto =
+            ApplicationDto(
                 id = null,
                 alluid = null,
                 applicationType = ApplicationType.CABLE_REPORT,
                 applicationData = applicationData
-        )
+            )
 
         every { cableReportService.create(any()) } returns 42
-        every { applicationRepo.save(any()) } answers {
-            val application = firstArg<AlluApplication>()
-            AlluApplication(
+        every { applicationRepo.save(any()) } answers
+            {
+                val application = firstArg<AlluApplication>()
+                AlluApplication(
                     id = 1,
                     alluid = application.alluid,
                     userId = application.userId,
                     applicationType = application.applicationType,
                     applicationData = application.applicationData
-            )
-        }
+                )
+            }
 
         val created = service.create(dto)
         assertThat(created.id).isEqualTo(1)
         assertThat(created.alluid).isEqualTo(42)
     }
-
 }

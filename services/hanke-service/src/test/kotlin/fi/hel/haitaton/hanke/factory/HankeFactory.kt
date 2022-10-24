@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import java.time.ZonedDateTime
 
@@ -88,6 +89,8 @@ object HankeFactory : Factory<Hanke>() {
      *
      * Without parameters, will add one contact for each role.
      *
+     * You can provide a lambda for mutating all the generated yhteystieto after creation.
+     *
      * Examples:
      * ```
      * HankeFactory.create().withYhteystiedot()
@@ -106,10 +109,13 @@ object HankeFactory : Factory<Hanke>() {
         omistajat: List<Int> = listOf(1),
         arvioijat: List<Int> = listOf(2),
         toteuttajat: List<Int> = listOf(3),
-    ): Hanke =
-        this.withGeneratedOmistajat(omistajat)
-            .withGeneratedArvioijat(arvioijat)
-            .withGeneratedToteuttajat(toteuttajat)
+        mutator: (HankeYhteystieto) -> Unit = {},
+    ): Hanke {
+        this.omistajat.addAll(HankeYhteystietoFactory.createDifferentiated(omistajat, mutator))
+        this.arvioijat.addAll(HankeYhteystietoFactory.createDifferentiated(arvioijat, mutator))
+        this.toteuttajat.addAll(HankeYhteystietoFactory.createDifferentiated(toteuttajat, mutator))
+        return this
+    }
 
     /**
      * Add a number of omistaja to a hanke. Generates the yhteystiedot with

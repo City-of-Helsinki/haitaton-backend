@@ -4,10 +4,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 
 interface HankeService {
 
-    /**
-     * Fetch hanke with hankeTunnus.
-     * Returns null if there is no hanke with the given tunnus.
-     */
+    /** Fetch hanke with hankeTunnus. Returns null if there is no hanke with the given tunnus. */
     fun loadHanke(hankeTunnus: String): Hanke?
 
     fun createHanke(hanke: Hanke): Hanke
@@ -20,4 +17,5 @@ interface HankeService {
 
     fun loadHankkeetByIds(ids: List<Int>): List<Hanke>
 
+    fun loadHankkeetByUserId(userId: String): List<Hanke>
 }

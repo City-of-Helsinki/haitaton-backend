@@ -32,6 +32,11 @@ open class HankeServiceImpl(
     override fun loadHankkeetByIds(ids: List<Int>) =
         hankeRepository.findAllById(ids).map { createHankeDomainObjectFromEntity(it) }
 
+    override fun loadHankkeetByUserId(userId: String) =
+        hankeRepository.findAllByCreatedByUserIdOrModifiedByUserId(userId, userId).map {
+            createHankeDomainObjectFromEntity(it)
+        }
+
     /** @return a new Hanke instance with the added and possibly modified values. */
     override fun createHanke(hanke: Hanke): Hanke {
         // TODO: Only create that hanke-tunnus if a specific set of fields are non-empty/set.
