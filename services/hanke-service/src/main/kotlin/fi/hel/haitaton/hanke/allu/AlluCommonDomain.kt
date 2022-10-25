@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.allu
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import org.apache.commons.lang3.StringUtils
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CustomerWithContacts(val customer: Customer, val contacts: List<Contact>)
@@ -12,7 +13,14 @@ data class Contact(
     val email: String?,
     val phone: String?,
     val orderer: Boolean = false
-)
+) {
+    /** Check if this contact is blank, i.e. it doesn't contain any actual contact information. */
+    fun isBlank() =
+        StringUtils.isBlank(name) &&
+            StringUtils.isBlank(email) &&
+            StringUtils.isBlank(phone) &&
+            postalAddress?.isBlank() ?: true
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Customer(
@@ -33,7 +41,13 @@ data class PostalAddress(
     val streetAddress: StreetAddress,
     val postalCode: String,
     val city: String
-)
+) {
+    /** Check if this address is blank, i.e. none of fields have any information. */
+    fun isBlank() =
+        StringUtils.isBlank(streetAddress.streetName) &&
+            StringUtils.isBlank(postalCode) &&
+            StringUtils.isBlank(city)
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true) data class StreetAddress(val streetName: String?)
 

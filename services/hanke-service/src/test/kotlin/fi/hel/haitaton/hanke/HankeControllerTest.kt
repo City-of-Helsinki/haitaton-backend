@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
-import fi.hel.haitaton.hanke.logging.YhteystietoLoggingService
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.Permission
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionProfiles
@@ -49,20 +49,20 @@ class HankeControllerTest {
         @Bean
         fun permissionService(): PermissionService = Mockito.mock(PermissionService::class.java)
 
-        @Bean fun yhteystietoLoggingService(): YhteystietoLoggingService = mockk()
+        @Bean fun yhteystietoLoggingService(): DisclosureLogService = mockk()
 
         @Bean
         fun hankeController(
             hankeService: HankeService,
             hankeGeometriatService: HankeGeometriatService,
             permissionService: PermissionService,
-            yhteystietoLoggingService: YhteystietoLoggingService,
+            disclosureLogService: DisclosureLogService,
         ): HankeController =
             HankeController(
                 hankeService,
                 hankeGeometriatService,
                 permissionService,
-                yhteystietoLoggingService
+                disclosureLogService
             )
     }
 
@@ -74,7 +74,7 @@ class HankeControllerTest {
 
     @Autowired private lateinit var hankeController: HankeController
 
-    @Autowired private lateinit var yhteystietoLoggingService: YhteystietoLoggingService
+    @Autowired private lateinit var disclosureLogService: DisclosureLogService
 
     @BeforeEach
     fun resetMockks() {
@@ -108,13 +108,13 @@ class HankeControllerTest {
                     SaveType.DRAFT
                 )
             )
-        justRun { yhteystietoLoggingService.saveDisclosureLogForUser(any(), "user") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "user") }
 
         val response = hankeController.getHankeByTunnus(mockedHankeTunnus)
 
         assertThat(response).isNotNull
         assertThat(response.nimi).isNotEmpty
-        verify { yhteystietoLoggingService.saveDisclosureLogForUser(any(), eq("user")) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq("user")) }
     }
 
     @WithMockUser
@@ -164,7 +164,7 @@ class HankeControllerTest {
             )
         Mockito.`when`(permissionService.getPermissionsByUserId("user")).thenReturn(permissions)
         Mockito.`when`(hankeService.loadHankkeetByIds(listOf(1234, 50))).thenReturn(listOfHanke)
-        justRun { yhteystietoLoggingService.saveDisclosureLogsForUser(any(), "user") }
+        justRun { disclosureLogService.saveDisclosureLogsForHankkeet(any(), "user") }
 
         val hankeList = hankeController.getHankeList(false)
 
@@ -175,7 +175,7 @@ class HankeControllerTest {
         assertThat(hankeList[0].permissions).isEqualTo(listOf(PermissionCode.VIEW))
         assertThat(hankeList[1].permissions)
             .isEqualTo(listOf(PermissionCode.VIEW, PermissionCode.EDIT))
-        verify { yhteystietoLoggingService.saveDisclosureLogsForUser(any(), eq("user")) }
+        verify { disclosureLogService.saveDisclosureLogsForHankkeet(any(), eq("user")) }
     }
 
     @Test
@@ -202,14 +202,14 @@ class HankeControllerTest {
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke))
             .thenReturn(partialHanke.copy(modifiedBy = "user", modifiedAt = getCurrentTimeUTC()))
-        justRun { yhteystietoLoggingService.saveDisclosureLogForUser(any(), "user") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "user") }
 
         // Actual call
         val response: Hanke = hankeController.updateHanke(partialHanke, "id123")
 
         assertThat(response).isNotNull
         assertThat(response.nimi).isEqualTo("hankkeen nimi")
-        verify { yhteystietoLoggingService.saveDisclosureLogForUser(any(), eq("user")) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq("user")) }
     }
 
     @Test
@@ -240,7 +240,7 @@ class HankeControllerTest {
             .isThrownBy { hankeController.updateHanke(partialHanke, "id123") }
             .withMessageContaining("updateHanke.hanke.nimi: " + HankeError.HAI1002.toString())
 
-        verify { yhteystietoLoggingService wasNot Called }
+        verify { disclosureLogService wasNot Called }
     }
 
     // sending of sub types
@@ -291,7 +291,7 @@ class HankeControllerTest {
 
         // mock HankeService response
         Mockito.`when`(hankeService.createHanke(hanke)).thenReturn(mockedHanke)
-        justRun { yhteystietoLoggingService.saveDisclosureLogForUser(any(), "Tiina") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "Tiina") }
 
         // Actual call
         val response: Hanke = hankeController.createHanke(hanke)
@@ -304,7 +304,7 @@ class HankeControllerTest {
         assertThat(response.omistajat).hasSize(1)
         assertThat(response.omistajat[0].id).isEqualTo(1)
         assertThat(response.omistajat[0].sukunimi).isEqualTo("Pekkanen")
-        verify { yhteystietoLoggingService.saveDisclosureLogForUser(any(), eq("Tiina")) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq("Tiina")) }
     }
 
     @Test
@@ -336,7 +336,7 @@ class HankeControllerTest {
             .withMessageContaining("updateHanke.hanke.vaihe: " + HankeError.HAI1002.toString())
             .withMessageContaining("updateHanke.hanke.saveType: " + HankeError.HAI1002.toString())
 
-        verify { yhteystietoLoggingService wasNot Called }
+        verify { disclosureLogService wasNot Called }
     }
 
     @Test
@@ -365,14 +365,14 @@ class HankeControllerTest {
         mockedHanke.hankeTunnus = "JOKU12"
 
         Mockito.`when`(hankeService.createHanke(hanke)).thenReturn(mockedHanke)
-        justRun { yhteystietoLoggingService.saveDisclosureLogForUser(any(), "Tiina") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "Tiina") }
 
         val response: Hanke = hankeController.createHanke(hanke)
 
         assertThat(response).isNotNull
         Mockito.verify(permissionService)
             .setPermission(12, hanke.createdBy!!, PermissionProfiles.HANKE_OWNER_PERMISSIONS)
-        verify { yhteystietoLoggingService.saveDisclosureLogForUser(any(), eq("Tiina")) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq("Tiina")) }
     }
 
     private fun getDatetimeAlku(): ZonedDateTime {

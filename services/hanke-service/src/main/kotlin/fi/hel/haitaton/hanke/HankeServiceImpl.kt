@@ -10,7 +10,6 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.ZonedDateTime
 import mu.KotlinLogging
-import org.springframework.security.core.context.SecurityContextHolder
 
 private val logger = KotlinLogging.logger {}
 
@@ -41,7 +40,7 @@ open class HankeServiceImpl(
     override fun createHanke(hanke: Hanke): Hanke {
         // TODO: Only create that hanke-tunnus if a specific set of fields are non-empty/set.
 
-        val userId = SecurityContextHolder.getContext().authentication.name
+        val userId = currentUserId()
 
         val entity = HankeEntity()
         val loggingEntryHolder = prepareLogging(entity)
@@ -81,7 +80,7 @@ open class HankeServiceImpl(
     override fun updateHanke(hanke: Hanke): Hanke {
         if (hanke.hankeTunnus == null) error("Somehow got here with hanke without hanke-tunnus")
 
-        val userid = SecurityContextHolder.getContext().authentication.name
+        val userid = currentUserId()
 
         // Both checks that the hanke already exists, and get its old fields to transfer data into
         val entity =

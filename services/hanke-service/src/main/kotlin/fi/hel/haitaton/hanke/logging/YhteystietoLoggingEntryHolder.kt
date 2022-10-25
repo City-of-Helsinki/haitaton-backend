@@ -129,7 +129,7 @@ class YhteystietoLoggingEntryHolder {
          *
          * TODO: very very very simplified implementation. Needs a lot of improvement.
          */
-        fun applyIpAddresses(auditLogEntries: List<AuditLogEntry>) {
+        fun applyIpAddresses(auditLogEntries: Collection<AuditLogEntry>) {
             val attribs =
                 (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes?) ?: return
             val request = attribs.request
