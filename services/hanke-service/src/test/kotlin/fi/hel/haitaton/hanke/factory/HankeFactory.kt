@@ -127,8 +127,11 @@ object HankeFactory : Factory<Hanke>() {
      * HankeFactory.create().withGeneratedOmistajat(listOf(1,2))
      * ```
      */
-    fun Hanke.withGeneratedOmistajat(ids: List<Int>): Hanke {
-        omistajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids))
+    fun Hanke.withGeneratedOmistajat(
+        ids: List<Int>,
+        mutator: (HankeYhteystieto) -> Unit = {}
+    ): Hanke {
+        omistajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
         return this
     }
 
@@ -140,7 +143,10 @@ object HankeFactory : Factory<Hanke>() {
      * HankeFactory.create().withGeneratedOmistajat(1,2)
      * ```
      */
-    fun Hanke.withGeneratedOmistajat(vararg ids: Int): Hanke = withGeneratedOmistajat(ids.toList())
+    fun Hanke.withGeneratedOmistajat(
+        vararg ids: Int,
+        mutator: (HankeYhteystieto) -> Unit = {}
+    ): Hanke = withGeneratedOmistajat(ids.toList(), mutator)
 
     /**
      * Same as [Hanke.withGeneratedOmistajat] but adds a single omistaja.
@@ -150,7 +156,8 @@ object HankeFactory : Factory<Hanke>() {
      * HankeFactory.create().withGeneratedOmistaja(1)
      * ```
      */
-    fun Hanke.withGeneratedOmistaja(id: Int): Hanke = withGeneratedOmistajat(id)
+    fun Hanke.withGeneratedOmistaja(id: Int, mutator: (HankeYhteystieto) -> Unit = {}): Hanke =
+        withGeneratedOmistajat(listOf(id), mutator)
 
     /**
      * Add a number of arvioija to a hanke. Generates the yhteystiedot with
@@ -162,8 +169,11 @@ object HankeFactory : Factory<Hanke>() {
      * HankeFactory.create().withGeneratedArvioijat(listOf(1,2))
      * ```
      */
-    fun Hanke.withGeneratedArvioijat(ids: List<Int>): Hanke {
-        arvioijat.addAll(HankeYhteystietoFactory.createDifferentiated(ids))
+    fun Hanke.withGeneratedArvioijat(
+        ids: List<Int>,
+        mutator: (HankeYhteystieto) -> Unit = {}
+    ): Hanke {
+        arvioijat.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
         return this
     }
 
@@ -175,7 +185,10 @@ object HankeFactory : Factory<Hanke>() {
      * HankeFactory.create().withGeneratedArvioijat(1,2)
      * ```
      */
-    fun Hanke.withGeneratedArvioijat(vararg ids: Int): Hanke = withGeneratedArvioijat(ids.toList())
+    fun Hanke.withGeneratedArvioijat(
+        vararg ids: Int,
+        mutator: (HankeYhteystieto) -> Unit = {}
+    ): Hanke = withGeneratedArvioijat(ids.toList(), mutator)
 
     /**
      * Same as [Hanke.withGeneratedArvioijat] but adds a single arvioija.
@@ -185,7 +198,8 @@ object HankeFactory : Factory<Hanke>() {
      * HankeFactory.create().withGeneratedArvioija(1)
      * ```
      */
-    fun Hanke.withGeneratedArvioija(id: Int): Hanke = withGeneratedArvioijat(id)
+    fun Hanke.withGeneratedArvioija(id: Int, mutator: (HankeYhteystieto) -> Unit = {}): Hanke =
+        withGeneratedArvioijat(listOf(id), mutator)
 
     /**
      * Add a number of toteuttaja to a hanke. Generates the yhteystiedot with
@@ -197,8 +211,11 @@ object HankeFactory : Factory<Hanke>() {
      * HankeFactory.create().withGeneratedToteuttajat(listOf(1,2))
      * ```
      */
-    fun Hanke.withGeneratedToteuttajat(ids: List<Int>): Hanke {
-        toteuttajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids))
+    fun Hanke.withGeneratedToteuttajat(
+        ids: List<Int>,
+        mutator: (HankeYhteystieto) -> Unit = {}
+    ): Hanke {
+        toteuttajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
         return this
     }
 
@@ -210,8 +227,10 @@ object HankeFactory : Factory<Hanke>() {
      * HankeFactory.create().withGeneratedToteuttajat(1,2)
      * ```
      */
-    fun Hanke.withGeneratedToteuttajat(vararg ids: Int): Hanke =
-        withGeneratedToteuttajat(ids.toList())
+    fun Hanke.withGeneratedToteuttajat(
+        vararg ids: Int,
+        mutator: (HankeYhteystieto) -> Unit = {}
+    ): Hanke = withGeneratedToteuttajat(ids.toList(), mutator)
 
     /**
      * Same as [Hanke.withGeneratedToteuttajat] but adds a single toteuttaja.
@@ -221,5 +240,6 @@ object HankeFactory : Factory<Hanke>() {
      * HankeFactory.create().withGeneratedToteuttaja(1)
      * ```
      */
-    fun Hanke.withGeneratedToteuttaja(id: Int): Hanke = withGeneratedToteuttajat(id)
+    fun Hanke.withGeneratedToteuttaja(id: Int, mutator: (HankeYhteystieto) -> Unit = {}): Hanke =
+        withGeneratedToteuttajat(listOf(id), mutator)
 }

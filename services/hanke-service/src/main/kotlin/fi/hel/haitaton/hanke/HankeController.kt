@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.logging.YhteystietoLoggingService
 import fi.hel.haitaton.hanke.permissions.Permission
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionProfiles
@@ -11,7 +12,6 @@ import javax.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
-private val logger = KotlinLogging.logger { }
+private val logger = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/hankkeet")
@@ -34,13 +34,13 @@ private val logger = KotlinLogging.logger { }
 class HankeController(
     @Autowired private val hankeService: HankeService,
     @Autowired private val hankeGeometriatService: HankeGeometriatService,
-    @Autowired private val permissionService: PermissionService
+    @Autowired private val permissionService: PermissionService,
+    @Autowired private val yhteystietoLoggingService: YhteystietoLoggingService,
 ) {
 
     @GetMapping("/{hankeTunnus}")
     fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String): Hanke {
-        val hanke = hankeService.loadHanke(hankeTunnus)
-                ?: throw HankeNotFoundException(hankeTunnus)
+        val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
 
         val userid = SecurityContextHolder.getContext().authentication.name
         val permission = permissionService.getPermissionByHankeIdAndUserId(hanke.id!!, userid)
@@ -48,6 +48,7 @@ class HankeController(
             throw HankeNotFoundException(hankeTunnus)
         }
 
+        yhteystietoLoggingService.saveDisclosureLogForUser(hanke, userid)
         return hanke
     }
 
@@ -55,8 +56,10 @@ class HankeController(
     fun getHankeList(@RequestParam geometry: Boolean = false): List<Hanke> {
         val userid = SecurityContextHolder.getContext().authentication.name
 
-        val userPermissions = permissionService.getPermissionsByUserId(userid)
-                .filter { it.permissions.contains(PermissionCode.VIEW) }
+        val userPermissions =
+            permissionService.getPermissionsByUserId(userid).filter {
+                it.permissions.contains(PermissionCode.VIEW)
+            }
 
         val hankeList = hankeService.loadHankkeetByIds(userPermissions.map { it.hankeId })
         includePermissions(hankeList, userPermissions)
@@ -65,6 +68,7 @@ class HankeController(
             hankeList.forEach { it.geometriat = hankeGeometriatService.loadGeometriat(it) }
         }
 
+        yhteystietoLoggingService.saveDisclosureLogsForUser(hankeList, userid)
         return hankeList
     }
 
@@ -73,42 +77,43 @@ class HankeController(
         hankeList.forEach { it.permissions = permissionsByHankeId.get(it.id!!)?.permissions }
     }
 
-    /**
-     * Add one hanke.
-     * This method will be called when we do not have id for hanke yet
-     */
+    /** Add one hanke. This method will be called when we do not have id for hanke yet */
     @PostMapping
-    fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): ResponseEntity<Any> {
-        logger.info {
-            "Creating Hanke: ${hanke?.toLogString()}"
-        }
+    fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): Hanke {
+        logger.info { "Creating Hanke: ${hanke?.toLogString()}" }
 
         if (hanke == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
+            throw HankeArgumentException("No hanke given when creating hanke")
         }
         val createdHanke = hankeService.createHanke(hanke)
 
-        permissionService.setPermission(createdHanke.id!!, createdHanke.createdBy!!, PermissionProfiles.HANKE_OWNER_PERMISSIONS)
-        return ResponseEntity.status(HttpStatus.OK).body(createdHanke)
+        permissionService.setPermission(
+            createdHanke.id!!,
+            createdHanke.createdBy!!,
+            PermissionProfiles.HANKE_OWNER_PERMISSIONS
+        )
+        yhteystietoLoggingService.saveDisclosureLogForUser(createdHanke, createdHanke.createdBy)
+        return createdHanke
     }
 
-    /**
-     * Update one hanke.
-     */
+    /** Update one hanke. */
     @PutMapping("/{hankeTunnus}")
-    fun updateHanke(@ValidHanke @RequestBody hanke: Hanke?, @PathVariable hankeTunnus: String?): ResponseEntity<Any> {
-        logger.info {
-            "Updating Hanke: ${hanke?.toLogString()}"
+    fun updateHanke(
+        @ValidHanke @RequestBody hanke: Hanke?,
+        @PathVariable hankeTunnus: String?
+    ): Hanke {
+        logger.info { "Updating Hanke: ${hanke?.toLogString()}" }
+        if (hanke == null) {
+            throw HankeArgumentException("No hanke given when updating hanke")
         }
-        if (hanke == null || hankeTunnus == null || hankeTunnus != hanke.hankeTunnus) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(HankeError.HAI1002)
+        if (hankeTunnus == null || hankeTunnus != hanke.hankeTunnus) {
+            throw HankeArgumentException("Hanketunnus not given or doesn't match the hanke data")
         }
         hanke.geometriat = hankeGeometriatService.loadGeometriat(hanke)
         val updatedHanke = hankeService.updateHanke(hanke)
-        logger.info {
-            "Updated hanke ${updatedHanke.hankeTunnus}."
-        }
-        return ResponseEntity.status(HttpStatus.OK).body(updatedHanke)
+        logger.info { "Updated hanke ${updatedHanke.hankeTunnus}." }
+        yhteystietoLoggingService.saveDisclosureLogForUser(updatedHanke, updatedHanke.modifiedBy!!)
+        return updatedHanke
     }
 
     @DeleteMapping("/{hankeTunnus}")
@@ -128,6 +133,13 @@ class HankeController(
         hankeService.deleteHanke(hankeId)
 
         logger.info { "Deleted Hanke: ${hanke.toLogString()}" }
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(HankeArgumentException::class)
+    fun handleArgumentExceptions(ex: HankeArgumentException): HankeError {
+        logger.warn { ex.message }
+        return HankeError.HAI1002
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)

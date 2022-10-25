@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat
 import javax.validation.ConstraintViolation
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
-enum class HankeError(
-    val errorMessage: String
-) {
+enum class HankeError(val errorMessage: String) {
     HAI0001("Access denied"),
     HAI0002("Internal error"),
     HAI0003("Invalid data"),
@@ -44,7 +42,10 @@ enum class HankeError(
     }
 }
 
-class HankeNotFoundException(val hankeTunnus: String) : RuntimeException("Hanke $hankeTunnus not found")
+class HankeNotFoundException(val hankeTunnus: String) :
+    RuntimeException("Hanke $hankeTunnus not found")
+
+class HankeArgumentException(message: String) : RuntimeException(message)
 
 class HankeYhteystietoNotFoundException(val hankeId: Int, ytId: Int) :
     RuntimeException("HankeYhteystiedot $ytId not found for Hanke $hankeId")

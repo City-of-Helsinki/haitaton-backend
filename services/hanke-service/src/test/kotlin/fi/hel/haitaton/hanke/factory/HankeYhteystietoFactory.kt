@@ -29,7 +29,7 @@ object HankeYhteystietoFactory : Factory<HankeYhteystieto>() {
      */
     fun createDifferentiated(intValue: Int): HankeYhteystieto {
         return HankeYhteystieto(
-            id = null,
+            id = intValue,
             sukunimi = "suku$intValue",
             etunimi = "etu$intValue",
             email = "email$intValue",
