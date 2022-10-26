@@ -42,20 +42,20 @@ class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
     }
 
     private fun auditLogEntriesForCustomers(applications: List<CableReportApplication>) =
-        entriesForCustomers(applications.flatMap { extractCustomers(it) }.toSet())
+        applications
+            .flatMap { extractCustomers(it) }
+            .toSet()
+            .filter { it.hasInformation() }
+            // Customers don't have IDs, since they're embedded in the applications. We could use
+            // the application ID here, but that would require the log reader to have deep knowledge
+            // of haitaton to make sense of the objectId field.
+            .map { disclosureLogEntry(ObjectType.ALLU_CUSTOMER, null, it) }
 
     private fun auditLogEntriesForContacts(applications: List<CableReportApplication>) =
-        entriesForContacts(applications.flatMap { extractContacts(it) }.toSet())
-
-    private fun entriesForCustomers(customers: Collection<Customer>) =
-        // Customers don't have IDs, since they're embedded in the applications. We could use the
-        // application ID here, but that would require the log reader to have deep knowledge of
-        // haitaton to make sense of the objectId field.
-        customers.map { disclosureLogEntry(ObjectType.ALLU_CUSTOMER, null, it) }
-
-    private fun entriesForContacts(contacts: Collection<Contact>) =
-        contacts
-            .filter { !it.isBlank() }
+        applications
+            .flatMap { extractContacts(it) }
+            .toSet()
+            .filter { it.hasInformation() }
             // Contacts don't have IDs, since they're embedded in the applications. We could use the
             // application ID here, but that would require the log reader to have deep knowledge of
             // haitaton to make sense of the objectId field.

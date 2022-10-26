@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.allu
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import org.apache.commons.lang3.StringUtils
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CustomerWithContacts(val customer: Customer, val contacts: List<Contact>)
@@ -15,11 +15,14 @@ data class Contact(
     val orderer: Boolean = false
 ) {
     /** Check if this contact is blank, i.e. it doesn't contain any actual contact information. */
+    @JsonIgnore
     fun isBlank() =
-        StringUtils.isBlank(name) &&
-            StringUtils.isBlank(email) &&
-            StringUtils.isBlank(phone) &&
-            postalAddress?.isBlank() ?: true
+        name.isNullOrBlank() &&
+            email.isNullOrBlank() &&
+            phone.isNullOrBlank() &&
+            postalAddress.isNullOrBlank()
+
+    fun hasInformation() = !isBlank()
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -34,7 +37,22 @@ data class Customer(
     val ovt: String?, // e-invoice identifier (ovt-tunnus)
     val invoicingOperator: String?, // e-invoicing operator code
     val sapCustomerNumber: String? // customer's sap number
-)
+) {
+    /** Check if this customer is blank, i.e. it doesn't contain any actual customer information. */
+    @JsonIgnore
+    fun isBlank() =
+        name.isBlank() &&
+            country.isBlank() &&
+            postalAddress.isNullOrBlank() &&
+            email.isNullOrBlank() &&
+            phone.isNullOrBlank() &&
+            registryKey.isNullOrBlank() &&
+            ovt.isNullOrBlank() &&
+            invoicingOperator.isNullOrBlank() &&
+            sapCustomerNumber.isNullOrBlank()
+
+    fun hasInformation() = !isBlank()
+}
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class PostalAddress(
@@ -43,11 +61,13 @@ data class PostalAddress(
     val city: String
 ) {
     /** Check if this address is blank, i.e. none of fields have any information. */
+    @JsonIgnore
     fun isBlank() =
-        StringUtils.isBlank(streetAddress.streetName) &&
-            StringUtils.isBlank(postalCode) &&
-            StringUtils.isBlank(city)
+        streetAddress.streetName.isNullOrBlank() && postalCode.isBlank() && city.isBlank()
 }
+
+/** Check if this address is blank, i.e. none of fields have any information. */
+fun PostalAddress?.isNullOrBlank() = this?.isBlank() ?: true
 
 @JsonIgnoreProperties(ignoreUnknown = true) data class StreetAddress(val streetName: String?)
 

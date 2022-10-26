@@ -5,6 +5,8 @@ import fi.hel.haitaton.hanke.allu.ApplicationDto
 import fi.hel.haitaton.hanke.allu.ApplicationType
 import fi.hel.haitaton.hanke.allu.CableReportApplication
 import fi.hel.haitaton.hanke.allu.Contact
+import fi.hel.haitaton.hanke.allu.Customer
+import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
 import fi.hel.haitaton.hanke.allu.PostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress
@@ -193,6 +195,25 @@ internal class DisclosureLogServiceTest {
                     AlluDataFactory.createCableReportApplication(
                         customerWithContacts = customerWithoutContacts,
                         contractorWithContacts = contractorWithoutContacts
+                    )
+            )
+
+        disclosureLogService.saveDisclosureLogsForApplication(application, userId)
+
+        verify { auditLogRepository wasNot Called }
+    }
+
+    @Test
+    fun `saveDisclosureLogsForApplication doesn't save entries for blank customers`() {
+        val blankCustomer =
+            Customer(type = CustomerType.PERSON, "", "", null, "", "", "", "", "", "")
+        val customerWithoutContacts = CustomerWithContacts(blankCustomer, listOf())
+        val application =
+            applicationDto(
+                applicationData =
+                    AlluDataFactory.createCableReportApplication(
+                        customerWithContacts = customerWithoutContacts,
+                        contractorWithContacts = customerWithoutContacts
                     )
             )
 
