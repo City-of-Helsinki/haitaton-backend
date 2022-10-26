@@ -45,7 +45,9 @@ class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
         applications
             .flatMap { extractCustomers(it) }
             .toSet()
-            .filter { it.hasInformation() }
+            // Ignore country, since all customers have a default country atm.
+            // Also, just a country can't be considered personal information.
+            .filter { it.copy(country = "").hasInformation() }
             // Customers don't have IDs, since they're embedded in the applications. We could use
             // the application ID here, but that would require the log reader to have deep knowledge
             // of haitaton to make sense of the objectId field.
