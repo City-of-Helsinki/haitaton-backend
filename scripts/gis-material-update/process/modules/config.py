@@ -20,24 +20,26 @@ class Config:
         return self
 
     def _cfg_file(self) -> dict:
-        """Try to find configuration file.
+        """Find configuration file.
 
         Handle cases
         * dockerized implementation
         * local development
         """
         parsed = {}
-        candidate_paths = ["/haitaton-gis", str(Path(__file__).parent.parent.parent)]
-        for c_p in candidate_paths:
-            try:
-                with open("{}/config.yaml".format(c_p), "r") as stream:
+        candidate_paths = [Path("/haitaton-gis"), Path(__file__).parent.parent.parent]
+
+        for c_p in [cand / "config.yaml" for cand in candidate_paths]:
+            if c_p.is_file():
+                with open("{}".format(c_p), "r") as stream:
                     try:
                         parsed = yaml.safe_load(stream)
                     except yaml.YAMLError as exc:
                         raise Exception(exc)
-            except OSError as error:
-                print(f"Not found: {error.filename}")
-        return parsed
+                    else:
+                        print("Using configuration file: {}".format(c_p))
+                return parsed
+        raise OSError("Configuration file was not found.")
 
     def _file_directory(self, storage: str = "download_dir") -> str:
         """Obtain directory for input/output files. Detect running environment automatically.
@@ -88,69 +90,19 @@ class Config:
         """Return buffer value list from configuration."""
         return self._cfg.get(item, {}).get("buffer")
 
-    def downloaded_file_name(
-        self, data_descriptor: str, file_desc: str = "local_file"
-    ) -> str:
-        """Return complete file path for further file access."""
-
-        deployment_profile = self.deployment_profile()
-        directory = self._cfg.get("storage").get(deployment_profile).get("download_dir")
-        candidate_path = None
-
-        # TODO: how to handle this part in configuration YAML
-        if deployment_profile == "local_development":
-            candidate_path = Path(__file__).parent.parent.parent / directory
-        elif deployment_profile == "local_docker_development":
-            candidate_path = Path(directory)
-
-        candidate_file = self._cfg.get(data_descriptor).get(file_desc)
-        # candidate_paths = [
-        #     Path(__file__).parent.parent.parent / "haitaton-downloads",
-        #     self._cfg.get("common").get("download_path")
-        #     ]
-        # for c_p in candidate_paths:
-        #     cand_path = Path(c_p) / candidate_file
-        #     if Path(c_p).is_dir():
-        #         return str(cand_path)
-        # do not guess but assign path by deployment
-        file_path = Path(
-            self._cfg.get("storage").get(self.deployment_profile()).get("download_dir")
-        )
-        file_path /= candidate_file
-
-        if file_path.is_file():
-            return str(file_path)
-
-        return None
-
-    def pg_conn_string(self, deployment: str = None) -> str:
-        """Return connection string for database.
-
-        deployment -parameter refers to deployment configuration."""
-        if deployment is None:
-            deployment = self.deployment_profile()
-
-        return "PG:'host={} dbname={} user={} password={} port={}'".format(
-            self._cfg.get("database").get(deployment).get("host"),
-            self._cfg.get("database").get(deployment).get("database"),
-            self._cfg.get("database").get(deployment).get("username"),
-            self._cfg.get("database").get(deployment).get("password"),
-            self._cfg.get("database").get(deployment).get("port"),
-        )
-
     def pg_conn_uri(self, deployment: str = None) -> str:
-        """Return PostgreSQL connect URI
+        """Return PostgreSQL connection URI
 
         deployment -parameter refers to deployment in configuration"""
         if deployment is None:
             deployment = self.deployment_profile()
 
         return "postgresql://{user}:{password}@{host}:{port}/{dbname}".format(
-            host=self._cfg.get("database").get(deployment).get("host"),
-            dbname=self._cfg.get("database").get(deployment).get("database"),
             user=self._cfg.get("database").get(deployment).get("username"),
             password=self._cfg.get("database").get(deployment).get("password"),
+            host=self._cfg.get("database").get(deployment).get("host"),
             port=self._cfg.get("database").get(deployment).get("port"),
+            dbname=self._cfg.get("database").get(deployment).get("database"),
         )
 
     def deployment_profile(self) -> str:
