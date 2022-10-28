@@ -5,11 +5,9 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
-import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.security.test.context.support.WithMockUser
@@ -21,21 +19,17 @@ class ApplicationControllerTest {
     private val username = "testUser"
 
     private val applicationService: ApplicationService = mockk()
-    private val disclosureLogService: DisclosureLogService = mockk()
+    private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
 
     private val applicationController =
         ApplicationController(applicationService, disclosureLogService)
 
-    @BeforeEach
-    fun clearMockks() {
-        clearAllMocks()
-    }
-
     @AfterEach
-    fun checkStubs() {
+    fun cleanUp() {
         // TODO: Needs newer MockK, which needs newer Spring test dependencies
         // checkUnnecessaryStub()
         confirmVerified()
+        clearAllMocks()
     }
 
     @Test
@@ -50,7 +44,6 @@ class ApplicationControllerTest {
                 ),
             )
         every { applicationService.getAllApplicationsForCurrentUser() } returns applications
-        justRun { disclosureLogService.saveDisclosureLogsForApplications(applications, username) }
 
         applicationController.getAll()
 
@@ -61,7 +54,6 @@ class ApplicationControllerTest {
     fun `getById saves disclosure logs`() {
         val application = AlluDataFactory.createApplicationDto()
         every { applicationService.getApplicationById(1) } returns application
-        justRun { disclosureLogService.saveDisclosureLogsForApplication(application, username) }
 
         applicationController.getById(1)
 
@@ -73,9 +65,6 @@ class ApplicationControllerTest {
         val requestApplication = AlluDataFactory.createApplicationDto(id = null)
         val createdApplication = requestApplication.copy(id = 1)
         every { applicationService.create(requestApplication) } returns createdApplication
-        justRun {
-            disclosureLogService.saveDisclosureLogsForApplication(createdApplication, username)
-        }
 
         applicationController.create(requestApplication)
 
@@ -89,7 +78,6 @@ class ApplicationControllerTest {
         val application = AlluDataFactory.createApplicationDto(id = 1)
         every { applicationService.updateApplicationData(1, application.applicationData) } returns
             application
-        justRun { disclosureLogService.saveDisclosureLogsForApplication(application, username) }
 
         applicationController.update(1, application)
 

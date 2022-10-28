@@ -13,6 +13,9 @@ import fi.hel.haitaton.hanke.toJsonString
 import java.time.OffsetDateTime
 import org.springframework.stereotype.Service
 
+/** Special username for Allu service. */
+const val ALLU_AUDIT_LOG_USERID = "Allu"
+
 /** Luovutusloki */
 @Service
 class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
@@ -20,6 +23,17 @@ class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
     fun saveDisclosureLogsForApplication(application: ApplicationDto?, userId: String) {
         if (application == null) return
         saveDisclosureLogsForApplications(listOf(application), userId)
+    }
+
+    fun saveDisclosureLogsForCableReportApplication(
+        application: CableReportApplication,
+        userId: String,
+        status: Status
+    ) {
+        val entries =
+            auditLogEntriesForCustomers(listOf(application), status) +
+                auditLogEntriesForContacts(listOf(application), status)
+        saveDisclosureLogs(userId, entries)
     }
 
     fun saveDisclosureLogsForApplications(applications: List<ApplicationDto>, userId: String) {
@@ -41,7 +55,10 @@ class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
         )
     }
 
-    private fun auditLogEntriesForCustomers(applications: List<CableReportApplication>) =
+    private fun auditLogEntriesForCustomers(
+        applications: List<CableReportApplication>,
+        status: Status = Status.SUCCESS
+    ) =
         applications
             .flatMap { extractCustomers(it) }
             .toSet()
@@ -51,9 +68,12 @@ class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
             // Customers don't have IDs, since they're embedded in the applications. We could use
             // the application ID here, but that would require the log reader to have deep knowledge
             // of haitaton to make sense of the objectId field.
-            .map { disclosureLogEntry(ObjectType.ALLU_CUSTOMER, null, it) }
+            .map { disclosureLogEntry(ObjectType.ALLU_CUSTOMER, null, it, status) }
 
-    private fun auditLogEntriesForContacts(applications: List<CableReportApplication>) =
+    private fun auditLogEntriesForContacts(
+        applications: List<CableReportApplication>,
+        status: Status = Status.SUCCESS
+    ) =
         applications
             .flatMap { extractContacts(it) }
             .toSet()
@@ -61,7 +81,7 @@ class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
             // Contacts don't have IDs, since they're embedded in the applications. We could use the
             // application ID here, but that would require the log reader to have deep knowledge of
             // haitaton to make sense of the objectId field.
-            .map { disclosureLogEntry(ObjectType.ALLU_CONTACT, null, it) }
+            .map { disclosureLogEntry(ObjectType.ALLU_CONTACT, null, it, status) }
 
     private fun parseJsonApplicationData(application: ApplicationDto?): CableReportApplication? =
         application?.applicationData?.let { OBJECT_MAPPER.treeToValue(it) }
@@ -90,11 +110,16 @@ class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
     private fun auditLogEntriesForYhteystiedot(yhteystiedot: List<HankeYhteystieto>) =
         yhteystiedot.toSet().map { disclosureLogEntry(ObjectType.YHTEYSTIETO, it.id, it) }
 
-    private fun disclosureLogEntry(objectType: ObjectType, objectId: Int?, objectBefore: Any) =
+    private fun disclosureLogEntry(
+        objectType: ObjectType,
+        objectId: Int?,
+        objectBefore: Any,
+        status: Status = Status.SUCCESS,
+    ) =
         AuditLogEntry(
             eventTime = null,
             action = Action.READ,
-            status = Status.SUCCESS,
+            status = status,
             objectType = objectType,
             objectId = objectId,
             objectBefore = objectBefore.toJsonString()

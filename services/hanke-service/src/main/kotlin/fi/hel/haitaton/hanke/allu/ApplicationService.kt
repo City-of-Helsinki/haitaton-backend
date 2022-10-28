@@ -4,12 +4,16 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.currentUserId
+import fi.hel.haitaton.hanke.logging.ALLU_AUDIT_LOG_USERID
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.logging.Status
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
 class ApplicationService(
     private val repo: ApplicationRepository,
-    private val cableReportService: CableReportService
+    private val cableReportService: CableReportService,
+    private val disclosureLogService: DisclosureLogService,
 ) {
 
     fun getAllApplicationsForCurrentUser(): List<ApplicationDto> {
@@ -99,12 +103,47 @@ class ApplicationService(
             application.applicationData = OBJECT_MAPPER.valueToTree(cableReportApplication)
         }
 
-        val alluId = application.alluid
-        if (alluId == null) {
-            application.alluid = cableReportService.create(cableReportApplication)
-        } else {
-            cableReportService.update(alluId, cableReportApplication)
+        withDisclosureLogging(cableReportApplication) {
+            val alluId = application.alluid
+            if (alluId == null) {
+                application.alluid = cableReportService.create(cableReportApplication)
+            } else {
+                cableReportService.update(alluId, cableReportApplication)
+            }
         }
+    }
+
+    /**
+     * Save disclosure logs for the personal information inside the application. Determine the
+     * status of the operation from whether there were exceptions or not. Don't save logging
+     * failures, since personal data was not yet disclosed.
+     */
+    private fun withDisclosureLogging(
+        cableReportApplication: CableReportApplication,
+        f: (CableReportApplication) -> Unit
+    ) {
+        try {
+            f(cableReportApplication)
+        } catch (e: AlluLoginException) {
+            // Since the login failed we didn't send the application itself, so logging not needed.
+            throw e
+        } catch (e: Throwable) {
+            // There was an exception outside logging, so there was at least an attempt to send the
+            // application to Allu. Allu might have read it and rejected it, so we should log this
+            // as a disclosure event.
+            disclosureLogService.saveDisclosureLogsForCableReportApplication(
+                application = cableReportApplication,
+                userId = ALLU_AUDIT_LOG_USERID,
+                status = Status.FAILED
+            )
+            throw e
+        }
+        // There were no exceptions, so log this as a successful disclosure.
+        disclosureLogService.saveDisclosureLogsForCableReportApplication(
+            application = cableReportApplication,
+            userId = ALLU_AUDIT_LOG_USERID,
+            status = Status.SUCCESS
+        )
     }
 }
 
