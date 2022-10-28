@@ -1,3 +1,4 @@
+from __future__ import annotations
 from os.path import exists
 from pathlib import Path
 import yaml
@@ -10,8 +11,8 @@ class Config:
         self._cfg = self._cfg_file()
         self._deployment_profile = "local_development"
 
-    def with_deployment_profile(self, deployment_profile: str):
-        """Use deployment profile.
+    def with_deployment_profile(self, deployment_profile: str) -> Config:
+        """Set deployment profile.
 
         Supported configurations:
             - local_development
@@ -22,6 +23,8 @@ class Config:
     def _cfg_file(self) -> dict:
         """Find configuration file.
 
+        Return parsed configuration YAML.
+
         Handle cases
         * dockerized implementation
         * local development
@@ -29,27 +32,26 @@ class Config:
         parsed = {}
         candidate_paths = [Path("/haitaton-gis"), Path(__file__).parent.parent.parent]
 
-        for c_p in [cand / "config.yaml" for cand in candidate_paths]:
-            if c_p.is_file():
-                with open("{}".format(c_p), "r") as stream:
+        for config_file in [cand / "config.yaml" for cand in candidate_paths]:
+            if config_file.is_file():
+                with open(str(config_file), "r") as stream:
                     try:
                         parsed = yaml.safe_load(stream)
                     except yaml.YAMLError as exc:
                         raise Exception(exc)
                     else:
-                        print("Using configuration file: {}".format(c_p))
+                        print("Using configuration file: {}".format(config_file))
                 return parsed
         raise OSError("Configuration file was not found.")
 
     def _file_directory(self, storage: str = "download_dir") -> str:
-        """Obtain directory for input/output files. Detect running environment automatically.
+        """Obtain directory for input/output files.
 
         Supported storage parameter values:
             download_dir - directory for download files
             output_dir - directory for gis output files."""
-
         deployment_profile = self.deployment_profile()
-        directory = self._cfg.get("storage").get(deployment_profile).get(storage)
+        directory = self._cfg.get("storage").get(deployment_profile, {}).get(storage)
 
         if deployment_profile == "local_development":
             directory_name = Path(__file__).parent.parent.parent / directory
@@ -62,6 +64,9 @@ class Config:
             return str(directory_name)
         else:
             return None
+
+    def deployment_profile(self) -> str:
+        return self._deployment_profile
 
     def local_file(self, item: str) -> str:
         """Return local file name from configuration."""
@@ -98,12 +103,9 @@ class Config:
             deployment = self.deployment_profile()
 
         return "postgresql://{user}:{password}@{host}:{port}/{dbname}".format(
-            user=self._cfg.get("database").get(deployment).get("username"),
-            password=self._cfg.get("database").get(deployment).get("password"),
-            host=self._cfg.get("database").get(deployment).get("host"),
-            port=self._cfg.get("database").get(deployment).get("port"),
-            dbname=self._cfg.get("database").get(deployment).get("database"),
+            user=self._cfg.get("database").get(deployment, {}).get("username"),
+            password=self._cfg.get("database").get(deployment, {}).get("password"),
+            host=self._cfg.get("database").get(deployment, {}).get("host"),
+            port=self._cfg.get("database").get(deployment, {}).get("port"),
+            dbname=self._cfg.get("database").get(deployment, {}).get("database"),
         )
-
-    def deployment_profile(self) -> str:
-        return self._deployment_profile

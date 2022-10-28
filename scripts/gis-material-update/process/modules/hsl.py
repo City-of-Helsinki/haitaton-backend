@@ -9,6 +9,10 @@ from shapely.geometry import Point, LineString
 from sqlalchemy import create_engine
 
 
+import warnings
+from shapely.errors import ShapelyDeprecationWarning
+
+
 from modules.config import Config
 from modules.gis_processing import GisProcessor
 
@@ -19,6 +23,8 @@ def as_date(d: str) -> date:
 
 
 class HslBuses(GisProcessor):
+    """Process HSL bus lines."""
+
     def __init__(
         self, cfg: Config, validate_gtfs: bool = True, week_of_transit: int = 2
     ):
@@ -73,53 +79,6 @@ class HslBuses(GisProcessor):
         return min(as_date(d1max), as_date(d2max)) - max(
             as_date(d1min), as_date(d2min)
         ) >= timedelta(0)
-
-    def process(self):
-        self._process_result_lines = self._process_hsl_bus_lines()
-
-        # Buffering configuration
-        buffers = self._cfg.buffer("hsl")
-        if len(buffers) > 1:
-            raise ValueError("Unkown number of buffer values")
-
-        # buffer lines
-        target_route_polys = self._process_result_lines
-        target_route_polys["geometry"] = target_route_polys.buffer(buffers[0])
-
-        # save to instance
-        self._process_result_polygons = target_route_polys
-
-    def persist_to_database(self):
-        connection = create_engine(self._cfg.pg_conn_uri())
-
-        # persist route lines to database
-        self._process_result_lines.to_postgis(
-            "bus_lines",
-            connection,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
-
-        # persist polygons to database
-        self._process_result_polygons.to_postgis(
-            "bus_line_polys",
-            connection,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
-
-    def save_to_file(self):
-        """Save processing results to file(s).
-
-        For time being, write lines and polygons to file."""
-        target_lines_file_name = self._cfg.target_file("hsl")
-        self._process_result_lines.to_file(target_lines_file_name, driver="GPKG")
-        target_buffer_file_name = self._cfg.target_buffer_file("hsl")
-        self._process_result_polygons.to_file(target_buffer_file_name, driver="GPKG")
 
     def _pick_service_ids_for_one_day(self, datestring: str) -> list[str]:
         """Return list of service ids of a given day.
@@ -248,14 +207,16 @@ class HslBuses(GisProcessor):
         stop_times_trip = self.feed().stop_times[
             self.feed().stop_times["trip_id"].isin(trips_day["trip_id"])
         ]
-        tmp = stop_times_trip.drop_duplicates("trip_id")
-        tmp2 = tmp.merge(trips_day, on="trip_id", how="left")
+        stop_times_trip_uniq = stop_times_trip.drop_duplicates("trip_id")
+        stops_trips = stop_times_trip_uniq.merge(trips_day, on="trip_id", how="left")
 
         # rush hour time columns added
-        tmp2 = self._compute_rush_hours(tmp2)
+        stops_trips = self._compute_rush_hours(stops_trips)
 
         shape_trips_max = (
-            tmp2.loc[:, ["shape_id"] + [x for x in tmp2.columns if x.startswith("n_")]]
+            stops_trips.loc[
+                :, ["shape_id"] + [x for x in stops_trips.columns if x.startswith("n_")]
+            ]
             .groupby("shape_id")
             .sum()
             .max(axis=1)
@@ -276,25 +237,30 @@ class HslBuses(GisProcessor):
 
         shps = self.feed().shapes.copy()
 
-        # form point objects from coordinate values
-        shps["geometry"] = shps.apply(
-            lambda r: Point(r.shape_pt_lon, r.shape_pt_lat), axis=1
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
+            # form point objects from coordinate values
+            shps["geometry"] = shps.apply(
+                lambda r: Point(r.shape_pt_lon, r.shape_pt_lat), axis=1
+            )
 
         # pick all line geometries (shapes) that are operated within a given week
-        # sort by shape_id and shape sequence to ensure correct linestring formation
+        # sort by shape_id and shape point sequence, to ensure correct linestring formation
         shapes_week_ind = shps["shape_id"].isin(trips_week["shape_id"].tolist())
         shapes_week = shps[shapes_week_ind].sort_values(
             ["shape_id", "shape_pt_sequence"]
         )
 
-        # Create Linestring from points
-        shapes_week_lines = gpd.GeoDataFrame(
-            shapes_week.groupby(["shape_id"])["geometry"].apply(
-                lambda x: LineString(x.tolist())
-            ),
-            geometry="geometry",
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
+            # Create Linestring from points
+            shapes_week_lines = gpd.GeoDataFrame(
+                shapes_week.groupby(["shape_id"])["geometry"].apply(
+                    lambda x: LineString(x.tolist())
+                ),
+                geometry="geometry",
+            )
+
         shapes_week_lines = shapes_week_lines.merge(
             stop_times_day, on="shape_id", how="left"
         ).fillna(0)
@@ -322,11 +288,11 @@ class HslBuses(GisProcessor):
             ~shapes_trips_routes.route_type.isin([0, 1, 4, 109])
         ]
 
-        # Pick columns and reproject to desired CRS
         shapes_with_attributes = self._add_trunk_descriptor(
             filtered_shapes_trips_routes
         )
 
+        # Pick columns and reproject to desired CRS
         shapes_with_attributes["fid"] = shapes_with_attributes.reset_index().index
         shapes_with_attributes = shapes_with_attributes.loc[
             :, ["fid", "route_id", "direction_id", "rush_hour", "trunk", "geometry"]
@@ -335,7 +301,7 @@ class HslBuses(GisProcessor):
             self._cfg.crs()
         )
 
-        # Only intersecting routes are important
+        # Only intersecting routes to Helsinki area are important
         # read Helsinki geographical region and reproject
         try:
             helsinki_region_polygon = gpd.read_file(
@@ -360,3 +326,53 @@ class HslBuses(GisProcessor):
             lambda r: self._route_is_trunk(r.route_id), axis=1
         )
         return retval
+
+    def process(self) -> None:
+        # main part of processing is initiated here
+        self._process_result_lines = self._process_hsl_bus_lines()
+
+        # Buffering configuration
+        buffers = self._cfg.buffer("hsl")
+        if len(buffers) != 1:
+            raise ValueError("Unkown number of buffer values")
+
+        # buffer lines
+        target_route_polys = self._process_result_lines.copy()
+        target_route_polys["geometry"] = target_route_polys.buffer(buffers[0])
+
+        # save to instance
+        self._process_result_polygons = target_route_polys
+
+    def persist_to_database(self) -> None:
+        connection = create_engine(self._cfg.pg_conn_uri())
+
+        # persist route lines to database
+        self._process_result_lines.to_postgis(
+            "bus_lines",
+            connection,
+            "public",
+            if_exists="replace",
+            index=True,
+            index_label="fid",
+        )
+
+        # persist polygons to database
+        self._process_result_polygons.to_postgis(
+            "bus_line_polys",
+            connection,
+            "public",
+            if_exists="replace",
+            index=True,
+            index_label="fid",
+        )
+
+    def save_to_file(self) -> None:
+        """Save processing results to file(s).
+
+        write computed bus lines and polygons to file."""
+        # Bus line as debug material
+        target_lines_file_name = self._cfg.target_file("hsl")
+        self._process_result_lines.to_file(target_lines_file_name, driver="GPKG")
+        # tormays GIS material
+        target_buffer_file_name = self._cfg.target_buffer_file("hsl")
+        self._process_result_polygons.to_file(target_buffer_file_name, driver="GPKG")

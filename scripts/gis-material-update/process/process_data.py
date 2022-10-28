@@ -5,7 +5,8 @@ from modules.config import Config
 from modules.gis_processing import GisProcessor
 from modules.hsl import HslBuses
 
-def process_item(item : str, cfg : Config):
+
+def process_item(item: str, cfg: Config):
     print(f"Processing item: {item}")
     gis_processor = instantiate_processor(item, cfg)
     gis_processor.process()
@@ -13,7 +14,8 @@ def process_item(item : str, cfg : Config):
     gis_processor.save_to_file()
     pass
 
-def instantiate_processor(item : str, cfg : Config) -> GisProcessor:
+
+def instantiate_processor(item: str, cfg: Config) -> GisProcessor:
     """Instantiate correct class for processing data."""
     if item == "hsl":
         # TODO: Do not validate feed during development (save time)
@@ -24,11 +26,12 @@ def instantiate_processor(item : str, cfg : Config) -> GisProcessor:
         except Exception as e:
             print("{}".format(e))
 
+
 if __name__ == "__main__":
 
     deployment_profile = os.environ.get("TORMAYS_DEPLOYMENT_PROFILE")
 
-    if deployment_profile in [ "local_docker_development", "local_development" ]:
+    if deployment_profile in ["local_docker_development", "local_development"]:
         use_deployment_profile = deployment_profile
     else:
         raise ValueError("Deployment profile not detected")
@@ -37,7 +40,7 @@ if __name__ == "__main__":
 
     cfg = Config().with_deployment_profile(use_deployment_profile)
 
-    print("Processing data:")
+    print("Processing data.")
 
     for item in sys.argv[1:]:
         process_item(item, cfg)
