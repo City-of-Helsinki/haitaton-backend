@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.allu.Contact
+import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.Action
 import fi.hel.haitaton.hanke.logging.AuditLogEntry
@@ -34,4 +36,17 @@ object AuditLogEntryFactory : Factory<AuditLogEntry>() {
         (hanke.omistajat + hanke.arvioijat + hanke.toteuttajat).map {
             createReadEntry(objectId = it.id, objectBefore = it.toJsonString())
         }
+
+    fun createReadEntryForContact(contact: Contact): AuditLogEntry =
+        createReadEntry(
+            objectId = null,
+            objectType = ObjectType.ALLU_CONTACT,
+            objectBefore = contact.toJsonString()
+        )
+    fun createReadEntryForCustomer(customer: Customer): AuditLogEntry =
+        createReadEntry(
+            objectId = null,
+            objectType = ObjectType.ALLU_CUSTOMER,
+            objectBefore = customer.toJsonString()
+        )
 }

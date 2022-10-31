@@ -3,9 +3,8 @@ package fi.hel.haitaton.hanke.allu
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
-import java.lang.IllegalArgumentException
+import fi.hel.haitaton.hanke.currentUserId
 import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Repository
 
 class ApplicationService(
@@ -14,8 +13,7 @@ class ApplicationService(
 ) {
 
     fun getAllApplicationsForCurrentUser(): List<ApplicationDto> {
-        val userId = SecurityContextHolder.getContext().authentication.name
-        return getAllApplicationsForUser(userId)
+        return getAllApplicationsForUser(currentUserId())
     }
 
     fun getAllApplicationsForUser(userId: String): List<ApplicationDto> {
@@ -25,18 +23,17 @@ class ApplicationService(
     fun getApplicationById(id: Long) = getById(id)?.let { applicationToDto(it) }
 
     fun create(application: ApplicationDto): ApplicationDto {
-        val userId = SecurityContextHolder.getContext().authentication.name
-        val application =
+        val alluApplication =
             AlluApplication(
                 id = null,
                 alluid = null,
-                userId = userId,
+                userId = currentUserId(),
                 applicationType = application.applicationType,
                 applicationData = application.applicationData
             )
-        trySendingPendingApplicationToAllu(application)
+        trySendingPendingApplicationToAllu(alluApplication)
 
-        return applicationToDto(repo.save(application))
+        return applicationToDto(repo.save(alluApplication))
     }
 
     fun updateApplicationData(id: Long, newApplicationData: JsonNode): ApplicationDto? {
@@ -62,8 +59,7 @@ class ApplicationService(
     }
 
     private fun getById(id: Long): AlluApplication? {
-        val userId = SecurityContextHolder.getContext().authentication.name
-        return repo.findOneByIdAndUserId(id, userId)
+        return repo.findOneByIdAndUserId(id, currentUserId())
     }
 
     private fun isStillPending(application: AlluApplication): Boolean {

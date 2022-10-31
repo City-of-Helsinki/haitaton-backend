@@ -50,7 +50,9 @@ enum class Status {
 }
 
 enum class ObjectType {
-    YHTEYSTIETO
+    YHTEYSTIETO,
+    ALLU_CUSTOMER,
+    ALLU_CONTACT,
 }
 
 @Entity

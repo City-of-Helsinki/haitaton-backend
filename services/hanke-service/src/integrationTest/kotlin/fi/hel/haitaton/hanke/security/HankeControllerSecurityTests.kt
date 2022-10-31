@@ -11,7 +11,7 @@ import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
-import fi.hel.haitaton.hanke.logging.YhteystietoLoggingService
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.Permission
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionProfiles
@@ -64,7 +64,7 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
 
     @Autowired private lateinit var hankeGeometriatService: HankeGeometriatService
 
-    @Autowired private lateinit var yhteystietoLoggingService: YhteystietoLoggingService
+    @Autowired private lateinit var disclosureLogService: DisclosureLogService
 
     private val testHankeTunnus = "HAI21-TEST-1"
 
@@ -111,7 +111,7 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
                     Permission(1, "test7358", 444, listOf(PermissionCode.VIEW))
                 )
             )
-        justRun { yhteystietoLoggingService.saveDisclosureLogsForUser(any(), "test7358") }
+        justRun { disclosureLogService.saveDisclosureLogsForHankkeet(any(), "test7358") }
 
         return mockMvc.perform(get("/hankkeet").accept(MediaType.APPLICATION_JSON))
     }
@@ -132,7 +132,7 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
             }
             .returns(Permission(1, "test7358", 12, PermissionProfiles.HANKE_OWNER_PERMISSIONS))
         every { hankeGeometriatService.loadGeometriat(any()) }.returns(null)
-        justRun { yhteystietoLoggingService.saveDisclosureLogForUser(any(), "test7358") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358") }
 
         return mockMvc.perform(
             post("/hankkeet")
@@ -151,7 +151,7 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         val content = hanke.toJsonString()
 
         every { hankeService.updateHanke(any()) }.returns(hanke.copy(modifiedBy = "test7358"))
-        justRun { yhteystietoLoggingService.saveDisclosureLogForUser(any(), "test7358") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358") }
 
         return mockMvc.perform(
             put("/hankkeet/$testHankeTunnus")
@@ -169,7 +169,7 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         every { hankeService.loadHanke(any()) }.returns(Hanke(123, "HAI-TEST-1"))
         every { permissionService.getPermissionByHankeIdAndUserId(123, "test7358") }
             .returns(Permission(1, "test7358", 123, PermissionProfiles.HANKE_OWNER_PERMISSIONS))
-        justRun { yhteystietoLoggingService.saveDisclosureLogForUser(any(), "test7358") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358") }
 
         return mockMvc.perform(get("/hankkeet/$testHankeTunnus").accept(MediaType.APPLICATION_JSON))
     }

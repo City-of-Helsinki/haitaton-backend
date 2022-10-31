@@ -5,7 +5,7 @@ import fi.hel.haitaton.hanke.gdpr.GdprJsonConverter
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
-import fi.hel.haitaton.hanke.logging.YhteystietoLoggingService
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
@@ -62,7 +62,7 @@ class IntegrationTestConfiguration {
 
     @Bean fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
 
-    @Bean fun yhteystietoLoggingService(): YhteystietoLoggingService = mockk()
+    @Bean fun yhteystietoLoggingService(): DisclosureLogService = mockk()
 
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {
