@@ -8,7 +8,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.PermissionFactory
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
-import fi.hel.haitaton.hanke.logging.YhteystietoLoggingService
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.Permission
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionProfiles
@@ -20,7 +20,6 @@ import io.mockk.justRun
 import io.mockk.verify
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
-import mu.KotlinLogging
 import org.geojson.FeatureCollection
 import org.hamcrest.Matchers.hasSize
 import org.junit.jupiter.api.AfterEach
@@ -40,8 +39,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-private val logger = KotlinLogging.logger {}
-
 /**
  * Testing the Hanke Controller through a full REST request.
  *
@@ -58,7 +55,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @Autowired lateinit var hankeService: HankeService // faking these calls
     @Autowired lateinit var permissionService: PermissionService
     @Autowired lateinit var hankeGeometriatService: HankeGeometriatService
-    @Autowired lateinit var yhteystietoLoggingService: YhteystietoLoggingService
+    @Autowired lateinit var disclosureLogService: DisclosureLogService
 
     @AfterEach
     fun cleanup() {
@@ -75,7 +72,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .perform(get("/hankkeet/$mockedHankeTunnus").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound)
 
-        verify { yhteystietoLoggingService wasNot Called }
+        verify { disclosureLogService wasNot Called }
     }
 
     @Test
@@ -89,7 +86,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         every { hankeService.loadHanke(mockedHankeTunnus) }.returns(hanke)
         every { permissionService.getPermissionByHankeIdAndUserId(hankeId, userId) }
             .returns(permission)
-        justRun { yhteystietoLoggingService.saveDisclosureLogForUser(hanke, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(hanke, "test") }
 
         mockMvc
             .perform(get("/hankkeet/$mockedHankeTunnus").accept(MediaType.APPLICATION_JSON))
@@ -98,7 +95,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("$.nimi").value("Hämeentien perusparannus ja katuvalot"))
 
         verify { hankeService.loadHanke(mockedHankeTunnus) }
-        verify { yhteystietoLoggingService.saveDisclosureLogForUser(hanke, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(hanke, "test") }
     }
 
     @Test
@@ -127,7 +124,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // faking the service call with two returned Hanke
         every { hankeService.loadHankkeetByIds(hankeIds) }.returns(hankkeet)
         every { permissionService.getPermissionsByUserId("test") }.returns(permissions)
-        justRun { yhteystietoLoggingService.saveDisclosureLogsForUser(hankkeet, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, "test") }
 
         // we check that we get the two hankeTunnus we expect
         mockMvc
@@ -150,7 +147,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("$[1].permissions").value(hasSize<Array<Any>>(1)))
 
         verify { hankeService.loadHankkeetByIds(hankeIds) }
-        verify { yhteystietoLoggingService.saveDisclosureLogsForUser(hankkeet, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, "test") }
     }
 
     @Test
@@ -169,7 +166,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         every { hankeGeometriatService.loadGeometriat(Hanke(444, "hanketunnus2")) }
             .returns(HankeGeometriat(2, 444, FeatureCollection()))
         every { permissionService.getPermissionsByUserId("test") }.returns(permissions)
-        justRun { yhteystietoLoggingService.saveDisclosureLogsForUser(hankkeet, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, "test") }
 
         // we check that we get the two hankeTunnus and geometriat we expect
         mockMvc
@@ -193,7 +190,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         verify { hankeService.loadHankkeetByIds(hankeIds) }
         verify { hankeGeometriatService.loadGeometriat(Hanke(123, mockedHankeTunnus)) }
         verify { hankeGeometriatService.loadGeometriat(Hanke(444, "hanketunnus2")) }
-        verify { yhteystietoLoggingService.saveDisclosureLogsForUser(hankkeet, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, "test") }
     }
 
     @Test
@@ -225,7 +222,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 )
             }
             .returns(permission)
-        justRun { yhteystietoLoggingService.saveDisclosureLogForUser(createdHanke, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(createdHanke, "test") }
 
         mockMvc
             .perform(
@@ -241,7 +238,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("$.hankeTunnus").value(mockedHankeTunnus))
             .andExpect(content().json(createdHanke.toJsonString()))
         verify { hankeService.createHanke(any()) }
-        verify { yhteystietoLoggingService.saveDisclosureLogForUser(createdHanke, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(createdHanke, "test") }
     }
 
     @Test
@@ -257,7 +254,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // faking the service call
         every { hankeService.updateHanke(any()) }.returns(updatedHanke)
         every { hankeGeometriatService.loadGeometriat(any()) }.returns(null)
-        justRun { yhteystietoLoggingService.saveDisclosureLogForUser(updatedHanke, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, "test") }
 
         mockMvc
             .perform(
@@ -273,7 +270,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("$.nimi").value(HankeFactory.defaultNimi))
 
         verify { hankeService.updateHanke(any()) }
-        verify { yhteystietoLoggingService.saveDisclosureLogForUser(updatedHanke, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, "test") }
     }
 
     @Test
@@ -302,7 +299,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             }
             .returns(PermissionFactory.create())
         every { hankeService.createHanke(any()) }.returns(expectedHanke)
-        justRun { yhteystietoLoggingService.saveDisclosureLogForUser(expectedHanke, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, "test") }
 
         val expectedContent = expectedHanke.toJsonString()
         mockMvc
@@ -319,7 +316,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(content().json(expectedContent))
             .andExpect(jsonPath("$.hankeTunnus").value(mockedHankeTunnus))
         verify { hankeService.createHanke(any()) }
-        verify { yhteystietoLoggingService.saveDisclosureLogForUser(expectedHanke, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, "test") }
     }
 
     @Test
@@ -358,7 +355,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         // faking the service call
         every { hankeService.updateHanke(any()) }.returns(expectedHanke)
         every { hankeGeometriatService.loadGeometriat(any()) }.returns(null)
-        justRun { yhteystietoLoggingService.saveDisclosureLogForUser(expectedHanke, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, "test") }
 
         // Call it and check results
         mockMvc
@@ -380,7 +377,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                     .value(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI.name)
             ) // Note, here as string, not the enum.
         verify { hankeService.updateHanke(any()) }
-        verify { yhteystietoLoggingService.saveDisclosureLogForUser(expectedHanke, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, "test") }
     }
 
     @Test
@@ -435,7 +432,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 )
             }
             .returns(PermissionFactory.create())
-        justRun { yhteystietoLoggingService.saveDisclosureLogForUser(expectedHanke, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, "test") }
 
         // Call it and check results
         mockMvc
@@ -456,7 +453,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("$.haittaAlkuPvm").value(expectedDateAlkuJson))
             .andExpect(jsonPath("$.haittaLoppuPvm").value(expectedDateLoppuJson))
         verify { hankeService.createHanke(any()) }
-        verify { yhteystietoLoggingService.saveDisclosureLogForUser(expectedHanke, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, "test") }
     }
 
     @Test

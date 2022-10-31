@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
-import fi.hel.haitaton.hanke.logging.YhteystietoLoggingService
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.Permission
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionProfiles
@@ -12,7 +12,6 @@ import javax.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -35,26 +34,26 @@ class HankeController(
     @Autowired private val hankeService: HankeService,
     @Autowired private val hankeGeometriatService: HankeGeometriatService,
     @Autowired private val permissionService: PermissionService,
-    @Autowired private val yhteystietoLoggingService: YhteystietoLoggingService,
+    @Autowired private val disclosureLogService: DisclosureLogService,
 ) {
 
     @GetMapping("/{hankeTunnus}")
     fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String): Hanke {
         val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
 
-        val userid = SecurityContextHolder.getContext().authentication.name
+        val userid = currentUserId()
         val permission = permissionService.getPermissionByHankeIdAndUserId(hanke.id!!, userid)
         if (permission == null || !permission.permissions.contains(PermissionCode.VIEW)) {
             throw HankeNotFoundException(hankeTunnus)
         }
 
-        yhteystietoLoggingService.saveDisclosureLogForUser(hanke, userid)
+        disclosureLogService.saveDisclosureLogsForHanke(hanke, userid)
         return hanke
     }
 
     @GetMapping
     fun getHankeList(@RequestParam geometry: Boolean = false): List<Hanke> {
-        val userid = SecurityContextHolder.getContext().authentication.name
+        val userid = currentUserId()
 
         val userPermissions =
             permissionService.getPermissionsByUserId(userid).filter {
@@ -68,7 +67,7 @@ class HankeController(
             hankeList.forEach { it.geometriat = hankeGeometriatService.loadGeometriat(it) }
         }
 
-        yhteystietoLoggingService.saveDisclosureLogsForUser(hankeList, userid)
+        disclosureLogService.saveDisclosureLogsForHankkeet(hankeList, userid)
         return hankeList
     }
 
@@ -92,7 +91,7 @@ class HankeController(
             createdHanke.createdBy!!,
             PermissionProfiles.HANKE_OWNER_PERMISSIONS
         )
-        yhteystietoLoggingService.saveDisclosureLogForUser(createdHanke, createdHanke.createdBy)
+        disclosureLogService.saveDisclosureLogsForHanke(createdHanke, createdHanke.createdBy)
         return createdHanke
     }
 
@@ -112,7 +111,7 @@ class HankeController(
         hanke.geometriat = hankeGeometriatService.loadGeometriat(hanke)
         val updatedHanke = hankeService.updateHanke(hanke)
         logger.info { "Updated hanke ${updatedHanke.hankeTunnus}." }
-        yhteystietoLoggingService.saveDisclosureLogForUser(updatedHanke, updatedHanke.modifiedBy!!)
+        disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, updatedHanke.modifiedBy!!)
         return updatedHanke
     }
 
@@ -124,8 +123,8 @@ class HankeController(
         val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
         val hankeId = hanke.id!!
 
-        val userid = SecurityContextHolder.getContext().authentication.name
-        val permissions = permissionService.getPermissionByHankeIdAndUserId(hankeId, userid)
+        val permissions =
+            permissionService.getPermissionByHankeIdAndUserId(hankeId, currentUserId())
         if (permissions == null || !permissions.permissions.contains(PermissionCode.DELETE)) {
             throw HankeNotFoundException(hankeTunnus)
         }
