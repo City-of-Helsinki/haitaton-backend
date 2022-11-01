@@ -132,7 +132,7 @@ Currently supported processing targets are:
 
 Prerequisite: downloaded `hsl` and `hki` materials.
 
-Docker example run (ensure that build and file copying is
+Docker example run (ensure that image build and file copying is
 already performed as instructed above):
 
 ```sh
