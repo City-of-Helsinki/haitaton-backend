@@ -6,12 +6,10 @@ from os import path
 import pandas as pd
 from parse import parse
 import re
+from shapely.errors import ShapelyDeprecationWarning
 from shapely.geometry import Point, LineString
 from sqlalchemy import create_engine
-
-
 import warnings
-from shapely.errors import ShapelyDeprecationWarning
 
 
 from modules.config import Config

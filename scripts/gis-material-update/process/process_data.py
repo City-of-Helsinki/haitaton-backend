@@ -1,5 +1,7 @@
-import sys
+"""Main entrypoint script for material processing.
+"""
 import os
+import sys
 
 from modules.config import Config
 from modules.gis_processing import GisProcessor
@@ -18,7 +20,6 @@ def process_item(item: str, cfg: Config):
 def instantiate_processor(item: str, cfg: Config) -> GisProcessor:
     """Instantiate correct class for processing data."""
     if item == "hsl":
-        # TODO: Do not validate feed during development (save time)
         return HslBuses(cfg, validate_gtfs=False)
     else:
         try:
@@ -34,7 +35,7 @@ if __name__ == "__main__":
     if deployment_profile in ["local_docker_development", "local_development"]:
         use_deployment_profile = deployment_profile
     else:
-        raise ValueError("Deployment profile not detected")
+        raise ValueError("Deployment profile is not detected")
 
     print("Using deployment profile: '{}'".format(use_deployment_profile))
 

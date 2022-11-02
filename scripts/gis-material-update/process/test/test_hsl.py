@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, time
 import geopandas as gpd
 import pandas as pd
 import unittest
@@ -119,6 +119,74 @@ class TestHslInternals(unittest.TestCase):
 
     def test_rush_hours(self):
         self.assertEqual(len(self.hsl._rush_hours()), 2 * 13)
+
+    def test_rush_hour_start(self):
+        morning_start_times = [
+            time(6, 0),
+            time(6, 15),
+            time(6, 30),
+            time(6, 45),
+            time(7, 0),
+            time(7, 15),
+            time(7, 30),
+            time(7, 45),
+            time(8, 0),
+            time(8, 15),
+            time(8, 30),
+            time(8, 45),
+            time(9, 0),
+        ]
+        evening_start_times = [
+            time(15, 0),
+            time(15, 15),
+            time(15, 30),
+            time(15, 45),
+            time(16, 0),
+            time(16, 15),
+            time(16, 30),
+            time(16, 45),
+            time(17, 0),
+            time(17, 15),
+            time(17, 30),
+            time(17, 45),
+            time(18, 0),
+        ]
+        start_times = {s_t[1] for s_t in self.hsl._rush_hours()}
+        self.assertEqual(start_times, set(morning_start_times + evening_start_times))
+
+    def test_rush_hour_end(self):
+        morning_end_times = [
+            time(7, 0),
+            time(7, 15),
+            time(7, 30),
+            time(7, 45),
+            time(8, 0),
+            time(8, 15),
+            time(8, 30),
+            time(8, 45),
+            time(9, 0),
+            time(9, 15),
+            time(9, 30),
+            time(9, 45),
+            time(10, 0),
+        ]
+        evening_end_times = [
+            time(16, 0),
+            time(16, 15),
+            time(16, 30),
+            time(16, 45),
+            time(17, 0),
+            time(17, 15),
+            time(17, 30),
+            time(17, 45),
+            time(18, 0),
+            time(18, 15),
+            time(18, 30),
+            time(18, 45),
+            time(19, 0),
+        ]
+        end_times = {s_t[2] for s_t in self.hsl._rush_hours()}
+        self.assertEqual(end_times, set(morning_end_times + evening_end_times))
 
     def test_hour_parse_same_day(self):
         parsed_time = self.hsl._parse_time("23:59:59")
