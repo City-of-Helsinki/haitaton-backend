@@ -12,10 +12,10 @@ class TestHslLines(unittest.TestCase):
     """Test that final output contains correct geometry and attributes."""
 
     @classmethod
-    def setUpClass(self):
-        self.cfg = Config()
-        filename = self.cfg.target_buffer_file("hsl")
-        self._target_buffer_dataframe = gpd.read_file(filename)
+    def setUpClass(cls):
+        cls.cfg = Config()
+        filename = cls.cfg.target_buffer_file("hsl")
+        cls._target_buffer_dataframe = gpd.read_file(filename)
 
     def test_line_geometry_is_linestring(self):
         filename = self.cfg.target_file("hsl")
@@ -66,10 +66,10 @@ class TestHslInternals(unittest.TestCase):
     """Test processing class methods and feed contents."""
 
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         cfg = Config()
-        self.hsl = HslBuses(cfg, validate_gtfs=False)
-        self.feed = self.hsl.feed()
+        cls.hsl = HslBuses(cfg, validate_gtfs=False)
+        cls.feed = cls.hsl.feed()
 
     def test_overlaps(self):
         a = "20221001"
