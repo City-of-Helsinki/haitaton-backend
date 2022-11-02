@@ -150,12 +150,12 @@ haitaton-gis-output
 
 # Run tests
 
-Configure python virtual environment.
+Configure and activate python virtual environment.
 
 Run following in `gis-material_update/process` -directory.
 
 ```sh
-[.../process/]$ python -m unittest discover
+[(venv)::process/]$ python -m unittest discover -v
 ```
 
 # Run processing in IDE
