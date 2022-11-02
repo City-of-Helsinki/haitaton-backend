@@ -2,6 +2,7 @@ from datetime import date, timedelta, datetime, time
 from functools import partial
 import geopandas as gpd
 import gtfs_kit as gk
+from os import path
 import pandas as pd
 from parse import parse
 import re
@@ -29,6 +30,10 @@ class HslBuses(GisProcessor):
         self, cfg: Config, validate_gtfs: bool = True, week_of_transit: int = 2
     ):
         self._cfg = cfg
+
+        # check that Helsinki city area file is available
+        if not path.exists(self._cfg.local_file("hki")):
+            raise FileNotFoundError("Helsinki city area polygon not found")
 
         # TODO: how to obtain this string automatically?
         file_name = cfg.local_file("hsl")

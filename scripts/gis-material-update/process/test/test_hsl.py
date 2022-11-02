@@ -151,7 +151,7 @@ class TestHslInternals(unittest.TestCase):
             (" 1500", "no"),
             ("_2511", "no"),
             ("1041", "no"),
-            ("1040", "yes"),
+            ("1040", "almost"),
         ]
         for r_id, result in candidates_true:
             self.assertEqual(self.hsl._route_is_trunk(r_id), result)
