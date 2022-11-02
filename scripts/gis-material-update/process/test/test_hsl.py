@@ -151,7 +151,7 @@ class TestHslInternals(unittest.TestCase):
             time(17, 45),
             time(18, 0),
         ]
-        start_times = {s_t[1] for s_t in self.hsl._rush_hours()}
+        start_times = {times[1] for times in self.hsl._rush_hours()}
         self.assertEqual(start_times, set(morning_start_times + evening_start_times))
 
     def test_rush_hour_end(self):
@@ -185,7 +185,7 @@ class TestHslInternals(unittest.TestCase):
             time(18, 45),
             time(19, 0),
         ]
-        end_times = {s_t[2] for s_t in self.hsl._rush_hours()}
+        end_times = {times[2] for times in self.hsl._rush_hours()}
         self.assertEqual(end_times, set(morning_end_times + evening_end_times))
 
     def test_hour_parse_same_day(self):
