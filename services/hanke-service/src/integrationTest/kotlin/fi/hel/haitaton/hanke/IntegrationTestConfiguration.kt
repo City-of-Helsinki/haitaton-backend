@@ -62,7 +62,7 @@ class IntegrationTestConfiguration {
 
     @Bean fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
 
-    @Bean fun yhteystietoLoggingService(): DisclosureLogService = mockk()
+    @Bean fun disclosureLogService(): DisclosureLogService = mockk(relaxUnitFun = true)
 
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {

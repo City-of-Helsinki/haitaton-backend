@@ -53,6 +53,7 @@ enum class ObjectType {
     YHTEYSTIETO,
     ALLU_CUSTOMER,
     ALLU_CONTACT,
+    GDPR_RESPONSE,
 }
 
 enum class UserRole {

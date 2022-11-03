@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
 import fi.hel.haitaton.hanke.allu.PostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress
+import fi.hel.haitaton.hanke.allu.username
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -19,6 +20,8 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedToteuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
+import fi.hel.haitaton.hanke.gdpr.CollectionNode
+import fi.hel.haitaton.hanke.gdpr.StringNode
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
 import io.mockk.clearAllMocks
@@ -44,6 +47,48 @@ internal class DisclosureLogServiceTest {
         // checkUnnecessaryStub()
         confirmVerified()
         clearAllMocks()
+    }
+
+    @Test
+    fun `saveDisclosureLogsForProfiili saves audit log of the entire info`() {
+        val info =
+            CollectionNode(
+                "user",
+                listOf(
+                    StringNode("id", "4f15afe1-51dc-4015-bb66-3a536295abea"),
+                    StringNode("nimi", "Teppo Testihenkilö"),
+                    StringNode("sahkoposti", "teppo@example.test"),
+                    StringNode("puhelin", "04012345678"),
+                )
+            )
+
+        disclosureLogService.saveDisclosureLogsForProfiili(userId, info)
+
+        val expectedObject =
+            """
+            |{"key":"user","children":
+              |[
+                |{"key":"id","value":"4f15afe1-51dc-4015-bb66-3a536295abea"},
+                |{"key":"nimi","value":"Teppo Testihenkilö"},
+                |{"key":"sahkoposti","value":"teppo@example.test"},
+                |{"key":"puhelin","value":"04012345678"}
+              |]
+            |}"""
+                .trimMargin()
+                .replace("\n", "")
+        val expectedEntries =
+            listOf(
+                AuditLogEntryFactory.createReadEntry(
+                    userId = PROFIILI_AUDIT_LOG_USERID,
+                    userRole = UserRole.SERVICE,
+                    objectType = ObjectType.GDPR_RESPONSE,
+                    objectId = username,
+                    objectBefore = expectedObject
+                )
+            )
+        verify {
+            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedEntries)))
+        }
     }
 
     @Test
