@@ -250,23 +250,19 @@ internal class DisclosureLogServiceTest {
 
     @ParameterizedTest(name = "{displayName}({arguments})")
     @EnumSource(Status::class)
-    fun `saveDisclosureLogsForCableReportApplication saves logs with the given status`(
-        expectedStatus: Status
-    ) {
+    fun `saveDisclosureLogsForAllu saves logs with the given status`(expectedStatus: Status) {
         val cableReportApplication = AlluDataFactory.createCableReportApplication()
         val contact = cableReportApplication.customerWithContacts.contacts[0]
         val expectedLogs =
             listOf(
                 AuditLogEntryFactory.createReadEntryForContact(contact).apply {
                     status = expectedStatus
+                    userId = ALLU_AUDIT_LOG_USERID
+                    userRole = UserRole.SERVICE
                 }
             )
 
-        disclosureLogService.saveDisclosureLogsForCableReportApplication(
-            cableReportApplication,
-            userId,
-            expectedStatus
-        )
+        disclosureLogService.saveDisclosureLogsForAllu(cableReportApplication, expectedStatus)
 
         verify {
             auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))

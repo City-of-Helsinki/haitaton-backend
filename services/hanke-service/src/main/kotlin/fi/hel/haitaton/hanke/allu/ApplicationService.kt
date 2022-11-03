@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.currentUserId
-import fi.hel.haitaton.hanke.logging.ALLU_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
 import org.springframework.data.jpa.repository.JpaRepository
@@ -131,19 +130,11 @@ class ApplicationService(
             // There was an exception outside logging, so there was at least an attempt to send the
             // application to Allu. Allu might have read it and rejected it, so we should log this
             // as a disclosure event.
-            disclosureLogService.saveDisclosureLogsForCableReportApplication(
-                application = cableReportApplication,
-                userId = ALLU_AUDIT_LOG_USERID,
-                status = Status.FAILED
-            )
+            disclosureLogService.saveDisclosureLogsForAllu(cableReportApplication, Status.FAILED)
             throw e
         }
         // There were no exceptions, so log this as a successful disclosure.
-        disclosureLogService.saveDisclosureLogsForCableReportApplication(
-            application = cableReportApplication,
-            userId = ALLU_AUDIT_LOG_USERID,
-            status = Status.SUCCESS
-        )
+        disclosureLogService.saveDisclosureLogsForAllu(cableReportApplication, Status.SUCCESS)
     }
 }
 

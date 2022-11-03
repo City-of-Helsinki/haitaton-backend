@@ -5,7 +5,6 @@ import assertk.assertions.isEqualTo
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.asJsonNode
-import fi.hel.haitaton.hanke.logging.ALLU_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
 import io.mockk.called
@@ -73,11 +72,7 @@ class ApplicationServiceTest {
         val expectedApplication =
             OBJECT_MAPPER.treeToValue<CableReportApplication>(applicationData)!!
         verify {
-            disclosureLogService.saveDisclosureLogsForCableReportApplication(
-                expectedApplication,
-                ALLU_AUDIT_LOG_USERID,
-                Status.SUCCESS
-            )
+            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
         }
     }
 
@@ -102,11 +97,7 @@ class ApplicationServiceTest {
         val expectedApplication =
             OBJECT_MAPPER.treeToValue<CableReportApplication>(applicationData)!!
         verify {
-            disclosureLogService.saveDisclosureLogsForCableReportApplication(
-                expectedApplication,
-                ALLU_AUDIT_LOG_USERID,
-                Status.SUCCESS
-            )
+            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
         }
     }
 
@@ -132,11 +123,7 @@ class ApplicationServiceTest {
                 pendingOnClient = false
             }
         verify {
-            disclosureLogService.saveDisclosureLogsForCableReportApplication(
-                expectedApplication,
-                ALLU_AUDIT_LOG_USERID,
-                Status.SUCCESS
-            )
+            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
         }
     }
 
@@ -161,11 +148,7 @@ class ApplicationServiceTest {
                 pendingOnClient = false
             }
         verify {
-            disclosureLogService.saveDisclosureLogsForCableReportApplication(
-                expectedApplication,
-                ALLU_AUDIT_LOG_USERID,
-                Status.FAILED
-            )
+            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.FAILED)
         }
     }
 
