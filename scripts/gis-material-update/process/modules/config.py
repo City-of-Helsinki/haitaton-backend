@@ -51,7 +51,7 @@ class Config:
             download_dir - directory for download files
             output_dir - directory for gis output files."""
         deployment_profile = self.deployment_profile()
-        directory = self._cfg.get("storage").get(deployment_profile, {}).get(storage)
+        directory = self._cfg.get(deployment_profile, {}).get("storage").get(storage)
 
         if deployment_profile == "local_development":
             directory_name = Path(__file__).parent.parent.parent / directory
@@ -103,9 +103,9 @@ class Config:
             deployment = self.deployment_profile()
 
         return "postgresql://{user}:{password}@{host}:{port}/{dbname}".format(
-            user=self._cfg.get("database").get(deployment, {}).get("username"),
-            password=self._cfg.get("database").get(deployment, {}).get("password"),
-            host=self._cfg.get("database").get(deployment, {}).get("host"),
-            port=self._cfg.get("database").get(deployment, {}).get("port"),
-            dbname=self._cfg.get("database").get(deployment, {}).get("database"),
+            user=self._cfg.get(deployment, {}).get("database").get("username"),
+            password=self._cfg.get(deployment, {}).get("database").get("password"),
+            host=self._cfg.get(deployment, {}).get("database").get("host"),
+            port=self._cfg.get(deployment, {}).get("database").get("port"),
+            dbname=self._cfg.get(deployment, {}).get("database").get("database"),
         )

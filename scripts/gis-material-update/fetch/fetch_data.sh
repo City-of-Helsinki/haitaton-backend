@@ -38,8 +38,8 @@ cfg_dest_layer () {
     echo "${data_object}.dest_layer"
 }
 
-cfg_where_query () {
-    echo "${data_object}.where_query"
+cfg_extra_args () {
+    echo "${data_object}.extra_args"
 }
 
 # download path
@@ -50,19 +50,15 @@ addr=$(parse_config $(cfg_addr $data_object))
 layer=$(parse_config $(cfg_layer $data_object))
 local_file=${download_dir}/$(parse_config $(cfg_local_file $data_object))
 dest_layer=$(parse_config $(cfg_dest_layer $data_object))
-where_query=$(parse_config $(cfg_where_query $data_object))
+extra_args=$(parse_config $(cfg_extra_args $data_object))
 
 case $data_object in
 hsl|osm)
     wget -O "$local_file" "$addr"
     ;;
 # plain WFS fetch
-ylre_katualue|ylre_katuosat|maka_autoliikennemaarat)
-    ogr2ogr -f GPKG "$local_file" WFS:"$addr" "$layer"
-    ;;
-# WFS fetch with layer renaming and where condition
-hki)
-    ogr2ogr -f GPKG "$local_file" -nln "$dest_layer" -where "$where_query" WFS:"$addr" "$layer"
+hki|ylre_katualue|ylre_katuosat|maka_autoliikennemaarat)
+    ogr2ogr -f GPKG "$local_file" ${extra_args:+$extra_args} WFS:"$addr" "$layer"
     ;;
 *)
     echo "Not supported"

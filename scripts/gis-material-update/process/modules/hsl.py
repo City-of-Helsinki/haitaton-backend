@@ -119,19 +119,21 @@ class HslBuses(GisProcessor):
         # 17.45 - 18.45
         # 18.00 - 19.00
         for s in [6, 15]:
-            start_times = []
-            for h in range(4):
+            for h in range(3):
                 for m in [0, 15, 30, 45]:
                     # construct list of tuples (hour_start, minute_start, hour_end, minute_end)
-                    start_times.append((s + h, m, s + h + 1, m))
-            # pick first 13 values, according to spec commented above
-            start_times = start_times[0:13]
-            hours += start_times
+                    hours.append((s + h, m, s + h + 1, m))
+            # append last time interval: 9.00 - 10.00 or 18.00 - 19.00
+            hours.append((s + 3, 0, s + 4, 0))
 
         hour_range = []
-        for h_s, m_s, h_e, m_e in hours:
+        for hour_start, minute_start, hour_end, minute_end in hours:
             hour_range.append(
-                ("n_{:02d}{:02d}".format(h_s, m_s), time(h_s, m_s), time(h_e, m_e))
+                (
+                    "n_{:02d}{:02d}".format(hour_start, minute_start),
+                    time(hour_start, minute_start),
+                    time(hour_end, minute_end),
+                )
             )
         return hour_range
 
