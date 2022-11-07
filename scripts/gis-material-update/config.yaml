@@ -28,7 +28,6 @@ hki:
 
 common:
   download_path: "/downloads"
-  gis_output_path: "/gis-output"
   crs: "EPSG:3879"
 
 # pyynnöstä toimitetut
