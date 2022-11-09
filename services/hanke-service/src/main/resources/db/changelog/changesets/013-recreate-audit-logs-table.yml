@@ -1,0 +1,48 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-drop-old-audit-log-table
+      comment: Audit logs are not in production yet, so the table is safe to drop.
+      author: Topias Heinonen
+      changes:
+        - dropTable:
+            tableName: audit_log
+  - changeSet:
+      id: 013-create-new-audit-logs-table
+      comment: Create audit log table compatible with the generic log transfer component
+      author: Topias Heinonen
+      changes:
+        - createTable:
+            tableName: audit_logs # Database name mandated by the log transfer component
+            remarks: "Table for caching audit logs before log transfer component sends them to a centralized logging service"
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                  remarks: "Unique ID for this log row"
+              - column:
+                  name: is_sent
+                  type: boolean
+                  constraints:
+                    nullable: false
+                  remarks: "Whether this row has been sent. Used by the log transfer component."
+              - column:
+                  name: message
+                  type: jsonb
+                  constraints:
+                    nullable: false
+                  remarks: "The actual log object in JSON"
+              - column:
+                  name: created_at
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+                  remarks: "Auto-generated timestamp on when the log row was written to the database"
+        - addAutoIncrement:
+            tableName: audit_logs
+            columnName: id
+            columnDataType: bigint
+            generationType: ALWAYS

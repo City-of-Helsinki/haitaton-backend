@@ -3,11 +3,14 @@ package fi.hel.haitaton.hanke.logging
 import assertk.Assert
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
+import assertk.assertions.isNull
 import assertk.assertions.support.expected
 import assertk.assertions.support.show
 import fi.hel.haitaton.hanke.HaitatonPostgreSQLContainer
 import java.time.Duration
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.temporal.TemporalAmount
 import javax.persistence.EntityManager
@@ -33,11 +36,11 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
 @Transactional
-class PersonalDataLogRepositoryITests
+class AuditLogServiceITests
 @Autowired
 constructor(
     val entityManager: EntityManager,
-    val auditLogRepository: AuditLogRepository,
+    val auditLogService: AuditLogService,
 ) {
 
     companion object {
@@ -67,6 +70,13 @@ constructor(
         expected("after:${show(now.minus(offset))} but was:${show(actual)}")
     }
 
+    fun Assert<LocalDateTime?>.isRecentLocal(offset: TemporalAmount) = given { actual ->
+        if (actual == null) return
+        val now = LocalDateTime.now()
+        if (actual.isBefore(now) && actual.isAfter(now.minus(offset))) return
+        expected("after:${show(now.minus(offset))} but was:${show(actual)}")
+    }
+
     @Test
     fun `saving audit log entry works`() {
         // Create a log entry, save it, flush, clear caches:
@@ -74,13 +84,15 @@ constructor(
             AuditLogEntry(
                 userId = "1234-1234",
                 userRole = UserRole.USER,
-                action = Action.CREATE,
-                status = Status.SUCCESS,
+                ipAddress = "127.0.0.1",
+                operation = Operation.CREATE,
+                status = Status.FAILED,
+                failureDescription = "There was an error",
                 objectType = ObjectType.YHTEYSTIETO,
                 objectId = "333",
                 objectAfter = "fake JSON"
             )
-        val savedAuditLogEntry = auditLogRepository.save(auditLogEntry)
+        val savedAuditLogEntry = auditLogService.saveAll(listOf(auditLogEntry))[0]
         val id = savedAuditLogEntry.id
         // Make sure the stuff is run to database (though not necessarily committed)
         entityManager.flush()
@@ -88,15 +100,23 @@ constructor(
         entityManager.clear()
 
         // Check it is there (using something else than the repository):
-        val foundAuditLogEntry = entityManager.find(AuditLogEntry::class.java, id)
+        val foundAuditLogEntry = entityManager.find(AuditLogEntryEntity::class.java, id)
         assertThat(foundAuditLogEntry).isNotNull()
-        assertThat(foundAuditLogEntry.eventTime).isRecent(Duration.ofMinutes(1))
-        assertThat(foundAuditLogEntry.userId).isEqualTo("1234-1234")
-        assertThat(foundAuditLogEntry.userRole).isEqualTo(UserRole.USER)
-        assertThat(foundAuditLogEntry.action).isEqualTo(Action.CREATE)
-        assertThat(foundAuditLogEntry.status).isEqualTo(Status.SUCCESS)
-        assertThat(foundAuditLogEntry.objectType).isEqualTo(ObjectType.YHTEYSTIETO)
-        assertThat(foundAuditLogEntry.objectId).isEqualTo("333")
-        assertThat(foundAuditLogEntry.objectAfter).isEqualTo("fake JSON")
+        assertThat(foundAuditLogEntry.id).isNotNull()
+        assertThat(foundAuditLogEntry.isSent).isFalse()
+        assertThat(foundAuditLogEntry.createdAt).isRecentLocal(Duration.ofMinutes(1))
+        val auditLogEvent = foundAuditLogEntry.message.auditEvent
+        assertThat(auditLogEvent.dateTime).isRecent(Duration.ofMinutes(1))
+        assertThat(auditLogEvent.appVersion).isEqualTo("1")
+        assertThat(auditLogEvent.operation).isEqualTo(Operation.CREATE)
+        assertThat(auditLogEvent.status).isEqualTo(Status.FAILED)
+        assertThat(auditLogEvent.failureDescription).isEqualTo("There was an error")
+        assertThat(auditLogEvent.actor.userId).isEqualTo("1234-1234")
+        assertThat(auditLogEvent.actor.role).isEqualTo(UserRole.USER)
+        assertThat(auditLogEvent.actor.ipAddress).isEqualTo("127.0.0.1")
+        assertThat(auditLogEvent.target.type).isEqualTo(ObjectType.YHTEYSTIETO)
+        assertThat(auditLogEvent.target.id).isEqualTo("333")
+        assertThat(auditLogEvent.target.objectAfter).isEqualTo("fake JSON")
+        assertThat(auditLogEvent.target.objectBefore).isNull()
     }
 }

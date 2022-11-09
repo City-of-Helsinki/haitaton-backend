@@ -38,8 +38,8 @@ internal class DisclosureLogServiceTest {
 
     private val userId = "test"
 
-    private val auditLogRepository: AuditLogRepository = mockk(relaxed = true)
-    private val disclosureLogService = DisclosureLogService(auditLogRepository)
+    private val auditLogService: AuditLogService = mockk(relaxed = true)
+    private val disclosureLogService = DisclosureLogService(auditLogService)
 
     @AfterEach
     fun cleanUp() {
@@ -87,7 +87,7 @@ internal class DisclosureLogServiceTest {
                 )
             )
         verify {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedEntries)))
+            auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedEntries)))
         }
     }
 
@@ -97,7 +97,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
 
-        verify { auditLogRepository wasNot Called }
+        verify { auditLogService wasNot Called }
     }
 
     @Test
@@ -107,9 +107,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
 
-        verify {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        }
+        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
     }
 
     @Test
@@ -126,16 +124,14 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
 
-        verify {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        }
+        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
     }
 
     @Test
     fun `saveDisclosureLogsForHankkeet without hankkeet does nothing`() {
         disclosureLogService.saveDisclosureLogsForHankkeet(listOf(), userId)
 
-        verify { auditLogRepository wasNot Called }
+        verify { auditLogService wasNot Called }
     }
 
     @Test
@@ -144,7 +140,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, userId)
 
-        verify { auditLogRepository wasNot Called }
+        verify { auditLogService wasNot Called }
     }
 
     @Test
@@ -161,9 +157,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, userId)
 
-        verify {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        }
+        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
     }
 
     @Test
@@ -177,16 +171,14 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, userId)
 
-        verify {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        }
+        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
     }
 
     @Test
     fun `saveDisclosureLogsForApplication with null application does nothing`() {
         disclosureLogService.saveDisclosureLogsForApplication(null, userId)
 
-        verify { auditLogRepository wasNot Called }
+        verify { auditLogService wasNot Called }
     }
 
     @Test
@@ -206,7 +198,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
-        verify { auditLogRepository wasNot Called }
+        verify { auditLogService wasNot Called }
     }
 
     @Test
@@ -229,7 +221,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
-        verify { auditLogRepository wasNot Called }
+        verify { auditLogService wasNot Called }
     }
 
     @Test
@@ -251,7 +243,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
-        verify { auditLogRepository wasNot Called }
+        verify { auditLogService wasNot Called }
     }
 
     @Test
@@ -274,9 +266,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
-        verify {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        }
+        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
     }
 
     @Test
@@ -288,9 +278,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
-        verify {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        }
+        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
     }
 
     @ParameterizedTest(name = "{displayName}({arguments})")
@@ -300,18 +288,17 @@ internal class DisclosureLogServiceTest {
         val contact = cableReportApplication.customerWithContacts.contacts[0]
         val expectedLogs =
             listOf(
-                AuditLogEntryFactory.createReadEntryForContact(contact).apply {
-                    status = expectedStatus
-                    userId = ALLU_AUDIT_LOG_USERID
-                    userRole = UserRole.SERVICE
-                }
+                AuditLogEntryFactory.createReadEntryForContact(contact)
+                    .copy(
+                        status = expectedStatus,
+                        userId = ALLU_AUDIT_LOG_USERID,
+                        userRole = UserRole.SERVICE,
+                    )
             )
 
         disclosureLogService.saveDisclosureLogsForAllu(cableReportApplication, expectedStatus)
 
-        verify {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        }
+        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
     }
 
     @Test
@@ -344,16 +331,14 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForApplications(applications, userId)
 
-        verify {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        }
+        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
     }
 
     @Test
     fun `saveDisclosureLogsForApplications with company customers and no contacts does nothing`() {
         disclosureLogService.saveDisclosureLogsForApplications(listOf(), userId)
 
-        verify { auditLogRepository wasNot Called }
+        verify { auditLogService wasNot Called }
     }
 
     private fun containsAllWithoutGeneratedFields(
@@ -366,7 +351,7 @@ internal class DisclosureLogServiceTest {
         this.size == other.size && this.toSet() == other.toSet()
 
     private fun withoutGeneratedFields(entries: List<AuditLogEntry>): List<AuditLogEntry> =
-        entries.map { it.copy(eventTime = null, id = null) }
+        entries.map { it.copy(dateTime = null) }
 
     private fun applicationDto(applicationData: CableReportApplication): ApplicationDto =
         ApplicationDto(

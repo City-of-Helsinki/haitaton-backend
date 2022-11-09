@@ -8,7 +8,7 @@ import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDaoImpl
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatServiceImpl
-import fi.hel.haitaton.hanke.logging.AuditLogRepository
+import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
@@ -73,14 +73,14 @@ class Configuration {
         hankeRepository: HankeRepository,
         tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
         hanketunnusService: HanketunnusService,
-        auditLogRepository: AuditLogRepository,
+        auditLogService: AuditLogService,
         permissionService: PermissionService
     ): HankeService =
         HankeServiceImpl(
             hankeRepository,
             tormaystarkasteluLaskentaService,
             hanketunnusService,
-            auditLogRepository
+            auditLogService
         )
 
     @Bean

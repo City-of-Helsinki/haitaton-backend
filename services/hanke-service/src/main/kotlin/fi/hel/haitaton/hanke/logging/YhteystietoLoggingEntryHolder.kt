@@ -23,15 +23,15 @@ const val PERSONAL_DATA_LOGGING_MAX_IP_LENGTH = 40
  */
 class YhteystietoLoggingEntryHolder {
 
-    private val auditLogEntries: MutableList<AuditLogEntry> = mutableListOf()
+    private var auditLogEntries: MutableList<AuditLogEntry> = mutableListOf()
 
     // Holds the ids of Yhteystietos that were in the Hanke before this request handling.
     private val previousYhteystietoIds: HashSet<Int> = hashSetOf()
 
     fun hasEntries(): Boolean = auditLogEntries.isNotEmpty()
 
-    fun idList(): String {
-        return auditLogEntries.map { it.id }.joinToString()
+    fun objectIds(): String {
+        return auditLogEntries.map { it.objectId }.joinToString()
     }
 
     fun initWithOldYhteystietos(oldYTs: MutableList<HankeYhteystietoEntity>) {
@@ -46,19 +46,19 @@ class YhteystietoLoggingEntryHolder {
     }
 
     /**
-     * Creates audit log entries for the given action to this holder. This function will not save
+     * Creates audit log entries for the given operation to this holder. This function will not save
      * them, or set IP to them; those must be done separately before returning from the relevant
      * process.
      *
      * The id of the yhteystieto will be taken from the oldEntity, unless it or its id is null and
      * the newEntity is non-null, in which case it is taken from the newEntity. This rule handles
      * all cases of create, update, and delete, _if_ this function is called after saving the
-     * entities for create action(s).
+     * entities for create operation(s).
      *
      * For the old entity value, make a clone/copy of the persisted entity before making changes to
      * it, if necessary.
      *
-     * @param action can not be null
+     * @param operation can not be null
      * @param failed can not be null
      * @param failureDescription description for the failure, if one is available
      * @param oldEntity for logging the previous field values; can be null (when creating new)
@@ -67,21 +67,21 @@ class YhteystietoLoggingEntryHolder {
      * @param userId ID of the user making the API call
      */
     fun addLogEntriesForEvent(
-        action: Action,
+        operation: Operation,
         failed: Boolean = false,
         failureDescription: String? = null,
         oldEntity: HankeYhteystietoEntity?,
         newEntity: HankeYhteystietoEntity?,
         userId: String
     ) {
-        // Note, use oldEntity delete and update and newEntity for create-action.
+        // Note, use oldEntity delete and update and newEntity for create-operation.
         val yhteystietoId = oldEntity?.id ?: newEntity?.id
 
         val auditLogEntry =
             AuditLogEntry(
                 userId = userId,
                 userRole = UserRole.USER,
-                action = action,
+                operation = operation,
                 status = if (failed) Status.FAILED else Status.SUCCESS,
                 failureDescription = failureDescription,
                 objectType = ObjectType.YHTEYSTIETO,
@@ -107,7 +107,7 @@ class YhteystietoLoggingEntryHolder {
             .filter { !previousYhteystietoIds.contains(it.id) }
             .forEach { newYhteystietoEntity ->
                 addLogEntriesForEvent(
-                    action = Action.CREATE,
+                    operation = Operation.CREATE,
                     oldEntity = null,
                     newEntity = newYhteystietoEntity,
                     userId = userid,
@@ -116,11 +116,11 @@ class YhteystietoLoggingEntryHolder {
     }
 
     fun applyIpAddresses() {
-        Companion.applyIpAddresses(auditLogEntries)
+        auditLogEntries = Companion.applyIpAddresses(auditLogEntries).toMutableList()
     }
 
-    fun saveLogEntries(auditLogRepository: AuditLogRepository) {
-        auditLogRepository.saveAll(auditLogEntries)
+    fun saveLogEntries(auditLogService: AuditLogService) {
+        auditLogService.saveAll(auditLogEntries)
     }
 
     companion object {
@@ -128,11 +128,16 @@ class YhteystietoLoggingEntryHolder {
          * If request context (attributes) exists, gets the IP from it and applies to all the log
          * entries currently held in this holder.
          *
+         * Returns a new list with the IP addresses added to each entry.
+         *
          * TODO: very very very simplified implementation. Needs a lot of improvement.
          */
-        fun applyIpAddresses(auditLogEntries: Collection<AuditLogEntry>) {
+        fun applyIpAddresses(
+            auditLogEntries: Collection<AuditLogEntry>
+        ): Collection<AuditLogEntry> {
             val attribs =
-                (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes?) ?: return
+                (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes?)
+                    ?: return auditLogEntries
             val request = attribs.request
             // Very simplified version for now.
             // For starters, see e.g.
@@ -140,16 +145,14 @@ class YhteystietoLoggingEntryHolder {
             // Combine all the various ideas into one, and note that even then it is not even
             // half-way to a proper solution. Hopefully one can find a ready-made fully thought out
             // implementation.
-            var ip: String = request.getHeader("X-FORWARDED-FOR") ?: request.remoteAddr ?: return
+            var ip: String =
+                request.getHeader("X-FORWARDED-FOR") ?: request.remoteAddr ?: return auditLogEntries
             // Just to make sure it won't break the db if someone put something silly long in the
             // header:
             if (ip.length > PERSONAL_DATA_LOGGING_MAX_IP_LENGTH)
                 ip = ip.substring(0, PERSONAL_DATA_LOGGING_MAX_IP_LENGTH)
 
-            auditLogEntries.forEach {
-                it.ipFar = ip
-                it.ipNear = ip
-            }
+            return auditLogEntries.map { it.copy(ipAddress = ip) }
         }
     }
 }

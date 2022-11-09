@@ -22,7 +22,7 @@ const val PROFIILI_AUDIT_LOG_USERID = "Helsinki Profiili"
 
 /** Luovutusloki */
 @Service
-class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
+class DisclosureLogService(private val auditLogService: AuditLogService) {
 
     /**
      * Save disclosure log for when we are responding to a GDPR information request from Profiili.
@@ -37,10 +37,14 @@ class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
      * Save disclosure logs for when we are sending a cable report application to Allu. Write
      * disclosure log entries for the customers and contacts in the application.
      */
-    fun saveDisclosureLogsForAllu(application: CableReportApplication, status: Status) {
+    fun saveDisclosureLogsForAllu(
+        application: CableReportApplication,
+        status: Status,
+        failureDescription: String? = null
+    ) {
         val entries =
-            auditLogEntriesForCustomers(listOf(application), status) +
-                auditLogEntriesForContacts(listOf(application), status)
+            auditLogEntriesForCustomers(listOf(application), status, failureDescription) +
+                auditLogEntriesForContacts(listOf(application), status, failureDescription)
         saveDisclosureLogs(ALLU_AUDIT_LOG_USERID, UserRole.SERVICE, entries)
     }
 
@@ -91,7 +95,8 @@ class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
 
     private fun auditLogEntriesForCustomers(
         applications: List<CableReportApplication>,
-        status: Status = Status.SUCCESS
+        status: Status = Status.SUCCESS,
+        failureDescription: String? = null
     ) =
         applications
             .flatMap { extractCustomers(it) }
@@ -102,11 +107,14 @@ class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
             // Customers don't have IDs, since they're embedded in the applications. We could use
             // the application ID here, but that would require the log reader to have deep knowledge
             // of haitaton to make sense of the objectId field.
-            .map { disclosureLogEntry(ObjectType.ALLU_CUSTOMER, null, it, status) }
+            .map {
+                disclosureLogEntry(ObjectType.ALLU_CUSTOMER, null, it, status, failureDescription)
+            }
 
     private fun auditLogEntriesForContacts(
         applications: List<CableReportApplication>,
-        status: Status = Status.SUCCESS
+        status: Status = Status.SUCCESS,
+        failureDescription: String? = null,
     ) =
         applications
             .flatMap { extractContacts(it) }
@@ -115,7 +123,9 @@ class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
             // Contacts don't have IDs, since they're embedded in the applications. We could use the
             // application ID here, but that would require the log reader to have deep knowledge of
             // haitaton to make sense of the objectId field.
-            .map { disclosureLogEntry(ObjectType.ALLU_CONTACT, null, it, status) }
+            .map {
+                disclosureLogEntry(ObjectType.ALLU_CONTACT, null, it, status, failureDescription)
+            }
 
     private fun parseJsonApplicationData(application: ApplicationDto?): CableReportApplication? =
         application?.applicationData?.let { OBJECT_MAPPER.treeToValue(it) }
@@ -150,11 +160,13 @@ class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
         objectId: Any?,
         objectBefore: Any,
         status: Status = Status.SUCCESS,
+        failureDescription: String? = null,
     ): AuditLogEntry =
         AuditLogEntry(
-            eventTime = null,
-            action = Action.READ,
+            dateTime = null,
+            operation = Operation.READ,
             status = status,
+            failureDescription = failureDescription,
             objectType = objectType,
             objectId = objectId?.toString(),
             objectBefore = objectBefore.toJsonString()
@@ -170,13 +182,11 @@ class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
         }
 
         val eventTime = OffsetDateTime.now()
-        entries.forEach {
-            it.userId = userId
-            it.userRole = userRole
-            it.eventTime = eventTime
-        }
+        val entities =
+            YhteystietoLoggingEntryHolder.applyIpAddresses(entries).map {
+                it.copy(userId = userId, userRole = userRole, dateTime = eventTime)
+            }
 
-        YhteystietoLoggingEntryHolder.applyIpAddresses(entries)
-        auditLogRepository.saveAll(entries)
+        auditLogService.saveAll(entities)
     }
 }

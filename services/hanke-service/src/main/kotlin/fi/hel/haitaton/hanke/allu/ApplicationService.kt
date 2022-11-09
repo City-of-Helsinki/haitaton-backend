@@ -9,6 +9,8 @@ import fi.hel.haitaton.hanke.logging.Status
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
+const val ALLU_APPLICATION_ERROR_MSG = "Error sending application to Allu"
+
 class ApplicationService(
     private val repo: ApplicationRepository,
     private val cableReportService: CableReportService,
@@ -130,7 +132,11 @@ class ApplicationService(
             // There was an exception outside logging, so there was at least an attempt to send the
             // application to Allu. Allu might have read it and rejected it, so we should log this
             // as a disclosure event.
-            disclosureLogService.saveDisclosureLogsForAllu(cableReportApplication, Status.FAILED)
+            disclosureLogService.saveDisclosureLogsForAllu(
+                cableReportApplication,
+                Status.FAILED,
+                ALLU_APPLICATION_ERROR_MSG
+            )
             throw e
         }
         // There were no exceptions, so log this as a successful disclosure.
