@@ -1,6 +1,10 @@
 hsl:
   addr: "https://infopalvelut.storage.hsldev.com/gtfs/hsl.zip"
   local_file: "hsl.zip"
+  target_file: "buses_lines.gpkg"
+  target_buffer_file: "tormays_buses_polys.gpkg"
+  buffer:
+    - 15
 maka_autoliikennemaarat:
   addr: "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:Ajoneuvoliikenne_liikennemaarat_viiva"
@@ -16,9 +20,15 @@ ylre_katuosat:
 osm:
   addr: "https://download.geofabrik.de/europe/finland-latest.osm.pbf"
   local_file: "finland-latest.osm.pbf"
+hki:
+  addr: "https://geo.stat.fi/geoserver/tilastointialueet/wfs"
+  layer: "tilastointialueet:kunta1000k"
+  local_file: "helsinki_alue.gpkg"
+  extra_args: "-nln alue -where kunta='091'"
 
 common:
   download_path: "/downloads"
+  crs: "EPSG:3879"
 
 # pyynnöstä toimitetut
 bussiliikenne_kriittinen:
@@ -27,5 +37,24 @@ polkupyora_prioriteetti:
 polkupyora_paareitti:
 liikennevaylat:
 
-# manuaalisesti ladattavat
-kuntarajat:
+local_development:
+  database:
+    port: 15432
+    host: localhost
+    username: haitaton
+    password: haitaton
+    database: haitaton
+  storage:
+    download_dir: "haitaton-downloads"
+    output_dir: "haitaton-local-gis-output"
+
+local_docker_development:
+  database:
+    port: 5432
+    host: gis-db
+    username: haitaton
+    password: haitaton
+    database: haitaton
+  storage:
+    download_dir: "/downloads"
+    output_dir: "/gis-output"
