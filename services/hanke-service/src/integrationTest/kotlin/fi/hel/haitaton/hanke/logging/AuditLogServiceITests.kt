@@ -8,7 +8,7 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.support.expected
 import assertk.assertions.support.show
-import fi.hel.haitaton.hanke.HaitatonPostgreSQLContainer
+import fi.hel.haitaton.hanke.DatabaseTest
 import java.time.Duration
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -18,10 +18,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
 import org.springframework.transaction.annotation.Transactional
-import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
 
 /**
@@ -36,32 +33,10 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
 @Transactional
-class AuditLogServiceITests
-@Autowired
-constructor(
-    val entityManager: EntityManager,
-    val auditLogService: AuditLogService,
-) {
+class AuditLogServiceITests : DatabaseTest() {
 
-    companion object {
-        @Container
-        var container: HaitatonPostgreSQLContainer =
-            HaitatonPostgreSQLContainer()
-                .withExposedPorts(5433) // use non-default port
-                .withPassword("test")
-                .withUsername("test")
-
-        @JvmStatic
-        @DynamicPropertySource
-        fun postgresqlProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.datasource.url", container::getJdbcUrl)
-            registry.add("spring.datasource.username", container::getUsername)
-            registry.add("spring.datasource.password", container::getPassword)
-            registry.add("spring.liquibase.url", container::getJdbcUrl)
-            registry.add("spring.liquibase.user", container::getUsername)
-            registry.add("spring.liquibase.password", container::getPassword)
-        }
-    }
+    @Autowired private lateinit var entityManager: EntityManager
+    @Autowired private lateinit var auditLogService: AuditLogService
 
     fun Assert<OffsetDateTime?>.isRecent(offset: TemporalAmount) = given { actual ->
         if (actual == null) return
