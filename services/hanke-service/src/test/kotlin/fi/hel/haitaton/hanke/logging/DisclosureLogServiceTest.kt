@@ -23,31 +23,27 @@ import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 
 internal class DisclosureLogServiceTest {
 
     private val userId = "test"
 
-    private val auditLogRepository: AuditLogRepository = mockk()
+    private val auditLogRepository: AuditLogRepository = mockk(relaxed = true)
     private val disclosureLogService = DisclosureLogService(auditLogRepository)
 
-    @BeforeEach
-    fun clearMockks() {
-        clearAllMocks()
-    }
-
     @AfterEach
-    fun checkStubs() {
+    fun cleanUp() {
         // TODO: Needs newer MockK, which needs newer Spring test dependencies
         // checkUnnecessaryStub()
         confirmVerified()
+        clearAllMocks()
     }
 
     @Test
@@ -63,9 +59,6 @@ internal class DisclosureLogServiceTest {
     fun `saveDisclosureLogsForHanke saves audit logs for all yhteystiedot`() {
         val hanke = HankeFactory.create().withYhteystiedot()
         val expectedLogs = AuditLogEntryFactory.createReadEntriesForHanke(hanke)
-        every {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        } returns expectedLogs
 
         disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
 
@@ -85,9 +78,6 @@ internal class DisclosureLogServiceTest {
             }
         val expectedLogs =
             listOf(AuditLogEntryFactory.createReadEntry(objectBefore = yhteystieto.toJsonString()))
-        every {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        } returns expectedLogs
 
         disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
 
@@ -123,9 +113,6 @@ internal class DisclosureLogServiceTest {
                     .withGeneratedToteuttaja(6)
             )
         val expectedLogs = hankkeet.flatMap { AuditLogEntryFactory.createReadEntriesForHanke(it) }
-        every {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        } returns expectedLogs
 
         disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, userId)
 
@@ -142,9 +129,6 @@ internal class DisclosureLogServiceTest {
                 HankeFactory.create().withYhteystiedot()
             )
         val expectedLogs = AuditLogEntryFactory.createReadEntriesForHanke(hankkeet[0])
-        every {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        } returns expectedLogs
 
         disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, userId)
 
@@ -242,9 +226,6 @@ internal class DisclosureLogServiceTest {
             listOf(
                 AuditLogEntryFactory.createReadEntryForCustomer(customerWithoutContacts.customer)
             )
-        every {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        } returns expectedLogs
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
@@ -258,12 +239,30 @@ internal class DisclosureLogServiceTest {
         val cableReportApplication = AlluDataFactory.createCableReportApplication()
         val contact = cableReportApplication.customerWithContacts.contacts[0]
         val expectedLogs = listOf(AuditLogEntryFactory.createReadEntryForContact(contact))
-        every {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        } returns expectedLogs
         val application = applicationDto(applicationData = cableReportApplication)
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
+
+        verify {
+            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
+        }
+    }
+
+    @ParameterizedTest(name = "{displayName}({arguments})")
+    @EnumSource(Status::class)
+    fun `saveDisclosureLogsForAllu saves logs with the given status`(expectedStatus: Status) {
+        val cableReportApplication = AlluDataFactory.createCableReportApplication()
+        val contact = cableReportApplication.customerWithContacts.contacts[0]
+        val expectedLogs =
+            listOf(
+                AuditLogEntryFactory.createReadEntryForContact(contact).apply {
+                    status = expectedStatus
+                    userId = ALLU_AUDIT_LOG_USERID
+                    userRole = UserRole.SERVICE
+                }
+            )
+
+        disclosureLogService.saveDisclosureLogsForAllu(cableReportApplication, expectedStatus)
 
         verify {
             auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
@@ -278,9 +277,6 @@ internal class DisclosureLogServiceTest {
             (contacts.map { AuditLogEntryFactory.createReadEntryForContact(it) } +
                 customers.map { AuditLogEntryFactory.createReadEntryForCustomer(it) })
         assertEquals(12, expectedLogs.size)
-        every {
-            auditLogRepository.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs)))
-        } returns expectedLogs
         val customersWithContacts =
             (0..3).map { i ->
                 CustomerWithContacts(

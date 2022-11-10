@@ -80,11 +80,12 @@ class YhteystietoLoggingEntryHolder {
         val auditLogEntry =
             AuditLogEntry(
                 userId = userId,
+                userRole = UserRole.USER,
                 action = action,
                 status = if (failed) Status.FAILED else Status.SUCCESS,
                 failureDescription = failureDescription,
                 objectType = ObjectType.YHTEYSTIETO,
-                objectId = yhteystietoId,
+                objectId = yhteystietoId?.toString(),
                 objectBefore = oldEntity?.toChangeLogJsonString(),
                 objectAfter = newEntity?.toChangeLogJsonString(),
             )

@@ -55,19 +55,25 @@ enum class ObjectType {
     ALLU_CONTACT,
 }
 
+enum class UserRole {
+    USER,
+    SERVICE,
+}
+
 @Entity
 @Table(name = "audit_log")
 data class AuditLogEntry(
     @Id var id: UUID? = UUID.randomUUID(),
     @Column(name = "event_time") var eventTime: OffsetDateTime? = OffsetDateTime.now(),
     @Column(name = "user_id") var userId: String? = null,
+    @Enumerated(EnumType.STRING) @Column(name = "user_role") var userRole: UserRole = UserRole.USER,
     @Column(name = "ip_near") var ipNear: String? = null,
     @Column(name = "ip_far") var ipFar: String? = null,
     @Enumerated(EnumType.STRING) var action: Action? = null,
     @Enumerated(EnumType.STRING) var status: Status? = null,
     @Column(name = "failure_description") var failureDescription: String? = null,
     @Enumerated(EnumType.STRING) @Column(name = "object_type") var objectType: ObjectType? = null,
-    @Column(name = "object_id") var objectId: Int? = null,
+    @Column(name = "object_id") var objectId: String? = null,
     @Column(name = "object_before") var objectBefore: String? = null,
     @Column(name = "object_after") var objectAfter: String? = null
 )
