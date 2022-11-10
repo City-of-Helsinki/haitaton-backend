@@ -12,9 +12,9 @@ class TestMakaAutoliikennemaarat(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cfg = Config()
+        cls.cfg = Config()
 
-        volumes = MakaAutoliikennemaarat(cfg)
+        volumes = MakaAutoliikennemaarat(cls.cfg)
         volumes.process()
 
         cls._line_results = volumes._df
@@ -27,8 +27,8 @@ class TestMakaAutoliikennemaarat(unittest.TestCase):
 
         self.assertEqual(geom_names[0].lower(), "linestring")
 
-    def test_line_geometry_has_crs_epsg_3879(self):
-        self.assertEqual(self._line_results.crs, "EPSG:3879")
+    def test_line_geometry_has_configured_crs(self):
+        self.assertEqual(self._line_results.crs, self.cfg.crs())
 
     def test_buffered_geometry_is_polygon(self):
         for _, geom_data in self._polygon_results.items():
@@ -38,9 +38,9 @@ class TestMakaAutoliikennemaarat(unittest.TestCase):
 
             self.assertEqual(geom_names[0].lower(), "polygon")
 
-    def test_buffered_geometry_has_crs_epsg_3879(self):
+    def test_buffered_geometry_has_configured_crs(self):
         for _, geom_data in self._polygon_results.items():
-            self.assertEqual(geom_data.crs, "EPSG:3879")
+            self.assertEqual(geom_data.crs, self.cfg.crs())
 
     def test_tormays_attributes(self):
         attributes = set(["volume", "geometry"])
