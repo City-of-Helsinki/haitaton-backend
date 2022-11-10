@@ -73,10 +73,11 @@ constructor(
         val auditLogEntry =
             AuditLogEntry(
                 userId = "1234-1234",
+                userRole = UserRole.USER,
                 action = Action.CREATE,
                 status = Status.SUCCESS,
                 objectType = ObjectType.YHTEYSTIETO,
-                objectId = 333,
+                objectId = "333",
                 objectAfter = "fake JSON"
             )
         val savedAuditLogEntry = auditLogRepository.save(auditLogEntry)
@@ -91,10 +92,11 @@ constructor(
         assertThat(foundAuditLogEntry).isNotNull()
         assertThat(foundAuditLogEntry.eventTime).isRecent(Duration.ofMinutes(1))
         assertThat(foundAuditLogEntry.userId).isEqualTo("1234-1234")
+        assertThat(foundAuditLogEntry.userRole).isEqualTo(UserRole.USER)
         assertThat(foundAuditLogEntry.action).isEqualTo(Action.CREATE)
         assertThat(foundAuditLogEntry.status).isEqualTo(Status.SUCCESS)
         assertThat(foundAuditLogEntry.objectType).isEqualTo(ObjectType.YHTEYSTIETO)
-        assertThat(foundAuditLogEntry.objectId).isEqualTo(333)
+        assertThat(foundAuditLogEntry.objectId).isEqualTo("333")
         assertThat(foundAuditLogEntry.objectAfter).isEqualTo("fake JSON")
     }
 }

@@ -2,143 +2,49 @@ package fi.hel.haitaton.hanke.allu
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import com.ninjasquad.springmockk.MockkBean
+import com.fasterxml.jackson.module.kotlin.treeToValue
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
+import fi.hel.haitaton.hanke.asJsonNode
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.logging.Status
+import io.mockk.called
+import io.mockk.clearAllMocks
+import io.mockk.confirmVerified
 import io.mockk.every
+import io.mockk.justRun
+import io.mockk.mockk
+import io.mockk.verify
+import java.lang.RuntimeException
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
+const val username = "test"
+
 @ExtendWith(SpringExtension::class)
-@WithMockUser
+@WithMockUser(username)
 class ApplicationServiceTest {
+    private val applicationRepo: ApplicationRepository = mockk()
+    private val cableReportService: CableReportService = mockk()
+    private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
 
-    @MockkBean private lateinit var applicationRepo: ApplicationRepository
+    private val service: ApplicationService =
+        ApplicationService(applicationRepo, cableReportService, disclosureLogService)
 
-    @MockkBean private lateinit var cableReportService: CableReportService
+    @AfterEach
+    fun cleanup() {
+        // TODO: Needs newer MockK, which needs newer Spring test dependencies
+        // checkUnnecessaryStub()
+        confirmVerified()
+        clearAllMocks()
+    }
 
     @Test
-    fun test() {
-        val service = ApplicationService(applicationRepo, cableReportService)
-
-        val json =
-            """
-        {
-            "name":"test",
-            "customerWithContacts":{
-                "customer":{
-                    "type":"PERSON",
-                    "name":"Testi Testinen",
-                    "country":"FI",
-                    "postalAddress":{
-                        "streetAddress":{
-                            "streetName":"Mannerheimintie 1 2 3"
-                        },
-                        "postalCode":"00900",
-                        "city":"Helsinki"
-                    },
-                    "email":"test@haitaton.fi",
-                    "phone":"0123456789",
-                    "registryKey":null,
-                    "ovt":null,
-                    "invoicingOperator":null,
-                    "sapCustomerNumber":null
-                },
-                "contacts":[
-                    {
-                        "email":"test@haitaton.fi",
-                        "name":"Testi Testinen",
-                        "orderer":true,
-                        "phone":"0123456789",
-                        "postalAddress":{
-                            "city":"Helsinki",
-                            "postalCode":"00900",
-                            "streetAddress":{
-                                "streetName":"Mannerheimintie 1 2 3"
-                            }
-                        }
-                    }
-                ]
-            },
-            "geometry":{
-                "type":"GeometryCollection",
-                "crs":{
-                    "type":"name",
-                    "properties":{
-                        "name":"EPSG:3879"
-                    }
-                },
-                "geometries":[
-                    {
-                        "type":"Polygon",
-                        "coordinates":[
-                            [
-                                [ 25497314.94, 6672065.27 ],
-                                [ 25497232.87, 6672189.43 ],
-                                [ 25497108.71, 6672107.36 ],
-                                [ 25497190.78, 6671983.2 ],
-                                [ 25497314.94, 6672065.27 ]
-                            ]
-                        ]
-                    }
-                ]
-            },
-            "startTime":"2022-06-01T00:00:00Z",
-            "endTime":"2022-07-01T00:00:00Z",
-            "pendingOnClient":true,
-            "identificationNumber":"HAI-123",
-            "clientApplicationKind":"Testi",
-            "workDescription":"anything goes",
-            "contractorWithContacts":{
-                "customer":{
-                    "type":"COMPANY",
-                    "name":"Haitaton Oy",
-                    "country":"FI",
-                    "postalAddress":{
-                        "streetAddress":{
-                            "streetName":"Mannerheimintie 1 2 3"
-                        },
-                        "postalCode":"00900",
-                        "city":"Helsinki"
-                    },
-                    "email":"test@haitaton.fi",
-                    "phone":"0123456789",
-                    "registryKey":null,
-                    "ovt":null,
-                    "invoicingOperator":null,
-                    "sapCustomerNumber":null
-                },
-                "contacts":[
-                    {
-                        "name":"Testi Testinen",
-                        "postalAddress":{
-                            "streetAddress":{
-                                "streetName":"Mannerheimintie 1 2 3"
-                            },
-                            "postalCode":"00900",
-                            "city":"Helsinki"
-                        },
-                        "email":"test@haitaton.fi",
-                        "phone":"0123456789",
-                        "orderer":false
-                    }
-                ]
-            },
-            "postalAddress":null,
-            "representativeWithContacts":null,
-            "invoicingCustomer":null,
-            "customerReference":null,
-            "area":null,
-            "propertyDeveloperWithContacts":null,
-            "constructionWork":false,
-            "maintenanceWork":false,
-            "emergencyWork":true,
-            "propertyConnectivity":false
-        }
-        """.trimIndent()
-
-        val applicationData = OBJECT_MAPPER.readTree(json)
+    fun create() {
+        val applicationData = "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonNode()
         val dto =
             ApplicationDto(
                 id = null,
@@ -146,7 +52,6 @@ class ApplicationServiceTest {
                 applicationType = ApplicationType.CABLE_REPORT,
                 applicationData = applicationData
             )
-
         every { cableReportService.create(any()) } returns 42
         every { applicationRepo.save(any()) } answers
             {
@@ -161,7 +66,111 @@ class ApplicationServiceTest {
             }
 
         val created = service.create(dto)
+
         assertThat(created.id).isEqualTo(1)
         assertThat(created.alluid).isEqualTo(42)
+        val expectedApplication =
+            OBJECT_MAPPER.treeToValue<CableReportApplication>(applicationData)!!
+        verify {
+            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
+        }
+    }
+
+    @Test
+    fun `updateApplicationData saves disclosure logs when updating Allu data`() {
+        val applicationData = "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonNode()
+        val applicationEntity =
+            AlluApplication(
+                id = 3,
+                alluid = 42,
+                userId = username,
+                applicationType = ApplicationType.CABLE_REPORT,
+                applicationData = applicationData
+            )
+        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+        every { applicationRepo.save(applicationEntity) } returns applicationEntity
+        justRun { cableReportService.update(42, any()) }
+        every { cableReportService.getCurrentStatus(42) } returns null
+
+        service.updateApplicationData(3, applicationData)
+
+        val expectedApplication =
+            OBJECT_MAPPER.treeToValue<CableReportApplication>(applicationData)!!
+        verify {
+            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
+        }
+    }
+
+    @Test
+    fun `sendApplication saves disclosure logs for successful attempts`() {
+        val applicationData = "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonNode()
+        val applicationEntity =
+            AlluApplication(
+                id = 3,
+                alluid = null,
+                userId = username,
+                applicationType = ApplicationType.CABLE_REPORT,
+                applicationData = applicationData
+            )
+        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+        every { applicationRepo.save(any()) } answers { firstArg() }
+        every { cableReportService.create(any()) } returns 42
+
+        service.sendApplication(3)
+
+        val expectedApplication =
+            OBJECT_MAPPER.treeToValue<CableReportApplication>(applicationData)!!.apply {
+                pendingOnClient = false
+            }
+        verify {
+            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
+        }
+    }
+
+    @Test
+    fun `sendApplication saves disclosure logs for failed attempts`() {
+        val applicationData = "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonNode()
+        val applicationEntity =
+            AlluApplication(
+                id = 3,
+                alluid = null,
+                userId = username,
+                applicationType = ApplicationType.CABLE_REPORT,
+                applicationData = applicationData
+            )
+        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+        every { cableReportService.create(any()) } throws RuntimeException()
+
+        assertThrows<RuntimeException> { service.sendApplication(3) }
+
+        val expectedApplication =
+            OBJECT_MAPPER.treeToValue<CableReportApplication>(applicationData)!!.apply {
+                pendingOnClient = false
+            }
+        verify {
+            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.FAILED)
+        }
+    }
+
+    @Test
+    fun `sendApplication doesn't save disclosure logs for login errors`() {
+        val applicationData = "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonNode()
+        val applicationEntity =
+            AlluApplication(
+                id = 3,
+                alluid = null,
+                userId = username,
+                applicationType = ApplicationType.CABLE_REPORT,
+                applicationData = applicationData
+            )
+        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+        every { cableReportService.create(any()) } throws AlluLoginException(RuntimeException())
+        OBJECT_MAPPER.treeToValue<CableReportApplication>(applicationData)!!.apply {
+            pendingOnClient = false
+        }
+
+        assertThrows<AlluLoginException> { service.sendApplication(3) }
+
+        verify { disclosureLogService wasNot called }
     }
 }

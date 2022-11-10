@@ -7,12 +7,14 @@ import fi.hel.haitaton.hanke.logging.Action
 import fi.hel.haitaton.hanke.logging.AuditLogEntry
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Status
+import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.toJsonString
 
 object AuditLogEntryFactory : Factory<AuditLogEntry>() {
 
     fun createReadEntry(
         userId: String? = "test",
+        userRole: UserRole = UserRole.USER,
         action: Action = Action.READ,
         status: Status = Status.SUCCESS,
         objectType: ObjectType = ObjectType.YHTEYSTIETO,
@@ -23,10 +25,11 @@ object AuditLogEntryFactory : Factory<AuditLogEntry>() {
     ) =
         AuditLogEntry(
             userId = userId,
+            userRole = userRole,
             action = action,
             status = status,
             objectType = objectType,
-            objectId = objectId,
+            objectId = objectId?.toString(),
             objectBefore = objectBefore,
             ipNear = ipNear,
             ipFar = ipFar,
@@ -43,6 +46,7 @@ object AuditLogEntryFactory : Factory<AuditLogEntry>() {
             objectType = ObjectType.ALLU_CONTACT,
             objectBefore = contact.toJsonString()
         )
+
     fun createReadEntryForCustomer(customer: Customer): AuditLogEntry =
         createReadEntry(
             objectId = null,

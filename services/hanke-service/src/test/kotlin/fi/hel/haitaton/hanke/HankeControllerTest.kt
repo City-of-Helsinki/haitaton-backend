@@ -10,7 +10,6 @@ import fi.hel.haitaton.hanke.permissions.PermissionProfiles
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.mockk.Called
 import io.mockk.clearAllMocks
-import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
 import java.time.ZonedDateTime
@@ -18,7 +17,7 @@ import java.time.temporal.ChronoUnit
 import javax.validation.ConstraintViolationException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
@@ -49,7 +48,7 @@ class HankeControllerTest {
         @Bean
         fun permissionService(): PermissionService = Mockito.mock(PermissionService::class.java)
 
-        @Bean fun yhteystietoLoggingService(): DisclosureLogService = mockk()
+        @Bean fun yhteystietoLoggingService(): DisclosureLogService = mockk(relaxUnitFun = true)
 
         @Bean
         fun hankeController(
@@ -76,8 +75,8 @@ class HankeControllerTest {
 
     @Autowired private lateinit var disclosureLogService: DisclosureLogService
 
-    @BeforeEach
-    fun resetMockks() {
+    @AfterEach
+    fun cleanUp() {
         clearAllMocks()
     }
 
@@ -108,7 +107,6 @@ class HankeControllerTest {
                     SaveType.DRAFT
                 )
             )
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "user") }
 
         val response = hankeController.getHankeByTunnus(mockedHankeTunnus)
 
@@ -164,7 +162,6 @@ class HankeControllerTest {
             )
         Mockito.`when`(permissionService.getPermissionsByUserId("user")).thenReturn(permissions)
         Mockito.`when`(hankeService.loadHankkeetByIds(listOf(1234, 50))).thenReturn(listOfHanke)
-        justRun { disclosureLogService.saveDisclosureLogsForHankkeet(any(), "user") }
 
         val hankeList = hankeController.getHankeList(false)
 
@@ -202,7 +199,6 @@ class HankeControllerTest {
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke))
             .thenReturn(partialHanke.copy(modifiedBy = "user", modifiedAt = getCurrentTimeUTC()))
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "user") }
 
         // Actual call
         val response: Hanke = hankeController.updateHanke(partialHanke, "id123")
@@ -291,7 +287,6 @@ class HankeControllerTest {
 
         // mock HankeService response
         Mockito.`when`(hankeService.createHanke(hanke)).thenReturn(mockedHanke)
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "Tiina") }
 
         // Actual call
         val response: Hanke = hankeController.createHanke(hanke)
@@ -365,7 +360,6 @@ class HankeControllerTest {
         mockedHanke.hankeTunnus = "JOKU12"
 
         Mockito.`when`(hankeService.createHanke(hanke)).thenReturn(mockedHanke)
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "Tiina") }
 
         val response: Hanke = hankeController.createHanke(hanke)
 

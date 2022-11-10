@@ -51,3 +51,5 @@ databaseChangeLog:
       file: db/changelog/changesets/010-create-table-for-database-logging.yml
   - include:
       file: db/changelog/changesets/011-drop-old-personal-data-log-tables.yml
+  - include:
+      file: db/changelog/changesets/012-add-user-role-to-audit-log.yml
