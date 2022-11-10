@@ -14,7 +14,6 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
-import java.lang.RuntimeException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -148,7 +147,11 @@ class ApplicationServiceTest {
                 pendingOnClient = false
             }
         verify {
-            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.FAILED)
+            disclosureLogService.saveDisclosureLogsForAllu(
+                expectedApplication,
+                Status.FAILED,
+                ALLU_APPLICATION_ERROR_MSG
+            )
         }
     }
 
