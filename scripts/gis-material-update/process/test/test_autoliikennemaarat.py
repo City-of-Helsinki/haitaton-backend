@@ -8,22 +8,17 @@ from modules.autoliikennemaarat import MakaAutoliikennemaarat
 
 
 class TestMakaAutoliikennemaarat(unittest.TestCase):
-    """Test MAKA Autoliikennemäärät -processing"""
+    """Test traffic volume processing"""
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.cfg = Config()
-        cls._module_name = "maka_autoliikennemaarat"
-        filename_template = cls.cfg.target_buffer_file(cls._module_name)
-        buffers = cls.cfg.buffer(cls._module_name)
+        cfg = Config()
 
-        results = {}
-        for buffer in buffers:
-            results[buffer] = gpd.read_file(filename_template.format(buffer))
+        volumes = MakaAutoliikennemaarat(cfg)
+        volumes.process()
 
-        cls._polygon_results = results
-
-        cls._line_results = gpd.read_file(cls.cfg.target_file(cls._module_name))
+        cls._line_results = volumes._df
+        cls._polygon_results = volumes._process_result
 
     def test_line_geometry_is_linestring(self):
         geom_names = self._line_results.geometry.geom_type.unique().tolist()
@@ -32,13 +27,29 @@ class TestMakaAutoliikennemaarat(unittest.TestCase):
 
         self.assertEqual(geom_names[0].lower(), "linestring")
 
-    def test_buffer_geometry_is_polygon(self):
+    def test_line_geometry_has_crs_epsg_3879(self):
+        self.assertEqual(self._line_results.crs, "EPSG:3879")
+
+    def test_buffered_geometry_is_polygon(self):
         for _, geom_data in self._polygon_results.items():
             geom_names = geom_data.geometry.geom_type.unique().tolist()
 
             self.assertEqual(len(geom_names), 1)
 
             self.assertEqual(geom_names[0].lower(), "polygon")
+
+    def test_buffered_geometry_has_crs_epsg_3879(self):
+        for _, geom_data in self._polygon_results.items():
+            self.assertEqual(geom_data.crs, "EPSG:3879")
+
+    def test_tormays_attributes(self):
+        attributes = set(["volume", "geometry"])
+        for _, geom_data in self._polygon_results.items():
+            self.assertEqual(set(geom_data.columns.tolist()), attributes)
+
+    def test_tormays_min_area(self):
+        for _, geom_data in self._polygon_results.items():
+            self.assertGreater(min(geom_data.area), 0.0)
 
 
 if __name__ == "__main__":
