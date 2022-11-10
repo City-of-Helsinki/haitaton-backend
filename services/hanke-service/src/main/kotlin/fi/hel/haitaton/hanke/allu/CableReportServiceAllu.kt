@@ -5,7 +5,12 @@ import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.web.reactive.function.BodyInserters
-import org.springframework.web.reactive.function.client.*
+import org.springframework.web.reactive.function.client.ClientRequest
+import org.springframework.web.reactive.function.client.ClientResponse
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction
+import org.springframework.web.reactive.function.client.ExchangeFunction
+import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.body
 import reactor.core.publisher.Mono
 
 class CableReportServiceAllu(
@@ -108,7 +113,7 @@ class CableReportServiceAllu(
 
         webClient
             .post()
-            .uri("$baseUrl/v2/applications/{applicationId}/attachments", applicationId)
+            .uri("$baseUrl/v2/applications/$applicationId/attachments")
             .contentType(MediaType.MULTIPART_FORM_DATA)
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
@@ -122,7 +127,7 @@ class CableReportServiceAllu(
         val token = login()!!
         return webClient
             .get()
-            .uri("$baseUrl/v2/applications/{applicationId}/informationrequests", applicationId)
+            .uri("$baseUrl/v2/applications/$applicationId/informationrequests")
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
             .retrieve()
@@ -141,11 +146,7 @@ class CableReportServiceAllu(
         val token = login()!!
         webClient
             .post()
-            .uri(
-                "$baseUrl/v2/cablereports/{applicationId}/informationrequests/{requestId}/response",
-                applicationId,
-                requestId
-            )
+            .uri("$baseUrl/v2/cablereports/$applicationId/informationrequests/$requestId/response")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
@@ -160,7 +161,7 @@ class CableReportServiceAllu(
         val token = login()!!
         return webClient
             .get()
-            .uri("$baseUrl/v2/cablereports/{applicationId}/decision", applicationId)
+            .uri("$baseUrl/v2/cablereports/$applicationId/decision", applicationId)
             .accept(MediaType.APPLICATION_PDF)
             .headers { it.setBearerAuth(token) }
             .exchange()
@@ -172,10 +173,9 @@ class CableReportServiceAllu(
 
     override fun getDecisionAttachments(applicationId: Int): List<AttachmentInfo> {
         val token = login()!!
-        System.out.println(token)
         return webClient
             .get()
-            .uri("$baseUrl/v2/applications/{applicationId}/attachments", applicationId)
+            .uri("$baseUrl/v2/applications/$applicationId/attachments", applicationId)
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
             .retrieve()
@@ -189,11 +189,7 @@ class CableReportServiceAllu(
         val token = login()!!
         return webClient
             .get()
-            .uri(
-                "$baseUrl/v2/applications/{applicationId}/attachments/{attachentId}",
-                applicationId,
-                attachmentId
-            )
+            .uri("$baseUrl/v2/applications/$applicationId/attachments/$attachmentId")
             .accept(MediaType.APPLICATION_PDF)
             .headers { it.setBearerAuth(token) }
             .exchange()
