@@ -6,7 +6,7 @@ from modules.config import Config
 
 
 class MakaAutoliikennemaarat:
-    """ "Process traffic (car) volumes."""
+    """Process traffic (car) volumes."""
 
     def __init__(self, cfg: Config):
         self._cfg = cfg
@@ -36,7 +36,7 @@ class MakaAutoliikennemaarat:
     def persist_to_database(self) -> None:
         connection = create_engine(self._cfg.pg_conn_uri())
 
-        # persist route lines to database
+        # persist traffic volume lines to database
         self._df.to_postgis(
             "volume_lines",
             connection,
@@ -46,7 +46,7 @@ class MakaAutoliikennemaarat:
             index_label="fid",
         )
 
-        # persist polygons to database
+        # persist traffic volume polygons to database
         for buffer_size, polygon_data in self._process_result.items():
             polygon_data.to_postgis(
                 "volume_{}".format(buffer_size),
