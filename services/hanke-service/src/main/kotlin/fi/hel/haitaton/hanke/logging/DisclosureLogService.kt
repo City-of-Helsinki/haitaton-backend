@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.toJsonString
 import java.time.OffsetDateTime
 import org.springframework.stereotype.Service
@@ -16,9 +17,21 @@ import org.springframework.stereotype.Service
 /** Special username for Allu service. */
 const val ALLU_AUDIT_LOG_USERID = "Allu"
 
+/** Special username for Helsinki Profiili. */
+const val PROFIILI_AUDIT_LOG_USERID = "Helsinki Profiili"
+
 /** Luovutusloki */
 @Service
 class DisclosureLogService(private val auditLogRepository: AuditLogRepository) {
+
+    /**
+     * Save disclosure log for when we are responding to a GDPR information request from Profiili.
+     * Write a single disclosure log entry with the response data.
+     */
+    fun saveDisclosureLogsForProfiili(userId: String, gdprInfo: CollectionNode) {
+        val entry = disclosureLogEntry(ObjectType.GDPR_RESPONSE, userId, gdprInfo)
+        saveDisclosureLogs(PROFIILI_AUDIT_LOG_USERID, UserRole.SERVICE, listOf(entry))
+    }
 
     /**
      * Save disclosure logs for when we are sending a cable report application to Allu. Write

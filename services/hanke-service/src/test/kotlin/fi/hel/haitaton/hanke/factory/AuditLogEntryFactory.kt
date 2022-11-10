@@ -18,7 +18,7 @@ object AuditLogEntryFactory : Factory<AuditLogEntry>() {
         action: Action = Action.READ,
         status: Status = Status.SUCCESS,
         objectType: ObjectType = ObjectType.YHTEYSTIETO,
-        objectId: Int? = 1,
+        objectId: Any? = 1,
         objectBefore: String? = null,
         ipNear: String? = null,
         ipFar: String? = null,

@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.gdpr
 
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.allu.ApplicationService
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Operation
@@ -10,7 +11,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import mu.KotlinLogging
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
@@ -27,10 +27,11 @@ private val logger = KotlinLogging.logger {}
 @RequestMapping("/gdpr-api")
 @Validated
 class GdprController(
-    @Autowired private val applicationService: ApplicationService,
-    @Autowired private val hankeService: HankeService,
-    @Autowired private val profiiliClient: ProfiiliClient,
-    @Autowired private val gdprJsonConverter: GdprJsonConverter,
+    private val applicationService: ApplicationService,
+    private val hankeService: HankeService,
+    private val profiiliClient: ProfiiliClient,
+    private val gdprJsonConverter: GdprJsonConverter,
+    private val disclosureLogService: DisclosureLogService,
 ) {
 
     @Value("\${haitaton.gdpr.disabled}") var gdprDisabled: Boolean = true
@@ -90,6 +91,7 @@ class GdprController(
             throw UserNotFoundException(userId)
         }
 
+        disclosureLogService.saveDisclosureLogsForProfiili(userId, gdprInfo)
         logger.info { "Returning GDPR information for user $userId" }
         return gdprInfo
     }
