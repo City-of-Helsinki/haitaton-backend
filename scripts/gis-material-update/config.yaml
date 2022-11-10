@@ -10,7 +10,7 @@ maka_autoliikennemaarat:
   layer: "avoindata:Ajoneuvoliikenne_liikennemaarat_viiva"
   local_file: "maka_autoliikennemaarat.gpkg"
   target_file: "volume_lines.gpkg"
-  target_buffer_file: "tormays_volume_{}.gpkg"
+  target_buffer_file: "tormays_volumes{}_polys.gpkg"
   buffer:
     - 15
     - 30
