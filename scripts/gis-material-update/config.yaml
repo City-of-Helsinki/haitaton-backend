@@ -9,6 +9,11 @@ maka_autoliikennemaarat:
   addr: "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:Ajoneuvoliikenne_liikennemaarat_viiva"
   local_file: "maka_autoliikennemaarat.gpkg"
+  target_file: "volume_lines.gpkg"
+  target_buffer_file: "tormays_volumes{}_polys.gpkg"
+  buffer:
+    - 15
+    - 30
 ylre_katualue:
   addr: "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:YLRE_Katualue_alue"

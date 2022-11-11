@@ -36,6 +36,11 @@ class TestHslLines(unittest.TestCase):
         # Geometry is Polygon
         self.assertEqual(geom_names[0].lower(), "polygon")
 
+    def test_tormays_geometry_has_configured_crs(self):
+        polygons = self._target_buffer_dataframe
+
+        self.assertEqual(polygons.geometry.crs, self.cfg.crs())
+
     def test_tormays_attributes(self):
         tormays = self._target_buffer_dataframe
         attributes = set(["direction_id", "route_id", "rush_hour", "trunk", "geometry"])
