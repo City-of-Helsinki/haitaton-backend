@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
 import com.vladmihalcea.hibernate.type.json.JsonBinaryType
-import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
@@ -56,7 +55,7 @@ data class AuditLogEntryEntity(
     /** This will be set by the database. */
     @Column(name = "created_at")
     @Generated(GenerationTime.INSERT)
-    val createdAt: LocalDateTime? = null,
+    val createdAt: OffsetDateTime? = null,
 )
 
 data class AuditLogMessage(@JsonProperty("audit_event") val auditEvent: AuditLogEvent)
