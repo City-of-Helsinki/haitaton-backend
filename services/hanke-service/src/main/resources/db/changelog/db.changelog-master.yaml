@@ -55,3 +55,5 @@ databaseChangeLog:
       file: db/changelog/changesets/012-add-user-role-to-audit-log.yml
   - include:
       file: db/changelog/changesets/013-recreate-audit-logs-table.yml
+  - include:
+      file: db/changelog/changesets/014-add-timezone-to-audit-logs-created-at.sql

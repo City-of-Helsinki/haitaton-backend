@@ -10,7 +10,6 @@ import assertk.assertions.support.expected
 import assertk.assertions.support.show
 import fi.hel.haitaton.hanke.HaitatonPostgreSQLContainer
 import java.time.Duration
-import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.temporal.TemporalAmount
 import javax.persistence.EntityManager
@@ -70,13 +69,6 @@ constructor(
         expected("after:${show(now.minus(offset))} but was:${show(actual)}")
     }
 
-    fun Assert<LocalDateTime?>.isRecentLocal(offset: TemporalAmount) = given { actual ->
-        if (actual == null) return
-        val now = LocalDateTime.now()
-        if (actual.isBefore(now) && actual.isAfter(now.minus(offset))) return
-        expected("after:${show(now.minus(offset))} but was:${show(actual)}")
-    }
-
     @Test
     fun `saving audit log entry works`() {
         // Create a log entry, save it, flush, clear caches:
@@ -104,7 +96,7 @@ constructor(
         assertThat(foundAuditLogEntry).isNotNull()
         assertThat(foundAuditLogEntry.id).isNotNull()
         assertThat(foundAuditLogEntry.isSent).isFalse()
-        assertThat(foundAuditLogEntry.createdAt).isRecentLocal(Duration.ofMinutes(1))
+        assertThat(foundAuditLogEntry.createdAt).isRecent(Duration.ofMinutes(1))
         val auditLogEvent = foundAuditLogEntry.message.auditEvent
         assertThat(auditLogEvent.dateTime).isRecent(Duration.ofMinutes(1))
         assertThat(auditLogEvent.appVersion).isEqualTo("1")
