@@ -5,6 +5,8 @@ import sys
 
 from modules.config import Config
 from modules.gis_processing import GisProcessor
+
+from modules.autoliikennemaarat import MakaAutoliikennemaarat
 from modules.hsl import HslBuses
 
 
@@ -21,6 +23,8 @@ def instantiate_processor(item: str, cfg: Config) -> GisProcessor:
     """Instantiate correct class for processing data."""
     if item == "hsl":
         return HslBuses(cfg, validate_gtfs=False)
+    elif item == "maka_autoliikennemaarat":
+        return MakaAutoliikennemaarat(cfg)
     else:
         try:
             raise RuntimeError("Configuration not recognized: {}".format(item))

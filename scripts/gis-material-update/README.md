@@ -36,6 +36,8 @@ Local development database is set up with PostGIS spatial support.
 
 Local directory `haitaton-downloads` is mapped to fetch and processing containers.
 
+Local directory `haitaton-gis-output` is mapped to processing container.
+
 External volume `haitaton_gis_prepare` contains scripts for processing.
 
 External volume `haitaton_gis_db` is dedicated for database.
@@ -114,7 +116,7 @@ Where `<source>` is currently one of:
 - `osm`
 - `ylre_katualue`
 - `ylre_katuosat`
-- `maka_autoliikennemaarat`
+- `maka_autoliikennemaarat` - Traffic volumes (car traffic)
 
 Data files are downloaded to `./haitaton-downloads` -directory.
 
@@ -147,6 +149,25 @@ haitaton-gis-output
 
 - buses_lines.gpkg
 - tormays_buses_polys.gpkg
+
+### `maka_autoliikennemaarat`
+
+Docker example run (ensure that image build and file copying is
+already performed as instructed above):
+
+```sh
+docker-compose up -d gis-db
+docker-compose run --rm gis-fetch maka_autoliikennemaarat
+docker-compose run --rm gis-process maka_autoliikennemaarat
+docker-compose stop gis-db
+```
+
+Processed GIS material is available in:
+haitaton-gis-output
+
+- volume_lines.gpkg
+- tormays_volumes15_polys.gpkg
+- tormays_volumes30_polys.gpkg
 
 # Run tests
 
