@@ -1,9 +1,13 @@
 package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.module.kotlin.readValue
 
 fun <T> String.asJsonResource(type: Class<T>): T =
     OBJECT_MAPPER.readValue(getResourceAsText(this), type)
+
+inline fun <reified T : Any> String.asJsonResource(): T =
+    OBJECT_MAPPER.readValue(getResourceAsText(this))
 
 fun String.asJsonNode(): JsonNode = OBJECT_MAPPER.readTree(getResourceAsText(this))
 
