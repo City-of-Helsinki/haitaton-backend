@@ -21,7 +21,11 @@ ylre_katualue:
 ylre_katuosat:
   addr: "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:YLRE_Katuosat_alue"
-  local_file: "ylre_katuosa_alue.gpkg"
+  local_file: "ylre_katuosat_alue.gpkg"
+  target_file: "ylre_parts_orig_polys.gpkg"
+  target_buffer_file: "tormays_ylre_parts_polys.gpkg"
+  buffer:
+    - 5
 osm:
   addr: "https://download.geofabrik.de/europe/finland-latest.osm.pbf"
   local_file: "finland-latest.osm.pbf"

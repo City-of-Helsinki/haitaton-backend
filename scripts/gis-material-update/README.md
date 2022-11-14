@@ -115,7 +115,7 @@ Where `<source>` is currently one of:
 - `hki` - Helsinki area GIS material, polygon, scale 1:1000000
 - `osm`
 - `ylre_katualue`
-- `ylre_katuosat`
+- `ylre_katuosat` - Helsinki YLRE parts, polygons.
 - `maka_autoliikennemaarat` - Traffic volumes (car traffic)
 
 Data files are downloaded to `./haitaton-downloads` -directory.
@@ -168,6 +168,24 @@ haitaton-gis-output
 - volume_lines.gpkg
 - tormays_volumes15_polys.gpkg
 - tormays_volumes30_polys.gpkg
+
+### `ylre_katuosat`
+
+Docker example run (ensure that image build and file copying is
+already performed as instructed above):
+
+```sh
+docker-compose up -d gis-db
+docker-compose run --rm gis-fetch ylre_katuosat
+docker-compose run --rm gis-process ylre_katuosat
+docker-compose stop gis-db
+```
+
+Processed GIS material is available in:
+haitaton-gis-output
+
+- ylre_parts_orig_polys.gpkg
+- tormays_ylre_parts_polys.gpkg
 
 # Run tests
 

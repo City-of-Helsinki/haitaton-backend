@@ -8,6 +8,7 @@ from modules.gis_processing import GisProcessor
 
 from modules.autoliikennemaarat import MakaAutoliikennemaarat
 from modules.hsl import HslBuses
+from modules.ylre_katuosat import YlreKatuosat
 
 
 def process_item(item: str, cfg: Config):
@@ -25,6 +26,8 @@ def instantiate_processor(item: str, cfg: Config) -> GisProcessor:
         return HslBuses(cfg, validate_gtfs=False)
     elif item == "maka_autoliikennemaarat":
         return MakaAutoliikennemaarat(cfg)
+    elif item == "ylre_katuosat":
+        return YlreKatuosat(cfg)
     else:
         try:
             raise RuntimeError("Configuration not recognized: {}".format(item))
