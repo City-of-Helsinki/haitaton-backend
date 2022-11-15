@@ -39,6 +39,18 @@ class TestYlreKatualueet(unittest.TestCase):
         attributes = set(["ylre_class", "geometry"])
         self.assertEqual(set(self._processed_features.columns.tolist()), attributes)
 
+    def test_tormays_attribute_values(self):
+        tormays_attribute_values = [
+            "Pääkatu tai moottoriväylä",
+            "Alueellinen kokoojakatu",
+            "Paikallinen kokoojakatu",
+            "Tonttikatu tai ajoyhteys",
+        ]
+
+        attribute_values = set(self._processed_features["ylre_class"].unique().tolist())
+        for attribute_value in attribute_values:
+            self.assertIn(attribute_value, tormays_attribute_values)
+
     def test_tormays_min_area(self):
         self.assertGreater(min(self._processed_features.area), 0.0)
 
