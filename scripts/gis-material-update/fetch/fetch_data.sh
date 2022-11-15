@@ -53,12 +53,12 @@ dest_layer=$(parse_config $(cfg_dest_layer $data_object))
 extra_args=$(parse_config $(cfg_extra_args $data_object))
 
 case $data_object in
-hsl|osm)
+hsl)
     wget -O "$local_file" "$addr"
     ;;
 # plain WFS fetch
-hki|ylre_katualueet|ylre_katuosat|maka_autoliikennemaarat)
-    ogr2ogr -progress -f GPKG "$local_file" ${extra_args:+$extra_args} WFS:"$addr" "$layer"
+hki|ylre_katualueet|ylre_katuosat|maka_autoliikennemaarat|osm)
+    ogr2ogr -progress -f GPKG "$local_file" ${extra_args:+$extra_args} "$addr" "$layer"
     ;;
 *)
     echo "Not supported"

@@ -6,7 +6,7 @@ hsl:
   buffer:
     - 15
 maka_autoliikennemaarat:
-  addr: "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
+  addr: "WFS:https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:Ajoneuvoliikenne_liikennemaarat_viiva"
   local_file: "maka_autoliikennemaarat.gpkg"
   target_file: "volume_lines.gpkg"
@@ -15,13 +15,13 @@ maka_autoliikennemaarat:
     - 15
     - 30
 ylre_katualueet:
-  addr: "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
+  addr: "WFS:https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:YLRE_Katualue_alue"
   local_file: "ylre_katualue_alue.gpkg"
   target_file: "ylre_classes_orig_polys.gpkg"
   target_buffer_file: "tormays_ylre_classes_polys.gpkg"
 ylre_katuosat:
-  addr: "https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
+  addr: "WFS:https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:YLRE_Katuosat_alue"
   local_file: "ylre_katuosat_alue.gpkg"
   target_file: "ylre_parts_orig_polys.gpkg"
@@ -29,10 +29,12 @@ ylre_katuosat:
   buffer:
     - 5
 osm:
-  addr: "https://download.geofabrik.de/europe/finland-latest.osm.pbf"
-  local_file: "finland-latest.osm.pbf"
+  addr: "/vsicurl/https://download.geofabrik.de/europe/finland-latest.osm.pbf"
+  layer: "lines"
+  local_file: "finland-latest.gpkg"
+  extra_args: "-oo INTERLEAVED_READING=YES"
 hki:
-  addr: "https://geo.stat.fi/geoserver/tilastointialueet/wfs"
+  addr: "WFS:https://geo.stat.fi/geoserver/tilastointialueet/wfs"
   layer: "tilastointialueet:kunta1000k"
   local_file: "helsinki_alue.gpkg"
   extra_args: "-nln alue -where kunta='091'"
