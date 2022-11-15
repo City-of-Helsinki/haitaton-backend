@@ -57,7 +57,7 @@ hsl|osm)
     wget -O "$local_file" "$addr"
     ;;
 # plain WFS fetch
-hki|ylre_katualue|ylre_katuosat|maka_autoliikennemaarat)
+hki|ylre_katualueet|ylre_katuosat|maka_autoliikennemaarat)
     ogr2ogr -progress -f GPKG "$local_file" ${extra_args:+$extra_args} WFS:"$addr" "$layer"
     ;;
 *)
