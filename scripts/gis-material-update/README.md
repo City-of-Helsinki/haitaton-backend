@@ -147,6 +147,8 @@ docker-compose stop gis-db
 Processed GIS material is available in:
 haitaton-gis-output
 
+Files (names configured in `config.yaml`)
+
 - buses_lines.gpkg
 - tormays_buses_polys.gpkg
 
@@ -164,6 +166,8 @@ docker-compose stop gis-db
 
 Processed GIS material is available in:
 haitaton-gis-output
+
+Files (names configured in `config.yaml`)
 
 - volume_lines.gpkg
 - tormays_volumes15_polys.gpkg
@@ -184,8 +188,30 @@ docker-compose stop gis-db
 Processed GIS material is available in:
 haitaton-gis-output
 
+Files (names configured in `config.yaml`)
+
 - ylre_parts_orig_polys.gpkg
 - tormays_ylre_parts_polys.gpkg
+
+### `ylre_katualueet`
+
+Docker example run (ensure that image build and file copying is
+already performed as instructed above):
+
+```sh
+docker-compose up -d gis-db
+docker-compose run --rm gis-fetch ylre_katualueet
+docker-compose run --rm gis-process ylre_katualueet
+docker-compose stop gis-db
+```
+
+Processed GIS material is available in:
+haitaton-gis-output
+
+Files (names configured in `config.yaml`)
+
+- ylre_classes_orig_polys.gpkg
+- tormays_ylre_classes_polys.gpkg
 
 # Run tests
 
