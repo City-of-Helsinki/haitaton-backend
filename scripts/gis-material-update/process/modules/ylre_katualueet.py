@@ -40,13 +40,8 @@ class YlreKatualueet:
         self._df = df.set_index("fid")
 
     def process(self):
-        buffers = self._cfg.buffer(self._module)
-        buffer_amount = buffers[0]
-        process_result = self._df.copy()
-        process_result["geometry"] = process_result.buffer(buffer_amount)
-        # process_result = process_result.explode(index_parts=False)
-        process_result["fid"] = process_result.reset_index().index
-        self._process_result = process_result.set_index("fid")
+        # no buffering or further processing needed
+        self._process_result = self._df.copy()
 
     def persist_to_database(self):
         connection = create_engine(self._cfg.pg_conn_uri())
