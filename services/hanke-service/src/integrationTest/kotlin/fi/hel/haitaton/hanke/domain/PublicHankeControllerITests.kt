@@ -5,7 +5,7 @@ import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.mutate
-import fi.hel.haitaton.hanke.factory.HankeFactory.withHaitta
+import fi.hel.haitaton.hanke.factory.HankeFactory.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
@@ -51,10 +51,10 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `only returns hankkeet with tormaystarkasteluTulos`() {
         performGetHankkeet(
                 listOf(
-                    HankeFactory.create().withHaitta().mutate {
+                    HankeFactory.create().withHankealue().mutate {
                         it.tormaystarkasteluTulos = TormaystarkasteluTulos(1f, 1f, 1f)
                     },
-                    HankeFactory.create(id = 444, hankeTunnus = "HAI-TEST-2").withHaitta()
+                    HankeFactory.create(id = 444, hankeTunnus = "HAI-TEST-2").withHankealue()
                 )
             )
             .andExpect(MockMvcResultMatchers.status().isOk)
@@ -68,7 +68,7 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `doesn't return personal information from yhteystiedot`() {
         performGetHankkeet(
                 listOf(
-                    HankeFactory.create().withHaitta().withYhteystiedot().mutate {
+                    HankeFactory.create().withHankealue().withYhteystiedot().mutate {
                         it.tormaystarkasteluTulos = TormaystarkasteluTulos(1f, 1f, 1f)
                     }
                 )

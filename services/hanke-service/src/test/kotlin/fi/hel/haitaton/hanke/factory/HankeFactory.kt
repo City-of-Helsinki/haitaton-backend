@@ -1,10 +1,7 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.Haitta13
-import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.SaveType
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
-import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
@@ -61,27 +58,26 @@ object HankeFactory : Factory<Hanke>() {
         )
 
     /**
-     * Add a haitta to a test Hanke.
+     * Add a hankealue with haitat to a test Hanke.
      *
      * Example:
      * ```
-     * HankeFactory.create().withHaitta()
+     * HankeFactory.create().withHankealue()
      * ```
      */
-    fun Hanke.withHaitta(): Hanke {
+    fun Hanke.withHankealue(
+        alue: Hankealue =
+            HankealueFactory.create(
+                hankeId = this.id,
+                haittaAlkuPvm = this.alkuPvm,
+                haittaLoppuPvm = this.loppuPvm
+            )
+    ): Hanke {
         this.tyomaaKatuosoite = "Testikatu 1"
         this.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
         this.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
         this.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
 
-        val alue = Hankealue()
-        alue.haittaAlkuPvm = DateFactory.getStartDatetime()
-        alue.haittaLoppuPvm = DateFactory.getEndDatetime()
-        alue.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
-        alue.kaistaPituusHaitta = KaistajarjestelynPituus.NELJA
-        alue.meluHaitta = Haitta13.YKSI
-        alue.polyHaitta = Haitta13.KAKSI
-        alue.tarinaHaitta = Haitta13.KOLME
         this.alueet.add(alue)
 
         return this

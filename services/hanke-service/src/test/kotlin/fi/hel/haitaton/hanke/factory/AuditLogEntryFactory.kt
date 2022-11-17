@@ -20,7 +20,6 @@ object AuditLogEntryFactory : Factory<AuditLogEntry>() {
         objectType: ObjectType = ObjectType.YHTEYSTIETO,
         objectId: Any? = 1,
         objectBefore: String? = null,
-        ipAddress: String? = null,
     ) =
         AuditLogEntry(
             userId = userId,
@@ -30,7 +29,6 @@ object AuditLogEntryFactory : Factory<AuditLogEntry>() {
             objectType = objectType,
             objectId = objectId?.toString(),
             objectBefore = objectBefore,
-            ipAddress = ipAddress,
         )
 
     fun createReadEntriesForHanke(hanke: Hanke): List<AuditLogEntry> =
