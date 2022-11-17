@@ -86,9 +86,7 @@ internal class DisclosureLogServiceTest {
                     objectBefore = expectedObject
                 )
             )
-        verify {
-            auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedEntries)))
-        }
+        verify { auditLogService.createAll(match(containsAll(expectedEntries))) }
     }
 
     @Test
@@ -107,7 +105,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
 
-        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
+        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
 
     @Test
@@ -124,7 +122,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
 
-        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
+        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
 
     @Test
@@ -157,7 +155,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, userId)
 
-        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
+        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
 
     @Test
@@ -171,7 +169,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, userId)
 
-        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
+        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
 
     @Test
@@ -266,7 +264,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
-        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
+        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
 
     @Test
@@ -278,7 +276,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
-        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
+        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
 
     @ParameterizedTest(name = "{displayName}({arguments})")
@@ -298,7 +296,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForAllu(cableReportApplication, expectedStatus)
 
-        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
+        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
 
     @Test
@@ -331,7 +329,7 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForApplications(applications, userId)
 
-        verify { auditLogService.saveAll(match(containsAllWithoutGeneratedFields(expectedLogs))) }
+        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
 
     @Test
@@ -341,17 +339,12 @@ internal class DisclosureLogServiceTest {
         verify { auditLogService wasNot Called }
     }
 
-    private fun containsAllWithoutGeneratedFields(
+    private fun containsAll(
         expectedLogs: List<AuditLogEntry>,
-    ): (List<AuditLogEntry>) -> Boolean = { entries ->
-        withoutGeneratedFields(entries) equalsIgnoreOrder withoutGeneratedFields(expectedLogs)
-    }
+    ): (List<AuditLogEntry>) -> Boolean = { entries -> entries equalsIgnoreOrder expectedLogs }
 
-    private infix fun <T> List<T>.equalsIgnoreOrder(other: List<T>) =
+    private infix fun <T> List<T>.equalsIgnoreOrder(other: List<T>): Boolean =
         this.size == other.size && this.toSet() == other.toSet()
-
-    private fun withoutGeneratedFields(entries: List<AuditLogEntry>): List<AuditLogEntry> =
-        entries.map { it.copy(dateTime = null) }
 
     private fun applicationDto(applicationData: CableReportApplication): ApplicationDto =
         ApplicationDto(

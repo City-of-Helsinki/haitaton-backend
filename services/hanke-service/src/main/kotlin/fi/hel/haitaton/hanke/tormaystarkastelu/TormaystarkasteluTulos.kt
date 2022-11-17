@@ -1,29 +1,43 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
+import com.fasterxml.jackson.annotation.JsonView
+import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankeEntity
-import javax.persistence.*
+import javax.persistence.Entity
+import javax.persistence.FetchType
+import javax.persistence.GeneratedValue
+import javax.persistence.GenerationType
+import javax.persistence.Id
+import javax.persistence.JoinColumn
+import javax.persistence.ManyToOne
+import javax.persistence.Table
 
 data class TormaystarkasteluTulos(
-        val perusIndeksi: Float,
-        val pyorailyIndeksi: Float,
-        val joukkoliikenneIndeksi: Float) {
+    @JsonView(ChangeLogView::class) val perusIndeksi: Float,
+    @JsonView(ChangeLogView::class) val pyorailyIndeksi: Float,
+    @JsonView(ChangeLogView::class) val joukkoliikenneIndeksi: Float
+) {
 
+    @get:JsonView(ChangeLogView::class)
     val liikennehaittaIndeksi: LiikennehaittaIndeksiType by lazy {
-        val maxIndex = setOf(perusIndeksi, pyorailyIndeksi, joukkoliikenneIndeksi).maxOrNull()
-                ?: throw IllegalStateException("perusIndeksi, pyorailyIndeksi and joukkoliikenneIndeksi cannot be null")
+        val maxIndex =
+            setOf(perusIndeksi, pyorailyIndeksi, joukkoliikenneIndeksi).maxOrNull()
+                ?: throw IllegalStateException(
+                    "perusIndeksi, pyorailyIndeksi and joukkoliikenneIndeksi cannot be null"
+                )
         when (maxIndex) {
             joukkoliikenneIndeksi ->
                 LiikennehaittaIndeksiType(joukkoliikenneIndeksi, IndeksiType.JOUKKOLIIKENNEINDEKSI)
-            perusIndeksi ->
-                LiikennehaittaIndeksiType(perusIndeksi, IndeksiType.PERUSINDEKSI)
-            else ->
-                LiikennehaittaIndeksiType(pyorailyIndeksi, IndeksiType.PYORAILYINDEKSI)
+            perusIndeksi -> LiikennehaittaIndeksiType(perusIndeksi, IndeksiType.PERUSINDEKSI)
+            else -> LiikennehaittaIndeksiType(pyorailyIndeksi, IndeksiType.PYORAILYINDEKSI)
         }
     }
-
 }
 
-data class LiikennehaittaIndeksiType(val indeksi: Float, val tyyppi: IndeksiType)
+data class LiikennehaittaIndeksiType(
+    @JsonView(ChangeLogView::class) val indeksi: Float,
+    @JsonView(ChangeLogView::class) val tyyppi: IndeksiType
+)
 
 enum class IndeksiType {
     PERUSINDEKSI,
@@ -34,15 +48,13 @@ enum class IndeksiType {
 @Entity
 @Table(name = "tormaystarkastelutulos")
 class TormaystarkasteluTulosEntity(
-        val perus: Float,
-        val pyoraily: Float,
-        val joukkoliikenne: Float,
-        @ManyToOne(optional = false, fetch = FetchType.LAZY)
-        @JoinColumn(name = "hankeid")
-        val hanke: HankeEntity,
-        @Id
-        @GeneratedValue(strategy = GenerationType.IDENTITY)
-        val id: Int = 0
+    val perus: Float,
+    val pyoraily: Float,
+    val joukkoliikenne: Float,
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "hankeid")
+    val hanke: HankeEntity,
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Int = 0
 ) {
 
     override fun equals(other: Any?): Boolean {

@@ -123,13 +123,13 @@ class HankeController(
         val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
         val hankeId = hanke.id!!
 
-        val permissions =
-            permissionService.getPermissionByHankeIdAndUserId(hankeId, currentUserId())
+        val userId = currentUserId()
+        val permissions = permissionService.getPermissionByHankeIdAndUserId(hankeId, userId)
         if (permissions == null || !permissions.permissions.contains(PermissionCode.DELETE)) {
             throw HankeNotFoundException(hankeTunnus)
         }
 
-        hankeService.deleteHanke(hankeId)
+        hankeService.deleteHanke(hanke, userId)
 
         logger.info { "Deleted Hanke: ${hanke.toLogString()}" }
     }

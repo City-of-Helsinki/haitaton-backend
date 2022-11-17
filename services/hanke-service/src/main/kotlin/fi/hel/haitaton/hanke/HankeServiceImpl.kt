@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.logging.AuditLogService
+import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
@@ -10,6 +11,7 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.ZonedDateTime
 import mu.KotlinLogging
+import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
 
@@ -18,6 +20,7 @@ open class HankeServiceImpl(
     private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
     private val hanketunnusService: HanketunnusService,
     private val auditLogService: AuditLogService,
+    private val hankeLoggingService: HankeLoggingService,
 ) : HankeService {
 
     override fun loadHanke(hankeTunnus: String) =
@@ -126,8 +129,10 @@ open class HankeServiceImpl(
         return createHankeDomainObjectFromEntity(entity)
     }
 
-    override fun deleteHanke(id: Int) {
-        hankeRepository.deleteById(id)
+    @Transactional
+    override fun deleteHanke(hanke: Hanke, userId: String) {
+        hankeRepository.deleteById(hanke.id!!)
+        hankeLoggingService.logDelete(hanke, userId)
     }
 
     // TODO: functions to remove and invalidate Hanke's tormaystarkastelu-data
@@ -719,7 +724,6 @@ open class HankeServiceImpl(
     private fun postProcessAndSaveLoggingForRestrictions(
         loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder
     ) {
-        loggingEntryHolderForRestrictedActions.applyIpAddresses()
         loggingEntryHolderForRestrictedActions.saveLogEntries(auditLogService)
         val idList = loggingEntryHolderForRestrictedActions.objectIds()
         throw HankeYhteystietoProcessingRestrictedException(
@@ -748,7 +752,6 @@ open class HankeServiceImpl(
             savedHankeEntity.listOfHankeYhteystieto,
             userid
         )
-        loggingEntryHolder.applyIpAddresses()
         loggingEntryHolder.saveLogEntries(auditLogService)
     }
 }
