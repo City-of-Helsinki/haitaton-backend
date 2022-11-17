@@ -38,8 +38,15 @@ cfg_dest_layer () {
     echo "${data_object}.dest_layer"
 }
 
+# default extra args
 cfg_extra_args () {
     echo "${data_object}.extra_args"
+}
+
+# extra args when quoting is needed
+# e.g. parameter with -sql
+cfg_extra_quoted_args () {
+    echo "${data_object}.extra_quoted_args"
 }
 
 # download path
@@ -51,14 +58,15 @@ layer=$(parse_config $(cfg_layer $data_object))
 local_file=${download_dir}/$(parse_config $(cfg_local_file $data_object))
 dest_layer=$(parse_config $(cfg_dest_layer $data_object))
 extra_args=$(parse_config $(cfg_extra_args $data_object))
+extra_quoted_args=$(parse_config $(cfg_extra_quoted_args $data_object))
 
 case $data_object in
 hsl)
     wget -O "$local_file" "$addr"
     ;;
 # plain WFS fetch
-hki|ylre_katualueet|ylre_katuosat|maka_autoliikennemaarat|osm)
-    ogr2ogr -progress -f GPKG "$local_file" ${extra_args:+$extra_args} "$addr" "$layer"
+hki|ylre_katualueet|ylre_katuosat|maka_autoliikennemaarat|osm|helsinki_osm_lines)
+    ogr2ogr -progress -f GPKG "$local_file" ${extra_args:+$extra_args} ${extra_quoted_args:+"$extra_quoted_args"} "$addr" "$layer"
     ;;
 *)
     echo "Not supported"
