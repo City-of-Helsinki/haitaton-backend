@@ -35,7 +35,7 @@ osm:
   extra_args: "-oo INTERLEAVED_READING=YES"
 helsinki_osm_lines:
   addr: "/haitaton-gis/osm_vrt_clip.vrt"
-  local_file: "helsinki-osm.gpkg"
+  local_file: "helsinki-osm-lines.gpkg"
   extra_args: "-dialect sqlite -nln lines -sql"
   extra_quoted_args: "SELECT lines.* FROM lines, area WHERE ST_Intersects(lines.geom, area.geom)"
 hki:
