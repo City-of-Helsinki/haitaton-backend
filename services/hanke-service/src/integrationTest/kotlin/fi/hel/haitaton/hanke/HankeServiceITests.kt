@@ -514,14 +514,15 @@ class HankeServiceITests : DatabaseTest() {
         val yhteystietoId2 = createdHanke.omistajat[1].id!!
         assertThat(createdHanke.omistajat[1].sukunimi).isEqualTo("suku2")
 
-        var auditLogEvents = auditLogRepository.findAll().map { it.message.auditEvent }
+        var auditLogEvents =
+            auditLogRepository.findByType(ObjectType.YHTEYSTIETO).map { it.message.auditEvent }
         // The log must have 2 entries since two yhteystietos were created.
         assertThat(auditLogEvents.count()).isEqualTo(2)
         // Check that each yhteystieto has single entry in log:
         var auditLogEvents1 = auditLogEvents.filter { it.target.id == yhteystietoId1.toString() }
         var auditLogEvents2 = auditLogEvents.filter { it.target.id == yhteystietoId2.toString() }
-        assertThat(auditLogEvents1.size).isEqualTo(1)
-        assertThat(auditLogEvents2.size).isEqualTo(1)
+        assertThat(auditLogEvents1).hasSize(1)
+        assertThat(auditLogEvents2).hasSize(1)
 
         // Check that each entry has correct data.
         assertThat(auditLogEvents1[0].operation).isEqualTo(Operation.CREATE)
@@ -559,14 +560,15 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(hankeAfterUpdate.omistajat[0].sukunimi).isEqualTo("suku1")
         assertThat(hankeAfterUpdate.omistajat[1].sukunimi).isEqualTo("Som Et Hing")
 
-        auditLogEvents = auditLogRepository.findAll().map { it.message.auditEvent }
+        auditLogEvents =
+            auditLogRepository.findByType(ObjectType.YHTEYSTIETO).map { it.message.auditEvent }
         // Check that only 1 entry was added to log, about the updated yhteystieto.
-        assertThat(auditLogEvents.size).isEqualTo(3)
+        assertThat(auditLogEvents).hasSize(3)
         // Check that the second yhteystieto got a single entry in log and the other didn't.
         auditLogEvents1 = auditLogEvents.filter { it.target.id == yhteystietoId1.toString() }
         auditLogEvents2 = auditLogEvents.filter { it.target.id == yhteystietoId2.toString() }
-        assertThat(auditLogEvents1.size).isEqualTo(1)
-        assertThat(auditLogEvents2.size).isEqualTo(2)
+        assertThat(auditLogEvents1).hasSize(1)
+        assertThat(auditLogEvents2).hasSize(2)
         // Check that the new entry has correct data.
         assertThat(auditLogEvents2[1].operation).isEqualTo(Operation.UPDATE)
         assertThat(auditLogEvents2[1].actor.userId).isEqualTo(USER_NAME)
@@ -594,14 +596,15 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(hankeAfterDelete.omistajat[0].id).isEqualTo(yhteystietoId1)
         assertThat(hankeAfterDelete.omistajat[0].sukunimi).isEqualTo("suku1")
 
-        auditLogEvents = auditLogRepository.findAll().map { it.message.auditEvent }
+        auditLogEvents =
+            auditLogRepository.findByType(ObjectType.YHTEYSTIETO).map { it.message.auditEvent }
         // Check that only 1 entry was added to log, about the deleted yhteystieto.
-        assertThat(auditLogEvents.size).isEqualTo(4)
+        assertThat(auditLogEvents).hasSize(4)
         // Check that the second yhteystieto got a single entry in log and the other didn't.
         auditLogEvents1 = auditLogEvents.filter { it.target.id == yhteystietoId1.toString() }
         auditLogEvents2 = auditLogEvents.filter { it.target.id == yhteystietoId2.toString() }
-        assertThat(auditLogEvents1.size).isEqualTo(1)
-        assertThat(auditLogEvents2.size).isEqualTo(3)
+        assertThat(auditLogEvents1).hasSize(1)
+        assertThat(auditLogEvents2).hasSize(3)
         // Check that the new entry has correct data.
         assertThat(auditLogEvents2[2].operation).isEqualTo(Operation.DELETE)
         assertThat(auditLogEvents2[2].actor.userId).isEqualTo(USER_NAME)
@@ -624,7 +627,7 @@ class HankeServiceITests : DatabaseTest() {
         // Call create, get the return object:
         val returnedHanke = hankeService.createHanke(hanke)
         // Logs must have 2 entries (two yhteystietos were created):
-        assertThat(auditLogRepository.count()).isEqualTo(2)
+        assertThat(auditLogRepository.countByType(ObjectType.YHTEYSTIETO)).isEqualTo(2)
 
         // Get the non-owner yhteystieto, and set the processing restriction (i.e. locked) -flag
         // (must be done via entities):
@@ -649,15 +652,15 @@ class HankeServiceITests : DatabaseTest() {
             .isThrownBy { hankeService.updateHanke(hankeWithLockedYT) }
         // The initial create has created two entries to the log, and now the failed update should
         // have added one more.
-        assertThat(auditLogRepository.count()).isEqualTo(3)
+        assertThat(auditLogRepository.countByType(ObjectType.YHTEYSTIETO)).isEqualTo(3)
         var auditLogEvents =
             auditLogRepository
-                .findAll()
+                .findByType(ObjectType.YHTEYSTIETO)
                 .map { it.message.auditEvent }
                 .filter { it.target.id == arvioijaId }
         // For the second yhteystieto, there should be one entry for the earlier creation and
         // another for this failed update.
-        assertThat(auditLogEvents.size).isEqualTo(2)
+        assertThat(auditLogEvents).hasSize(2)
         assertThat(auditLogEvents[1].operation).isEqualTo(Operation.UPDATE)
         assertThat(auditLogEvents[1].actor.userId).isEqualTo(USER_NAME)
         assertThat(auditLogEvents[1].actor.role).isEqualTo(UserRole.USER)
@@ -680,15 +683,15 @@ class HankeServiceITests : DatabaseTest() {
         assertThatExceptionOfType(HankeYhteystietoProcessingRestrictedException::class.java)
             .isThrownBy { hankeService.updateHanke(hankeWithLockedYT) }
         // There should be one more entry in the audit log.
-        assertThat(auditLogRepository.count()).isEqualTo(4)
+        assertThat(auditLogRepository.countByType(ObjectType.YHTEYSTIETO)).isEqualTo(4)
         auditLogEvents =
             auditLogRepository
-                .findAll()
+                .findByType(ObjectType.YHTEYSTIETO)
                 .map { it.message.auditEvent }
                 .filter { it.target.id == arvioijaId }
         // For the second yhteystieto, there should be one more audit log entry for this failed
         // deletion:
-        assertThat(auditLogEvents.size).isEqualTo(3)
+        assertThat(auditLogEvents).hasSize(3)
         assertThat(auditLogEvents[2].operation).isEqualTo(Operation.DELETE)
         assertThat(auditLogEvents[2].actor.userId).isEqualTo(USER_NAME)
         assertThat(auditLogEvents[2].actor.role).isEqualTo(UserRole.USER)
@@ -720,14 +723,14 @@ class HankeServiceITests : DatabaseTest() {
         // Check that the change went through:
         assertThat(finalHanke.arvioijat[0].etunimi).isEqualTo("Hopefully-Not-Evil-Change")
         // There should be one more entry in the log.
-        assertThat(auditLogRepository.count()).isEqualTo(5)
+        assertThat(auditLogRepository.countByType(ObjectType.YHTEYSTIETO)).isEqualTo(5)
         auditLogEvents =
             auditLogRepository
-                .findAll()
+                .findByType(ObjectType.YHTEYSTIETO)
                 .map { it.message.auditEvent }
                 .filter { it.target.id == arvioijaId }
         // For the second yhteystieto, there should be one more entry in the log:
-        assertThat(auditLogEvents.size).isEqualTo(4)
+        assertThat(auditLogEvents).hasSize(4)
     }
 
     @Test
@@ -741,6 +744,7 @@ class HankeServiceITests : DatabaseTest() {
         hankeService.updateHanke(hankeWithGeometria)
         val hankeWithTulos =
             hankeService.loadHanke(hanke.hankeTunnus!!)!!.apply { this.geometriat = geometriat }
+        auditLogRepository.deleteAll()
         assertEquals(0, auditLogRepository.count())
         TestUtils.addMockedRequestIp()
 
@@ -764,32 +768,17 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(ObjectType.HANKE, event.target.type)
         assertNull(event.target.objectAfter)
         val expectedObject =
-            """{"id":${hankeWithTulos.id},
-               |"hankeTunnus":"${hankeWithTulos.hankeTunnus}",
-               |"onYKTHanke":true,
-               |"nimi":"Hämeentien perusparannus ja katuvalot",
-               |"kuvaus":"lorem ipsum dolor sit amet...",
-               |"alkuPvm":"2023-02-20T00:00:00Z",
-               |"loppuPvm":"2023-02-21T00:00:00Z",
-               |"vaihe":"OHJELMOINTI",
-               |"suunnitteluVaihe":null,
-               |"version":1,
-               |"tyomaaKatuosoite":"Testikatu 1",
-               |"tyomaaTyyppi":["VESI", "MUU"],
-               |"tyomaaKoko":"LAAJA_TAI_USEA_KORTTELI",
-               |"haittaAlkuPvm":"2023-02-20T00:00:00Z",
-               |"haittaLoppuPvm":"2023-02-21T00:00:00Z",
-               |"kaistaHaitta":"KAKSI",
-               |"kaistaPituusHaitta":"NELJA",
-               |"meluHaitta":"YKSI",
-               |"polyHaitta":"KAKSI",
-               |"tarinaHaitta":"KOLME",
-               |"tormaystarkasteluTulos":{
+            expectedHankeLogObject(
+                hankeWithTulos.id,
+                hankeWithTulos.hankeTunnus,
+                1,
+                """{
                |"perusIndeksi":1.4,
                |"pyorailyIndeksi":1.0,
                |"joukkoliikenneIndeksi":1.0,
                |"liikennehaittaIndeksi":{"indeksi":1.4,"tyyppi":"PERUSINDEKSI"}
-               |}}""".trimMargin()
+               |}""".trimMargin()
+            )
         JSONAssert.assertEquals(
             expectedObject,
             event.target.objectBefore,
@@ -799,18 +788,18 @@ class HankeServiceITests : DatabaseTest() {
 
     @Test
     fun `deleteHanke creates audit log entries for deleted yhteystiedot`() {
-        assertEquals(0, auditLogRepository.count())
         val hanke =
             hankeService.createHanke(
                 HankeFactory.create(id = null, hankeTunnus = null).withYhteystiedot { it.id = null }
             )
-        assertEquals(3, auditLogRepository.count())
+        auditLogRepository.deleteAll()
+        assertEquals(0, auditLogRepository.count())
         TestUtils.addMockedRequestIp()
 
         hankeService.deleteHanke(hanke, "testUser")
 
         val logs = auditLogRepository.findByType(ObjectType.YHTEYSTIETO)
-        assertEquals(6, logs.size)
+        assertEquals(3, logs.size)
         val deleteLogs = logs.filter { it.message.auditEvent.operation == Operation.DELETE }
         assertThat(deleteLogs).hasSize(3).allSatisfy { log ->
             assertFalse(log.isSent)
@@ -846,6 +835,65 @@ class HankeServiceITests : DatabaseTest() {
             JSONCompareMode.NON_EXTENSIBLE
         )
     }
+
+    @Test
+    fun `createHanke creates audit log entry for created hanke`() {
+        TestUtils.addMockedRequestIp()
+
+        val hanke = hankeService.createHanke(HankeFactory.create(id = null).withHaitta())
+
+        val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
+        assertEquals(1, hankeLogs.size)
+        val hankeLog = hankeLogs[0]
+        assertFalse(hankeLog.isSent)
+        assertThat(hankeLog.createdAt).isCloseToUtcNow(byLessThan(1, ChronoUnit.MINUTES))
+        val event = hankeLog.message.auditEvent
+        assertThat(event.dateTime).isCloseToUtcNow(byLessThan(1, ChronoUnit.MINUTES))
+        assertEquals(Operation.CREATE, event.operation)
+        assertEquals(Status.SUCCESS, event.status)
+        assertNull(event.failureDescription)
+        assertEquals("1", event.appVersion)
+        assertEquals("test7358", event.actor.userId)
+        assertEquals(UserRole.USER, event.actor.role)
+        assertEquals("127.0.0.1", event.actor.ipAddress)
+        assertEquals(hanke.id?.toString(), event.target.id)
+        assertEquals(ObjectType.HANKE, event.target.type)
+        assertNull(event.target.objectBefore)
+        val expectedObject = expectedHankeLogObject(hanke.id, hanke.hankeTunnus, 0, null)
+        assertEquals(
+            OBJECT_MAPPER.readTree(expectedObject),
+            OBJECT_MAPPER.readTree(event.target.objectAfter),
+        )
+    }
+
+    private fun expectedHankeLogObject(
+        id: Int?,
+        hankeTunnus: String?,
+        version: Int,
+        tormaystarkasteluTulos: String?
+    ) =
+        """{"id":$id,
+               |"hankeTunnus":"$hankeTunnus",
+               |"onYKTHanke":true,
+               |"nimi":"Hämeentien perusparannus ja katuvalot",
+               |"kuvaus":"lorem ipsum dolor sit amet...",
+               |"alkuPvm":"2023-02-20T00:00:00Z",
+               |"loppuPvm":"2023-02-21T00:00:00Z",
+               |"vaihe":"OHJELMOINTI",
+               |"suunnitteluVaihe":null,
+               |"version":$version,
+               |"tyomaaKatuosoite":"Testikatu 1",
+               |"tyomaaTyyppi":["VESI", "MUU"],
+               |"tyomaaKoko":"LAAJA_TAI_USEA_KORTTELI",
+               |"haittaAlkuPvm":"2023-02-20T00:00:00Z",
+               |"haittaLoppuPvm":"2023-02-21T00:00:00Z",
+               |"kaistaHaitta":"KAKSI",
+               |"kaistaPituusHaitta":"NELJA",
+               |"meluHaitta":"YKSI",
+               |"polyHaitta":"KAKSI",
+               |"tarinaHaitta":"KOLME",
+               |"tormaystarkasteluTulos":$tormaystarkasteluTulos
+               |}""".trimMargin()
 
     private fun List<AuditLogEntryEntity>.findByTargetId(id: Int): AuditLogEntryEntity =
         this.filter { it.message.auditEvent.target.id == id.toString() }[0]
@@ -893,4 +941,7 @@ class HankeServiceITests : DatabaseTest() {
      */
     fun AuditLogRepository.findByType(type: ObjectType) =
         this.findAll().filter { it.message.auditEvent.target.type == type }
+
+    fun AuditLogRepository.countByType(type: ObjectType) =
+        this.findAll().count { it.message.auditEvent.target.type == type }
 }

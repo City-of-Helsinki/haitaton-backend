@@ -40,6 +40,7 @@ open class HankeServiceImpl(
         }
 
     /** @return a new Hanke instance with the added and possibly modified values. */
+    @Transactional
     override fun createHanke(hanke: Hanke): Hanke {
         // TODO: Only create that hanke-tunnus if a specific set of fields are non-empty/set.
 
@@ -75,7 +76,9 @@ open class HankeServiceImpl(
         // Creating a new domain object for the return value; it will have the updated values from
         // the database, e.g. the main date values truncated to midnight, and the added id and
         // hanketunnus.
-        return createHankeDomainObjectFromEntity(entity)
+        val savedHanke = createHankeDomainObjectFromEntity(entity)
+        hankeLoggingService.logCreate(savedHanke, userId)
+        return savedHanke
     }
 
     // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO UPDATE A HANKE:
@@ -291,24 +294,15 @@ open class HankeServiceImpl(
         // A temporary copy, so that we can remove handled entries from it, leaving
         // certain deleted entries as remainder:
         val tempLockedExistingYts = lockedExistingYTs.toMutableMap()
-        findAndLogAffectedBlockedYhteystietos(
-            incomingHanke.omistajat,
-            tempLockedExistingYts,
-            loggingEntryHolderForRestrictedActions,
-            userid
-        )
-        findAndLogAffectedBlockedYhteystietos(
-            incomingHanke.arvioijat,
-            tempLockedExistingYts,
-            loggingEntryHolderForRestrictedActions,
-            userid
-        )
-        findAndLogAffectedBlockedYhteystietos(
-            incomingHanke.toteuttajat,
-            tempLockedExistingYts,
-            loggingEntryHolderForRestrictedActions,
-            userid
-        )
+        listOf(incomingHanke.omistajat, incomingHanke.arvioijat, incomingHanke.toteuttajat)
+            .forEach { yhteystiedot ->
+                findAndLogAffectedBlockedYhteystietos(
+                    yhteystiedot,
+                    tempLockedExistingYts,
+                    loggingEntryHolderForRestrictedActions,
+                    userid
+                )
+            }
 
         // If no entries were blocked, and there is nothing left in the tempLockedExistingYts, all
         // clear to proceed:
@@ -471,30 +465,21 @@ open class HankeServiceImpl(
 
         // Check each incoming yhteystieto (from three lists) for being new or an update to existing
         // one, and add to the main entity's single list if necessary:
-        processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-            hanke.omistajat,
-            entity,
-            ContactType.OMISTAJA,
-            userid,
-            existingYTs,
-            loggingEntryHolder
-        )
-        processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-            hanke.arvioijat,
-            entity,
-            ContactType.ARVIOIJA,
-            userid,
-            existingYTs,
-            loggingEntryHolder
-        )
-        processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-            hanke.toteuttajat,
-            entity,
-            ContactType.TOTEUTTAJA,
-            userid,
-            existingYTs,
-            loggingEntryHolder
-        )
+        listOf(
+                ContactType.OMISTAJA to hanke.omistajat,
+                ContactType.ARVIOIJA to hanke.arvioijat,
+                ContactType.TOTEUTTAJA to hanke.toteuttajat,
+            )
+            .forEach { (type, yhteystiedot) ->
+                processIncomingHankeYhteystietosOfSpecificTypeToEntity(
+                    yhteystiedot,
+                    entity,
+                    type,
+                    userid,
+                    existingYTs,
+                    loggingEntryHolder
+                )
+            }
 
         // TODO: this method of removing entries if they are missing in the incoming data is
         //  different to behavior of the other simpler fields, where missing or null field is
