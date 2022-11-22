@@ -82,4 +82,27 @@ internal class HankeLoggingServiceTest {
             )
         }
     }
+
+    @Test
+    fun `logCreate creates audit log entry for created hanke`() {
+        val hanke = HankeFactory.create()
+
+        hankeLoggingService.logCreate(hanke, userId)
+
+        verify {
+            auditLogService.create(
+                withArg { entry ->
+                    assertEquals(Operation.CREATE, entry.operation)
+                    assertEquals(Status.SUCCESS, entry.status)
+                    assertNull(entry.failureDescription)
+                    assertEquals(userId, entry.userId)
+                    assertEquals(UserRole.USER, entry.userRole)
+                    assertEquals(HankeFactory.defaultId.toString(), entry.objectId)
+                    assertEquals(ObjectType.HANKE, entry.objectType)
+                    assertNotNull(entry.objectAfter)
+                    assertNull(entry.objectBefore)
+                }
+            )
+        }
+    }
 }

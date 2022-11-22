@@ -26,4 +26,16 @@ class HankeLoggingService(private val auditLogService: AuditLogService) {
 
         auditLogService.createAll(yhteystietoEntries + auditLogEntry)
     }
+
+    /**
+     * Create audit log entry for a created hanke.
+     *
+     * Don't process sub-entities, they are handled elsewhere. Log entries for yhteystiedot are
+     * added in [fi.hel.haitaton.hanke.HankeServiceImpl]. Geometries are added in their own
+     * controller, so they are logged there.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    fun logCreate(hanke: Hanke, userId: String) {
+        auditLogService.create(AuditLogService.createEntry(userId, ObjectType.HANKE, hanke))
+    }
 }
