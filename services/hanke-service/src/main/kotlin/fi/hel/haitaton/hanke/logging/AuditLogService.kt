@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.logging
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.toChangeLogJsonString
 import java.time.OffsetDateTime
-import liquibase.pro.packaged.T
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -53,7 +52,7 @@ class AuditLogService(private val auditLogRepository: AuditLogRepository) {
             return ip
         }
 
-        fun <I, T : HasId<I>> deleteEntry(userId: String, type: ObjectType, objectBefore: T) =
+        fun <ID, T : HasId<ID>> deleteEntry(userId: String, type: ObjectType, objectBefore: T) =
             AuditLogEntry(
                 operation = Operation.DELETE,
                 status = Status.SUCCESS,

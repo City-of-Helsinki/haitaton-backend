@@ -1,5 +1,9 @@
 package fi.hel.haitaton.hanke.domain
 
-interface HasId<T> {
-    var id: T?
+/**
+ * Marker interface for classes that have an id-field of type [ID]. Useful for generic functions
+ * that need access to the id-field.
+ */
+interface HasId<ID> {
+    var id: ID?
 }
