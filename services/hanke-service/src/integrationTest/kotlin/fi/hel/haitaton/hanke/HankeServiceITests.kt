@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistajat
 import fi.hel.haitaton.hanke.factory.HankeFactory.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankealueFactory
+import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.AuditLogEntryEntity
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
@@ -765,7 +766,76 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
-    fun `deleteHanke creates audit log entries for deleted hanke`() {
+    fun `updateHanke creates new hankealue`() {
+        val hanke = getATestHanke()
+        val hankealue =
+            HankealueFactory.create(
+                id = null,
+                haittaAlkuPvm = hanke.alkuPvm,
+                haittaLoppuPvm = hanke.loppuPvm,
+                kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KOLME,
+                kaistaPituusHaitta = KaistajarjestelynPituus.KOLME,
+                meluHaitta = Haitta13.KOLME,
+                polyHaitta = Haitta13.KOLME,
+                tarinaHaitta = Haitta13.KOLME,
+            )
+        val createdHanke = hankeService.createHanke(hanke)
+        createdHanke.alueet.add(hankealue)
+
+        val updatedHanke = hankeService.updateHanke(createdHanke)
+
+        assertThat(updatedHanke.alueet).hasSize(2)
+        val alue = updatedHanke.alueet[1]
+        assertThat(alue.haittaAlkuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+            .isEqualTo(hanke.alkuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+        assertThat(alue.haittaLoppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+            .isEqualTo(hanke.loppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+        assertThat(alue.kaistaHaitta)
+            .isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KOLME)
+        assertThat(alue.kaistaPituusHaitta).isEqualTo(KaistajarjestelynPituus.KOLME)
+        assertThat(alue.meluHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(alue.polyHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(alue.tarinaHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(alue.geometriat).isNotNull
+    }
+
+    @Test
+    fun `updateHanke removes hankealue`() {
+        val hanke = getATestHanke()
+        val hankealue =
+            HankealueFactory.create(
+                id = null,
+                haittaAlkuPvm = hanke.alkuPvm,
+                haittaLoppuPvm = hanke.loppuPvm,
+                kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KOLME,
+                kaistaPituusHaitta = KaistajarjestelynPituus.KOLME,
+                meluHaitta = Haitta13.KOLME,
+                polyHaitta = Haitta13.KOLME,
+                tarinaHaitta = Haitta13.KOLME,
+            )
+        hanke.alueet.add(hankealue)
+        val createdHanke = hankeService.createHanke(hanke)
+        createdHanke.alueet.removeAt(0)
+
+        val updatedHanke = hankeService.updateHanke(createdHanke)
+
+        assertThat(updatedHanke.alueet).hasSize(1)
+        val alue = updatedHanke.alueet[0]
+        assertThat(alue.haittaAlkuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+            .isEqualTo(hanke.alkuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+        assertThat(alue.haittaLoppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+            .isEqualTo(hanke.loppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+        assertThat(alue.kaistaHaitta)
+            .isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KOLME)
+        assertThat(alue.kaistaPituusHaitta).isEqualTo(KaistajarjestelynPituus.KOLME)
+        assertThat(alue.meluHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(alue.polyHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(alue.tarinaHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(alue.geometriat).isNotNull
+    }
+
+    @Test
+    fun `deleteHanke creates audit log entry for deleted hanke`() {
         val hanke = hankeService.createHanke(HankeFactory.create(id = null).withHankealue())
         // Update needed for generating TormaystarkasteluTulos
         hankeService.updateHanke(hanke)
@@ -898,12 +968,12 @@ class HankeServiceITests : DatabaseTest() {
     @Test
     fun `createHanke without a hankealue creates audit log entry for created hanke`() {
         TestUtils.addMockedRequestIp()
-        val hankeBefore = HankeFactory.create(id = null)
-        hankeBefore.tyomaaKatuosoite = "Testikatu 1"
-        hankeBefore.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
-        hankeBefore.tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
+        val hankeBeforeSave = HankeFactory.create(id = null)
+        hankeBeforeSave.tyomaaKatuosoite = "Testikatu 1"
+        hankeBeforeSave.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
+        hankeBeforeSave.tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
 
-        val hanke = hankeService.createHanke(hankeBefore)
+        val hanke = hankeService.createHanke(hankeBeforeSave)
 
         val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
         assertEquals(1, hankeLogs.size)
@@ -926,6 +996,98 @@ class HankeServiceITests : DatabaseTest() {
         JSONAssert.assertEquals(
             expectedObject,
             event.target.objectAfter,
+            JSONCompareMode.NON_EXTENSIBLE
+        )
+    }
+
+    @Test
+    fun `updateHanke creates audit log entry for updated hanke`() {
+        val hankeBeforeSave = HankeFactory.create(id = null)
+        hankeBeforeSave.tyomaaKatuosoite = "Testikatu 1"
+        hankeBeforeSave.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
+        hankeBeforeSave.tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
+        val hanke = hankeService.createHanke(hankeBeforeSave)
+        val geometria: Geometriat =
+            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+                .asJsonResource<Geometriat>()
+                .apply { id = 67 }
+        hanke.alueet.add(HankealueFactory.create(id = null, geometriat = geometria))
+        auditLogRepository.deleteAll()
+        assertEquals(0, auditLogRepository.count())
+        TestUtils.addMockedRequestIp()
+
+        val updatedHanke = hankeService.updateHanke(hanke)
+
+        val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
+        assertEquals(1, hankeLogs.size)
+        val hankeLog = hankeLogs[0]
+        assertFalse(hankeLog.isSent)
+        assertThat(hankeLog.createdAt).isCloseToUtcNow(byLessThan(1, ChronoUnit.MINUTES))
+        val event = hankeLog.message.auditEvent
+        assertThat(event.dateTime).isCloseToUtcNow(byLessThan(1, ChronoUnit.MINUTES))
+        assertEquals(Operation.UPDATE, event.operation)
+        assertEquals(Status.SUCCESS, event.status)
+        assertNull(event.failureDescription)
+        assertEquals("1", event.appVersion)
+        assertEquals("test7358", event.actor.userId)
+        assertEquals(UserRole.USER, event.actor.role)
+        assertEquals("127.0.0.1", event.actor.ipAddress)
+        assertEquals(hanke.id?.toString(), event.target.id)
+        assertEquals(ObjectType.HANKE, event.target.type)
+        val expectedObjectBefore =
+            expectedHankeLogObject(hanke.id, null, hanke.hankeTunnus, 0, null)
+        JSONAssert.assertEquals(
+            expectedObjectBefore,
+            event.target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
+        )
+        val expectedObjectAfter =
+            expectedHankeLogObject(
+                updatedHanke.id,
+                updatedHanke.alueet[0].id,
+                updatedHanke.hankeTunnus,
+                1,
+                """{
+               |"perusIndeksi":1.4,
+               |"pyorailyIndeksi":1.0,
+               |"joukkoliikenneIndeksi":1.0,
+               |"liikennehaittaIndeksi":{"indeksi":1.4,"tyyppi":"PERUSINDEKSI"}
+               |}
+            """.trimIndent()
+            )
+        JSONAssert.assertEquals(
+            expectedObjectAfter,
+            event.target.objectAfter,
+            JSONCompareMode.NON_EXTENSIBLE
+        )
+    }
+
+    @Test
+    fun `updateHanke creates audit log entry even if there are no changes`() {
+        val hankeBeforeSave = HankeFactory.create(id = null)
+        hankeBeforeSave.tyomaaKatuosoite = "Testikatu 1"
+        hankeBeforeSave.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
+        hankeBeforeSave.tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
+        val hanke = hankeService.createHanke(hankeBeforeSave)
+        auditLogRepository.deleteAll()
+        assertEquals(0, auditLogRepository.count())
+
+        hankeService.updateHanke(hanke)
+
+        val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
+        assertThat(hankeLogs).hasSize(1)
+        val target = hankeLogs[0]!!.message.auditEvent.target
+        val expectedObjectBefore =
+            expectedHankeLogObject(hanke.id, null, hanke.hankeTunnus, 0, null)
+        JSONAssert.assertEquals(
+            expectedObjectBefore,
+            target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
+        )
+        val expectedObjectAfter = expectedHankeLogObject(hanke.id, null, hanke.hankeTunnus, 1, null)
+        JSONAssert.assertEquals(
+            expectedObjectAfter,
+            target.objectAfter,
             JSONCompareMode.NON_EXTENSIBLE
         )
     }

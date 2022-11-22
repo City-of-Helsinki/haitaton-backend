@@ -10,7 +10,7 @@ interface HankeService {
 
     @Transactional fun createHanke(hanke: Hanke): Hanke
 
-    fun updateHanke(hanke: Hanke): Hanke
+    @Transactional fun updateHanke(hanke: Hanke): Hanke
 
     @Transactional fun deleteHanke(hanke: Hanke, userId: String)
 

@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
@@ -21,15 +22,10 @@ private val logger = KotlinLogging.logger {}
  * Helper for mapping and sorting data to existing collections.
  *
  * Example usage:
- * mergeDataInto(
- *   hanke.alueet,
- *   entity.listOfHankeAlueet,
- *   { it.id },
- *   { it.id },
- *   { source, target -> copyNonNullHankealueFieldsToEntity(hanke, source, target) }
- * )
+ * mergeDataInto(hanke.alueet, entity.listOfHankeAlueet) { source, target ->
+ *    copyNonNullHankealueFieldsToEntity(hanke, source, target)
+ * }
  * - Transforms data from hanke.alueet into entity.listOfHankeAlueet
- * - Uses id-field as identity
  * - Does the transformation with the last lambda
  *
  * Source list is not modified. Target container is sorted by order of source container.
@@ -37,29 +33,18 @@ private val logger = KotlinLogging.logger {}
  * converter takes additional parameter for existing Target object in case it exists in target collection.
  *
  */
-fun <Source, Target> mergeDataInto(
+fun <Source : HasId<Int>, Target : HasId<Int>> mergeDataInto(
     source: List<Source>,
     target: MutableList<Target>,
-    sourceIdFn: (Source) -> Int?,
-    targetIdFn: (Target) -> Int?,
     converterFn: (Source, Target?) -> Target
 ) {
     // Existing data is collected for mapping
-    val targetIdentified = mutableMapOf<Int, Target>()
-    val targetRest = mutableListOf<Target>()
-    target.forEach {
-        val id = targetIdFn(it)
-        if (id != null) {
-            targetIdentified[id] = it
-        } else {
-            targetRest.add(it)
-        }
-    }
+    val (targetIdentified, targetRest) = target.partition { it.id != null }
+    val targetMap = targetIdentified.associateBy { it.id!! }
 
     // Target is overwritten with merged and new data from source
     target.clear()
-    source.forEach { target.add(converterFn(it, targetIdentified[sourceIdFn(it)])) }
-
+    target.addAll(source.map { converterFn(it, targetMap[it.id]) })
     target.addAll(targetRest)
 }
 
@@ -135,41 +120,44 @@ open class HankeServiceImpl(
 
     // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO UPDATE A HANKE:
     // @PreAuthorize("#hanke.createdBy == authentication.name")
+    @Transactional
     override fun updateHanke(hanke: Hanke): Hanke {
         if (hanke.hankeTunnus == null) error("Somehow got here with hanke without hanke-tunnus")
 
-        val userid = currentUserId()
+        val userId = currentUserId()
 
         // Both checks that the hanke already exists, and get its old fields to transfer data into
         val entity =
             hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
                 ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
 
+        val hankeBeforeUpdate = createHankeDomainObjectFromEntity(entity)
+
         val existingYTs = prepareMapOfExistingYhteystietos(entity)
-        checkAndHandleDataProcessingRestrictions(hanke, entity, existingYTs, userid)
+        checkAndHandleDataProcessingRestrictions(hanke, entity, existingYTs, userId)
 
         val loggingEntryHolder = prepareLogging(entity)
         // Transfer field values from domain object to entity object, and set relevant audit fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
-        copyYhteystietosToEntity(hanke, entity, userid, loggingEntryHolder, existingYTs)
+        copyYhteystietosToEntity(hanke, entity, userId, loggingEntryHolder, existingYTs)
 
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
         // Special fields; handled "manually"..
         entity.version = entity.version?.inc() ?: 1
         // (Not changing createdBy/At fields.)
-        entity.modifiedByUserId = userid
+        entity.modifiedByUserId = userId
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
 
         tormaystarkasteluService.calculateTormaystarkastelu(hanke)?.let {
             entity.tormaystarkasteluTulokset.clear()
-            val tulosEntity =
+            entity.tormaystarkasteluTulokset.add(
                 TormaystarkasteluTulosEntity(
                     perus = it.perusIndeksi,
                     pyoraily = it.pyorailyIndeksi,
                     joukkoliikenne = it.joukkoliikenneIndeksi,
                     hanke = entity
                 )
-            entity.tormaystarkasteluTulokset.add(tulosEntity)
+            )
         }
 
         // Save changes:
@@ -177,11 +165,13 @@ open class HankeServiceImpl(
         val savedHankeEntity = hankeRepository.save(entity)
         logger.debug { "Saved Hanke ${hanke.hankeTunnus}." }
 
-        postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userid)
+        postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
         // Creating a new domain object for the return value; it will have the updated values from
         // the database, e.g. the main date values truncated to midnight.
-        return createHankeDomainObjectFromEntity(entity)
+        val updatedHanke = createHankeDomainObjectFromEntity(entity)
+        hankeLoggingService.logUpdate(hankeBeforeUpdate, updatedHanke, userId)
+        return updatedHanke
     }
 
     @Transactional
@@ -198,27 +188,22 @@ open class HankeServiceImpl(
     // ======================================================================
 
     // --------------- Helpers for data transfer from database ------------
-    internal fun createHankealueDomainObjectFromEntity(
-        hankealueEntity: HankealueEntity
-    ): Hankealue {
-        val result =
-            Hankealue(
-                id = hankealueEntity.id,
-                hankeId = hankealueEntity.hanke?.id,
-                haittaAlkuPvm = hankealueEntity.haittaAlkuPvm?.atStartOfDay(TZ_UTC),
-                haittaLoppuPvm = hankealueEntity.haittaLoppuPvm?.atStartOfDay(TZ_UTC),
-                geometriat =
-                    hankealueEntity.geometriat?.let { geometriatService.getGeometriat(it) },
-                kaistaHaitta = hankealueEntity.kaistaHaitta,
-                kaistaPituusHaitta = hankealueEntity.kaistaPituusHaitta,
-                meluHaitta = hankealueEntity.meluHaitta,
-                polyHaitta = hankealueEntity.polyHaitta,
-                tarinaHaitta = hankealueEntity.tarinaHaitta
-            )
-        return result
+    private fun createHankealueDomainObjectFromEntity(hankealueEntity: HankealueEntity): Hankealue {
+        return Hankealue(
+            id = hankealueEntity.id,
+            hankeId = hankealueEntity.hanke?.id,
+            haittaAlkuPvm = hankealueEntity.haittaAlkuPvm?.atStartOfDay(TZ_UTC),
+            haittaLoppuPvm = hankealueEntity.haittaLoppuPvm?.atStartOfDay(TZ_UTC),
+            geometriat = hankealueEntity.geometriat?.let { geometriatService.getGeometriat(it) },
+            kaistaHaitta = hankealueEntity.kaistaHaitta,
+            kaistaPituusHaitta = hankealueEntity.kaistaPituusHaitta,
+            meluHaitta = hankealueEntity.meluHaitta,
+            polyHaitta = hankealueEntity.polyHaitta,
+            tarinaHaitta = hankealueEntity.tarinaHaitta
+        )
     }
 
-    internal fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke {
+    private fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke {
         val h =
             Hanke(
                 hankeEntity.id,
@@ -475,13 +460,9 @@ open class HankeServiceImpl(
         hanke.tyomaaKoko?.let { entity.tyomaaKoko = hanke.tyomaaKoko }
 
         // Merge hankealueet
-        mergeDataInto(
-            hanke.alueet,
-            entity.listOfHankeAlueet,
-            { it.id },
-            { it.id },
-            { source, target -> copyNonNullHankealueFieldsToEntity(hanke, source, target) }
-        )
+        mergeDataInto(hanke.alueet, entity.listOfHankeAlueet) { source, target ->
+            copyNonNullHankealueFieldsToEntity(hanke, source, target)
+        }
 
         entity.listOfHankeAlueet.forEach { it.hanke = entity }
     }
