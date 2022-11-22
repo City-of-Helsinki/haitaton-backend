@@ -26,6 +26,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import org.skyscreamer.jsonassert.JSONAssert
+import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
@@ -730,10 +732,7 @@ class HankeServiceITests : DatabaseTest() {
 
     @Test
     fun `deleteHanke creates audit log entries for deleted hanke`() {
-        val hanke =
-            hankeService.createHanke(HankeFactory.create(id = null).withHaitta()).apply {
-                this.tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.SAHKO)
-            }
+        val hanke = hankeService.createHanke(HankeFactory.create(id = null).withHaitta())
         val geometria: HankeGeometriat =
             "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource()
         val geometriat = hankeGeometriatService.saveGeometriat(hanke, geometria)
@@ -776,7 +775,7 @@ class HankeServiceITests : DatabaseTest() {
                |"suunnitteluVaihe":null,
                |"version":1,
                |"tyomaaKatuosoite":"Testikatu 1",
-               |"tyomaaTyyppi":["SAHKO"],
+               |"tyomaaTyyppi":["VESI", "MUU"],
                |"tyomaaKoko":"LAAJA_TAI_USEA_KORTTELI",
                |"haittaAlkuPvm":"2023-02-20T00:00:00Z",
                |"haittaLoppuPvm":"2023-02-21T00:00:00Z",
@@ -791,9 +790,10 @@ class HankeServiceITests : DatabaseTest() {
                |"joukkoliikenneIndeksi":1.0,
                |"liikennehaittaIndeksi":{"indeksi":1.4,"tyyppi":"PERUSINDEKSI"}
                |}}""".trimMargin()
-        assertEquals(
-            OBJECT_MAPPER.readTree(expectedObject),
-            OBJECT_MAPPER.readTree(event.target.objectBefore)
+        JSONAssert.assertEquals(
+            expectedObject,
+            event.target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
         )
     }
 
@@ -826,21 +826,24 @@ class HankeServiceITests : DatabaseTest() {
         }
         val omistajaId = hanke.omistajat[0].id!!
         val omistajaEvent = deleteLogs.findByTargetId(omistajaId).message.auditEvent
-        assertEquals(
+        JSONAssert.assertEquals(
             expectedYhteystietoDeleteLogObject(omistajaId, 1),
-            OBJECT_MAPPER.readTree(omistajaEvent.target.objectBefore)
+            omistajaEvent.target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
         )
         val arvioijaId = hanke.arvioijat[0].id!!
         val arvioijaEvent = deleteLogs.findByTargetId(arvioijaId).message.auditEvent
-        assertEquals(
+        JSONAssert.assertEquals(
             expectedYhteystietoDeleteLogObject(arvioijaId, 2),
-            OBJECT_MAPPER.readTree(arvioijaEvent.target.objectBefore)
+            arvioijaEvent.target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
         )
         val toteuttajaId = hanke.toteuttajat[0].id!!
         val toteuttajaEvent = deleteLogs.findByTargetId(toteuttajaId).message.auditEvent
-        assertEquals(
+        JSONAssert.assertEquals(
             expectedYhteystietoDeleteLogObject(toteuttajaId, 3),
-            OBJECT_MAPPER.readTree(toteuttajaEvent.target.objectBefore)
+            toteuttajaEvent.target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
         )
     }
 
@@ -852,18 +855,16 @@ class HankeServiceITests : DatabaseTest() {
      * [fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createDifferentiated].
      */
     private fun expectedYhteystietoDeleteLogObject(id: Int?, i: Int) =
-        OBJECT_MAPPER.readTree(
-            """{
-                |"id":$id,
-                |"sukunimi":"suku$i",
-                |"etunimi":"etu$i",
-                |"email":"email$i",
-                |"puhelinnumero":"010$i$i$i$i$i$i$i",
-                |"organisaatioId":$i,
-                |"organisaatioNimi":"org$i",
-                |"osasto":"osasto$i"
-                |}""".trimMargin()
-        )
+        """{
+           |"id":$id,
+           |"sukunimi":"suku$i",
+           |"etunimi":"etu$i",
+           |"email":"email$i",
+           |"puhelinnumero":"010$i$i$i$i$i$i$i",
+           |"organisaatioId":$i,
+           |"organisaatioNimi":"org$i",
+           |"osasto":"osasto$i"
+           |}""".trimMargin()
 
     /**
      * Fills a new Hanke domain object with test values and returns it. The audit and id/tunnus
