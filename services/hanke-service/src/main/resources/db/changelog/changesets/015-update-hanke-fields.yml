@@ -1,0 +1,87 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-update-hanke-fields
+      comment: Hanke field changes for the new UI
+      author: Niko Junkala
+      changes:
+        - addColumn:
+            remarks: "New fields for updated hankeyhteystiedot"
+            tableName: hankeyhteystieto
+            columns:
+              - column:
+                  name: nimi
+                  type: varchar(256)
+                  remarks: "Deprecates etunimi and sukunimi. Migration is done in separate file."
+              - column:
+                  name: ytunnustaihetu
+                  type: varchar(32)
+              - column:
+                  name: osoite
+                  type: varchar(1024)
+              - column:
+                  name: postinumero
+                  type: varchar(32)
+              - column:
+                  name: postitoimipaikka
+                  type: varchar(256)
+              - column:
+                  name: ordernumber
+                  type: int8
+                  remarks: "Allow sorting of contacts"
+              - column:
+                  name: parent_id
+                  type: bigint
+                  remarks: "Allow subcontacts"
+                  constraints:
+                    foreignKeyName: fk_hankeyhteystieto_hankeyhteystieto
+                    references: hankeyhteystieto(id)
+        - createTable:
+            tableName: hankealue
+            remarks: "Table to add multiple areas infulenced by the hanke"
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: haittaalkupvm
+                  type: date
+              - column:
+                  name: haittaloppupvm
+                  type: date
+              - column:
+                  name: kaistahaitta
+                  type: tinyint
+              - column:
+                  name: kaistapituushaitta
+                  type: tinyint
+              - column:
+                  name: meluhaitta
+                  type: tinyint
+              - column:
+                  name: polyhaitta
+                  type: tinyint
+              - column:
+                  name: tarinahaitta
+                  type: tinyint
+              - column:
+                  name: geometriat
+                  type: bigint
+                  constraints:
+                    foreignKeyName: fk_hankealue_geometria
+                    references: HankeGeometriat(id)
+              - column:
+                  name: hankeid
+                  type: bigint
+                  constraints:
+                    foreignKeyName: fk_hanke_hankealue
+                    references: hanke(id)
+                    nullable: false
+
+        - addAutoIncrement:
+            tableName: hankealue
+            columnName: id
+            columnDataType: bigint
+            generationType: ALWAYS

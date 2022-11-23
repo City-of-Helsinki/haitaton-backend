@@ -16,6 +16,7 @@ object HankeYhteystietoFactory : Factory<HankeYhteystieto>() {
             organisaatioId = organisaatioId,
             organisaatioNimi = "Organisaatio",
             osasto = "Osasto",
+            alikontaktit = arrayListOf(),
             createdBy = "test7358",
             createdAt = getCurrentTimeUTC(),
             modifiedBy = "test7358",
@@ -29,14 +30,15 @@ object HankeYhteystietoFactory : Factory<HankeYhteystieto>() {
      */
     fun createDifferentiated(intValue: Int): HankeYhteystieto {
         return HankeYhteystieto(
-            id = intValue,
-            sukunimi = "suku$intValue",
-            etunimi = "etu$intValue",
-            email = "email$intValue",
-            puhelinnumero = "010$intValue$intValue$intValue$intValue$intValue$intValue$intValue",
-            organisaatioId = intValue,
-            organisaatioNimi = "org$intValue",
-            osasto = "osasto$intValue"
+            null,
+            "suku$intValue",
+            "etu$intValue",
+            "email$intValue",
+            "010$intValue$intValue$intValue$intValue$intValue$intValue$intValue",
+            intValue,
+            "org$intValue",
+            "osasto$intValue",
+            alikontaktit = arrayListOf()
         )
     }
 

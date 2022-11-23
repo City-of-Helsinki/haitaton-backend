@@ -17,7 +17,7 @@ data class HankeYhteystieto(
     var organisaatioId: Int?,
     var organisaatioNimi: String?,
     var osasto: String?,
-
+    var alikontaktit: MutableList<HankeYhteystieto>,
     var createdBy: String? = null,
     var createdAt: ZonedDateTime? = null,
     var modifiedBy: String? = null,
@@ -25,19 +25,26 @@ data class HankeYhteystieto(
 ) {
 
     /**
-     * Returns true if at least one Yhteystieto-field is non-null, non-empty and non-whitespace-only.
+     * Returns true if at least one Yhteystieto-field is non-null, non-empty and
+     * non-whitespace-only.
      */
     @JsonIgnore
     fun isAnyFieldSet(): Boolean {
-        return isAnyMandatoryFieldSet() || !organisaatioNimi.isNullOrBlank() || !osasto.isNullOrBlank()
+        return isAnyMandatoryFieldSet() ||
+            !organisaatioNimi.isNullOrBlank() ||
+            !osasto.isNullOrBlank()
     }
 
     /**
-     * Returns true if at least one mandatory Yhteystieto-field is non-null, non-empty and non-whitespace-only.
+     * Returns true if at least one mandatory Yhteystieto-field is non-null, non-empty and
+     * non-whitespace-only.
      */
     @JsonIgnore
     fun isAnyMandatoryFieldSet(): Boolean {
-        return sukunimi.isNotBlank() || etunimi.isNotBlank() || email.isNotBlank() || puhelinnumero.isNotBlank()
+        return sukunimi.isNotBlank() ||
+            etunimi.isNotBlank() ||
+            email.isNotBlank() ||
+            puhelinnumero.isNotBlank()
     }
 
     /**
@@ -45,6 +52,9 @@ data class HankeYhteystieto(
      */
     @JsonIgnore
     fun isValid(): Boolean {
-        return sukunimi.isNotBlank() && etunimi.isNotBlank() && email.isNotBlank() && puhelinnumero.isNotBlank()
+        return sukunimi.isNotBlank() &&
+            etunimi.isNotBlank() &&
+            email.isNotBlank() &&
+            puhelinnumero.isNotBlank()
     }
 }

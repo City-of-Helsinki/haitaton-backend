@@ -6,25 +6,29 @@ import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.SRID
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.toJsonString
+import java.sql.Timestamp
+import java.sql.Types
 import org.geojson.Crs
 import org.geojson.Feature
 import org.geojson.FeatureCollection
 import org.springframework.jdbc.core.JdbcOperations
-import java.sql.Timestamp
-import java.sql.Types
 
 class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : HankeGeometriatDao {
 
     companion object {
 
-        private fun saveHankeGeometriaRows(hankeGeometriat: HankeGeometriat, jdbcOperations: JdbcOperations) {
-            val arguments: List<Array<Any>>? = hankeGeometriat.featureCollection?.features?.map { feature ->
-                arrayOf(
-                    hankeGeometriat.id!!,
-                    feature.geometry.toJsonString(),
-                    feature.properties?.toJsonString() ?: "null"
-                )
-            }
+        private fun saveHankeGeometriaRows(
+            hankeGeometriat: HankeGeometriat,
+            jdbcOperations: JdbcOperations
+        ) {
+            val arguments: List<Array<Any>>? =
+                hankeGeometriat.featureCollection?.features?.map { feature ->
+                    arrayOf(
+                        hankeGeometriat.id!!,
+                        feature.geometry.toJsonString(),
+                        feature.properties?.toJsonString() ?: "null"
+                    )
+                }
             val argumentTypes = intArrayOf(Types.INTEGER, Types.VARCHAR, Types.OTHER)
             if (arguments != null) {
                 val originalSrid = hankeGeometriat.featureCollection!!.srid()
@@ -44,16 +48,22 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                         }
                     },
                         ?
-                    )""".trimIndent(), arguments, argumentTypes
+                    )""".trimIndent(),
+                    arguments,
+                    argumentTypes
                 )
             }
         }
 
         private fun FeatureCollection.srid(): Int {
-            return this.crs?.properties?.get("name")?.toString()?.split("::")?.get(1)?.toInt() ?: SRID
+            return this.crs?.properties?.get("name")?.toString()?.split("::")?.get(1)?.toInt()
+                ?: SRID
         }
 
-        private fun updateHankeGeometriat(hankeGeometriat: HankeGeometriat, jdbcOperations: JdbcOperations) {
+        private fun updateHankeGeometriat(
+            hankeGeometriat: HankeGeometriat,
+            jdbcOperations: JdbcOperations
+        ) {
             jdbcOperations.update(
                 """
                 UPDATE HankeGeometriat
@@ -72,7 +82,10 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                     ps.setNull(2, Types.INTEGER)
                 }
                 if (hankeGeometriat.modifiedAt != null) {
-                    ps.setTimestamp(3, Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli()))
+                    ps.setTimestamp(
+                        3,
+                        Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli())
+                    )
                 } else {
                     ps.setNull(3, Types.TIMESTAMP)
                 }
@@ -80,17 +93,22 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
             }
         }
 
-        private fun deleteHankeGeometriaRows(hankeGeometriat: HankeGeometriat, jdbcOperations: JdbcOperations) {
-            jdbcOperations.execute("DELETE FROM HankeGeometria WHERE hankeGeometriatId = ${hankeGeometriat.id}")
+        private fun deleteHankeGeometriaRows(
+            hankeGeometriat: HankeGeometriat,
+            jdbcOperations: JdbcOperations
+        ) {
+            jdbcOperations.execute(
+                "DELETE FROM HankeGeometria WHERE hankeGeometriatId = ${hankeGeometriat.id}"
+            )
         }
     }
 
-    override fun createHankeGeometriat(hankeGeometriat: HankeGeometriat) {
+    override fun createHankeGeometriat(hankeGeometriat: HankeGeometriat): HankeGeometriat {
         with(jdbcOperations) {
-            val id = queryForObject(
-                """
+            val id =
+                queryForObject(
+                    """
                 INSERT INTO HankeGeometriat (
-                    hankeId,
                     version,
                     createdByUserId,
                     createdAt,
@@ -101,65 +119,72 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                     ?,
                     ?,
                     ?,
-                    ?,
                     ?               
                 )
                 RETURNING id
-                """.trimIndent(), { rs, _ -> rs.getInt(1) },
-                hankeGeometriat.hankeId,
-                hankeGeometriat.version ?: 0,
-                hankeGeometriat.createdByUserId,
-                if (hankeGeometriat.createdAt != null) {
-                    Timestamp(hankeGeometriat.createdAt!!.toInstant().toEpochMilli())
-                } else {
-                    null
-                },
-                hankeGeometriat.modifiedByUserId,
-                if (hankeGeometriat.modifiedAt != null) {
-                    Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli())
-                } else {
-                    null
-                }
-            )
+                """.trimIndent(),
+                    { rs, _ -> rs.getInt(1) },
+                    hankeGeometriat.version ?: 0,
+                    hankeGeometriat.createdByUserId,
+                    if (hankeGeometriat.createdAt != null) {
+                        Timestamp(hankeGeometriat.createdAt!!.toInstant().toEpochMilli())
+                    } else {
+                        null
+                    },
+                    hankeGeometriat.modifiedByUserId,
+                    if (hankeGeometriat.modifiedAt != null) {
+                        Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli())
+                    } else {
+                        null
+                    }
+                )
             hankeGeometriat.id = id
             saveHankeGeometriaRows(hankeGeometriat, this)
+            return hankeGeometriat
         }
     }
 
-    override fun retrieveHankeGeometriat(hankeId: Int): HankeGeometriat? {
+    override fun retrieveGeometriat(id: Int): HankeGeometriat? {
         with(jdbcOperations) {
-            val hankeGeometriat = query(
-                """
+            val hankeGeometriat =
+                query(
+                        """
             SELECT
                 id,
-                hankeId,
                 version,
                 createdByUserId,
                 createdAt,
                 modifiedByUserId,
                 modifiedAt
-            FROM HankeGeometriat WHERE hankeId = ?            
-        """.trimIndent(), { rs, _ ->
-                    HankeGeometriat(
-                        rs.getInt(1),
-                        rs.getInt(2),
-                        null,
-                        rs.getInt(3),
-                        rs.getString(4),
-                        rs.getTimestamp(5).toInstant().atZone(TZ_UTC),
-                        rs.getString(6),
-                        rs.getTimestamp(7)?.toInstant()?.atZone(TZ_UTC)
+            FROM HankeGeometriat WHERE id = ?            
+        """.trimIndent(),
+                        { rs, _ ->
+                            HankeGeometriat(
+                                rs.getInt(1),
+                                null,
+                                rs.getInt(2),
+                                rs.getString(3),
+                                rs.getTimestamp(4).toInstant().atZone(TZ_UTC),
+                                rs.getString(5),
+                                rs.getTimestamp(6)?.toInstant()?.atZone(TZ_UTC)
+                            )
+                        },
+                        id
                     )
-                }, hankeId
-            ).getOrNull(0)
-            return hankeGeometriat?.withFeatureCollection(FeatureCollection().apply {
-                features = retrieveHankeGeometriaRows(hankeGeometriat.id!!, this@with)
-                crs = Crs().apply { properties = mapOf(Pair("name", COORDINATE_SYSTEM_URN)) }
-            })
+                    .getOrNull(0)
+            return hankeGeometriat?.withFeatureCollection(
+                FeatureCollection().apply {
+                    features = retrieveHankeGeometriaRows(hankeGeometriat.id!!, this@with)
+                    crs = Crs().apply { properties = mapOf(Pair("name", COORDINATE_SYSTEM_URN)) }
+                }
+            )
         }
     }
 
-    private fun retrieveHankeGeometriaRows(hankeGeometriatId: Int, jdbcOperations: JdbcOperations): List<Feature> {
+    private fun retrieveHankeGeometriaRows(
+        hankeGeometriatId: Int,
+        jdbcOperations: JdbcOperations
+    ): List<Feature> {
         return jdbcOperations.query(
             """
                     SELECT
@@ -169,14 +194,16 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                         HankeGeometria
                     WHERE
                         hankeGeometriatId = ?
-                """.trimIndent(), { rs, _ ->
+                """.trimIndent(),
+            { rs, _ ->
                 val geojson = rs.getString(1)
                 val paramjson = rs.getString(2)
                 Feature().apply {
                     geometry = OBJECT_MAPPER.readValue(geojson)
                     paramjson?.let { properties = OBJECT_MAPPER.readValue(paramjson) }
                 }
-            }, hankeGeometriatId
+            },
+            hankeGeometriatId
         )
     }
 

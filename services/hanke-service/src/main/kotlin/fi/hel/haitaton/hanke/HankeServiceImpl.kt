@@ -2,6 +2,8 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
@@ -13,10 +15,48 @@ import mu.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
 
+/*
+ * Helper for mapping and sorting data to existing collections.
+ *
+ * Example usage:
+ * TODO
+ *
+ * Source list is not modified. Target container is sorted by order of source container.
+ *
+ * converter takes additional parameter for existing Target object in case it exists in target collection.
+ *
+ */
+fun <Source, Target> mergeDataInto(
+    source: List<Source>,
+    target: MutableList<Target>,
+    sourceIdFn: (Source) -> Int?,
+    targetIdFn: (Target) -> Int?,
+    converterFn: (Source, Target?) -> Target
+) {
+    // Existing data is collected for mapping
+    val targetIdentified = mutableMapOf<Int, Target>()
+    val targetRest = mutableListOf<Target>()
+    target.forEach {
+        val id = targetIdFn(it)
+        if (id != null) {
+            targetIdentified[id] = it
+        } else {
+            targetRest.add(it)
+        }
+    }
+
+    // Target is overwritten with merged and new data from source
+    target.clear()
+    source.forEach { target.add(converterFn(it, targetIdentified[sourceIdFn(it)])) }
+
+    target.addAll(targetRest)
+}
+
 open class HankeServiceImpl(
     private val hankeRepository: HankeRepository,
     private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
     private val hanketunnusService: HanketunnusService,
+    private val hankeGeometriatService: HankeGeometriatService,
     private val auditLogService: AuditLogService,
 ) : HankeService {
 
@@ -45,8 +85,14 @@ open class HankeServiceImpl(
         val entity = HankeEntity()
         val loggingEntryHolder = prepareLogging(entity)
 
+        // Create a new hanketunnus for it and save it:
+        val hanketunnus = hanketunnusService.newHanketunnus()
+        entity.hankeTunnus = hanketunnus
+        hanke.hankeTunnus = hanketunnus
+
         // Copy values from the incoming domain object, and set some internal fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
+
         val existingYTs = prepareMapOfExistingYhteystietos(entity)
         copyYhteystietosToEntity(hanke, entity, userId, loggingEntryHolder, existingYTs)
 
@@ -60,9 +106,6 @@ open class HankeServiceImpl(
         entity.modifiedByUserId = null
         entity.modifiedAt = null
 
-        // Create a new hanketunnus for it and save it:
-        val hanketunnus = hanketunnusService.newHanketunnus()
-        entity.hankeTunnus = hanketunnus
         logger.debug { "Creating Hanke ${hanke.hankeTunnus}: ${hanke.toLogString()}" }
         val savedHankeEntity = hankeRepository.save(entity)
         logger.debug { "Created Hanke ${hanke.hankeTunnus}." }
@@ -138,65 +181,80 @@ open class HankeServiceImpl(
     // ======================================================================
 
     // --------------- Helpers for data transfer from database ------------
+    internal fun createHankealueDomainObjectFromEntity(
+        hankealueEntity: HankealueEntity
+    ): Hankealue {
+        val result =
+            Hankealue(
+                id = hankealueEntity.id,
+                hankeId = hankealueEntity.hanke?.id,
+                haittaAlkuPvm = hankealueEntity.haittaAlkuPvm?.atStartOfDay(TZ_UTC),
+                haittaLoppuPvm = hankealueEntity.haittaLoppuPvm?.atStartOfDay(TZ_UTC),
+                geometriat =
+                    hankealueEntity.geometriat?.let { hankeGeometriatService.getGeometriat(it) },
+                kaistaHaitta = hankealueEntity.kaistaHaitta,
+                kaistaPituusHaitta = hankealueEntity.kaistaPituusHaitta,
+                meluHaitta = hankealueEntity.meluHaitta,
+                polyHaitta = hankealueEntity.polyHaitta,
+                tarinaHaitta = hankealueEntity.tarinaHaitta
+            )
+        return result
+    }
 
-    companion object Converters {
-        internal fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke {
-            val h =
-                Hanke(
-                    hankeEntity.id,
-                    hankeEntity.hankeTunnus,
-                    hankeEntity.onYKTHanke,
-                    hankeEntity.nimi,
-                    hankeEntity.kuvaus,
-                    hankeEntity.alkuPvm?.atStartOfDay(TZ_UTC),
-                    hankeEntity.loppuPvm?.atStartOfDay(TZ_UTC),
-                    hankeEntity.vaihe,
-                    hankeEntity.suunnitteluVaihe,
-                    hankeEntity.version,
-                    // TODO: will need in future to actually fetch the username from another
-                    //   service.. (or whatever we choose to pass out here)
-                    //   Do it below, outside this construction call.
-                    hankeEntity.createdByUserId ?: "",
-                    // From UTC without timezone info to UTC with timezone info
-                    if (hankeEntity.createdAt != null)
-                        ZonedDateTime.of(hankeEntity.createdAt, TZ_UTC)
-                    else null,
-                    hankeEntity.modifiedByUserId,
-                    if (hankeEntity.modifiedAt != null)
-                        ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC)
-                    else null,
-                    hankeEntity.saveType
-                )
-            createSeparateYhteystietoListsFromEntityData(h, hankeEntity)
+    internal fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke {
+        val h =
+            Hanke(
+                hankeEntity.id,
+                hankeEntity.hankeTunnus,
+                hankeEntity.onYKTHanke,
+                hankeEntity.nimi,
+                hankeEntity.kuvaus,
+                hankeEntity.alkuPvm?.atStartOfDay(TZ_UTC),
+                hankeEntity.loppuPvm?.atStartOfDay(TZ_UTC),
+                hankeEntity.vaihe,
+                hankeEntity.suunnitteluVaihe,
+                hankeEntity.version,
+                // TODO: will need in future to actually fetch the username from another
+                //   service.. (or whatever we choose to pass out here)
+                //   Do it below, outside this construction call.
+                hankeEntity.createdByUserId ?: "",
+                // From UTC without timezone info to UTC with timezone info
+                if (hankeEntity.createdAt != null) ZonedDateTime.of(hankeEntity.createdAt, TZ_UTC)
+                else null,
+                hankeEntity.modifiedByUserId,
+                if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC)
+                else null,
+                hankeEntity.saveType
+            )
 
-            h.tyomaaKatuosoite = hankeEntity.tyomaaKatuosoite
-            h.tyomaaTyyppi = hankeEntity.tyomaaTyyppi
-            h.tyomaaKoko = hankeEntity.tyomaaKoko
+        h.tyomaaKatuosoite = hankeEntity.tyomaaKatuosoite
+        h.tyomaaTyyppi = hankeEntity.tyomaaTyyppi
+        h.tyomaaKoko = hankeEntity.tyomaaKoko
 
-            h.haittaAlkuPvm = hankeEntity.haittaAlkuPvm?.atStartOfDay(TZ_UTC)
-            h.haittaLoppuPvm = hankeEntity.haittaLoppuPvm?.atStartOfDay(TZ_UTC)
-            h.kaistaHaitta = hankeEntity.kaistaHaitta
-            h.kaistaPituusHaitta = hankeEntity.kaistaPituusHaitta
-            h.meluHaitta = hankeEntity.meluHaitta
-            h.polyHaitta = hankeEntity.polyHaitta
-            h.tarinaHaitta = hankeEntity.tarinaHaitta
+        createSeparateYhteystietoListsFromEntityData(h, hankeEntity)
 
-            hankeEntity.tormaystarkasteluTulokset.firstOrNull()?.let {
-                h.tormaystarkasteluTulos =
-                    TormaystarkasteluTulos(it.perus, it.pyoraily, it.joukkoliikenne)
-            }
-
-            return h
+        hankeEntity.listOfHankeAlueet.forEach {
+            val alue = createHankealueDomainObjectFromEntity(it)
+            alue.geometriat?.includeHankeProperties(h)
+            h.alueet.add(alue)
         }
 
-        /**
-         * createSeparateYhteystietoListsFromEntityData splits entity's one list to three different
-         * contact information lists and adds them for Hanke domain object
-         */
-        private fun createSeparateYhteystietoListsFromEntityData(
-            hanke: Hanke,
-            hankeEntity: HankeEntity
-        ) {
+        hankeEntity.tormaystarkasteluTulokset.firstOrNull()?.let {
+            h.tormaystarkasteluTulos =
+                TormaystarkasteluTulos(it.perus, it.pyoraily, it.joukkoliikenne)
+        }
+
+        return h
+    }
+
+    /**
+     * createSeparateYhteystietoListsFromEntityData splits entity's one list to three different
+     * contact information lists and adds them for Hanke domain object
+     */
+    private fun createSeparateYhteystietoListsFromEntityData(
+        hanke: Hanke,
+        hankeEntity: HankeEntity
+    ) {
 
             hankeEntity.listOfHankeYhteystieto.forEach { hankeYhteystietoEntity ->
                 val hankeYhteystieto =
@@ -205,38 +263,44 @@ open class HankeServiceImpl(
                 when (hankeYhteystietoEntity.contactType) {
                     ContactType.OMISTAJA -> hanke.omistajat.add(hankeYhteystieto)
                     ContactType.TOTEUTTAJA -> hanke.toteuttajat.add(hankeYhteystieto)
-                    ContactType.ARVIOIJA -> hanke.arvioijat.add(hankeYhteystieto)
+                    ContactType.RAKENTAJA -> hanke.rakennuttajat.add(hankeYhteystieto)
+                    ContactType.MUU -> hanke.muut.add(hankeYhteystieto)
                 }
             }
         }
 
-        private fun createHankeYhteystietoDomainObjectFromEntity(
-            hankeYhteystietoEntity: HankeYhteystietoEntity
-        ): HankeYhteystieto {
-            var createdAt: ZonedDateTime? = null
+    private fun createHankeYhteystietoDomainObjectFromEntity(
+        hankeYhteystietoEntity: HankeYhteystietoEntity
+    ): HankeYhteystieto {
+        var createdAt: ZonedDateTime? = null
 
-            if (hankeYhteystietoEntity.createdAt != null)
-                createdAt = ZonedDateTime.of(hankeYhteystietoEntity.createdAt, TZ_UTC)
+        if (hankeYhteystietoEntity.createdAt != null)
+            createdAt = ZonedDateTime.of(hankeYhteystietoEntity.createdAt, TZ_UTC)
 
-            var modifiedAt: ZonedDateTime? = null
-            if (hankeYhteystietoEntity.modifiedAt != null)
-                modifiedAt = ZonedDateTime.of(hankeYhteystietoEntity.modifiedAt, TZ_UTC)
+        var modifiedAt: ZonedDateTime? = null
+        if (hankeYhteystietoEntity.modifiedAt != null)
+            modifiedAt = ZonedDateTime.of(hankeYhteystietoEntity.modifiedAt, TZ_UTC)
 
-            return HankeYhteystieto(
-                id = hankeYhteystietoEntity.id,
-                etunimi = hankeYhteystietoEntity.etunimi,
-                sukunimi = hankeYhteystietoEntity.sukunimi,
-                email = hankeYhteystietoEntity.email,
-                puhelinnumero = hankeYhteystietoEntity.puhelinnumero,
-                organisaatioId = hankeYhteystietoEntity.organisaatioId,
-                organisaatioNimi = hankeYhteystietoEntity.organisaatioNimi,
-                osasto = hankeYhteystietoEntity.osasto,
-                createdBy = hankeYhteystietoEntity.createdByUserId,
-                modifiedBy = hankeYhteystietoEntity.modifiedByUserId,
-                createdAt = createdAt,
-                modifiedAt = modifiedAt
-            )
-        }
+        val alikontaktit =
+            hankeYhteystietoEntity.subcontacts
+                .map { createHankeYhteystietoDomainObjectFromEntity(it) }
+                .toMutableList()
+
+        return HankeYhteystieto(
+            id = hankeYhteystietoEntity.id,
+            etunimi = hankeYhteystietoEntity.etunimi,
+            sukunimi = hankeYhteystietoEntity.sukunimi,
+            email = hankeYhteystietoEntity.email,
+            puhelinnumero = hankeYhteystietoEntity.puhelinnumero,
+            organisaatioId = hankeYhteystietoEntity.organisaatioId,
+            organisaatioNimi = hankeYhteystietoEntity.organisaatioNimi,
+            osasto = hankeYhteystietoEntity.osasto,
+            alikontaktit = alikontaktit,
+            createdBy = hankeYhteystietoEntity.createdByUserId,
+            modifiedBy = hankeYhteystietoEntity.modifiedByUserId,
+            createdAt = createdAt,
+            modifiedAt = modifiedAt
+        )
     }
 
     // --------------- Helpers for data transfer towards database ------------
@@ -293,13 +357,19 @@ open class HankeServiceImpl(
             userid
         )
         findAndLogAffectedBlockedYhteystietos(
-            incomingHanke.arvioijat,
+            incomingHanke.rakennuttajat,
             tempLockedExistingYts,
             loggingEntryHolderForRestrictedActions,
             userid
         )
         findAndLogAffectedBlockedYhteystietos(
             incomingHanke.toteuttajat,
+            tempLockedExistingYts,
+            loggingEntryHolderForRestrictedActions,
+            userid
+        )
+        findAndLogAffectedBlockedYhteystietos(
+            incomingHanke.muut,
             tempLockedExistingYts,
             loggingEntryHolderForRestrictedActions,
             userid
@@ -400,6 +470,7 @@ open class HankeServiceImpl(
         // Note, .toLocalDate() does not do any time zone conversion.
         hanke.alkuPvm?.let { entity.alkuPvm = hanke.alkuPvm?.toLocalDate() }
         hanke.loppuPvm?.let { entity.loppuPvm = hanke.loppuPvm?.toLocalDate() }
+
         hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
         hanke.suunnitteluVaihe?.let { entity.suunnitteluVaihe = hanke.suunnitteluVaihe }
 
@@ -408,16 +479,44 @@ open class HankeServiceImpl(
         entity.tyomaaTyyppi = hanke.tyomaaTyyppi
         hanke.tyomaaKoko?.let { entity.tyomaaKoko = hanke.tyomaaKoko }
 
+        // Merge hankealueet
+        mergeDataInto(
+            hanke.alueet,
+            entity.listOfHankeAlueet,
+            { it.id },
+            { it.id },
+            { source, target -> copyNonNullHankealueFieldsToEntity(hanke, source, target) }
+        )
+
+        entity.listOfHankeAlueet.forEach { it.hanke = entity }
+    }
+
+    private fun copyNonNullHankealueFieldsToEntity(
+        hanke: Hanke,
+        source: Hankealue,
+        target: HankealueEntity?
+    ): HankealueEntity {
+        val result = target ?: HankealueEntity()
+
         // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
         // be simply dropped here.
         // Note, .toLocalDate() does not do any time zone conversion.
-        hanke.haittaAlkuPvm?.let { entity.haittaAlkuPvm = hanke.haittaAlkuPvm?.toLocalDate() }
-        hanke.haittaLoppuPvm?.let { entity.haittaLoppuPvm = hanke.haittaLoppuPvm?.toLocalDate() }
-        hanke.kaistaHaitta?.let { entity.kaistaHaitta = hanke.kaistaHaitta }
-        hanke.kaistaPituusHaitta?.let { entity.kaistaPituusHaitta = hanke.kaistaPituusHaitta }
-        hanke.meluHaitta?.let { entity.meluHaitta = hanke.meluHaitta }
-        hanke.polyHaitta?.let { entity.polyHaitta = hanke.polyHaitta }
-        hanke.tarinaHaitta?.let { entity.tarinaHaitta = hanke.tarinaHaitta }
+        source.haittaLoppuPvm?.let { result.haittaLoppuPvm = source.haittaLoppuPvm?.toLocalDate() }
+        source.haittaAlkuPvm?.let { result.haittaAlkuPvm = source.haittaAlkuPvm?.toLocalDate() }
+
+        source.kaistaHaitta?.let { result.kaistaHaitta = source.kaistaHaitta }
+        source.kaistaPituusHaitta?.let { result.kaistaPituusHaitta = source.kaistaPituusHaitta }
+        source.meluHaitta?.let { result.meluHaitta = source.meluHaitta }
+        source.polyHaitta?.let { result.polyHaitta = source.polyHaitta }
+        source.tarinaHaitta?.let { result.tarinaHaitta = source.tarinaHaitta }
+        source.geometriat?.let {
+            it.id = result.geometriat ?: it.id
+            it.includeHankeProperties(hanke)
+            val saved = hankeGeometriatService.saveGeometriat(it)
+            result.geometriat = saved?.id
+        }
+
+        return result
     }
 
     /**
@@ -475,9 +574,9 @@ open class HankeServiceImpl(
             loggingEntryHolder
         )
         processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-            hanke.arvioijat,
+            hanke.rakennuttajat,
             entity,
-            ContactType.ARVIOIJA,
+            ContactType.RAKENTAJA,
             userid,
             existingYTs,
             loggingEntryHolder
@@ -486,6 +585,14 @@ open class HankeServiceImpl(
             hanke.toteuttajat,
             entity,
             ContactType.TOTEUTTAJA,
+            userid,
+            existingYTs,
+            loggingEntryHolder
+        )
+        processIncomingHankeYhteystietosOfSpecificTypeToEntity(
+            hanke.muut,
+            entity,
+            ContactType.MUU,
             userid,
             existingYTs,
             loggingEntryHolder

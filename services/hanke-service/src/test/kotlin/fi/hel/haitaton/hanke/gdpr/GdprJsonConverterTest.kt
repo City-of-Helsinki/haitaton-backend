@@ -45,7 +45,7 @@ internal class GdprJsonConverterTest {
         val hanke =
             HankeFactory.create().withYhteystiedot(
                 omistajat = listOf(1, 2),
-                arvioijat = listOf(3, 2),
+                rakennuttajat = listOf(3, 2),
                 toteuttajat = listOf(4, 2)
             ) { it.organisaatioId = null }
         val userInfo = teppoUserInfo(firstName = "Other")
@@ -62,7 +62,7 @@ internal class GdprJsonConverterTest {
         val hanke =
             HankeFactory.create().withYhteystiedot(
                 omistajat = listOf(1, 2),
-                arvioijat = listOf(3, 2),
+                rakennuttajat = listOf(3, 2),
                 toteuttajat = listOf(4, 2)
             ) {
                 it.organisaatioId = null
@@ -541,7 +541,7 @@ internal class GdprJsonConverterTest {
         val hanke =
             HankeFactory.create().withYhteystiedot(
                 omistajat = listOf(1, 2),
-                arvioijat = listOf(3, 2),
+                rakennuttajat = listOf(3, 2),
                 toteuttajat = listOf(4, 2)
             ) { it.organisaatioId = null }
         val userInfo = UserInfo("id", "etu2", "suku2")

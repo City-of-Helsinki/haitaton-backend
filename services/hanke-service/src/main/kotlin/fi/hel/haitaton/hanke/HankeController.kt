@@ -63,8 +63,8 @@ class HankeController(
         val hankeList = hankeService.loadHankkeetByIds(userPermissions.map { it.hankeId })
         includePermissions(hankeList, userPermissions)
 
-        if (geometry) {
-            hankeList.forEach { it.geometriat = hankeGeometriatService.loadGeometriat(it) }
+        if (!geometry) { // FIXME premature optimization
+            hankeList.forEach { hanke -> hanke.alueet.forEach { alue -> alue.geometriat = null } }
         }
 
         disclosureLogService.saveDisclosureLogsForHankkeet(hankeList, userid)
@@ -108,7 +108,6 @@ class HankeController(
         if (hankeTunnus == null || hankeTunnus != hanke.hankeTunnus) {
             throw HankeArgumentException("Hanketunnus not given or doesn't match the hanke data")
         }
-        hanke.geometriat = hankeGeometriatService.loadGeometriat(hanke)
         val updatedHanke = hankeService.updateHanke(hanke)
         logger.info { "Updated hanke ${updatedHanke.hankeTunnus}." }
         disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, updatedHanke.modifiedBy!!)

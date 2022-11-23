@@ -34,7 +34,7 @@ object AuditLogEntryFactory : Factory<AuditLogEntry>() {
         )
 
     fun createReadEntriesForHanke(hanke: Hanke): List<AuditLogEntry> =
-        (hanke.omistajat + hanke.arvioijat + hanke.toteuttajat).map {
+        (hanke.omistajat + hanke.rakennuttajat + hanke.toteuttajat + hanke.muut).map {
             createReadEntry(objectId = it.id, objectBefore = it.toJsonString())
         }
 

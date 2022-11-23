@@ -57,3 +57,5 @@ databaseChangeLog:
       file: db/changelog/changesets/013-recreate-audit-logs-table.yml
   - include:
       file: db/changelog/changesets/014-add-timezone-to-audit-logs-created-at.sql
+  - include:
+      file: db/changelog/changesets/015-update-hanke-fields.yml

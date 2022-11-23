@@ -28,7 +28,6 @@ fun hankeYhteystietoToPublic(yhteystieto: HankeYhteystieto) =
 data class PublicHankeGeometriat(
     val id: Int,
     val version: Int,
-    val hankeId: Int,
     val createdAt: ZonedDateTime,
     val modifiedAt: ZonedDateTime?,
     val featureCollection: FeatureCollection?
@@ -38,11 +37,23 @@ fun hankeGeometriatToPublic(geometriat: HankeGeometriat) =
     PublicHankeGeometriat(
         geometriat.id!!,
         geometriat.version!!,
-        geometriat.hankeId!!,
         geometriat.createdAt!!,
         geometriat.modifiedAt,
         geometriat.featureCollection
     )
+
+data class PublicHankealue(
+    var id: Int?,
+    var hankeId: Int?,
+    var haittaAlkuPvm: ZonedDateTime? = null,
+    var haittaLoppuPvm: ZonedDateTime? = null,
+    var geometriat: HankeGeometriat? = null,
+    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
+    var kaistaPituusHaitta: KaistajarjestelynPituus? = null,
+    var meluHaitta: Haitta13? = null,
+    var polyHaitta: Haitta13? = null,
+    var tarinaHaitta: Haitta13? = null,
+)
 
 data class PublicHanke(
     val id: Int,
@@ -51,16 +62,29 @@ data class PublicHanke(
     val kuvaus: String,
     val alkuPvm: ZonedDateTime,
     val loppuPvm: ZonedDateTime,
-    val haittaAlkuPvm: ZonedDateTime,
-    val haittaLoppuPvm: ZonedDateTime,
     val vaihe: Vaihe,
     val suunnitteluVaihe: SuunnitteluVaihe?,
     val tyomaaTyyppi: MutableSet<TyomaaTyyppi>,
     val liikennehaittaindeksi: LiikennehaittaIndeksiType,
     val tormaystarkasteluTulos: TormaystarkasteluTulos,
     val omistajat: List<PublicHankeYhteystieto>,
-    val geometriat: PublicHankeGeometriat?
+    val alueet: List<PublicHankealue>
 )
+
+fun hankealueToPublic(alue: Hankealue): PublicHankealue {
+    return PublicHankealue(
+        alue.id,
+        alue.hankeId,
+        alue.haittaAlkuPvm,
+        alue.haittaLoppuPvm,
+        alue.geometriat,
+        alue.kaistaHaitta,
+        alue.kaistaPituusHaitta,
+        alue.meluHaitta,
+        alue.polyHaitta,
+        alue.tarinaHaitta
+    )
+}
 
 fun hankeToPublic(hanke: Hanke): PublicHanke {
     val omistajat =
@@ -68,8 +92,7 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
             .filter { it.organisaatioNimi != null || it.organisaatioId != null }
             .map { hankeYhteystietoToPublic(it) }
 
-    val geometriat = hanke.geometriat
-    val publicGeometriat = if (geometriat != null) hankeGeometriatToPublic(geometriat) else null
+    val alueet = hanke.alueet.map { hankealueToPublic(it) }
 
     return PublicHanke(
         hanke.id!!,
@@ -78,15 +101,13 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
         hanke.kuvaus!!,
         hanke.alkuPvm!!,
         hanke.loppuPvm!!,
-        hanke.haittaAlkuPvm!!,
-        hanke.haittaLoppuPvm!!,
         hanke.vaihe!!,
         hanke.suunnitteluVaihe,
         hanke.tyomaaTyyppi,
         hanke.liikennehaittaindeksi!!,
         hanke.tormaystarkasteluTulos!!,
         omistajat,
-        publicGeometriat
+        alueet
     )
 }
 
@@ -100,7 +121,8 @@ class PublicHankeController(
     @GetMapping
     fun getAll(): List<PublicHanke> {
         val hankkeet = hankeService.loadAllHanke().filter { it.tormaystarkasteluTulos != null }
-        hankkeet.forEach { it.geometriat = hankeGeometriatService.loadGeometriat(it) }
+        // FIXME
+        //        hankkeet.forEach { it.geometriat = hankeGeometriatService.loadGeometriat(it) }
         return hankkeet.map { hankeToPublic(it) }
     }
 }

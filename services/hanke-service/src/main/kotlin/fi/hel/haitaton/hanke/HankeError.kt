@@ -53,3 +53,5 @@ class HankeYhteystietoNotFoundException(val hankeId: Int, ytId: Int) :
 class DatabaseStateException(message: String) : RuntimeException(message)
 
 class HankeYhteystietoProcessingRestrictedException(message: String) : RuntimeException(message)
+
+class GeometriaValidationException(message: String) : RuntimeException(message)
