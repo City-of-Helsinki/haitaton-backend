@@ -32,17 +32,18 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
         // Must be earlier than some relevant maximum date.
         // The starting date can be in the past, since sometimes the permission to dig a hole is
         // applied for after the hole has already been dug.
-        if (hanke.alkuPvm != null && hanke.alkuPvm!!.isAfter(MAXIMUM_DATE)) {
+        if (hanke.alkuPvm == null || hanke.alkuPvm!!.isAfter(MAXIMUM_DATE)) {
             context
                 .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
                 .addPropertyNode("alkuPvm")
                 .addConstraintViolation()
             ok = false
         }
-        // Must be same or later than alkuPvm and earlier than some relevant maximum date.
+        // Must be from the and earlier than some relevant maximum date,
+        // and same or later than alkuPvm.
         // The end date can be in the past, since sometimes the permission to dig a hole is
         // applied for only after the hole has already been dug and covered.
-        if (hanke.loppuPvm != null && hanke.loppuPvm!!.isAfter(MAXIMUM_DATE)) {
+        if (hanke.loppuPvm == null || hanke.loppuPvm!!.isAfter(MAXIMUM_DATE)) {
             context
                 .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
                 .addPropertyNode("loppuPvm")
@@ -84,9 +85,8 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             ok = false
         }
 
-        //  TODO ok = ok && isValidHankeYhteystietos(hanke, context) removed mandatory checks for
-        // now when
-        //   front is not ready to add same rules and this confuses
+        // TODO ok = ok && isValidHankeYhteystietos(hanke, context) removed mandatory checks for
+        //  now when front is not ready to add same rules and this confuses
         ok = ok && checkTyomaaTiedot(hanke, context)
         ok = ok && checkHaitat(hanke, context)
 
@@ -159,11 +159,10 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
         // TODO: can haitta alku/loppu pvm be after the hanke ends?
         //  E.g. if agreed that another hanke will continue with the same hole soon after?
         // haittaAlkuPvm - either null or after alkuPvm and before maximum end date
-        if (
-            hanke.haittaAlkuPvm != null &&
-                ((hanke.alkuPvm != null && hanke.haittaAlkuPvm!!.isBefore(hanke.alkuPvm)) ||
-                    hanke.haittaAlkuPvm!!.isAfter(MAXIMUM_DATE))
-        ) {
+        val alku = hanke.getHaittaAlkuPvm()
+        val loppu = hanke.getHaittaLoppuPvm()
+
+        if (alku != null && (alku.isBefore(hanke.alkuPvm) || alku.isAfter(MAXIMUM_DATE))) {
             context
                 .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
                 .addPropertyNode("haittaAlkuPvm")
@@ -171,11 +170,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             ok = false
         }
         // haittaLoppuPvm - either null or after haittaAlkuPvm and before maximum end date
-        if (
-            hanke.haittaLoppuPvm != null &&
-                (hanke.haittaLoppuPvm!!.isBefore(hanke.haittaAlkuPvm) ||
-                    hanke.haittaLoppuPvm!!.isAfter(MAXIMUM_DATE))
-        ) {
+        if (loppu != null && (loppu.isBefore(alku) || loppu.isAfter(MAXIMUM_DATE))) {
             context
                 .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
                 .addPropertyNode("haittaLoppuPvm")

@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import java.time.ZonedDateTime
 
@@ -72,13 +73,17 @@ object HankeFactory : Factory<Hanke>() {
         this.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
         this.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
         this.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
-        this.haittaAlkuPvm = DateFactory.getStartDatetime()
-        this.haittaLoppuPvm = DateFactory.getEndDatetime()
-        this.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
-        this.kaistaPituusHaitta = KaistajarjestelynPituus.NELJA
-        this.meluHaitta = Haitta13.YKSI
-        this.polyHaitta = Haitta13.KAKSI
-        this.tarinaHaitta = Haitta13.KOLME
+
+        val alue = Hankealue()
+        alue.haittaAlkuPvm = DateFactory.getStartDatetime()
+        alue.haittaLoppuPvm = DateFactory.getEndDatetime()
+        alue.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
+        alue.kaistaPituusHaitta = KaistajarjestelynPituus.NELJA
+        alue.meluHaitta = Haitta13.YKSI
+        alue.polyHaitta = Haitta13.KAKSI
+        alue.tarinaHaitta = Haitta13.KOLME
+        this.alueet.add(alue)
+
         return this
     }
 

@@ -9,11 +9,14 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistajat
 import fi.hel.haitaton.hanke.factory.HankeFactory.withHaitta
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
+import fi.hel.haitaton.hanke.factory.HankealueFactory
+import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
+import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -85,14 +88,15 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke.tyomaaKatuosoite).isEqualTo("Testikatu 1")
         assertThat(returnedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         assertThat(returnedHanke.tyomaaKoko).isEqualTo(TyomaaKoko.LAAJA_TAI_USEA_KORTTELI)
-        assertThat(returnedHanke.haittaAlkuPvm).isEqualTo(expectedDateAlku)
-        assertThat(returnedHanke.haittaLoppuPvm).isEqualTo(expectedDateLoppu)
-        assertThat(returnedHanke.kaistaHaitta)
+        assertThat(returnedHanke.getHaittaAlkuPvm()).isEqualTo(expectedDateAlku)
+        assertThat(returnedHanke.getHaittaLoppuPvm()).isEqualTo(expectedDateLoppu)
+        assertThat(returnedHanke.alueet[0].kaistaHaitta)
             .isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI)
-        assertThat(returnedHanke.kaistaPituusHaitta).isEqualTo(KaistajarjestelynPituus.NELJA)
-        assertThat(returnedHanke.meluHaitta).isEqualTo(Haitta13.YKSI)
-        assertThat(returnedHanke.polyHaitta).isEqualTo(Haitta13.KAKSI)
-        assertThat(returnedHanke.tarinaHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(returnedHanke.alueet[0].kaistaPituusHaitta)
+            .isEqualTo(KaistajarjestelynPituus.NELJA)
+        assertThat(returnedHanke.alueet[0].meluHaitta).isEqualTo(Haitta13.YKSI)
+        assertThat(returnedHanke.alueet[0].polyHaitta).isEqualTo(Haitta13.KAKSI)
+        assertThat(returnedHanke.alueet[0].tarinaHaitta).isEqualTo(Haitta13.KOLME)
 
         assertThat(returnedHanke.version).isZero
         assertThat(returnedHanke.createdAt).isNotNull
@@ -719,6 +723,47 @@ class HankeServiceITests : DatabaseTest() {
                 .filter { it.target.id == arvioijaId }
         // For the second yhteystieto, there should be one more entry in the log:
         assertThat(auditLogEvents.size).isEqualTo(4)
+    }
+
+    @Test
+    fun `test creation of alueet`() {
+        val hankeGeometriat =
+            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
+                HankeGeometriat::class.java
+            )
+        hankeGeometriat.version = null
+        hankeGeometriat.createdAt = null
+        hankeGeometriat.modifiedAt = null
+
+        val hanke = getATestHanke()
+        val hankealue =
+            HankealueFactory.create(
+                geometriat = hankeGeometriat,
+                haittaAlkuPvm = hanke.alkuPvm,
+                haittaLoppuPvm = hanke.loppuPvm,
+                kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KOLME,
+                kaistaPituusHaitta = KaistajarjestelynPituus.KOLME,
+                meluHaitta = Haitta13.KOLME,
+                polyHaitta = Haitta13.KOLME,
+                tarinaHaitta = Haitta13.KOLME,
+            )
+
+        hanke.alueet.add(hankealue)
+
+        val createdHanke = hankeService.createHanke(hanke)
+        assertThat(createdHanke.alueet).hasSize(2)
+        assertThat(createdHanke.alueet[1].haittaAlkuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+            .isEqualTo(hanke.alkuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+        assertThat(createdHanke.alueet[1].haittaLoppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+            .isEqualTo(hanke.loppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+        assertThat(createdHanke.alueet[1].kaistaHaitta)
+            .isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KOLME)
+        assertThat(createdHanke.alueet[1].kaistaPituusHaitta)
+            .isEqualTo(KaistajarjestelynPituus.KOLME)
+        assertThat(createdHanke.alueet[1].meluHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(createdHanke.alueet[1].polyHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(createdHanke.alueet[1].tarinaHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(createdHanke.alueet[1].geometriat).isNotNull
     }
 
     /**

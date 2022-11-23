@@ -167,8 +167,8 @@ class HankeControllerTest {
 
         assertThat(hankeList[0].nimi).isEqualTo("Mannerheimintien remontti remonttinen")
         assertThat(hankeList[1].nimi).isEqualTo("Hämeenlinnanväylän uudistus")
-        assertThat(hankeList[0].geometriat).isNull()
-        assertThat(hankeList[1].geometriat).isNull()
+        assertThat(hankeList[0].alueidenGeometriat()).isEmpty()
+        assertThat(hankeList[1].alueidenGeometriat()).isEmpty()
         assertThat(hankeList[0].permissions).isEqualTo(listOf(PermissionCode.VIEW))
         assertThat(hankeList[1].permissions)
             .isEqualTo(listOf(PermissionCode.VIEW, PermissionCode.EDIT))
@@ -271,7 +271,6 @@ class HankeControllerTest {
                     "3212312",
                     null,
                     "Kaivuri ja mies",
-                    null,
                     null,
                     null,
                     null,

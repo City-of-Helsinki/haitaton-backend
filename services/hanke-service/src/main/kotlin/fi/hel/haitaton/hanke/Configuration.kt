@@ -72,6 +72,7 @@ class Configuration {
     fun hankeService(
         hankeRepository: HankeRepository,
         tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
+        geometriatService: HankeGeometriatService,
         hanketunnusService: HanketunnusService,
         auditLogService: AuditLogService,
         permissionService: PermissionService
@@ -80,6 +81,7 @@ class Configuration {
             hankeRepository,
             tormaystarkasteluLaskentaService,
             hanketunnusService,
+            geometriatService,
             auditLogService
         )
 

@@ -6,7 +6,6 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.countMapper
 import java.time.ZonedDateTime
 import javax.transaction.Transactional
 import org.geojson.Point
@@ -29,20 +28,21 @@ internal class HankeGeometriatDaoImplITest : DatabaseTest() {
 
     @Test
     fun `CRUD testing`() {
-        val hankeGeometriat: HankeGeometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource()
+        val hankeGeometriat =
+            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
+                HankeGeometriat::class.java
+            )
         hankeGeometriat.createdByUserId = "1111"
         hankeGeometriat.modifiedByUserId = "2222"
-        // For FK constraints we need a Hanke in database
-        jdbcTemplate.execute("INSERT INTO Hanke (id) VALUES (${hankeGeometriat.hankeId})")
 
         // Create
-        hankeGeometriatDao.createHankeGeometriat(hankeGeometriat)
+        val geometriat = hankeGeometriatDao.createHankeGeometriat(hankeGeometriat)
+        val geometriaId = geometriat.id!!
+
         // Retrieve
-        var loadedHankeGeometriat =
-            hankeGeometriatDao.retrieveHankeGeometriat(hankeGeometriat.hankeId!!)
+        var loadedHankeGeometriat = hankeGeometriatDao.retrieveGeometriat(geometriaId)
+
         assertAll {
-            assertThat(loadedHankeGeometriat!!.hankeId).isEqualTo(hankeGeometriat.hankeId)
             assertThat(loadedHankeGeometriat!!.version).isEqualTo(hankeGeometriat.version)
             assertThat(loadedHankeGeometriat!!.createdByUserId)
                 .isEqualTo(hankeGeometriat.createdByUserId)
@@ -64,11 +64,10 @@ internal class HankeGeometriatDaoImplITest : DatabaseTest() {
         hankeGeometriat.version = hankeGeometriat.version!! + 1
         hankeGeometriat.modifiedAt = ZonedDateTime.now()
         hankeGeometriatDao.updateHankeGeometriat(hankeGeometriat)
-        loadedHankeGeometriat =
-            hankeGeometriatDao.retrieveHankeGeometriat(hankeGeometriat.hankeId!!)
+        loadedHankeGeometriat = hankeGeometriatDao.retrieveGeometriat(geometriaId)
         assertAll {
-            assertThat(loadedHankeGeometriat!!.hankeId).isEqualTo(hankeGeometriat.hankeId)
-            assertThat(loadedHankeGeometriat.version).isEqualTo(hankeGeometriat.version)
+            assertThat(geometriaId).isEqualTo(geometriaId)
+            assertThat(loadedHankeGeometriat!!.version).isEqualTo(hankeGeometriat.version)
             assertThat(loadedHankeGeometriat.createdByUserId)
                 .isEqualTo(hankeGeometriat.createdByUserId)
             assertThat(loadedHankeGeometriat.createdAt).isEqualTo(hankeGeometriat.createdAt)
@@ -87,11 +86,18 @@ internal class HankeGeometriatDaoImplITest : DatabaseTest() {
         // Delete
         hankeGeometriatDao.deleteHankeGeometriat(hankeGeometriat)
         // check that all was deleted correctly
-        assertThat(hankeGeometriatDao.retrieveHankeGeometriat(hankeGeometriat.hankeId!!))
-            .isNotNull()
-        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometriat", countMapper))
+        assertThat(hankeGeometriatDao.retrieveGeometriat(geometriaId)).isNotNull()
+        assertThat(
+                jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometriat") { rs, _ ->
+                    rs.getInt(1)
+                }
+            )
             .isEqualTo(1)
-        assertThat(jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometria", countMapper))
+        assertThat(
+                jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometria") { rs, _ ->
+                    rs.getInt(1)
+                }
+            )
             .isEqualTo(0)
     }
 }

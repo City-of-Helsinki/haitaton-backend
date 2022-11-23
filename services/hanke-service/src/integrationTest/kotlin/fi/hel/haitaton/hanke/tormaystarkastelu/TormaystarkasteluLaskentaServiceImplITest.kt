@@ -4,14 +4,10 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import com.ninjasquad.springmockk.MockkBean
-import fi.hel.haitaton.hanke.DatabaseTest
-import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.KaistajarjestelynPituus
-import fi.hel.haitaton.hanke.TZ_UTC
-import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
+import fi.hel.haitaton.hanke.*
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
 import io.mockk.every
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.Test
@@ -29,7 +25,6 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @WithMockUser(username = "test", roles = ["haitaton-user"])
 internal class TormaystarkasteluLaskentaServiceImplITest : DatabaseTest() {
 
-    @MockkBean private lateinit var hankeGeometriatDao: HankeGeometriatDao
     @MockkBean private lateinit var tormaystarkasteluDao: TormaystarkasteluTormaysService
 
     @Autowired private lateinit var hankeService: HankeService
@@ -45,48 +40,71 @@ internal class TormaystarkasteluLaskentaServiceImplITest : DatabaseTest() {
         val tulos = tormaystarkasteluLaskentaService.calculateTormaystarkastelu(hanke)
         assertThat(tulos).isNotNull()
         assertThat(tulos!!.liikennehaittaIndeksi).isNotNull()
-        assertThat(tulos.liikennehaittaIndeksi.indeksi).isNotNull()
-        assertThat(tulos.liikennehaittaIndeksi.indeksi).isEqualTo(4.0f)
+        assertThat(tulos.liikennehaittaIndeksi!!.indeksi).isNotNull()
+        assertThat(tulos.liikennehaittaIndeksi!!.indeksi).isEqualTo(4.0f)
     }
 
     private fun setupHappyCase(): Hanke {
-        val tmp = Hanke()
-        tmp.apply {
-            alkuPvm = ZonedDateTime.of(2021, 3, 4, 0, 0, 0, 0, TZ_UTC)
-            loppuPvm = alkuPvm!!.plusDays(7)
-            haittaAlkuPvm = alkuPvm
-            haittaLoppuPvm = loppuPvm
-            kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.YKSI
-            kaistaPituusHaitta = KaistajarjestelynPituus.YKSI
-        }
+        val hankeGeometriat =
+            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
+                HankeGeometriat::class.java
+            )
+
+        val alkuPvm = ZonedDateTime.of(2021, 3, 4, 0, 0, 0, 0, TZ_UTC)
+        val loppuPvm = alkuPvm!!.plusDays(7)
+        val tmp =
+            Hanke(
+                nimi = "hanke",
+                alkuPvm = alkuPvm,
+                loppuPvm = loppuPvm,
+                vaihe = Vaihe.OHJELMOINTI,
+                saveType = SaveType.DRAFT
+            )
+        val hankeGeometriatId = 1
+        val hankeGeometriaId = 1
+        tmp.alueet.add(
+            Hankealue(
+                geometriat = hankeGeometriat,
+                haittaAlkuPvm = alkuPvm,
+                haittaLoppuPvm = alkuPvm!!.plusDays(7),
+                kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.YKSI,
+                kaistaPituusHaitta = KaistajarjestelynPituus.YKSI
+            )
+        )
+
         val hanke = hankeService.createHanke(tmp)
 
-        val hankeId = hanke.id!!
-        val hankeGeometriatId = 1
-        val hankeGeometriat = HankeGeometriat(hankeGeometriatId, hankeId)
-        hankeService.updateHanke(hanke)
-        hanke.geometriat = hankeGeometriat
-
-        every { hankeGeometriatDao.retrieveHankeGeometriat(hankeId) } returns hankeGeometriat
-        every { tormaystarkasteluDao.anyIntersectsYleinenKatuosa(hankeGeometriat) } returns true
         every {
-            tormaystarkasteluDao.maxIntersectingYleinenkatualueKatuluokka(hankeGeometriat)
+            tormaystarkasteluDao.anyIntersectsYleinenKatuosa(hanke.alueidenGeometriat())
+        } returns true
+        every {
+            tormaystarkasteluDao.maxIntersectingYleinenkatualueKatuluokka(
+                hanke.alueidenGeometriat()
+            )
         } returns TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value
         every {
-            tormaystarkasteluDao.maxIntersectingLiikenteellinenKatuluokka(hankeGeometriat)
+            tormaystarkasteluDao.maxIntersectingLiikenteellinenKatuluokka(
+                hanke.alueidenGeometriat()
+            )
         } returns TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value
         every {
             tormaystarkasteluDao.maxLiikennemaara(
-                hankeGeometriat,
+                hanke.alueidenGeometriat(),
                 TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30
             )
         } returns 1000
-        every { tormaystarkasteluDao.anyIntersectsWithCyclewaysPriority(hankeGeometriat) } returns
-            false
-        every { tormaystarkasteluDao.anyIntersectsWithCyclewaysMain(hankeGeometriat) } returns true
-        every { tormaystarkasteluDao.maxIntersectingTramByLaneType(hankeGeometriat) } returns
-            TormaystarkasteluRaitiotiekaistatyyppi.JAETTU.value
-        every { tormaystarkasteluDao.anyIntersectsCriticalBusRoutes(hankeGeometriat) } returns true
+        every {
+            tormaystarkasteluDao.anyIntersectsWithCyclewaysPriority(hanke.alueidenGeometriat())
+        } returns false
+        every {
+            tormaystarkasteluDao.anyIntersectsWithCyclewaysMain(hanke.alueidenGeometriat())
+        } returns true
+        every {
+            tormaystarkasteluDao.maxIntersectingTramByLaneType(hanke.alueidenGeometriat())
+        } returns TormaystarkasteluRaitiotiekaistatyyppi.JAETTU.value
+        every {
+            tormaystarkasteluDao.anyIntersectsCriticalBusRoutes(hanke.alueidenGeometriat())
+        } returns true
 
         return hanke
     }

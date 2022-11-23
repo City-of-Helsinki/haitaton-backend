@@ -113,6 +113,7 @@ internal class DisclosureLogServiceTest {
     @Test
     fun `saveDisclosureLogsForHanke saves identical audit logs only once`() {
         val yhteystieto = HankeYhteystietoFactory.createDifferentiated(1)
+        yhteystieto.id = 1
         val hanke =
             HankeFactory.create().mutate {
                 it.omistajat = mutableListOf(yhteystieto)

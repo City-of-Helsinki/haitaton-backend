@@ -18,13 +18,13 @@ open class TormaystarkasteluLaskentaService(
 
         val perusIndeksi = calculatePerusIndeksi(hanke)
 
-        val pyorailyLuokittelu = pyorailyLuokittelu(hanke.geometriat!!)
+        val pyorailyLuokittelu = pyorailyLuokittelu(hanke.alueidenGeometriat())
         val pyorailyIndeksi = if (pyorailyLuokittelu >= 4) 3.0f else 1.0f
 
-        val bussiLuokittelu = bussiLuokittelu(hanke.geometriat!!)
+        val bussiLuokittelu = bussiLuokittelu(hanke.alueidenGeometriat())
         val bussiIndeksi = if (bussiLuokittelu >= 3) 4.0f else 1.0f
 
-        val raitiovaunuLuokittelu = raitiovaunuLuokittelu(hanke.geometriat!!)
+        val raitiovaunuLuokittelu = raitiovaunuLuokittelu(hanke.alueidenGeometriat())
         val raitiovaunuIndeksi = if (raitiovaunuLuokittelu >= 3) 4.0f else 1.0f
 
         val joukkoliikenneIndeksi = maxOf(bussiIndeksi, raitiovaunuIndeksi)
@@ -34,12 +34,11 @@ open class TormaystarkasteluLaskentaService(
 
     private fun hasAllRequiredInformation(hanke: Hanke): Boolean {
         return (hanke.hankeTunnus != null &&
-            hanke.haittaAlkuPvm != null &&
-            hanke.haittaLoppuPvm != null &&
-            hanke.kaistaHaitta != null &&
-            hanke.kaistaPituusHaitta != null &&
-            hanke.geometriat != null &&
-            hanke.geometriat?.id != null)
+            hanke.alkuPvm != null &&
+            hanke.loppuPvm != null &&
+            hanke.kaistaHaitat().isNotEmpty() &&
+            hanke.kaistaPituusHaitat().isNotEmpty() &&
+            hanke.alueidenGeometriat().isNotEmpty())
     }
 
     private fun calculatePerusIndeksi(hanke: Hanke): Float {
@@ -48,13 +47,14 @@ open class TormaystarkasteluLaskentaService(
         luokittelu[LuokitteluType.HAITTA_AJAN_KESTO] =
             haittaAjanKestoLuokittelu(hanke.haittaAjanKestoDays!!)
         luokittelu[LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN] =
-            hanke.kaistaHaitta!!.value
-        luokittelu[LuokitteluType.KAISTAJARJESTELYN_PITUUS] = hanke.kaistaPituusHaitta!!.value
+            hanke.kaistaHaitat().maxOfOrNull { it.value }!!
+        luokittelu[LuokitteluType.KAISTAJARJESTELYN_PITUUS] =
+            hanke.kaistaPituusHaitat().maxOfOrNull { it.value }!!
 
-        val katuluokkaLuokittelu = katuluokkaLuokittelu(hanke.geometriat!!)
+        val katuluokkaLuokittelu = katuluokkaLuokittelu(hanke.alueidenGeometriat())
         luokittelu[LuokitteluType.KATULUOKKA] = katuluokkaLuokittelu
         luokittelu[LuokitteluType.LIIKENNEMAARA] =
-            liikennemaaraLuokittelu(hanke.geometriat!!, katuluokkaLuokittelu)
+            liikennemaaraLuokittelu(hanke.alueidenGeometriat(), katuluokkaLuokittelu)
 
         return calculatePerusIndeksiFromLuokittelu(luokittelu)
     }
@@ -62,7 +62,7 @@ open class TormaystarkasteluLaskentaService(
     fun haittaAjanKestoLuokittelu(haittaAjanKestoDays: Int) =
         luokitteluRajaArvotService.getHaittaAjanKestoLuokka(haittaAjanKestoDays)
 
-    private fun katuluokkaLuokittelu(hankeGeometriat: HankeGeometriat): Int {
+    private fun katuluokkaLuokittelu(hankeGeometriat: List<HankeGeometriat>): Int {
         if (tormaysService.anyIntersectsYleinenKatuosa(hankeGeometriat)) {
             // ON ylre_parts => street_classes?
             return tormaysService.maxIntersectingLiikenteellinenKatuluokka(hankeGeometriat)
@@ -84,7 +84,7 @@ open class TormaystarkasteluLaskentaService(
     }
 
     private fun liikennemaaraLuokittelu(
-        hankeGeometriat: HankeGeometriat,
+        hankeGeometriat: List<HankeGeometriat>,
         katuluokkaLuokittelu: Int
     ): Int {
         if (katuluokkaLuokittelu == 0) {
@@ -109,7 +109,7 @@ open class TormaystarkasteluLaskentaService(
             .sum()
             .roundToOneDecimal()
 
-    private fun pyorailyLuokittelu(hankeGeometriat: HankeGeometriat): Int {
+    private fun pyorailyLuokittelu(hankeGeometriat: List<HankeGeometriat>): Int {
         return when {
             tormaysService.anyIntersectsWithCyclewaysPriority(hankeGeometriat) ->
                 PyorailyTormaysLuokittelu.PRIORISOITU_REITTI
@@ -119,7 +119,7 @@ open class TormaystarkasteluLaskentaService(
         }.value
     }
 
-    fun bussiLuokittelu(hankeGeometriat: HankeGeometriat): Int {
+    fun bussiLuokittelu(hankeGeometriat: List<HankeGeometriat>): Int {
         if (tormaysService.anyIntersectsCriticalBusRoutes(hankeGeometriat)) {
             return BussiLiikenneLuokittelu.KAMPPI_RAUTATIENTORI.value
         }
@@ -147,6 +147,6 @@ open class TormaystarkasteluLaskentaService(
         return maxOf(valueByRajaArvo, valueByRunkolinja)
     }
 
-    private fun raitiovaunuLuokittelu(hankeGeometriat: HankeGeometriat) =
+    private fun raitiovaunuLuokittelu(hankeGeometriat: List<HankeGeometriat>) =
         tormaysService.maxIntersectingTramByLaneType(hankeGeometriat) ?: 0
 }

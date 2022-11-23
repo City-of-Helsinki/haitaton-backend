@@ -79,12 +79,14 @@ enum class TyomaaTyyppi {
     VAIHTOLAVA
 }
 
+/** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
 enum class TyomaaKoko {
     SUPPEA_TAI_PISTE,
     YLI_10M_TAI_KORTTELI,
     LAAJA_TAI_USEA_KORTTELI
 }
 
+/** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
 enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(
     override val value: Int,
     override val explanation: String
@@ -96,6 +98,7 @@ enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(
     VIISI(5, "Vähentää samanaikaisesti useita kaistoja liittymien eri suunnilla")
 }
 
+/** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
 enum class KaistajarjestelynPituus(override val value: Int, override val explanation: String) :
     Luokittelu {
     YKSI(1, "Ei tarvita"),
@@ -105,6 +108,7 @@ enum class KaistajarjestelynPituus(override val value: Int, override val explana
     VIISI(5, "Yli 500 m")
 }
 
+/** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
 enum class Haitta13 {
     YKSI,
     KAKSI,
@@ -146,7 +150,14 @@ class HankeEntity(
         cascade = [CascadeType.ALL],
         orphanRemoval = true
     )
-    var listOfHankeYhteystieto: MutableList<HankeYhteystietoEntity> = mutableListOf()
+    var listOfHankeYhteystieto: MutableList<HankeYhteystietoEntity> = mutableListOf(),
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        mappedBy = "hanke",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    var listOfHankeAlueet: MutableList<HankealueEntity> = mutableListOf()
 ) {
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
     var tyomaaKatuosoite: String? = null
