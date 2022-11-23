@@ -14,5 +14,6 @@ do
 done
 
 docker cp config.yaml dummy://haitaton-gis
+docker cp osm_vrt_clip.vrt dummy://haitaton-gis
 
 docker rm dummy

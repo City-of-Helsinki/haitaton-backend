@@ -1,0 +1,16 @@
+<OGRVRTDataSource>
+<OGRVRTWarpedLayer>
+    <OGRVRTLayer name="lines">
+        <SrcDataSource>/downloads/finland-latest.gpkg</SrcDataSource>
+        <SrcLayer>lines</SrcLayer>
+    </OGRVRTLayer>
+    <TargetSRS>EPSG:3879</TargetSRS>
+</OGRVRTWarpedLayer>
+<OGRVRTWarpedLayer>
+    <OGRVRTLayer name="area">
+        <SrcDataSource>/downloads/helsinki_alue.gpkg</SrcDataSource>
+        <SrcLayer>alue</SrcLayer>
+    </OGRVRTLayer>
+    <TargetSRS>EPSG:3879</TargetSRS>
+</OGRVRTWarpedLayer>
+</OGRVRTDataSource>

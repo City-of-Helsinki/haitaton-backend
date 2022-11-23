@@ -113,12 +113,32 @@ Where `<source>` is currently one of:
 
 - `hsl` - HSL bus schedules
 - `hki` - Helsinki area GIS material, polygon, scale 1:1000000
-- `osm`
-- `ylre_katualue`
+- `osm` - OpenStreetMap export of Finland
+- `helsinki_osm_lines` - line geometry export from `osm`, covering area of city of Helsinki
+- `ylre_katualue` - Helsinki YLRE street areas, polygons.
 - `ylre_katuosat` - Helsinki YLRE parts, polygons.
 - `maka_autoliikennemaarat` - Traffic volumes (car traffic)
 
 Data files are downloaded to `./haitaton-downloads` -directory.
+
+Primary function in data download is to download from remote location (and possibly convert) file during download.
+
+Exceptions are listed below.
+
+### `helsinki_osm_lines`
+
+Prerequisites:
+
+- `osm` material fetched
+- `hki` material fetched
+
+  Helsinki OSM line geometries are obtained by intersecting city of Helsinki area
+  and OSM GIS material from whole Finland.
+
+Materials are expected to be previously fetched to local directory.
+
+Intersection is computed using OGR VRT driver in actual fetch operation. Due to
+large area in OSM material, computation takes tens of minutes to complete.
 
 ## Run processing
 
