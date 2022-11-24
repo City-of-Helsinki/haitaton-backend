@@ -5,11 +5,11 @@ import assertk.assertions.isEqualTo
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.asJsonNode
+import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
 import io.mockk.called
 import io.mockk.clearAllMocks
-import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
@@ -21,7 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
-const val username = "test"
+private const val username = "test"
 
 @ExtendWith(SpringExtension::class)
 @WithMockUser(username)
@@ -29,15 +29,20 @@ class ApplicationServiceTest {
     private val applicationRepo: ApplicationRepository = mockk()
     private val cableReportService: CableReportService = mockk()
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
+    private val applicationLoggingService: ApplicationLoggingService = mockk(relaxUnitFun = true)
 
     private val service: ApplicationService =
-        ApplicationService(applicationRepo, cableReportService, disclosureLogService)
+        ApplicationService(
+            applicationRepo,
+            cableReportService,
+            disclosureLogService,
+            applicationLoggingService,
+        )
 
     @AfterEach
     fun cleanup() {
         // TODO: Needs newer MockK, which needs newer Spring test dependencies
         // checkUnnecessaryStub()
-        confirmVerified()
         clearAllMocks()
     }
 
@@ -64,7 +69,7 @@ class ApplicationServiceTest {
                 )
             }
 
-        val created = service.create(dto)
+        val created = service.create(dto, username)
 
         assertThat(created.id).isEqualTo(1)
         assertThat(created.alluid).isEqualTo(42)
@@ -91,7 +96,7 @@ class ApplicationServiceTest {
         justRun { cableReportService.update(42, any()) }
         every { cableReportService.getCurrentStatus(42) } returns null
 
-        service.updateApplicationData(3, applicationData)
+        service.updateApplicationData(3, applicationData, username)
 
         val expectedApplication =
             OBJECT_MAPPER.treeToValue<CableReportApplication>(applicationData)!!

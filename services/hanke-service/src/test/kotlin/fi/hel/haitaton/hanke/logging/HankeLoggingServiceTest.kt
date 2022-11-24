@@ -25,7 +25,7 @@ internal class HankeLoggingServiceTest {
     fun cleanUp() {
         // TODO: Needs newer MockK, which needs newer Spring test dependencies
         // checkUnnecessaryStub()
-        confirmVerified()
+        confirmVerified(auditLogService)
         clearAllMocks()
     }
 

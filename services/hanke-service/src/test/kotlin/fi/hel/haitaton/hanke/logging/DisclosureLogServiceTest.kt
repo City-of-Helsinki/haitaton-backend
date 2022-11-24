@@ -10,7 +10,6 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
 import fi.hel.haitaton.hanke.allu.PostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress
-import fi.hel.haitaton.hanke.allu.username
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -45,7 +44,7 @@ internal class DisclosureLogServiceTest {
     fun cleanUp() {
         // TODO: Needs newer MockK, which needs newer Spring test dependencies
         // checkUnnecessaryStub()
-        confirmVerified()
+        confirmVerified(auditLogService)
         clearAllMocks()
     }
 
@@ -82,7 +81,7 @@ internal class DisclosureLogServiceTest {
                     userId = PROFIILI_AUDIT_LOG_USERID,
                     userRole = UserRole.SERVICE,
                     objectType = ObjectType.GDPR_RESPONSE,
-                    objectId = username,
+                    objectId = userId,
                     objectBefore = expectedObject
                 )
             )

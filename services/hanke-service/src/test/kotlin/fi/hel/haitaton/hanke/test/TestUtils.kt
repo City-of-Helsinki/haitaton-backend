@@ -5,7 +5,9 @@ import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
 
 object TestUtils {
-    fun addMockedRequestIp(ip: String = "127.0.0.1") {
+    const val mockedIp = "127.0.0.1"
+
+    fun addMockedRequestIp(ip: String = mockedIp) {
         val request = MockHttpServletRequest()
         request.remoteAddr = ip
         RequestContextHolder.setRequestAttributes(ServletRequestAttributes(request))

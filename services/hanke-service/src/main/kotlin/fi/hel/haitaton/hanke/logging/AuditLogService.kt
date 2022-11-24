@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.logging
 
+import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.toChangeLogJsonString
 import java.time.OffsetDateTime
@@ -99,7 +100,7 @@ class AuditLogService(private val auditLogRepository: AuditLogRepository) {
             val jsonBefore = objectBefore.toChangeLogJsonString()
             val jsonAfter = objectAfter.toChangeLogJsonString()
 
-            return if (jsonBefore == jsonAfter) {
+            return if (OBJECT_MAPPER.readTree(jsonBefore) == OBJECT_MAPPER.readTree(jsonAfter)) {
                 null
             } else {
                 AuditLogEntry(
@@ -109,8 +110,8 @@ class AuditLogService(private val auditLogRepository: AuditLogRepository) {
                     userRole = UserRole.USER,
                     objectId = objectAfter.id?.toString(),
                     objectType = type,
-                    objectBefore = objectBefore.toChangeLogJsonString(),
-                    objectAfter = objectAfter.toChangeLogJsonString(),
+                    objectBefore = jsonBefore,
+                    objectAfter = jsonAfter,
                 )
             }
         }

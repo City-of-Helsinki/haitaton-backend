@@ -4,45 +4,57 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.treeToValue
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.currentUserId
+import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
+import org.springframework.transaction.annotation.Transactional
 
 const val ALLU_APPLICATION_ERROR_MSG = "Error sending application to Allu"
 
-class ApplicationService(
+open class ApplicationService(
     private val repo: ApplicationRepository,
     private val cableReportService: CableReportService,
     private val disclosureLogService: DisclosureLogService,
+    private val applicationLoggingService: ApplicationLoggingService,
 ) {
 
-    fun getAllApplicationsForCurrentUser(): List<ApplicationDto> {
+    open fun getAllApplicationsForCurrentUser(): List<ApplicationDto> {
         return getAllApplicationsForUser(currentUserId())
     }
 
-    fun getAllApplicationsForUser(userId: String): List<ApplicationDto> {
+    open fun getAllApplicationsForUser(userId: String): List<ApplicationDto> {
         return repo.getAllByUserId(userId).map { applicationToDto(it) }
     }
 
-    fun getApplicationById(id: Long) = getById(id)?.let { applicationToDto(it) }
+    open fun getApplicationById(id: Long) = getById(id)?.let { applicationToDto(it) }
 
-    fun create(application: ApplicationDto): ApplicationDto {
+    @Transactional
+    open fun create(application: ApplicationDto, userId: String): ApplicationDto {
         val alluApplication =
             AlluApplication(
                 id = null,
                 alluid = null,
-                userId = currentUserId(),
+                userId = userId,
                 applicationType = application.applicationType,
                 applicationData = application.applicationData
             )
         trySendingPendingApplicationToAllu(alluApplication)
 
-        return applicationToDto(repo.save(alluApplication))
+        val savedApplication = applicationToDto(repo.save(alluApplication))
+        applicationLoggingService.logCreate(savedApplication, userId)
+        return savedApplication
     }
 
-    fun updateApplicationData(id: Long, newApplicationData: JsonNode): ApplicationDto? {
+    @Transactional
+    open fun updateApplicationData(
+        id: Long,
+        newApplicationData: JsonNode,
+        userId: String,
+    ): ApplicationDto? {
         val application = getById(id) ?: return null
+        val applicationBefore = applicationToDto(application)
 
         if (!isStillPending(application)) {
             throw IllegalArgumentException("Application already sent")
@@ -51,10 +63,12 @@ class ApplicationService(
         application.applicationData = newApplicationData
         trySendingPendingApplicationToAllu(application)
 
-        return applicationToDto(repo.save(application))
+        val applicationAfter = applicationToDto(repo.save(application))
+        applicationLoggingService.logUpdate(applicationBefore, applicationAfter, userId)
+        return applicationAfter
     }
 
-    fun sendApplication(id: Long): ApplicationDto? {
+    open fun sendApplication(id: Long): ApplicationDto? {
         val application = getById(id) ?: return null
         if (!isStillPending(application)) {
             throw IllegalArgumentException("Application already sent")
@@ -77,7 +91,7 @@ class ApplicationService(
         val currentStatus = cableReportService.getCurrentStatus(id) ?: return true
 
         // We've already sent this application with pendingOnClient: false
-        return currentStatus == ApplicationStatus.PENDING
+        return currentStatus in listOf(ApplicationStatus.PENDING, ApplicationStatus.PENDING_CLIENT)
     }
 
     private fun trySendingPendingApplicationToAllu(application: AlluApplication) {

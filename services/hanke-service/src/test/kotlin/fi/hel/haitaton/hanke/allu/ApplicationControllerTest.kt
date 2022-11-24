@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.allu
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import io.mockk.clearAllMocks
-import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -28,7 +27,6 @@ class ApplicationControllerTest {
     fun cleanUp() {
         // TODO: Needs newer MockK, which needs newer Spring test dependencies
         // checkUnnecessaryStub()
-        confirmVerified()
         clearAllMocks()
     }
 
@@ -64,7 +62,7 @@ class ApplicationControllerTest {
     fun `create saves disclosure logs`() {
         val requestApplication = AlluDataFactory.createApplicationDto(id = null)
         val createdApplication = requestApplication.copy(id = 1)
-        every { applicationService.create(requestApplication) } returns createdApplication
+        every { applicationService.create(requestApplication, username) } returns createdApplication
 
         applicationController.create(requestApplication)
 
@@ -76,8 +74,9 @@ class ApplicationControllerTest {
     @Test
     fun `update saves disclosure logs`() {
         val application = AlluDataFactory.createApplicationDto(id = 1)
-        every { applicationService.updateApplicationData(1, application.applicationData) } returns
-            application
+        every {
+            applicationService.updateApplicationData(1, application.applicationData, username)
+        } returns application
 
         applicationController.update(1, application)
 
