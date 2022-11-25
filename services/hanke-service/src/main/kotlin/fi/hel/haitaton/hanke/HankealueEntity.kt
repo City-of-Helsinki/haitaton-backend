@@ -14,7 +14,7 @@ class HankealueEntity {
     @JoinColumn(name = "hankeid")
     var hanke: HankeEntity? = null
 
-    // TODO: Use entity insted?
+    // NOTE: This should be changed to an entity
     // Refers to HankeGeometria.
     var geometriat: Int? = null
 

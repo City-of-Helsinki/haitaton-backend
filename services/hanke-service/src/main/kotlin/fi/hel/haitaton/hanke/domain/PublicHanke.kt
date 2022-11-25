@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.domain
 
 import fi.hel.haitaton.hanke.*
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
@@ -115,14 +114,11 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
 @RequestMapping("/public-hankkeet")
 class PublicHankeController(
     @Autowired private val hankeService: HankeService,
-    @Autowired private val hankeGeometriatService: HankeGeometriatService
 ) {
 
     @GetMapping
     fun getAll(): List<PublicHanke> {
         val hankkeet = hankeService.loadAllHanke().filter { it.tormaystarkasteluTulos != null }
-        // FIXME
-        //        hankkeet.forEach { it.geometriat = hankeGeometriatService.loadGeometriat(it) }
         return hankkeet.map { hankeToPublic(it) }
     }
 }

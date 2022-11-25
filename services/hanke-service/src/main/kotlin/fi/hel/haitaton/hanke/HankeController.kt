@@ -63,7 +63,7 @@ class HankeController(
         val hankeList = hankeService.loadHankkeetByIds(userPermissions.map { it.hankeId })
         includePermissions(hankeList, userPermissions)
 
-        if (!geometry) { // FIXME premature optimization
+        if (!geometry) {
             hankeList.forEach { hanke -> hanke.alueet.forEach { alue -> alue.geometriat = null } }
         }
 

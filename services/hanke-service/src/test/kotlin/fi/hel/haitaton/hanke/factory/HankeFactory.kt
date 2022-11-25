@@ -182,7 +182,7 @@ object HankeFactory : Factory<Hanke>() {
         ids: List<Int>,
         mutator: (HankeYhteystieto) -> Unit = {}
     ): Hanke {
-        muut.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
+        rakennuttajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
         return this
     }
 

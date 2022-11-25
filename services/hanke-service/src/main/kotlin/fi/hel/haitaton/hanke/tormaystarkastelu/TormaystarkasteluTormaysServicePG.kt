@@ -105,7 +105,6 @@ class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperatio
     override fun anyIntersectsWithCyclewaysMain(hankegeometriat: List<HankeGeometriat>) =
         anyIntersectsWith(geometriatToIdSets(hankegeometriat), "tormays_cycleways_main_polys")
 
-    // FIXME string concatenation with SQL
     private fun getDistinctValuesIntersectingRows(
         hankegeometriat: Set<Int>,
         table: String,

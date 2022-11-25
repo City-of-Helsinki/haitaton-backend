@@ -19,7 +19,16 @@ private val logger = KotlinLogging.logger {}
  * Helper for mapping and sorting data to existing collections.
  *
  * Example usage:
- * TODO
+ * mergeDataInto(
+ *   hanke.alueet,
+ *   entity.listOfHankeAlueet,
+ *   { it.id },
+ *   { it.id },
+ *   { source, target -> copyNonNullHankealueFieldsToEntity(hanke, source, target) }
+ * )
+ * - Transforms data from hanke.alueet into entity.listOfHankeAlueet
+ * - Uses id-field as identity
+ * - Does the transformation with the last lambda
  *
  * Source list is not modified. Target container is sorted by order of source container.
  *

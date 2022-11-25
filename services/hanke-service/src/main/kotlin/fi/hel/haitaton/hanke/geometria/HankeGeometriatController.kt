@@ -26,6 +26,7 @@ class HankeGeometriaController(
     @Autowired private val geometryService: HankeGeometriatService
 ) {
 
+    /** NOTE This method is deprecated. Create a new endpoint for querying geometry data. */
     @GetMapping("/{hankeTunnus}/geometriat")
     fun getGeometria(@PathVariable("hankeTunnus") hankeTunnus: String): ResponseEntity<Any> {
         logger.info { "Getting Hanke Geometria for $hankeTunnus..." }

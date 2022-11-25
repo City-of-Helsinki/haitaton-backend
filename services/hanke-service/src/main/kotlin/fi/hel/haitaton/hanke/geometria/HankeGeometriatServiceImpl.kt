@@ -73,8 +73,9 @@ open class HankeGeometriatServiceImpl(private val hankeGeometriaDao: HankeGeomet
     /**
      * Load geometries with object id.
      *
-     * FIXME Hanke contains multiple HankeAlueet that own their own geometries TODO change to
-     * contain multiple return values TODO add HankeAlue information to properties
+     * NOTE This method is deprecated. Create a new endpoint for querying geometry data.
+     *
+     * contain multiple return values
      */
     override fun loadGeometriat(hanke: Hanke): HankeGeometriat? {
         val hankeGeometriat = hankeGeometriaDao.retrieveGeometriat(hanke.id!!)

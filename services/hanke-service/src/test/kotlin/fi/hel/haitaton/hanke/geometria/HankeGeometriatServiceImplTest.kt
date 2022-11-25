@@ -42,13 +42,16 @@ internal class HankeGeometriatServiceImplTest {
         }
     }
 
+    private fun loadGeometriat(): HankeGeometriat {
+        return "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
+            HankeGeometriat::class.java
+        )
+    }
+
     @Test
     fun `save HankeGeometriat OK - with old version`() {
         val gid = 42
-        val hankeGeometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                HankeGeometriat::class.java
-            )
+        val hankeGeometriat = loadGeometriat()
         hankeGeometriat.id = gid
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
@@ -78,10 +81,7 @@ internal class HankeGeometriatServiceImplTest {
 
     @Test
     fun `save HankeGeometriat OK - without old version`() {
-        val hankeGeometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                HankeGeometriat::class.java
-            )
+        val hankeGeometriat = loadGeometriat()
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
         hankeGeometriat.modifiedAt = null
@@ -104,14 +104,8 @@ internal class HankeGeometriatServiceImplTest {
     fun `save HankeGeometriat OK - without features (delete)`() {
         val hankeTunnus = "1234567"
         val hankeId = 1
-        val hankeGeometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat-delete.json".asJsonResource(
-                HankeGeometriat::class.java
-            )
-        val oldHankeGeometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                HankeGeometriat::class.java
-            )
+        val hankeGeometriat = loadGeometriat()
+        val oldHankeGeometriat = loadGeometriat()
         oldHankeGeometriat.version = 0
 
         every { hankeService.loadHanke(hankeTunnus) } returns Hanke(hankeId, hankeTunnus)
@@ -136,17 +130,11 @@ internal class HankeGeometriatServiceImplTest {
     fun `save HankeGeometriat OK - with an empty old version (after delete)`() {
         val hankeTunnus = "1234567"
         val hankeId = 1
-        val hankeGeometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                HankeGeometriat::class.java
-            )
+        val hankeGeometriat = loadGeometriat()
         hankeGeometriat.version = null
         hankeGeometriat.createdAt = null
         hankeGeometriat.modifiedAt = null
-        val oldHankeGeometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                HankeGeometriat::class.java
-            )
+        val oldHankeGeometriat = loadGeometriat()
         oldHankeGeometriat.version = 1
         oldHankeGeometriat.featureCollection!!.features.clear()
 
@@ -175,10 +163,7 @@ internal class HankeGeometriatServiceImplTest {
     fun `load HankeGeometriat OK`() {
         val hankeTunnus = "1234567"
         val hankeId = 1
-        val hankeGeometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                HankeGeometriat::class.java
-            )
+        val hankeGeometriat = loadGeometriat()
         every { hankeService.loadHanke(hankeTunnus) } returns Hanke(hankeId, hankeTunnus)
         every { hankeGeometriatDao.retrieveGeometriat(hankeId) } returns hankeGeometriat
 
