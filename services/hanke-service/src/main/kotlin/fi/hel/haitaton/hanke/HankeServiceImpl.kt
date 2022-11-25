@@ -256,18 +256,18 @@ open class HankeServiceImpl(
         hankeEntity: HankeEntity
     ) {
 
-            hankeEntity.listOfHankeYhteystieto.forEach { hankeYhteystietoEntity ->
-                val hankeYhteystieto =
-                    createHankeYhteystietoDomainObjectFromEntity(hankeYhteystietoEntity)
+        hankeEntity.listOfHankeYhteystieto.forEach { hankeYhteystietoEntity ->
+            val hankeYhteystieto =
+                createHankeYhteystietoDomainObjectFromEntity(hankeYhteystietoEntity)
 
-                when (hankeYhteystietoEntity.contactType) {
-                    ContactType.OMISTAJA -> hanke.omistajat.add(hankeYhteystieto)
-                    ContactType.TOTEUTTAJA -> hanke.toteuttajat.add(hankeYhteystieto)
-                    ContactType.RAKENTAJA -> hanke.rakennuttajat.add(hankeYhteystieto)
-                    ContactType.MUU -> hanke.muut.add(hankeYhteystieto)
-                }
+            when (hankeYhteystietoEntity.contactType) {
+                ContactType.OMISTAJA -> hanke.omistajat.add(hankeYhteystieto)
+                ContactType.TOTEUTTAJA -> hanke.toteuttajat.add(hankeYhteystieto)
+                ContactType.RAKENTAJA -> hanke.rakennuttajat.add(hankeYhteystieto)
+                ContactType.MUU -> hanke.muut.add(hankeYhteystieto)
             }
         }
+    }
 
     private fun createHankeYhteystietoDomainObjectFromEntity(
         hankeYhteystietoEntity: HankeYhteystietoEntity

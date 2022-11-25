@@ -149,7 +149,8 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             // Only personal data needs to be logged, not other types of customers.
             .filter { it.type == CustomerType.PERSON }
 
-    fun extractYhteystiedot(hanke: Hanke) = hanke.omistajat + hanke.rakennuttajat + hanke.toteuttajat + hanke.muut
+    fun extractYhteystiedot(hanke: Hanke) =
+        hanke.omistajat + hanke.rakennuttajat + hanke.toteuttajat + hanke.muut
 
     private fun auditLogEntriesForYhteystiedot(yhteystiedot: List<HankeYhteystieto>) =
         yhteystiedot.toSet().map { disclosureLogEntry(ObjectType.YHTEYSTIETO, it.id, it) }

@@ -9,8 +9,8 @@ import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import java.time.ZonedDateTime
 
@@ -118,7 +118,9 @@ object HankeFactory : Factory<Hanke>() {
         mutator: (HankeYhteystieto) -> Unit = {},
     ): Hanke {
         this.omistajat.addAll(HankeYhteystietoFactory.createDifferentiated(omistajat, mutator))
-        this.rakennuttajat.addAll(HankeYhteystietoFactory.createDifferentiated(rakennuttajat, mutator))
+        this.rakennuttajat.addAll(
+            HankeYhteystietoFactory.createDifferentiated(rakennuttajat, mutator)
+        )
         this.toteuttajat.addAll(HankeYhteystietoFactory.createDifferentiated(toteuttajat, mutator))
         this.muut.addAll(HankeYhteystietoFactory.createDifferentiated(muut, mutator))
         return this
@@ -249,7 +251,6 @@ object HankeFactory : Factory<Hanke>() {
      */
     fun Hanke.withGeneratedToteuttaja(id: Int, mutator: (HankeYhteystieto) -> Unit = {}): Hanke =
         withGeneratedToteuttajat(listOf(id), mutator)
-    
 
     /**
      * Add a number of muu yhteystieto to a hanke. Generates the yhteystiedot with
@@ -262,8 +263,8 @@ object HankeFactory : Factory<Hanke>() {
      * ```
      */
     fun Hanke.withGeneratedMuutYhteystiedot(
-            ids: List<Int>,
-            mutator: (HankeYhteystieto) -> Unit = {}
+        ids: List<Int>,
+        mutator: (HankeYhteystieto) -> Unit = {}
     ): Hanke {
         muut.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
         return this
@@ -278,8 +279,8 @@ object HankeFactory : Factory<Hanke>() {
      * ```
      */
     fun Hanke.withGeneratedMuutYhteystiedot(
-            vararg ids: Int,
-            mutator: (HankeYhteystieto) -> Unit = {}
+        vararg ids: Int,
+        mutator: (HankeYhteystieto) -> Unit = {}
     ): Hanke = withGeneratedMuutYhteystiedot(ids.toList(), mutator)
 
     /**
@@ -290,6 +291,8 @@ object HankeFactory : Factory<Hanke>() {
      * HankeFactory.create().withGeneratedMuuyhteystieto(1)
      * ```
      */
-    fun Hanke.withGeneratedMuuYhteystieto(id: Int, mutator: (HankeYhteystieto) -> Unit = {}): Hanke =
-            withGeneratedMuutYhteystiedot(listOf(id), mutator)
+    fun Hanke.withGeneratedMuuYhteystieto(
+        id: Int,
+        mutator: (HankeYhteystieto) -> Unit = {}
+    ): Hanke = withGeneratedMuutYhteystiedot(listOf(id), mutator)
 }

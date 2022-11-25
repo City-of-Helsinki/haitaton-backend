@@ -9,16 +9,11 @@ import fi.hel.haitaton.hanke.*
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
 import javax.transaction.Transactional
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
-import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.junit.jupiter.Testcontainers
-import org.testcontainers.utility.MountableFile
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -26,16 +21,15 @@ import org.testcontainers.utility.MountableFile
 @Transactional
 internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
 
-    @Autowired
-    private lateinit var hankeGeometriatDao: HankeGeometriatDao
+    @Autowired private lateinit var hankeGeometriatDao: HankeGeometriatDao
 
     @Autowired private lateinit var tormaysService: TormaystarkasteluTormaysService
 
     private fun createHankeGeometria(): HankeGeometriat {
         val hankeGeometriat =
-                "/fi/hel/haitaton/hanke/tormaystarkastelu/hankeGeometriat.json".asJsonResource(
-                        HankeGeometriat::class.java
-                )
+            "/fi/hel/haitaton/hanke/tormaystarkastelu/hankeGeometriat.json".asJsonResource(
+                HankeGeometriat::class.java
+            )
         val luotu = hankeGeometriatDao.createHankeGeometriat(hankeGeometriat)
         return luotu!!
     }
