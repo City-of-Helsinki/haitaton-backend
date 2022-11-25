@@ -1,4 +1,5 @@
 {
+  "applicationType": "CABLE_REPORT",
   "area": null,
   "name": "Testihakemus",
   "startTime": "2022-10-23T21:00:00.000Z",

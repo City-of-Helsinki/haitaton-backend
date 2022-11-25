@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.allu
 
 import java.time.ZonedDateTime
+import mu.KotlinLogging
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType
 import org.springframework.http.client.MultipartBodyBuilder
@@ -10,13 +11,24 @@ import org.springframework.web.reactive.function.client.ClientResponse
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction
 import org.springframework.web.reactive.function.client.ExchangeFunction
 import org.springframework.web.reactive.function.client.WebClient
+import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.body
 import reactor.core.publisher.Mono
 
+private val logger = KotlinLogging.logger {}
+
 class CableReportServiceAllu(
     private val webClient: WebClient,
-    private val properties: AlluProperties
+    private val properties: AlluProperties,
 ) : CableReportService {
+
+    /**
+     * Date from before Allu was launched.
+     *
+     * Useful for getting the complete history of an application while the history API doesn't
+     * accept null in the eventsAfter field.
+     */
+    private val beforeAlluLaunch = ZonedDateTime.parse("2017-01-01T00:00:00Z")
 
     private val baseUrl = properties.baseUrl
 
@@ -30,8 +42,11 @@ class CableReportServiceAllu(
                 .body(Mono.just(LoginInfo(properties.username, properties.password)))
                 .retrieve()
                 .bodyToMono(String::class.java)
-                // Allu has started to return the login token in quotes. Remove them.
-                // This is undocumented, so we should confirm this is intentional.
+                .doOnError(WebClientResponseException::class.java) {
+                    logError("Error logging in to Allu", it)
+                }
+                // Allu has gone back and forth on whether it returns the login token surrounded
+                // with quotes or not. To be safe, remove them if they are found.
                 .map { it.trim('"') }
                 .block()
         } catch (e: Throwable) {
@@ -40,11 +55,9 @@ class CableReportServiceAllu(
     }
 
     override fun getCurrentStatus(applicationId: Int): ApplicationStatus? {
-        // Allu no longer accepts null in the eventsAfter field. Use a date before Allu was launched
-        // to get the full history.
-        // The API documentation still says null is interpreted as "complete history",
-        // so we should confirm this change is intentional.
-        return getApplicationStatusHistory(applicationId, ZonedDateTime.now().withYear(2010))
+        // Allu should accept null in the eventsBefore field of this request, but returns an error
+        // at the moment. As a workaround use a time from before Allu was launched.
+        return getApplicationStatusHistory(applicationId, beforeAlluLaunch)
             .block()
             ?.events
             ?.maxWithOrNull(compareByDescending { it.eventTime })
@@ -53,7 +66,7 @@ class CableReportServiceAllu(
 
     override fun getApplicationStatusEvents(
         applicationId: Int,
-        eventsAfter: ZonedDateTime?
+        eventsAfter: ZonedDateTime,
     ): List<ApplicationStatusEvent> {
         return getApplicationStatusHistory(applicationId, eventsAfter).block()?.events
             ?: emptyList()
@@ -61,7 +74,7 @@ class CableReportServiceAllu(
 
     private fun getApplicationStatusHistory(
         applicationId: Int,
-        eventsAfter: ZonedDateTime?
+        eventsAfter: ZonedDateTime,
     ): Mono<ApplicationHistory> {
         val token = login()!!
         val search = ApplicationHistorySearch(listOf(applicationId), eventsAfter)
@@ -76,11 +89,14 @@ class CableReportServiceAllu(
             // API returns an array of ApplicationHistory objects (one for each requested
             // applicationId)
             .bodyToFlux(ApplicationHistory::class.java)
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error getting application history from Allu", it)
+            }
             // As this function always requests just one take the first
             .next()
     }
 
-    override fun create(cableReport: CableReportApplication): Int {
+    override fun create(cableReport: CableReportApplicationData): Int {
         val token = login()!!
         return webClient
             .post()
@@ -91,11 +107,14 @@ class CableReportServiceAllu(
             .bodyValue(cableReport)
             .retrieve()
             .bodyToMono(Int::class.java)
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error creating cable report to Allu", it)
+            }
             .blockOptional()
             .orElseThrow()
     }
 
-    override fun update(applicationId: Int, cableReport: CableReportApplication) {
+    override fun update(applicationId: Int, cableReport: CableReportApplicationData) {
         val token = login()!!
         webClient
             .put()
@@ -106,6 +125,9 @@ class CableReportServiceAllu(
             .body(Mono.just(cableReport))
             .retrieve()
             .bodyToMono(Int::class.java)
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error updating cable report in Allu", it)
+            }
             .blockOptional()
             .orElseThrow()
     }
@@ -126,6 +148,9 @@ class CableReportServiceAllu(
             .headers { it.setBearerAuth(token) }
             .body(BodyInserters.fromMultipartData(multipartData))
             .exchange()
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error uploading attachment to Allu", it)
+            }
             .blockOptional()
             .orElseThrow()
     }
@@ -139,6 +164,9 @@ class CableReportServiceAllu(
             .headers { it.setBearerAuth(token) }
             .retrieve()
             .bodyToFlux(InformationRequest::class.java)
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error getting application information from Allu", it)
+            }
             .collectList()
             .blockOptional()
             .orElseThrow()
@@ -147,8 +175,8 @@ class CableReportServiceAllu(
     override fun respondToInformationRequest(
         applicationId: Int,
         requestId: Int,
-        cableReport: CableReportApplication,
-        updatedFields: List<InformationRequestFieldKey>
+        cableReport: CableReportApplicationData,
+        updatedFields: List<InformationRequestFieldKey>,
     ) {
         val token = login()!!
         webClient
@@ -172,6 +200,9 @@ class CableReportServiceAllu(
             .accept(MediaType.APPLICATION_PDF)
             .headers { it.setBearerAuth(token) }
             .exchange()
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error getting decision PDF from Allu", it)
+            }
             .flatMap { it.bodyToMono(ByteArrayResource::class.java) }
             .map { it.byteArray }
             .blockOptional()
@@ -187,6 +218,9 @@ class CableReportServiceAllu(
             .headers { it.setBearerAuth(token) }
             .retrieve()
             .bodyToFlux(AttachmentInfo::class.java)
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error getting decision attachments from Allu", it)
+            }
             .collectList()
             .blockOptional()
             .orElseThrow()
@@ -200,10 +234,19 @@ class CableReportServiceAllu(
             .accept(MediaType.APPLICATION_PDF)
             .headers { it.setBearerAuth(token) }
             .exchange()
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error getting decision attachment data from Allu", it)
+            }
             .flatMap { it.bodyToMono(ByteArrayResource::class.java) }
             .map { it.byteArray }
             .blockOptional()
             .orElseThrow()
+    }
+
+    private fun logError(msg: String, ex: WebClientResponseException) {
+        logger.error {
+            "$msg with status ${ex.statusCode} and response:\n${ex.responseBodyAsString}"
+        }
     }
 }
 
@@ -221,7 +264,7 @@ class ErrorFilter : ExchangeFilterFunction {
 
     override fun filter(request: ClientRequest, next: ExchangeFunction): Mono<ClientResponse> {
         return next.exchange(request).flatMap { resp ->
-            if (resp.statusCode() != null && resp.statusCode().isError) {
+            if (resp.statusCode().isError) {
                 resp
                     .bodyToMono(String::class.java)
                     .defaultIfEmpty(resp.statusCode().reasonPhrase)

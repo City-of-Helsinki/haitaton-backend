@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.allu
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import io.mockk.clearAllMocks
+import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -12,10 +13,11 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
+private const val username = "testUser"
+
 @ExtendWith(SpringExtension::class)
-@WithMockUser("testUser")
+@WithMockUser(username)
 class ApplicationControllerTest {
-    private val username = "testUser"
 
     private val applicationService: ApplicationService = mockk()
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
@@ -27,6 +29,7 @@ class ApplicationControllerTest {
     fun cleanUp() {
         // TODO: Needs newer MockK, which needs newer Spring test dependencies
         // checkUnnecessaryStub()
+        confirmVerified(applicationService, disclosureLogService)
         clearAllMocks()
     }
 
@@ -34,33 +37,39 @@ class ApplicationControllerTest {
     fun `getAll saves disclosure logs`() {
         val applications =
             listOf(
-                AlluDataFactory.createApplicationDto(),
-                AlluDataFactory.createApplicationDto(
+                AlluDataFactory.createApplication(),
+                AlluDataFactory.createApplication(
                     id = 2,
                     applicationData =
-                        AlluDataFactory.createCableReportApplication(name = "Toinen selvitys")
+                        AlluDataFactory.createCableReportApplicationData(name = "Toinen selvitys")
                 ),
             )
-        every { applicationService.getAllApplicationsForCurrentUser() } returns applications
+        every { applicationService.getAllApplicationsForUser(username) } returns applications
 
         applicationController.getAll()
 
-        verify { disclosureLogService.saveDisclosureLogsForApplications(applications, username) }
+        verify {
+            disclosureLogService.saveDisclosureLogsForApplications(applications, username)
+            applicationService.getAllApplicationsForUser(username)
+        }
     }
 
     @Test
     fun `getById saves disclosure logs`() {
-        val application = AlluDataFactory.createApplicationDto()
-        every { applicationService.getApplicationById(1) } returns application
+        val application = AlluDataFactory.createApplication()
+        every { applicationService.getApplicationById(1, username) } returns application
 
         applicationController.getById(1)
 
-        verify { disclosureLogService.saveDisclosureLogsForApplication(application, username) }
+        verify {
+            disclosureLogService.saveDisclosureLogsForApplication(application, username)
+            applicationService.getApplicationById(1, username)
+        }
     }
 
     @Test
     fun `create saves disclosure logs`() {
-        val requestApplication = AlluDataFactory.createApplicationDto(id = null)
+        val requestApplication = AlluDataFactory.createApplication(id = null)
         val createdApplication = requestApplication.copy(id = 1)
         every { applicationService.create(requestApplication, username) } returns createdApplication
 
@@ -68,18 +77,22 @@ class ApplicationControllerTest {
 
         verify {
             disclosureLogService.saveDisclosureLogsForApplication(createdApplication, username)
+            applicationService.create(requestApplication, username)
         }
     }
 
     @Test
     fun `update saves disclosure logs`() {
-        val application = AlluDataFactory.createApplicationDto(id = 1)
+        val application = AlluDataFactory.createApplication(id = 1)
         every {
             applicationService.updateApplicationData(1, application.applicationData, username)
         } returns application
 
         applicationController.update(1, application)
 
-        verify { disclosureLogService.saveDisclosureLogsForApplication(application, username) }
+        verify {
+            disclosureLogService.saveDisclosureLogsForApplication(application, username)
+            applicationService.updateApplicationData(1, application.applicationData, username)
+        }
     }
 }

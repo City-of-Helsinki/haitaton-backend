@@ -16,7 +16,7 @@ data class ApplicationStatusEvent(
     val applicationIdentifier: String,
     /**
      * Tells next status (DECISION, OPERATIONAL_CONDITION or FINISHED) if current status is
-     * DECISIONMAKING
+     * DECISIONMAKING.
      */
     val targetStatus: ApplicationStatus?,
 )

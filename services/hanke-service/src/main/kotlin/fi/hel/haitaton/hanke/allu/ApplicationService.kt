@@ -1,12 +1,9 @@
 package fi.hel.haitaton.hanke.allu
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.module.kotlin.treeToValue
-import fi.hel.haitaton.hanke.OBJECT_MAPPER
-import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
+import kotlin.reflect.KClass
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
@@ -19,30 +16,26 @@ open class ApplicationService(
     private val disclosureLogService: DisclosureLogService,
     private val applicationLoggingService: ApplicationLoggingService,
 ) {
-
-    open fun getAllApplicationsForCurrentUser(): List<ApplicationDto> {
-        return getAllApplicationsForUser(currentUserId())
+    open fun getAllApplicationsForUser(userId: String): List<Application> {
+        return repo.getAllByUserId(userId).map { it.toApplication() }
     }
 
-    open fun getAllApplicationsForUser(userId: String): List<ApplicationDto> {
-        return repo.getAllByUserId(userId).map { applicationToDto(it) }
-    }
-
-    open fun getApplicationById(id: Long) = getById(id)?.let { applicationToDto(it) }
+    open fun getApplicationById(id: Long, userId: String): Application =
+        getById(id, userId).toApplication()
 
     @Transactional
-    open fun create(application: ApplicationDto, userId: String): ApplicationDto {
-        val alluApplication =
-            AlluApplication(
+    open fun create(application: Application, userId: String): Application {
+        val applicationEntity =
+            ApplicationEntity(
                 id = null,
                 alluid = null,
                 userId = userId,
                 applicationType = application.applicationType,
                 applicationData = application.applicationData
             )
-        trySendingPendingApplicationToAllu(alluApplication)
+        trySendingPendingApplicationToAllu(applicationEntity)
 
-        val savedApplication = applicationToDto(repo.save(alluApplication))
+        val savedApplication = repo.save(applicationEntity).toApplication()
         applicationLoggingService.logCreate(savedApplication, userId)
         return savedApplication
     }
@@ -50,11 +43,22 @@ open class ApplicationService(
     @Transactional
     open fun updateApplicationData(
         id: Long,
-        newApplicationData: JsonNode,
-        userId: String,
-    ): ApplicationDto? {
-        val application = getById(id) ?: return null
-        val applicationBefore = applicationToDto(application)
+        newApplicationData: ApplicationData,
+        userId: String
+    ): Application {
+        val application = getById(id, userId)
+        val applicationBefore = application.toApplication()
+
+        when (application.applicationData) {
+            is CableReportApplicationData ->
+                if (newApplicationData !is CableReportApplicationData) {
+                    throw IncompatibleApplicationException(
+                        id,
+                        application.applicationData::class,
+                        newApplicationData::class
+                    )
+                }
+        }
 
         if (!isStillPending(application)) {
             throw IllegalArgumentException("Application already sent")
@@ -63,25 +67,25 @@ open class ApplicationService(
         application.applicationData = newApplicationData
         trySendingPendingApplicationToAllu(application)
 
-        val applicationAfter = applicationToDto(repo.save(application))
+        val applicationAfter = repo.save(application).toApplication()
         applicationLoggingService.logUpdate(applicationBefore, applicationAfter, userId)
         return applicationAfter
     }
 
-    open fun sendApplication(id: Long): ApplicationDto? {
-        val application = getById(id) ?: return null
+    open fun sendApplication(id: Long, userId: String): Application {
+        val application = getById(id, userId)
         if (!isStillPending(application)) {
             throw IllegalArgumentException("Application already sent")
         }
         sendApplicationToAllu(application, pendingOnClient = false)
-        return applicationToDto(repo.save(application))
+        return repo.save(application).toApplication()
     }
 
-    private fun getById(id: Long): AlluApplication? {
-        return repo.findOneByIdAndUserId(id, currentUserId())
+    private fun getById(id: Long, userId: String): ApplicationEntity {
+        return repo.findOneByIdAndUserId(id, userId) ?: throw ApplicationNotFoundException(id)
     }
 
-    private fun isStillPending(application: AlluApplication): Boolean {
+    private fun isStillPending(application: ApplicationEntity): Boolean {
         // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)
         val id = application.alluid ?: return true
 
@@ -94,7 +98,7 @@ open class ApplicationService(
         return currentStatus in listOf(ApplicationStatus.PENDING, ApplicationStatus.PENDING_CLIENT)
     }
 
-    private fun trySendingPendingApplicationToAllu(application: AlluApplication) {
+    private fun trySendingPendingApplicationToAllu(application: ApplicationEntity) {
         try {
             sendApplicationToAllu(application, pendingOnClient = true)
         } catch (ignore: Exception) {
@@ -102,28 +106,26 @@ open class ApplicationService(
         }
     }
 
-    private fun sendApplicationToAllu(application: AlluApplication, pendingOnClient: Boolean) {
-        when (application.applicationType) {
-            ApplicationType.CABLE_REPORT -> {
-                sendCableReport(application, pendingOnClient)
-            }
+    private fun sendApplicationToAllu(application: ApplicationEntity, pendingOnClient: Boolean) {
+        when (application.applicationData) {
+            is CableReportApplicationData -> sendCableReport(application, pendingOnClient)
         }
     }
 
-    private fun sendCableReport(application: AlluApplication, pendingOnClient: Boolean) {
-        val cableReportApplication: CableReportApplication =
-            OBJECT_MAPPER.treeToValue(application.applicationData)!!
-        if (cableReportApplication.pendingOnClient != pendingOnClient) {
-            cableReportApplication.pendingOnClient = pendingOnClient
-            application.applicationData = OBJECT_MAPPER.valueToTree(cableReportApplication)
+    private fun sendCableReport(application: ApplicationEntity, pendingOnClient: Boolean) {
+        val cableReportApplicationData: CableReportApplicationData =
+            application.applicationData as CableReportApplicationData
+        if (cableReportApplicationData.pendingOnClient != pendingOnClient) {
+            cableReportApplicationData.pendingOnClient = pendingOnClient
+            application.applicationData = cableReportApplicationData
         }
 
-        withDisclosureLogging(cableReportApplication) {
+        withDisclosureLogging(cableReportApplicationData) {
             val alluId = application.alluid
             if (alluId == null) {
-                application.alluid = cableReportService.create(cableReportApplication)
+                application.alluid = cableReportService.create(cableReportApplicationData)
             } else {
-                cableReportService.update(alluId, cableReportApplication)
+                cableReportService.update(alluId, cableReportApplicationData)
             }
         }
     }
@@ -134,11 +136,11 @@ open class ApplicationService(
      * failures, since personal data was not yet disclosed.
      */
     private fun withDisclosureLogging(
-        cableReportApplication: CableReportApplication,
-        f: (CableReportApplication) -> Unit
+        cableReportApplicationData: CableReportApplicationData,
+        f: (CableReportApplicationData) -> Unit
     ) {
         try {
-            f(cableReportApplication)
+            f(cableReportApplicationData)
         } catch (e: AlluLoginException) {
             // Since the login failed we didn't send the application itself, so logging not needed.
             throw e
@@ -147,19 +149,31 @@ open class ApplicationService(
             // application to Allu. Allu might have read it and rejected it, so we should log this
             // as a disclosure event.
             disclosureLogService.saveDisclosureLogsForAllu(
-                cableReportApplication,
+                cableReportApplicationData,
                 Status.FAILED,
                 ALLU_APPLICATION_ERROR_MSG
             )
             throw e
         }
         // There were no exceptions, so log this as a successful disclosure.
-        disclosureLogService.saveDisclosureLogsForAllu(cableReportApplication, Status.SUCCESS)
+        disclosureLogService.saveDisclosureLogsForAllu(cableReportApplicationData, Status.SUCCESS)
     }
 }
 
+class IncompatibleApplicationException(
+    applicationId: Long,
+    oldApplicationClass: KClass<out ApplicationData>,
+    newApplicationClass: KClass<out ApplicationData>
+) :
+    RuntimeException(
+        "Tried to update application $applicationId of type $oldApplicationClass with $newApplicationClass"
+    )
+
+class ApplicationNotFoundException(id: Long) :
+    RuntimeException("Application not found with id $id")
+
 @Repository
-interface ApplicationRepository : JpaRepository<AlluApplication, Long> {
-    fun findOneByIdAndUserId(id: Long, userId: String): AlluApplication?
-    fun getAllByUserId(userId: String): List<AlluApplication>
+interface ApplicationRepository : JpaRepository<ApplicationEntity, Long> {
+    fun findOneByIdAndUserId(id: Long, userId: String): ApplicationEntity?
+    fun getAllByUserId(userId: String): List<ApplicationEntity>
 }

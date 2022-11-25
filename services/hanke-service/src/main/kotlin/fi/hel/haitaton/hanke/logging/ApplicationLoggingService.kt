@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.logging
 
-import fi.hel.haitaton.hanke.allu.ApplicationDto
+import fi.hel.haitaton.hanke.allu.Application
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -9,18 +9,14 @@ import org.springframework.transaction.annotation.Transactional
 class ApplicationLoggingService(private val auditLogService: AuditLogService) {
 
     @Transactional(propagation = Propagation.MANDATORY)
-    fun logCreate(savedApplication: ApplicationDto, userId: String) {
+    fun logCreate(savedApplication: Application, userId: String) {
         auditLogService.create(
             AuditLogService.createEntry(userId, ObjectType.APPLICATION, savedApplication)
         )
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
-    fun logUpdate(
-        applicationBefore: ApplicationDto,
-        applicationAfter: ApplicationDto,
-        userId: String
-    ) {
+    fun logUpdate(applicationBefore: Application, applicationAfter: Application, userId: String) {
         AuditLogService.updateEntry(
                 userId,
                 ObjectType.APPLICATION,

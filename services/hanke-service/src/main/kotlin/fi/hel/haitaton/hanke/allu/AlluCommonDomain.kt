@@ -2,6 +2,8 @@ package fi.hel.haitaton.hanke.allu
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonView
+import fi.hel.haitaton.hanke.ChangeLogView
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CustomerWithContacts(val customer: Customer, val contacts: List<Contact>)
@@ -26,6 +28,7 @@ data class Contact(
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonView(ChangeLogView::class)
 data class Customer(
     val type: CustomerType,
     val name: String,
@@ -69,7 +72,9 @@ data class PostalAddress(
 /** Check if this address is blank, i.e. none of fields have any information. */
 fun PostalAddress?.isNullOrBlank() = this?.isBlank() ?: true
 
-@JsonIgnoreProperties(ignoreUnknown = true) data class StreetAddress(val streetName: String?)
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonView(ChangeLogView::class)
+data class StreetAddress(val streetName: String?)
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 enum class CustomerType {

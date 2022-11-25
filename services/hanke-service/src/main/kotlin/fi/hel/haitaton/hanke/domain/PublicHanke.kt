@@ -109,7 +109,7 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
         hanke.vaihe!!,
         hanke.suunnitteluVaihe,
         hanke.tyomaaTyyppi,
-        hanke.liikennehaittaindeksi!!,
+        hanke.getLiikennehaittaindeksi()!!,
         hanke.tormaystarkasteluTulos!!,
         omistajat,
         alueet,

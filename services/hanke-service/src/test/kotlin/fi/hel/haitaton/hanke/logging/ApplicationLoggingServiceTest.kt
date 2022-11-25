@@ -26,7 +26,7 @@ internal class ApplicationLoggingServiceTest {
 
     @Test
     fun `logCreate creates audit log entry for created application`() {
-        val application = AlluDataFactory.createApplicationDto()
+        val application = AlluDataFactory.createApplication()
 
         applicationLoggingService.logCreate(application, userId)
 
@@ -53,14 +53,14 @@ internal class ApplicationLoggingServiceTest {
     @Test
     fun `logUpdate creates audit log entry for updated hanke`() {
         val applicationBefore =
-            AlluDataFactory.createApplicationDto(
+            AlluDataFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplication(name = "Johtoselvitys #1")
+                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #1")
             )
         val applicationAfter =
-            AlluDataFactory.createApplicationDto(
+            AlluDataFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplication(name = "Johtoselvitys #2")
+                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #2")
             )
 
         applicationLoggingService.logUpdate(applicationBefore, applicationAfter, userId)
@@ -88,14 +88,14 @@ internal class ApplicationLoggingServiceTest {
     @Test
     fun `logUpdate doesn't create audit log entry if hanke not changed`() {
         val applicationBefore =
-            AlluDataFactory.createApplicationDto(
+            AlluDataFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplication(name = "Johtoselvitys #1")
+                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #1")
             )
         val applicationAfter =
-            AlluDataFactory.createApplicationDto(
+            AlluDataFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplication(name = "Johtoselvitys #1")
+                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #1")
             )
 
         applicationLoggingService.logUpdate(applicationBefore, applicationAfter, userId)

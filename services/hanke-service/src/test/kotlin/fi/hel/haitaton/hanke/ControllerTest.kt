@@ -1,0 +1,69 @@
+package fi.hel.haitaton.hanke
+
+import org.springframework.http.MediaType
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.ResultActions
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+
+interface ControllerTest {
+    val mockMvc: MockMvc
+
+    /** Send a GET request to the given URL. */
+    fun get(url: String): ResultActions {
+        return mockMvc.perform(MockMvcRequestBuilders.get(url).accept(MediaType.APPLICATION_JSON))
+    }
+
+    /**
+     * Send a POST request with the given string as the request body as-is.
+     *
+     * Useful for testing malformed requests that can't be expressed with DTO objects.
+     */
+    fun postRaw(url: String, content: String): ResultActions {
+        return mockMvc.perform(postRequest(url).content(content))
+    }
+
+    /** Send a POST request without a request body. */
+    fun post(url: String): ResultActions = mockMvc.perform(postRequest(url))
+
+    /** Send a POST request with the content object in the request body as JSON. */
+    fun post(url: String, content: Any): ResultActions =
+        mockMvc.perform(postRequest(url).body(content))
+
+    /**
+     * Send a PUT request with the given string as the request body as-is.
+     *
+     * Useful for testing malformed requests that can't be expressed with DTO objects.
+     */
+    fun putRaw(url: String, content: String): ResultActions {
+        return mockMvc.perform(putRequest(url).content(content))
+    }
+
+    /** Send a POST request without a request body. */
+    fun put(url: String): ResultActions = mockMvc.perform(putRequest(url))
+
+    /** Send a POST request with the content object in the request body as JSON. */
+    fun put(url: String, content: Any): ResultActions =
+        mockMvc.perform(putRequest(url).body(content))
+
+    /** Use the given object as the request body for this request. Serialize the object as JSON. */
+    private fun MockHttpServletRequestBuilder.body(content: Any): MockHttpServletRequestBuilder =
+        this.content(OBJECT_MAPPER.writeValueAsString(content))
+
+    private fun postRequest(url: String): MockHttpServletRequestBuilder =
+        MockMvcRequestBuilders.post(url).modifyHeaders()
+
+    private fun putRequest(url: String): MockHttpServletRequestBuilder =
+        MockMvcRequestBuilders.put(url).modifyHeaders()
+
+    /**
+     * Headers that are common for the HTTP methods that send a body with the request, like POST and
+     * PUT.
+     */
+    private fun MockHttpServletRequestBuilder.modifyHeaders(): MockHttpServletRequestBuilder =
+        this.accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .characterEncoding("UTF-8")
+            .with(SecurityMockMvcRequestPostProcessors.csrf())
+}

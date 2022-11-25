@@ -34,16 +34,16 @@ class HankeYhteystietoEntity(
     @JsonView(ChangeLogView::class) var osasto: String? = null,
 
     // Personal data processing restriction (or other needs to prevent changes)
-    var dataLocked: Boolean? = false,
-    var dataLockInfo: String? = null,
+    @JsonView(NotInChangeLogView::class) var dataLocked: Boolean? = false,
+    @JsonView(NotInChangeLogView::class) var dataLockInfo: String? = null,
 
     // NOTE: createdByUserId must be non-null for valid data, but to allow creating instances with
     // no-arg constructor and programming convenience, this class allows it to be null
     // (temporarily).
-    var createdByUserId: String? = null,
-    var createdAt: LocalDateTime? = null,
-    var modifiedByUserId: String? = null,
-    var modifiedAt: LocalDateTime? = null,
+    @JsonView(NotInChangeLogView::class) var createdByUserId: String? = null,
+    @JsonView(NotInChangeLogView::class) var createdAt: LocalDateTime? = null,
+    @JsonView(NotInChangeLogView::class) var modifiedByUserId: String? = null,
+    @JsonView(NotInChangeLogView::class) var modifiedAt: LocalDateTime? = null,
     // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
     // can be a performance problem if there is a need to do bulk inserts.
     // Using SEQUENCE would allow getting multiple ids more efficiently.
@@ -51,7 +51,10 @@ class HankeYhteystietoEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Int? = null,
-    @ManyToOne(fetch = FetchType.EAGER) @JoinColumn(name = "hankeid") var hanke: HankeEntity? = null
+    @JsonView(NotInChangeLogView::class)
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "hankeid")
+    var hanke: HankeEntity? = null
 ) {
 
     // Must consider both id and all non-audit fields for correct operations in certain collections
