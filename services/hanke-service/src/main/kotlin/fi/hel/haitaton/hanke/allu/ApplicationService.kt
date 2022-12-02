@@ -4,9 +4,12 @@ import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
 import kotlin.reflect.KClass
+import mu.KotlinLogging
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
+
+private val logger = KotlinLogging.logger {}
 
 const val ALLU_APPLICATION_ERROR_MSG = "Error sending application to Allu"
 
@@ -25,17 +28,21 @@ open class ApplicationService(
 
     @Transactional
     open fun create(application: Application, userId: String): Application {
+        logger.info("Creating a new application for user $userId")
         val applicationEntity =
             ApplicationEntity(
                 id = null,
                 alluid = null,
                 userId = userId,
                 applicationType = application.applicationType,
-                applicationData = application.applicationData
+                // The application is still a draft in Haitaton until the customer explicitly sends
+                // it to Allu
+                applicationData = application.applicationData.copy(pendingOnClient = true)
             )
-        trySendingPendingApplicationToAllu(applicationEntity)
+        applicationEntity.alluid = createApplicationToAllu(applicationEntity.applicationData)
 
         val savedApplication = repo.save(applicationEntity).toApplication()
+        logger.info { "Created a new application with id ${application.id} for user $userId" }
         applicationLoggingService.logCreate(savedApplication, userId)
         return savedApplication
     }
@@ -48,6 +55,7 @@ open class ApplicationService(
     ): Application {
         val application = getById(id, userId)
         val applicationBefore = application.toApplication()
+        logger.info("Updating application id=$id, alluid=${application.alluid}")
 
         when (application.applicationData) {
             is CableReportApplicationData ->
@@ -61,23 +69,31 @@ open class ApplicationService(
         }
 
         if (!isStillPending(application)) {
-            throw IllegalArgumentException("Application already sent")
+            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
 
-        application.applicationData = newApplicationData
-        trySendingPendingApplicationToAllu(application)
+        // Don't change a draft to a non-draft or vice-versa with the update method.
+        application.applicationData =
+            newApplicationData.copy(pendingOnClient = application.applicationData.pendingOnClient)
+        application.alluid = updateApplicationToAllu(application)
 
-        val applicationAfter = repo.save(application).toApplication()
-        applicationLoggingService.logUpdate(applicationBefore, applicationAfter, userId)
-        return applicationAfter
+        val updatedApplication = repo.save(application).toApplication()
+        logger.info("Updated application id=$id, alluid=${updatedApplication.alluid}")
+        applicationLoggingService.logUpdate(applicationBefore, updatedApplication, userId)
+        return updatedApplication
     }
 
     open fun sendApplication(id: Long, userId: String): Application {
         val application = getById(id, userId)
+        logger.info("Sending application id=$id, alluid=${application.alluid}")
         if (!isStillPending(application)) {
-            throw IllegalArgumentException("Application already sent")
+            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
-        sendApplicationToAllu(application, pendingOnClient = false)
+        // The application should no longer be a draft
+        application.applicationData = application.applicationData.copy(pendingOnClient = false)
+        application.alluid = sendApplicationToAllu(application)
+        logger.info("Sent application id=$id, alluid=${application.alluid}")
+        // Save only if sendApplicationToAllu didn't throw an exception
         return repo.save(application).toApplication()
     }
 
@@ -98,34 +114,48 @@ open class ApplicationService(
         return currentStatus in listOf(ApplicationStatus.PENDING, ApplicationStatus.PENDING_CLIENT)
     }
 
-    private fun trySendingPendingApplicationToAllu(application: ApplicationEntity) {
-        try {
-            sendApplicationToAllu(application, pendingOnClient = true)
-        } catch (ignore: Exception) {
-            // Just ignore it, maybe applicationData is missing something required which is fine
+    private fun createApplicationToAllu(applicationData: ApplicationData): Int? {
+        return try {
+            when (applicationData) {
+                is CableReportApplicationData ->
+                    withDisclosureLogging(applicationData) {
+                        cableReportService.create(applicationData)
+                    }
+            }
+        } catch (ex: Exception) {
+            logger.warn(ex) { "Error creating an application to allu." }
+            null
         }
     }
 
-    private fun sendApplicationToAllu(application: ApplicationEntity, pendingOnClient: Boolean) {
-        when (application.applicationData) {
-            is CableReportApplicationData -> sendCableReport(application, pendingOnClient)
+    private fun updateApplicationToAllu(application: ApplicationEntity): Int? {
+        return try {
+            sendApplicationToAllu(application)
+        } catch (ex: Exception) {
+            logger.warn(ex) {
+                "Error updating an application to allu. id=${application.id} alluid=${application.alluid}"
+            }
+            application.alluid
         }
     }
 
-    private fun sendCableReport(application: ApplicationEntity, pendingOnClient: Boolean) {
+    private fun sendApplicationToAllu(application: ApplicationEntity): Int {
+        return when (application.applicationData) {
+            is CableReportApplicationData -> sendCableReport(application)
+        }
+    }
+
+    private fun sendCableReport(application: ApplicationEntity): Int {
         val cableReportApplicationData: CableReportApplicationData =
             application.applicationData as CableReportApplicationData
-        if (cableReportApplicationData.pendingOnClient != pendingOnClient) {
-            cableReportApplicationData.pendingOnClient = pendingOnClient
-            application.applicationData = cableReportApplicationData
-        }
 
-        withDisclosureLogging(cableReportApplicationData) {
-            val alluId = application.alluid
-            if (alluId == null) {
-                application.alluid = cableReportService.create(cableReportApplicationData)
+        return withDisclosureLogging(cableReportApplicationData) {
+            val alluid = application.alluid
+            if (alluid == null) {
+                cableReportService.create(cableReportApplicationData)
             } else {
-                cableReportService.update(alluId, cableReportApplicationData)
+                cableReportService.update(alluid, cableReportApplicationData)
+                alluid
             }
         }
     }
@@ -135,12 +165,17 @@ open class ApplicationService(
      * status of the operation from whether there were exceptions or not. Don't save logging
      * failures, since personal data was not yet disclosed.
      */
-    private fun withDisclosureLogging(
+    private fun <T> withDisclosureLogging(
         cableReportApplicationData: CableReportApplicationData,
-        f: (CableReportApplicationData) -> Unit
-    ) {
+        f: (CableReportApplicationData) -> T,
+    ): T {
         try {
-            f(cableReportApplicationData)
+            val result = f(cableReportApplicationData)
+            disclosureLogService.saveDisclosureLogsForAllu(
+                cableReportApplicationData,
+                Status.SUCCESS
+            )
+            return result
         } catch (e: AlluLoginException) {
             // Since the login failed we didn't send the application itself, so logging not needed.
             throw e
@@ -155,15 +190,13 @@ open class ApplicationService(
             )
             throw e
         }
-        // There were no exceptions, so log this as a successful disclosure.
-        disclosureLogService.saveDisclosureLogsForAllu(cableReportApplicationData, Status.SUCCESS)
     }
 }
 
 class IncompatibleApplicationException(
     applicationId: Long,
     oldApplicationClass: KClass<out ApplicationData>,
-    newApplicationClass: KClass<out ApplicationData>
+    newApplicationClass: KClass<out ApplicationData>,
 ) :
     RuntimeException(
         "Tried to update application $applicationId of type $oldApplicationClass with $newApplicationClass"
@@ -171,6 +204,9 @@ class IncompatibleApplicationException(
 
 class ApplicationNotFoundException(id: Long) :
     RuntimeException("Application not found with id $id")
+
+class ApplicationAlreadyProcessingException(id: Long?, alluid: Int?) :
+    RuntimeException("Application is no longer pending in Allu, id=$id, alluid=$alluid")
 
 @Repository
 interface ApplicationRepository : JpaRepository<ApplicationEntity, Long> {

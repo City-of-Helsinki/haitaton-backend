@@ -22,6 +22,9 @@ import org.geojson.GeometryCollection
 sealed interface ApplicationData {
     val applicationType: ApplicationType
     val name: String
+    val pendingOnClient: Boolean
+
+    fun copy(pendingOnClient: Boolean): ApplicationData
 }
 
 @JsonView(ChangeLogView::class)
@@ -34,7 +37,7 @@ data class CableReportApplicationData(
     val geometry: GeometryCollection,
     val startTime: ZonedDateTime,
     val endTime: ZonedDateTime,
-    var pendingOnClient: Boolean,
+    override val pendingOnClient: Boolean,
     val identificationNumber: String,
 
     // CableReport specific, required
@@ -43,19 +46,22 @@ data class CableReportApplicationData(
     val contractorWithContacts: CustomerWithContacts, // työn suorittaja
 
     // Common, not required
-    var postalAddress: PostalAddress? = null,
-    var representativeWithContacts: CustomerWithContacts? = null,
-    var invoicingCustomer: Customer? = null,
-    var customerReference: String? = null,
-    var area: Double? = null,
+    val postalAddress: PostalAddress? = null,
+    val representativeWithContacts: CustomerWithContacts? = null,
+    val invoicingCustomer: Customer? = null,
+    val customerReference: String? = null,
+    val area: Double? = null,
 
     // CableReport specific, not required
-    var propertyDeveloperWithContacts: CustomerWithContacts? = null, // rakennuttaja
-    var constructionWork: Boolean = false,
-    var maintenanceWork: Boolean = false,
-    var emergencyWork: Boolean = false,
-    var propertyConnectivity: Boolean = false, // tontti-/kiinteistöliitos
-) : ApplicationData
+    val propertyDeveloperWithContacts: CustomerWithContacts? = null, // rakennuttaja
+    val constructionWork: Boolean = false,
+    val maintenanceWork: Boolean = false,
+    val emergencyWork: Boolean = false,
+    val propertyConnectivity: Boolean = false, // tontti-/kiinteistöliitos
+) : ApplicationData {
+    override fun copy(pendingOnClient: Boolean): CableReportApplicationData =
+        copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
+}
 
 data class CableReportInformationRequestResponse(
     val applicationData: CableReportApplicationData,

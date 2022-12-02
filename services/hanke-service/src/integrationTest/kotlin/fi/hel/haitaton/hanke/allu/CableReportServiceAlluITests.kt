@@ -161,22 +161,19 @@ class CableReportServiceAlluITests {
 
         val now = ZonedDateTime.now()
 
-        val application =
-            CableReportApplicationData(
-                applicationType = ApplicationType.CABLE_REPORT,
-                name = "Haitaton hankkeen nimi",
-                customerWithContacts = customerWContacts,
-                geometry = geometry,
-                startTime = now.plusDays(1L),
-                endTime = now.plusDays(22L),
-                pendingOnClient = false,
-                identificationNumber = "HAI-123",
-                clientApplicationKind = "Telekaapelin laittoa",
-                workDescription = "Kaivuhommiahan nää tietty",
-                contractorWithContacts = contractorWContacts
-            )
-        application.constructionWork = true
-
-        return application
+        return CableReportApplicationData(
+            applicationType = ApplicationType.CABLE_REPORT,
+            name = "Haitaton hankkeen nimi",
+            customerWithContacts = customerWContacts,
+            geometry = geometry,
+            startTime = now.plusDays(1L),
+            endTime = now.plusDays(22L),
+            pendingOnClient = false,
+            identificationNumber = "HAI-123",
+            clientApplicationKind = "Telekaapelin laittoa",
+            workDescription = "Kaivuhommiahan nää tietty",
+            contractorWithContacts = contractorWContacts,
+            constructionWork = true,
+        )
     }
 }

@@ -26,7 +26,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-private const val userName = "testUser"
+private const val username = "testUser"
 
 @WebMvcTest(ApplicationController::class)
 @Import(IntegrationTestConfiguration::class)
@@ -55,19 +55,19 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     }
 
     @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `getAll with no accessible applications returns empty list`() {
-        every { applicationService.getAllApplicationsForUser(userName) } returns listOf()
+        every { applicationService.getAllApplicationsForUser(username) } returns listOf()
 
         get("/hakemukset").andExpect(status().isOk).andExpect(content().json("[]"))
 
-        verify { applicationService.getAllApplicationsForUser(userName) }
+        verify { applicationService.getAllApplicationsForUser(username) }
     }
 
     @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `getAll returns applications for the current user`() {
-        every { applicationService.getAllApplicationsForUser(userName) } returns
+        every { applicationService.getAllApplicationsForUser(username) } returns
             AlluDataFactory.createApplications(3)
 
         get("/hakemukset")
@@ -75,7 +75,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             .andExpect(jsonPath("$").isArray)
             .andExpect(jsonPath("$.length()").value(3))
 
-        verify { applicationService.getAllApplicationsForUser(userName) }
+        verify { applicationService.getAllApplicationsForUser(username) }
     }
 
     @Test
@@ -86,20 +86,20 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     }
 
     @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `getById with unknown ID returns 404`() {
-        every { applicationService.getApplicationById(1234, userName) } throws
+        every { applicationService.getApplicationById(1234, username) } throws
             ApplicationNotFoundException(1234)
 
         get("/hakemukset/1234").andExpect(status().isNotFound)
 
-        verify { applicationService.getApplicationById(1234, userName) }
+        verify { applicationService.getApplicationById(1234, username) }
     }
 
     @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `getById with known ID returns application`() {
-        every { applicationService.getApplicationById(1234, userName) } returns
+        every { applicationService.getApplicationById(1234, username) } returns
             AlluDataFactory.createApplication(id = 1234)
 
         get("/hakemukset/1234")
@@ -107,7 +107,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             .andExpect(jsonPath("$.applicationType").value("CABLE_REPORT"))
             .andExpect(jsonPath("$.applicationData.applicationType").value("CABLE_REPORT"))
 
-        verify { applicationService.getApplicationById(1234, userName) }
+        verify { applicationService.getApplicationById(1234, username) }
     }
 
     @Test
@@ -119,7 +119,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     }
 
     @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `create without body returns 400`() {
         post("/hakemukset").andExpect(status().isBadRequest)
 
@@ -127,21 +127,21 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     }
 
     @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `create with proper application creates application`() {
         val newApplication = AlluDataFactory.createApplication(id = null)
         val createdApplication = newApplication.copy(id = 1234)
-        every { applicationService.create(newApplication, userName) } returns createdApplication
+        every { applicationService.create(newApplication, username) } returns createdApplication
 
         val response: Application =
             post("/hakemukset", newApplication).andExpect(status().isOk).andReturnBody()
 
         assertEquals(createdApplication, response)
-        verify { applicationService.create(newApplication, userName) }
+        verify { applicationService.create(newApplication, username) }
     }
 
     @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `create with missing application data type returns 400`() {
         val application = AlluDataFactory.createApplication(id = null)
         val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
@@ -153,7 +153,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     }
 
     @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `create with missing application type returns 400`() {
         val application = AlluDataFactory.createApplication(id = null)
         val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
@@ -175,7 +175,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     }
 
     @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `update without body returns 400`() {
         put("/hakemukset/1234").andExpect(status().isBadRequest)
 
@@ -183,11 +183,11 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     }
 
     @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `update with known id returns ok`() {
         val application = AlluDataFactory.createApplication()
         every {
-            applicationService.updateApplicationData(1234, application.applicationData, userName)
+            applicationService.updateApplicationData(1234, application.applicationData, username)
         } returns application
 
         val response: Application =
@@ -195,12 +195,12 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         assertEquals(application, response)
         verify {
-            applicationService.updateApplicationData(1234, application.applicationData, userName)
+            applicationService.updateApplicationData(1234, application.applicationData, username)
         }
     }
 
     @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `update with missing application data type returns 400`() {
         val application = AlluDataFactory.createApplication()
         val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
@@ -212,7 +212,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     }
 
     @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `update with missing application type returns 400`() {
         val application = AlluDataFactory.createApplication()
         val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
@@ -226,17 +226,32 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     }
 
     @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `update with unknown id returns 404`() {
         val application = AlluDataFactory.createApplication()
         every {
-            applicationService.updateApplicationData(1234, application.applicationData, userName)
+            applicationService.updateApplicationData(1234, application.applicationData, username)
         } throws ApplicationNotFoundException(1234)
 
         put("/hakemukset/1234", application).andExpect(status().isNotFound)
 
         verify {
-            applicationService.updateApplicationData(1234, application.applicationData, userName)
+            applicationService.updateApplicationData(1234, application.applicationData, username)
+        }
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `update with application that's no longer pending returns 409`() {
+        val application = AlluDataFactory.createApplication()
+        every {
+            applicationService.updateApplicationData(1234, application.applicationData, username)
+        } throws ApplicationAlreadyProcessingException(1234, 21)
+
+        put("/hakemukset/1234", application).andExpect(status().isConflict)
+
+        verify {
+            applicationService.updateApplicationData(1234, application.applicationData, username)
         }
     }
 
@@ -249,65 +264,71 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     }
 
     @Test
-    @WithMockUser(userName)
-    fun `sendApplication without body returns 400`() {
-        post("/hakemukset").andExpect(status().isBadRequest)
-
-        verify { applicationService wasNot Called }
-    }
-
-    @Test
-    @WithMockUser(userName)
-    fun `sendApplication with proper application creates application`() {
-        val newApplication = AlluDataFactory.createApplication(id = null)
-        val createdApplication = newApplication.copy(id = 1234)
-        every { applicationService.create(newApplication, userName) } returns createdApplication
+    @WithMockUser(username)
+    fun `sendApplication without body sends application to Allu and returns the result`() {
+        val application = AlluDataFactory.createApplication()
+        every { applicationService.sendApplication(1234, username) } returns application
 
         val response: Application =
-            post("/hakemukset", newApplication).andExpect(status().isOk).andReturnBody()
+            post("/hakemukset/1234/send-application").andExpect(status().isOk).andReturnBody()
 
-        assertEquals(createdApplication, response)
-        verify { applicationService.create(newApplication, userName) }
+        assertEquals(application, response)
+        verify { applicationService.sendApplication(1234, username) }
     }
 
     @Test
-    @WithMockUser(userName)
-    fun `sendApplication with missing application data type returns 400`() {
-        val application = AlluDataFactory.createApplication(id = null)
+    @WithMockUser(username)
+    fun `sendApplication ignores request body`() {
+        val application = AlluDataFactory.createApplication(alluid = 21)
+        every { applicationService.sendApplication(1234, username) } returns application
+
+        val response: Application =
+            post("/hakemukset/1234/send-application", application.copy(alluid = 9999))
+                .andExpect(status().isOk)
+                .andReturnBody()
+
+        assertEquals(application, response)
+        verify { applicationService.sendApplication(1234, username) }
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `sendApplication ignores even broken request body`() {
+        val application = AlluDataFactory.createApplication()
         val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
         (content.get("applicationData") as ObjectNode).remove("applicationType")
+        every { applicationService.sendApplication(1234, username) } returns application
 
-        postRaw("/hakemukset", content.toJsonString()).andExpect(status().isBadRequest)
+        val response: Application =
+            postRaw("/hakemukset/1234/send-application", content.toJsonString())
+                .andExpect(status().isOk)
+                .andReturnBody()
 
-        verify { applicationService wasNot Called }
+        assertEquals(application, response)
+        verify { applicationService.sendApplication(1234, username) }
     }
 
     @Test
-    @WithMockUser(userName)
-    fun `sendApplication with missing application type returns 400`() {
-        val application = AlluDataFactory.createApplication(id = null)
-        val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
-        content.remove("applicationType")
-
-        postRaw("/hakemukset", content.toJsonString())
-            .andDo { print(it) }
-            .andExpect(status().isBadRequest)
-
-        verify { applicationService wasNot Called }
-    }
-
-    @Test
-    @WithMockUser(userName)
+    @WithMockUser(username)
     fun `sendApplication with unknown id returns 404`() {
         val application = AlluDataFactory.createApplication()
-        every {
-            applicationService.updateApplicationData(1234, application.applicationData, userName)
-        } throws ApplicationNotFoundException(1234)
+        every { applicationService.sendApplication(1234, username) } throws
+            ApplicationNotFoundException(1234)
 
-        put("/hakemukset/1234", application).andExpect(status().isNotFound)
+        post("/hakemukset/1234/send-application", application).andExpect(status().isNotFound)
 
-        verify {
-            applicationService.updateApplicationData(1234, application.applicationData, userName)
-        }
+        verify { applicationService.sendApplication(1234, username) }
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `sendApplication with application that's no longer pending returns 409`() {
+        val application = AlluDataFactory.createApplication()
+        every { applicationService.sendApplication(1234, username) } throws
+            ApplicationAlreadyProcessingException(1234, 21)
+
+        post("/hakemukset/1234/send-application", application).andExpect(status().isConflict)
+
+        verify { applicationService.sendApplication(1234, username) }
     }
 }
