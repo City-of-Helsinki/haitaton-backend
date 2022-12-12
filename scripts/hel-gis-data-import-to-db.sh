@@ -26,11 +26,15 @@ start=`date +%s`
 counter=0
 for file in ${FILES[@]}; do
     counter=$((counter + 1))
-    echo "[$counter/${#FILES[@]}] Importing ${file}"
-    docker run --rm --network=haitaton-backend_backbone -v $(pwd)/tormays_polys:/tormays_polys osgeo/gdal:alpine-small-latest \
-        ogr2ogr -overwrite -f PostgreSQL PG:"dbname='$DB_NAME' host='$DB_HOST' port='$DB_PORT' user='$DB_USER' password='$DB_PASS'" \
-        ${POLYS_DIR}/${file}
-    echo "Imported ${file}"
+    if [ -f "${POLYS_DIR}/${file}" ]; then
+        echo "[$counter/${#FILES[@]}] Importing '${file}'"
+        docker run --rm --network=haitaton-backend_backbone -v $(pwd)/tormays_polys:/tormays_polys osgeo/gdal:alpine-small-latest \
+            ogr2ogr -overwrite -f PostgreSQL PG:"dbname='$DB_NAME' host='$DB_HOST' port='$DB_PORT' user='$DB_USER' password='$DB_PASS'" \
+            ${POLYS_DIR}/${file}
+        echo "Imported '${file}'"
+    else
+        echo "[$counter/${#FILES[@]}] Skipping, '${file}' does not exist."
+    fi
 done
 
 end=`date +%s`
