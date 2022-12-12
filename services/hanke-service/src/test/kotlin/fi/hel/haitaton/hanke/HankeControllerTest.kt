@@ -2,12 +2,10 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.permissions.Permission
 import fi.hel.haitaton.hanke.permissions.PermissionCode
-import fi.hel.haitaton.hanke.permissions.PermissionProfiles
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.permissions.Role
 import io.mockk.Called
 import io.mockk.clearAllMocks
 import io.mockk.mockk
@@ -29,9 +27,11 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
 
+private const val username = "testuser"
+
 @ExtendWith(SpringExtension::class)
 @Import(HankeControllerTest.TestConfiguration::class)
-@WithMockUser
+@WithMockUser(username)
 class HankeControllerTest {
 
     @Configuration
@@ -42,9 +42,6 @@ class HankeControllerTest {
         @Bean fun hankeService(): HankeService = Mockito.mock(HankeService::class.java)
 
         @Bean
-        fun geometriatService(): GeometriatService = Mockito.mock(GeometriatService::class.java)
-
-        @Bean
         fun permissionService(): PermissionService = Mockito.mock(PermissionService::class.java)
 
         @Bean fun yhteystietoLoggingService(): DisclosureLogService = mockk(relaxUnitFun = true)
@@ -52,16 +49,9 @@ class HankeControllerTest {
         @Bean
         fun hankeController(
             hankeService: HankeService,
-            geometriatService: GeometriatService,
             permissionService: PermissionService,
             disclosureLogService: DisclosureLogService,
-        ): HankeController =
-            HankeController(
-                hankeService,
-                geometriatService,
-                permissionService,
-                disclosureLogService
-            )
+        ): HankeController = HankeController(hankeService, permissionService, disclosureLogService)
     }
 
     private val mockedHankeTunnus = "AFC1234"
@@ -82,10 +72,9 @@ class HankeControllerTest {
     @Test
     fun `test that the getHankeByTunnus returns ok`() {
         val hankeId = 1234
-        val permission = Permission(1, "user", hankeId, listOf(PermissionCode.VIEW))
 
-        Mockito.`when`(permissionService.getPermissionByHankeIdAndUserId(hankeId, "user"))
-            .thenReturn(permission)
+        Mockito.`when`(permissionService.hasPermission(hankeId, username, PermissionCode.VIEW))
+            .thenReturn(true)
         Mockito.`when`(hankeService.loadHanke(mockedHankeTunnus))
             .thenReturn(
                 Hanke(
@@ -111,17 +100,11 @@ class HankeControllerTest {
 
         assertThat(response).isNotNull
         assertThat(response.nimi).isNotEmpty
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq("user")) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
     }
 
-    @WithMockUser
     @Test
     fun `test when called without parameters then getHankeList returns ok and two items without geometry`() {
-        val permissions =
-            listOf(
-                Permission(1, "user", 1234, listOf(PermissionCode.VIEW)),
-                Permission(2, "user", 50, listOf(PermissionCode.VIEW, PermissionCode.EDIT))
-            )
         val listOfHanke =
             listOf(
                 Hanke(
@@ -159,7 +142,8 @@ class HankeControllerTest {
                     SaveType.SUBMIT
                 )
             )
-        Mockito.`when`(permissionService.getPermissionsByUserId("user")).thenReturn(permissions)
+        Mockito.`when`(permissionService.getAllowedHankeIds(username, PermissionCode.VIEW))
+            .thenReturn(listOf(1234, 50))
         Mockito.`when`(hankeService.loadHankkeetByIds(listOf(1234, 50))).thenReturn(listOfHanke)
 
         val hankeList = hankeController.getHankeList(false)
@@ -168,10 +152,7 @@ class HankeControllerTest {
         assertThat(hankeList[1].nimi).isEqualTo("Hämeenlinnanväylän uudistus")
         assertThat(hankeList[0].alueidenGeometriat()).isEmpty()
         assertThat(hankeList[1].alueidenGeometriat()).isEmpty()
-        assertThat(hankeList[0].permissions).isEqualTo(listOf(PermissionCode.VIEW))
-        assertThat(hankeList[1].permissions)
-            .isEqualTo(listOf(PermissionCode.VIEW, PermissionCode.EDIT))
-        verify { disclosureLogService.saveDisclosureLogsForHankkeet(any(), eq("user")) }
+        verify { disclosureLogService.saveDisclosureLogsForHankkeet(any(), eq(username)) }
     }
 
     @Test
@@ -197,14 +178,17 @@ class HankeControllerTest {
 
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke))
-            .thenReturn(partialHanke.copy(modifiedBy = "user", modifiedAt = getCurrentTimeUTC()))
+            .thenReturn(partialHanke.copy(modifiedBy = username, modifiedAt = getCurrentTimeUTC()))
+        Mockito.`when`(hankeService.getHankeId("id123")).thenReturn(123)
+        Mockito.`when`(permissionService.hasPermission(123, username, PermissionCode.EDIT))
+            .thenReturn(true)
 
         // Actual call
         val response: Hanke = hankeController.updateHanke(partialHanke, "id123")
 
         assertThat(response).isNotNull
         assertThat(response.nimi).isEqualTo("hankkeen nimi")
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq("user")) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
     }
 
     @Test
@@ -297,7 +281,7 @@ class HankeControllerTest {
         assertThat(response.omistajat).hasSize(1)
         assertThat(response.omistajat[0].id).isEqualTo(1)
         assertThat(response.omistajat[0].sukunimi).isEqualTo("Pekkanen")
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq("Tiina")) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
     }
 
     @Test
@@ -362,9 +346,8 @@ class HankeControllerTest {
         val response: Hanke = hankeController.createHanke(hanke)
 
         assertThat(response).isNotNull
-        Mockito.verify(permissionService)
-            .setPermission(12, hanke.createdBy!!, PermissionProfiles.HANKE_OWNER_PERMISSIONS)
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq("Tiina")) }
+        Mockito.verify(permissionService).setPermission(12, username, Role.KAIKKI_OIKEUDET)
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
     }
 
     private fun getDatetimeAlku(): ZonedDateTime {

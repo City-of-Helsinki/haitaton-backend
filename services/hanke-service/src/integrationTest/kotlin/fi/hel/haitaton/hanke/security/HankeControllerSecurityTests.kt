@@ -13,10 +13,9 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.permissions.Permission
 import fi.hel.haitaton.hanke.permissions.PermissionCode
-import fi.hel.haitaton.hanke.permissions.PermissionProfiles
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.every
 import io.mockk.justRun
@@ -110,13 +109,8 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
                     HankeFactory.create(id = 444, hankeTunnus = "HAI-TEST-2")
                 )
             )
-        every { permissionService.getPermissionsByUserId("test7358") }
-            .returns(
-                listOf(
-                    Permission(1, "test7358", 123, PermissionProfiles.HANKE_OWNER_PERMISSIONS),
-                    Permission(1, "test7358", 444, listOf(PermissionCode.VIEW))
-                )
-            )
+        every { permissionService.getAllowedHankeIds("test7358", PermissionCode.VIEW) }
+            .returns(listOf(123, 444))
         justRun { disclosureLogService.saveDisclosureLogsForHankkeet(any(), "test7358") }
 
         return mockMvc.perform(get("/hankkeet").accept(MediaType.APPLICATION_JSON))
@@ -129,14 +123,7 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         val content = hanke.toJsonString()
 
         every { hankeService.createHanke(any()) }.returns(hanke)
-        every {
-                permissionService.setPermission(
-                    12,
-                    "test7358",
-                    PermissionProfiles.HANKE_OWNER_PERMISSIONS
-                )
-            }
-            .returns(Permission(1, "test7358", 12, PermissionProfiles.HANKE_OWNER_PERMISSIONS))
+        justRun { permissionService.setPermission(12, "test7358", Role.KAIKKI_OIKEUDET) }
         every { geometriatService.loadGeometriat(any()) }.returns(null)
         justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358") }
 
@@ -156,6 +143,9 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         val hanke = getTestHanke(123, testHankeTunnus)
         val content = hanke.toJsonString()
 
+        every { hankeService.getHankeId(any()) }.returns(hanke.id)
+        every { permissionService.hasPermission(hanke.id!!, "test7358", PermissionCode.EDIT) }
+            .returns(true)
         every { hankeService.updateHanke(any()) }.returns(hanke.copy(modifiedBy = "test7358"))
         justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358") }
 
@@ -174,8 +164,8 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     private fun performGetHankeByTunnus(): ResultActions {
         every { hankeService.loadHanke(any()) }
             .returns(HankeFactory.create(id = 123, hankeTunnus = "HAI-TEST-1"))
-        every { permissionService.getPermissionByHankeIdAndUserId(123, "test7358") }
-            .returns(Permission(1, "test7358", 123, PermissionProfiles.HANKE_OWNER_PERMISSIONS))
+        every { permissionService.hasPermission(123, "test7358", PermissionCode.VIEW) }
+            .returns(true)
         justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358") }
 
         return mockMvc.perform(get("/hankkeet/$testHankeTunnus").accept(MediaType.APPLICATION_JSON))

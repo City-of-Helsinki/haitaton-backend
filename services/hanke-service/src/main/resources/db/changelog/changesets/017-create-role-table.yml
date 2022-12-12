@@ -1,0 +1,111 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-create-role-table
+      comment: Create a table for unified audit logs
+      author: Topias Heinonen
+      changes:
+        - createTable:
+            tableName: role
+            remarks: "Table storing the different user roles in Haitaton. Used to access control."
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: role
+                  type: varchar
+                  constraints:
+                    nullable: false
+                    unique: true
+                    uniqueConstraintName: uk_role_role
+              - column:
+                  name: permissioncode
+                  type: bigint
+                  constraints:
+                    nullable: false
+                  remarks: "A bitfield encoding the permissions this role gives."
+        - addAutoIncrement:
+            tableName: role
+            columnName: id
+            columnDataType: bigint
+            generationType: ALWAYS
+        - insert:
+            tableName: role
+            columns:
+              - column:
+                  name: id
+                  value: 1
+              - column:
+                  name: role
+                  value: "KAIKKI_OIKEUDET"
+              - column:
+                  name: permissioncode
+                  value: 0xFFFFFFFFFFFFFFF
+        - insert:
+            tableName: role
+            columns:
+              - column:
+                  name: id
+                  value: 2
+              - column:
+                  name: role
+                  value: "KAIKKIEN_MUOKKAUS"
+              - column:
+                  name: permissioncode
+                  valueComputed: 1 | 2 | 4 | 8 | 64 | 128
+        - insert:
+            tableName: role
+            columns:
+              - column:
+                  name: id
+                  value: 3
+              - column:
+                  name: role
+                  value: "HANKEMUOKKAUS"
+              - column:
+                  name: permissioncode
+                  valueComputed: 1 | 4
+        - insert:
+            tableName: role
+            columns:
+              - column:
+                  name: id
+                  value: 4
+              - column:
+                  name: role
+                  value: "HAKEMUSASIOINTI"
+              - column:
+                  name: permissioncode
+                  valueComputed: 1 | 64
+        - insert:
+            tableName: role
+            columns:
+              - column:
+                  name: id
+                  value: 5
+              - column:
+                  name: role
+                  value: "KATSELUOIKEUS"
+              - column:
+                  name: permissioncode
+                  value: 1
+        - addColumn:
+            tableName: permissions
+            columns:
+              - column:
+                  name: roleid
+                  type: bigint
+                  defaultValue: 1
+                  constraints:
+                    nullable: false
+                    references: role(id)
+                    foreignKeyName: fk_permissions_role
+        - dropDefaultValue:
+            tableName: permissions
+            columnName: roleid
+        - dropColumn:
+            tableName: permissions
+            columnName: permissioncode
