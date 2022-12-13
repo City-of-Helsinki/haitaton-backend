@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # Script to download tormays polygons GIS material from project fileshare
+# Maintenance VPN is needed to access the fileshare.
 
 set -e
 
@@ -21,7 +22,6 @@ if ! [ -d "$POLYS_DIR" ]; then
     mkdir "$POLYS_DIR"
 fi
 
-# Needs maintenance VPN to access the fileshare.
 start=`date +%s`
 
 counter=0

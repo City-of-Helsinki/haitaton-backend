@@ -12,7 +12,7 @@ if [ "$sourced" -eq "1" ] || ! test -z "$(type -p)" ; then
     return 0
 fi
 
-# Common variables are fetched from dedicated file
+# Common variables are fetched from separate file
 . ./hel-gis-data-variables.sh
 
 DB_NAME="haitaton"
