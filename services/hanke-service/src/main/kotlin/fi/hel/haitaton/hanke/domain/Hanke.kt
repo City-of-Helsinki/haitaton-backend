@@ -9,7 +9,7 @@ import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihi
 import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
-import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
@@ -171,7 +171,7 @@ data class Hanke(
         return toString()
     }
 
-    fun alueidenGeometriat(): List<HankeGeometriat> {
+    fun alueidenGeometriat(): List<Geometriat> {
         return this.alueet.map { it.geometriat }.filterNotNull()
     }
 }

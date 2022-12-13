@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.domain
 
 import fi.hel.haitaton.hanke.*
-import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
@@ -24,7 +24,7 @@ fun hankeYhteystietoToPublic(yhteystieto: HankeYhteystieto) =
         yhteystieto.osasto
     )
 
-data class PublicHankeGeometriat(
+data class PublicGeometriat(
     val id: Int,
     val version: Int,
     val createdAt: ZonedDateTime,
@@ -32,8 +32,8 @@ data class PublicHankeGeometriat(
     val featureCollection: FeatureCollection?
 )
 
-fun hankeGeometriatToPublic(geometriat: HankeGeometriat) =
-    PublicHankeGeometriat(
+fun geometriatToPublic(geometriat: Geometriat) =
+    PublicGeometriat(
         geometriat.id!!,
         geometriat.version!!,
         geometriat.createdAt!!,
@@ -42,16 +42,16 @@ fun hankeGeometriatToPublic(geometriat: HankeGeometriat) =
     )
 
 data class PublicHankealue(
-    var id: Int?,
-    var hankeId: Int?,
-    var haittaAlkuPvm: ZonedDateTime? = null,
-    var haittaLoppuPvm: ZonedDateTime? = null,
-    var geometriat: HankeGeometriat? = null,
-    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
-    var kaistaPituusHaitta: KaistajarjestelynPituus? = null,
-    var meluHaitta: Haitta13? = null,
-    var polyHaitta: Haitta13? = null,
-    var tarinaHaitta: Haitta13? = null,
+        var id: Int?,
+        var hankeId: Int?,
+        var haittaAlkuPvm: ZonedDateTime? = null,
+        var haittaLoppuPvm: ZonedDateTime? = null,
+        var geometriat: Geometriat? = null,
+        var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
+        var kaistaPituusHaitta: KaistajarjestelynPituus? = null,
+        var meluHaitta: Haitta13? = null,
+        var polyHaitta: Haitta13? = null,
+        var tarinaHaitta: Haitta13? = null,
 )
 
 data class PublicHanke(

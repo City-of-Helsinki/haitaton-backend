@@ -7,7 +7,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.mutate
 import fi.hel.haitaton.hanke.factory.HankeFactory.withHaitta
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import io.mockk.clearAllMocks
 import io.mockk.every
@@ -33,7 +33,7 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Autowired private lateinit var hankeService: HankeService
 
-    @Autowired private lateinit var hankeGeometriatService: HankeGeometriatService
+    @Autowired private lateinit var geometriatService: GeometriatService
 
     @AfterEach
     fun cleanup() {
@@ -88,7 +88,7 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
     private fun performGetHankkeet(hankkeet: List<Hanke>): ResultActions {
         every { hankeService.loadAllHanke() }.returns(hankkeet)
 
-        every { hankeGeometriatService.loadGeometriat(any()) }.returns(null)
+        every { geometriatService.loadGeometriat(any()) }.returns(null)
 
         return mockMvc.perform(
             MockMvcRequestBuilders.get("/public-hankkeet").accept(MediaType.APPLICATION_JSON)

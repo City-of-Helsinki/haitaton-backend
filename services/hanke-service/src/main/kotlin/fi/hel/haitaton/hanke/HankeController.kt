@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.Permission
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -31,10 +31,10 @@ private val logger = KotlinLogging.logger {}
 @RequestMapping("/hankkeet")
 @Validated
 class HankeController(
-    @Autowired private val hankeService: HankeService,
-    @Autowired private val hankeGeometriatService: HankeGeometriatService,
-    @Autowired private val permissionService: PermissionService,
-    @Autowired private val disclosureLogService: DisclosureLogService,
+        @Autowired private val hankeService: HankeService,
+        @Autowired private val geometriatService: GeometriatService,
+        @Autowired private val permissionService: PermissionService,
+        @Autowired private val disclosureLogService: DisclosureLogService,
 ) {
 
     @GetMapping("/{hankeTunnus}")

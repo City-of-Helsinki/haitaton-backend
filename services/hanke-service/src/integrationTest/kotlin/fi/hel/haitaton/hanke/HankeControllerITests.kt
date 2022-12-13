@@ -6,8 +6,8 @@ import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.PermissionFactory
-import fi.hel.haitaton.hanke.geometria.HankeGeometriat
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.Permission
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -54,7 +54,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Autowired lateinit var hankeService: HankeService // faking these calls
     @Autowired lateinit var permissionService: PermissionService
-    @Autowired lateinit var hankeGeometriatService: HankeGeometriatService
+    @Autowired lateinit var geometriatService: GeometriatService
     @Autowired lateinit var disclosureLogService: DisclosureLogService
 
     @AfterEach
@@ -160,8 +160,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 Permission(2, "test", 444, listOf(PermissionCode.VIEW))
             )
 
-        val alue1 = Hankealue(hankeId = 123, geometriat = HankeGeometriat(1, FeatureCollection()))
-        val alue2 = Hankealue(hankeId = 444, geometriat = HankeGeometriat(2, FeatureCollection()))
+        val alue1 = Hankealue(hankeId = 123, geometriat = Geometriat(1, FeatureCollection()))
+        val alue2 = Hankealue(hankeId = 444, geometriat = Geometriat(2, FeatureCollection()))
         val hanke1 = Hanke(123, mockedHankeTunnus)
         val hanke2 = Hanke(444, "hanketunnus2")
         hanke1.alueet = mutableListOf(alue1)
@@ -169,8 +169,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val hankkeet = listOf(hanke1, hanke2)
 
         every { hankeService.loadHankkeetByIds(hankeIds) }.returns(listOf(hanke1, hanke2))
-        every { hankeGeometriatService.getGeometriat(1) }.returns(alue1.geometriat)
-        every { hankeGeometriatService.getGeometriat(2) }.returns(alue2.geometriat)
+        every { geometriatService.getGeometriat(1) }.returns(alue1.geometriat)
+        every { geometriatService.getGeometriat(2) }.returns(alue2.geometriat)
         every { permissionService.getPermissionsByUserId("test") }.returns(permissions)
         justRun { disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, "test") }
 
@@ -250,7 +250,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         // faking the service call
         every { hankeService.updateHanke(any()) }.returns(updatedHanke)
-        every { hankeGeometriatService.loadGeometriat(any()) }.returns(null)
+        every { geometriatService.loadGeometriat(any()) }.returns(null)
         justRun { disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, "test") }
 
         mockMvc
@@ -356,7 +356,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         // faking the service call
         every { hankeService.updateHanke(any()) }.returns(expectedHanke)
-        every { hankeGeometriatService.loadGeometriat(any()) }.returns(null)
+        every { geometriatService.loadGeometriat(any()) }.returns(null)
         justRun { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, "test") }
 
         // Call it and check results

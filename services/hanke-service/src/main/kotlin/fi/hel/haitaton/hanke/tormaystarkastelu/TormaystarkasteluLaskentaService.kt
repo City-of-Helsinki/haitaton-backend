@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.roundToOneDecimal
 import org.springframework.beans.factory.annotation.Autowired
 
@@ -62,30 +62,30 @@ open class TormaystarkasteluLaskentaService(
     fun haittaAjanKestoLuokittelu(haittaAjanKestoDays: Int) =
         luokitteluRajaArvotService.getHaittaAjanKestoLuokka(haittaAjanKestoDays)
 
-    private fun katuluokkaLuokittelu(hankeGeometriat: List<HankeGeometriat>): Int {
-        if (tormaysService.anyIntersectsYleinenKatuosa(hankeGeometriat)) {
+    private fun katuluokkaLuokittelu(geometriat: List<Geometriat>): Int {
+        if (tormaysService.anyIntersectsYleinenKatuosa(geometriat)) {
             // ON ylre_parts => street_classes?
-            return tormaysService.maxIntersectingLiikenteellinenKatuluokka(hankeGeometriat)
+            return tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat)
             // EI street_classes => ylre_classes?
-            ?: tormaysService.maxIntersectingYleinenkatualueKatuluokka(hankeGeometriat)
+            ?: tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriat)
                 // EI ylre_classes
                 ?: 0
         } else {
             // EI ylre_parts => ylre_classes?
             val max =
-                tormaysService.maxIntersectingYleinenkatualueKatuluokka(hankeGeometriat)
+                tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriat)
                 // EI ylre_classes
                 ?: return 0
             // ON ylre_classes => street_classes?
-            return tormaysService.maxIntersectingLiikenteellinenKatuluokka(hankeGeometriat)
+            return tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat)
             // JOS EI LÖYDY => Valitse ylre_classes
             ?: max
         }
     }
 
     private fun liikennemaaraLuokittelu(
-        hankeGeometriat: List<HankeGeometriat>,
-        katuluokkaLuokittelu: Int
+            geometriat: List<Geometriat>,
+            katuluokkaLuokittelu: Int
     ): Int {
         if (katuluokkaLuokittelu == 0) {
             return 0
@@ -98,7 +98,7 @@ open class TormaystarkasteluLaskentaService(
             } else {
                 TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
             }
-        val maxVolume = tormaysService.maxLiikennemaara(hankeGeometriat, radius) ?: 0
+        val maxVolume = tormaysService.maxLiikennemaara(geometriat, radius) ?: 0
         return luokitteluRajaArvotService.getLiikennemaaraLuokka(maxVolume)
     }
 
@@ -109,22 +109,22 @@ open class TormaystarkasteluLaskentaService(
             .sum()
             .roundToOneDecimal()
 
-    private fun pyorailyLuokittelu(hankeGeometriat: List<HankeGeometriat>): Int {
+    private fun pyorailyLuokittelu(geometriat: List<Geometriat>): Int {
         return when {
-            tormaysService.anyIntersectsWithCyclewaysPriority(hankeGeometriat) ->
+            tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) ->
                 PyorailyTormaysLuokittelu.PRIORISOITU_REITTI
-            tormaysService.anyIntersectsWithCyclewaysMain(hankeGeometriat) ->
+            tormaysService.anyIntersectsWithCyclewaysMain(geometriat) ->
                 PyorailyTormaysLuokittelu.PAAREITTI
             else -> PyorailyTormaysLuokittelu.EI_PYORAILUREITTI
         }.value
     }
 
-    fun bussiLuokittelu(hankeGeometriat: List<HankeGeometriat>): Int {
-        if (tormaysService.anyIntersectsCriticalBusRoutes(hankeGeometriat)) {
+    fun bussiLuokittelu(geometriat: List<Geometriat>): Int {
+        if (tormaysService.anyIntersectsCriticalBusRoutes(geometriat)) {
             return BussiLiikenneLuokittelu.KAMPPI_RAUTATIENTORI.value
         }
 
-        val bussesTormaystulos = tormaysService.getIntersectingBusRoutes(hankeGeometriat)
+        val bussesTormaystulos = tormaysService.getIntersectingBusRoutes(geometriat)
 
         if (bussesTormaystulos.isEmpty()) {
             return BussiLiikenneLuokittelu.EI_VAIKUTA.value
@@ -147,6 +147,6 @@ open class TormaystarkasteluLaskentaService(
         return maxOf(valueByRajaArvo, valueByRunkolinja)
     }
 
-    private fun raitiovaunuLuokittelu(hankeGeometriat: List<HankeGeometriat>) =
-        tormaysService.maxIntersectingTramByLaneType(hankeGeometriat) ?: 0
+    private fun raitiovaunuLuokittelu(geometriat: List<Geometriat>) =
+        tormaysService.maxIntersectingTramByLaneType(geometriat) ?: 0
 }

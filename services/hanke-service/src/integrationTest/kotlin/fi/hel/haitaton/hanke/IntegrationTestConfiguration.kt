@@ -2,8 +2,8 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.allu.ApplicationService
 import fi.hel.haitaton.hanke.gdpr.GdprJsonConverter
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.geometria.GeometriatDao
+import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
@@ -48,13 +48,13 @@ class IntegrationTestConfiguration {
 
     @Bean fun organisaatioService(): OrganisaatioService = mockk()
 
-    @Bean fun hankeGeometriatDao(jdbcOperations: JdbcOperations): HankeGeometriatDao = mockk()
+    @Bean fun geometriatDao(jdbcOperations: JdbcOperations): GeometriatDao = mockk()
 
     @Bean
-    fun hankeGeometriatService(
-        service: HankeService,
-        hankeGeometriatDao: HankeGeometriatDao
-    ): HankeGeometriatService = mockk()
+    fun geometriatService(
+            service: HankeService,
+            geometriatDao: GeometriatDao
+    ): GeometriatService = mockk()
 
     @Bean
     fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService =

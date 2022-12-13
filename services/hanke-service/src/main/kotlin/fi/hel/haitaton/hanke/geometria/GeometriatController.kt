@@ -21,9 +21,9 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/hankkeet")
 @Validated
-class HankeGeometriaController(
+class GeometriaController(
     @Autowired private val hankeService: HankeService,
-    @Autowired private val geometryService: HankeGeometriatService
+    @Autowired private val geometryService: GeometriatService
 ) {
 
     /** NOTE This method is deprecated. Create a new endpoint for querying geometry data. */

@@ -2,9 +2,9 @@ package fi.hel.haitaton.hanke.geometria
 
 import fi.hel.haitaton.hanke.COORDINATE_SYSTEM_URN
 
-class HankeGeometriatValidator {
+class GeometriatValidator {
     companion object {
-        fun expectValid(value: HankeGeometriat?) {
+        fun expectValid(value: Geometriat?) {
             val featureCollection =
                 value?.featureCollection ?: throw GeometriaValidationException("featureCollection")
             when {

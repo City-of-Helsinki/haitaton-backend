@@ -4,7 +4,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
 
-data class HankeGeometriat(
+data class Geometriat(
     var id: Int? = null,
     var featureCollection: FeatureCollection? = null,
     var version: Int? = null,
@@ -13,7 +13,7 @@ data class HankeGeometriat(
     var modifiedByUserId: String? = null,
     var modifiedAt: ZonedDateTime? = null
 ) {
-    fun withFeatureCollection(featureCollection: FeatureCollection): HankeGeometriat {
+    fun withFeatureCollection(featureCollection: FeatureCollection): Geometriat {
         this.featureCollection = featureCollection
         return this
     }

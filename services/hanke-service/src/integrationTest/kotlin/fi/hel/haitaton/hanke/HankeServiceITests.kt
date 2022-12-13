@@ -10,7 +10,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistajat
 import fi.hel.haitaton.hanke.factory.HankeFactory.withHaitta
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankealueFactory
-import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
@@ -727,18 +727,18 @@ class HankeServiceITests : DatabaseTest() {
 
     @Test
     fun `test creation of alueet`() {
-        val hankeGeometriat =
+        val geometriat =
             "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                HankeGeometriat::class.java
+                Geometriat::class.java
             )
-        hankeGeometriat.version = null
-        hankeGeometriat.createdAt = null
-        hankeGeometriat.modifiedAt = null
+        geometriat.version = null
+        geometriat.createdAt = null
+        geometriat.modifiedAt = null
 
         val hanke = getATestHanke()
         val hankealue =
             HankealueFactory.create(
-                geometriat = hankeGeometriat,
+                geometriat = geometriat,
                 haittaAlkuPvm = hanke.alkuPvm,
                 haittaLoppuPvm = hanke.loppuPvm,
                 kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KOLME,

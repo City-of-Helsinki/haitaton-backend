@@ -4,7 +4,7 @@ TRUNCATE TABLE
     hanke,
     hankealue,
     hankegeometria,
-    hankegeometriat,
+    geometriat,
     hanketyomaatyyppi,
     hankeyhteystieto,
     organisaatio,

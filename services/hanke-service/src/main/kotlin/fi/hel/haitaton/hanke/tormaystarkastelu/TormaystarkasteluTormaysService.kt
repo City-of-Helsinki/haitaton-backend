@@ -1,37 +1,37 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.geometria.Geometriat
 
 interface TormaystarkasteluTormaysService {
 
     // yleinen katuosa, ylre_parts
-    fun anyIntersectsYleinenKatuosa(hankegeometriat: List<HankeGeometriat>): Boolean
+    fun anyIntersectsYleinenKatuosa(geometriat: List<Geometriat>): Boolean
 
     // yleinen katualue, ylre_classes
-    fun maxIntersectingYleinenkatualueKatuluokka(hankegeometriat: List<HankeGeometriat>): Int?
+    fun maxIntersectingYleinenkatualueKatuluokka(geometriat: List<Geometriat>): Int?
 
     // liikenteellinen katuluokka, street_classes
-    fun maxIntersectingLiikenteellinenKatuluokka(hankegeometriat: List<HankeGeometriat>): Int?
+    fun maxIntersectingLiikenteellinenKatuluokka(geometriat: List<Geometriat>): Int?
 
     // kantakaupunki, central_business_area
-    fun anyIntersectsWithKantakaupunki(hankegeometriat: List<HankeGeometriat>): Boolean
+    fun anyIntersectsWithKantakaupunki(geometriat: List<Geometriat>): Boolean
 
     fun maxLiikennemaara(
-        hankegeometriat: List<HankeGeometriat>,
-        etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
+            geometriat: List<Geometriat>,
+            etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
     ): Int?
 
-    fun anyIntersectsCriticalBusRoutes(hankegeometriat: List<HankeGeometriat>): Boolean
+    fun anyIntersectsCriticalBusRoutes(geometriat: List<Geometriat>): Boolean
 
     fun getIntersectingBusRoutes(
-        hankegeometriat: List<HankeGeometriat>
+        geometriat: List<Geometriat>
     ): Set<TormaystarkasteluBussireitti>
 
-    fun maxIntersectingTramByLaneType(hankegeometriat: List<HankeGeometriat>): Int?
+    fun maxIntersectingTramByLaneType(geometriat: List<Geometriat>): Int?
 
-    fun anyIntersectsWithCyclewaysPriority(hankegeometriat: List<HankeGeometriat>): Boolean
+    fun anyIntersectsWithCyclewaysPriority(geometriat: List<Geometriat>): Boolean
 
-    fun anyIntersectsWithCyclewaysMain(hankegeometriat: List<HankeGeometriat>): Boolean
+    fun anyIntersectsWithCyclewaysMain(geometriat: List<Geometriat>): Boolean
 }
 
 /** There are two(2) separate traffic counts - one for radius of 15m and other for 30m */

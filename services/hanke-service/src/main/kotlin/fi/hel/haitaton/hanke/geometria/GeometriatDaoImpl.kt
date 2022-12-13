@@ -13,25 +13,25 @@ import org.geojson.Feature
 import org.geojson.FeatureCollection
 import org.springframework.jdbc.core.JdbcOperations
 
-class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : HankeGeometriatDao {
+class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : GeometriatDao {
 
     companion object {
 
         private fun saveHankeGeometriaRows(
-            hankeGeometriat: HankeGeometriat,
-            jdbcOperations: JdbcOperations
+                geometriat: Geometriat,
+                jdbcOperations: JdbcOperations
         ) {
             val arguments: List<Array<Any>>? =
-                hankeGeometriat.featureCollection?.features?.map { feature ->
+                geometriat.featureCollection?.features?.map { feature ->
                     arrayOf(
-                        hankeGeometriat.id!!,
+                        geometriat.id!!,
                         feature.geometry.toJsonString(),
                         feature.properties?.toJsonString() ?: "null"
                     )
                 }
             val argumentTypes = intArrayOf(Types.INTEGER, Types.VARCHAR, Types.OTHER)
             if (arguments != null) {
-                val originalSrid = hankeGeometriat.featureCollection!!.srid()
+                val originalSrid = geometriat.featureCollection!!.srid()
                 jdbcOperations.batchUpdate(
                     """
                     INSERT INTO HankeGeometria (
@@ -61,13 +61,13 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                 ?: SRID
         }
 
-        private fun updateHankeGeometriat(
-            hankeGeometriat: HankeGeometriat,
-            jdbcOperations: JdbcOperations
+        private fun updateGeometriat(
+                geometriat: Geometriat,
+                jdbcOperations: JdbcOperations
         ) {
             jdbcOperations.update(
                 """
-                UPDATE HankeGeometriat
+                UPDATE Geometriat
                 SET
                     version = ?,
                     modifiedByUserId = ?,
@@ -76,40 +76,40 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                     id = ?
             """.trimIndent()
             ) { ps ->
-                ps.setInt(1, hankeGeometriat.version!!)
-                if (hankeGeometriat.modifiedByUserId != null) {
-                    ps.setString(2, hankeGeometriat.modifiedByUserId!!)
+                ps.setInt(1, geometriat.version!!)
+                if (geometriat.modifiedByUserId != null) {
+                    ps.setString(2, geometriat.modifiedByUserId!!)
                 } else {
                     ps.setNull(2, Types.INTEGER)
                 }
-                if (hankeGeometriat.modifiedAt != null) {
+                if (geometriat.modifiedAt != null) {
                     ps.setTimestamp(
                         3,
-                        Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli())
+                        Timestamp(geometriat.modifiedAt!!.toInstant().toEpochMilli())
                     )
                 } else {
                     ps.setNull(3, Types.TIMESTAMP)
                 }
-                ps.setInt(4, hankeGeometriat.id!!)
+                ps.setInt(4, geometriat.id!!)
             }
         }
 
         private fun deleteHankeGeometriaRows(
-            hankeGeometriat: HankeGeometriat,
-            jdbcOperations: JdbcOperations
+                geometriat: Geometriat,
+                jdbcOperations: JdbcOperations
         ) {
             jdbcOperations.execute(
-                "DELETE FROM HankeGeometria WHERE hankeGeometriatId = ${hankeGeometriat.id}"
+                "DELETE FROM HankeGeometria WHERE hankeGeometriatId = ${geometriat.id}"
             )
         }
     }
 
-    override fun createHankeGeometriat(hankeGeometriat: HankeGeometriat): HankeGeometriat {
+    override fun createGeometriat(geometriat: Geometriat): Geometriat {
         with(jdbcOperations) {
             val id =
                 queryForObject(
                     """
-                    INSERT INTO HankeGeometriat (
+                    INSERT INTO Geometriat (
                         version,
                         createdByUserId,
                         createdAt,
@@ -125,29 +125,29 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                     RETURNING id
                     """.trimIndent(),
                     { rs, _ -> rs.getInt(1) },
-                    hankeGeometriat.version ?: 0,
-                    hankeGeometriat.createdByUserId,
-                    if (hankeGeometriat.createdAt != null) {
-                        Timestamp(hankeGeometriat.createdAt!!.toInstant().toEpochMilli())
+                    geometriat.version ?: 0,
+                    geometriat.createdByUserId,
+                    if (geometriat.createdAt != null) {
+                        Timestamp(geometriat.createdAt!!.toInstant().toEpochMilli())
                     } else {
                         null
                     },
-                    hankeGeometriat.modifiedByUserId,
-                    if (hankeGeometriat.modifiedAt != null) {
-                        Timestamp(hankeGeometriat.modifiedAt!!.toInstant().toEpochMilli())
+                    geometriat.modifiedByUserId,
+                    if (geometriat.modifiedAt != null) {
+                        Timestamp(geometriat.modifiedAt!!.toInstant().toEpochMilli())
                     } else {
                         null
                     }
                 )
-            hankeGeometriat.id = id
-            saveHankeGeometriaRows(hankeGeometriat, this)
-            return hankeGeometriat
+            geometriat.id = id
+            saveHankeGeometriaRows(geometriat, this)
+            return geometriat
         }
     }
 
-    override fun retrieveGeometriat(id: Int): HankeGeometriat? {
+    override fun retrieveGeometriat(id: Int): Geometriat? {
         with(jdbcOperations) {
-            val hankeGeometriat =
+            val geometriat =
                 query(
                         """
                         SELECT
@@ -157,9 +157,9 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                             createdAt,
                             modifiedByUserId,
                             modifiedAt
-                        FROM HankeGeometriat WHERE id = ?""".trimIndent(),
+                        FROM Geometriat WHERE id = ?""".trimIndent(),
                         { rs, _ ->
-                            HankeGeometriat(
+                            Geometriat(
                                 id = rs.getInt(1),
                                 featureCollection = null,
                                 version = rs.getInt(2),
@@ -172,9 +172,9 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                         id
                     )
                     .getOrNull(0)
-            return hankeGeometriat?.withFeatureCollection(
+            return geometriat?.withFeatureCollection(
                 FeatureCollection().apply {
-                    features = retrieveHankeGeometriaRows(hankeGeometriat.id!!, this@with)
+                    features = retrieveHankeGeometriaRows(geometriat.id!!, this@with)
                     crs = Crs().apply { properties = mapOf(Pair("name", COORDINATE_SYSTEM_URN)) }
                 }
             )
@@ -182,7 +182,7 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
     }
 
     private fun retrieveHankeGeometriaRows(
-        hankeGeometriatId: Int,
+        geometriatId: Int,
         jdbcOperations: JdbcOperations
     ): List<Feature> {
         return jdbcOperations.query(
@@ -203,27 +203,27 @@ class HankeGeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Hanke
                     paramjson?.let { properties = OBJECT_MAPPER.readValue(paramjson) }
                 }
             },
-            hankeGeometriatId
+            geometriatId
         )
     }
 
-    override fun updateHankeGeometriat(hankeGeometriat: HankeGeometriat) {
+    override fun updateGeometriat(geometriat: Geometriat) {
         with(jdbcOperations) {
             // update master row
-            updateHankeGeometriat(hankeGeometriat, this)
+            updateGeometriat(geometriat, this)
             // delete old geometry rows
-            deleteHankeGeometriaRows(hankeGeometriat, this)
+            deleteHankeGeometriaRows(geometriat, this)
             // save new geometry rows
-            saveHankeGeometriaRows(hankeGeometriat, this)
+            saveHankeGeometriaRows(geometriat, this)
         }
     }
 
-    override fun deleteHankeGeometriat(hankeGeometriat: HankeGeometriat) {
+    override fun deleteGeometriat(geometriat: Geometriat) {
         with(jdbcOperations) {
             // update master row
-            updateHankeGeometriat(hankeGeometriat, this)
+            updateGeometriat(geometriat, this)
             // delete old geometry rows
-            deleteHankeGeometriaRows(hankeGeometriat, this)
+            deleteHankeGeometriaRows(geometriat, this)
         }
     }
 }

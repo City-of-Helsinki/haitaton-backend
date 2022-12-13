@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
@@ -62,11 +62,11 @@ fun <Source, Target> mergeDataInto(
 }
 
 open class HankeServiceImpl(
-    private val hankeRepository: HankeRepository,
-    private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
-    private val hanketunnusService: HanketunnusService,
-    private val hankeGeometriatService: HankeGeometriatService,
-    private val auditLogService: AuditLogService,
+        private val hankeRepository: HankeRepository,
+        private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
+        private val hanketunnusService: HanketunnusService,
+        private val geometriatService: GeometriatService,
+        private val auditLogService: AuditLogService,
 ) : HankeService {
 
     override fun loadHanke(hankeTunnus: String) =
@@ -200,7 +200,7 @@ open class HankeServiceImpl(
                 haittaAlkuPvm = hankealueEntity.haittaAlkuPvm?.atStartOfDay(TZ_UTC),
                 haittaLoppuPvm = hankealueEntity.haittaLoppuPvm?.atStartOfDay(TZ_UTC),
                 geometriat =
-                    hankealueEntity.geometriat?.let { hankeGeometriatService.getGeometriat(it) },
+                    hankealueEntity.geometriat?.let { geometriatService.getGeometriat(it) },
                 kaistaHaitta = hankealueEntity.kaistaHaitta,
                 kaistaPituusHaitta = hankealueEntity.kaistaPituusHaitta,
                 meluHaitta = hankealueEntity.meluHaitta,
@@ -508,7 +508,7 @@ open class HankeServiceImpl(
         source.geometriat?.let {
             it.id = result.geometriat ?: it.id
             it.includeHankeProperties(hanke)
-            val saved = hankeGeometriatService.saveGeometriat(it)
+            val saved = geometriatService.saveGeometriat(it)
             result.geometriat = saved?.id
         }
 

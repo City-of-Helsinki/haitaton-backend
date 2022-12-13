@@ -29,19 +29,19 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @ActiveProfiles("default")
 @Transactional
 @WithMockUser(username = "test", roles = ["haitaton-user"])
-internal class HankeGeometriatServiceImplITest : DatabaseTest() {
+internal class GeometriatServiceImplITest : DatabaseTest() {
 
     @Autowired private lateinit var hankeService: HankeService
 
-    @Autowired private lateinit var hankeGeometriatService: HankeGeometriatService
+    @Autowired private lateinit var geometriatService: GeometriatService
 
     @Autowired private lateinit var jdbcTemplate: JdbcTemplate
 
     @Test
     fun `save and load and update`() {
-        val hankeGeometriat =
+        val geometriat =
             "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                HankeGeometriat::class.java
+                Geometriat::class.java
             )
         val username = SecurityContextHolder.getContext().authentication.name
 
@@ -51,7 +51,7 @@ internal class HankeGeometriatServiceImplITest : DatabaseTest() {
         // they must be picked from the created hanke-instance.
         val hankeId = 1
         val hankeInit = Hanke(hankeId)
-        hankeInit.alueet.add(HankealueFactory.create(null, null, geometriat = hankeGeometriat))
+        hankeInit.alueet.add(HankealueFactory.create(null, null, geometriat = geometriat))
         val hanke = hankeService.createHanke(hankeInit)
         val hankeTunnus = hanke.hankeTunnus!!
 
@@ -62,24 +62,24 @@ internal class HankeGeometriatServiceImplITest : DatabaseTest() {
         assertThat(updatedHanke!!.alueidenGeometriat()).isNotEmpty()
 
         // loading geometries
-        var loadedHankeGeometriat =
-            hankeGeometriatService.getGeometriat(updatedHanke.alueidenGeometriat().get(0).id!!)
-        assertThat(loadedHankeGeometriat).isNotNull()
+        var loadedGeometriat =
+            geometriatService.getGeometriat(updatedHanke.alueidenGeometriat().get(0).id!!)
+        assertThat(loadedGeometriat).isNotNull()
 
-        val createdAt = loadedHankeGeometriat!!.createdAt!!
-        val modifiedAt = loadedHankeGeometriat.modifiedAt!!
+        val createdAt = loadedGeometriat!!.createdAt!!
+        val modifiedAt = loadedGeometriat.modifiedAt!!
         assertAll {
-            assertThat(loadedHankeGeometriat!!.version).isEqualTo(0)
-            assertThat(loadedHankeGeometriat!!.createdByUserId).isEqualTo(username)
-            assertThat(loadedHankeGeometriat!!.modifiedByUserId).isNull()
-            assertThat(loadedHankeGeometriat!!.featureCollection!!.features.size).isEqualTo(2)
-            assertThat(loadedHankeGeometriat!!.featureCollection!!.features[0].geometry is Point)
+            assertThat(loadedGeometriat!!.version).isEqualTo(0)
+            assertThat(loadedGeometriat!!.createdByUserId).isEqualTo(username)
+            assertThat(loadedGeometriat!!.modifiedByUserId).isNull()
+            assertThat(loadedGeometriat!!.featureCollection!!.features.size).isEqualTo(2)
+            assertThat(loadedGeometriat!!.featureCollection!!.features[0].geometry is Point)
             val loadedPoint =
-                loadedHankeGeometriat!!.featureCollection!!.features[0].geometry as Point
-            val point = hankeGeometriat.featureCollection!!.features[0].geometry as Point
+                loadedGeometriat!!.featureCollection!!.features[0].geometry as Point
+            val point = geometriat.featureCollection!!.features[0].geometry as Point
             assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
             assertThat(
-                    loadedHankeGeometriat!!
+                    loadedGeometriat!!
                         .featureCollection!!
                         .features[0]
                         .properties["hankeTunnus"]
@@ -88,29 +88,29 @@ internal class HankeGeometriatServiceImplITest : DatabaseTest() {
         }
 
         // update geometriat
-        loadedHankeGeometriat.featureCollection!!
+        loadedGeometriat.featureCollection!!
             .features
-            .add(loadedHankeGeometriat.featureCollection!!.features[0])
-        hankeGeometriatService.saveGeometriat(loadedHankeGeometriat)
+            .add(loadedGeometriat.featureCollection!!.features[0])
+        geometriatService.saveGeometriat(loadedGeometriat)
 
         // load
-        loadedHankeGeometriat = hankeGeometriatService.getGeometriat(loadedHankeGeometriat.id!!)
+        loadedGeometriat = geometriatService.getGeometriat(loadedGeometriat.id!!)
         assertAll {
-            assertThat(loadedHankeGeometriat!!.version).isEqualTo(1) // this has increased
-            assertThat(loadedHankeGeometriat.createdByUserId).isEqualTo(username)
-            assertThat(loadedHankeGeometriat.createdAt!!.format(DATABASE_TIMESTAMP_FORMAT))
+            assertThat(loadedGeometriat!!.version).isEqualTo(1) // this has increased
+            assertThat(loadedGeometriat.createdByUserId).isEqualTo(username)
+            assertThat(loadedGeometriat.createdAt!!.format(DATABASE_TIMESTAMP_FORMAT))
                 .isEqualTo(createdAt.format(DATABASE_TIMESTAMP_FORMAT))
-            assertThat(loadedHankeGeometriat.modifiedAt!!.isAfter(modifiedAt)) // this has changed
-            assertThat(loadedHankeGeometriat.modifiedByUserId).isEqualTo(username)
-            assertThat(loadedHankeGeometriat.featureCollection!!.features.size)
+            assertThat(loadedGeometriat.modifiedAt!!.isAfter(modifiedAt)) // this has changed
+            assertThat(loadedGeometriat.modifiedByUserId).isEqualTo(username)
+            assertThat(loadedGeometriat.featureCollection!!.features.size)
                 .isEqualTo(3) // this has increased
-            assertThat(loadedHankeGeometriat.featureCollection!!.features[0].geometry is Point)
+            assertThat(loadedGeometriat.featureCollection!!.features[0].geometry is Point)
             val loadedPoint =
-                loadedHankeGeometriat.featureCollection!!.features[0].geometry as Point
-            val point = hankeGeometriat.featureCollection!!.features[0].geometry as Point
+                loadedGeometriat.featureCollection!!.features[0].geometry as Point
+            val point = geometriat.featureCollection!!.features[0].geometry as Point
             assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
             assertThat(
-                    loadedHankeGeometriat.featureCollection!!.features[0].properties["hankeTunnus"]
+                    loadedGeometriat.featureCollection!!.features[0].properties["hankeTunnus"]
                 )
                 .isEqualTo(hankeTunnus)
         }
@@ -118,7 +118,7 @@ internal class HankeGeometriatServiceImplITest : DatabaseTest() {
         // check database too to make sure there is everything correctly
         assertAll {
             assertThat(
-                    jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometriat") { rs, _ ->
+                    jdbcTemplate.queryForObject("SELECT COUNT(*) FROM Geometriat") { rs, _ ->
                         rs.getInt(1)
                     }
                 )
@@ -130,43 +130,43 @@ internal class HankeGeometriatServiceImplITest : DatabaseTest() {
             assertThat(ids.size).isEqualTo(3)
             ids.forEach { idPair ->
                 assertThat(idPair.first).isNotNull()
-                assertThat(idPair.second).isEqualTo(loadedHankeGeometriat!!.id)
+                assertThat(idPair.second).isEqualTo(loadedGeometriat!!.id)
             }
         }
     }
 
     @Test
     fun `save Geometria with missing properties`() {
-        val hankeGeometriat =
+        val geometriat =
             "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                HankeGeometriat::class.java
+                Geometriat::class.java
             )
-        hankeGeometriat.version = null
-        hankeGeometriat.createdAt = null
-        hankeGeometriat.modifiedAt = null
-        hankeGeometriat.featureCollection?.crs?.properties = null
+        geometriat.version = null
+        geometriat.createdAt = null
+        geometriat.modifiedAt = null
+        geometriat.featureCollection?.crs?.properties = null
 
         assertThrows<GeometriaValidationException> {
-            hankeGeometriatService.saveGeometriat(hankeGeometriat)
+            geometriatService.saveGeometriat(geometriat)
         }
     }
 
     @Test
     fun `save Geometria with invalid coordinate system`() {
-        val hankeGeometriat =
+        val geometriat =
             "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                HankeGeometriat::class.java
+                Geometriat::class.java
             )
-        hankeGeometriat.version = null
-        hankeGeometriat.createdAt = null
-        hankeGeometriat.modifiedAt = null
-        hankeGeometriat.featureCollection
+        geometriat.version = null
+        geometriat.createdAt = null
+        geometriat.modifiedAt = null
+        geometriat.featureCollection
             ?.crs
             ?.properties
             ?.set("name", "urn:ogc:def:crs:EPSG::0000")
 
         assertThrows<UnsupportedCoordinateSystemException> {
-            hankeGeometriatService.saveGeometriat(hankeGeometriat)
+            geometriatService.saveGeometriat(geometriat)
         }
     }
 }

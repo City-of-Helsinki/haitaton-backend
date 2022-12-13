@@ -16,14 +16,14 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-@WebMvcTest(HankeGeometriaController::class)
+@WebMvcTest(GeometriaController::class)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @WithMockUser("test", roles = ["haitaton-user"])
-internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
+internal class GeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Autowired private lateinit var hankeService: HankeService
-    @Autowired private lateinit var hankeGeometriatService: HankeGeometriatService
+    @Autowired private lateinit var geometriatService: GeometriatService
 
     @Test
     fun `get Geometria OK`() {
@@ -31,18 +31,18 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
         val hankeId = 1
         val hanke = Hanke(hankeId, hankeTunnus)
 
-        val hankeGeometriat =
+        val geometriat =
             "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                HankeGeometriat::class.java
+                Geometriat::class.java
             )
         every { hankeService.loadHanke(hankeTunnus) } returns hanke
-        every { hankeGeometriatService.loadGeometriat(hanke) } returns hankeGeometriat
+        every { geometriatService.loadGeometriat(hanke) } returns geometriat
         mockMvc
             .perform(get("/hankkeet/$hankeTunnus/geometriat").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
         //
-        // .andExpect(MockMvcResultMatchers.jsonPath("$.hankeId").value(hankeGeometriat.hankeId!!))
-        verify { hankeGeometriatService.loadGeometriat(hanke) }
+        // .andExpect(MockMvcResultMatchers.jsonPath("$.hankeId").value(geometriat.hankeId!!))
+        verify { geometriatService.loadGeometriat(hanke) }
     }
 
     @Test
@@ -54,7 +54,7 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(status().isNotFound)
             .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1001"))
         verify { hankeService.loadHanke(hankeTunnus) }
-        verify(exactly = 0) { hankeGeometriatService.loadGeometriat(any()) }
+        verify(exactly = 0) { geometriatService.loadGeometriat(any()) }
     }
 
     @Test
@@ -63,12 +63,12 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
         val hankeId = 1
         val hanke = Hanke(hankeId, hankeTunnus)
         every { hankeService.loadHanke(hankeTunnus) } returns hanke
-        every { hankeGeometriatService.loadGeometriat(hanke) } returns null
+        every { geometriatService.loadGeometriat(hanke) } returns null
         mockMvc
             .perform(get("/hankkeet/$hankeTunnus/geometriat").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isNotFound)
             .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI1015"))
-        verify { hankeGeometriatService.loadGeometriat(hanke) }
+        verify { geometriatService.loadGeometriat(hanke) }
     }
 
     @Test
@@ -77,11 +77,11 @@ internal class HankeGeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
         val hankeId = 1
         val hanke = Hanke(hankeId, hankeTunnus)
         every { hankeService.loadHanke(hankeTunnus) } returns hanke
-        every { hankeGeometriatService.loadGeometriat(hanke) } throws RuntimeException()
+        every { geometriatService.loadGeometriat(hanke) } throws RuntimeException()
         mockMvc
             .perform(get("/hankkeet/$hankeTunnus/geometriat").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isInternalServerError)
             .andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value("HAI0002"))
-        verify { hankeGeometriatService.loadGeometriat(hanke) }
+        verify { geometriatService.loadGeometriat(hanke) }
     }
 }

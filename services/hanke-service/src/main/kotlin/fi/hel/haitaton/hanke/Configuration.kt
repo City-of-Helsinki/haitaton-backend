@@ -4,10 +4,10 @@ import fi.hel.haitaton.hanke.allu.AlluProperties
 import fi.hel.haitaton.hanke.allu.ApplicationRepository
 import fi.hel.haitaton.hanke.allu.ApplicationService
 import fi.hel.haitaton.hanke.allu.CableReportServiceAllu
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatDao
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatDaoImpl
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatServiceImpl
+import fi.hel.haitaton.hanke.geometria.GeometriatDao
+import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
+import fi.hel.haitaton.hanke.geometria.GeometriatService
+import fi.hel.haitaton.hanke.geometria.GeometriatServiceImpl
 import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
@@ -70,12 +70,12 @@ class Configuration {
 
     @Bean
     fun hankeService(
-        hankeRepository: HankeRepository,
-        tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
-        geometriatService: HankeGeometriatService,
-        hanketunnusService: HanketunnusService,
-        auditLogService: AuditLogService,
-        permissionService: PermissionService
+            hankeRepository: HankeRepository,
+            tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
+            geometriatService: GeometriatService,
+            hanketunnusService: HanketunnusService,
+            auditLogService: AuditLogService,
+            permissionService: PermissionService
     ): HankeService =
         HankeServiceImpl(
             hankeRepository,
@@ -90,12 +90,12 @@ class Configuration {
         OrganisaatioService(organisaatioRepository)
 
     @Bean
-    fun hankeGeometriatDao(jdbcOperations: JdbcOperations): HankeGeometriatDao =
-        HankeGeometriatDaoImpl(jdbcOperations)
+    fun geometriatDao(jdbcOperations: JdbcOperations): GeometriatDao =
+        GeometriatDaoImpl(jdbcOperations)
 
     @Bean
-    fun hankeGeometriatService(hankeGeometriatDao: HankeGeometriatDao): HankeGeometriatService =
-        HankeGeometriatServiceImpl(hankeGeometriatDao)
+    fun geometriatService(geometriatDao: GeometriatDao): GeometriatService =
+        GeometriatServiceImpl(geometriatDao)
 
     @Bean
     fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService =

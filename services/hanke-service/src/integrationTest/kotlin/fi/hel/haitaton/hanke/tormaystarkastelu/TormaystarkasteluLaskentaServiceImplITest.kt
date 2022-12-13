@@ -7,7 +7,7 @@ import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.*
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.Hankealue
-import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.geometria.Geometriat
 import io.mockk.every
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.Test
@@ -45,9 +45,9 @@ internal class TormaystarkasteluLaskentaServiceImplITest : DatabaseTest() {
     }
 
     private fun setupHappyCase(): Hanke {
-        val hankeGeometriat =
+        val geometriat =
             "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                HankeGeometriat::class.java
+                Geometriat::class.java
             )
 
         val alkuPvm = ZonedDateTime.of(2021, 3, 4, 0, 0, 0, 0, TZ_UTC)
@@ -60,11 +60,11 @@ internal class TormaystarkasteluLaskentaServiceImplITest : DatabaseTest() {
                 vaihe = Vaihe.OHJELMOINTI,
                 saveType = SaveType.DRAFT
             )
-        val hankeGeometriatId = 1
+        val geometriatId = 1
         val hankeGeometriaId = 1
         tmp.alueet.add(
             Hankealue(
-                geometriat = hankeGeometriat,
+                geometriat = geometriat,
                 haittaAlkuPvm = alkuPvm,
                 haittaLoppuPvm = alkuPvm!!.plusDays(7),
                 kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.YKSI,
