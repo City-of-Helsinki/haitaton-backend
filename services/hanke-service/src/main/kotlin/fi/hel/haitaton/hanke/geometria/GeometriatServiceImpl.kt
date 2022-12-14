@@ -9,8 +9,7 @@ import org.springframework.security.core.context.SecurityContextHolder
 
 private val logger = KotlinLogging.logger {}
 
-open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) :
-    GeometriatService {
+open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) : GeometriatService {
 
     @Transactional
     override fun saveGeometriat(geometriat: Geometriat): Geometriat {
@@ -52,9 +51,7 @@ open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) :
             else -> {
                 // UPDATE
                 if (oldGeometriat.version == null) {
-                    error(
-                        "There is an old Geometriat ${oldGeometriat.id} but it has no 'version'"
-                    )
+                    error("There is an old Geometriat ${oldGeometriat.id} but it has no 'version'")
                 } else {
                     oldGeometriat.version = oldGeometriat.version!! + 1
                 }

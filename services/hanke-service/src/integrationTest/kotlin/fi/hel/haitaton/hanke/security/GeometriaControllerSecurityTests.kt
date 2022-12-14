@@ -28,9 +28,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
  *
  * The actual activities in each test are not important, as long as they cause the relevant method
  * to be called. "Perform" function implementations have been adapted from
- * GeometriatControllerITests. As long as the mocked operation goes through and returns
- * something "ok" (when authenticated correctly), it will be usable as an authentication test's
- * operation.
+ * GeometriatControllerITests. As long as the mocked operation goes through and returns something
+ * "ok" (when authenticated correctly), it will be usable as an authentication test's operation.
  */
 @WebMvcTest(GeometriaController::class)
 @Import(IntegrationTestConfiguration::class, IntegrationTestResourceServerConfig::class)

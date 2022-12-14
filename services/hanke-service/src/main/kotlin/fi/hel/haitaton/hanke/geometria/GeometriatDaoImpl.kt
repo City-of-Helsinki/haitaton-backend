@@ -17,10 +17,7 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
 
     companion object {
 
-        private fun saveHankeGeometriaRows(
-                geometriat: Geometriat,
-                jdbcOperations: JdbcOperations
-        ) {
+        private fun saveHankeGeometriaRows(geometriat: Geometriat, jdbcOperations: JdbcOperations) {
             val arguments: List<Array<Any>>? =
                 geometriat.featureCollection?.features?.map { feature ->
                     arrayOf(
@@ -61,10 +58,7 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
                 ?: SRID
         }
 
-        private fun updateGeometriat(
-                geometriat: Geometriat,
-                jdbcOperations: JdbcOperations
-        ) {
+        private fun updateGeometriat(geometriat: Geometriat, jdbcOperations: JdbcOperations) {
             jdbcOperations.update(
                 """
                 UPDATE Geometriat
@@ -95,8 +89,8 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
         }
 
         private fun deleteHankeGeometriaRows(
-                geometriat: Geometriat,
-                jdbcOperations: JdbcOperations
+            geometriat: Geometriat,
+            jdbcOperations: JdbcOperations
         ) {
             jdbcOperations.execute(
                 "DELETE FROM HankeGeometria WHERE hankeGeometriatId = ${geometriat.id}"

@@ -17,15 +17,13 @@ interface TormaystarkasteluTormaysService {
     fun anyIntersectsWithKantakaupunki(geometriat: List<Geometriat>): Boolean
 
     fun maxLiikennemaara(
-            geometriat: List<Geometriat>,
-            etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
+        geometriat: List<Geometriat>,
+        etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
     ): Int?
 
     fun anyIntersectsCriticalBusRoutes(geometriat: List<Geometriat>): Boolean
 
-    fun getIntersectingBusRoutes(
-        geometriat: List<Geometriat>
-    ): Set<TormaystarkasteluBussireitti>
+    fun getIntersectingBusRoutes(geometriat: List<Geometriat>): Set<TormaystarkasteluBussireitti>
 
     fun maxIntersectingTramByLaneType(geometriat: List<Geometriat>): Int?
 

@@ -42,8 +42,7 @@ class HankeControllerTest {
         @Bean fun hankeService(): HankeService = Mockito.mock(HankeService::class.java)
 
         @Bean
-        fun geometriatService(): GeometriatService =
-            Mockito.mock(GeometriatService::class.java)
+        fun geometriatService(): GeometriatService = Mockito.mock(GeometriatService::class.java)
 
         @Bean
         fun permissionService(): PermissionService = Mockito.mock(PermissionService::class.java)
@@ -52,10 +51,10 @@ class HankeControllerTest {
 
         @Bean
         fun hankeController(
-                hankeService: HankeService,
-                geometriatService: GeometriatService,
-                permissionService: PermissionService,
-                disclosureLogService: DisclosureLogService,
+            hankeService: HankeService,
+            geometriatService: GeometriatService,
+            permissionService: PermissionService,
+            disclosureLogService: DisclosureLogService,
         ): HankeController =
             HankeController(
                 hankeService,

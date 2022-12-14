@@ -70,12 +70,12 @@ class Configuration {
 
     @Bean
     fun hankeService(
-            hankeRepository: HankeRepository,
-            tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
-            geometriatService: GeometriatService,
-            hanketunnusService: HanketunnusService,
-            auditLogService: AuditLogService,
-            permissionService: PermissionService
+        hankeRepository: HankeRepository,
+        tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
+        geometriatService: GeometriatService,
+        hanketunnusService: HanketunnusService,
+        auditLogService: AuditLogService,
+        permissionService: PermissionService
     ): HankeService =
         HankeServiceImpl(
             hankeRepository,

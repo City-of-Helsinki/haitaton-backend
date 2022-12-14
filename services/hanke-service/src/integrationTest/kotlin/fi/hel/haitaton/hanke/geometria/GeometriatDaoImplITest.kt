@@ -44,16 +44,13 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
 
         assertAll {
             assertThat(loadedGeometriat!!.version).isEqualTo(geometriat.version)
-            assertThat(loadedGeometriat!!.createdByUserId)
-                .isEqualTo(geometriat.createdByUserId)
+            assertThat(loadedGeometriat!!.createdByUserId).isEqualTo(geometriat.createdByUserId)
             assertThat(loadedGeometriat!!.createdAt).isEqualTo(geometriat.createdAt)
-            assertThat(loadedGeometriat!!.modifiedByUserId)
-                .isEqualTo(geometriat.modifiedByUserId)
+            assertThat(loadedGeometriat!!.modifiedByUserId).isEqualTo(geometriat.modifiedByUserId)
             assertThat(loadedGeometriat!!.modifiedAt).isEqualTo(geometriat.modifiedAt)
             assertThat(loadedGeometriat!!.featureCollection!!.features.size).isEqualTo(2)
             assertThat(loadedGeometriat!!.featureCollection!!.features[0].geometry is Point)
-            val loadedPoint =
-                loadedGeometriat!!.featureCollection!!.features[0].geometry as Point
+            val loadedPoint = loadedGeometriat!!.featureCollection!!.features[0].geometry as Point
             val point = geometriat.featureCollection!!.features[0].geometry as Point
             assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
         }
@@ -68,17 +65,14 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
         assertAll {
             assertThat(geometriaId).isEqualTo(geometriaId)
             assertThat(loadedGeometriat!!.version).isEqualTo(geometriat.version)
-            assertThat(loadedGeometriat.createdByUserId)
-                .isEqualTo(geometriat.createdByUserId)
+            assertThat(loadedGeometriat.createdByUserId).isEqualTo(geometriat.createdByUserId)
             assertThat(loadedGeometriat.createdAt).isEqualTo(geometriat.createdAt)
-            assertThat(loadedGeometriat.modifiedByUserId)
-                .isEqualTo(geometriat.modifiedByUserId)
+            assertThat(loadedGeometriat.modifiedByUserId).isEqualTo(geometriat.modifiedByUserId)
             assertThat(loadedGeometriat.modifiedAt!!.isAfter(geometriat.modifiedAt!!))
             assertThat(loadedGeometriat.featureCollection!!.features.size)
                 .isEqualTo(3) // this has increased
             assertThat(loadedGeometriat.featureCollection!!.features[0].geometry is Point)
-            val loadedPoint =
-                loadedGeometriat.featureCollection!!.features[0].geometry as Point
+            val loadedPoint = loadedGeometriat.featureCollection!!.features[0].geometry as Point
             val point = geometriat.featureCollection!!.features[0].geometry as Point
             assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
         }

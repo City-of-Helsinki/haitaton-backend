@@ -28,14 +28,11 @@ class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperatio
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
     override fun anyIntersectsWithKantakaupunki(geometriat: List<Geometriat>) =
-        anyIntersectsWith(
-            geometriatToIdSets(geometriat),
-            "tormays_central_business_area_polys"
-        )
+        anyIntersectsWith(geometriatToIdSets(geometriat), "tormays_central_business_area_polys")
 
     override fun maxLiikennemaara(
-            geometriat: List<Geometriat>,
-            etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
+        geometriat: List<Geometriat>,
+        etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
     ): Int? {
         val placeholders = Collections.nCopies(geometriat.size, "?").joinToString(", ")
         val tableName = "tormays_volumes${etaisyys.radius}_polys"

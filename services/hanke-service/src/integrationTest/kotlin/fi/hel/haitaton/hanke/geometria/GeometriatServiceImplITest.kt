@@ -74,16 +74,10 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
             assertThat(loadedGeometriat!!.modifiedByUserId).isNull()
             assertThat(loadedGeometriat!!.featureCollection!!.features.size).isEqualTo(2)
             assertThat(loadedGeometriat!!.featureCollection!!.features[0].geometry is Point)
-            val loadedPoint =
-                loadedGeometriat!!.featureCollection!!.features[0].geometry as Point
+            val loadedPoint = loadedGeometriat!!.featureCollection!!.features[0].geometry as Point
             val point = geometriat.featureCollection!!.features[0].geometry as Point
             assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
-            assertThat(
-                    loadedGeometriat!!
-                        .featureCollection!!
-                        .features[0]
-                        .properties["hankeTunnus"]
-                )
+            assertThat(loadedGeometriat!!.featureCollection!!.features[0].properties["hankeTunnus"])
                 .isEqualTo(hankeTunnus)
         }
 
@@ -105,13 +99,10 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
             assertThat(loadedGeometriat.featureCollection!!.features.size)
                 .isEqualTo(3) // this has increased
             assertThat(loadedGeometriat.featureCollection!!.features[0].geometry is Point)
-            val loadedPoint =
-                loadedGeometriat.featureCollection!!.features[0].geometry as Point
+            val loadedPoint = loadedGeometriat.featureCollection!!.features[0].geometry as Point
             val point = geometriat.featureCollection!!.features[0].geometry as Point
             assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
-            assertThat(
-                    loadedGeometriat.featureCollection!!.features[0].properties["hankeTunnus"]
-                )
+            assertThat(loadedGeometriat.featureCollection!!.features[0].properties["hankeTunnus"])
                 .isEqualTo(hankeTunnus)
         }
 
@@ -146,9 +137,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
         geometriat.modifiedAt = null
         geometriat.featureCollection?.crs?.properties = null
 
-        assertThrows<GeometriaValidationException> {
-            geometriatService.saveGeometriat(geometriat)
-        }
+        assertThrows<GeometriaValidationException> { geometriatService.saveGeometriat(geometriat) }
     }
 
     @Test
@@ -160,10 +149,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
         geometriat.version = null
         geometriat.createdAt = null
         geometriat.modifiedAt = null
-        geometriat.featureCollection
-            ?.crs
-            ?.properties
-            ?.set("name", "urn:ogc:def:crs:EPSG::0000")
+        geometriat.featureCollection?.crs?.properties?.set("name", "urn:ogc:def:crs:EPSG::0000")
 
         assertThrows<UnsupportedCoordinateSystemException> {
             geometriatService.saveGeometriat(geometriat)

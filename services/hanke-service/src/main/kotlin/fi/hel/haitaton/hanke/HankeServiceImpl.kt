@@ -62,11 +62,11 @@ fun <Source, Target> mergeDataInto(
 }
 
 open class HankeServiceImpl(
-        private val hankeRepository: HankeRepository,
-        private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
-        private val hanketunnusService: HanketunnusService,
-        private val geometriatService: GeometriatService,
-        private val auditLogService: AuditLogService,
+    private val hankeRepository: HankeRepository,
+    private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
+    private val hanketunnusService: HanketunnusService,
+    private val geometriatService: GeometriatService,
+    private val auditLogService: AuditLogService,
 ) : HankeService {
 
     override fun loadHanke(hankeTunnus: String) =

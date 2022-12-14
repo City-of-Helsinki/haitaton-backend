@@ -31,10 +31,10 @@ private val logger = KotlinLogging.logger {}
 @RequestMapping("/hankkeet")
 @Validated
 class HankeController(
-        @Autowired private val hankeService: HankeService,
-        @Autowired private val geometriatService: GeometriatService,
-        @Autowired private val permissionService: PermissionService,
-        @Autowired private val disclosureLogService: DisclosureLogService,
+    @Autowired private val hankeService: HankeService,
+    @Autowired private val geometriatService: GeometriatService,
+    @Autowired private val permissionService: PermissionService,
+    @Autowired private val disclosureLogService: DisclosureLogService,
 ) {
 
     @GetMapping("/{hankeTunnus}")

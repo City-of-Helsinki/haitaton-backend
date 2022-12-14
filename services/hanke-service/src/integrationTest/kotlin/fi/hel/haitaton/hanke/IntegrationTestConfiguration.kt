@@ -51,10 +51,8 @@ class IntegrationTestConfiguration {
     @Bean fun geometriatDao(jdbcOperations: JdbcOperations): GeometriatDao = mockk()
 
     @Bean
-    fun geometriatService(
-            service: HankeService,
-            geometriatDao: GeometriatDao
-    ): GeometriatService = mockk()
+    fun geometriatService(service: HankeService, geometriatDao: GeometriatDao): GeometriatService =
+        mockk()
 
     @Bean
     fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService =

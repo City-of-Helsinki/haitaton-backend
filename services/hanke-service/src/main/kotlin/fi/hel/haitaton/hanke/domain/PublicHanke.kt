@@ -42,16 +42,16 @@ fun geometriatToPublic(geometriat: Geometriat) =
     )
 
 data class PublicHankealue(
-        var id: Int?,
-        var hankeId: Int?,
-        var haittaAlkuPvm: ZonedDateTime? = null,
-        var haittaLoppuPvm: ZonedDateTime? = null,
-        var geometriat: Geometriat? = null,
-        var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
-        var kaistaPituusHaitta: KaistajarjestelynPituus? = null,
-        var meluHaitta: Haitta13? = null,
-        var polyHaitta: Haitta13? = null,
-        var tarinaHaitta: Haitta13? = null,
+    var id: Int?,
+    var hankeId: Int?,
+    var haittaAlkuPvm: ZonedDateTime? = null,
+    var haittaLoppuPvm: ZonedDateTime? = null,
+    var geometriat: Geometriat? = null,
+    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
+    var kaistaPituusHaitta: KaistajarjestelynPituus? = null,
+    var meluHaitta: Haitta13? = null,
+    var polyHaitta: Haitta13? = null,
+    var tarinaHaitta: Haitta13? = null,
 )
 
 data class PublicHanke(

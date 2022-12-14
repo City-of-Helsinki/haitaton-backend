@@ -84,8 +84,8 @@ open class TormaystarkasteluLaskentaService(
     }
 
     private fun liikennemaaraLuokittelu(
-            geometriat: List<Geometriat>,
-            katuluokkaLuokittelu: Int
+        geometriat: List<Geometriat>,
+        katuluokkaLuokittelu: Int
     ): Int {
         if (katuluokkaLuokittelu == 0) {
             return 0
