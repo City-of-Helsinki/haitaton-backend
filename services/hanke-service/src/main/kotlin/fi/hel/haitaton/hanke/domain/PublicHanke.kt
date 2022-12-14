@@ -1,6 +1,9 @@
 package fi.hel.haitaton.hanke.domain
 
-import fi.hel.haitaton.hanke.*
+import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.SuunnitteluVaihe
+import fi.hel.haitaton.hanke.TyomaaTyyppi
+import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.geometria.HankeGeometriat
 import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
@@ -49,8 +52,8 @@ data class PublicHanke(
     val hankeTunnus: String,
     val nimi: String,
     val kuvaus: String,
-    val alkuPvm: ZonedDateTime,
-    val loppuPvm: ZonedDateTime,
+    val alkuPvm: ZonedDateTime?,
+    val loppuPvm: ZonedDateTime?,
     val haittaAlkuPvm: ZonedDateTime,
     val haittaLoppuPvm: ZonedDateTime,
     val vaihe: Vaihe,
@@ -76,8 +79,8 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
         hanke.hankeTunnus!!,
         hanke.nimi!!,
         hanke.kuvaus!!,
-        hanke.alkuPvm!!,
-        hanke.loppuPvm!!,
+        hanke.alkuPvm,
+        hanke.loppuPvm,
         hanke.haittaAlkuPvm!!,
         hanke.haittaLoppuPvm!!,
         hanke.vaihe!!,
