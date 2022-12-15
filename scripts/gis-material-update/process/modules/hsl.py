@@ -322,6 +322,11 @@ class HslBuses(GisProcessor):
             .set_index("fid")
         )
 
+        # Cast attribute data
+        target_routes = target_routes.astype(
+            {"rush_hour": "int32", "direction_id": "int32"}
+        )
+
         return target_routes
 
     def _add_trunk_descriptor(self, shapes: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
@@ -380,4 +385,13 @@ class HslBuses(GisProcessor):
         self._process_result_lines.to_file(target_lines_file_name, driver="GPKG")
         # tormays GIS material
         target_buffer_file_name = self._cfg.target_buffer_file("hsl")
-        self._process_result_polygons.to_file(target_buffer_file_name, driver="GPKG")
+
+        # instruct Geopandas for correct data type in file write
+        # fid is originally as index, obtain fid as column...
+        tormays_polygons = self._process_result_polygons.reset_index()
+
+        schema = gpd.io.file.infer_schema(tormays_polygons)
+        schema["properties"]["rush_hour"] = "int32"
+        schema["properties"]["direction_id"] = "int32"
+
+        tormays_polygons.to_file(target_buffer_file_name, schema=schema, driver="GPKG")
