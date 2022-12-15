@@ -22,6 +22,7 @@ class MakaAutoliikennemaarat:
         )
         self._df["fid"] = self._df.reset_index().index
         self._df = self._df.set_index("fid")
+        self._df = self._df.astype({"volume": "int32"})
 
     def process(self) -> None:
         buffers = self._cfg.buffer(self._module)
@@ -65,4 +66,8 @@ class MakaAutoliikennemaarat:
 
         for buffer_size, polygon_data in self._process_result.items():
             file_name = target_buffer_file_template.format(buffer_size)
-            polygon_data.to_file(file_name, driver="GPKG")
+            polygons = polygon_data.reset_index()
+
+            schema = gpd.io.file.infer_schema(polygons)
+            schema["properties"]["volume"] = "int32"
+            polygons.to_file(file_name, schema=schema, driver="GPKG")
