@@ -1,7 +1,10 @@
 package fi.hel.haitaton.hanke.security
 
-import fi.hel.haitaton.hanke.*
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.IntegrationTestConfiguration
+import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
+import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.geometria.GeometriaController
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.geometria.GeometriatService
@@ -60,7 +63,7 @@ class GeometriaControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     private fun performGetHankkeetTunnusGeometriat(): ResultActions {
         val hankeTunnus = "1234567"
         val hankeId = 1
-        val hanke = Hanke(hankeId, hankeTunnus)
+        val hanke = HankeFactory.create(id = hankeId, hankeTunnus = hankeTunnus)
         val geometriat =
             "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
                 Geometriat::class.java

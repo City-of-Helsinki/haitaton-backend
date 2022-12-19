@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -162,8 +161,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
         val alue1 = Hankealue(hankeId = 123, geometriat = Geometriat(1, FeatureCollection()))
         val alue2 = Hankealue(hankeId = 444, geometriat = Geometriat(2, FeatureCollection()))
-        val hanke1 = Hanke(123, mockedHankeTunnus)
-        val hanke2 = Hanke(444, "hanketunnus2")
+        val hanke1 = HankeFactory.create(id = 123, hankeTunnus = mockedHankeTunnus)
+        val hanke2 = HankeFactory.create(id = 444, hankeTunnus = "hanketunnus2")
         hanke1.alueet = mutableListOf(alue1)
         hanke2.alueet = mutableListOf(alue2)
         val hankkeet = listOf(hanke1, hanke2)
@@ -335,8 +334,6 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         alue.tarinaHaitta = Haitta13.KOLME
         hankeToBeUpdated.alueet.add(alue)
 
-        val content = hankeToBeUpdated.toJsonString()
-
         // Prepare the expected result/return
         // Note, "pvm" values should have become truncated to begin of the day
         val expectedDateAlku =
@@ -401,8 +398,6 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         alue.haittaLoppuPvm = datetimeLoppu
         hankeToBeMocked.alueet.add(alue)
 
-        val content = hankeToBeMocked.toJsonString()
-
         // Prepare the expected result/return
         // Note, "pvm" values should have become truncated to begin of the day
         val expectedDateAlku = datetimeAlku.truncatedTo(ChronoUnit.DAYS)
@@ -460,12 +455,14 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @Test
     fun `exception in Hanke creation causes a 500 Internal Server Error response with specific HankeError`() {
         val hanke =
-            Hanke(
-                "Testihanke",
-                ZonedDateTime.of(2021, 1, 1, 0, 0, 0, 0, TZ_UTC),
-                ZonedDateTime.of(2021, 12, 31, 0, 0, 0, 0, TZ_UTC),
-                Vaihe.OHJELMOINTI,
-                SaveType.AUTO
+            HankeFactory.create(
+                id = null,
+                hankeTunnus = null,
+                nimi = "Testihanke",
+                alkuPvm = ZonedDateTime.of(2021, 1, 1, 0, 0, 0, 0, TZ_UTC),
+                loppuPvm = ZonedDateTime.of(2021, 12, 31, 0, 0, 0, 0, TZ_UTC),
+                vaihe = Vaihe.OHJELMOINTI,
+                saveType = SaveType.AUTO,
             )
         // faking the service call
         every { hankeService.createHanke(any()) } throws RuntimeException("Some error")

@@ -1,6 +1,12 @@
 package fi.hel.haitaton.hanke.domain
 
-import fi.hel.haitaton.hanke.*
+import fi.hel.haitaton.hanke.Haitta13
+import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.KaistajarjestelynPituus
+import fi.hel.haitaton.hanke.SuunnitteluVaihe
+import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
+import fi.hel.haitaton.hanke.TyomaaTyyppi
+import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
@@ -67,7 +73,7 @@ data class PublicHanke(
     val liikennehaittaindeksi: LiikennehaittaIndeksiType,
     val tormaystarkasteluTulos: TormaystarkasteluTulos,
     val omistajat: List<PublicHankeYhteystieto>,
-    val alueet: List<PublicHankealue>
+    val alueet: List<PublicHankealue>,
 )
 
 fun hankealueToPublic(alue: Hankealue): PublicHankealue {
@@ -81,7 +87,7 @@ fun hankealueToPublic(alue: Hankealue): PublicHankealue {
         alue.kaistaPituusHaitta,
         alue.meluHaitta,
         alue.polyHaitta,
-        alue.tarinaHaitta
+        alue.tarinaHaitta,
     )
 }
 
@@ -106,7 +112,7 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
         hanke.liikennehaittaindeksi!!,
         hanke.tormaystarkasteluTulos!!,
         omistajat,
-        alueet
+        alueet,
     )
 }
 

@@ -81,17 +81,12 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
         geometriatDao.deleteGeometriat(geometriat)
         // check that all was deleted correctly
         assertThat(geometriatDao.retrieveGeometriat(geometriaId)).isNotNull()
-        assertThat(
-                jdbcTemplate.queryForObject("SELECT COUNT(*) FROM geometriat") { rs, _ ->
-                    rs.getInt(1)
-                }
-            )
-            .isEqualTo(1)
-        assertThat(
-                jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometria") { rs, _ ->
-                    rs.getInt(1)
-                }
-            )
-            .isEqualTo(0)
+        assertThat(getGeometriaCount()).isEqualTo(1)
+        assertThat(getHankeGeometriaCount()).isEqualTo(0)
     }
+
+    private fun getGeometriaCount(): Int? =
+        jdbcTemplate.queryForObject("SELECT COUNT(*) FROM geometriat") { rs, _ -> rs.getInt(1) }
+    private fun getHankeGeometriaCount(): Int? =
+        jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometria") { rs, _ -> rs.getInt(1) }
 }

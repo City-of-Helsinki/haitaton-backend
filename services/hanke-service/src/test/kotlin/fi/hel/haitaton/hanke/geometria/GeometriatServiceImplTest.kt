@@ -9,7 +9,7 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -160,7 +160,7 @@ internal class GeometriatServiceImplTest {
         val hankeTunnus = "1234567"
         val hankeId = 1
         val geometriat = loadGeometriat()
-        val hanke = Hanke(hankeId, hankeTunnus)
+        val hanke = HankeFactory.create(id = hankeId, hankeTunnus = hankeTunnus)
         every { geometriatDao.retrieveGeometriat(hankeId) } returns geometriat
 
         val loadedGeometriat = service.loadGeometriat(hanke)

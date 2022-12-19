@@ -11,7 +11,6 @@ import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
-import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import java.time.ZonedDateTime
 
 object HankeFactory : Factory<Hanke>() {
@@ -40,7 +39,8 @@ object HankeFactory : Factory<Hanke>() {
         suunnitteluVaihe: SuunnitteluVaihe? = null,
         version: Int? = 1,
         createdBy: String? = defaultUser,
-        createdAt: ZonedDateTime? = getCurrentTimeUTC(),
+        createdAt: ZonedDateTime? = DateFactory.getStartDatetime(),
+        saveType: SaveType = SaveType.DRAFT,
     ): Hanke =
         Hanke(
             id,
@@ -57,7 +57,7 @@ object HankeFactory : Factory<Hanke>() {
             createdAt,
             null,
             null,
-            SaveType.DRAFT
+            saveType,
         )
 
     /**

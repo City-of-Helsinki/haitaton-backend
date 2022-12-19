@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import fi.hel.haitaton.hanke.geometria.Geometriat
-import java.util.*
+import java.util.Collections
 import org.springframework.jdbc.core.JdbcOperations
 
 // PostGIS implementation

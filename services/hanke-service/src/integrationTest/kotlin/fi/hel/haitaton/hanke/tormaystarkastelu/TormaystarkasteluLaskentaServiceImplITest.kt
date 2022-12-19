@@ -4,9 +4,17 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import com.ninjasquad.springmockk.MockkBean
-import fi.hel.haitaton.hanke.*
+import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.KaistajarjestelynPituus
+import fi.hel.haitaton.hanke.SaveType
+import fi.hel.haitaton.hanke.TZ_UTC
+import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
+import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import io.mockk.every
 import java.time.ZonedDateTime
@@ -40,8 +48,8 @@ internal class TormaystarkasteluLaskentaServiceImplITest : DatabaseTest() {
         val tulos = tormaystarkasteluLaskentaService.calculateTormaystarkastelu(hanke)
         assertThat(tulos).isNotNull()
         assertThat(tulos!!.liikennehaittaIndeksi).isNotNull()
-        assertThat(tulos.liikennehaittaIndeksi!!.indeksi).isNotNull()
-        assertThat(tulos.liikennehaittaIndeksi!!.indeksi).isEqualTo(4.0f)
+        assertThat(tulos.liikennehaittaIndeksi.indeksi).isNotNull()
+        assertThat(tulos.liikennehaittaIndeksi.indeksi).isEqualTo(4.0f)
     }
 
     private fun setupHappyCase(): Hanke {
@@ -53,20 +61,20 @@ internal class TormaystarkasteluLaskentaServiceImplITest : DatabaseTest() {
         val alkuPvm = ZonedDateTime.of(2021, 3, 4, 0, 0, 0, 0, TZ_UTC)
         val loppuPvm = alkuPvm!!.plusDays(7)
         val tmp =
-            Hanke(
+            HankeFactory.create(
+                id = null,
+                hankeTunnus = null,
                 nimi = "hanke",
                 alkuPvm = alkuPvm,
                 loppuPvm = loppuPvm,
                 vaihe = Vaihe.OHJELMOINTI,
                 saveType = SaveType.DRAFT
             )
-        val geometriatId = 1
-        val hankeGeometriaId = 1
         tmp.alueet.add(
             Hankealue(
                 geometriat = geometriat,
                 haittaAlkuPvm = alkuPvm,
-                haittaLoppuPvm = alkuPvm!!.plusDays(7),
+                haittaLoppuPvm = alkuPvm.plusDays(7),
                 kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.YKSI,
                 kaistaPituusHaitta = KaistajarjestelynPituus.YKSI
             )

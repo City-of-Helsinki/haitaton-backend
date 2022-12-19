@@ -16,12 +16,6 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
-// TODO: should give most constructor parameters a default value (or move out of constructor),
-// and instead ensure that there are explicit checks for the mandatory fields in the validator.
-// Current way causes a lot of bloat in test methods, yet gives no real benefit.
-// The original thinking was that the constructor has the first page fields, which are
-// mandatory... but e.g. audit fields are internal stuff, should be outside of constructor.
-// The added constructors help a bit with the above, but have limited options.
 data class Hanke(
     /**
      * Can be used for e.g. autosaving before hankeTunnus has been given (optional future stuff).
@@ -44,54 +38,6 @@ data class Hanke(
     /** Default for machine API's. UI should always give the save type. */
     var saveType: SaveType? = SaveType.SUBMIT
 ) {
-
-    constructor(
-        id: Int
-    ) : this(id, null, null, null, null, null, null, null, null, null, null, null, null, null)
-    constructor(
-        id: Int,
-        hankeTunnus: String
-    ) : this(
-        id,
-        hankeTunnus,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null
-    )
-    constructor() :
-        this(null, null, null, null, null, null, null, null, null, null, null, null, null, null)
-    constructor(
-        nimi: String,
-        alkuPvm: ZonedDateTime?,
-        loppuPvm: ZonedDateTime?,
-        vaihe: Vaihe,
-        saveType: SaveType
-    ) : this(
-        null,
-        null,
-        null,
-        nimi,
-        null,
-        alkuPvm,
-        loppuPvm,
-        vaihe,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        saveType
-    )
 
     // --------------- Yhteystiedot -----------------
     var omistajat = mutableListOf<HankeYhteystieto>()

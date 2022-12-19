@@ -1,7 +1,9 @@
 package fi.hel.haitaton.hanke.geometria
 
-import fi.hel.haitaton.hanke.*
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.IntegrationTestConfiguration
+import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.Test
@@ -29,7 +31,7 @@ internal class GeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `get Geometria OK`() {
         val hankeTunnus = "1234567"
         val hankeId = 1
-        val hanke = Hanke(hankeId, hankeTunnus)
+        val hanke = HankeFactory.create(id = hankeId, hankeTunnus = hankeTunnus)
 
         val geometriat =
             "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
@@ -37,11 +39,11 @@ internal class GeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
             )
         every { hankeService.loadHanke(hankeTunnus) } returns hanke
         every { geometriatService.loadGeometriat(hanke) } returns geometriat
+
         mockMvc
             .perform(get("/hankkeet/$hankeTunnus/geometriat").accept(MediaType.APPLICATION_JSON))
             .andExpect(status().isOk)
-        //
-        // .andExpect(MockMvcResultMatchers.jsonPath("$.hankeId").value(geometriat.hankeId!!))
+
         verify { geometriatService.loadGeometriat(hanke) }
     }
 
@@ -61,7 +63,7 @@ internal class GeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `get Geometria for missing geometry`() {
         val hankeTunnus = "1234567"
         val hankeId = 1
-        val hanke = Hanke(hankeId, hankeTunnus)
+        val hanke = HankeFactory.create(id = hankeId, hankeTunnus = hankeTunnus)
         every { hankeService.loadHanke(hankeTunnus) } returns hanke
         every { geometriatService.loadGeometriat(hanke) } returns null
         mockMvc
@@ -75,7 +77,7 @@ internal class GeometriaControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `get Geometria with internal error`() {
         val hankeTunnus = "1234567"
         val hankeId = 1
-        val hanke = Hanke(hankeId, hankeTunnus)
+        val hanke = HankeFactory.create(id = hankeId, hankeTunnus = hankeTunnus)
         every { hankeService.loadHanke(hankeTunnus) } returns hanke
         every { geometriatService.loadGeometriat(hanke) } throws RuntimeException()
         mockMvc
