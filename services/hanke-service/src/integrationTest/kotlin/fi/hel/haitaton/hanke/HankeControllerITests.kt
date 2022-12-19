@@ -200,16 +200,24 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `Add Hanke and return it newly created hankeTunnus (POST)`() {
         val hankeToBeMocked =
             HankeFactory.create(
+                id = null,
+                hankeTunnus = null,
+                version = null,
+                createdAt = null,
+                createdBy = null,
+            )
+        val createdHanke =
+            hankeToBeMocked.copy(
                 id = 1,
                 hankeTunnus = mockedHankeTunnus,
-                version = null,
+                version = 0,
+                createdBy = "test",
                 createdAt = getCurrentTimeUTC(),
-                createdBy = "test"
             )
         val permission = PermissionFactory.create()
 
         // faking the service call
-        every { hankeService.createHanke(any()) }.returns(hankeToBeMocked)
+        every { hankeService.createHanke(any()) }.returns(createdHanke)
         every {
                 permissionService.setPermission(
                     any(),
@@ -218,7 +226,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 )
             }
             .returns(permission)
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(hankeToBeMocked, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(createdHanke, "test") }
 
         mockMvc
             .perform(
@@ -232,9 +240,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.hankeTunnus").value(mockedHankeTunnus))
-            .andExpect(content().json(hankeToBeMocked.toJsonString()))
+            .andExpect(content().json(createdHanke.toJsonString()))
         verify { hankeService.createHanke(any()) }
-        verify { disclosureLogService.saveDisclosureLogsForHanke(hankeToBeMocked, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(createdHanke, "test") }
     }
 
     @Test
