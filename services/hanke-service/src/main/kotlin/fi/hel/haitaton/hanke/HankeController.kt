@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.Permission
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -32,7 +32,7 @@ private val logger = KotlinLogging.logger {}
 @Validated
 class HankeController(
     @Autowired private val hankeService: HankeService,
-    @Autowired private val hankeGeometriatService: HankeGeometriatService,
+    @Autowired private val geometriatService: GeometriatService,
     @Autowired private val permissionService: PermissionService,
     @Autowired private val disclosureLogService: DisclosureLogService,
 ) {
@@ -63,8 +63,8 @@ class HankeController(
         val hankeList = hankeService.loadHankkeetByIds(userPermissions.map { it.hankeId })
         includePermissions(hankeList, userPermissions)
 
-        if (geometry) {
-            hankeList.forEach { it.geometriat = hankeGeometriatService.loadGeometriat(it) }
+        if (!geometry) {
+            hankeList.forEach { hanke -> hanke.alueet.forEach { alue -> alue.geometriat = null } }
         }
 
         disclosureLogService.saveDisclosureLogsForHankkeet(hankeList, userid)
@@ -108,7 +108,6 @@ class HankeController(
         if (hankeTunnus == null || hankeTunnus != hanke.hankeTunnus) {
             throw HankeArgumentException("Hanketunnus not given or doesn't match the hanke data")
         }
-        hanke.geometriat = hankeGeometriatService.loadGeometriat(hanke)
         val updatedHanke = hankeService.updateHanke(hanke)
         logger.info { "Updated hanke ${updatedHanke.hankeTunnus}." }
         disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, updatedHanke.modifiedBy!!)

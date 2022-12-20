@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.geometria.HankeGeometriatService
+import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.Permission
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -42,8 +42,7 @@ class HankeControllerTest {
         @Bean fun hankeService(): HankeService = Mockito.mock(HankeService::class.java)
 
         @Bean
-        fun hankeGeometriatService(): HankeGeometriatService =
-            Mockito.mock(HankeGeometriatService::class.java)
+        fun geometriatService(): GeometriatService = Mockito.mock(GeometriatService::class.java)
 
         @Bean
         fun permissionService(): PermissionService = Mockito.mock(PermissionService::class.java)
@@ -53,13 +52,13 @@ class HankeControllerTest {
         @Bean
         fun hankeController(
             hankeService: HankeService,
-            hankeGeometriatService: HankeGeometriatService,
+            geometriatService: GeometriatService,
             permissionService: PermissionService,
             disclosureLogService: DisclosureLogService,
         ): HankeController =
             HankeController(
                 hankeService,
-                hankeGeometriatService,
+                geometriatService,
                 permissionService,
                 disclosureLogService
             )
@@ -167,8 +166,8 @@ class HankeControllerTest {
 
         assertThat(hankeList[0].nimi).isEqualTo("Mannerheimintien remontti remonttinen")
         assertThat(hankeList[1].nimi).isEqualTo("Hämeenlinnanväylän uudistus")
-        assertThat(hankeList[0].geometriat).isNull()
-        assertThat(hankeList[1].geometriat).isNull()
+        assertThat(hankeList[0].alueidenGeometriat()).isEmpty()
+        assertThat(hankeList[1].alueidenGeometriat()).isEmpty()
         assertThat(hankeList[0].permissions).isEqualTo(listOf(PermissionCode.VIEW))
         assertThat(hankeList[1].permissions)
             .isEqualTo(listOf(PermissionCode.VIEW, PermissionCode.EDIT))
@@ -271,7 +270,6 @@ class HankeControllerTest {
                     "3212312",
                     null,
                     "Kaivuri ja mies",
-                    null,
                     null,
                     null,
                     null,
