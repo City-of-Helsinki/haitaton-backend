@@ -1,0 +1,60 @@
+databaseChangeLog:
+  - changeSet:
+      id: 015-update-hanke-fields
+      comment: Hanke field changes for the new UI
+      author: Niko Junkala
+      changes:
+        - createTable:
+            tableName: hankealue
+            remarks: "Table to add multiple areas influenced by the hanke"
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: haittaalkupvm
+                  type: date
+              - column:
+                  name: haittaloppupvm
+                  type: date
+              - column:
+                  name: kaistahaitta
+                  type: tinyint
+              - column:
+                  name: kaistapituushaitta
+                  type: tinyint
+              - column:
+                  name: meluhaitta
+                  type: tinyint
+              - column:
+                  name: polyhaitta
+                  type: tinyint
+              - column:
+                  name: tarinahaitta
+                  type: tinyint
+              - column:
+                  name: geometriat
+                  type: bigint
+                  constraints:
+                    foreignKeyName: fk_hankealue_geometria
+                    references: HankeGeometriat(id)
+              - column:
+                  name: hankeid
+                  type: bigint
+                  constraints:
+                    foreignKeyName: fk_hanke_hankealue
+                    references: hanke(id)
+                    nullable: false
+        - addAutoIncrement:
+            tableName: hankealue
+            columnName: id
+            columnDataType: bigint
+            generationType: ALWAYS
+        - dropColumn:
+            tableName: hankegeometriat
+            columnName: hankeid
+        - delete:
+            tableName: hankegeometriat # All geometriat will be orphaned, so just delete them.

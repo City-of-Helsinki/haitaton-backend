@@ -12,46 +12,29 @@ import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.PostMapping
-import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
-private val logger = KotlinLogging.logger { }
+private val logger = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/hankkeet")
 @Validated
-class HankeGeometriaController(
-        @Autowired private val hankeService: HankeService,
-        @Autowired private val geometryService: HankeGeometriatService) {
+class GeometriaController(
+    @Autowired private val hankeService: HankeService,
+    @Autowired private val geometryService: GeometriatService
+) {
 
-    @PostMapping("/{hankeTunnus}/geometriat")
-    fun createGeometria(
-        @PathVariable("hankeTunnus") hankeTunnus: String,
-        @ValidHankeGeometriat @RequestBody hankeGeometriat: HankeGeometriat?
-    ): ResponseEntity<Any> {
-        logger.info {
-            "Saving Hanke Geometria for $hankeTunnus..."
-        }
-        if (hankeGeometriat == null) {
-            return ResponseEntity.badRequest().body(HankeError.HAI1011)
-        }
-        val hanke = hankeService.loadHanke(hankeTunnus)
-                ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
-        val savedHankeGeometriat = geometryService.saveGeometriat(hanke, hankeGeometriat)
-        return ResponseEntity.ok(savedHankeGeometriat)
-    }
-
+    /** NOTE This method is deprecated. Create a new endpoint for querying geometry data. */
     @GetMapping("/{hankeTunnus}/geometriat")
     fun getGeometria(@PathVariable("hankeTunnus") hankeTunnus: String): ResponseEntity<Any> {
-        logger.info {
-            "Getting Hanke Geometria for $hankeTunnus..."
-        }
-        val hanke = hankeService.loadHanke(hankeTunnus)
+        logger.info { "Getting Hanke Geometria for $hankeTunnus..." }
+        val hanke =
+            hankeService.loadHanke(hankeTunnus)
                 ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1001)
-        val geometry = geometryService.loadGeometriat(hanke)
+        val geometry =
+            geometryService.loadGeometriat(hanke)
                 ?: return ResponseEntity.status(HttpStatus.NOT_FOUND).body(HankeError.HAI1015)
         return ResponseEntity.ok(geometry)
     }
