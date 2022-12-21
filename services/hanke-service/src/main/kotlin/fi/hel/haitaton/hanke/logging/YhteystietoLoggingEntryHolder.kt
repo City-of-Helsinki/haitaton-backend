@@ -2,8 +2,7 @@ package fi.hel.haitaton.hanke.logging
 
 import fi.hel.haitaton.hanke.DatabaseStateException
 import fi.hel.haitaton.hanke.HankeYhteystietoEntity
-import org.springframework.web.context.request.RequestContextHolder
-import org.springframework.web.context.request.ServletRequestAttributes
+import fi.hel.haitaton.hanke.toChangeLogJsonString
 
 const val PERSONAL_DATA_LOGGING_MAX_IP_LENGTH = 40
 
@@ -115,44 +114,7 @@ class YhteystietoLoggingEntryHolder {
             }
     }
 
-    fun applyIpAddresses() {
-        auditLogEntries = Companion.applyIpAddresses(auditLogEntries).toMutableList()
-    }
-
     fun saveLogEntries(auditLogService: AuditLogService) {
-        auditLogService.saveAll(auditLogEntries)
-    }
-
-    companion object {
-        /**
-         * If request context (attributes) exists, gets the IP from it and applies to all the log
-         * entries currently held in this holder.
-         *
-         * Returns a new list with the IP addresses added to each entry.
-         *
-         * TODO: very very very simplified implementation. Needs a lot of improvement.
-         */
-        fun applyIpAddresses(
-            auditLogEntries: Collection<AuditLogEntry>
-        ): Collection<AuditLogEntry> {
-            val attribs =
-                (RequestContextHolder.getRequestAttributes() as ServletRequestAttributes?)
-                    ?: return auditLogEntries
-            val request = attribs.request
-            // Very simplified version for now.
-            // For starters, see e.g.
-            // https://stackoverflow.com/questions/22877350/how-to-extract-ip-address-in-spring-mvc-controller-get-call
-            // Combine all the various ideas into one, and note that even then it is not even
-            // half-way to a proper solution. Hopefully one can find a ready-made fully thought out
-            // implementation.
-            var ip: String =
-                request.getHeader("X-FORWARDED-FOR") ?: request.remoteAddr ?: return auditLogEntries
-            // Just to make sure it won't break the db if someone put something silly long in the
-            // header:
-            if (ip.length > PERSONAL_DATA_LOGGING_MAX_IP_LENGTH)
-                ip = ip.substring(0, PERSONAL_DATA_LOGGING_MAX_IP_LENGTH)
-
-            return auditLogEntries.map { it.copy(ipAddress = ip) }
-        }
+        auditLogService.createAll(auditLogEntries)
     }
 }

@@ -1,6 +1,8 @@
 package fi.hel.haitaton.hanke.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonView
+import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.Haitta13
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.SaveType
@@ -20,16 +22,16 @@ data class Hanke(
     /**
      * Can be used for e.g. autosaving before hankeTunnus has been given (optional future stuff).
      */
-    var id: Int?,
-    var hankeTunnus: String?,
-    var onYKTHanke: Boolean?,
-    var nimi: String?,
-    var kuvaus: String?,
-    var alkuPvm: ZonedDateTime?,
-    var loppuPvm: ZonedDateTime?,
-    var vaihe: Vaihe?,
-    var suunnitteluVaihe: SuunnitteluVaihe?,
-    var version: Int?,
+    @JsonView(ChangeLogView::class) override var id: Int?,
+    @JsonView(ChangeLogView::class) var hankeTunnus: String?,
+    @JsonView(ChangeLogView::class) var onYKTHanke: Boolean?,
+    @JsonView(ChangeLogView::class) var nimi: String?,
+    @JsonView(ChangeLogView::class) var kuvaus: String?,
+    @JsonView(ChangeLogView::class) var alkuPvm: ZonedDateTime?,
+    @JsonView(ChangeLogView::class) var loppuPvm: ZonedDateTime?,
+    @JsonView(ChangeLogView::class) var vaihe: Vaihe?,
+    @JsonView(ChangeLogView::class) var suunnitteluVaihe: SuunnitteluVaihe?,
+    @JsonView(ChangeLogView::class) var version: Int?,
     val createdBy: String?,
     val createdAt: ZonedDateTime?,
     var modifiedBy: String?,
@@ -37,7 +39,7 @@ data class Hanke(
 
     /** Default for machine API's. UI should always give the save type. */
     var saveType: SaveType? = SaveType.SUBMIT
-) {
+) : HasId<Int> {
 
     // --------------- Yhteystiedot -----------------
     var omistajat = mutableListOf<HankeYhteystieto>()
@@ -45,9 +47,9 @@ data class Hanke(
     var toteuttajat = mutableListOf<HankeYhteystieto>()
 
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
-    var tyomaaKatuosoite: String? = null
-    var tyomaaTyyppi = mutableSetOf<TyomaaTyyppi>()
-    var tyomaaKoko: TyomaaKoko? = null
+    @JsonView(ChangeLogView::class) var tyomaaKatuosoite: String? = null
+    @JsonView(ChangeLogView::class) var tyomaaTyyppi = mutableSetOf<TyomaaTyyppi>()
+    @JsonView(ChangeLogView::class) var tyomaaKoko: TyomaaKoko? = null
 
     // --------------- Hankkeen haitat -------------------
     fun kaistaHaitat(): Set<TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin> {
@@ -70,7 +72,7 @@ data class Hanke(
         return alueet.map { it.tarinaHaitta }.filterNotNull().toSet()
     }
 
-    var alueet = mutableListOf<Hankealue>()
+    @JsonView(ChangeLogView::class) var alueet = mutableListOf<Hankealue>()
 
     var permissions: List<PermissionCode>? = null
 
@@ -88,7 +90,7 @@ data class Hanke(
         tormaystarkasteluTulos?.liikennehaittaIndeksi
     }
 
-    var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
+    @JsonView(ChangeLogView::class) var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
 
     fun getHaittaAlkuPvm(): ZonedDateTime? {
         return alueet.map { it.haittaAlkuPvm }.filterNotNull().minOfOrNull { it }

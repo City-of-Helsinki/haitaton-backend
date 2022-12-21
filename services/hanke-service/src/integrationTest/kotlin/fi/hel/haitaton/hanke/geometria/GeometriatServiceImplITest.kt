@@ -51,7 +51,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
         // they must be picked from the created hanke-instance.
         val hankeId = 1
         val hankeInit = HankeFactory.create(id = hankeId)
-        hankeInit.alueet.add(HankealueFactory.create(null, null, geometriat = geometriat))
+        hankeInit.alueet.add(HankealueFactory.createMinimal(geometriat = geometriat))
         val hanke = hankeService.createHanke(hankeInit)
         val hankeTunnus = hanke.hankeTunnus!!
 

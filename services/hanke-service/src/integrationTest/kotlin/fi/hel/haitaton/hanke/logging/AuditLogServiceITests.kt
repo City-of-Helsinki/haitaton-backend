@@ -9,6 +9,7 @@ import assertk.assertions.isNull
 import assertk.assertions.support.expected
 import assertk.assertions.support.show
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.test.TestUtils
 import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.temporal.TemporalAmount
@@ -51,7 +52,6 @@ class AuditLogServiceITests : DatabaseTest() {
             AuditLogEntry(
                 userId = "1234-1234",
                 userRole = UserRole.USER,
-                ipAddress = "127.0.0.1",
                 operation = Operation.CREATE,
                 status = Status.FAILED,
                 failureDescription = "There was an error",
@@ -59,13 +59,15 @@ class AuditLogServiceITests : DatabaseTest() {
                 objectId = "333",
                 objectAfter = "fake JSON"
             )
-        val savedAuditLogEntry = auditLogService.saveAll(listOf(auditLogEntry))[0]
+        TestUtils.addMockedRequestIp("127.0.0.1")
+
+        val savedAuditLogEntry = auditLogService.createAll(listOf(auditLogEntry))[0]
+
         val id = savedAuditLogEntry.id
         // Make sure the stuff is run to database (though not necessarily committed)
         entityManager.flush()
         // Ensure the original entity is no longer in Hibernate's 1st level cache
         entityManager.clear()
-
         // Check it is there (using something else than the repository):
         val foundAuditLogEntry = entityManager.find(AuditLogEntryEntity::class.java, id)
         assertThat(foundAuditLogEntry).isNotNull()
