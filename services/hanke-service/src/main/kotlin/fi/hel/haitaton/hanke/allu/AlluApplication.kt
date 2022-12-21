@@ -1,7 +1,10 @@
 package fi.hel.haitaton.hanke.allu
 
+import com.fasterxml.jackson.annotation.JsonView
 import com.fasterxml.jackson.databind.JsonNode
 import com.vladmihalcea.hibernate.type.json.JsonType
+import fi.hel.haitaton.hanke.ChangeLogView
+import fi.hel.haitaton.hanke.domain.HasId
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.EnumType
@@ -18,11 +21,11 @@ enum class ApplicationType {
 }
 
 data class ApplicationDto(
-    val id: Long?,
-    val alluid: Int?,
-    val applicationType: ApplicationType,
-    val applicationData: JsonNode
-)
+    @JsonView(ChangeLogView::class) override val id: Long?,
+    @JsonView(ChangeLogView::class) val alluid: Int?,
+    @JsonView(ChangeLogView::class) val applicationType: ApplicationType,
+    @JsonView(ChangeLogView::class) val applicationData: JsonNode
+) : HasId<Long>
 
 fun applicationToDto(a: AlluApplication) =
     ApplicationDto(a.id, a.alluid, a.applicationType, a.applicationData)

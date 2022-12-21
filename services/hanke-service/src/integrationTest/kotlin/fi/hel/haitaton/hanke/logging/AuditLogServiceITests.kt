@@ -1,18 +1,13 @@
 package fi.hel.haitaton.hanke.logging
 
-import assertk.Assert
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
-import assertk.assertions.support.expected
-import assertk.assertions.support.show
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
-import java.time.Duration
-import java.time.OffsetDateTime
-import java.time.temporal.TemporalAmount
 import javax.persistence.EntityManager
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -38,13 +33,6 @@ class AuditLogServiceITests : DatabaseTest() {
     @Autowired private lateinit var entityManager: EntityManager
     @Autowired private lateinit var auditLogService: AuditLogService
 
-    fun Assert<OffsetDateTime?>.isRecent(offset: TemporalAmount) = given { actual ->
-        if (actual == null) return
-        val now = OffsetDateTime.now()
-        if (actual.isBefore(now) && actual.isAfter(now.minus(offset))) return
-        expected("after:${show(now.minus(offset))} but was:${show(actual)}")
-    }
-
     @Test
     fun `saving audit log entry works`() {
         // Create a log entry, save it, flush, clear caches:
@@ -59,7 +47,7 @@ class AuditLogServiceITests : DatabaseTest() {
                 objectId = "333",
                 objectAfter = "fake JSON"
             )
-        TestUtils.addMockedRequestIp("127.0.0.1")
+        TestUtils.addMockedRequestIp()
 
         val savedAuditLogEntry = auditLogService.createAll(listOf(auditLogEntry))[0]
 
@@ -73,9 +61,9 @@ class AuditLogServiceITests : DatabaseTest() {
         assertThat(foundAuditLogEntry).isNotNull()
         assertThat(foundAuditLogEntry.id).isNotNull()
         assertThat(foundAuditLogEntry.isSent).isFalse()
-        assertThat(foundAuditLogEntry.createdAt).isRecent(Duration.ofMinutes(1))
+        assertThat(foundAuditLogEntry.createdAt).isRecent()
         val auditLogEvent = foundAuditLogEntry.message.auditEvent
-        assertThat(auditLogEvent.dateTime).isRecent(Duration.ofMinutes(1))
+        assertThat(auditLogEvent.dateTime).isRecent()
         assertThat(auditLogEvent.appVersion).isEqualTo("1")
         assertThat(auditLogEvent.operation).isEqualTo(Operation.CREATE)
         assertThat(auditLogEvent.status).isEqualTo(Status.FAILED)
