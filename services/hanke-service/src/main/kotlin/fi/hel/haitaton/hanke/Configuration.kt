@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.geometria.GeometriatServiceImpl
+import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
@@ -62,8 +63,14 @@ class Configuration {
         applicationRepository: ApplicationRepository,
         cableReportServiceAllu: CableReportServiceAllu,
         disclosureLogService: DisclosureLogService,
+        applicationLoggingService: ApplicationLoggingService,
     ): ApplicationService =
-        ApplicationService(applicationRepository, cableReportServiceAllu, disclosureLogService)
+        ApplicationService(
+            applicationRepository,
+            cableReportServiceAllu,
+            disclosureLogService,
+            applicationLoggingService,
+        )
 
     @Bean
     fun hanketunnusService(idCounterRepository: IdCounterRepository): HanketunnusService =

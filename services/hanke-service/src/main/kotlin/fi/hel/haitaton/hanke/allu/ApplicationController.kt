@@ -32,8 +32,9 @@ class ApplicationController(
 
     @PostMapping
     fun create(@RequestBody application: ApplicationDto): ApplicationDto {
-        val createdApplication = service.create(application)
-        disclosureLogService.saveDisclosureLogsForApplication(createdApplication, currentUserId())
+        val userId = currentUserId()
+        val createdApplication = service.create(application, userId)
+        disclosureLogService.saveDisclosureLogsForApplication(createdApplication, userId)
         return createdApplication
     }
 
@@ -42,7 +43,9 @@ class ApplicationController(
         @PathVariable(name = "id") id: Long,
         @RequestBody application: ApplicationDto
     ): ApplicationDto? {
-        val updatedApplication = service.updateApplicationData(id, application.applicationData)
+        val userId = currentUserId()
+        val updatedApplication =
+            service.updateApplicationData(id, application.applicationData, userId)
         disclosureLogService.saveDisclosureLogsForApplication(updatedApplication, currentUserId())
         return updatedApplication
     }

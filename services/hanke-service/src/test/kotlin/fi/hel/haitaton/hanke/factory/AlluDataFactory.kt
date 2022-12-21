@@ -14,6 +14,8 @@ import java.time.ZonedDateTime
 import org.geojson.GeometryCollection
 
 object AlluDataFactory {
+    const val defaultApplicationId: Long = 1
+    const val defaultApplicationName: String = "Johtoselvitys"
 
     fun createPostalAddress(
         streetAddress: StreetAddress = StreetAddress("Katu 1"),
@@ -106,7 +108,7 @@ object AlluDataFactory {
         )
 
     fun createApplicationDto(
-        id: Long? = 1,
+        id: Long? = defaultApplicationId,
         alluid: Int? = null,
         applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
         applicationData: CableReportApplication = createCableReportApplication()

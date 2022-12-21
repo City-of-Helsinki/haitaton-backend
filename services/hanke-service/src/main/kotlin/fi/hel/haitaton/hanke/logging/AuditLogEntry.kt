@@ -48,6 +48,7 @@ enum class ObjectType {
     ALLU_CONTACT,
     GDPR_RESPONSE,
     HANKE,
+    APPLICATION,
 }
 
 enum class UserRole {

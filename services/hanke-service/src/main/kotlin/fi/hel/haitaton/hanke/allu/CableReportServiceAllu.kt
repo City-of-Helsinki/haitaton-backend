@@ -30,6 +30,9 @@ class CableReportServiceAllu(
                 .body(Mono.just(LoginInfo(properties.username, properties.password)))
                 .retrieve()
                 .bodyToMono(String::class.java)
+                // Allu has started to return the login token in quotes. Remove them.
+                // This is undocumented, so we should confirm this is intentional.
+                .map { it.trim('"') }
                 .block()
         } catch (e: Throwable) {
             throw AlluLoginException(e)
@@ -37,7 +40,11 @@ class CableReportServiceAllu(
     }
 
     override fun getCurrentStatus(applicationId: Int): ApplicationStatus? {
-        return getApplicationStatusHistory(applicationId, null)
+        // Allu no longer accepts null in the eventsAfter field. Use a date before Allu was launched
+        // to get the full history.
+        // The API documentation still says null is interpreted as "complete history",
+        // so we should confirm this change is intentional.
+        return getApplicationStatusHistory(applicationId, ZonedDateTime.now().withYear(2010))
             .block()
             ?.events
             ?.maxWithOrNull(compareByDescending { it.eventTime })
