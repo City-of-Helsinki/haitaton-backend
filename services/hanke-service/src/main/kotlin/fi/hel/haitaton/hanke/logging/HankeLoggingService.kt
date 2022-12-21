@@ -38,4 +38,23 @@ class HankeLoggingService(private val auditLogService: AuditLogService) {
     fun logCreate(hanke: Hanke, userId: String) {
         auditLogService.create(AuditLogService.createEntry(userId, ObjectType.HANKE, hanke))
     }
+
+    /**
+     * Create audit log entry for an updated hanke.
+     *
+     * Only create the entry if the logged content of the hanke has changed.
+     *
+     * Currently, the version field is updated even if there are no other changes, so the audit log
+     * entry is always created.
+     *
+     * Don't process sub-entities, they are handled elsewhere. Log entries for yhteystiedot are
+     * added in [fi.hel.haitaton.hanke.HankeServiceImpl]. Geometries are added in their own
+     * controller, so they are logged there.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    fun logUpdate(hankeBefore: Hanke, hankeAfter: Hanke, userId: String) {
+        AuditLogService.updateEntry(userId, ObjectType.HANKE, hankeBefore, hankeAfter)?.let {
+            auditLogService.create(it)
+        }
+    }
 }

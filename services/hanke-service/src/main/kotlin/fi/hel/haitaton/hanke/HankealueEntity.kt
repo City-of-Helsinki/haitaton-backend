@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.domain.HasId
 import java.time.LocalDate
 import javax.persistence.Entity
 import javax.persistence.FetchType
@@ -12,8 +13,8 @@ import javax.persistence.Table
 
 @Entity
 @Table(name = "hankealue")
-class HankealueEntity {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Int? = null
+class HankealueEntity : HasId<Int> {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) override var id: Int? = null
 
     @ManyToOne(fetch = FetchType.EAGER) @JoinColumn(name = "hankeid") var hanke: HankeEntity? = null
 
