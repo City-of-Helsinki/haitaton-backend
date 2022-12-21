@@ -25,6 +25,15 @@ class AuditLogService(private val auditLogRepository: AuditLogRepository) {
         return auditLogRepository.saveAll(auditLogEntries.map { it.toEntity(now, getIpAddress()) })
     }
 
+    /**
+     * Save a new audit log entry. Converts it to an entity and saves it.
+     *
+     * Sets the date_time and ip_address fields for the entry.
+     */
+    @Transactional(propagation = Propagation.SUPPORTS)
+    fun create(auditLogEntry: AuditLogEntry): MutableList<AuditLogEntryEntity> =
+        createAll(listOf(auditLogEntry))
+
     companion object {
         /**
          * If request context (attributes) exists, returns the IP from it.
@@ -52,16 +61,28 @@ class AuditLogService(private val auditLogRepository: AuditLogRepository) {
             return ip
         }
 
-        fun <ID, T : HasId<ID>> deleteEntry(userId: String, type: ObjectType, objectBefore: T) =
+        fun <ID, T : HasId<ID>> deleteEntry(userId: String, type: ObjectType, deletedObject: T) =
             AuditLogEntry(
                 operation = Operation.DELETE,
                 status = Status.SUCCESS,
                 userId = userId,
                 userRole = UserRole.USER,
-                objectId = objectBefore.id?.toString(),
+                objectId = deletedObject.id?.toString(),
                 objectType = type,
-                objectBefore = objectBefore.toChangeLogJsonString(),
+                objectBefore = deletedObject.toChangeLogJsonString(),
                 objectAfter = null,
+            )
+
+        fun <ID, T : HasId<ID>> createEntry(userId: String, type: ObjectType, createdObject: T) =
+            AuditLogEntry(
+                operation = Operation.CREATE,
+                status = Status.SUCCESS,
+                userId = userId,
+                userRole = UserRole.USER,
+                objectId = createdObject.id?.toString(),
+                objectType = type,
+                objectBefore = null,
+                objectAfter = createdObject.toChangeLogJsonString(),
             )
     }
 }
