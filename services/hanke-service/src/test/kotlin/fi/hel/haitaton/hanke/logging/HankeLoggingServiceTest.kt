@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.logging
 
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
+import io.mockk.called
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.mockk
@@ -104,5 +105,38 @@ internal class HankeLoggingServiceTest {
                 }
             )
         }
+    }
+
+    @Test
+    fun `logUpdate creates audit log entry for updated hanke`() {
+        val hankeBefore = HankeFactory.create(version = 1)
+        val hankeAfter = HankeFactory.create(version = 2)
+
+        hankeLoggingService.logUpdate(hankeBefore, hankeAfter, userId)
+
+        verify {
+            auditLogService.create(
+                withArg { entry ->
+                    assertEquals(Operation.UPDATE, entry.operation)
+                    assertEquals(Status.SUCCESS, entry.status)
+                    assertNull(entry.failureDescription)
+                    assertEquals(userId, entry.userId)
+                    assertEquals(UserRole.USER, entry.userRole)
+                    assertEquals(HankeFactory.defaultId.toString(), entry.objectId)
+                    assertEquals(ObjectType.HANKE, entry.objectType)
+                    assertNotNull(entry.objectBefore)
+                    assertNotNull(entry.objectAfter)
+                }
+            )
+        }
+    }
+    @Test
+    fun `logUpdate doesn't create audit log entry if hanke not changed`() {
+        val hankeBefore = HankeFactory.create(version = 1)
+        val hankeAfter = HankeFactory.create(version = 1)
+
+        hankeLoggingService.logUpdate(hankeBefore, hankeAfter, userId)
+
+        verify { auditLogService wasNot called }
     }
 }

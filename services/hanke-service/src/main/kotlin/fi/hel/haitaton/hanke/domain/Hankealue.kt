@@ -13,7 +13,7 @@ import java.time.ZonedDateTime
  * NOTE Remember to update PublicHankealue after changes
  */
 data class Hankealue(
-    @JsonView(ChangeLogView::class) var id: Int? = null,
+    @JsonView(ChangeLogView::class) override var id: Int? = null,
     @JsonView(ChangeLogView::class) var hankeId: Int? = null,
     @JsonView(ChangeLogView::class) var haittaAlkuPvm: ZonedDateTime? = null,
     @JsonView(ChangeLogView::class) var haittaLoppuPvm: ZonedDateTime? = null,
@@ -24,4 +24,4 @@ data class Hankealue(
     @JsonView(ChangeLogView::class) var meluHaitta: Haitta13? = null,
     @JsonView(ChangeLogView::class) var polyHaitta: Haitta13? = null,
     @JsonView(ChangeLogView::class) var tarinaHaitta: Haitta13? = null,
-)
+) : HasId<Int>

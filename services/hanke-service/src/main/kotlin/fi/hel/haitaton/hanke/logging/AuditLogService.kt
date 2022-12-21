@@ -84,5 +84,35 @@ class AuditLogService(private val auditLogRepository: AuditLogRepository) {
                 objectBefore = null,
                 objectAfter = createdObject.toChangeLogJsonString(),
             )
+
+        /**
+         * Create an audit log entry for the update if some logged data has changed.
+         *
+         * @return the audit log event if there are changes. null if there are not.
+         */
+        fun <ID, T : HasId<ID>> updateEntry(
+            userId: String,
+            type: ObjectType,
+            objectBefore: T,
+            objectAfter: T
+        ): AuditLogEntry? {
+            val jsonBefore = objectBefore.toChangeLogJsonString()
+            val jsonAfter = objectAfter.toChangeLogJsonString()
+
+            return if (jsonBefore == jsonAfter) {
+                null
+            } else {
+                AuditLogEntry(
+                    operation = Operation.UPDATE,
+                    status = Status.SUCCESS,
+                    userId = userId,
+                    userRole = UserRole.USER,
+                    objectId = objectAfter.id?.toString(),
+                    objectType = type,
+                    objectBefore = objectBefore.toChangeLogJsonString(),
+                    objectAfter = objectAfter.toChangeLogJsonString(),
+                )
+            }
+        }
     }
 }
