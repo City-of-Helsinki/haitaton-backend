@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import com.fasterxml.jackson.annotation.JsonView
 import java.time.LocalDate
 import javax.persistence.Entity
 import javax.persistence.FetchType
@@ -16,10 +15,7 @@ import javax.persistence.Table
 class HankealueEntity {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Int? = null
 
-    @JsonView(NotInChangeLogView::class)
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "hankeid")
-    var hanke: HankeEntity? = null
+    @ManyToOne(fetch = FetchType.EAGER) @JoinColumn(name = "hankeid") var hanke: HankeEntity? = null
 
     // NOTE: This should be changed to an entity
     // Refers to HankeGeometria.

@@ -11,7 +11,6 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.toJsonString
-import java.time.OffsetDateTime
 import org.springframework.stereotype.Service
 
 /** Special username for Allu service. */
@@ -163,7 +162,6 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         failureDescription: String? = null,
     ): AuditLogEntry =
         AuditLogEntry(
-            dateTime = null,
             operation = Operation.READ,
             status = status,
             failureDescription = failureDescription,
@@ -181,12 +179,8 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             return
         }
 
-        val eventTime = OffsetDateTime.now()
-        val entities =
-            YhteystietoLoggingEntryHolder.applyIpAddresses(entries).map {
-                it.copy(userId = userId, userRole = userRole, dateTime = eventTime)
-            }
+        val entities = entries.map { it.copy(userId = userId, userRole = userRole) }
 
-        auditLogService.saveAll(entities)
+        auditLogService.createAll(entities)
     }
 }

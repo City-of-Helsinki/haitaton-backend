@@ -7,20 +7,27 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedArvioija
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistajat
-import fi.hel.haitaton.hanke.factory.HankeFactory.withHaitta
+import fi.hel.haitaton.hanke.factory.HankeFactory.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankealueFactory
-import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.logging.AuditLogEntryEntity
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
+import fi.hel.haitaton.hanke.test.TestUtils
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.assertj.core.api.Assertions.byLessThan
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
+import org.skyscreamer.jsonassert.JSONAssert
+import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
@@ -39,9 +46,7 @@ class HankeServiceITests : DatabaseTest() {
     private val USER_NAME = "test7358"
 
     @Autowired private lateinit var hankeService: HankeService
-
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
-
     @Autowired private lateinit var hankeRepository: HankeRepository
 
     // Some tests also use and check loadHanke()'s return value because at one time the update
@@ -726,19 +731,10 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
-    fun `test creation of alueet`() {
-        val geometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                Geometriat::class.java
-            )
-        geometriat.version = null
-        geometriat.createdAt = null
-        geometriat.modifiedAt = null
-
+    fun `test creation of hanke with alueet`() {
         val hanke = getATestHanke()
         val hankealue =
             HankealueFactory.create(
-                geometriat = geometriat,
                 haittaAlkuPvm = hanke.alkuPvm,
                 haittaLoppuPvm = hanke.loppuPvm,
                 kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KOLME,
@@ -747,24 +743,161 @@ class HankeServiceITests : DatabaseTest() {
                 polyHaitta = Haitta13.KOLME,
                 tarinaHaitta = Haitta13.KOLME,
             )
-
         hanke.alueet.add(hankealue)
 
         val createdHanke = hankeService.createHanke(hanke)
+
         assertThat(createdHanke.alueet).hasSize(2)
-        assertThat(createdHanke.alueet[1].haittaAlkuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+        val alue = createdHanke.alueet[1]
+        assertThat(alue.haittaAlkuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
             .isEqualTo(hanke.alkuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
-        assertThat(createdHanke.alueet[1].haittaLoppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
+        assertThat(alue.haittaLoppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
             .isEqualTo(hanke.loppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
-        assertThat(createdHanke.alueet[1].kaistaHaitta)
+        assertThat(alue.kaistaHaitta)
             .isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KOLME)
-        assertThat(createdHanke.alueet[1].kaistaPituusHaitta)
-            .isEqualTo(KaistajarjestelynPituus.KOLME)
-        assertThat(createdHanke.alueet[1].meluHaitta).isEqualTo(Haitta13.KOLME)
-        assertThat(createdHanke.alueet[1].polyHaitta).isEqualTo(Haitta13.KOLME)
-        assertThat(createdHanke.alueet[1].tarinaHaitta).isEqualTo(Haitta13.KOLME)
-        assertThat(createdHanke.alueet[1].geometriat).isNotNull
+        assertThat(alue.kaistaPituusHaitta).isEqualTo(KaistajarjestelynPituus.KOLME)
+        assertThat(alue.meluHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(alue.polyHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(alue.tarinaHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(alue.geometriat).isNotNull
     }
+
+    @Test
+    fun `deleteHanke creates audit log entries for deleted hanke`() {
+        val hanke = hankeService.createHanke(HankeFactory.create(id = null).withHankealue())
+        // Update needed for generating TormaystarkasteluTulos
+        hankeService.updateHanke(hanke)
+        val hankeWithTulos = hankeService.loadHanke(hanke.hankeTunnus!!)!!
+        assertEquals(0, auditLogRepository.count())
+        TestUtils.addMockedRequestIp()
+
+        hankeService.deleteHanke(hankeWithTulos, "testUser")
+
+        val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
+        assertEquals(1, hankeLogs.size)
+        val hankeLog = hankeLogs[0]
+        assertFalse(hankeLog.isSent)
+        assertThat(hankeLog.createdAt).isCloseToUtcNow(byLessThan(1, ChronoUnit.MINUTES))
+        val event = hankeLog.message.auditEvent
+        assertThat(event.dateTime).isCloseToUtcNow(byLessThan(1, ChronoUnit.MINUTES))
+        assertEquals(Operation.DELETE, event.operation)
+        assertEquals(Status.SUCCESS, event.status)
+        assertNull(event.failureDescription)
+        assertEquals("1", event.appVersion)
+        assertEquals("testUser", event.actor.userId)
+        assertEquals(UserRole.USER, event.actor.role)
+        assertEquals("127.0.0.1", event.actor.ipAddress)
+        assertEquals(hanke.id?.toString(), event.target.id)
+        assertEquals(ObjectType.HANKE, event.target.type)
+        assertNull(event.target.objectAfter)
+        val expectedObject =
+            """{"id":${hankeWithTulos.id},
+               |"hankeTunnus":"${hankeWithTulos.hankeTunnus}",
+               |"onYKTHanke":true,
+               |"nimi":"Hämeentien perusparannus ja katuvalot",
+               |"kuvaus":"lorem ipsum dolor sit amet...",
+               |"alkuPvm":"2023-02-20T00:00:00Z",
+               |"loppuPvm":"2023-02-21T00:00:00Z",
+               |"vaihe":"OHJELMOINTI",
+               |"suunnitteluVaihe":null,
+               |"version":1,
+               |"tyomaaKatuosoite":"Testikatu 1",
+               |"tyomaaTyyppi":["VESI", "MUU"],
+               |"tyomaaKoko":"LAAJA_TAI_USEA_KORTTELI",
+               |"alueet": [
+               |  {
+               |     "id": ${hankeWithTulos.alueet[0].id},
+               |     "hankeId": ${hankeWithTulos.id},
+               |     "haittaAlkuPvm":"2023-02-20T00:00:00Z",
+               |     "haittaLoppuPvm":"2023-02-21T00:00:00Z",
+               |     "kaistaHaitta":"KAKSI",
+               |     "kaistaPituusHaitta":"NELJA",
+               |     "meluHaitta":"YKSI",
+               |     "polyHaitta":"KAKSI",
+               |     "tarinaHaitta":"KOLME"
+               |  }
+               |],
+               |"tormaystarkasteluTulos":{
+               |"perusIndeksi":1.4,
+               |"pyorailyIndeksi":1.0,
+               |"joukkoliikenneIndeksi":1.0,
+               |"liikennehaittaIndeksi":{"indeksi":1.4,"tyyppi":"PERUSINDEKSI"}
+               |}}""".trimMargin()
+        JSONAssert.assertEquals(
+            expectedObject,
+            event.target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
+        )
+    }
+
+    @Test
+    fun `deleteHanke creates audit log entries for deleted yhteystiedot`() {
+        assertEquals(0, auditLogRepository.count())
+        val hanke =
+            hankeService.createHanke(
+                HankeFactory.create(id = null, hankeTunnus = null).withYhteystiedot { it.id = null }
+            )
+        assertEquals(3, auditLogRepository.count())
+        TestUtils.addMockedRequestIp()
+
+        hankeService.deleteHanke(hanke, "testUser")
+
+        val logs = auditLogRepository.findByType(ObjectType.YHTEYSTIETO)
+        assertEquals(6, logs.size)
+        val deleteLogs = logs.filter { it.message.auditEvent.operation == Operation.DELETE }
+        assertThat(deleteLogs).hasSize(3).allSatisfy { log ->
+            assertFalse(log.isSent)
+            assertThat(log.createdAt).isCloseToUtcNow(byLessThan(1, ChronoUnit.MINUTES))
+            val event = log.message.auditEvent
+            assertThat(event.dateTime).isCloseToUtcNow(byLessThan(1, ChronoUnit.MINUTES))
+            assertEquals(Status.SUCCESS, event.status)
+            assertNull(event.failureDescription)
+            assertEquals("1", event.appVersion)
+            assertEquals("testUser", event.actor.userId)
+            assertEquals(UserRole.USER, event.actor.role)
+            assertEquals("127.0.0.1", event.actor.ipAddress)
+        }
+        val omistajaId = hanke.omistajat[0].id!!
+        val omistajaEvent = deleteLogs.findByTargetId(omistajaId).message.auditEvent
+        JSONAssert.assertEquals(
+            expectedYhteystietoDeleteLogObject(omistajaId, 1),
+            omistajaEvent.target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
+        )
+        val arvioijaId = hanke.arvioijat[0].id!!
+        val arvioijaEvent = deleteLogs.findByTargetId(arvioijaId).message.auditEvent
+        JSONAssert.assertEquals(
+            expectedYhteystietoDeleteLogObject(arvioijaId, 2),
+            arvioijaEvent.target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
+        )
+        val toteuttajaId = hanke.toteuttajat[0].id!!
+        val toteuttajaEvent = deleteLogs.findByTargetId(toteuttajaId).message.auditEvent
+        JSONAssert.assertEquals(
+            expectedYhteystietoDeleteLogObject(toteuttajaId, 3),
+            toteuttajaEvent.target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
+        )
+    }
+
+    private fun List<AuditLogEntryEntity>.findByTargetId(id: Int): AuditLogEntryEntity =
+        this.filter { it.message.auditEvent.target.id == id.toString() }[0]
+
+    /**
+     * Creates the logged object with the same content as
+     * [fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createDifferentiated].
+     */
+    private fun expectedYhteystietoDeleteLogObject(id: Int?, i: Int) =
+        """{
+           |"id":$id,
+           |"sukunimi":"suku$i",
+           |"etunimi":"etu$i",
+           |"email":"email$i",
+           |"puhelinnumero":"010$i$i$i$i$i$i$i",
+           |"organisaatioId":$i,
+           |"organisaatioNimi":"org$i",
+           |"osasto":"osasto$i"
+           |}""".trimMargin()
 
     /**
      * Fills a new Hanke domain object with test values and returns it. The audit and id/tunnus
@@ -782,5 +915,15 @@ class HankeServiceITests : DatabaseTest() {
                 createdBy = null,
                 createdAt = null,
             )
-            .withHaitta()
+            .withHankealue()
+
+    /**
+     * Find all audit logs for a specific object type. Getting all and filtering would obviously not
+     * be acceptable in production, but in tests we usually have a very limited number of entities
+     * at any one test.
+     *
+     * This way we don't have to add a new repository method only used in tests.
+     */
+    fun AuditLogRepository.findByType(type: ObjectType) =
+        this.findAll().filter { it.message.auditEvent.target.type == type }
 }

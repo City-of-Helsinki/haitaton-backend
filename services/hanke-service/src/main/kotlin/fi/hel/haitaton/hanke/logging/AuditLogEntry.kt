@@ -47,6 +47,7 @@ enum class ObjectType {
     ALLU_CUSTOMER,
     ALLU_CONTACT,
     GDPR_RESPONSE,
+    HANKE,
 }
 
 enum class UserRole {
@@ -56,25 +57,23 @@ enum class UserRole {
 
 /** Flat [AuditLogMessage] for better ergonomics. */
 data class AuditLogEntry(
-    val dateTime: OffsetDateTime? = OffsetDateTime.now(),
     val operation: Operation,
     val status: Status,
     val failureDescription: String? = null,
     val userId: String? = null,
     val userRole: UserRole = UserRole.USER,
-    val ipAddress: String? = null,
     val objectId: String? = null,
     val objectType: ObjectType,
     val objectBefore: String? = null,
     val objectAfter: String? = null,
 ) {
     // TODO: There will be a centralized place for object mappers. This should be moved there.
-    fun toEntity(): AuditLogEntryEntity =
+    fun toEntity(dateTime: OffsetDateTime, ipAddress: String?): AuditLogEntryEntity =
         AuditLogEntryEntity(
             message =
                 AuditLogMessage(
                     AuditLogEvent(
-                        dateTime = dateTime!!,
+                        dateTime = dateTime,
                         operation = operation,
                         status = status,
                         failureDescription = failureDescription,
