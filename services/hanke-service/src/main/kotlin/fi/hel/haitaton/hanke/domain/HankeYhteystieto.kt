@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.domain
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
+import fi.hel.haitaton.hanke.NotInChangeLogView
 import java.time.ZonedDateTime
 
 // e.g. omistaja, arvioija, toteuttaja
@@ -19,10 +20,10 @@ data class HankeYhteystieto(
     @JsonView(ChangeLogView::class) var organisaatioId: Int?,
     @JsonView(ChangeLogView::class) var organisaatioNimi: String?,
     @JsonView(ChangeLogView::class) var osasto: String?,
-    var createdBy: String? = null,
-    var createdAt: ZonedDateTime? = null,
-    var modifiedBy: String? = null,
-    var modifiedAt: ZonedDateTime? = null
+    @JsonView(NotInChangeLogView::class) var createdBy: String? = null,
+    @JsonView(NotInChangeLogView::class) var createdAt: ZonedDateTime? = null,
+    @JsonView(NotInChangeLogView::class) var modifiedBy: String? = null,
+    @JsonView(NotInChangeLogView::class) var modifiedAt: ZonedDateTime? = null
 ) : HasId<Int> {
 
     /**

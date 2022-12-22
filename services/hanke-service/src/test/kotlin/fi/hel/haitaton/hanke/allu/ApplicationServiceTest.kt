@@ -2,9 +2,7 @@ package fi.hel.haitaton.hanke.allu
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import com.fasterxml.jackson.module.kotlin.treeToValue
-import fi.hel.haitaton.hanke.OBJECT_MAPPER
-import fi.hel.haitaton.hanke.asJsonNode
+import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
@@ -18,13 +16,11 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
 private const val username = "test"
 
 @ExtendWith(SpringExtension::class)
-@WithMockUser(username)
 class ApplicationServiceTest {
     private val applicationRepo: ApplicationRepository = mockk()
     private val cableReportService: CableReportService = mockk()
@@ -48,9 +44,10 @@ class ApplicationServiceTest {
 
     @Test
     fun create() {
-        val applicationData = "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonNode()
+        val applicationData: CableReportApplicationData =
+            "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
         val dto =
-            ApplicationDto(
+            Application(
                 id = null,
                 alluid = null,
                 applicationType = ApplicationType.CABLE_REPORT,
@@ -59,8 +56,8 @@ class ApplicationServiceTest {
         every { cableReportService.create(any()) } returns 42
         every { applicationRepo.save(any()) } answers
             {
-                val application = firstArg<AlluApplication>()
-                AlluApplication(
+                val application: ApplicationEntity = firstArg()
+                ApplicationEntity(
                     id = 1,
                     alluid = application.alluid,
                     userId = application.userId,
@@ -73,18 +70,15 @@ class ApplicationServiceTest {
 
         assertThat(created.id).isEqualTo(1)
         assertThat(created.alluid).isEqualTo(42)
-        val expectedApplication =
-            OBJECT_MAPPER.treeToValue<CableReportApplication>(applicationData)!!
-        verify {
-            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
-        }
+        verify { disclosureLogService.saveDisclosureLogsForAllu(applicationData, Status.SUCCESS) }
     }
 
     @Test
     fun `updateApplicationData saves disclosure logs when updating Allu data`() {
-        val applicationData = "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonNode()
+        val applicationData: CableReportApplicationData =
+            "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
         val applicationEntity =
-            AlluApplication(
+            ApplicationEntity(
                 id = 3,
                 alluid = 42,
                 userId = username,
@@ -98,18 +92,15 @@ class ApplicationServiceTest {
 
         service.updateApplicationData(3, applicationData, username)
 
-        val expectedApplication =
-            OBJECT_MAPPER.treeToValue<CableReportApplication>(applicationData)!!
-        verify {
-            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
-        }
+        verify { disclosureLogService.saveDisclosureLogsForAllu(applicationData, Status.SUCCESS) }
     }
 
     @Test
     fun `sendApplication saves disclosure logs for successful attempts`() {
-        val applicationData = "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonNode()
+        val applicationData: CableReportApplicationData =
+            "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
         val applicationEntity =
-            AlluApplication(
+            ApplicationEntity(
                 id = 3,
                 alluid = null,
                 userId = username,
@@ -120,12 +111,9 @@ class ApplicationServiceTest {
         every { applicationRepo.save(any()) } answers { firstArg() }
         every { cableReportService.create(any()) } returns 42
 
-        service.sendApplication(3)
+        service.sendApplication(3, username)
 
-        val expectedApplication =
-            OBJECT_MAPPER.treeToValue<CableReportApplication>(applicationData)!!.apply {
-                pendingOnClient = false
-            }
+        val expectedApplication = applicationData.copy(pendingOnClient = false)
         verify {
             disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
         }
@@ -133,9 +121,10 @@ class ApplicationServiceTest {
 
     @Test
     fun `sendApplication saves disclosure logs for failed attempts`() {
-        val applicationData = "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonNode()
+        val applicationData: CableReportApplicationData =
+            "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
         val applicationEntity =
-            AlluApplication(
+            ApplicationEntity(
                 id = 3,
                 alluid = null,
                 userId = username,
@@ -145,12 +134,9 @@ class ApplicationServiceTest {
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
         every { cableReportService.create(any()) } throws RuntimeException()
 
-        assertThrows<RuntimeException> { service.sendApplication(3) }
+        assertThrows<RuntimeException> { service.sendApplication(3, username) }
 
-        val expectedApplication =
-            OBJECT_MAPPER.treeToValue<CableReportApplication>(applicationData)!!.apply {
-                pendingOnClient = false
-            }
+        val expectedApplication = applicationData.copy(pendingOnClient = false)
         verify {
             disclosureLogService.saveDisclosureLogsForAllu(
                 expectedApplication,
@@ -162,9 +148,10 @@ class ApplicationServiceTest {
 
     @Test
     fun `sendApplication doesn't save disclosure logs for login errors`() {
-        val applicationData = "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonNode()
+        val applicationData: CableReportApplicationData =
+            "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
         val applicationEntity =
-            AlluApplication(
+            ApplicationEntity(
                 id = 3,
                 alluid = null,
                 userId = username,
@@ -173,11 +160,8 @@ class ApplicationServiceTest {
             )
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
         every { cableReportService.create(any()) } throws AlluLoginException(RuntimeException())
-        OBJECT_MAPPER.treeToValue<CableReportApplication>(applicationData)!!.apply {
-            pendingOnClient = false
-        }
 
-        assertThrows<AlluLoginException> { service.sendApplication(3) }
+        assertThrows<AlluLoginException> { service.sendApplication(3, username) }
 
         verify { disclosureLogService wasNot called }
     }

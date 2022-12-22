@@ -1,11 +1,35 @@
 package fi.hel.haitaton.hanke.allu
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.annotation.JsonView
+import fi.hel.haitaton.hanke.ChangeLogView
+import fi.hel.haitaton.hanke.NotInChangeLogView
 import java.time.ZonedDateTime
 import org.geojson.GeometryCollection
 
-data class CableReportApplication(
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "applicationType",
+    visible = true
+)
+@JsonSubTypes(
+    JsonSubTypes.Type(value = CableReportApplicationData::class, name = "CABLE_REPORT"),
+)
+sealed interface ApplicationData {
+    val applicationType: ApplicationType
+    val name: String
+}
+
+@JsonView(ChangeLogView::class)
+data class CableReportApplicationData(
+    @JsonView(NotInChangeLogView::class) override val applicationType: ApplicationType,
+
     // Common, required
-    val name: String,
+    override val name: String,
     val customerWithContacts: CustomerWithContacts,
     val geometry: GeometryCollection,
     val startTime: ZonedDateTime,
@@ -31,9 +55,9 @@ data class CableReportApplication(
     var maintenanceWork: Boolean = false,
     var emergencyWork: Boolean = false,
     var propertyConnectivity: Boolean = false, // tontti-/kiinteistöliitos
-)
+) : ApplicationData
 
 data class CableReportInformationRequestResponse(
-    val applicationData: CableReportApplication,
+    val applicationData: CableReportApplicationData,
     val updatedFields: List<InformationRequestFieldKey>
 )

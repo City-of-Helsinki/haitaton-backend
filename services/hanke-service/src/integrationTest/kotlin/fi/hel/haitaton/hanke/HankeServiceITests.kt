@@ -1031,7 +1031,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals("1", event.appVersion)
         assertEquals("test7358", event.actor.userId)
         assertEquals(UserRole.USER, event.actor.role)
-        assertEquals("127.0.0.1", event.actor.ipAddress)
+        assertEquals(TestUtils.mockedIp, event.actor.ipAddress)
         assertEquals(hanke.id?.toString(), event.target.id)
         assertEquals(ObjectType.HANKE, event.target.type)
         val expectedObjectBefore =

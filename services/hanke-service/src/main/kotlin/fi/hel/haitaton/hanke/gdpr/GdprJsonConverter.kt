@@ -1,9 +1,8 @@
 package fi.hel.haitaton.hanke.gdpr
 
-import com.fasterxml.jackson.databind.JsonNode
-import fi.hel.haitaton.hanke.OBJECT_MAPPER
-import fi.hel.haitaton.hanke.allu.ApplicationDto
-import fi.hel.haitaton.hanke.allu.CableReportApplication
+import fi.hel.haitaton.hanke.allu.Application
+import fi.hel.haitaton.hanke.allu.ApplicationData
+import fi.hel.haitaton.hanke.allu.CableReportApplicationData
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
@@ -19,7 +18,7 @@ import org.springframework.stereotype.Component
 class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
 
     fun createGdprJson(
-        applications: List<ApplicationDto>,
+        applications: List<Application>,
         hankkeet: List<Hanke>,
         userInfo: UserInfo
     ): CollectionNode? {
@@ -119,14 +118,13 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
     private fun getIntNode(key: String, value: Int?): IntNode? = value?.let { IntNode(key, value) }
 
     internal fun getUserInfosFromApplication(
-        applicationData: JsonNode,
+        applicationData: ApplicationData,
         userInfo: UserInfo
     ): List<GdprInfo> {
-        val parsedData =
-            OBJECT_MAPPER.treeToValue(applicationData, CableReportApplication::class.java)
-
-        return listOf(parsedData.customerWithContacts, parsedData.contractorWithContacts).flatMap {
-            getGdprInfosFromCustomerWithContacts(it, userInfo)
+        return when (applicationData) {
+            is CableReportApplicationData ->
+                listOf(applicationData.customerWithContacts, applicationData.contractorWithContacts)
+                    .flatMap { getGdprInfosFromCustomerWithContacts(it, userInfo) }
         }
     }
 
