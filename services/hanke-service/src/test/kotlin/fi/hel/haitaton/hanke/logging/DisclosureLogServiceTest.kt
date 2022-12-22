@@ -1,9 +1,8 @@
 package fi.hel.haitaton.hanke.logging
 
-import fi.hel.haitaton.hanke.OBJECT_MAPPER
-import fi.hel.haitaton.hanke.allu.ApplicationDto
+import fi.hel.haitaton.hanke.allu.Application
 import fi.hel.haitaton.hanke.allu.ApplicationType
-import fi.hel.haitaton.hanke.allu.CableReportApplication
+import fi.hel.haitaton.hanke.allu.CableReportApplicationData
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
@@ -188,7 +187,7 @@ internal class DisclosureLogServiceTest {
         val application =
             applicationDto(
                 applicationData =
-                    AlluDataFactory.createCableReportApplication(
+                    AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
                         contractorWithContacts = contractorWithoutContacts
                     )
@@ -211,7 +210,7 @@ internal class DisclosureLogServiceTest {
         val application =
             applicationDto(
                 applicationData =
-                    AlluDataFactory.createCableReportApplication(
+                    AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
                         contractorWithContacts = contractorWithoutContacts
                     )
@@ -233,7 +232,7 @@ internal class DisclosureLogServiceTest {
         val application =
             applicationDto(
                 applicationData =
-                    AlluDataFactory.createCableReportApplication(
+                    AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
                         contractorWithContacts = contractorWithoutContacts
                     )
@@ -252,7 +251,7 @@ internal class DisclosureLogServiceTest {
             CustomerWithContacts(AlluDataFactory.createPersonCustomer(), listOf())
         val application =
             applicationDto(
-                AlluDataFactory.createCableReportApplication(
+                AlluDataFactory.createCableReportApplicationData(
                     customerWithContacts = customerWithoutContacts,
                     contractorWithContacts = contractorWithoutContacts
                 )
@@ -269,7 +268,7 @@ internal class DisclosureLogServiceTest {
 
     @Test
     fun `saveDisclosureLogsForApplication with contacts logs contacts`() {
-        val cableReportApplication = AlluDataFactory.createCableReportApplication()
+        val cableReportApplication = AlluDataFactory.createCableReportApplicationData()
         val contact = cableReportApplication.customerWithContacts.contacts[0]
         val expectedLogs = listOf(AuditLogEntryFactory.createReadEntryForContact(contact))
         val application = applicationDto(applicationData = cableReportApplication)
@@ -282,7 +281,7 @@ internal class DisclosureLogServiceTest {
     @ParameterizedTest(name = "{displayName}({arguments})")
     @EnumSource(Status::class)
     fun `saveDisclosureLogsForAllu saves logs with the given status`(expectedStatus: Status) {
-        val cableReportApplication = AlluDataFactory.createCableReportApplication()
+        val cableReportApplication = AlluDataFactory.createCableReportApplicationData()
         val contact = cableReportApplication.customerWithContacts.contacts[0]
         val expectedLogs =
             listOf(
@@ -316,11 +315,11 @@ internal class DisclosureLogServiceTest {
             }
         val applications =
             listOf(
-                    AlluDataFactory.createCableReportApplication(
+                    AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customersWithContacts[0],
                         contractorWithContacts = customersWithContacts[1],
                     ),
-                    AlluDataFactory.createCableReportApplication(
+                    AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customersWithContacts[2],
                         contractorWithContacts = customersWithContacts[3],
                     )
@@ -346,11 +345,11 @@ internal class DisclosureLogServiceTest {
     private infix fun <T> List<T>.equalsIgnoreOrder(other: List<T>): Boolean =
         this.size == other.size && this.toSet() == other.toSet()
 
-    private fun applicationDto(applicationData: CableReportApplication): ApplicationDto =
-        ApplicationDto(
+    private fun applicationDto(applicationData: CableReportApplicationData): Application =
+        Application(
             id = 1,
             alluid = null,
             applicationType = ApplicationType.CABLE_REPORT,
-            applicationData = OBJECT_MAPPER.valueToTree(applicationData)
+            applicationData = applicationData
         )
 }

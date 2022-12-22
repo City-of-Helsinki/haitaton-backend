@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
@@ -14,7 +13,6 @@ const val COORDINATE_SYSTEM_URN = "urn:ogc:def:crs:EPSG::$SRID"
 
 val OBJECT_MAPPER =
     jacksonObjectMapper().apply {
-        this.disable(MapperFeature.DEFAULT_VIEW_INCLUSION)
         this.registerModule(JavaTimeModule())
         this.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
     }

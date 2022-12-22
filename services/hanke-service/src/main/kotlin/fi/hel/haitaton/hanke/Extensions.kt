@@ -21,6 +21,8 @@ fun Any?.toChangeLogJsonString(): String =
 // These marker classes are used to get a limited set of info for logging.
 open class ChangeLogView
 
+open class NotInChangeLogView
+
 /** Rounds a Float to one decimal. */
 fun Float.roundToOneDecimal(): Float {
     return BigDecimal(this.toDouble()).setScale(1, RoundingMode.HALF_UP).toFloat()

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.Haitta13
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
+import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import java.time.ZonedDateTime
@@ -17,7 +18,7 @@ data class Hankealue(
     @JsonView(ChangeLogView::class) var hankeId: Int? = null,
     @JsonView(ChangeLogView::class) var haittaAlkuPvm: ZonedDateTime? = null,
     @JsonView(ChangeLogView::class) var haittaLoppuPvm: ZonedDateTime? = null,
-    var geometriat: Geometriat? = null,
+    @JsonView(NotInChangeLogView::class) var geometriat: Geometriat? = null,
     @JsonView(ChangeLogView::class)
     var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
     @JsonView(ChangeLogView::class) var kaistaPituusHaitta: KaistajarjestelynPituus? = null,

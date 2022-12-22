@@ -4,12 +4,18 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.readValue
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
+import java.nio.charset.StandardCharsets
+import org.springframework.test.web.servlet.ResultActions
 
 fun <T> String.asJsonResource(type: Class<T>): T =
     OBJECT_MAPPER.readValue(getResourceAsText(this), type)
 
 inline fun <reified T : Any> String.asJsonResource(): T =
     OBJECT_MAPPER.readValue(getResourceAsText(this))
+
+/** Read the response body from a MockMvc result and deserialize from JSON. */
+inline fun <reified T> ResultActions.andReturnBody(): T =
+    OBJECT_MAPPER.readValue(andReturn().response.getContentAsString(StandardCharsets.UTF_8))
 
 fun String.asJsonNode(): JsonNode = OBJECT_MAPPER.readTree(getResourceAsText(this))
 

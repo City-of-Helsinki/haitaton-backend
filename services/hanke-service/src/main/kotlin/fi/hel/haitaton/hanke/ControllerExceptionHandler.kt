@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
 import io.sentry.Sentry
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
+import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -33,7 +34,7 @@ class ControllerExceptionHandler {
     }
 
     @ExceptionHandler(HankeYhteystietoProcessingRestrictedException::class)
-    // Using 451 (since the restriction is typically due to legal reasons.
+    // Using 451 (since the restriction is typically due to legal reasons).
     // However, in some cases 403 forbidden might be considered correct response, too.
     @ResponseStatus(HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS)
     fun hankeYhteystietoProcessingRestricted(
@@ -48,6 +49,15 @@ class ControllerExceptionHandler {
     @ExceptionHandler(IllegalArgumentException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     fun illegalArgumentException(ex: IllegalArgumentException): HankeError {
+        logger.error(ex) { ex.message }
+        // notify Sentry
+        Sentry.captureException(ex)
+        return HankeError.HAI0003
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun httpMessageNotReadableException(ex: HttpMessageNotReadableException): HankeError {
         logger.error(ex) { ex.message }
         // notify Sentry
         Sentry.captureException(ex)

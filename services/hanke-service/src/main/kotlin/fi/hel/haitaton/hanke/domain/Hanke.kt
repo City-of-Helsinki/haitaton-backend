@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.Haitta13
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
+import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.SaveType
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
@@ -32,19 +33,19 @@ data class Hanke(
     @JsonView(ChangeLogView::class) var vaihe: Vaihe?,
     @JsonView(ChangeLogView::class) var suunnitteluVaihe: SuunnitteluVaihe?,
     @JsonView(ChangeLogView::class) var version: Int?,
-    val createdBy: String?,
-    val createdAt: ZonedDateTime?,
-    var modifiedBy: String?,
-    var modifiedAt: ZonedDateTime?,
+    @JsonView(NotInChangeLogView::class) val createdBy: String?,
+    @JsonView(NotInChangeLogView::class) val createdAt: ZonedDateTime?,
+    @JsonView(NotInChangeLogView::class) var modifiedBy: String?,
+    @JsonView(NotInChangeLogView::class) var modifiedAt: ZonedDateTime?,
 
     /** Default for machine API's. UI should always give the save type. */
-    var saveType: SaveType? = SaveType.SUBMIT
+    @JsonView(NotInChangeLogView::class) var saveType: SaveType? = SaveType.SUBMIT
 ) : HasId<Int> {
 
     // --------------- Yhteystiedot -----------------
-    var omistajat = mutableListOf<HankeYhteystieto>()
-    var arvioijat = mutableListOf<HankeYhteystieto>()
-    var toteuttajat = mutableListOf<HankeYhteystieto>()
+    @JsonView(NotInChangeLogView::class) var omistajat = mutableListOf<HankeYhteystieto>()
+    @JsonView(NotInChangeLogView::class) var arvioijat = mutableListOf<HankeYhteystieto>()
+    @JsonView(NotInChangeLogView::class) var toteuttajat = mutableListOf<HankeYhteystieto>()
 
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
     @JsonView(ChangeLogView::class) var tyomaaKatuosoite: String? = null
@@ -74,7 +75,7 @@ data class Hanke(
 
     @JsonView(ChangeLogView::class) var alueet = mutableListOf<Hankealue>()
 
-    var permissions: List<PermissionCode>? = null
+    @JsonView(NotInChangeLogView::class) var permissions: List<PermissionCode>? = null
 
     /** Number of days between haittaAlkuPvm and haittaLoppuPvm (incl. both days) */
     val haittaAjanKestoDays: Int?
@@ -86,16 +87,18 @@ data class Hanke(
                 null
             }
 
-    val liikennehaittaindeksi: LiikennehaittaIndeksiType? by lazy {
+    @JsonView(NotInChangeLogView::class)
+    fun getLiikennehaittaindeksi(): LiikennehaittaIndeksiType? =
         tormaystarkasteluTulos?.liikennehaittaIndeksi
-    }
 
     @JsonView(ChangeLogView::class) var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
 
+    @JsonView(NotInChangeLogView::class)
     fun getHaittaAlkuPvm(): ZonedDateTime? {
         return alueet.map { it.haittaAlkuPvm }.filterNotNull().minOfOrNull { it }
     }
 
+    @JsonView(NotInChangeLogView::class)
     fun getHaittaLoppuPvm(): ZonedDateTime? {
         return alueet.map { it.haittaLoppuPvm }.filterNotNull().maxOfOrNull { it }
     }

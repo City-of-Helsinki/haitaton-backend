@@ -6,11 +6,12 @@ import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
-import fi.hel.haitaton.hanke.allu.ApplicationDto
+import fi.hel.haitaton.hanke.allu.Application
 import fi.hel.haitaton.hanke.allu.ApplicationType
+import fi.hel.haitaton.hanke.allu.CableReportApplicationData
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
-import fi.hel.haitaton.hanke.asJsonNode
+import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
@@ -40,8 +41,9 @@ internal class GdprJsonConverterTest {
 
     @Test
     fun `createGdprJson returns null when no names match`() {
-        val applicationData = "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonNode()
-        val application = ApplicationDto(null, null, ApplicationType.CABLE_REPORT, applicationData)
+        val applicationData: CableReportApplicationData =
+            "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
+        val application = Application(null, null, ApplicationType.CABLE_REPORT, applicationData)
         val hanke =
             HankeFactory.create().withYhteystiedot(
                 omistajat = listOf(1, 2),
@@ -57,8 +59,9 @@ internal class GdprJsonConverterTest {
 
     @Test
     fun `createGdprJson combines identical results when there are several infos`() {
-        val applicationData = "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonNode()
-        val application = ApplicationDto(null, null, ApplicationType.CABLE_REPORT, applicationData)
+        val applicationData: CableReportApplicationData =
+            "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
+        val application = Application(null, null, ApplicationType.CABLE_REPORT, applicationData)
         val hanke =
             HankeFactory.create().withYhteystiedot(
                 omistajat = listOf(1, 2),
@@ -264,7 +267,8 @@ internal class GdprJsonConverterTest {
 
     @Test
     fun `getUserInfosFromApplication gets customer and contact info from application`() {
-        val applicationData = "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonNode()
+        val applicationData: CableReportApplicationData =
+            "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
 
         val result = gdprJsonConverter.getUserInfosFromApplication(applicationData, teppoUserInfo())
 

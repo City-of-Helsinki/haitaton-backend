@@ -24,7 +24,9 @@ enum class HankeError(val errorMessage: String) {
     HAI1020("HankeYhteystieto not found"),
     HAI1029("HankeYhteystieto personal data processing restricted"),
     HAI1030("Problem with classification of geometries"),
-    HAI1031("Invalid state: Missing needed data");
+    HAI1031("Invalid state: Missing needed data"),
+    HAI2001("Application not found"),
+    HAI2002("Incompatible application data type");
 
     val errorCode: String
         get() = name
