@@ -29,6 +29,7 @@ class YlreKatuosat:
         df["ylre_street_area"] = 1
         df["fid"] = df.reset_index().index
         self._df = df.set_index("fid")
+        self._df = self._df.astype({"ylre_street_area": "int32"})
 
     def process(self):
         buffers = self._cfg.buffer(self._module)
@@ -65,4 +66,9 @@ class YlreKatuosat:
         self._df.to_file(file_name, driver="GPKG")
 
         file_name = self._cfg.target_buffer_file(self._module)
-        self._process_result.to_file(file_name, driver="GPKG")
+
+        polygons = self._process_result.reset_index()
+        schema = gpd.io.file.infer_schema(polygons)
+        schema["properties"]["ylre_street_area"] = "int32"
+
+        polygons.to_file(file_name, schema=schema, driver="GPKG")
