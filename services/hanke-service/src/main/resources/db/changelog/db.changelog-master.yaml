@@ -61,3 +61,5 @@ databaseChangeLog:
       file: db/changelog/changesets/015-update-hanke-fields.yml
   - include:
       file: db/changelog/changesets/016-rename-hankegeometriat.yml
+  - include:
+      file: db/changelog/changesets/017-create-role-table.yml

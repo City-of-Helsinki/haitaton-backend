@@ -22,8 +22,6 @@ internal class HanketunnusServiceImplITest : DatabaseTest() {
         val hanketunnus1 = hanketunnusService.newHanketunnus()
         val hanketunnus2 = hanketunnusService.newHanketunnus()
 
-        println("hanketunnus 1: $hanketunnus1")
-        println("hanketunnus 2: $hanketunnus2")
         val serial1 = hanketunnus1.substringAfterLast('-').toInt()
         val serial2 = hanketunnus2.substringAfterLast('-').toInt()
         // hanketunnus pattern is HAIYY-N where YY is the current year (2 last digits)

@@ -57,6 +57,9 @@ open class HankeServiceImpl(
     private val hankeLoggingService: HankeLoggingService,
 ) : HankeService {
 
+    override fun getHankeId(hankeTunnus: String): Int? =
+        hankeRepository.findByHankeTunnus(hankeTunnus)?.id
+
     override fun loadHanke(hankeTunnus: String) =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let {
             createHankeDomainObjectFromEntity(it)
@@ -118,8 +121,6 @@ open class HankeServiceImpl(
         return savedHanke
     }
 
-    // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO UPDATE A HANKE:
-    // @PreAuthorize("#hanke.createdBy == authentication.name")
     @Transactional
     override fun updateHanke(hanke: Hanke): Hanke {
         if (hanke.hankeTunnus == null) error("Somehow got here with hanke without hanke-tunnus")
