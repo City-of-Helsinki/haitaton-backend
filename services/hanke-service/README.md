@@ -39,6 +39,9 @@ setup can not currently support authentication, so can not test the actions with
 > http://localhost:8080/swagger-ui.html \
 > http://localhost:8080/v3/api-docs
 
+When running the services with Docker Compose, the Swagger UI can be accessed with
+[http://localhost:3000/swagger-ui/index.html](http://localhost:3000/swagger-ui/index.html).
+
 ### Spotless formatter
 
 The Spotless Gradle plugin checks during the build stage that all code is formatted with ktfmt. If
