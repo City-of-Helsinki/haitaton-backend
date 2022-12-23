@@ -67,11 +67,11 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
         assertThat(loadedGeometriat).isNotNull()
 
         val createdAt = loadedGeometriat!!.createdAt!!
-        val modifiedAt = loadedGeometriat.modifiedAt!!
         assertAll {
             assertThat(loadedGeometriat!!.version).isEqualTo(0)
             assertThat(loadedGeometriat!!.createdByUserId).isEqualTo(username)
             assertThat(loadedGeometriat!!.modifiedByUserId).isNull()
+            assertThat(loadedGeometriat!!.modifiedAt).isNull()
             assertThat(loadedGeometriat!!.featureCollection!!.features.size).isEqualTo(2)
             assertThat(loadedGeometriat!!.featureCollection!!.features[0].geometry is Point)
             val loadedPoint = loadedGeometriat!!.featureCollection!!.features[0].geometry as Point
@@ -94,7 +94,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
             assertThat(loadedGeometriat.createdByUserId).isEqualTo(username)
             assertThat(loadedGeometriat.createdAt!!.format(DATABASE_TIMESTAMP_FORMAT))
                 .isEqualTo(createdAt.format(DATABASE_TIMESTAMP_FORMAT))
-            assertThat(loadedGeometriat.modifiedAt!!.isAfter(modifiedAt)) // this has changed
+            assertThat(loadedGeometriat.modifiedAt!!).isNotNull() // this has changed
             assertThat(loadedGeometriat.modifiedByUserId).isEqualTo(username)
             assertThat(loadedGeometriat.featureCollection!!.features.size)
                 .isEqualTo(3) // this has increased
