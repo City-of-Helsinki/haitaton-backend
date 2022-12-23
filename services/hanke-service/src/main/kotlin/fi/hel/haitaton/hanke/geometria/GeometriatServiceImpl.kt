@@ -43,6 +43,8 @@ open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) :
                 // CREATE
                 geometriat.createdByUserId = username
                 geometriat.createdAt = now
+                geometriat.modifiedByUserId = null
+                geometriat.modifiedAt = null
                 geometriat.version = 0
                 val created = hankeGeometriaDao.createGeometriat(geometriat)
                 logger.info { "Created new geometries ${created.id}" }

@@ -7,11 +7,13 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.mutate
 import fi.hel.haitaton.hanke.factory.HankeFactory.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
-import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import io.mockk.clearAllMocks
+import io.mockk.confirmVerified
 import io.mockk.every
+import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
@@ -33,17 +35,22 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Autowired private lateinit var hankeService: HankeService
 
-    @Autowired private lateinit var geometriatService: GeometriatService
-
-    @AfterEach
+    @BeforeEach
     fun cleanup() {
         clearAllMocks()
+    }
+
+    @AfterEach
+    fun checkMocks() {
+        confirmVerified(hankeService)
     }
 
     @Test
     // Without mock user, i.e. anonymous
     fun `status ok with unauthenticated user`() {
         performGetHankkeet(listOf()).andExpect(MockMvcResultMatchers.status().isOk)
+
+        verify { hankeService.loadAllHanke() }
     }
 
     @Test
@@ -61,6 +68,8 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("[0]").exists())
             .andExpect(jsonPath("[1]").doesNotExist())
             .andExpect(jsonPath("[0].id").value(123))
+
+        verify { hankeService.loadAllHanke() }
     }
 
     @Test
@@ -83,12 +92,12 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("[0].omistajat[0].puhelinnumero").doesNotExist())
             .andExpect(jsonPath("[0].toteuttajat").doesNotExist())
             .andExpect(jsonPath("[0].arvioijat").doesNotExist())
+
+        verify { hankeService.loadAllHanke() }
     }
 
     private fun performGetHankkeet(hankkeet: List<Hanke>): ResultActions {
         every { hankeService.loadAllHanke() }.returns(hankkeet)
-
-        every { geometriatService.loadGeometriat(any()) }.returns(null)
 
         return mockMvc.perform(
             MockMvcRequestBuilders.get("/public-hankkeet").accept(MediaType.APPLICATION_JSON)

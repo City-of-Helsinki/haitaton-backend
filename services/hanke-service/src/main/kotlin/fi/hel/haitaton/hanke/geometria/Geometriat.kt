@@ -33,9 +33,4 @@ data class Geometriat(
     fun hasFeatures(): Boolean {
         return !featureCollection?.features.isNullOrEmpty()
     }
-
-    /** @return log string containing id, version and the number of geometries */
-    fun toLogString(): String {
-        return toString()
-    }
 }
