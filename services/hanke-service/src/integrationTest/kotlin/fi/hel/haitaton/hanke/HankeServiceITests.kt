@@ -18,6 +18,7 @@ import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.test.TestUtils
+import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import org.assertj.core.api.Assertions.assertThat
@@ -869,12 +870,13 @@ class HankeServiceITests : DatabaseTest() {
                 hankeWithTulos.alueet[0].id,
                 hankeWithTulos.hankeTunnus,
                 1,
-                """{
-               |"perusIndeksi":1.4,
-               |"pyorailyIndeksi":1.0,
-               |"joukkoliikenneIndeksi":1.0,
-               |"liikennehaittaIndeksi":{"indeksi":1.4,"tyyppi":"PERUSINDEKSI"}
-               |}""".trimMargin()
+                tormaystarkasteluTulos =
+                    """{
+                      "perusIndeksi":1.4,
+                      "pyorailyIndeksi":1.0,
+                      "joukkoliikenneIndeksi":1.0,
+                      "liikennehaittaIndeksi":{"indeksi":1.4,"tyyppi":"PERUSINDEKSI"}
+                    }"""
             )
         JSONAssert.assertEquals(
             expectedObject,
@@ -1047,13 +1049,13 @@ class HankeServiceITests : DatabaseTest() {
                 updatedHanke.alueet[0].id,
                 updatedHanke.hankeTunnus,
                 1,
-                """{
-               |"perusIndeksi":1.4,
-               |"pyorailyIndeksi":1.0,
-               |"joukkoliikenneIndeksi":1.0,
-               |"liikennehaittaIndeksi":{"indeksi":1.4,"tyyppi":"PERUSINDEKSI"}
-               |}
-            """.trimIndent()
+                tormaystarkasteluTulos =
+                    """{
+                      "perusIndeksi":1.4,
+                      "pyorailyIndeksi":1.0,
+                      "joukkoliikenneIndeksi":1.0,
+                      "liikennehaittaIndeksi":{"indeksi":1.4,"tyyppi":"PERUSINDEKSI"}
+                    }"""
             )
         JSONAssert.assertEquals(
             expectedObjectAfter,
@@ -1100,39 +1102,39 @@ class HankeServiceITests : DatabaseTest() {
         tormaystarkasteluTulos: String?
     ): String {
         val alue =
-            alueId?.let {
-                """
-               {
+            if (alueId != null) {
+                """{
                   "id": ${alueId},
                   "hankeId": ${id},
-                  "haittaAlkuPvm":"2023-02-20T00:00:00Z",
-                  "haittaLoppuPvm":"2023-02-21T00:00:00Z",
+                  "haittaAlkuPvm":"${nextYear()}-02-20T00:00:00Z",
+                  "haittaLoppuPvm":"${nextYear()}-02-21T00:00:00Z",
                   "kaistaHaitta":"KAKSI",
                   "kaistaPituusHaitta":"NELJA",
                   "meluHaitta":"YKSI",
                   "polyHaitta":"KAKSI",
                   "tarinaHaitta":"KOLME"
-               }
-        """.trimIndent()
+               }"""
+            } else {
+                ""
             }
-                ?: ""
 
-        return """{"id":$id,
-               |"hankeTunnus":"$hankeTunnus",
-               |"onYKTHanke":true,
-               |"nimi":"Hämeentien perusparannus ja katuvalot",
-               |"kuvaus":"lorem ipsum dolor sit amet...",
-               |"alkuPvm":"2023-02-20T00:00:00Z",
-               |"loppuPvm":"2023-02-21T00:00:00Z",
-               |"vaihe":"OHJELMOINTI",
-               |"suunnitteluVaihe":null,
-               |"version":$version,
-               |"tyomaaKatuosoite":"Testikatu 1",
-               |"tyomaaTyyppi":["VESI", "MUU"],
-               |"tyomaaKoko":"LAAJA_TAI_USEA_KORTTELI",
-               |"alueet": [$alue],
-               |"tormaystarkasteluTulos":$tormaystarkasteluTulos
-               |}""".trimMargin()
+        return """{
+                 "id":$id,
+                 "hankeTunnus":"$hankeTunnus",
+                 "onYKTHanke":true,
+                 "nimi":"Hämeentien perusparannus ja katuvalot",
+                 "kuvaus":"lorem ipsum dolor sit amet...",
+                 "alkuPvm":"${nextYear()}-02-20T00:00:00Z",
+                 "loppuPvm":"${nextYear()}-02-21T00:00:00Z",
+                 "vaihe":"OHJELMOINTI",
+                 "suunnitteluVaihe":null,
+                 "version":$version,
+                 "tyomaaKatuosoite":"Testikatu 1",
+                 "tyomaaTyyppi":["VESI", "MUU"],
+                 "tyomaaKoko":"LAAJA_TAI_USEA_KORTTELI",
+                 "alueet": [$alue],
+                 "tormaystarkasteluTulos":$tormaystarkasteluTulos
+               }"""
     }
 
     private fun List<AuditLogEntryEntity>.findByTargetId(id: Int): AuditLogEntryEntity =
@@ -1144,15 +1146,15 @@ class HankeServiceITests : DatabaseTest() {
      */
     private fun expectedYhteystietoDeleteLogObject(id: Int?, i: Int) =
         """{
-           |"id":$id,
-           |"sukunimi":"suku$i",
-           |"etunimi":"etu$i",
-           |"email":"email$i",
-           |"puhelinnumero":"010$i$i$i$i$i$i$i",
-           |"organisaatioId":$i,
-           |"organisaatioNimi":"org$i",
-           |"osasto":"osasto$i"
-           |}""".trimMargin()
+          "id":$id,
+          "sukunimi":"suku$i",
+          "etunimi":"etu$i",
+          "email":"email$i",
+          "puhelinnumero":"010$i$i$i$i$i$i$i",
+          "organisaatioId":$i,
+          "organisaatioNimi":"org$i",
+          "osasto":"osasto$i"
+        }"""
 
     /**
      * Fills a new Hanke domain object with test values and returns it. The audit and id/tunnus
