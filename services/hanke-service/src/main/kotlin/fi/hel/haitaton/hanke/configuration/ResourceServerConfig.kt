@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke
+package fi.hel.haitaton.hanke.configuration
 
 import fi.hel.haitaton.hanke.security.AccessRules
 import org.springframework.boot.autoconfigure.security.oauth2.resource.PrincipalExtractor
@@ -18,7 +18,5 @@ class ResourceServerConfig : ResourceServerConfigurerAdapter() {
         AccessRules.configureHttpAccessRules(http)
     }
 
-    @Bean
-    fun principalExtractor(): PrincipalExtractor = PrincipalExtractor { it["sub"] }
-
+    @Bean fun principalExtractor(): PrincipalExtractor = PrincipalExtractor { it["sub"] }
 }

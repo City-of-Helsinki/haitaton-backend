@@ -34,13 +34,26 @@ for full API description) (and other sub-URLs similarly):
 > http://localhost:8080/hankkeet/<id> \
 > http://localhost:8080/hankkeet/<id>/geometriat
 
+### Swagger UI
+
 Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON). Note though that the swagger
 setup can not currently support authentication, so can not test the actions with it.
-> http://localhost:8080/swagger-ui.html \
-> http://localhost:8080/v3/api-docs
 
-When running the services with Docker Compose, the Swagger UI can be accessed with
-[http://localhost:3000/swagger-ui/index.html](http://localhost:3000/swagger-ui/index.html).
+Locally without Docker:
+- [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
+- [http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)
+
+When running the services with Docker Compose:
+- [http://localhost:3001/api/swagger-ui/index.html](http://localhost:3001/api/swagger-ui/index.html)
+- [http://localhost:3001/api/v3/api-docs](http://localhost:3001/api/v3/api-docs)
+
+On dev:
+- [https://haitaton-dev.agw.arodevtest.hel.fi/api/swagger-ui/index.html](https://haitaton-dev.agw.arodevtest.hel.fi/api/swagger-ui/index.html)
+- [https://haitaton-dev.agw.arodevtest.hel.fi/api/v3/api-docs](https://haitaton-dev.agw.arodevtest.hel.fi/api/v3/api-docs)
+
+On test:
+- [https://haitaton-test.agw.arodevtest.hel.fi/api/swagger-ui/index.html](https://haitaton-test.agw.arodevtest.hel.fi/api/swagger-ui/index.html)
+- [https://haitaton-test.agw.arodevtest.hel.fi/api/v3/api-docs](https://haitaton-test.agw.arodevtest.hel.fi/api/v3/api-docs)
 
 ### Spotless formatter
 
