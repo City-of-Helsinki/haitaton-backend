@@ -19,6 +19,7 @@ import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
+import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import io.mockk.Called
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -634,7 +635,7 @@ class ApplicationServiceITest : DatabaseTest() {
                "orderer": false
              }
            ]
-        """.trimIndent()
+        """
 
     private fun expectedLogObject(
         id: Long?,
@@ -655,8 +656,8 @@ class ApplicationServiceITest : DatabaseTest() {
                   "type": "GeometryCollection",
                   "geometries": []
                 },
-                "startTime": "2023-02-20T23:45:56Z",
-                "endTime": "2023-02-21T00:12:34Z",
+                "startTime": "${nextYear()}-02-20T23:45:56Z",
+                "endTime": "${nextYear()}-02-21T00:12:34Z",
                 "pendingOnClient": true,
                 "identificationNumber": "identification",
                 "clientApplicationKind": "applicationKind",
@@ -676,5 +677,5 @@ class ApplicationServiceITest : DatabaseTest() {
                 "propertyConnectivity": false
               }
             }
-        """.trimIndent()
+        """
 }
