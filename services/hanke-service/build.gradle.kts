@@ -93,6 +93,7 @@ dependencies {
 	testImplementation("org.testcontainers:postgresql:1.15.2")
 	testImplementation("com.squareup.okhttp3:okhttp:4.9.3")
 	testImplementation("com.squareup.okhttp3:mockwebserver:4.9.3")
+	testImplementation("net.pwall.mustache:kotlin-mustache:0.10")
 
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")

@@ -8,22 +8,20 @@ import java.nio.charset.StandardCharsets
 import org.springframework.test.web.servlet.ResultActions
 
 fun <T> String.asJsonResource(type: Class<T>): T =
-    OBJECT_MAPPER.readValue(getResourceAsText(this), type)
+    OBJECT_MAPPER.readValue(this.getResourceAsText(), type)
 
 inline fun <reified T : Any> String.asJsonResource(): T =
-    OBJECT_MAPPER.readValue(getResourceAsText(this))
+    OBJECT_MAPPER.readValue(this.getResourceAsText())
 
 /** Read the response body from a MockMvc result and deserialize from JSON. */
 inline fun <reified T> ResultActions.andReturnBody(): T =
     OBJECT_MAPPER.readValue(andReturn().response.getContentAsString(StandardCharsets.UTF_8))
 
-fun String.asJsonNode(): JsonNode = OBJECT_MAPPER.readTree(getResourceAsText(this))
-
-fun getResourceAsText(path: String): String =
+fun String.getResourceAsText(): String =
     // The class here is arbitrary, could be any class.
     // Using ClassLoader might be cleaner, but it would require changing every resource file
     // path anywhere in the test files.
-    JsonNode::class.java.getResource(path)!!.readText(Charsets.UTF_8)
+    JsonNode::class.java.getResource(this)!!.readText(Charsets.UTF_8)
 
 /**
  * Find all audit logs for a specific object type. Getting all and filtering would obviously not be
@@ -34,6 +32,3 @@ fun getResourceAsText(path: String): String =
  */
 fun AuditLogRepository.findByType(type: ObjectType) =
     this.findAll().filter { it.message.auditEvent.target.type == type }
-
-fun AuditLogRepository.countByType(type: ObjectType) =
-    this.findAll().count { it.message.auditEvent.target.type == type }
