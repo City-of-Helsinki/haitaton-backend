@@ -16,8 +16,6 @@ class HankeLoggingService(private val auditLogService: AuditLogService) {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     fun logDelete(hanke: Hanke, userId: String) {
-        // TODO: Add geometries in auditLogEntry or as separate log entries.
-        //   Waits for the changes in HAI-1273 before implementing.
         val auditLogEntry = AuditLogService.deleteEntry(userId, ObjectType.HANKE, hanke)
         val yhteystietoEntries =
             (hanke.arvioijat + hanke.toteuttajat + hanke.omistajat).map {
