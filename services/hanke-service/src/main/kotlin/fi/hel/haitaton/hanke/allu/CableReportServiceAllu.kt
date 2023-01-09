@@ -96,6 +96,36 @@ class CableReportServiceAllu(
             .next()
     }
 
+    /**
+     * We could send an empty list for application IDs. Allu would then send histories for all
+     * application created by the calling client i.e. Haitaton. This would work great in production.
+     * In other environments, this would cause an endless stream of false errors, since the Allu
+     * test instance is shared for all local, dev and test environments.
+     */
+    override fun getApplicationStatusHistories(
+        applicationIds: List<Int>,
+        eventsAfter: ZonedDateTime,
+    ): List<ApplicationHistory> {
+        val token = login()!!
+        val search = ApplicationHistorySearch(applicationIds, eventsAfter)
+        return webClient
+            .post()
+            .uri("$baseUrl/v2/applicationhistory")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .headers { it.setBearerAuth(token) }
+            .body(Mono.just(search))
+            .retrieve()
+            // API returns an array of ApplicationHistory objects (one for each requested
+            // applicationId)
+            .bodyToFlux(ApplicationHistory::class.java)
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error getting application history from Allu", it)
+            }
+            .collectList()
+            .block()!!
+    }
+
     override fun create(cableReport: CableReportApplicationData): Int {
         val token = login()!!
         return webClient

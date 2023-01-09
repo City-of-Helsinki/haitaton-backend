@@ -1,8 +1,12 @@
 package fi.hel.haitaton.hanke.allu
 
 import assertk.assertThat
+import assertk.assertions.hasClass
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFailure
 import assertk.assertions.isNull
+import fi.hel.haitaton.hanke.OBJECT_MAPPER
+import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import java.time.ZonedDateTime
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -11,6 +15,7 @@ import org.geojson.GeometryCollection
 import org.geojson.LngLatAlt
 import org.geojson.Polygon
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.http.HttpHeaders
@@ -20,8 +25,8 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 
 class CableReportServiceAlluITests {
 
-    lateinit var mockWebServer: MockWebServer
-    lateinit var service: CableReportServiceAllu
+    private lateinit var mockWebServer: MockWebServer
+    private lateinit var service: CableReportServiceAllu
 
     @BeforeEach
     fun setup() {
@@ -84,6 +89,70 @@ class CableReportServiceAlluITests {
         assertThat(createRequest.method).isEqualTo("POST")
         assertThat(createRequest.path).isEqualTo("/v2/cablereports")
         assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer " + stubbedBearer)
+    }
+
+    @Nested
+    inner class GetApplicationStatusHistories {
+        @Test
+        fun `returns application histories`() {
+            val alluids = listOf(12, 13)
+            val eventsAfter = ZonedDateTime.parse("2022-10-10T15:25:34.981654Z")
+            val histories = listOf(ApplicationHistoryFactory.create(applicationId = 12))
+            val stubbedBearer = addStubbedLoginResponse()
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .setBody(OBJECT_MAPPER.writeValueAsString(histories))
+            )
+
+            val response = service.getApplicationStatusHistories(alluids, eventsAfter)
+
+            assertThat(response).isEqualTo(histories)
+            val loginRequest = mockWebServer.takeRequest()
+            assertThat(loginRequest.method).isEqualTo("POST")
+            assertThat(loginRequest.path).isEqualTo("/v2/login")
+            assertThat(loginRequest.getHeader("Authorization")).isNull()
+            val createRequest = mockWebServer.takeRequest()
+            assertThat(createRequest.method).isEqualTo("POST")
+            assertThat(createRequest.path).isEqualTo("/v2/applicationhistory")
+            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
+        }
+
+        @Test
+        fun `doesn't panic on empty response`() {
+            val alluids = listOf(12, 13)
+            val eventsAfter = ZonedDateTime.parse("2022-10-10T15:25:34.981654Z")
+            addStubbedLoginResponse()
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .setBody("[]")
+            )
+
+            val response = service.getApplicationStatusHistories(alluids, eventsAfter)
+
+            assertThat(response).isEqualTo(listOf())
+        }
+
+        @Test
+        fun `throws error on bad status`() {
+            val alluids = listOf(12, 13)
+            val eventsAfter = ZonedDateTime.parse("2022-10-10T15:25:34.981654Z")
+            val histories = listOf(ApplicationHistoryFactory.create(applicationId = 12))
+            addStubbedLoginResponse()
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(404)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .setBody(OBJECT_MAPPER.writeValueAsString(histories))
+            )
+
+            assertThat { service.getApplicationStatusHistories(alluids, eventsAfter) }
+                .isFailure()
+                .hasClass(WebClientResponseException.NotFound::class)
+        }
     }
 
     private fun addStubbedLoginResponse(): String {

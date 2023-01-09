@@ -6,8 +6,6 @@ import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
-import fi.hel.haitaton.hanke.allu.Application
-import fi.hel.haitaton.hanke.allu.ApplicationType
 import fi.hel.haitaton.hanke.allu.CableReportApplicationData
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts
@@ -43,7 +41,7 @@ internal class GdprJsonConverterTest {
     fun `createGdprJson returns null when no names match`() {
         val applicationData: CableReportApplicationData =
             "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
-        val application = Application(null, null, ApplicationType.CABLE_REPORT, applicationData)
+        val application = AlluDataFactory.createApplication(applicationData = applicationData)
         val hanke =
             HankeFactory.create().withYhteystiedot(
                 omistajat = listOf(1, 2),
@@ -61,7 +59,7 @@ internal class GdprJsonConverterTest {
     fun `createGdprJson combines identical results when there are several infos`() {
         val applicationData: CableReportApplicationData =
             "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
-        val application = Application(null, null, ApplicationType.CABLE_REPORT, applicationData)
+        val application = AlluDataFactory.createApplication(applicationData = applicationData)
         val hanke =
             HankeFactory.create().withYhteystiedot(
                 omistajat = listOf(1, 2),
