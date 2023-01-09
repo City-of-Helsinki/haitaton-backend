@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.Haitta13
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
-import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import java.time.ZonedDateTime
@@ -13,16 +12,16 @@ import java.time.ZonedDateTime
  *
  * NOTE Remember to update PublicHankealue after changes
  */
+@JsonView(ChangeLogView::class)
 data class Hankealue(
-    @JsonView(ChangeLogView::class) override var id: Int? = null,
-    @JsonView(ChangeLogView::class) var hankeId: Int? = null,
-    @JsonView(ChangeLogView::class) var haittaAlkuPvm: ZonedDateTime? = null,
-    @JsonView(ChangeLogView::class) var haittaLoppuPvm: ZonedDateTime? = null,
-    @JsonView(NotInChangeLogView::class) var geometriat: Geometriat? = null,
-    @JsonView(ChangeLogView::class)
+    override var id: Int? = null,
+    var hankeId: Int? = null,
+    var haittaAlkuPvm: ZonedDateTime? = null,
+    var haittaLoppuPvm: ZonedDateTime? = null,
+    var geometriat: Geometriat? = null,
     var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
-    @JsonView(ChangeLogView::class) var kaistaPituusHaitta: KaistajarjestelynPituus? = null,
-    @JsonView(ChangeLogView::class) var meluHaitta: Haitta13? = null,
-    @JsonView(ChangeLogView::class) var polyHaitta: Haitta13? = null,
-    @JsonView(ChangeLogView::class) var tarinaHaitta: Haitta13? = null,
+    var kaistaPituusHaitta: KaistajarjestelynPituus? = null,
+    var meluHaitta: Haitta13? = null,
+    var polyHaitta: Haitta13? = null,
+    var tarinaHaitta: Haitta13? = null,
 ) : HasId<Int>

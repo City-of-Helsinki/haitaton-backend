@@ -1,0 +1,97 @@
+{
+  "id": {{hankeId}},
+  "hankeTunnus": "{{hankeTunnus}}",
+  "onYKTHanke": true,
+  "nimi": "Hämeentien perusparannus ja katuvalot",
+  "kuvaus": "lorem ipsum dolor sit amet...",
+  "alkuPvm": "{{nextYear}}-02-20T00:00:00Z",
+  "loppuPvm": "{{nextYear}}-02-21T00:00:00Z",
+  "vaihe": "OHJELMOINTI",
+  "suunnitteluVaihe": null,
+  "version": {{hankeVersion}},
+  "tyomaaKatuosoite": "Testikatu 1",
+  "tyomaaTyyppi": [
+    "MUU",
+    "VESI"
+  ],
+  "tyomaaKoko": "LAAJA_TAI_USEA_KORTTELI",
+  "alueet": [
+{{#alueId}}
+    {
+      "id": {{alueId}},
+      "hankeId": {{hankeId}},
+      "haittaAlkuPvm": "{{nextYear}}-02-20T00:00:00Z",
+      "haittaLoppuPvm": "{{nextYear}}-02-21T00:00:00Z",
+      "geometriat": {
+        "id": {{geometriaId}},
+        "featureCollection": {
+          "type": "FeatureCollection",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "hankeTunnus": "{{hankeTunnus}}"
+              },
+              "geometry": {
+                "type": "Polygon",
+                "crs": {
+                  "type": "name",
+                  "properties": {
+                    "name": "EPSG:3879"
+                  }
+                },
+                "coordinates": [
+                  [
+                    [
+                      2.474785643E7,
+                      6562789.7
+                    ],
+                    [
+                      2.474785543E7,
+                      6562789.7
+                    ],
+                    [
+                      2.474785543E7,
+                      6562788.7
+                    ],
+                    [
+                      2.474785643E7,
+                      6562789.7
+                    ]
+                  ]
+                ]
+              }
+            }
+          ]
+        },
+        "version": {{geometriaVersion}}
+      },
+      "kaistaHaitta": "KAKSI",
+      "kaistaPituusHaitta": "NELJA",
+      "meluHaitta": "YKSI",
+      "polyHaitta": "KAKSI",
+      "tarinaHaitta": "KOLME"
+    }
+{{/alueId}}
+  ],
+{{#tormaystarkasteluTulos}}
+  "tormaystarkasteluTulos": {
+    "perusIndeksi": 1.4,
+    "pyorailyIndeksi": 1.0,
+    "joukkoliikenneIndeksi": 1.0,
+    "liikennehaittaIndeksi": {
+      "indeksi": 1.4,
+      "tyyppi": "PERUSINDEKSI"
+    }
+  }
+{{/tormaystarkasteluTulos}}
+{{^tormaystarkasteluTulos}}
+  "tormaystarkasteluTulos": null
+{{/tormaystarkasteluTulos}}
+}

@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedArvioija
@@ -21,9 +22,13 @@ import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import net.pwall.mustache.Template
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.assertj.core.api.Assertions.byLessThan
+import org.geojson.Feature
+import org.geojson.LngLatAlt
+import org.geojson.Polygon
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
@@ -866,17 +871,11 @@ class HankeServiceITests : DatabaseTest() {
         assertNull(event.target.objectAfter)
         val expectedObject =
             expectedHankeLogObject(
-                hankeWithTulos.id,
-                hankeWithTulos.alueet[0].id,
-                hankeWithTulos.hankeTunnus,
+                hanke,
+                hanke.alueet[0],
                 1,
-                tormaystarkasteluTulos =
-                    """{
-                      "perusIndeksi":1.4,
-                      "pyorailyIndeksi":1.0,
-                      "joukkoliikenneIndeksi":1.0,
-                      "liikennehaittaIndeksi":{"indeksi":1.4,"tyyppi":"PERUSINDEKSI"}
-                    }"""
+                1,
+                tormaystarkasteluTulos = true,
             )
         JSONAssert.assertEquals(
             expectedObject,
@@ -958,8 +957,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(hanke.id?.toString(), event.target.id)
         assertEquals(ObjectType.HANKE, event.target.type)
         assertNull(event.target.objectBefore)
-        val expectedObject =
-            expectedHankeLogObject(hanke.id, hanke.alueet[0].id, hanke.hankeTunnus, 0, null)
+        val expectedObject = expectedHankeLogObject(hanke, hanke.alueet[0])
         JSONAssert.assertEquals(
             expectedObject,
             event.target.objectAfter,
@@ -994,7 +992,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(hanke.id?.toString(), event.target.id)
         assertEquals(ObjectType.HANKE, event.target.type)
         assertNull(event.target.objectBefore)
-        val expectedObject = expectedHankeLogObject(hanke.id, null, hanke.hankeTunnus, 0, null)
+        val expectedObject = expectedHankeLogObject(hanke)
         JSONAssert.assertEquals(
             expectedObject,
             event.target.objectAfter,
@@ -1036,8 +1034,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(TestUtils.mockedIp, event.actor.ipAddress)
         assertEquals(hanke.id?.toString(), event.target.id)
         assertEquals(ObjectType.HANKE, event.target.type)
-        val expectedObjectBefore =
-            expectedHankeLogObject(hanke.id, null, hanke.hankeTunnus, 0, null)
+        val expectedObjectBefore = expectedHankeLogObject(hanke)
         JSONAssert.assertEquals(
             expectedObjectBefore,
             event.target.objectBefore,
@@ -1045,20 +1042,64 @@ class HankeServiceITests : DatabaseTest() {
         )
         val expectedObjectAfter =
             expectedHankeLogObject(
-                updatedHanke.id,
-                updatedHanke.alueet[0].id,
-                updatedHanke.hankeTunnus,
-                1,
-                tormaystarkasteluTulos =
-                    """{
-                      "perusIndeksi":1.4,
-                      "pyorailyIndeksi":1.0,
-                      "joukkoliikenneIndeksi":1.0,
-                      "liikennehaittaIndeksi":{"indeksi":1.4,"tyyppi":"PERUSINDEKSI"}
-                    }"""
+                hanke,
+                updatedHanke.alueet[0],
+                hankeVersion = 1,
+                tormaystarkasteluTulos = true,
             )
         JSONAssert.assertEquals(
             expectedObjectAfter,
+            event.target.objectAfter,
+            JSONCompareMode.NON_EXTENSIBLE
+        )
+    }
+
+    @Test
+    fun `updateHanke creates audit log entry when geometria is updated in hankealue`() {
+        val hankeBeforeSave = HankeFactory.create(id = null).withHankealue()
+        val hanke = hankeService.createHanke(hankeBeforeSave)
+        auditLogRepository.deleteAll()
+        assertEquals(0, auditLogRepository.count())
+        TestUtils.addMockedRequestIp()
+        hanke.alueet[0].geometriat?.featureCollection?.features =
+            listOf(
+                Feature().apply {
+                    geometry =
+                        Polygon(
+                            LngLatAlt(24747856.43, 6562789.70),
+                            LngLatAlt(24747855.43, 6562789.70),
+                            LngLatAlt(24747855.43, 6562788.70),
+                            LngLatAlt(24747856.43, 6562789.70)
+                        )
+                }
+            )
+
+        val updatedHanke = hankeService.updateHanke(hanke)
+
+        val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
+        assertEquals(1, hankeLogs.size)
+        val event = hankeLogs[0].message.auditEvent
+        assertEquals(Operation.UPDATE, event.operation)
+        assertEquals(hanke.id?.toString(), event.target.id)
+        assertEquals(ObjectType.HANKE, event.target.type)
+        val expectedObjectBefore = expectedHankeLogObject(hanke, hanke.alueet[0])
+        JSONAssert.assertEquals(
+            expectedObjectBefore,
+            event.target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
+        )
+        val templateData =
+            TemplateData(
+                updatedHanke.id!!,
+                updatedHanke.hankeTunnus!!,
+                updatedHanke.alueet[0].id,
+                updatedHanke.alueet[0].geometriat?.id,
+                hankeVersion = 1,
+                geometriaVersion = 1,
+                tormaystarkasteluTulos = true,
+            )
+        JSONAssert.assertEquals(
+            expectedHankeWithPolygon.processToString(templateData),
             event.target.objectAfter,
             JSONCompareMode.NON_EXTENSIBLE
         )
@@ -1079,14 +1120,13 @@ class HankeServiceITests : DatabaseTest() {
         val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
         assertThat(hankeLogs).hasSize(1)
         val target = hankeLogs[0]!!.message.auditEvent.target
-        val expectedObjectBefore =
-            expectedHankeLogObject(hanke.id, null, hanke.hankeTunnus, 0, null)
+        val expectedObjectBefore = expectedHankeLogObject(hanke)
         JSONAssert.assertEquals(
             expectedObjectBefore,
             target.objectBefore,
             JSONCompareMode.NON_EXTENSIBLE
         )
-        val expectedObjectAfter = expectedHankeLogObject(hanke.id, null, hanke.hankeTunnus, 1, null)
+        val expectedObjectAfter = expectedHankeLogObject(hanke, hankeVersion = 1)
         JSONAssert.assertEquals(
             expectedObjectAfter,
             target.objectAfter,
@@ -1094,47 +1134,44 @@ class HankeServiceITests : DatabaseTest() {
         )
     }
 
-    private fun expectedHankeLogObject(
-        id: Int?,
-        alueId: Int?,
-        hankeTunnus: String?,
-        version: Int,
-        tormaystarkasteluTulos: String?
-    ): String {
-        val alue =
-            if (alueId != null) {
-                """{
-                  "id": ${alueId},
-                  "hankeId": ${id},
-                  "haittaAlkuPvm":"${nextYear()}-02-20T00:00:00Z",
-                  "haittaLoppuPvm":"${nextYear()}-02-21T00:00:00Z",
-                  "kaistaHaitta":"KAKSI",
-                  "kaistaPituusHaitta":"NELJA",
-                  "meluHaitta":"YKSI",
-                  "polyHaitta":"KAKSI",
-                  "tarinaHaitta":"KOLME"
-               }"""
-            } else {
-                ""
-            }
+    data class TemplateData(
+        val hankeId: Int,
+        val hankeTunnus: String,
+        val alueId: Int? = null,
+        val geometriaId: Int? = null,
+        val geometriaVersion: Int = 0,
+        val hankeVersion: Int = 0,
+        val nextYear: Int = nextYear(),
+        val tormaystarkasteluTulos: Boolean = false,
+    )
 
-        return """{
-                 "id":$id,
-                 "hankeTunnus":"$hankeTunnus",
-                 "onYKTHanke":true,
-                 "nimi":"Hämeentien perusparannus ja katuvalot",
-                 "kuvaus":"lorem ipsum dolor sit amet...",
-                 "alkuPvm":"${nextYear()}-02-20T00:00:00Z",
-                 "loppuPvm":"${nextYear()}-02-21T00:00:00Z",
-                 "vaihe":"OHJELMOINTI",
-                 "suunnitteluVaihe":null,
-                 "version":$version,
-                 "tyomaaKatuosoite":"Testikatu 1",
-                 "tyomaaTyyppi":["VESI", "MUU"],
-                 "tyomaaKoko":"LAAJA_TAI_USEA_KORTTELI",
-                 "alueet": [$alue],
-                 "tormaystarkasteluTulos":$tormaystarkasteluTulos
-               }"""
+    val expectedHankeWithPolygon =
+        Template.parse(
+            "/fi/hel/haitaton/hanke/logging/expectedHankeWithPolygon.json.mustache".getResourceAsText()
+        )
+
+    private fun expectedHankeLogObject(
+        hanke: Hanke,
+        alue: Hankealue? = null,
+        geometriaVersion: Int = 0,
+        hankeVersion: Int = 0,
+        tormaystarkasteluTulos: Boolean = false,
+    ): String {
+        val templateData =
+            TemplateData(
+                hanke.id!!,
+                hanke.hankeTunnus!!,
+                alue?.id,
+                alue?.geometriat?.id,
+                geometriaVersion,
+                hankeVersion,
+                nextYear(),
+                tormaystarkasteluTulos,
+            )
+        return Template.parse(
+                "/fi/hel/haitaton/hanke/logging/expectedHankeWithPoints.json.mustache".getResourceAsText()
+            )
+            .processToString(templateData)
     }
 
     private fun List<AuditLogEntryEntity>.findByTargetId(id: Int): AuditLogEntryEntity =
