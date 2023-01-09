@@ -1,0 +1,35 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-add-haittojen-hallinta-fields
+      comment: Add fields for managing haittojen hallinta
+      author: Niko Junkala
+      changes:
+        - addColumn:
+            tableName: hanke
+            columns:
+                - column: { name: pyoraliikenteenpaareitit, type: text }
+                - column: { name: merkittavatjoukkoliikennereitit, type: text }
+                - column: { name: autoliikenteenruuhkautuminen, type: text }
+                - column: { name: omanjamuidenhankkeidenkiertoreitit, type: text }
+                - column: { name: muuthankkeet, type: text }
+                - column: { name: moottoriliikenteenviivytykset, type: text }
+                - column: { name: kiskoillakulkevanliikenteenviivytykset, type: text }
+                - column: { name: selkeaennakkoopastuspaatoksentekijalle, type: text }
+                - column: { name: turvallinenkulku, type: text }
+                - column: { name: reititeivatpitene, type: text }
+                - column: { name: toimetpaivamelulle, type: text }
+                - column: { name: toimettarinalle, type: text }
+                - column: { name: toimetpolyllejalialle, type: text }
+                - column: { name: pilaantuneenmaanhallinta, type: text }
+                - column: { name: yleinensiisteysjakaupunkikuvallinenlaatu, type: text }
+                - column: { name: riittavanpysakointipaikkojenvarmistaminen, type: text }
+                - column: { name: liikennevalojentoimivuudenvarmistaminen, type: text }
+                - column: { name: aluevuokrauksetjamuuthankkeet, type: text }
+                - column: { name: palvelujamyyntipisteidennakyvyys, type: text }
+                - column: { name: toimintojensaavutettavuus, type: text }
+                - column: { name: sosiaalistentoimintojensailyttaminen, type: text }
+                - column: { name: sosiaalinenturvallisuus, type: text }
+                - column: { name: viheralueidensailyminen, type: text }
+                - column: { name: suojeltujenkohteidensailyminen, type: text }
+                - column: { name: lintujenpesintaajanhuomioiminen, type: text }
+                - column: { name: toimienennakkotiedottaminen, type: text }

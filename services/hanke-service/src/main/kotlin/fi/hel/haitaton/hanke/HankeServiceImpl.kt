@@ -282,6 +282,38 @@ open class HankeServiceImpl(
         h.tyomaaTyyppi = hankeEntity.tyomaaTyyppi
         h.tyomaaKoko = hankeEntity.tyomaaKoko
 
+        h.pyoraliikenteenPaareitit = hankeEntity.pyoraliikenteenPaareitit
+        h.merkittavatJoukkoliikennereitit = hankeEntity.merkittavatJoukkoliikennereitit
+        h.autoliikenteenRuuhkautuminen = hankeEntity.autoliikenteenRuuhkautuminen
+        h.omanJaMuidenHankkeidenKiertoreitit = hankeEntity.omanJaMuidenHankkeidenKiertoreitit
+        h.muutHankkeet = hankeEntity.muutHankkeet
+        h.moottoriLiikenteenViivytykset = hankeEntity.moottoriLiikenteenViivytykset
+        h.kiskoillaKulkevanLiikenteenViivytykset =
+            hankeEntity.kiskoillaKulkevanLiikenteenViivytykset
+        h.selkeaEnnakkoOpastusPaatoksentekijalle =
+            hankeEntity.selkeaEnnakkoOpastusPaatoksentekijalle
+        h.turvallinenKulku = hankeEntity.turvallinenKulku
+        h.reititEivatPitene = hankeEntity.reititEivatPitene
+        h.toimetPaivamelulle = hankeEntity.toimetPaivamelulle
+        h.toimetTarinalle = hankeEntity.toimetTarinalle
+        h.toimetPolylleJaLialle = hankeEntity.toimetPolylleJaLialle
+        h.pilaantuneenMaanHallinta = hankeEntity.pilaantuneenMaanHallinta
+        h.yleinenSiisteysJaKaupunkikuvallinenLaatu =
+            hankeEntity.yleinenSiisteysJaKaupunkikuvallinenLaatu
+        h.riittavanPysakointipaikkojenVarmistaminen =
+            hankeEntity.riittavanPysakointipaikkojenVarmistaminen
+        h.liikennevalojenToimivuudenVarmistaminen =
+            hankeEntity.liikennevalojenToimivuudenVarmistaminen
+        h.aluevuokrauksetJaMuutHankkeet = hankeEntity.aluevuokrauksetJaMuutHankkeet
+        h.palveluJaMyyntipisteidenNakyvyys = hankeEntity.palveluJaMyyntipisteidenNakyvyys
+        h.toimintojenSaavutettavuus = hankeEntity.toimintojenSaavutettavuus
+        h.sosiaalistenToimintojenSailyttaminen = hankeEntity.sosiaalistenToimintojenSailyttaminen
+        h.sosiaalinenTurvallisuus = hankeEntity.sosiaalinenTurvallisuus
+        h.viheralueidenSailyminen = hankeEntity.viheralueidenSailyminen
+        h.suojeltujenKohteidenSailyminen = hankeEntity.suojeltujenKohteidenSailyminen
+        h.lintujenPesintaajanHuomioiminen = hankeEntity.lintujenPesintaajanHuomioiminen
+        h.toimienEnnakkotiedottaminen = hankeEntity.toimienEnnakkotiedottaminen
+
         createSeparateYhteystietoListsFromEntityData(h, hankeEntity)
 
         hankeEntity.listOfHankeAlueet.forEach {
@@ -505,6 +537,36 @@ open class HankeServiceImpl(
         hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
         entity.tyomaaTyyppi = hanke.tyomaaTyyppi
         hanke.tyomaaKoko?.let { entity.tyomaaKoko = hanke.tyomaaKoko }
+
+        entity.pyoraliikenteenPaareitit = hanke.pyoraliikenteenPaareitit
+        entity.merkittavatJoukkoliikennereitit = hanke.merkittavatJoukkoliikennereitit
+        entity.autoliikenteenRuuhkautuminen = hanke.autoliikenteenRuuhkautuminen
+        entity.omanJaMuidenHankkeidenKiertoreitit = hanke.omanJaMuidenHankkeidenKiertoreitit
+        entity.muutHankkeet = hanke.muutHankkeet
+        entity.moottoriLiikenteenViivytykset = hanke.moottoriLiikenteenViivytykset
+        entity.kiskoillaKulkevanLiikenteenViivytykset = hanke.kiskoillaKulkevanLiikenteenViivytykset
+        entity.selkeaEnnakkoOpastusPaatoksentekijalle = hanke.selkeaEnnakkoOpastusPaatoksentekijalle
+        entity.turvallinenKulku = hanke.turvallinenKulku
+        entity.reititEivatPitene = hanke.reititEivatPitene
+        entity.toimetPaivamelulle = hanke.toimetPaivamelulle
+        entity.toimetTarinalle = hanke.toimetTarinalle
+        entity.toimetPolylleJaLialle = hanke.toimetPolylleJaLialle
+        entity.pilaantuneenMaanHallinta = hanke.pilaantuneenMaanHallinta
+        entity.yleinenSiisteysJaKaupunkikuvallinenLaatu =
+            hanke.yleinenSiisteysJaKaupunkikuvallinenLaatu
+        entity.riittavanPysakointipaikkojenVarmistaminen =
+            hanke.riittavanPysakointipaikkojenVarmistaminen
+        entity.liikennevalojenToimivuudenVarmistaminen =
+            hanke.liikennevalojenToimivuudenVarmistaminen
+        entity.aluevuokrauksetJaMuutHankkeet = hanke.aluevuokrauksetJaMuutHankkeet
+        entity.palveluJaMyyntipisteidenNakyvyys = hanke.palveluJaMyyntipisteidenNakyvyys
+        entity.toimintojenSaavutettavuus = hanke.toimintojenSaavutettavuus
+        entity.sosiaalistenToimintojenSailyttaminen = hanke.sosiaalistenToimintojenSailyttaminen
+        entity.sosiaalinenTurvallisuus = hanke.sosiaalinenTurvallisuus
+        entity.viheralueidenSailyminen = hanke.viheralueidenSailyminen
+        entity.suojeltujenKohteidenSailyminen = hanke.suojeltujenKohteidenSailyminen
+        entity.lintujenPesintaajanHuomioiminen = hanke.lintujenPesintaajanHuomioiminen
+        entity.toimienEnnakkotiedottaminen = hanke.toimienEnnakkotiedottaminen
 
         // Merge hankealueet
         mergeDataInto(hanke.alueet, entity.listOfHankeAlueet) { source, target ->

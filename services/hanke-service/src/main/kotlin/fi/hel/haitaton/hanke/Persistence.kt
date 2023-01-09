@@ -187,6 +187,34 @@ class HankeEntity(
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
 
+    // --------------- Hankkeen haittojenhallinta ---------
+    var pyoraliikenteenPaareitit: String? = null
+    var merkittavatJoukkoliikennereitit: String? = null
+    var autoliikenteenRuuhkautuminen: String? = null
+    var omanJaMuidenHankkeidenKiertoreitit: String? = null
+    var muutHankkeet: String? = null
+    var moottoriLiikenteenViivytykset: String? = null
+    var kiskoillaKulkevanLiikenteenViivytykset: String? = null
+    var selkeaEnnakkoOpastusPaatoksentekijalle: String? = null
+    var turvallinenKulku: String? = null
+    var reititEivatPitene: String? = null
+    var toimetPaivamelulle: String? = null
+    var toimetTarinalle: String? = null
+    var toimetPolylleJaLialle: String? = null
+    var pilaantuneenMaanHallinta: String? = null
+    var yleinenSiisteysJaKaupunkikuvallinenLaatu: String? = null
+    var riittavanPysakointipaikkojenVarmistaminen: String? = null
+    var liikennevalojenToimivuudenVarmistaminen: String? = null
+    var aluevuokrauksetJaMuutHankkeet: String? = null
+    var palveluJaMyyntipisteidenNakyvyys: String? = null
+    var toimintojenSaavutettavuus: String? = null
+    var sosiaalistenToimintojenSailyttaminen: String? = null
+    var sosiaalinenTurvallisuus: String? = null
+    var viheralueidenSailyminen: String? = null
+    var suojeltujenKohteidenSailyminen: String? = null
+    var lintujenPesintaajanHuomioiminen: String? = null
+    var toimienEnnakkotiedottaminen: String? = null
+
     // Made bidirectional relation mainly to allow cascaded delete.
     @OneToMany(
         fetch = FetchType.LAZY,

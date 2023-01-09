@@ -95,6 +95,75 @@ object HankeFactory : Factory<Hanke>() {
     }
 
     /**
+     * Add
+     *
+     * Example:
+     * ```
+     * HankeFactory.create().withHaittojenHallintaSuunnitelmat()
+     * ```
+     */
+    fun Hanke.withHaittojenHallintaSuunnitelma(
+        pyoraliikenteenPaareitit: String = "pyoraliikenteenPaareitit",
+        merkittavatJoukkoliikennereitit: String = "merkittavatJoukkoliikennereitit",
+        autoliikenteenRuuhkautuminen: String = "autoliikenteenRuuhkautuminen",
+        omanJaMuidenHankkeidenKiertoreitit: String = "omanJaMuidenHankkeidenKiertoreitit",
+        muutHankkeet: String = "muutHankkeet",
+        moottoriLiikenteenViivytykset: String = "moottoriLiikenteenViivytykset",
+        kiskoillaKulkevanLiikenteenViivytykset: String = "kiskoillaKulkevanLiikenteenViivytykset",
+        selkeaEnnakkoOpastusPaatoksentekijalle: String = "selkeaEnnakkoOpastusPaatoksentekijalle",
+        turvallinenKulku: String = "turvallinenKulku",
+        reititEivatPitene: String = "reititEivatPitene",
+        toimetPaivamelulle: String = "toimetPaivamelulle",
+        toimetTarinalle: String = "toimetTarinalle",
+        toimetPolylleJaLialle: String = "toimetPolylleJaLialle",
+        pilaantuneenMaanHallinta: String = "pilaantuneenMaanHallinta",
+        yleinenSiisteysJaKaupunkikuvallinenLaatu: String =
+            "yleinenSiisteysJaKaupunkikuvallinenLaatu",
+        riittavanPysakointipaikkojenVarmistaminen: String =
+            "riittavanPysakointipaikkojenVarmistaminen",
+        liikennevalojenToimivuudenVarmistaminen: String = "liikennevalojenToimivuudenVarmistaminen",
+        aluevuokrauksetJaMuutHankkeet: String = "aluevuokrauksetJaMuutHankkeet",
+        palveluJaMyyntipisteidenNakyvyys: String = "palveluJaMyyntipisteidenNakyvyys",
+        toimintojenSaavutettavuus: String = "toimintojenSaavutettavuus",
+        sosiaalistenToimintojenSailyttaminen: String = "sosiaalistenToimintojenSailyttaminen",
+        sosiaalinenTurvallisuus: String = "sosiaalinenTurvallisuus",
+        viheralueidenSailyminen: String = "viheralueidenSailyminen",
+        suojeltujenKohteidenSailyminen: String = "suojeltujenKohteidenSailyminen",
+        lintujenPesintaajanHuomioiminen: String = "lintujenPesintaajanHuomioiminen",
+        toimienEnnakkotiedottaminen: String = "toimienEnnakkotiedottaminen",
+    ): Hanke {
+
+        this.pyoraliikenteenPaareitit = pyoraliikenteenPaareitit
+        this.merkittavatJoukkoliikennereitit = merkittavatJoukkoliikennereitit
+        this.autoliikenteenRuuhkautuminen = autoliikenteenRuuhkautuminen
+        this.omanJaMuidenHankkeidenKiertoreitit = omanJaMuidenHankkeidenKiertoreitit
+        this.muutHankkeet = muutHankkeet
+        this.moottoriLiikenteenViivytykset = moottoriLiikenteenViivytykset
+        this.kiskoillaKulkevanLiikenteenViivytykset = kiskoillaKulkevanLiikenteenViivytykset
+        this.selkeaEnnakkoOpastusPaatoksentekijalle = selkeaEnnakkoOpastusPaatoksentekijalle
+        this.turvallinenKulku = turvallinenKulku
+        this.reititEivatPitene = reititEivatPitene
+        this.toimetPaivamelulle = toimetPaivamelulle
+        this.toimetTarinalle = toimetTarinalle
+        this.toimetPolylleJaLialle = toimetPolylleJaLialle
+        this.pilaantuneenMaanHallinta = pilaantuneenMaanHallinta
+        this.yleinenSiisteysJaKaupunkikuvallinenLaatu = yleinenSiisteysJaKaupunkikuvallinenLaatu
+        this.riittavanPysakointipaikkojenVarmistaminen = riittavanPysakointipaikkojenVarmistaminen
+        this.liikennevalojenToimivuudenVarmistaminen = liikennevalojenToimivuudenVarmistaminen
+        this.aluevuokrauksetJaMuutHankkeet = aluevuokrauksetJaMuutHankkeet
+        this.palveluJaMyyntipisteidenNakyvyys = palveluJaMyyntipisteidenNakyvyys
+        this.toimintojenSaavutettavuus = toimintojenSaavutettavuus
+        this.sosiaalistenToimintojenSailyttaminen = sosiaalistenToimintojenSailyttaminen
+        this.sosiaalinenTurvallisuus = sosiaalinenTurvallisuus
+        this.viheralueidenSailyminen = viheralueidenSailyminen
+        this.suojeltujenKohteidenSailyminen = suojeltujenKohteidenSailyminen
+        this.lintujenPesintaajanHuomioiminen = lintujenPesintaajanHuomioiminen
+        this.toimienEnnakkotiedottaminen = toimienEnnakkotiedottaminen
+
+        return this
+    }
+
+    /**
      * Add yhteystiedot to a test Hanke. Generates the yhteystiedot with
      * [HankeYhteystietoFactory.createDifferentiated] using the given ints for differentiating the
      * yhteystiedot from each other.

@@ -47,6 +47,34 @@ data class Hanke(
     @JsonView(ChangeLogView::class) var tyomaaTyyppi = mutableSetOf<TyomaaTyyppi>()
     @JsonView(ChangeLogView::class) var tyomaaKoko: TyomaaKoko? = null
 
+    // --------------- Hankkeen haittojenhallinta -------------------
+    @JsonView(ChangeLogView::class) var pyoraliikenteenPaareitit: String? = null
+    @JsonView(ChangeLogView::class) var merkittavatJoukkoliikennereitit: String? = null
+    @JsonView(ChangeLogView::class) var autoliikenteenRuuhkautuminen: String? = null
+    @JsonView(ChangeLogView::class) var omanJaMuidenHankkeidenKiertoreitit: String? = null
+    @JsonView(ChangeLogView::class) var muutHankkeet: String? = null
+    @JsonView(ChangeLogView::class) var moottoriLiikenteenViivytykset: String? = null
+    @JsonView(ChangeLogView::class) var kiskoillaKulkevanLiikenteenViivytykset: String? = null
+    @JsonView(ChangeLogView::class) var selkeaEnnakkoOpastusPaatoksentekijalle: String? = null
+    @JsonView(ChangeLogView::class) var turvallinenKulku: String? = null
+    @JsonView(ChangeLogView::class) var reititEivatPitene: String? = null
+    @JsonView(ChangeLogView::class) var toimetPaivamelulle: String? = null
+    @JsonView(ChangeLogView::class) var toimetTarinalle: String? = null
+    @JsonView(ChangeLogView::class) var toimetPolylleJaLialle: String? = null
+    @JsonView(ChangeLogView::class) var pilaantuneenMaanHallinta: String? = null
+    @JsonView(ChangeLogView::class) var yleinenSiisteysJaKaupunkikuvallinenLaatu: String? = null
+    @JsonView(ChangeLogView::class) var riittavanPysakointipaikkojenVarmistaminen: String? = null
+    @JsonView(ChangeLogView::class) var liikennevalojenToimivuudenVarmistaminen: String? = null
+    @JsonView(ChangeLogView::class) var aluevuokrauksetJaMuutHankkeet: String? = null
+    @JsonView(ChangeLogView::class) var palveluJaMyyntipisteidenNakyvyys: String? = null
+    @JsonView(ChangeLogView::class) var toimintojenSaavutettavuus: String? = null
+    @JsonView(ChangeLogView::class) var sosiaalistenToimintojenSailyttaminen: String? = null
+    @JsonView(ChangeLogView::class) var sosiaalinenTurvallisuus: String? = null
+    @JsonView(ChangeLogView::class) var viheralueidenSailyminen: String? = null
+    @JsonView(ChangeLogView::class) var suojeltujenKohteidenSailyminen: String? = null
+    @JsonView(ChangeLogView::class) var lintujenPesintaajanHuomioiminen: String? = null
+    @JsonView(ChangeLogView::class) var toimienEnnakkotiedottaminen: String? = null
+
     // --------------- Hankkeen haitat -------------------
     fun kaistaHaitat(): Set<TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin> {
         return alueet.map { it.kaistaHaitta }.filterNotNull().toSet()

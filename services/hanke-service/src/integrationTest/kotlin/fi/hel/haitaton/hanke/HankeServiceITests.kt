@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedArvioija
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistajat
+import fi.hel.haitaton.hanke.factory.HankeFactory.withHaittojenHallintaSuunnitelma
 import fi.hel.haitaton.hanke.factory.HankeFactory.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankealueFactory
@@ -152,6 +153,104 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(arvioija.id).isNotEqualTo(firstId)
         assertThat(toteuttaja.id).isNotEqualTo(firstId)
         assertThat(toteuttaja.id).isNotEqualTo(arvioija.id)
+    }
+
+    @Test
+    fun `test managing haittajen hallinta`() {
+        val hankeDto: Hanke = getATestHanke().withHaittojenHallintaSuunnitelma()
+        val hanke = hankeService.createHanke(hankeDto)
+
+        assertThat(hanke.pyoraliikenteenPaareitit).isEqualTo("pyoraliikenteenPaareitit")
+        assertThat(hanke.merkittavatJoukkoliikennereitit)
+            .isEqualTo("merkittavatJoukkoliikennereitit")
+        assertThat(hanke.autoliikenteenRuuhkautuminen).isEqualTo("autoliikenteenRuuhkautuminen")
+        assertThat(hanke.omanJaMuidenHankkeidenKiertoreitit)
+            .isEqualTo("omanJaMuidenHankkeidenKiertoreitit")
+        assertThat(hanke.muutHankkeet).isEqualTo("muutHankkeet")
+        assertThat(hanke.moottoriLiikenteenViivytykset).isEqualTo("moottoriLiikenteenViivytykset")
+        assertThat(hanke.kiskoillaKulkevanLiikenteenViivytykset)
+            .isEqualTo("kiskoillaKulkevanLiikenteenViivytykset")
+        assertThat(hanke.selkeaEnnakkoOpastusPaatoksentekijalle)
+            .isEqualTo("selkeaEnnakkoOpastusPaatoksentekijalle")
+        assertThat(hanke.turvallinenKulku).isEqualTo("turvallinenKulku")
+        assertThat(hanke.reititEivatPitene).isEqualTo("reititEivatPitene")
+        assertThat(hanke.toimetPaivamelulle).isEqualTo("toimetPaivamelulle")
+        assertThat(hanke.toimetTarinalle).isEqualTo("toimetTarinalle")
+        assertThat(hanke.toimetPolylleJaLialle).isEqualTo("toimetPolylleJaLialle")
+        assertThat(hanke.pilaantuneenMaanHallinta).isEqualTo("pilaantuneenMaanHallinta")
+        assertThat(hanke.yleinenSiisteysJaKaupunkikuvallinenLaatu)
+            .isEqualTo("yleinenSiisteysJaKaupunkikuvallinenLaatu")
+        assertThat(hanke.riittavanPysakointipaikkojenVarmistaminen)
+            .isEqualTo("riittavanPysakointipaikkojenVarmistaminen")
+        assertThat(hanke.liikennevalojenToimivuudenVarmistaminen)
+            .isEqualTo("liikennevalojenToimivuudenVarmistaminen")
+        assertThat(hanke.aluevuokrauksetJaMuutHankkeet).isEqualTo("aluevuokrauksetJaMuutHankkeet")
+        assertThat(hanke.palveluJaMyyntipisteidenNakyvyys)
+            .isEqualTo("palveluJaMyyntipisteidenNakyvyys")
+        assertThat(hanke.toimintojenSaavutettavuus).isEqualTo("toimintojenSaavutettavuus")
+        assertThat(hanke.sosiaalistenToimintojenSailyttaminen)
+            .isEqualTo("sosiaalistenToimintojenSailyttaminen")
+        assertThat(hanke.sosiaalinenTurvallisuus).isEqualTo("sosiaalinenTurvallisuus")
+        assertThat(hanke.viheralueidenSailyminen).isEqualTo("viheralueidenSailyminen")
+        assertThat(hanke.suojeltujenKohteidenSailyminen).isEqualTo("suojeltujenKohteidenSailyminen")
+        assertThat(hanke.lintujenPesintaajanHuomioiminen)
+            .isEqualTo("lintujenPesintaajanHuomioiminen")
+        assertThat(hanke.toimienEnnakkotiedottaminen).isEqualTo("toimienEnnakkotiedottaminen")
+
+        hanke.pyoraliikenteenPaareitit = null
+        hanke.merkittavatJoukkoliikennereitit = null
+        hanke.autoliikenteenRuuhkautuminen = null
+        hanke.omanJaMuidenHankkeidenKiertoreitit = null
+        hanke.muutHankkeet = null
+        hanke.moottoriLiikenteenViivytykset = null
+        hanke.kiskoillaKulkevanLiikenteenViivytykset = null
+        hanke.selkeaEnnakkoOpastusPaatoksentekijalle = null
+        hanke.turvallinenKulku = null
+        hanke.reititEivatPitene = null
+        hanke.toimetPaivamelulle = null
+        hanke.toimetTarinalle = null
+        hanke.toimetPolylleJaLialle = null
+        hanke.pilaantuneenMaanHallinta = null
+        hanke.yleinenSiisteysJaKaupunkikuvallinenLaatu = null
+        hanke.riittavanPysakointipaikkojenVarmistaminen = null
+        hanke.liikennevalojenToimivuudenVarmistaminen = null
+        hanke.aluevuokrauksetJaMuutHankkeet = null
+        hanke.palveluJaMyyntipisteidenNakyvyys = null
+        hanke.toimintojenSaavutettavuus = null
+        hanke.sosiaalistenToimintojenSailyttaminen = null
+        hanke.sosiaalinenTurvallisuus = null
+        hanke.viheralueidenSailyminen = null
+        hanke.suojeltujenKohteidenSailyminen = null
+        hanke.lintujenPesintaajanHuomioiminen = null
+        hanke.toimienEnnakkotiedottaminen = null
+
+        val hanke2 = hankeService.updateHanke(hanke)
+        assertThat(hanke2.pyoraliikenteenPaareitit).isNull()
+        assertThat(hanke2.merkittavatJoukkoliikennereitit).isNull()
+        assertThat(hanke2.autoliikenteenRuuhkautuminen).isNull()
+        assertThat(hanke2.omanJaMuidenHankkeidenKiertoreitit).isNull()
+        assertThat(hanke2.muutHankkeet).isNull()
+        assertThat(hanke2.moottoriLiikenteenViivytykset).isNull()
+        assertThat(hanke2.kiskoillaKulkevanLiikenteenViivytykset).isNull()
+        assertThat(hanke2.selkeaEnnakkoOpastusPaatoksentekijalle).isNull()
+        assertThat(hanke2.turvallinenKulku).isNull()
+        assertThat(hanke2.reititEivatPitene).isNull()
+        assertThat(hanke2.toimetPaivamelulle).isNull()
+        assertThat(hanke2.toimetTarinalle).isNull()
+        assertThat(hanke2.toimetPolylleJaLialle).isNull()
+        assertThat(hanke2.pilaantuneenMaanHallinta).isNull()
+        assertThat(hanke2.yleinenSiisteysJaKaupunkikuvallinenLaatu).isNull()
+        assertThat(hanke2.riittavanPysakointipaikkojenVarmistaminen).isNull()
+        assertThat(hanke2.liikennevalojenToimivuudenVarmistaminen).isNull()
+        assertThat(hanke2.aluevuokrauksetJaMuutHankkeet).isNull()
+        assertThat(hanke2.palveluJaMyyntipisteidenNakyvyys).isNull()
+        assertThat(hanke2.toimintojenSaavutettavuus).isNull()
+        assertThat(hanke2.sosiaalistenToimintojenSailyttaminen).isNull()
+        assertThat(hanke2.sosiaalinenTurvallisuus).isNull()
+        assertThat(hanke2.viheralueidenSailyminen).isNull()
+        assertThat(hanke2.suojeltujenKohteidenSailyminen).isNull()
+        assertThat(hanke2.lintujenPesintaajanHuomioiminen).isNull()
+        assertThat(hanke2.toimienEnnakkotiedottaminen).isNull()
     }
 
     @Test
