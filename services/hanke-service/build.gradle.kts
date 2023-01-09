@@ -1,5 +1,6 @@
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.springframework.boot.gradle.tasks.run.BootRun
 
 group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
@@ -37,6 +38,10 @@ idea {
 
 springBoot {
 	buildInfo()
+}
+
+tasks.getByName<BootRun>("bootRun") {
+	environment("HAITATON_SWAGGER_PATH_PREFIX", "/v3")
 }
 
 spotless {
