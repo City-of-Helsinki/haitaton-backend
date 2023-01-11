@@ -102,6 +102,20 @@ open class ApplicationService(
         return repo.save(application).toApplication()
     }
 
+    open fun makeDraft(id: Long, userId: String): Application {
+        val application = getById(id, userId)
+        logger.info("Reverting application to draft id=$id, alluid=${application.alluid}")
+        if (!isStillPending(application)) {
+            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
+        }
+        // Set the application to be a draft
+        application.applicationData = application.applicationData.copy(pendingOnClient = true)
+        application.alluid = sendApplicationToAllu(application)
+        logger.info("Reverted application to draft id=$id, alluid=${application.alluid}")
+        // Save only if sendApplicationToAllu didn't throw an exception
+        return repo.save(application).toApplication()
+    }
+
     @Transactional
     open fun handleApplicationUpdates(
         applicationHistories: List<ApplicationHistory>,

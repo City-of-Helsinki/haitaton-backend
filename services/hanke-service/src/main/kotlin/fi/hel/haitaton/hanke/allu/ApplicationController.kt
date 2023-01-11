@@ -221,6 +221,10 @@ class ApplicationController(
     fun sendApplication(@PathVariable(name = "id") id: Long): Application =
         service.sendApplication(id, currentUserId())
 
+    @PostMapping("/{id}/make-draft")
+    fun makeDraft(@PathVariable(name = "id") id: Long): Application =
+        service.makeDraft(id, currentUserId())
+
     @ExceptionHandler(ApplicationNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     fun missingApplication(ex: ApplicationNotFoundException): HankeError {
