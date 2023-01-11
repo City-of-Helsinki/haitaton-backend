@@ -1,0 +1,33 @@
+# Based on https://github.com/spring-projects/spring-integration/blob/5.3.x/spring-integration-jdbc/src/main/resources/org/springframework/integration/jdbc/schema-postgresql.sql
+databaseChangeLog:
+  - changeSet:
+      id: 020-create-lock-table
+      comment: Create a table for spring-integration-jdbc locking.
+      author: Topias Heinonen
+      changes:
+        - createTable:
+            tableName: INT_LOCK
+            remarks: "Table for distributed locking between service instances/pods."
+            columns:
+              - column:
+                  name: LOCK_KEY
+                  type: CHAR(36)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: INT_LOCK_PK
+              - column:
+                  name: REGION
+                  type: VARCHAR(100)
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+                    primaryKeyName: INT_LOCK_PK
+              - column:
+                  name: CLIENT_ID
+                  type: CHAR(36)
+              - column:
+                  name: CREATED_DATE
+                  type: timestamp
+                  constraints:
+                    nullable: false
