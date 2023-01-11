@@ -109,7 +109,7 @@ open class ApplicationService(
     ) {
         applicationHistories.forEach { handleApplicationUpdate(it) }
         val status = alluStatusRepository.getOne(1)
-        status.historyLastUpdated = updateTime // .minusDays(1) // TODO Remove minusDays
+        status.historyLastUpdated = updateTime
         alluStatusRepository.save(status)
     }
 
