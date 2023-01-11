@@ -597,6 +597,7 @@ class ApplicationServiceITest : DatabaseTest() {
     /** The timestamp used in the initial DB migration. */
     private val placeholderUpdateTime = OffsetDateTime.parse("2017-01-01T00:00:00Z")
     private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
+    private val alluid = 42
 
     @Test
     fun `handleApplicationUpdates with empty histories updates the last updated time`() {
@@ -609,7 +610,6 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @Test
     fun `handleApplicationUpdates updates the application statuses in the correct order`() {
-        val alluid = 42
         assertThat(applicationRepository.findAll()).isEmpty()
         assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
         alluDataFactory.saveApplicationEntity(username) { it.alluid = alluid }
@@ -636,26 +636,27 @@ class ApplicationServiceITest : DatabaseTest() {
 
         applicationService.handleApplicationUpdates(listOf(history), updateTime)
 
-        assertEquals(updateTime, alluStatusRepository.getLastUpdateTime().asUtc())
+        assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isEqualTo(updateTime)
         val application = applicationRepository.getOneByAlluid(alluid)
         assertThat(application)
             .isNotNull()
             .prop("alluStatus", ApplicationEntity::alluStatus)
             .isEqualTo(ApplicationStatus.HANDLING)
+        assertThat(application!!.applicationIdentifier)
+            .isEqualTo(ApplicationHistoryFactory.defaultApplicationIdentifier)
     }
 
     @Test
     fun `handleApplicationUpdates ignores missing application`() {
         assertThat(applicationRepository.findAll()).isEmpty()
-        val alluid = 42
         assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
         alluDataFactory.saveApplicationEntity(username) { it.alluid = alluid }
         alluDataFactory.saveApplicationEntity(username) { it.alluid = alluid + 2 }
         val histories =
             listOf(
-                ApplicationHistoryFactory.create(applicationId = alluid),
-                ApplicationHistoryFactory.create(applicationId = alluid + 1),
-                ApplicationHistoryFactory.create(applicationId = alluid + 2),
+                ApplicationHistoryFactory.create(alluid, "JS2300082"),
+                ApplicationHistoryFactory.create(alluid + 1, "JS2300083"),
+                ApplicationHistoryFactory.create(alluid + 2, "JS2300084"),
             )
 
         applicationService.handleApplicationUpdates(histories, updateTime)
@@ -668,6 +669,8 @@ class ApplicationServiceITest : DatabaseTest() {
                 ApplicationStatus.PENDING_CLIENT,
                 ApplicationStatus.PENDING_CLIENT
             )
+        assertThat(applications.map { it.applicationIdentifier })
+            .containsExactlyInAnyOrder("JS2300082", "JS2300084")
     }
     // }
 
