@@ -51,6 +51,10 @@ class AlluUpdateServiceTest {
 
     @Nested
     inner class CheckApplicationStatuses {
+        private val lastUpdatedString = "2022-10-12T14:14:58.423521Z"
+        private val lastUpdated = OffsetDateTime.parse(lastUpdatedString)
+        private val eventsAfter = ZonedDateTime.parse(lastUpdatedString)
+
         @Test
         fun `does nothing with no alluids`() {
             every { applicationRepository.getAllAlluIds() } returns listOf()
@@ -68,9 +72,6 @@ class AlluUpdateServiceTest {
         @Test
         fun `calls Allu with alluids and last update date`() {
             val alluids = listOf(23, 24)
-            val lastUpdatedString = "2022-10-12T14:14:58.423521Z"
-            val lastUpdated = OffsetDateTime.parse(lastUpdatedString)
-            val eventsAfter = ZonedDateTime.parse(lastUpdatedString)
             every { applicationRepository.getAllAlluIds() } returns alluids
             every { alluStatusRepository.getLastUpdateTime() } returns lastUpdated
             every { cableReportService.getApplicationStatusHistories(alluids, eventsAfter) } returns
@@ -90,9 +91,6 @@ class AlluUpdateServiceTest {
         @Test
         fun `calls application service with the returned histories`() {
             val alluids = listOf(23, 24)
-            val lastUpdatedString = "2022-10-12T14:14:58.423521Z"
-            val lastUpdated = OffsetDateTime.parse(lastUpdatedString)
-            val eventsAfter = ZonedDateTime.parse(lastUpdatedString)
             val histories = listOf(ApplicationHistoryFactory.create(applicationId = 24))
             every { applicationRepository.getAllAlluIds() } returns alluids
             every { alluStatusRepository.getLastUpdateTime() } returns lastUpdated
@@ -113,9 +111,6 @@ class AlluUpdateServiceTest {
         @Test
         fun `calls application service with the current time`() {
             val alluids = listOf(23, 24)
-            val lastUpdatedString = "2022-10-12T14:14:58.423521Z"
-            val lastUpdated = OffsetDateTime.parse(lastUpdatedString)
-            val eventsAfter = ZonedDateTime.parse(lastUpdatedString)
             every { applicationRepository.getAllAlluIds() } returns alluids
             every { alluStatusRepository.getLastUpdateTime() } returns lastUpdated
             every { cableReportService.getApplicationStatusHistories(alluids, eventsAfter) } returns
