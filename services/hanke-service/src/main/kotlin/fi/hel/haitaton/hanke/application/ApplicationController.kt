@@ -1,8 +1,9 @@
 package fi.hel.haitaton.hanke.application
 
-import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.currentUserId
+import fi.hel.haitaton.hanke.*
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -31,7 +32,9 @@ private val logger = KotlinLogging.logger {}
 @RequestMapping("/hakemukset")
 class ApplicationController(
     private val service: ApplicationService,
-    private val disclosureLogService: DisclosureLogService
+    private val hankeService: HankeService,
+    private val disclosureLogService: DisclosureLogService,
+    private val permissionService: PermissionService,
 ) {
     @GetMapping
     @Operation(
@@ -65,6 +68,16 @@ class ApplicationController(
     fun getById(@PathVariable(name = "id") id: Long): Application {
         val userId = currentUserId()
         val application = service.getApplicationById(id, userId)
+        val hankeTunnus = application.hankeTunnus ?: throw HankeNotFoundException("")
+        val hankeId = hankeService.getHankeId(hankeTunnus)
+
+        if (
+            hankeId == null ||
+                !permissionService.hasPermission(hankeId, userId, PermissionCode.EDIT_APPLICATIONS)
+        ) {
+            throw ApplicationNotFoundException(id)
+        }
+
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
         return application
     }
@@ -89,7 +102,18 @@ class ApplicationController(
     )
     fun create(@RequestBody application: Application): Application {
         val userId = currentUserId()
+        val hankeTunnus = application.hankeTunnus ?: throw HankeNotFoundException("")
+        val hankeId = hankeService.getHankeId(hankeTunnus)
+
+        if (
+            hankeId == null ||
+                !permissionService.hasPermission(hankeId, userId, PermissionCode.EDIT_APPLICATIONS)
+        ) {
+            throw HankeNotFoundException("")
+        }
+
         val createdApplication = service.create(application, userId)
+
         disclosureLogService.saveDisclosureLogsForApplication(createdApplication, userId)
         return createdApplication
     }
@@ -133,6 +157,16 @@ class ApplicationController(
         @RequestBody application: Application
     ): Application {
         val userId = currentUserId()
+        val hankeTunnus = application.hankeTunnus ?: throw HankeNotFoundException("")
+        val hankeId = hankeService.getHankeId(hankeTunnus)
+
+        if (
+            hankeId == null ||
+                !permissionService.hasPermission(hankeId, userId, PermissionCode.EDIT_APPLICATIONS)
+        ) {
+            throw ApplicationNotFoundException(id)
+        }
+
         val updatedApplication =
             service.updateApplicationData(id, application.applicationData, userId)
         disclosureLogService.saveDisclosureLogsForApplication(updatedApplication, currentUserId())
@@ -279,5 +313,12 @@ class ApplicationController(
     fun applicationDecisionNotFoundException(ex: ApplicationDecisionNotFoundException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2006
+    }
+
+    @ExceptionHandler(HankeNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    fun missingApplication(ex: HankeNotFoundException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI1001
     }
 }

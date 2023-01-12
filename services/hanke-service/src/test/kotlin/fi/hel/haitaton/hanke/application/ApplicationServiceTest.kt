@@ -6,6 +6,9 @@ import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFailure
+import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
@@ -49,6 +52,8 @@ class ApplicationServiceTest {
     private val geometriatDao: GeometriatDao = mockk()
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
     private val applicationLoggingService: ApplicationLoggingService = mockk(relaxUnitFun = true)
+    private val hankeRepository: HankeRepository = mockk()
+    private val hankeService: HankeService = mockk()
 
     private val service: ApplicationService =
         ApplicationService(
@@ -58,6 +63,7 @@ class ApplicationServiceTest {
             disclosureLogService,
             applicationLoggingService,
             geometriatDao,
+            hankeRepository,
         )
 
     @BeforeEach
@@ -84,12 +90,15 @@ class ApplicationServiceTest {
 
     @Test
     fun create() {
-        val dto = AlluDataFactory.createApplication(id = null, applicationData = applicationData)
+        val hankeTunnus = "HAI-1234"
+        val dto = AlluDataFactory.createApplication(id = null, applicationData = applicationData, hankeTunnus = hankeTunnus)
         every { applicationRepo.save(any()) } answers
             {
                 val application: ApplicationEntity = firstArg()
                 application.copy(id = 1)
             }
+        val hanke = HankeEntity(id = 1)
+        every { hankeRepository.findByHankeTunnus(hankeTunnus) } returns hanke
         every { geometriatDao.validateGeometria(any()) } returns null
 
         val created = service.create(dto, username)
@@ -125,12 +134,15 @@ class ApplicationServiceTest {
 
     @Test
     fun `updateApplicationData saves disclosure logs when updating Allu data`() {
+        val hankeTunnus = "HAI-1234"
+        val hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus)
         val applicationEntity =
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = 42,
                 userId = username,
                 applicationData = applicationData,
+                hanke = hanke,
             )
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
         every { applicationRepo.save(applicationEntity) } returns applicationEntity
@@ -165,6 +177,7 @@ class ApplicationServiceTest {
                 alluid = 42,
                 userId = username,
                 applicationData = applicationData,
+                hanke = null,
             )
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
         every { geometriatDao.validateGeometria(any()) } returns
@@ -196,7 +209,8 @@ class ApplicationServiceTest {
                 id = 3,
                 alluid = null,
                 userId = username,
-                applicationData = applicationData
+                applicationData = applicationData,
+                hanke = null,
             )
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
@@ -227,7 +241,8 @@ class ApplicationServiceTest {
                 id = 3,
                 alluid = null,
                 userId = username,
-                applicationData = applicationData
+                applicationData = applicationData,
+                hanke = null,
             )
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
         every { geometriatDao.calculateCombinedArea(any()) } returns 100f
@@ -255,7 +270,8 @@ class ApplicationServiceTest {
                 id = 3,
                 alluid = null,
                 userId = username,
-                applicationData = applicationData
+                applicationData = applicationData,
+                hanke = null,
             )
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
         every { geometriatDao.calculateCombinedArea(any()) } returns 500f
@@ -282,7 +298,8 @@ class ApplicationServiceTest {
                 id = 3,
                 alluid = null,
                 userId = username,
-                applicationData = applicationData.copy(rockExcavation = rockExcavation)
+                applicationData = applicationData.copy(rockExcavation = rockExcavation),
+                hanke = null,
             )
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
@@ -323,6 +340,7 @@ class ApplicationServiceTest {
                 alluid = null,
                 userId = username,
                 applicationData = applicationData,
+                hanke = null,
             )
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
 

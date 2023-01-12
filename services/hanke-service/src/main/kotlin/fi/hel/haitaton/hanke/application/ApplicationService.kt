@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke.application
 
+import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
@@ -34,6 +36,7 @@ open class ApplicationService(
     private val disclosureLogService: DisclosureLogService,
     private val applicationLoggingService: ApplicationLoggingService,
     private val geometriatDao: GeometriatDao,
+    private val hankeRepository: HankeRepository,
 ) {
     open fun getAllApplicationsForUser(userId: String): List<Application> {
         return repo.getAllByUserId(userId).map { it.toApplication() }
@@ -50,6 +53,11 @@ open class ApplicationService(
             "Invalid geometry received when creating a new application for user $userId, reason = ${validationError.reason}, location = ${validationError.location}"
         }
 
+        val hanke =
+                hankeRepository.findByHankeTunnus(
+                        application.hankeTunnus ?: throw HankeNotFoundException("")
+                ) ?: throw HankeNotFoundException(application.hankeTunnus)
+
         val applicationEntity =
             ApplicationEntity(
                 id = null,
@@ -60,7 +68,8 @@ open class ApplicationService(
                 applicationType = application.applicationType,
                 // The application is still a draft in Haitaton until the customer explicitly sends
                 // it to Allu
-                applicationData = application.applicationData.copy(pendingOnClient = true)
+                applicationData = application.applicationData.copy(pendingOnClient = true),
+                hanke = hanke,
             )
 
         val savedApplication = repo.save(applicationEntity).toApplication()

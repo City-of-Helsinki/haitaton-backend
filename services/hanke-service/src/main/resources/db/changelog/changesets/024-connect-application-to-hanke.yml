@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 024-connect-application-to-hanke
+      author: Niko Junkala
+      changes:
+        - addColumn:
+            tableName: applications
+            columns:
+              - column:
+                  name: hanke_id
+                  remarks: "Add relating hanke to application"
+                  type: bigint
+                  constraints:
+                    foreignKeyName: fk_application_hanke
+                    references: hanke(id)

@@ -75,6 +75,7 @@ class Configuration {
         disclosureLogService: DisclosureLogService,
         applicationLoggingService: ApplicationLoggingService,
         geometriatDao: GeometriatDao,
+        hankeRepository: HankeRepository,
     ): ApplicationService =
         ApplicationService(
             applicationRepository,
@@ -83,6 +84,7 @@ class Configuration {
             disclosureLogService,
             applicationLoggingService,
             geometriatDao,
+            hankeRepository,
         )
 
     @Bean

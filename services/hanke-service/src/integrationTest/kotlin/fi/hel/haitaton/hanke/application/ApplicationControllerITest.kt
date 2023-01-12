@@ -1,11 +1,9 @@
 package fi.hel.haitaton.hanke.application
 
 import com.fasterxml.jackson.databind.node.ObjectNode
-import fi.hel.haitaton.hanke.ControllerTest
-import fi.hel.haitaton.hanke.IntegrationTestConfiguration
-import fi.hel.haitaton.hanke.OBJECT_MAPPER
-import fi.hel.haitaton.hanke.andReturnBody
+import fi.hel.haitaton.hanke.*
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
@@ -38,6 +36,8 @@ private const val username = "testUser"
 class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired private lateinit var applicationService: ApplicationService
+    @Autowired private lateinit var hankeService: HankeService
+    @Autowired private lateinit var permissionService: PermissionService
 
     @BeforeEach
     fun clearMocks() {
@@ -48,7 +48,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     fun checkMocks() {
         // TODO: Needs newer MockK, which needs newer Spring test dependencies
         // checkUnnecessaryStub()
-        confirmVerified(applicationService)
+        confirmVerified(applicationService, hankeService, permissionService)
     }
 
     @Test
@@ -103,8 +103,11 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     @Test
     @WithMockUser(username)
     fun `getById with known ID returns application`() {
+        val hankeTunnus = "HAI-1234"
         every { applicationService.getApplicationById(1234, username) } returns
-            AlluDataFactory.createApplication(id = 1234)
+            AlluDataFactory.createApplication(id = 1234, hankeTunnus = hankeTunnus)
+        every { hankeService.getHankeId(hankeTunnus) } returns 42
+        every { permissionService.hasPermission(42, any(), any()) } returns true
 
         get("/hakemukset/1234")
             .andExpect(status().isOk)
@@ -112,6 +115,8 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             .andExpect(jsonPath("$.applicationData.applicationType").value("CABLE_REPORT"))
 
         verify { applicationService.getApplicationById(1234, username) }
+        verify { hankeService.getHankeId(hankeTunnus) }
+        verify { permissionService.hasPermission(42, any(), any()) }
     }
 
     @Test
@@ -133,15 +138,20 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     @Test
     @WithMockUser(username)
     fun `create with proper application creates application`() {
-        val newApplication = AlluDataFactory.createApplication(id = null)
+        val hankeTunnus = "HAI-1234"
+        val newApplication = AlluDataFactory.createApplication(id = null, hankeTunnus = hankeTunnus)
         val createdApplication = newApplication.copy(id = 1234)
         every { applicationService.create(newApplication, username) } returns createdApplication
+        every { hankeService.getHankeId(hankeTunnus) } returns 42
+        every { permissionService.hasPermission(42, any(), any()) } returns true
 
         val response: Application =
             post("/hakemukset", newApplication).andExpect(status().isOk).andReturnBody()
 
         assertEquals(createdApplication, response)
         verify { applicationService.create(newApplication, username) }
+        verify { hankeService.getHankeId(hankeTunnus) }
+        verify { permissionService.hasPermission(42, any(), any()) }
     }
 
     @Test
@@ -189,10 +199,13 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     @Test
     @WithMockUser(username)
     fun `update with known id returns ok`() {
-        val application = AlluDataFactory.createApplication()
+        val hankeTunnus = "HAI-1234"
+        val application = AlluDataFactory.createApplication(hankeTunnus = hankeTunnus)
         every {
             applicationService.updateApplicationData(1234, application.applicationData, username)
         } returns application
+        every { hankeService.getHankeId(hankeTunnus) } returns 42
+        every { permissionService.hasPermission(42, any(), any()) } returns true
 
         val response: Application =
             put("/hakemukset/1234", application).andExpect(status().isOk).andReturnBody()
@@ -201,6 +214,8 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         verify {
             applicationService.updateApplicationData(1234, application.applicationData, username)
         }
+        verify { hankeService.getHankeId(hankeTunnus) }
+        verify { permissionService.hasPermission(42, any(), any()) }
     }
 
     @Test
@@ -232,31 +247,41 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     @Test
     @WithMockUser(username)
     fun `update with unknown id returns 404`() {
-        val application = AlluDataFactory.createApplication()
+        val hankeTunnus = "HAI-1234"
+        val application = AlluDataFactory.createApplication(hankeTunnus = hankeTunnus)
         every {
             applicationService.updateApplicationData(1234, application.applicationData, username)
         } throws ApplicationNotFoundException(1234)
+        every { hankeService.getHankeId(hankeTunnus) } returns 42
+        every { permissionService.hasPermission(42, any(), any()) } returns true
 
         put("/hakemukset/1234", application).andExpect(status().isNotFound)
 
         verify {
             applicationService.updateApplicationData(1234, application.applicationData, username)
         }
+        verify { hankeService.getHankeId(hankeTunnus) }
+        verify { permissionService.hasPermission(42, any(), any()) }
     }
 
     @Test
     @WithMockUser(username)
     fun `update with application that's no longer pending returns 409`() {
-        val application = AlluDataFactory.createApplication()
+        val hankeTunnus = "HAI-1234"
+        val application = AlluDataFactory.createApplication(hankeTunnus = hankeTunnus)
         every {
             applicationService.updateApplicationData(1234, application.applicationData, username)
         } throws ApplicationAlreadyProcessingException(1234, 21)
+        every { hankeService.getHankeId(hankeTunnus) } returns 42
+        every { permissionService.hasPermission(42, any(), any()) } returns true
 
         put("/hakemukset/1234", application).andExpect(status().isConflict)
 
         verify {
             applicationService.updateApplicationData(1234, application.applicationData, username)
         }
+        verify { hankeService.getHankeId(hankeTunnus) }
+        verify { permissionService.hasPermission(42, any(), any()) }
     }
 
     @Test
@@ -331,6 +356,40 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         post("/hakemukset/1234/send-application").andExpect(status().isConflict)
 
         verify { applicationService.sendApplication(1234, username) }
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `Application can be linked to a hanke`() {
+        val hankeTunnus = "HAI-1234"
+        every { applicationService.getApplicationById(1234, username) } returns
+            AlluDataFactory.createApplication(id = 1234, hankeTunnus = hankeTunnus)
+        every { hankeService.getHankeId(hankeTunnus) } returns 42
+        every { permissionService.hasPermission(42, any(), any()) } returns true
+
+        get("/hakemukset/1234")
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.hankeTunnus").value(hankeTunnus))
+
+        verify { applicationService.getApplicationById(1234, username) }
+        verify { hankeService.getHankeId(hankeTunnus) }
+        verify { permissionService.hasPermission(42, any(), any()) }
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `Creating an application without hanke permissions fails`() {
+        val hankeTunnus = "HAI-1234"
+        every { applicationService.getApplicationById(1234, username) } returns
+            AlluDataFactory.createApplication(id = 1234, hankeTunnus = hankeTunnus)
+        every { hankeService.getHankeId(hankeTunnus) } returns 42
+        every { permissionService.hasPermission(42, any(), any()) } returns false
+
+        get("/hakemukset/1234").andExpect(status().isNotFound)
+
+        verify { applicationService.getApplicationById(1234, username) }
+        verify { hankeService.getHankeId(hankeTunnus) }
+        verify { permissionService.hasPermission(42, any(), any()) }
     }
 
     @Test

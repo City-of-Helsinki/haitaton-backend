@@ -1,7 +1,9 @@
 package fi.hel.haitaton.hanke.application
 
+import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
@@ -20,10 +22,17 @@ private const val username = "testUser"
 class ApplicationControllerTest {
 
     private val applicationService: ApplicationService = mockk()
+    private val hankeService: HankeService = mockk()
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
+    private val permissionService: PermissionService = mockk()
 
     private val applicationController =
-        ApplicationController(applicationService, disclosureLogService)
+        ApplicationController(
+            applicationService,
+            hankeService,
+            disclosureLogService,
+            permissionService
+        )
 
     @AfterEach
     fun cleanUp() {
@@ -56,9 +65,11 @@ class ApplicationControllerTest {
 
     @Test
     fun `getById saves disclosure logs`() {
-        val application = AlluDataFactory.createApplication()
+        val hankeTunnus = "HAI-1234"
+        val application = AlluDataFactory.createApplication(hankeTunnus = hankeTunnus)
         every { applicationService.getApplicationById(1, username) } returns application
-
+        every { hankeService.getHankeId(hankeTunnus) } returns 42
+        every { permissionService.hasPermission(42, any(), any()) } returns true
         applicationController.getById(1)
 
         verify {
@@ -69,8 +80,12 @@ class ApplicationControllerTest {
 
     @Test
     fun `create saves disclosure logs`() {
-        val requestApplication = AlluDataFactory.createApplication(id = null)
+        val hankeTunnus = "HAI-1234"
+        val requestApplication =
+            AlluDataFactory.createApplication(id = null, hankeTunnus = hankeTunnus)
         val createdApplication = requestApplication.copy(id = 1)
+        every { hankeService.getHankeId(hankeTunnus) } returns 42
+        every { permissionService.hasPermission(42, any(), any()) } returns true
         every { applicationService.create(requestApplication, username) } returns createdApplication
 
         applicationController.create(requestApplication)
@@ -83,10 +98,13 @@ class ApplicationControllerTest {
 
     @Test
     fun `update saves disclosure logs`() {
-        val application = AlluDataFactory.createApplication(id = 1)
+        val hankeTunnus = "HAI-1234"
+        val application = AlluDataFactory.createApplication(id = 1, hankeTunnus = hankeTunnus)
         every {
             applicationService.updateApplicationData(1, application.applicationData, username)
         } returns application
+        every { hankeService.getHankeId(hankeTunnus) } returns 42
+        every { permissionService.hasPermission(42, any(), any()) } returns true
 
         applicationController.update(1, application)
 
