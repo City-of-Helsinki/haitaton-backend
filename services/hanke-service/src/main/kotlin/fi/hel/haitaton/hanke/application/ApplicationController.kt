@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.allu
+package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.currentUserId
@@ -238,6 +238,13 @@ class ApplicationController(
     @ExceptionHandler(ApplicationAlreadyProcessingException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
     fun applicationAlreadyProcessing(ex: ApplicationAlreadyProcessingException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2003
+    }
+
+    @ExceptionHandler(AlluDataException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    fun alluDataError(ex: AlluDataException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2003
     }

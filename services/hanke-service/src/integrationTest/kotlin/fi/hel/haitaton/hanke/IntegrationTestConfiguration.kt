@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.allu.ApplicationService
+import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.gdpr.GdprJsonConverter
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatService

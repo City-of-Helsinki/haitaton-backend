@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.allu.Contact
-import fi.hel.haitaton.hanke.allu.Customer
+import fi.hel.haitaton.hanke.application.Contact
+import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.AuditLogEntry
 import fi.hel.haitaton.hanke.logging.ObjectType

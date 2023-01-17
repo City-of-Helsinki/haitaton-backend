@@ -1,17 +1,18 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.allu.Application
-import fi.hel.haitaton.hanke.allu.ApplicationEntity
-import fi.hel.haitaton.hanke.allu.ApplicationRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.ApplicationType
-import fi.hel.haitaton.hanke.allu.CableReportApplicationData
-import fi.hel.haitaton.hanke.allu.Contact
-import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.allu.CustomerWithContacts
-import fi.hel.haitaton.hanke.allu.PostalAddress
-import fi.hel.haitaton.hanke.allu.StreetAddress
+import fi.hel.haitaton.hanke.application.Application
+import fi.hel.haitaton.hanke.application.ApplicationData
+import fi.hel.haitaton.hanke.application.ApplicationEntity
+import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.application.Contact
+import fi.hel.haitaton.hanke.application.Customer
+import fi.hel.haitaton.hanke.application.CustomerWithContacts
+import fi.hel.haitaton.hanke.application.PostalAddress
+import fi.hel.haitaton.hanke.application.StreetAddress
 import java.time.ZonedDateTime
 import org.geojson.GeometryCollection
 import org.springframework.stereotype.Component
@@ -29,7 +30,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
         ) = PostalAddress(streetAddress, postalCode, city)
 
         fun createPersonCustomer(
-            type: CustomerType = CustomerType.PERSON,
+            type: CustomerType? = CustomerType.PERSON,
             name: String = "Teppo Testihenkilö",
             country: String = "FI",
             postalAddress: PostalAddress? = createPostalAddress(),
@@ -54,7 +55,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             )
 
         fun createCompanyCustomer(
-            type: CustomerType = CustomerType.COMPANY,
+            type: CustomerType? = CustomerType.COMPANY,
             name: String = "DNA",
             country: String = "FI",
             postalAddress: PostalAddress? = createPostalAddress(),
@@ -90,8 +91,8 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             customerWithContacts: CustomerWithContacts =
                 CustomerWithContacts(createCompanyCustomer(), listOf(createContact())),
             geometry: GeometryCollection = GeometryCollection(),
-            startTime: ZonedDateTime = DateFactory.getStartDatetime(),
-            endTime: ZonedDateTime = DateFactory.getEndDatetime(),
+            startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
+            endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             pendingOnClient: Boolean = false,
             identificationNumber: String = "identification",
             clientApplicationKind: String = "applicationKind",
@@ -163,7 +164,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             applicationIdentifier: String? = null,
             userId: String? = null,
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-            applicationData: CableReportApplicationData = createCableReportApplicationData(),
+            applicationData: ApplicationData = createCableReportApplicationData(),
         ): ApplicationEntity =
             ApplicationEntity(
                 id,

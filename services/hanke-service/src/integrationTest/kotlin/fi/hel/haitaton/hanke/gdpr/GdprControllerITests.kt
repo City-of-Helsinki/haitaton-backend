@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke.gdpr
 
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
-import fi.hel.haitaton.hanke.allu.ApplicationService
+import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.UserInfoFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService

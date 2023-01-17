@@ -1,36 +1,14 @@
 package fi.hel.haitaton.hanke.allu
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.annotation.JsonView
-import fi.hel.haitaton.hanke.ChangeLogView
-import fi.hel.haitaton.hanke.NotInChangeLogView
 import java.time.ZonedDateTime
 import org.geojson.GeometryCollection
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.EXISTING_PROPERTY,
-    property = "applicationType",
-    visible = true
-)
-@JsonSubTypes(
-    JsonSubTypes.Type(value = CableReportApplicationData::class, name = "CABLE_REPORT"),
-)
-sealed interface ApplicationData {
-    val applicationType: ApplicationType
+sealed interface AlluApplicationData {
     val name: String
     val pendingOnClient: Boolean
-
-    fun copy(pendingOnClient: Boolean): ApplicationData
 }
 
-@JsonView(ChangeLogView::class)
-data class CableReportApplicationData(
-    @JsonView(NotInChangeLogView::class) override val applicationType: ApplicationType,
-
+data class AlluCableReportApplicationData(
     // Common, required
     override val name: String,
     val customerWithContacts: CustomerWithContacts,
@@ -58,12 +36,9 @@ data class CableReportApplicationData(
     val maintenanceWork: Boolean = false,
     val emergencyWork: Boolean = false,
     val propertyConnectivity: Boolean = false, // tontti-/kiinteistöliitos
-) : ApplicationData {
-    override fun copy(pendingOnClient: Boolean): CableReportApplicationData =
-        copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
-}
+) : AlluApplicationData
 
 data class CableReportInformationRequestResponse(
-    val applicationData: CableReportApplicationData,
+    val applicationData: AlluCableReportApplicationData,
     val updatedFields: List<InformationRequestFieldKey>
 )

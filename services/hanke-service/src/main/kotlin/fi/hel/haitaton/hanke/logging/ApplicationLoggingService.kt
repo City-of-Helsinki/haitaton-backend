@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.logging
 
-import fi.hel.haitaton.hanke.allu.Application
+import fi.hel.haitaton.hanke.application.Application
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
