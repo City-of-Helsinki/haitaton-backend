@@ -67,3 +67,5 @@ databaseChangeLog:
       file: db/changelog/changesets/018-add-status-and-indentifier-for-applications.yml
   - include:
       file: db/changelog/changesets/019-create-allustatus-table.yml
+  - include:
+      file: db/changelog/changesets/020-create-lock-table.yml
