@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.allu
 
+import fi.hel.haitaton.hanke.configuration.LockService
 import java.time.OffsetDateTime
 import mu.KotlinLogging
 import org.springframework.scheduling.annotation.Scheduled
@@ -13,10 +14,18 @@ class AlluUpdateService(
     private val alluStatusRepository: AlluStatusRepository,
     private val cableReportService: CableReportService,
     private val applicationService: ApplicationService,
+    private val lockService: LockService,
 ) {
+
+    internal val lockName = "alluHistoryUpdate"
 
     @Scheduled(fixedDelay = 1000 * 60, initialDelay = 1000 * 60)
     fun checkApplicationStatuses() {
+        logger.info("Trying to obtain lock $lockName to start uploading audit logs.")
+        lockService.doIfUnlocked(lockName) { getApplicationStatuses() }
+    }
+
+    private fun getApplicationStatuses() {
         val ids = applicationRepository.getAllAlluIds()
         if (ids.isEmpty()) {
             // Exit if there are no alluids. Allu handles an empty list as "all", which we don't
