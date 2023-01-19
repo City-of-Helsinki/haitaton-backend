@@ -3,9 +3,11 @@ package fi.hel.haitaton.hanke.allu
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
+import java.time.OffsetDateTime
 import kotlin.reflect.KClass
 import mu.KotlinLogging
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
 
@@ -15,6 +17,7 @@ const val ALLU_APPLICATION_ERROR_MSG = "Error sending application to Allu"
 
 open class ApplicationService(
     private val repo: ApplicationRepository,
+    private val alluStatusRepository: AlluStatusRepository,
     private val cableReportService: CableReportService,
     private val disclosureLogService: DisclosureLogService,
     private val applicationLoggingService: ApplicationLoggingService,
@@ -33,6 +36,8 @@ open class ApplicationService(
             ApplicationEntity(
                 id = null,
                 alluid = null,
+                alluStatus = null,
+                applicationIdentifier = null,
                 userId = userId,
                 applicationType = application.applicationType,
                 // The application is still a draft in Haitaton until the customer explicitly sends
@@ -51,7 +56,7 @@ open class ApplicationService(
     open fun updateApplicationData(
         id: Long,
         newApplicationData: ApplicationData,
-        userId: String
+        userId: String,
     ): Application {
         val application = getById(id, userId)
         val applicationBefore = application.toApplication()
@@ -95,6 +100,42 @@ open class ApplicationService(
         logger.info("Sent application id=$id, alluid=${application.alluid}")
         // Save only if sendApplicationToAllu didn't throw an exception
         return repo.save(application).toApplication()
+    }
+
+    @Transactional
+    open fun handleApplicationUpdates(
+        applicationHistories: List<ApplicationHistory>,
+        updateTime: OffsetDateTime
+    ) {
+        applicationHistories.forEach { handleApplicationUpdate(it) }
+        val status = alluStatusRepository.getOne(1)
+        status.historyLastUpdated = updateTime
+        alluStatusRepository.save(status)
+    }
+
+    private fun handleApplicationUpdate(applicationHistory: ApplicationHistory) {
+        val application = repo.getOneByAlluid(applicationHistory.applicationId)
+        if (application == null) {
+            logger.error {
+                "Allu had events for an application we don't have anymore. alluid=${applicationHistory.applicationId}"
+            }
+            return
+        }
+        applicationHistory.events
+            .sortedBy { it.eventTime }
+            .forEach { event ->
+                application.alluStatus = event.newStatus
+                application.applicationIdentifier = event.applicationIdentifier
+                logger.info {
+                    "Updating application with new status, " +
+                        "id=${application.id}, " +
+                        "alluid=${application.alluid}, " +
+                        "application identifier=${application.applicationIdentifier}, " +
+                        "new status=${application.alluStatus}, " +
+                        "event time=${event.eventTime}"
+                }
+            }
+        repo.save(application)
     }
 
     private fun getById(id: Long, userId: String): ApplicationEntity {
@@ -211,5 +252,11 @@ class ApplicationAlreadyProcessingException(id: Long?, alluid: Int?) :
 @Repository
 interface ApplicationRepository : JpaRepository<ApplicationEntity, Long> {
     fun findOneByIdAndUserId(id: Long, userId: String): ApplicationEntity?
+
     fun getAllByUserId(userId: String): List<ApplicationEntity>
+
+    @Query("select alluid from ApplicationEntity where alluid is not null")
+    fun getAllAlluIds(): List<Int>
+
+    fun getOneByAlluid(alluid: Int): ApplicationEntity?
 }

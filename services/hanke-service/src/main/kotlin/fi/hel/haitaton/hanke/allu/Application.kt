@@ -9,6 +9,8 @@ enum class ApplicationType {
 data class Application(
     override val id: Long?,
     val alluid: Int?,
+    val alluStatus: ApplicationStatus?,
+    val applicationIdentifier: String?,
     val applicationType: ApplicationType,
     val applicationData: ApplicationData
 ) : HasId<Long>

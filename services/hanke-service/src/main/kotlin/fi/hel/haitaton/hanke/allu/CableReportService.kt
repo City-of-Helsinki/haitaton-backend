@@ -10,6 +10,11 @@ interface CableReportService {
         eventsAfter: ZonedDateTime
     ): List<ApplicationStatusEvent>
 
+    fun getApplicationStatusHistories(
+        applicationIds: List<Int>,
+        eventsAfter: ZonedDateTime
+    ): List<ApplicationHistory>
+
     fun create(cableReport: CableReportApplicationData): Int
     fun update(applicationId: Int, cableReport: CableReportApplicationData)
 

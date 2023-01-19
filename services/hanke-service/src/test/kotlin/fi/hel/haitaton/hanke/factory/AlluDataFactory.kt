@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.allu.Application
 import fi.hel.haitaton.hanke.allu.ApplicationEntity
 import fi.hel.haitaton.hanke.allu.ApplicationRepository
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationType
 import fi.hel.haitaton.hanke.allu.CableReportApplicationData
 import fi.hel.haitaton.hanke.allu.Contact
@@ -115,12 +116,16 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
         fun createApplication(
             id: Long? = 1,
             alluid: Int? = null,
+            alluStatus: ApplicationStatus? = null,
+            applicationIdentifier: String? = null,
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
             applicationData: CableReportApplicationData = createCableReportApplicationData(),
         ): Application =
             Application(
                 id = id,
                 alluid = alluid,
+                alluStatus = alluStatus,
+                applicationIdentifier = applicationIdentifier,
                 applicationType = applicationType,
                 applicationData = applicationData
             )
@@ -150,41 +155,72 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                     )
                 }
                 .map { application -> mapper(application.id!!, application) }
+
+        fun createApplicationEntity(
+            id: Long? = 3,
+            alluid: Int? = null,
+            alluStatus: ApplicationStatus? = null,
+            applicationIdentifier: String? = null,
+            userId: String? = null,
+            applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
+            applicationData: CableReportApplicationData = createCableReportApplicationData(),
+        ): ApplicationEntity =
+            ApplicationEntity(
+                id,
+                alluid,
+                alluStatus,
+                applicationIdentifier,
+                userId,
+                applicationType,
+                applicationData,
+            )
     }
 
+    /**
+     * Save an application to database. The mutator can be used to mutate the entity before saving
+     * it.
+     */
     fun saveApplicationEntity(
         username: String,
-        mapper: (ApplicationEntity) -> ApplicationEntity = { it },
+        mutator: (ApplicationEntity) -> Unit = {},
     ): ApplicationEntity {
         val application = createApplication()
         val applicationEntity =
             ApplicationEntity(
-                null,
-                application.alluid,
+                id = null,
+                alluid = application.alluid,
+                alluStatus = null,
+                applicationIdentifier = null,
                 username,
                 application.applicationType,
                 application.applicationData
             )
-        return applicationRepository.save(mapper(applicationEntity))
+        mutator(applicationEntity)
+        return applicationRepository.save(applicationEntity)
     }
 
+    /**
+     * Save several applications to database. The mutator can be used to mutate the entities before
+     * saving them.
+     */
     fun saveApplicationEntities(
         n: Long,
         username: String,
-        mapper: (Int, ApplicationEntity) -> ApplicationEntity = { _, app -> app },
-    ): List<ApplicationEntity> =
-        applicationRepository.saveAll(
-            createApplications(n)
-                .map { application ->
-                    ApplicationEntity(
-                        id = null,
-                        alluid = application.alluid,
-                        userId = username,
-                        applicationType = application.applicationType,
-                        applicationData = application.applicationData,
-                    )
-                }
-                .withIndex()
-                .map { (i, application) -> mapper(i, application) }
-        )
+        mutator: (Int, ApplicationEntity) -> Unit = { _, _ -> },
+    ): List<ApplicationEntity> {
+        val entities =
+            createApplications(n).map { application ->
+                ApplicationEntity(
+                    id = null,
+                    alluid = application.alluid,
+                    alluStatus = null,
+                    applicationIdentifier = null,
+                    userId = username,
+                    applicationType = application.applicationType,
+                    applicationData = application.applicationData,
+                )
+            }
+        entities.withIndex().forEach { (i, application) -> mutator(i, application) }
+        return applicationRepository.saveAll(entities)
+    }
 }
