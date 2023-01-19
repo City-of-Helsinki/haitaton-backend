@@ -5,6 +5,8 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
 import java.nio.charset.StandardCharsets
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import org.springframework.test.web.servlet.ResultActions
 
 fun <T> String.asJsonResource(type: Class<T>): T =
@@ -32,3 +34,5 @@ fun String.getResourceAsText(): String =
  */
 fun AuditLogRepository.findByType(type: ObjectType) =
     this.findAll().filter { it.message.auditEvent.target.type == type }
+
+fun OffsetDateTime.asUtc(): OffsetDateTime = this.withOffsetSameInstant(ZoneOffset.UTC)

@@ -7,8 +7,10 @@ import fi.hel.haitaton.hanke.HanketunnusService
 import fi.hel.haitaton.hanke.HanketunnusServiceImpl
 import fi.hel.haitaton.hanke.IdCounterRepository
 import fi.hel.haitaton.hanke.allu.AlluProperties
+import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationRepository
 import fi.hel.haitaton.hanke.allu.ApplicationService
+import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.CableReportServiceAllu
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
@@ -49,7 +51,7 @@ class Configuration {
     @Value("\${haitaton.allu.insecure}") var alluTrustInsecure: Boolean = false
 
     @Bean
-    fun cableReportServiceAllu(): CableReportServiceAllu {
+    fun cableReportService(): CableReportService {
         val webClient =
             if (alluTrustInsecure) createInsecureTrustingWebClient() else WebClient.create()
         val alluProps =
@@ -67,13 +69,15 @@ class Configuration {
     @Bean
     fun applicationService(
         applicationRepository: ApplicationRepository,
-        cableReportServiceAllu: CableReportServiceAllu,
+        alluStatusRepository: AlluStatusRepository,
+        cableReportService: CableReportService,
         disclosureLogService: DisclosureLogService,
         applicationLoggingService: ApplicationLoggingService,
     ): ApplicationService =
         ApplicationService(
             applicationRepository,
-            cableReportServiceAllu,
+            alluStatusRepository,
+            cableReportService,
             disclosureLogService,
             applicationLoggingService,
         )

@@ -1,8 +1,5 @@
 package fi.hel.haitaton.hanke.logging
 
-import fi.hel.haitaton.hanke.allu.Application
-import fi.hel.haitaton.hanke.allu.ApplicationType
-import fi.hel.haitaton.hanke.allu.CableReportApplicationData
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
@@ -185,7 +182,7 @@ internal class DisclosureLogServiceTest {
         val contractorWithoutContacts =
             CustomerWithContacts(AlluDataFactory.createCompanyCustomer(name = "Second"), listOf())
         val application =
-            applicationDto(
+            AlluDataFactory.createApplication(
                 applicationData =
                     AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
@@ -208,7 +205,7 @@ internal class DisclosureLogServiceTest {
                 listOf(Contact("", PostalAddress(StreetAddress(""), "", ""), "", ""))
             )
         val application =
-            applicationDto(
+            AlluDataFactory.createApplication(
                 applicationData =
                     AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
@@ -230,7 +227,7 @@ internal class DisclosureLogServiceTest {
         val customerWithoutContacts = CustomerWithContacts(blankCustomer, listOf())
         val contractorWithoutContacts = CustomerWithContacts(blankCustomerWithCountry, listOf())
         val application =
-            applicationDto(
+            AlluDataFactory.createApplication(
                 applicationData =
                     AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
@@ -250,11 +247,12 @@ internal class DisclosureLogServiceTest {
         val contractorWithoutContacts =
             CustomerWithContacts(AlluDataFactory.createPersonCustomer(), listOf())
         val application =
-            applicationDto(
-                AlluDataFactory.createCableReportApplicationData(
-                    customerWithContacts = customerWithoutContacts,
-                    contractorWithContacts = contractorWithoutContacts
-                )
+            AlluDataFactory.createApplication(
+                applicationData =
+                    AlluDataFactory.createCableReportApplicationData(
+                        customerWithContacts = customerWithoutContacts,
+                        contractorWithContacts = contractorWithoutContacts
+                    )
             )
         val expectedLogs =
             listOf(
@@ -271,7 +269,8 @@ internal class DisclosureLogServiceTest {
         val cableReportApplication = AlluDataFactory.createCableReportApplicationData()
         val contact = cableReportApplication.customerWithContacts.contacts[0]
         val expectedLogs = listOf(AuditLogEntryFactory.createReadEntryForContact(contact))
-        val application = applicationDto(applicationData = cableReportApplication)
+        val application =
+            AlluDataFactory.createApplication(applicationData = cableReportApplication)
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
@@ -324,7 +323,7 @@ internal class DisclosureLogServiceTest {
                         contractorWithContacts = customersWithContacts[3],
                     )
                 )
-                .map { applicationDto(it) }
+                .map { AlluDataFactory.createApplication(applicationData = it) }
 
         disclosureLogService.saveDisclosureLogsForApplications(applications, userId)
 
@@ -344,12 +343,4 @@ internal class DisclosureLogServiceTest {
 
     private infix fun <T> List<T>.equalsIgnoreOrder(other: List<T>): Boolean =
         this.size == other.size && this.toSet() == other.toSet()
-
-    private fun applicationDto(applicationData: CableReportApplicationData): Application =
-        Application(
-            id = 1,
-            alluid = null,
-            applicationType = ApplicationType.CABLE_REPORT,
-            applicationData = applicationData
-        )
 }

@@ -1,16 +1,21 @@
 package fi.hel.haitaton.hanke.allu
 
 import assertk.assertThat
+import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
 import assertk.assertions.extracting
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
+import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.prop
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.asUtc
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
@@ -26,6 +31,8 @@ import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
+import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -51,10 +58,11 @@ private const val username = "test7358"
 @ActiveProfiles("default")
 @WithMockUser(username)
 class ApplicationServiceITest : DatabaseTest() {
-    @MockkBean private lateinit var cableReportServiceAllu: CableReportServiceAllu
+    @MockkBean private lateinit var cableReportServiceAllu: CableReportService
     @Autowired private lateinit var applicationService: ApplicationService
 
     @Autowired private lateinit var applicationRepository: ApplicationRepository
+    @Autowired private lateinit var alluStatusRepository: AlluStatusRepository
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
 
@@ -194,15 +202,11 @@ class ApplicationServiceITest : DatabaseTest() {
         val otherUser = "otherUser"
         alluDataFactory.saveApplicationEntities(6, "otherUser") { i, application ->
             if (i % 2 == 0) {
-                application.apply {
-                    this.userId = username
-                    this.applicationData =
-                        AlluDataFactory.createCableReportApplicationData(
-                            name = "Application data for $username"
-                        )
-                }
-            } else {
-                application
+                application.userId = username
+                application.applicationData =
+                    AlluDataFactory.createCableReportApplicationData(
+                        name = "Application data for $username"
+                    )
             }
         }
         assertThat(applicationRepository.findAll()).hasSize(6)
@@ -362,8 +366,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @Test
     fun `updateApplicationData with application that's already saved to Allu is updated in Allu`() {
-        val application =
-            alluDataFactory.saveApplicationEntity(username) { it.apply { alluid = 21 } }
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = 21 }
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(name = "Uudistettu johtoselvitys")
         every { cableReportServiceAllu.getCurrentStatus(21) } returns null
@@ -388,8 +391,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @Test
     fun `updateApplicationData updates local database even if Allu update fails`() {
-        val application =
-            alluDataFactory.saveApplicationEntity(username) { it.apply { alluid = 21 } }
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = 21 }
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(name = "Uudistettu johtoselvitys")
         every { cableReportServiceAllu.getCurrentStatus(21) } returns null
@@ -418,10 +420,8 @@ class ApplicationServiceITest : DatabaseTest() {
     fun `updateApplicationData with application that's pending on Allu is updated in Allu`() {
         val application =
             alluDataFactory.saveApplicationEntity(username) {
-                it.apply {
-                    alluid = 21
-                    applicationData = applicationData.copy(pendingOnClient = false)
-                }
+                it.alluid = 21
+                it.applicationData = it.applicationData.copy(pendingOnClient = false)
             }
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(
@@ -453,10 +453,8 @@ class ApplicationServiceITest : DatabaseTest() {
     fun `updateApplicationData doesn't update pendingOnClient`() {
         val application =
             alluDataFactory.saveApplicationEntity(username) {
-                it.apply {
-                    alluid = 21
-                    applicationData = applicationData.copy(pendingOnClient = false)
-                }
+                it.alluid = 21
+                it.applicationData = it.applicationData.copy(pendingOnClient = false)
             }
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(
@@ -481,8 +479,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @Test
     fun `updateApplicationData with application that's already beyond pending in Allu is not updated`() {
-        val application =
-            alluDataFactory.saveApplicationEntity(username) { it.apply { alluid = 21 } }
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = 21 }
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(name = "Uudistettu johtoselvitys")
         every { cableReportServiceAllu.getCurrentStatus(21) } returns ApplicationStatus.HANDLING
@@ -515,10 +512,8 @@ class ApplicationServiceITest : DatabaseTest() {
     fun `sendApplication sends pending application to Allu`() {
         val application =
             alluDataFactory.saveApplicationEntity(username) {
-                it.apply {
-                    alluid = 21
-                    applicationData = applicationData.copy(pendingOnClient = false)
-                }
+                it.alluid = 21
+                it.applicationData = it.applicationData.copy(pendingOnClient = false)
             }
         val applicationData = application.applicationData as CableReportApplicationData
         every { cableReportServiceAllu.getCurrentStatus(21) } returns ApplicationStatus.PENDING
@@ -536,10 +531,8 @@ class ApplicationServiceITest : DatabaseTest() {
     fun `sendApplication sets pendingOnClient to false`() {
         val application =
             alluDataFactory.saveApplicationEntity(username) {
-                it.apply {
-                    alluid = 21
-                    applicationData = applicationData.copy(pendingOnClient = false)
-                }
+                it.alluid = 21
+                it.applicationData = it.applicationData.copy(pendingOnClient = false)
             }
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
@@ -563,8 +556,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @Test
     fun `sendApplication creates new application to Allu and saves ID to database`() {
-        val application =
-            alluDataFactory.saveApplicationEntity(username) { it.apply { alluid = null } }
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = null }
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
         every { cableReportServiceAllu.create(pendingApplicationData) } returns 26
@@ -585,10 +577,8 @@ class ApplicationServiceITest : DatabaseTest() {
     fun `sendApplication with application that's already beyond pending in Allu is not sent`() {
         val application =
             alluDataFactory.saveApplicationEntity(username) {
-                it.apply {
-                    alluid = 21
-                    applicationData = applicationData.copy(pendingOnClient = false)
-                }
+                it.alluid = 21
+                it.applicationData = it.applicationData.copy(pendingOnClient = false)
             }
         every { cableReportServiceAllu.getCurrentStatus(21) } throws
             ApplicationAlreadyProcessingException(application.id, 21)
@@ -599,6 +589,90 @@ class ApplicationServiceITest : DatabaseTest() {
 
         verify { cableReportServiceAllu.getCurrentStatus(21) }
     }
+
+    // TODO: Needs Spring 5.3, which comes with Spring Boot 2.4.
+    //  Inner test classes won't inherit properties from the enclosing class until then.
+    // @Nested class HandleApplicationUpdates {
+
+    /** The timestamp used in the initial DB migration. */
+    private val placeholderUpdateTime = OffsetDateTime.parse("2017-01-01T00:00:00Z")
+    private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
+    private val alluid = 42
+
+    @Test
+    fun `handleApplicationUpdates with empty histories updates the last updated time`() {
+        assertThat(applicationRepository.findAll()).isEmpty()
+        assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
+        applicationService.handleApplicationUpdates(listOf(), updateTime)
+
+        assertEquals(updateTime, alluStatusRepository.getLastUpdateTime().asUtc())
+    }
+
+    @Test
+    fun `handleApplicationUpdates updates the application statuses in the correct order`() {
+        assertThat(applicationRepository.findAll()).isEmpty()
+        assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
+        alluDataFactory.saveApplicationEntity(username) { it.alluid = alluid }
+        val firstEventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
+        val history =
+            ApplicationHistoryFactory.create(applicationId = alluid)
+                .copy(
+                    events =
+                        listOf(
+                            ApplicationHistoryFactory.createEvent(
+                                firstEventTime.plusDays(5),
+                                ApplicationStatus.PENDING
+                            ),
+                            ApplicationHistoryFactory.createEvent(
+                                firstEventTime.plusDays(10),
+                                ApplicationStatus.HANDLING
+                            ),
+                            ApplicationHistoryFactory.createEvent(
+                                firstEventTime,
+                                ApplicationStatus.PENDING
+                            ),
+                        )
+                )
+
+        applicationService.handleApplicationUpdates(listOf(history), updateTime)
+
+        assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isEqualTo(updateTime)
+        val application = applicationRepository.getOneByAlluid(alluid)
+        assertThat(application)
+            .isNotNull()
+            .prop("alluStatus", ApplicationEntity::alluStatus)
+            .isEqualTo(ApplicationStatus.HANDLING)
+        assertThat(application!!.applicationIdentifier)
+            .isEqualTo(ApplicationHistoryFactory.defaultApplicationIdentifier)
+    }
+
+    @Test
+    fun `handleApplicationUpdates ignores missing application`() {
+        assertThat(applicationRepository.findAll()).isEmpty()
+        assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
+        alluDataFactory.saveApplicationEntity(username) { it.alluid = alluid }
+        alluDataFactory.saveApplicationEntity(username) { it.alluid = alluid + 2 }
+        val histories =
+            listOf(
+                ApplicationHistoryFactory.create(alluid, "JS2300082"),
+                ApplicationHistoryFactory.create(alluid + 1, "JS2300083"),
+                ApplicationHistoryFactory.create(alluid + 2, "JS2300084"),
+            )
+
+        applicationService.handleApplicationUpdates(histories, updateTime)
+        assertEquals(updateTime, alluStatusRepository.getLastUpdateTime().asUtc())
+        val applications = applicationRepository.findAll()
+        assertThat(applications).hasSize(2)
+        assertThat(applications.map { it.alluid }).containsExactlyInAnyOrder(alluid, alluid + 2)
+        assertThat(applications.map { it.alluStatus })
+            .containsExactlyInAnyOrder(
+                ApplicationStatus.PENDING_CLIENT,
+                ApplicationStatus.PENDING_CLIENT
+            )
+        assertThat(applications.map { it.applicationIdentifier })
+            .containsExactlyInAnyOrder("JS2300082", "JS2300084")
+    }
+    // }
 
     val customerWithContactsJson =
         """
@@ -646,6 +720,8 @@ class ApplicationServiceITest : DatabaseTest() {
             {
               "id": $id,
               "alluid": $alluId,
+              "alluStatus": null,
+              "applicationIdentifier": null,
               "applicationType": "CABLE_REPORT",
               "applicationData": {
                 "name": "$name",

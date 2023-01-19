@@ -63,3 +63,7 @@ databaseChangeLog:
       file: db/changelog/changesets/016-rename-hankegeometriat.yml
   - include:
       file: db/changelog/changesets/017-create-role-table.yml
+  - include:
+      file: db/changelog/changesets/018-add-status-and-indentifier-for-applications.yml
+  - include:
+      file: db/changelog/changesets/019-create-allustatus-table.yml

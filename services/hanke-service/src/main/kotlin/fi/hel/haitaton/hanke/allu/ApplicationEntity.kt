@@ -18,9 +18,12 @@ import org.hibernate.annotations.TypeDef
 data class ApplicationEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Long?,
     var alluid: Int?,
+    @Enumerated(EnumType.STRING) var alluStatus: ApplicationStatus?,
+    var applicationIdentifier: String?,
     var userId: String?,
     @Enumerated(EnumType.STRING) val applicationType: ApplicationType,
     @Type(type = "json") @Column(columnDefinition = "jsonb") var applicationData: ApplicationData,
 ) {
-    fun toApplication() = Application(id, alluid, applicationType, applicationData)
+    fun toApplication() =
+        Application(id, alluid, alluStatus, applicationIdentifier, applicationType, applicationData)
 }
