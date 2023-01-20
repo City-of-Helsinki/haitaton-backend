@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.domain
 
 import fi.hel.haitaton.hanke.Haitta13
-import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
@@ -12,10 +11,6 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
 
 data class PublicHankeYhteystieto(
     val organisaatioId: Int?,
@@ -114,17 +109,4 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
         omistajat,
         alueet,
     )
-}
-
-@RestController
-@RequestMapping("/public-hankkeet")
-class PublicHankeController(
-    @Autowired private val hankeService: HankeService,
-) {
-
-    @GetMapping
-    fun getAll(): List<PublicHanke> {
-        val hankkeet = hankeService.loadAllHanke().filter { it.tormaystarkasteluTulos != null }
-        return hankkeet.map { hankeToPublic(it) }
-    }
 }

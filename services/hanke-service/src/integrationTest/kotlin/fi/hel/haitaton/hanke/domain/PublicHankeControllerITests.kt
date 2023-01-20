@@ -3,11 +3,11 @@ package fi.hel.haitaton.hanke.domain
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
+import fi.hel.haitaton.hanke.PublicHankeController
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.mutate
 import fi.hel.haitaton.hanke.factory.HankeFactory.withHankealue
+import fi.hel.haitaton.hanke.factory.HankeFactory.withTormaystarkasteluTulos
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
@@ -55,19 +55,46 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Test
     // Without mock user, i.e. anonymous
-    fun `only returns hankkeet with tormaystarkasteluTulos`() {
+    fun `only returns hankkeet with mandatory fields filled`() {
         performGetHankkeet(
                 listOf(
-                    HankeFactory.create().withHankealue().mutate {
-                        it.tormaystarkasteluTulos = TormaystarkasteluTulos(1f, 1f, 1f)
-                    },
-                    HankeFactory.create(id = 444, hankeTunnus = "HAI-TEST-2").withHankealue()
+                    HankeFactory.create(id = 1, nimi = null)
+                        .withHankealue()
+                        .withYhteystiedot()
+                        .withTormaystarkasteluTulos(),
+                    HankeFactory.create(id = 2, nimi = "null")
+                        .withHankealue()
+                        .withYhteystiedot()
+                        .withTormaystarkasteluTulos(),
                 )
             )
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(jsonPath("[0]").exists())
             .andExpect(jsonPath("[1]").doesNotExist())
-            .andExpect(jsonPath("[0].id").value(123))
+            .andExpect(jsonPath("[0].id").value(2))
+            .andExpect(jsonPath("[0].nimi").value("null"))
+
+        verify { hankeService.loadAllHanke() }
+    }
+
+    @Test
+    // Without mock user, i.e. anonymous
+    fun `only returns hankkeet with tormaystarkasteluTulos`() {
+        performGetHankkeet(
+                listOf(
+                    HankeFactory.create()
+                        .withHankealue()
+                        .withYhteystiedot()
+                        .withTormaystarkasteluTulos(),
+                    HankeFactory.create(id = 444, hankeTunnus = "HAI-TEST-2")
+                        .withHankealue()
+                        .withYhteystiedot()
+                )
+            )
+            .andExpect(MockMvcResultMatchers.status().isOk)
+            .andExpect(jsonPath("[0]").exists())
+            .andExpect(jsonPath("[1]").doesNotExist())
+            .andExpect(jsonPath("[0].id").value(HankeFactory.defaultId))
 
         verify { hankeService.loadAllHanke() }
     }
@@ -77,9 +104,10 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `doesn't return personal information from yhteystiedot`() {
         performGetHankkeet(
                 listOf(
-                    HankeFactory.create().withHankealue().withYhteystiedot().mutate {
-                        it.tormaystarkasteluTulos = TormaystarkasteluTulos(1f, 1f, 1f)
-                    }
+                    HankeFactory.create()
+                        .withHankealue()
+                        .withYhteystiedot()
+                        .withTormaystarkasteluTulos()
                 )
             )
             .andExpect(MockMvcResultMatchers.status().isOk)
