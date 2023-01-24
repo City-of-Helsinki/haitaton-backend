@@ -1,25 +1,16 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.domain.HaittojenHallinta
+import fi.hel.haitaton.hanke.domain.HaittojenHallintaKentta
+import fi.hel.haitaton.hanke.domain.HaittojenHallintaKuvaus
 import fi.hel.haitaton.hanke.tormaystarkastelu.Luokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.LocalDate
 import java.time.LocalDateTime
-import javax.persistence.CascadeType
-import javax.persistence.CollectionTable
-import javax.persistence.ElementCollection
-import javax.persistence.Entity
-import javax.persistence.EnumType
-import javax.persistence.Enumerated
-import javax.persistence.FetchType
-import javax.persistence.GeneratedValue
-import javax.persistence.GenerationType
-import javax.persistence.Id
-import javax.persistence.JoinColumn
-import javax.persistence.OneToMany
-import javax.persistence.Table
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
+import javax.persistence.*
 
 enum class HankeStatus {
     /** A hanke is a draft from its creation until all mandatory fields have been filled. */
@@ -175,6 +166,9 @@ class HankeEntity(
 
     @Enumerated(EnumType.STRING) var tyomaaKoko: TyomaaKoko? = null
 
+    @OneToOne(cascade = [CascadeType.ALL], orphanRemoval = true)
+    var haittojenHallinta: HaittojenHallintaEntity = HaittojenHallintaEntity()
+
     // --------------- Hankkeen haitat -------------------
     var haittaAlkuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
     var haittaLoppuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
@@ -187,33 +181,6 @@ class HankeEntity(
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
 
-    // --------------- Hankkeen haittojenhallinta ---------
-    var pyoraliikenteenPaareitit: String? = null
-    var merkittavatJoukkoliikennereitit: String? = null
-    var autoliikenteenRuuhkautuminen: String? = null
-    var omanJaMuidenHankkeidenKiertoreitit: String? = null
-    var muutHankkeet: String? = null
-    var moottoriLiikenteenViivytykset: String? = null
-    var kiskoillaKulkevanLiikenteenViivytykset: String? = null
-    var selkeaEnnakkoOpastusPaatoksentekijalle: String? = null
-    var turvallinenKulku: String? = null
-    var reititEivatPitene: String? = null
-    var toimetPaivamelulle: String? = null
-    var toimetTarinalle: String? = null
-    var toimetPolylleJaLialle: String? = null
-    var pilaantuneenMaanHallinta: String? = null
-    var yleinenSiisteysJaKaupunkikuvallinenLaatu: String? = null
-    var riittavanPysakointipaikkojenVarmistaminen: String? = null
-    var liikennevalojenToimivuudenVarmistaminen: String? = null
-    var aluevuokrauksetJaMuutHankkeet: String? = null
-    var palveluJaMyyntipisteidenNakyvyys: String? = null
-    var toimintojenSaavutettavuus: String? = null
-    var sosiaalistenToimintojenSailyttaminen: String? = null
-    var sosiaalinenTurvallisuus: String? = null
-    var viheralueidenSailyminen: String? = null
-    var suojeltujenKohteidenSailyminen: String? = null
-    var lintujenPesintaajanHuomioiminen: String? = null
-    var toimienEnnakkotiedottaminen: String? = null
 
     // Made bidirectional relation mainly to allow cascaded delete.
     @OneToMany(
@@ -272,6 +239,67 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
         modifiedByUserId: String
     ): List<HankeEntity>
 }
+
+@Entity
+@Table(name = "haittojenhallinta")
+class HaittojenHallintaEntity(
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Long? = null,
+
+    @ElementCollection
+    @CollectionTable(
+            name = "haittojenhallinta_kuvaukset",
+            joinColumns = [JoinColumn(name = "haittojenhallinta_id", referencedColumnName = "id")])
+    @MapKeyJoinColumn(name = "key")
+    @MapKeyEnumerated(EnumType.STRING)
+    @Column(name = "value")
+    var kuvaukset: MutableMap<HaittojenHallintaKentta, String?> = mutableMapOf(),
+
+) {
+
+    companion object {
+        fun toEntity(source: HaittojenHallinta?, target: HaittojenHallintaEntity) {
+            if (source == null) {
+                return;
+            }
+            target.kuvaukset.clear()
+            source.kuvaukset.forEach {
+                if (it.value.kaytossaHankkeessa) {
+                    target.kuvaukset[it.key] = it.value.kuvaus
+                }
+            }
+        }
+
+        fun toDto(source: HaittojenHallintaEntity, target: HaittojenHallinta) {
+            HaittojenHallintaKentta.values().forEach {
+                target.kuvaukset[it] =
+                        if (source.kuvaukset.contains(it)) HaittojenHallintaKuvaus(true, source.kuvaukset[it] ?: "")
+                        else HaittojenHallintaKuvaus(false, "")
+            }
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as HaittojenHallintaEntity
+
+        if (id != other.id) return false
+        if (kuvaukset != other.kuvaukset) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = id?.hashCode() ?: 0
+        result = 31 * result + kuvaukset.hashCode()
+        return result
+    }
+}
+
+interface HaittojenHallintaRepository : JpaRepository<HaittojenHallintaEntity, Long> {
+}
+
 
 enum class CounterType {
     HANKETUNNUS

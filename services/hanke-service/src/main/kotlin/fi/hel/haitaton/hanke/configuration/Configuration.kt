@@ -94,6 +94,7 @@ class Configuration {
         tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
         geometriatService: GeometriatService,
         hanketunnusService: HanketunnusService,
+        haittojenHallintaRepository: HaittojenHallintaRepository,
         auditLogService: AuditLogService,
         permissionService: PermissionService,
         hankeLoggingService: HankeLoggingService,
@@ -103,6 +104,7 @@ class Configuration {
             tormaystarkasteluLaskentaService,
             hanketunnusService,
             geometriatService,
+            haittojenHallintaRepository,
             auditLogService,
             hankeLoggingService,
         )
