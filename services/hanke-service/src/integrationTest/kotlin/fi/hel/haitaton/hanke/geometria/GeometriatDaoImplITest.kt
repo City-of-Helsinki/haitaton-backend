@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.geometria
 import assertk.assertAll
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import assertk.assertions.isNotNull
+import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.asJsonResource
 import java.time.ZonedDateTime
@@ -80,13 +80,13 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
         // Delete
         geometriatDao.deleteGeometriat(geometriat)
         // check that all was deleted correctly
-        assertThat(geometriatDao.retrieveGeometriat(geometriaId)).isNotNull()
-        assertThat(getGeometriaCount()).isEqualTo(1)
+        assertThat(geometriatDao.retrieveGeometriat(geometriaId)).isNull()
+        assertThat(getGeometriaCount()).isEqualTo(0)
         assertThat(getHankeGeometriaCount()).isEqualTo(0)
     }
 
     private fun getGeometriaCount(): Int? =
-        jdbcTemplate.queryForObject("SELECT COUNT(*) FROM geometriat") { rs, _ -> rs.getInt(1) }
+        jdbcTemplate.queryForObject("SELECT COUNT(*) FROM geometriat", Int::class.java)
     private fun getHankeGeometriaCount(): Int? =
-        jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometria") { rs, _ -> rs.getInt(1) }
+        jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometria", Int::class.java)
 }
