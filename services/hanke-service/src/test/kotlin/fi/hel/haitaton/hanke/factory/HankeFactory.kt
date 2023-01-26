@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
 
 object HankeFactory : Factory<Hanke>() {
@@ -80,6 +81,16 @@ object HankeFactory : Factory<Hanke>() {
 
         this.alueet.add(alue)
 
+        return this
+    }
+
+    fun Hanke.withTormaystarkasteluTulos(
+        perusIndeksi: Float = 1f,
+        pyorailyIndeksi: Float = 1f,
+        joukkoliikenneIndeksi: Float = 1f,
+    ): Hanke {
+        this.tormaystarkasteluTulos =
+            TormaystarkasteluTulos(perusIndeksi, pyorailyIndeksi, joukkoliikenneIndeksi)
         return this
     }
 
