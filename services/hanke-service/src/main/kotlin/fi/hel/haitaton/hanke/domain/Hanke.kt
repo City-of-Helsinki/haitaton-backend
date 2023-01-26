@@ -4,9 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.Haitta13
+import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.NotInChangeLogView
-import fi.hel.haitaton.hanke.SaveType
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.TyomaaKoko
@@ -20,9 +20,6 @@ import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
 data class Hanke(
-    /**
-     * Can be used for e.g. autosaving before hankeTunnus has been given (optional future stuff).
-     */
     @JsonView(ChangeLogView::class) override var id: Int?,
     @JsonView(ChangeLogView::class) var hankeTunnus: String?,
     @JsonView(ChangeLogView::class) var onYKTHanke: Boolean?,
@@ -37,9 +34,7 @@ data class Hanke(
     @JsonView(NotInChangeLogView::class) val createdAt: ZonedDateTime?,
     @JsonView(NotInChangeLogView::class) var modifiedBy: String?,
     @JsonView(NotInChangeLogView::class) var modifiedAt: ZonedDateTime?,
-
-    /** Default for machine API's. UI should always give the save type. */
-    @JsonView(NotInChangeLogView::class) var saveType: SaveType? = SaveType.SUBMIT
+    @JsonView(ChangeLogView::class) var status: HankeStatus? = HankeStatus.DRAFT
 ) : HasId<Int> {
 
     // --------------- Yhteystiedot -----------------
@@ -101,21 +96,6 @@ data class Hanke(
     @JsonView(NotInChangeLogView::class)
     fun getHaittaLoppuPvm(): ZonedDateTime? {
         return alueet.map { it.haittaLoppuPvm }.filterNotNull().maxOfOrNull { it }
-    }
-
-    fun onKaikkiPakollisetLuontiTiedot() =
-        !nimi.isNullOrBlank() &&
-            !kuvaus.isNullOrBlank() &&
-            (alkuPvm != null) &&
-            (loppuPvm != null) &&
-            hasMandatoryVaiheValues() &&
-            saveType == SaveType.SUBMIT
-
-    private fun hasMandatoryVaiheValues(): Boolean {
-        // Vaihe must be given, but suunnitteluVaihe is mandatory only if vaihe is "SUUNNITTELU".
-        if (vaihe == null) return false
-        if (vaihe == Vaihe.SUUNNITTELU && suunnitteluVaihe == null) return false
-        return true
     }
 
     fun toLogString(): String {

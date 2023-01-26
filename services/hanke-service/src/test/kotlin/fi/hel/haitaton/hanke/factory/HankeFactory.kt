@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.SaveType
+import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
@@ -38,7 +38,7 @@ object HankeFactory : Factory<Hanke>() {
         version: Int? = 1,
         createdBy: String? = defaultUser,
         createdAt: ZonedDateTime? = DateFactory.getStartDatetime(),
-        saveType: SaveType = SaveType.DRAFT,
+        hankeStatus: HankeStatus = HankeStatus.DRAFT,
     ): Hanke =
         Hanke(
             id,
@@ -55,7 +55,7 @@ object HankeFactory : Factory<Hanke>() {
             createdAt,
             null,
             null,
-            saveType,
+            hankeStatus,
         )
 
     /**
