@@ -36,3 +36,10 @@ fun AuditLogRepository.findByType(type: ObjectType) =
     this.findAll().filter { it.message.auditEvent.target.type == type }
 
 fun OffsetDateTime.asUtc(): OffsetDateTime = this.withOffsetSameInstant(ZoneOffset.UTC)
+
+/**
+ * "Uses" a variable without doing anything with it. Used to avoid "Parameter is never used"
+ * warnings when compiling. Especially useful for ParameterizedTests if there are parameters meant
+ * to be used in the name of the test.
+ */
+fun Any?.touch() = Unit
