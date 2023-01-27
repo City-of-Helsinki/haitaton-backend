@@ -1,0 +1,25 @@
+environment:
+  dev:
+    fileshare: http://edit-here/fileshare-for-dev
+  test:
+    fileshare: http://edit-here/fileshare-for-test
+  staging:
+    fileshare: http://edit-here/fileshare-for-staging
+  prod:
+    fileshare: http://edit-here/fileshare-for-prod
+
+polys_dir: tormays_polys
+
+files: |
+  tormays_buses_polys.gpkg
+  tormays_central_business_area_polys.gpkg
+  tormays_critical_area_polys.gpkg
+  tormays_cycleways_basic_polys.gpkg
+  tormays_cycleways_main_polys.gpkg
+  tormays_cycleways_priority_polys.gpkg
+  tormays_street_classes_polys.gpkg
+  tormays_trams_polys.gpkg
+  tormays_volumes15_polys.gpkg
+  tormays_volumes30_polys.gpkg
+  tormays_ylre_classes_polys.gpkg
+  tormays_ylre_parts_polys.gpkg
