@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.gdpr
 
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.allu.ApplicationService
+import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import io.sentry.Sentry

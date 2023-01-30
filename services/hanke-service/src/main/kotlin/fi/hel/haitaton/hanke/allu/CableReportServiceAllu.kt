@@ -126,7 +126,7 @@ class CableReportServiceAllu(
             .block()!!
     }
 
-    override fun create(cableReport: CableReportApplicationData): Int {
+    override fun create(cableReport: AlluCableReportApplicationData): Int {
         val token = login()!!
         return webClient
             .post()
@@ -144,7 +144,7 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
-    override fun update(applicationId: Int, cableReport: CableReportApplicationData) {
+    override fun update(applicationId: Int, cableReport: AlluCableReportApplicationData) {
         val token = login()!!
         webClient
             .put()
@@ -205,7 +205,7 @@ class CableReportServiceAllu(
     override fun respondToInformationRequest(
         applicationId: Int,
         requestId: Int,
-        cableReport: CableReportApplicationData,
+        cableReport: AlluCableReportApplicationData,
         updatedFields: List<InformationRequestFieldKey>,
     ) {
         val token = login()!!

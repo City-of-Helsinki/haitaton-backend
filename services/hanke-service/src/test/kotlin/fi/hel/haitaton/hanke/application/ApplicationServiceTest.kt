@@ -1,12 +1,20 @@
-package fi.hel.haitaton.hanke.allu
+package fi.hel.haitaton.hanke.application
 
+import assertk.all
 import assertk.assertThat
+import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFailure
+import assertk.assertions.matchesPredicate
+import fi.hel.haitaton.hanke.allu.AlluLoginException
+import fi.hel.haitaton.hanke.allu.AlluStatusRepository
+import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
+import io.mockk.Called
 import io.mockk.called
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -14,15 +22,21 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
+import java.util.stream.Stream
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
 private const val username = "test"
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(SpringExtension::class)
 class ApplicationServiceTest {
     private val applicationRepo: ApplicationRepository = mockk()
@@ -178,5 +192,62 @@ class ApplicationServiceTest {
             applicationRepo.findOneByIdAndUserId(3, username)
             cableReportService.create(any())
         }
+    }
+
+    @ParameterizedTest(name = "{1} {2}")
+    @MethodSource("invalidApplicationData")
+    fun `sendApplication with invalid data doesn't send application to Allu`(
+        applicationData: ApplicationData,
+        path: String,
+        error: String,
+    ) {
+        val applicationEntity =
+            AlluDataFactory.createApplicationEntity(
+                id = 3,
+                alluid = null,
+                userId = username,
+                applicationData = applicationData,
+            )
+
+        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+
+        assertThat { service.sendApplication(3, username) }
+            .isFailure()
+            .all {
+                this.matchesPredicate { it is AlluDataException }
+                this.hasMessage("Application data failed validation at $path: $error")
+            }
+        verify {
+            applicationRepo.findOneByIdAndUserId(3, username)
+            cableReportService wasNot Called
+            disclosureLogService wasNot Called
+            applicationLoggingService wasNot Called
+        }
+    }
+
+    private fun invalidApplicationData(): Stream<Arguments> {
+        return Stream.of(
+            Arguments.of(
+                applicationData.copy(
+                    customerWithContacts =
+                        applicationData.customerWithContacts.copy(
+                            customer =
+                                applicationData.customerWithContacts.customer.copy(type = null)
+                        )
+                ),
+                "applicationData.customerWithContacts.customer.type",
+                "Can't be null"
+            ),
+            Arguments.of(
+                applicationData.copy(endTime = null),
+                "applicationData.endTime",
+                "Can't be null"
+            ),
+            Arguments.of(
+                applicationData.copy(startTime = null),
+                "applicationData.startTime",
+                "Can't be null"
+            ),
+        )
     }
 }

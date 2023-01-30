@@ -1,5 +1,10 @@
-package fi.hel.haitaton.hanke.allu
+package fi.hel.haitaton.hanke.application
 
+import fi.hel.haitaton.hanke.allu.AlluLoginException
+import fi.hel.haitaton.hanke.allu.AlluStatusRepository
+import fi.hel.haitaton.hanke.allu.ApplicationHistory
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
@@ -80,7 +85,7 @@ open class ApplicationService(
         // Don't change a draft to a non-draft or vice-versa with the update method.
         application.applicationData =
             newApplicationData.copy(pendingOnClient = application.applicationData.pendingOnClient)
-        application.alluid = updateApplicationToAllu(application)
+        application.alluid = sendApplicationToAllu(application)
 
         val updatedApplication = repo.save(application).toApplication()
         logger.info("Updated application id=$id, alluid=${updatedApplication.alluid}")
@@ -158,25 +163,14 @@ open class ApplicationService(
     private fun createApplicationToAllu(applicationData: ApplicationData): Int? {
         return try {
             when (applicationData) {
-                is CableReportApplicationData ->
-                    withDisclosureLogging(applicationData) {
-                        cableReportService.create(applicationData)
-                    }
+                is CableReportApplicationData -> {
+                    val alluData = applicationData.toAlluData()
+                    withDisclosureLogging(applicationData) { cableReportService.create(alluData) }
+                }
             }
         } catch (ex: Exception) {
             logger.warn(ex) { "Error creating an application to allu." }
             null
-        }
-    }
-
-    private fun updateApplicationToAllu(application: ApplicationEntity): Int? {
-        return try {
-            sendApplicationToAllu(application)
-        } catch (ex: Exception) {
-            logger.warn(ex) {
-                "Error updating an application to allu. id=${application.id} alluid=${application.alluid}"
-            }
-            application.alluid
         }
     }
 
@@ -190,12 +184,13 @@ open class ApplicationService(
         val cableReportApplicationData: CableReportApplicationData =
             application.applicationData as CableReportApplicationData
 
+        val alluData = cableReportApplicationData.toAlluData()
         return withDisclosureLogging(cableReportApplicationData) {
             val alluid = application.alluid
             if (alluid == null) {
-                cableReportService.create(cableReportApplicationData)
+                cableReportService.create(alluData)
             } else {
-                cableReportService.update(alluid, cableReportApplicationData)
+                cableReportService.update(alluid, alluData)
                 alluid
             }
         }

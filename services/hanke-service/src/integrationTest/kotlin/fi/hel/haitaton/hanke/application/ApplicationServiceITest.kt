@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.allu
+package fi.hel.haitaton.hanke.application
 
 import assertk.assertThat
 import assertk.assertions.containsExactlyInAnyOrder
@@ -13,6 +13,10 @@ import assertk.assertions.isNull
 import assertk.assertions.prop
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
+import fi.hel.haitaton.hanke.allu.AlluStatusRepository
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asUtc
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
@@ -113,7 +117,7 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `updateHanke creates an audit log entry for updated application`() {
+    fun `updateApplicationData creates an audit log entry for updated application`() {
         TestUtils.addMockedRequestIp()
         every { cableReportServiceAllu.create(any()) }.returns(2)
         every { cableReportServiceAllu.getCurrentStatus(any()) }.returns(null)
@@ -163,7 +167,7 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `updateHanke doesn't create an audit log entry if the application hasn't changed`() {
+    fun `updateApplicationData doesn't create an audit log entry if the application hasn't changed`() {
         TestUtils.addMockedRequestIp()
         every { cableReportServiceAllu.create(any()) }.returns(2)
         every { cableReportServiceAllu.getCurrentStatus(any()) }.returns(null)
@@ -255,7 +259,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 id = givenId,
                 applicationData = cableReportApplicationData
             )
-        every { cableReportServiceAllu.create(cableReportApplicationData) } returns 21
+        every { cableReportServiceAllu.create(cableReportApplicationData.toAlluData()) } returns 21
         assertTrue(cableReportApplicationData.pendingOnClient)
 
         val response = applicationService.create(newApplication, username)
@@ -276,7 +280,7 @@ class ApplicationServiceITest : DatabaseTest() {
         assertEquals(newApplication.applicationData, savedApplication.applicationData)
         assertTrue(savedApplication.applicationData.pendingOnClient)
 
-        verify { cableReportServiceAllu.create(cableReportApplicationData) }
+        verify { cableReportServiceAllu.create(cableReportApplicationData.toAlluData()) }
     }
 
     @Test
@@ -290,14 +294,14 @@ class ApplicationServiceITest : DatabaseTest() {
                 applicationData = cableReportApplicationData
             )
         val expectedApplicationData = cableReportApplicationData.copy(pendingOnClient = true)
-        every { cableReportServiceAllu.create(expectedApplicationData) } returns 21
+        every { cableReportServiceAllu.create(expectedApplicationData.toAlluData()) } returns 21
 
         val response = applicationService.create(newApplication, username)
 
         assertTrue(response.applicationData.pendingOnClient)
         val savedApplication = applicationRepository.findById(response.id!!).get()
         assertTrue(savedApplication.applicationData.pendingOnClient)
-        verify { cableReportServiceAllu.create(expectedApplicationData) }
+        verify { cableReportServiceAllu.create(expectedApplicationData.toAlluData()) }
     }
 
     @Test
@@ -309,7 +313,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 id = null,
                 applicationData = cableReportApplicationData
             )
-        every { cableReportServiceAllu.create(cableReportApplicationData) } throws
+        every { cableReportServiceAllu.create(cableReportApplicationData.toAlluData()) } throws
             RuntimeException()
 
         val response = applicationService.create(newApplication, username)
@@ -323,7 +327,7 @@ class ApplicationServiceITest : DatabaseTest() {
         assertNotNull(savedApplication.id)
         assertNull(savedApplication.alluid)
 
-        verify { cableReportServiceAllu.create(cableReportApplicationData) }
+        verify { cableReportServiceAllu.create(cableReportApplicationData.toAlluData()) }
     }
 
     @Test
@@ -344,7 +348,7 @@ class ApplicationServiceITest : DatabaseTest() {
         val application = alluDataFactory.saveApplicationEntity(username)
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(name = "Uudistettu johtoselvitys")
-        every { cableReportServiceAllu.create(newApplicationData) } returns 21
+        every { cableReportServiceAllu.create(newApplicationData.toAlluData()) } returns 21
 
         val response =
             applicationService.updateApplicationData(application.id!!, newApplicationData, username)
@@ -361,7 +365,7 @@ class ApplicationServiceITest : DatabaseTest() {
         assertEquals(application.applicationType, savedApplication.applicationType)
         assertEquals(newApplicationData, savedApplication.applicationData)
 
-        verify { cableReportServiceAllu.create(newApplicationData) }
+        verify { cableReportServiceAllu.create(newApplicationData.toAlluData()) }
     }
 
     @Test
@@ -370,7 +374,7 @@ class ApplicationServiceITest : DatabaseTest() {
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(name = "Uudistettu johtoselvitys")
         every { cableReportServiceAllu.getCurrentStatus(21) } returns null
-        justRun { cableReportServiceAllu.update(21, newApplicationData) }
+        justRun { cableReportServiceAllu.update(21, newApplicationData.toAlluData()) }
 
         val response =
             applicationService.updateApplicationData(application.id!!, newApplicationData, username)
@@ -385,34 +389,34 @@ class ApplicationServiceITest : DatabaseTest() {
 
         verify {
             cableReportServiceAllu.getCurrentStatus(21)
-            cableReportServiceAllu.update(21, newApplicationData)
+            cableReportServiceAllu.update(21, newApplicationData.toAlluData())
         }
     }
 
     @Test
-    fun `updateApplicationData updates local database even if Allu update fails`() {
+    fun `updateApplicationData doesn't save to database if Allu update fails`() {
         val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = 21 }
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(name = "Uudistettu johtoselvitys")
         every { cableReportServiceAllu.getCurrentStatus(21) } returns null
-        every { cableReportServiceAllu.update(21, newApplicationData) } throws RuntimeException()
+        every { cableReportServiceAllu.update(21, newApplicationData.toAlluData()) } throws
+            RuntimeException("Allu call failed")
 
-        val response =
-            applicationService.updateApplicationData(application.id!!, newApplicationData, username)
+        val exception =
+            assertThrows<RuntimeException> {
+                applicationService.updateApplicationData(
+                    application.id!!,
+                    newApplicationData,
+                    username
+                )
+            }
 
-        assertEquals(21, response.alluid)
-        assertEquals(application.applicationType, response.applicationType)
-        assertEquals(newApplicationData, response.applicationData)
-
+        assertEquals("Allu call failed", exception.message)
         val savedApplication = applicationRepository.findById(application.id!!).orElseThrow()
-        assertEquals(response.id, savedApplication.id)
-        assertEquals(21, savedApplication.alluid)
-        assertEquals(application.applicationType, savedApplication.applicationType)
-        assertEquals(newApplicationData, savedApplication.applicationData)
-
+        assertEquals(AlluDataFactory.defaultApplicationName, savedApplication.applicationData.name)
         verify {
             cableReportServiceAllu.getCurrentStatus(21)
-            cableReportServiceAllu.update(21, newApplicationData)
+            cableReportServiceAllu.update(21, newApplicationData.toAlluData())
         }
     }
 
@@ -429,7 +433,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 pendingOnClient = false
             )
         every { cableReportServiceAllu.getCurrentStatus(21) } returns ApplicationStatus.PENDING
-        justRun { cableReportServiceAllu.update(21, newApplicationData) }
+        justRun { cableReportServiceAllu.update(21, newApplicationData.toAlluData()) }
 
         val response =
             applicationService.updateApplicationData(application.id!!, newApplicationData, username)
@@ -445,8 +449,47 @@ class ApplicationServiceITest : DatabaseTest() {
 
         verify {
             cableReportServiceAllu.getCurrentStatus(21)
-            cableReportServiceAllu.update(21, newApplicationData)
+            cableReportServiceAllu.update(21, newApplicationData.toAlluData())
         }
+    }
+
+    @Test
+    fun `updateApplicationData with application that's pending on Allu is not updated on Allu if new data is invalid`() {
+        val application =
+            alluDataFactory.saveApplicationEntity(username) {
+                it.apply {
+                    alluid = 21
+                    applicationData = applicationData.copy(pendingOnClient = false)
+                }
+            }
+        val newApplicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                startTime = null,
+                pendingOnClient = false
+            )
+        every { cableReportServiceAllu.getCurrentStatus(21) } returns ApplicationStatus.PENDING
+
+        val exception =
+            assertThrows<AlluDataException> {
+                applicationService.updateApplicationData(
+                    application.id!!,
+                    newApplicationData,
+                    username
+                )
+            }
+
+        assertEquals(
+            "Application data failed validation at applicationData.startTime: Can't be null",
+            exception.message
+        )
+        val savedApplications = applicationRepository.findAll()
+        assertThat(savedApplications).hasSize(1)
+        val savedApplication = savedApplications[0]
+        assertEquals(21, savedApplication.alluid)
+        assertEquals(application.applicationData, savedApplication.applicationData)
+
+        verify { cableReportServiceAllu.getCurrentStatus(21) }
+        verify(exactly = 0) { cableReportServiceAllu.update(any(), any()) }
     }
 
     @Test
@@ -461,7 +504,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 name = "Päivitetty hakemus",
                 pendingOnClient = true,
             )
-        val expectedApplicationData = newApplicationData.copy(pendingOnClient = false)
+        val expectedApplicationData = newApplicationData.copy(pendingOnClient = false).toAlluData()
         every { cableReportServiceAllu.getCurrentStatus(21) } returns ApplicationStatus.PENDING
         justRun { cableReportServiceAllu.update(21, expectedApplicationData) }
 
@@ -515,7 +558,8 @@ class ApplicationServiceITest : DatabaseTest() {
                 it.alluid = 21
                 it.applicationData = it.applicationData.copy(pendingOnClient = false)
             }
-        val applicationData = application.applicationData as CableReportApplicationData
+        val applicationData =
+            application.applicationData.toAlluData() as AlluCableReportApplicationData
         every { cableReportServiceAllu.getCurrentStatus(21) } returns ApplicationStatus.PENDING
         justRun { cableReportServiceAllu.update(21, applicationData) }
 
@@ -534,7 +578,8 @@ class ApplicationServiceITest : DatabaseTest() {
                 it.alluid = 21
                 it.applicationData = it.applicationData.copy(pendingOnClient = false)
             }
-        val applicationData = application.applicationData as CableReportApplicationData
+        val applicationData =
+            application.applicationData.toAlluData() as AlluCableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
         every { cableReportServiceAllu.getCurrentStatus(21) } returns ApplicationStatus.PENDING
         justRun { cableReportServiceAllu.update(21, pendingApplicationData) }
@@ -543,7 +588,6 @@ class ApplicationServiceITest : DatabaseTest() {
 
         val responseApplicationData = response.applicationData as CableReportApplicationData
         assertFalse(responseApplicationData.pendingOnClient)
-
         val savedApplication = applicationRepository.findById(application.id!!).get()
         val savedApplicationData = savedApplication.applicationData as CableReportApplicationData
         assertFalse(savedApplicationData.pendingOnClient)
@@ -559,18 +603,17 @@ class ApplicationServiceITest : DatabaseTest() {
         val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = null }
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
-        every { cableReportServiceAllu.create(pendingApplicationData) } returns 26
+        every { cableReportServiceAllu.create(pendingApplicationData.toAlluData()) } returns 26
 
         val response = applicationService.sendApplication(application.id!!, username)
 
         assertEquals(26, response.alluid)
         assertEquals(pendingApplicationData, response.applicationData)
-
         val savedApplication = applicationRepository.findById(application.id!!).get()
         assertEquals(26, savedApplication.alluid)
         assertEquals(pendingApplicationData, savedApplication.applicationData)
 
-        verify { cableReportServiceAllu.create(pendingApplicationData) }
+        verify { cableReportServiceAllu.create(pendingApplicationData.toAlluData()) }
     }
 
     @Test

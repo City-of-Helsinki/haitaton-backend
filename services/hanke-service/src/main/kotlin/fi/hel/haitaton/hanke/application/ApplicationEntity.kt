@@ -1,6 +1,7 @@
-package fi.hel.haitaton.hanke.allu
+package fi.hel.haitaton.hanke.application
 
 import com.vladmihalcea.hibernate.type.json.JsonType
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.EnumType
