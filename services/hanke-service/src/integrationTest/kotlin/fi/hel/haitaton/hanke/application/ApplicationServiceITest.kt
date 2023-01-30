@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
+import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
@@ -331,6 +332,30 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    fun `create throws exception with invalid geometry`() {
+        val cableReportApplicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                geometry =
+                    "/fi/hel/haitaton/hanke/geometria/invalid-geometry-collection.json".asJsonResource()
+            )
+        val newApplication =
+            AlluDataFactory.createApplication(
+                id = null,
+                applicationData = cableReportApplicationData
+            )
+
+        val exception =
+            assertThrows<ApplicationGeometryException> {
+                applicationService.create(newApplication, username)
+            }
+
+        assertEquals(
+            """Invalid geometry received when creating a new application for user $username, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}""",
+            exception.message
+        )
+    }
+
+    @Test
     fun `updateApplicationData with unknown ID throws exception`() {
         assertThat(applicationRepository.findAll()).isEmpty()
 
@@ -540,6 +565,30 @@ class ApplicationServiceITest : DatabaseTest() {
         )
 
         verify { cableReportServiceAllu.getCurrentStatus(21) }
+    }
+
+    @Test
+    fun `updateApplicationData throws exception with invalid geometry`() {
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = 21 }
+        val cableReportApplicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                geometry =
+                    "/fi/hel/haitaton/hanke/geometria/invalid-geometry-collection.json".asJsonResource()
+            )
+
+        val exception =
+            assertThrows<ApplicationGeometryException> {
+                applicationService.updateApplicationData(
+                    application.id!!,
+                    cableReportApplicationData,
+                    username
+                )
+            }
+
+        assertEquals(
+            """Invalid geometry received when updating application for user $username, id=${application.id}, alluid=${application.alluid}, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}""",
+            exception.message
+        )
     }
 
     @Test

@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke.geometria
 
+import org.geojson.GeoJsonObject
+
 interface GeometriatDao {
     fun createGeometriat(geometriat: Geometriat): Geometriat
 
@@ -10,4 +12,17 @@ interface GeometriatDao {
 
     /** Deletes geometry rows BUT DOES NOT DELETE THE MASTER ROW (Geometriat row) */
     fun deleteGeometriat(geometriat: Geometriat)
+
+    /**
+     * Uses PostGIS to check if the geometries are valid.
+     *
+     * For e.g. polygons it checks - among other things - that the first and last coordinate are
+     * identical and that the line doesn't intersect itself.
+     *
+     * Note that some empty geometries are valid, like empty GeometryCollections and
+     * FeatureCollections.
+     *
+     * @return List of indexes in the feature collection where the validation failed.
+     */
+    fun validateGeometria(geometria: GeoJsonObject): GeometriatDaoImpl.InvalidDetail?
 }
