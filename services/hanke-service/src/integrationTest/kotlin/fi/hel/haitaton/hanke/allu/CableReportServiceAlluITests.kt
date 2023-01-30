@@ -166,7 +166,7 @@ class CableReportServiceAlluITests {
         return stubbedBearer
     }
 
-    private fun getTestApplication(): CableReportApplicationData {
+    private fun getTestApplication(): AlluCableReportApplicationData {
         val customer =
             Customer(
                 type = CustomerType.COMPANY,
@@ -230,8 +230,7 @@ class CableReportServiceAlluITests {
 
         val now = ZonedDateTime.now()
 
-        return CableReportApplicationData(
-            applicationType = ApplicationType.CABLE_REPORT,
+        return AlluCableReportApplicationData(
             name = "Haitaton hankkeen nimi",
             customerWithContacts = customerWContacts,
             geometry = geometry,

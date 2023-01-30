@@ -8,10 +8,10 @@ import fi.hel.haitaton.hanke.HanketunnusServiceImpl
 import fi.hel.haitaton.hanke.IdCounterRepository
 import fi.hel.haitaton.hanke.allu.AlluProperties
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
-import fi.hel.haitaton.hanke.allu.ApplicationRepository
-import fi.hel.haitaton.hanke.allu.ApplicationService
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.CableReportServiceAllu
+import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
 import fi.hel.haitaton.hanke.geometria.GeometriatService

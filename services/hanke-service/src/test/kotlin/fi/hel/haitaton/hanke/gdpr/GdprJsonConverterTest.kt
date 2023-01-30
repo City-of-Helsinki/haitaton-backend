@@ -6,9 +6,9 @@ import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
-import fi.hel.haitaton.hanke.allu.CableReportApplicationData
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.allu.CustomerWithContacts
+import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory

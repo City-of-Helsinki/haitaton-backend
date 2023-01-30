@@ -28,6 +28,7 @@ enum class HankeError(val errorMessage: String) {
     HAI2001("Application not found"),
     HAI2002("Incompatible application data type"),
     HAI2003("Application is already processing in Allu and can no longer be updated."),
+    HAI2004("Application data missing information needed by Allu."),
     ;
 
     val errorCode: String

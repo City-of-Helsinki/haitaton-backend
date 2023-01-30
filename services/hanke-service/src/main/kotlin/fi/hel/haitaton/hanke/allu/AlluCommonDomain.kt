@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.allu
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
@@ -15,20 +14,10 @@ data class Contact(
     val email: String?,
     val phone: String?,
     val orderer: Boolean = false
-) {
-    /** Check if this contact is blank, i.e. it doesn't contain any actual contact information. */
-    @JsonIgnore
-    fun isBlank() =
-        name.isNullOrBlank() &&
-            email.isNullOrBlank() &&
-            phone.isNullOrBlank() &&
-            postalAddress.isNullOrBlank()
+)
 
-    fun hasInformation() = !isBlank()
-}
-
+/** Non-null fields are not mandatory in Allu. */
 @JsonIgnoreProperties(ignoreUnknown = true)
-@JsonView(ChangeLogView::class)
 data class Customer(
     val type: CustomerType,
     val name: String,
@@ -40,37 +29,14 @@ data class Customer(
     val ovt: String?, // e-invoice identifier (ovt-tunnus)
     val invoicingOperator: String?, // e-invoicing operator code
     val sapCustomerNumber: String? // customer's sap number
-) {
-    /** Check if this customer is blank, i.e. it doesn't contain any actual customer information. */
-    @JsonIgnore
-    fun isBlank() =
-        name.isBlank() &&
-            country.isBlank() &&
-            postalAddress.isNullOrBlank() &&
-            email.isNullOrBlank() &&
-            phone.isNullOrBlank() &&
-            registryKey.isNullOrBlank() &&
-            ovt.isNullOrBlank() &&
-            invoicingOperator.isNullOrBlank() &&
-            sapCustomerNumber.isNullOrBlank()
-
-    fun hasInformation() = !isBlank()
-}
+)
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class PostalAddress(
     val streetAddress: StreetAddress,
     val postalCode: String,
     val city: String
-) {
-    /** Check if this address is blank, i.e. none of fields have any information. */
-    @JsonIgnore
-    fun isBlank() =
-        streetAddress.streetName.isNullOrBlank() && postalCode.isBlank() && city.isBlank()
-}
-
-/** Check if this address is blank, i.e. none of fields have any information. */
-fun PostalAddress?.isNullOrBlank() = this?.isBlank() ?: true
+)
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonView(ChangeLogView::class)

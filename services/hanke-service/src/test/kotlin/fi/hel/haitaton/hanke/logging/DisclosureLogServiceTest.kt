@@ -1,11 +1,11 @@
 package fi.hel.haitaton.hanke.logging
 
-import fi.hel.haitaton.hanke.allu.Contact
-import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.allu.CustomerWithContacts
-import fi.hel.haitaton.hanke.allu.PostalAddress
-import fi.hel.haitaton.hanke.allu.StreetAddress
+import fi.hel.haitaton.hanke.application.Contact
+import fi.hel.haitaton.hanke.application.Customer
+import fi.hel.haitaton.hanke.application.CustomerWithContacts
+import fi.hel.haitaton.hanke.application.PostalAddress
+import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory

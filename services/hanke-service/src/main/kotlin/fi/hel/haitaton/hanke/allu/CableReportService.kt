@@ -15,8 +15,8 @@ interface CableReportService {
         eventsAfter: ZonedDateTime
     ): List<ApplicationHistory>
 
-    fun create(cableReport: CableReportApplicationData): Int
-    fun update(applicationId: Int, cableReport: CableReportApplicationData)
+    fun create(cableReport: AlluCableReportApplicationData): Int
+    fun update(applicationId: Int, cableReport: AlluCableReportApplicationData)
 
     fun addAttachment(applicationId: Int, metadata: AttachmentInfo, file: ByteArray)
 
@@ -24,7 +24,7 @@ interface CableReportService {
     fun respondToInformationRequest(
         applicationId: Int,
         requestId: Int,
-        cableReport: CableReportApplicationData,
+        cableReport: AlluCableReportApplicationData,
         updatedFields: List<InformationRequestFieldKey>
     )
 

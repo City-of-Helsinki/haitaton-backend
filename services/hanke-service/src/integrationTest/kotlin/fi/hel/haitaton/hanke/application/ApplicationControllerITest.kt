@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.allu
+package fi.hel.haitaton.hanke.application
 
 import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.ControllerTest
@@ -257,8 +257,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
     @Test
     fun `sendApplication without logged in user returns 401`() {
-        post("/hakemukset/1234/send-application", AlluDataFactory.createApplication())
-            .andExpect(status().isUnauthorized)
+        post("/hakemukset/1234/send-application").andExpect(status().isUnauthorized)
 
         verify { applicationService wasNot Called }
     }
@@ -311,11 +310,10 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     @Test
     @WithMockUser(username)
     fun `sendApplication with unknown id returns 404`() {
-        val application = AlluDataFactory.createApplication()
         every { applicationService.sendApplication(1234, username) } throws
             ApplicationNotFoundException(1234)
 
-        post("/hakemukset/1234/send-application", application).andExpect(status().isNotFound)
+        post("/hakemukset/1234/send-application").andExpect(status().isNotFound)
 
         verify { applicationService.sendApplication(1234, username) }
     }
@@ -323,11 +321,21 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     @Test
     @WithMockUser(username)
     fun `sendApplication with application that's no longer pending returns 409`() {
-        val application = AlluDataFactory.createApplication()
         every { applicationService.sendApplication(1234, username) } throws
             ApplicationAlreadyProcessingException(1234, 21)
 
-        post("/hakemukset/1234/send-application", application).andExpect(status().isConflict)
+        post("/hakemukset/1234/send-application").andExpect(status().isConflict)
+
+        verify { applicationService.sendApplication(1234, username) }
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `sendApplication with invalid application data returns 409`() {
+        every { applicationService.sendApplication(1234, username) } throws
+            AlluDataException("applicationData.some.path", "Some error")
+
+        post("/hakemukset/1234/send-application").andExpect(status().isConflict)
 
         verify { applicationService.sendApplication(1234, username) }
     }

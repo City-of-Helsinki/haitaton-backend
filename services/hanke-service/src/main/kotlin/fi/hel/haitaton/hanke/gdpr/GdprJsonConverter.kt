@@ -1,13 +1,13 @@
 package fi.hel.haitaton.hanke.gdpr
 
-import fi.hel.haitaton.hanke.allu.Application
-import fi.hel.haitaton.hanke.allu.ApplicationData
-import fi.hel.haitaton.hanke.allu.CableReportApplicationData
-import fi.hel.haitaton.hanke.allu.Contact
-import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.allu.CustomerWithContacts
-import fi.hel.haitaton.hanke.allu.PostalAddress
+import fi.hel.haitaton.hanke.application.Application
+import fi.hel.haitaton.hanke.application.ApplicationData
+import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.application.Contact
+import fi.hel.haitaton.hanke.application.Customer
+import fi.hel.haitaton.hanke.application.CustomerWithContacts
+import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
@@ -123,7 +123,10 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
     ): List<GdprInfo> {
         return when (applicationData) {
             is CableReportApplicationData ->
-                listOf(applicationData.customerWithContacts, applicationData.contractorWithContacts)
+                listOfNotNull(
+                        applicationData.customerWithContacts,
+                        applicationData.contractorWithContacts
+                    )
                     .flatMap { getGdprInfosFromCustomerWithContacts(it, userInfo) }
         }
     }
