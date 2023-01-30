@@ -83,7 +83,6 @@ class ApplicationServiceTest {
     @Test
     fun create() {
         val dto = AlluDataFactory.createApplication(id = null, applicationData = applicationData)
-        every { cableReportService.create(any()) } returns 42
         every { applicationRepo.save(any()) } answers
             {
                 val application: ApplicationEntity = firstArg()
@@ -94,13 +93,13 @@ class ApplicationServiceTest {
         val created = service.create(dto, username)
 
         assertThat(created.id).isEqualTo(1)
-        assertThat(created.alluid).isEqualTo(42)
+        assertThat(created.alluid).isEqualTo(null)
         verify {
-            disclosureLogService.saveDisclosureLogsForAllu(applicationData, Status.SUCCESS)
-            cableReportService.create(any())
             applicationRepo.save(any())
             applicationLoggingService.logCreate(any(), username)
             geometriatDao.validateGeometria(any())
+            disclosureLogService wasNot Called
+            cableReportService wasNot Called
         }
     }
 
