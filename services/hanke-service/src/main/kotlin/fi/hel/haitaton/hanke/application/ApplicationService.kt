@@ -181,14 +181,10 @@ open class ApplicationService(
 
     private fun isStillPending(application: ApplicationEntity): Boolean {
         // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)
-        val id = application.alluid ?: return true
+        val alluid = application.alluid ?: return true
 
-        // If we already have an id but there's no status available then the application is still
-        // pendingOnClient because ALLU doesn't report status events for applications that are in
-        // the "meta state" pendingOnClient
-        val currentStatus = cableReportService.getCurrentStatus(id) ?: return true
+        val currentStatus = cableReportService.getApplicationInformation(alluid).status
 
-        // We've already sent this application with pendingOnClient: false
         return currentStatus in listOf(ApplicationStatus.PENDING, ApplicationStatus.PENDING_CLIENT)
     }
 

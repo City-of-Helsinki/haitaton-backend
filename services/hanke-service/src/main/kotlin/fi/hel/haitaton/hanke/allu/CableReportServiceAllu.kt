@@ -22,14 +22,6 @@ class CableReportServiceAllu(
     private val properties: AlluProperties,
 ) : CableReportService {
 
-    /**
-     * Date from before Allu was launched.
-     *
-     * Useful for getting the complete history of an application while the history API doesn't
-     * accept null in the eventsAfter field.
-     */
-    private val beforeAlluLaunch = ZonedDateTime.parse("2017-01-01T00:00:00Z")
-
     private val baseUrl = properties.baseUrl
 
     private fun login(): String? {
@@ -68,48 +60,6 @@ class CableReportServiceAllu(
             }
             .blockOptional()
             .orElseThrow()
-    }
-
-    override fun getCurrentStatus(applicationId: Int): ApplicationStatus? {
-        // Allu should accept null in the eventsBefore field of this request, but returns an error
-        // at the moment. As a workaround use a time from before Allu was launched.
-        return getApplicationStatusHistory(applicationId, beforeAlluLaunch)
-            .block()
-            ?.events
-            ?.maxWithOrNull(compareByDescending { it.eventTime })
-            ?.newStatus
-    }
-
-    override fun getApplicationStatusEvents(
-        applicationId: Int,
-        eventsAfter: ZonedDateTime,
-    ): List<ApplicationStatusEvent> {
-        return getApplicationStatusHistory(applicationId, eventsAfter).block()?.events
-            ?: emptyList()
-    }
-
-    private fun getApplicationStatusHistory(
-        applicationId: Int,
-        eventsAfter: ZonedDateTime,
-    ): Mono<ApplicationHistory> {
-        val token = login()!!
-        val search = ApplicationHistorySearch(listOf(applicationId), eventsAfter)
-        return webClient
-            .post()
-            .uri("$baseUrl/v2/applicationhistory")
-            .contentType(MediaType.APPLICATION_JSON)
-            .accept(MediaType.APPLICATION_JSON)
-            .headers { it.setBearerAuth(token) }
-            .body(Mono.just(search))
-            .retrieve()
-            // API returns an array of ApplicationHistory objects (one for each requested
-            // applicationId)
-            .bodyToFlux(ApplicationHistory::class.java)
-            .doOnError(WebClientResponseException::class.java) {
-                logError("Error getting application history from Allu", it)
-            }
-            // As this function always requests just one take the first
-            .next()
     }
 
     /**
