@@ -69,3 +69,5 @@ databaseChangeLog:
       file: db/changelog/changesets/019-create-allustatus-table.yml
   - include:
       file: db/changelog/changesets/020-create-lock-table.yml
+  - include:
+      file: db/changelog/changesets/021-add-status-and-remove-savetype-in-hanke.yml

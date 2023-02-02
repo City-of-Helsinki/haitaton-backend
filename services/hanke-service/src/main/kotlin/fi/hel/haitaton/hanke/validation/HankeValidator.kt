@@ -5,7 +5,6 @@ import fi.hel.haitaton.hanke.MAXIMUM_DATE
 import fi.hel.haitaton.hanke.MAXIMUM_TYOMAAKATUOSOITE_LENGTH
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import javax.validation.ConstraintValidator
 import javax.validation.ConstraintValidatorContext
 
@@ -77,64 +76,10 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             ok = false
         }
 
-        if (hanke.saveType == null) {
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("saveType")
-                .addConstraintViolation()
-            ok = false
-        }
-
-        // TODO ok = ok && isValidHankeYhteystietos(hanke, context) removed mandatory checks for
-        //  now when front is not ready to add same rules and this confuses
         ok = ok && checkTyomaaTiedot(hanke, context)
         ok = ok && checkHaitat(hanke, context)
 
         return ok
-    }
-
-    /** Checks that each given Yhteystieto has valid data, or not given at all. */
-    private fun isValidHankeYhteystietos(
-        hanke: Hanke,
-        context: ConstraintValidatorContext
-    ): Boolean {
-        var ok = true
-        hanke.omistajat.forEach { yhteystieto ->
-            // mandatory
-            ok = checkMandatoryYhteystietoData(yhteystieto, context, ok)
-        }
-        hanke.toteuttajat.forEach { yhteystieto ->
-            // mandatory
-            ok = checkMandatoryYhteystietoData(yhteystieto, context, ok)
-        }
-        hanke.arvioijat.forEach { yhteystieto ->
-            // mandatory
-            ok = checkMandatoryYhteystietoData(yhteystieto, context, ok)
-        }
-        return ok
-    }
-
-    private fun checkMandatoryYhteystietoData(
-        yhteystieto: HankeYhteystieto,
-        context: ConstraintValidatorContext,
-        ok: Boolean
-    ): Boolean {
-        var ok1 = ok
-        // TODO: NOTE: having all four mandatory fields empty,
-        //  but giving organisation is still valid for this... needs to be fixed.
-        // Short version: Either all four mandatory fields must be have proper value,
-        // or all of them must be empty/whitespace-only.
-        if (yhteystieto.isAnyMandatoryFieldSet() && !yhteystieto.isValid()) {
-            // TODO: is that property node correct?
-            // TODO: Does not currently matter, though, as the node information does not get through
-            // to error response.
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("YhteysTiedot")
-                .addConstraintViolation()
-            ok1 = false
-        }
-        return ok1
     }
 
     private fun checkTyomaaTiedot(hanke: Hanke, context: ConstraintValidatorContext): Boolean {

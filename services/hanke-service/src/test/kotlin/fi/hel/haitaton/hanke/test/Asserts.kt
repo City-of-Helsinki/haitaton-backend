@@ -4,6 +4,7 @@ import assertk.Assert
 import assertk.assertions.isBetween
 import java.time.Duration
 import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 import java.time.temporal.TemporalAmount
 
 object Asserts {
@@ -12,6 +13,13 @@ object Asserts {
         given { actual ->
             if (actual == null) return
             val now = OffsetDateTime.now()
+            assertThat(actual).isBetween(now.minus(offset), now)
+        }
+
+    fun Assert<ZonedDateTime?>.isRecentZDT(offset: TemporalAmount = Duration.ofMinutes(1)) =
+        given { actual ->
+            if (actual == null) return
+            val now = ZonedDateTime.now()
             assertThat(actual).isBetween(now.minus(offset), now)
         }
 }

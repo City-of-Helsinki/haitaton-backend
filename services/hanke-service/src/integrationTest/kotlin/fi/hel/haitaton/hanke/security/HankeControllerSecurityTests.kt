@@ -3,9 +3,9 @@ package fi.hel.haitaton.hanke.security
 import fi.hel.haitaton.hanke.HankeController
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
-import fi.hel.haitaton.hanke.SaveType
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
@@ -199,7 +199,7 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
             getCurrentTimeUTC(),
             null,
             null,
-            SaveType.DRAFT
+            HankeStatus.DRAFT
         )
     }
 

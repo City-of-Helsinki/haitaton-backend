@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.domain
 
+import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
@@ -15,23 +16,18 @@ import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
-import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.ResultActions
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 
 @WebMvcTest(PublicHankeController::class)
 @Import(IntegrationTestConfiguration::class, IntegrationTestResourceServerConfig::class)
 @ActiveProfiles("itest")
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
+class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired private lateinit var hankeService: HankeService
 
@@ -48,68 +44,54 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @Test
     // Without mock user, i.e. anonymous
     fun `status ok with unauthenticated user`() {
-        performGetHankkeet(listOf()).andExpect(MockMvcResultMatchers.status().isOk)
+        every { hankeService.loadPublicHanke() }.returns(listOf())
 
-        verify { hankeService.loadAllHanke() }
+        get("/public-hankkeet").andExpect(MockMvcResultMatchers.status().isOk)
+
+        verify { hankeService.loadPublicHanke() }
     }
 
     @Test
     // Without mock user, i.e. anonymous
-    fun `only returns hankkeet with mandatory fields filled`() {
-        performGetHankkeet(
-                listOf(
-                    HankeFactory.create(id = 1, nimi = null)
-                        .withHankealue()
-                        .withYhteystiedot()
-                        .withTormaystarkasteluTulos(),
-                    HankeFactory.create(id = 2, nimi = "null")
-                        .withHankealue()
-                        .withYhteystiedot()
-                        .withTormaystarkasteluTulos(),
-                )
+    fun `returns public hankkeet`() {
+        val hankkeet =
+            listOf(
+                HankeFactory.create(id = 1, nimi = "nimi")
+                    .withHankealue()
+                    .withYhteystiedot()
+                    .withTormaystarkasteluTulos(),
+                HankeFactory.create(id = 2, nimi = "null")
+                    .withHankealue()
+                    .withYhteystiedot()
+                    .withTormaystarkasteluTulos(),
             )
+        every { hankeService.loadPublicHanke() }.returns(hankkeet)
+
+        get("/public-hankkeet")
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(jsonPath("[0]").exists())
-            .andExpect(jsonPath("[1]").doesNotExist())
-            .andExpect(jsonPath("[0].id").value(2))
-            .andExpect(jsonPath("[0].nimi").value("null"))
+            .andExpect(jsonPath("[1]").exists())
+            .andExpect(jsonPath("[0].id").value(1))
+            .andExpect(jsonPath("[0].nimi").value("nimi"))
+            .andExpect(jsonPath("[1].id").value(2))
+            .andExpect(jsonPath("[1].nimi").value("null"))
 
-        verify { hankeService.loadAllHanke() }
-    }
-
-    @Test
-    // Without mock user, i.e. anonymous
-    fun `only returns hankkeet with tormaystarkasteluTulos`() {
-        performGetHankkeet(
-                listOf(
-                    HankeFactory.create()
-                        .withHankealue()
-                        .withYhteystiedot()
-                        .withTormaystarkasteluTulos(),
-                    HankeFactory.create(id = 444, hankeTunnus = "HAI-TEST-2")
-                        .withHankealue()
-                        .withYhteystiedot()
-                )
-            )
-            .andExpect(MockMvcResultMatchers.status().isOk)
-            .andExpect(jsonPath("[0]").exists())
-            .andExpect(jsonPath("[1]").doesNotExist())
-            .andExpect(jsonPath("[0].id").value(HankeFactory.defaultId))
-
-        verify { hankeService.loadAllHanke() }
+        verify { hankeService.loadPublicHanke() }
     }
 
     @Test
     // Without mock user, i.e. anonymous
     fun `doesn't return personal information from yhteystiedot`() {
-        performGetHankkeet(
-                listOf(
-                    HankeFactory.create()
-                        .withHankealue()
-                        .withYhteystiedot()
-                        .withTormaystarkasteluTulos()
-                )
+        val hankkeet =
+            listOf(
+                HankeFactory.create()
+                    .withHankealue()
+                    .withYhteystiedot()
+                    .withTormaystarkasteluTulos()
             )
+        every { hankeService.loadPublicHanke() }.returns(hankkeet)
+
+        get("/public-hankkeet")
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(jsonPath("[0]").exists())
             .andExpect(jsonPath("[0].omistajat[0]").exists())
@@ -121,14 +103,6 @@ class PublicHankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("[0].toteuttajat").doesNotExist())
             .andExpect(jsonPath("[0].arvioijat").doesNotExist())
 
-        verify { hankeService.loadAllHanke() }
-    }
-
-    private fun performGetHankkeet(hankkeet: List<Hanke>): ResultActions {
-        every { hankeService.loadAllHanke() }.returns(hankkeet)
-
-        return mockMvc.perform(
-            MockMvcRequestBuilders.get("/public-hankkeet").accept(MediaType.APPLICATION_JSON)
-        )
+        verify { hankeService.loadPublicHanke() }
     }
 }
