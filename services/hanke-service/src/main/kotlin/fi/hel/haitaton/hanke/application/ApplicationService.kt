@@ -58,10 +58,9 @@ open class ApplicationService(
                 // it to Allu
                 applicationData = application.applicationData.copy(pendingOnClient = true)
             )
-        applicationEntity.alluid = createApplicationToAllu(applicationEntity.applicationData)
 
         val savedApplication = repo.save(applicationEntity).toApplication()
-        logger.info { "Created a new application with id ${application.id} for user $userId" }
+        logger.info { "Created a new application with id ${savedApplication.id} for user $userId" }
         applicationLoggingService.logCreate(savedApplication, userId)
         return savedApplication
     }
@@ -100,7 +99,11 @@ open class ApplicationService(
         // Don't change a draft to a non-draft or vice-versa with the update method.
         application.applicationData =
             newApplicationData.copy(pendingOnClient = application.applicationData.pendingOnClient)
-        application.alluid = sendApplicationToAllu(application)
+
+        // Update the application in Allu, if it's been already uploaded
+        if (application.alluid != null) {
+            updateApplicationInAllu(application.alluid!!, application.applicationData)
+        }
 
         val updatedApplication = repo.save(application).toApplication()
         logger.info("Updated application id=$id, alluid=${updatedApplication.alluid}")
@@ -116,7 +119,7 @@ open class ApplicationService(
         }
         // The application should no longer be a draft
         application.applicationData = application.applicationData.copy(pendingOnClient = false)
-        application.alluid = sendApplicationToAllu(application)
+        application.alluid = sendApplicationToAllu(application.alluid, application.applicationData)
         logger.info("Sent application id=$id, alluid=${application.alluid}")
         // Save only if sendApplicationToAllu didn't throw an exception
         return repo.save(application).toApplication()
@@ -175,39 +178,43 @@ open class ApplicationService(
         return currentStatus in listOf(ApplicationStatus.PENDING, ApplicationStatus.PENDING_CLIENT)
     }
 
-    private fun createApplicationToAllu(applicationData: ApplicationData): Int? {
-        return try {
-            when (applicationData) {
-                is CableReportApplicationData -> {
-                    val alluData = applicationData.toAlluData()
-                    withDisclosureLogging(applicationData) { cableReportService.create(alluData) }
-                }
-            }
-        } catch (ex: Exception) {
-            logger.warn(ex) { "Error creating an application to allu." }
-            null
+    private fun sendApplicationToAllu(alluid: Int?, applicationData: ApplicationData): Int {
+        return if (alluid == null) {
+            createApplicationInAllu(applicationData)
+        } else {
+            updateApplicationInAllu(alluid, applicationData)
+            alluid
         }
     }
 
-    private fun sendApplicationToAllu(application: ApplicationEntity): Int {
-        return when (application.applicationData) {
-            is CableReportApplicationData -> sendCableReport(application)
+    private fun updateApplicationInAllu(alluid: Int, applicationData: ApplicationData) {
+        when (applicationData) {
+            is CableReportApplicationData -> updateCableReportInAllu(alluid, applicationData)
         }
     }
 
-    private fun sendCableReport(application: ApplicationEntity): Int {
-        val cableReportApplicationData: CableReportApplicationData =
-            application.applicationData as CableReportApplicationData
+    private fun createApplicationInAllu(applicationData: ApplicationData): Int {
+        return when (applicationData) {
+            is CableReportApplicationData -> createCableReportToAllu(applicationData)
+        }
+    }
 
+    private fun createCableReportToAllu(
+        cableReportApplicationData: CableReportApplicationData
+    ): Int {
         val alluData = cableReportApplicationData.toAlluData()
         return withDisclosureLogging(cableReportApplicationData) {
-            val alluid = application.alluid
-            if (alluid == null) {
-                cableReportService.create(alluData)
-            } else {
-                cableReportService.update(alluid, alluData)
-                alluid
-            }
+            cableReportService.create(alluData)
+        }
+    }
+
+    private fun updateCableReportInAllu(
+        alluId: Int,
+        cableReportApplicationData: CableReportApplicationData
+    ) {
+        val alluData = cableReportApplicationData.toAlluData()
+        withDisclosureLogging(cableReportApplicationData) {
+            cableReportService.update(alluId, alluData)
         }
     }
 

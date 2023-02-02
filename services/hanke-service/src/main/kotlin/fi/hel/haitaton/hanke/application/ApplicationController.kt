@@ -94,8 +94,7 @@ class ApplicationController(
         summary = "Create a new application",
         description =
             "Creates a new application. The new application is created as a draft, " +
-                "i.e. with true in pendingOnClient. If the draft was successfully sent to Allu, " +
-                "the response includes the Allu ID of the application."
+                "i.e. with true in pendingOnClient. The draft is not sent to Allu."
     )
     @ApiResponses(
         value =
@@ -134,10 +133,12 @@ class ApplicationController(
     @Operation(
         summary = "Update an application",
         description =
-            "Updates an application. The application can be updated until it has started processing on " +
-                "Allu, i.e. it's still pending. The updated application will be sent to Allu, but " +
-                "it will be updated locally even if that fails. The pendingOnClient value can't be " +
-                "changed with this endpoint. Use POST /hakemukset/{id}/send-application for that."
+            "Updates an application. The application can be updated until it has started " +
+                "processing on Allu, i.e. it's still pending. If the application has been " +
+                "sent to Allu, it will be updated there as well. If an Allu-update is " +
+                "required, but it fails, the local version will not be updated. The " +
+                "pendingOnClient value can't be changed with this endpoint. Use POST " +
+                "/hakemukset/{id}/send-application for that."
     )
     @ApiResponses(
         value =
