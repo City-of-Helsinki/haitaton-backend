@@ -3,10 +3,6 @@ environment:
     fileshare: http://edit-here/fileshare-for-dev
   test:
     fileshare: http://edit-here/fileshare-for-test
-  staging:
-    fileshare: http://edit-here/fileshare-for-staging
-  prod:
-    fileshare: http://edit-here/fileshare-for-prod
 
 polys_dir: tormays_polys
 

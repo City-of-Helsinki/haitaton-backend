@@ -4,7 +4,7 @@
 
 config_yaml="./hel-gis-data-variables.yaml"
 
-supported_environments="dev|test|staging|prod"
+supported_environments="dev|test"
 
 usage () {
     echo "Usage: $0 <$supported_environments>"
