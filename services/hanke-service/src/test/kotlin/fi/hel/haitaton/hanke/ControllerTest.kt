@@ -47,6 +47,9 @@ interface ControllerTest {
     fun put(url: String, content: Any): ResultActions =
         mockMvc.perform(putRequest(url).body(content))
 
+    /** Send a DELETE request without a request body. */
+    fun delete(url: String): ResultActions = mockMvc.perform(deleteRequest(url))
+
     /** Use the given object as the request body for this request. Serialize the object as JSON. */
     private fun MockHttpServletRequestBuilder.body(content: Any): MockHttpServletRequestBuilder =
         this.content(OBJECT_MAPPER.writeValueAsString(content))
@@ -56,6 +59,9 @@ interface ControllerTest {
 
     private fun putRequest(url: String): MockHttpServletRequestBuilder =
         MockMvcRequestBuilders.put(url).modifyHeaders()
+
+    private fun deleteRequest(url: String): MockHttpServletRequestBuilder =
+        MockMvcRequestBuilders.delete(url).modifyHeaders()
 
     /**
      * Headers that are common for the HTTP methods that send a body with the request, like POST and

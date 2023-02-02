@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import io.sentry.Sentry
+import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -104,6 +105,7 @@ class GdprController(
 
     @ExceptionHandler(UserNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
     fun userNotFound(ex: UserNotFoundException) {
         logger.warn { ex.message }
         Sentry.captureException(ex)
@@ -111,6 +113,7 @@ class GdprController(
 
     @ExceptionHandler(NotImplementedError::class)
     @ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
+    @Hidden
     fun notImplemented(ex: NotImplementedError) {
         logger.warn { ex.message }
         Sentry.captureException(ex)
@@ -118,6 +121,7 @@ class GdprController(
 
     @ExceptionHandler(Exception::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @Hidden
     fun otherExceptions(ex: Exception): GdprErrorResponse {
         logger.error(ex) { "Error while retrieving GDPR info" }
         Sentry.captureException(ex)

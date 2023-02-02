@@ -128,6 +128,22 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
+    override fun cancel(applicationId: Int) {
+        val token = login()!!
+        webClient
+            .put()
+            .uri("$baseUrl/v2/applications/$applicationId/cancelled")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .headers { it.setBearerAuth(token) }
+            .retrieve()
+            .bodyToMono(Void::class.java)
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error canceling application in Allu", it)
+            }
+            .block()
+    }
+
     override fun addAttachment(applicationId: Int, metadata: AttachmentInfo, file: ByteArray) {
         val token = login()!!
 
