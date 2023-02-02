@@ -11,6 +11,7 @@ import java.sql.Types
 import org.geojson.Crs
 import org.geojson.Feature
 import org.geojson.FeatureCollection
+import org.geojson.GeoJsonObject
 import org.springframework.jdbc.core.JdbcOperations
 
 class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : GeometriatDao {
@@ -90,7 +91,7 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
 
         private fun deleteHankeGeometriaRows(
             geometriat: Geometriat,
-            jdbcOperations: JdbcOperations
+            jdbcOperations: JdbcOperations,
         ) {
             jdbcOperations.execute(
                 "DELETE FROM HankeGeometria WHERE hankeGeometriatId = ${geometriat.id}"
@@ -173,6 +174,29 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
                 }
             )
         }
+    }
+
+    data class InvalidDetail(val reason: String, val location: String)
+
+    override fun validateGeometria(geometria: GeoJsonObject): InvalidDetail? {
+        val detailQuery =
+            "select valid, reason, ST_AsGeoJSON(location) as location from ST_IsValidDetail(ST_GeomFromGeoJSON(?))"
+
+        return jdbcOperations
+            .query(
+                detailQuery,
+                { rs, _ ->
+                    if (!rs.getBoolean("valid")) {
+                        InvalidDetail(
+                            rs.getString("reason"),
+                            rs.getString("location"),
+                        )
+                    } else {
+                        null
+                    }
+                },
+                geometria.toJsonString()
+            )[0]
     }
 
     private fun retrieveHankeGeometriaRows(

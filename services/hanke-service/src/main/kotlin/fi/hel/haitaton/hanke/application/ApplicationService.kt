@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationHistory
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
+import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
@@ -26,6 +27,7 @@ open class ApplicationService(
     private val cableReportService: CableReportService,
     private val disclosureLogService: DisclosureLogService,
     private val applicationLoggingService: ApplicationLoggingService,
+    private val geometriatDao: GeometriatDao,
 ) {
     open fun getAllApplicationsForUser(userId: String): List<Application> {
         return repo.getAllByUserId(userId).map { it.toApplication() }
@@ -37,6 +39,13 @@ open class ApplicationService(
     @Transactional
     open fun create(application: Application, userId: String): Application {
         logger.info("Creating a new application for user $userId")
+
+        geometriatDao.validateGeometria(application.applicationData.geometry)?.let {
+            throw ApplicationGeometryException(
+                "Invalid geometry received when creating a new application for user $userId, reason = ${it.reason}, location = ${it.location}"
+            )
+        }
+
         val applicationEntity =
             ApplicationEntity(
                 id = null,
@@ -76,6 +85,12 @@ open class ApplicationService(
                         newApplicationData::class
                     )
                 }
+        }
+
+        geometriatDao.validateGeometria(newApplicationData.geometry)?.let {
+            throw ApplicationGeometryException(
+                "Invalid geometry received when updating application for user $userId, id=${application.id}, alluid=${application.alluid}, reason = ${it.reason}, location = ${it.location}"
+            )
         }
 
         if (!isStillPending(application)) {
@@ -243,6 +258,8 @@ class ApplicationNotFoundException(id: Long) :
 
 class ApplicationAlreadyProcessingException(id: Long?, alluid: Int?) :
     RuntimeException("Application is no longer pending in Allu, id=$id, alluid=$alluid")
+
+class ApplicationGeometryException(message: String) : RuntimeException(message)
 
 @Repository
 interface ApplicationRepository : JpaRepository<ApplicationEntity, Long> {

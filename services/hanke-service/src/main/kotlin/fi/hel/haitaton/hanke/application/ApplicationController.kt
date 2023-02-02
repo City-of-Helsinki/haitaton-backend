@@ -246,6 +246,13 @@ class ApplicationController(
     @ResponseStatus(HttpStatus.CONFLICT)
     fun alluDataError(ex: AlluDataException): HankeError {
         logger.warn(ex) { ex.message }
-        return HankeError.HAI2003
+        return HankeError.HAI2004
+    }
+
+    @ExceptionHandler(ApplicationGeometryException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    fun applicationGeometryException(ex: ApplicationGeometryException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2005
     }
 }
