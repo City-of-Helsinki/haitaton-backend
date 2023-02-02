@@ -21,14 +21,20 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 
-/*
-Hibernate/JPA Entity classes
- */
-
-enum class SaveType {
-    AUTO, // When the information has been saved by a periodic auto-save feature
-    DRAFT, // When the user presses "saves as draft"
-    SUBMIT // When the user presses "save" or "submit" or such that indicates the data is ready.
+enum class HankeStatus {
+    /** A hanke is a draft from its creation until all mandatory fields have been filled. */
+    DRAFT,
+    /**
+     * A hanke goes public after all mandatory fields have been filled. This happens automatically
+     * on any update. A public hanke has some info visible to everyone and applications can be added
+     * to it.
+     */
+    PUBLIC,
+    /**
+     * After the end dates of all hankealue have passed, a hanke is considered finished. It's
+     * anonymized and at least mostly hidden in the UI.
+     */
+    ENDED,
 }
 
 enum class Vaihe {
@@ -120,7 +126,7 @@ enum class Haitta13 {
 @Entity
 @Table(name = "hanke")
 class HankeEntity(
-    @Enumerated(EnumType.STRING) var saveType: SaveType? = null,
+    @Enumerated(EnumType.STRING) var status: HankeStatus = HankeStatus.DRAFT,
     var hankeTunnus: String? = null,
     var nimi: String? = null,
     var kuvaus: String? = null,
@@ -211,7 +217,7 @@ class HankeEntity(
         if (this === other) return true
         if (other !is HankeEntity) return false
 
-        if (saveType != other.saveType) return false
+        if (status != other.status) return false
         if (hankeTunnus != other.hankeTunnus) return false
         if (id != other.id) return false
 
@@ -219,7 +225,7 @@ class HankeEntity(
     }
 
     override fun hashCode(): Int {
-        var result = saveType?.hashCode() ?: 0
+        var result = status.hashCode()
         result = 31 * result + (hankeTunnus?.hashCode() ?: 0)
         result = 31 * result + (id ?: 0)
         return result
@@ -231,28 +237,12 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
 
     override fun findAll(): List<HankeEntity>
 
-    // search with date range
-    fun findAllByAlkuPvmIsBeforeAndLoppuPvmIsAfter(
-        endAlkuPvm: LocalDate,
-        startLoppuPvm: LocalDate
-    ): List<HankeEntity>
-
-    // search with saveType
-    fun findAllBySaveType(saveType: SaveType): List<HankeEntity>
+    fun findAllByStatus(status: HankeStatus): List<HankeEntity>
 
     fun findAllByCreatedByUserIdOrModifiedByUserId(
         createdByUserId: String,
         modifiedByUserId: String
     ): List<HankeEntity>
-
-    /*
-        // search with date range, example with query:
-        @Query("select h from HankeEntity h "+
-                " where (alkupvm >= :periodBegin and alkupvm <= :periodEnd) " +
-                " or (loppupvm >= :periodBegin and loppupvm <= :periodEnd) " +
-                " or (alkupvm <= :periodBegin and loppupvm >= :periodEnd)")
-        fun getAllDataHankeBetweenTimePeriod(periodBegin: LocalDate, periodEnd: LocalDate): List<HankeEntity>
-    */
 }
 
 enum class CounterType {

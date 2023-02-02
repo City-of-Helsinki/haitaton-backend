@@ -96,6 +96,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.nimi").value("Hämeentien perusparannus ja katuvalot"))
+            .andExpect(jsonPath("$.status").value(HankeStatus.DRAFT.name))
 
         verify { hankeService.loadHanke(mockedHankeTunnus) }
         verify { disclosureLogService.saveDisclosureLogsForHanke(hanke, "test") }
@@ -260,6 +261,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             hankeToBeUpdated.apply {
                 modifiedAt = getCurrentTimeUTC()
                 modifiedBy = "test"
+                status = HankeStatus.PUBLIC
             }
 
         every { hankeService.getHankeId(hanketunnus) }.returns(updatedHanke.id)
@@ -280,6 +282,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.nimi").value(HankeFactory.defaultNimi))
+            .andExpect(jsonPath("$.status").value(HankeStatus.PUBLIC.name))
 
         verify { hankeService.getHankeId(hanketunnus) }
         verify { permissionService.hasPermission(updatedHanke.id!!, username, PermissionCode.EDIT) }
@@ -474,7 +477,6 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 alkuPvm = ZonedDateTime.of(2021, 1, 1, 0, 0, 0, 0, TZ_UTC),
                 loppuPvm = ZonedDateTime.of(2021, 12, 31, 0, 0, 0, 0, TZ_UTC),
                 vaihe = Vaihe.OHJELMOINTI,
-                saveType = SaveType.AUTO,
             )
         // faking the service call
         every { hankeService.createHanke(any()) } throws RuntimeException("Some error")

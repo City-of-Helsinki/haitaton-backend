@@ -18,6 +18,8 @@ interface HankeService {
 
     fun loadAllHanke(): List<Hanke>
 
+    fun loadPublicHanke(): List<Hanke>
+
     fun loadHankkeetByIds(ids: List<Int>): List<Hanke>
 
     fun loadHankkeetByUserId(userId: String): List<Hanke>

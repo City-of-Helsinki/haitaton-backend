@@ -92,7 +92,7 @@ class HankeControllerTest {
                     getCurrentTimeUTC(),
                     null,
                     null,
-                    SaveType.DRAFT
+                    HankeStatus.DRAFT
                 )
             )
 
@@ -122,7 +122,7 @@ class HankeControllerTest {
                     getCurrentTimeUTC(),
                     null,
                     null,
-                    SaveType.DRAFT
+                    HankeStatus.DRAFT
                 ),
                 Hanke(
                     50,
@@ -139,7 +139,7 @@ class HankeControllerTest {
                     getCurrentTimeUTC(),
                     null,
                     null,
-                    SaveType.SUBMIT
+                    HankeStatus.DRAFT
                 )
             )
         Mockito.`when`(permissionService.getAllowedHankeIds(username, PermissionCode.VIEW))
@@ -173,7 +173,7 @@ class HankeControllerTest {
                 createdAt = getCurrentTimeUTC(),
                 modifiedBy = null,
                 modifiedAt = null,
-                saveType = SaveType.DRAFT
+                status = HankeStatus.DRAFT
             )
 
         // mock HankeService response
@@ -209,7 +209,7 @@ class HankeControllerTest {
                 createdAt = null,
                 modifiedBy = null,
                 modifiedAt = null,
-                saveType = SaveType.DRAFT
+                status = HankeStatus.DRAFT
             )
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
@@ -241,7 +241,7 @@ class HankeControllerTest {
                 createdAt = getCurrentTimeUTC(),
                 modifiedBy = null,
                 modifiedAt = null,
-                saveType = SaveType.DRAFT
+                status = HankeStatus.DRAFT,
             )
 
         hanke.omistajat =
@@ -302,7 +302,7 @@ class HankeControllerTest {
                 createdAt = null,
                 modifiedBy = null,
                 modifiedAt = null,
-                saveType = null
+                status = null,
             )
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
@@ -311,7 +311,6 @@ class HankeControllerTest {
         assertThatExceptionOfType(ConstraintViolationException::class.java)
             .isThrownBy { hankeController.updateHanke(partialHanke, "id123") }
             .withMessageContaining("updateHanke.hanke.vaihe: " + HankeError.HAI1002.toString())
-            .withMessageContaining("updateHanke.hanke.saveType: " + HankeError.HAI1002.toString())
 
         verify { disclosureLogService wasNot Called }
     }
@@ -334,7 +333,7 @@ class HankeControllerTest {
                 createdAt = getCurrentTimeUTC(),
                 modifiedBy = null,
                 modifiedAt = null,
-                saveType = SaveType.DRAFT
+                status = HankeStatus.DRAFT
             )
 
         val mockedHanke = hanke.copy()

@@ -71,7 +71,7 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
         val loadedHanke = hankeRepository.findByHankeTunnus("ABC-123")
         assertThat(loadedHanke).isNotNull
 
-        assertThat(loadedHanke!!.saveType).isEqualTo(SaveType.DRAFT)
+        assertThat(loadedHanke!!.status).isEqualTo(HankeStatus.DRAFT)
         assertThat(loadedHanke.nimi).isEqualTo("nimi")
         assertThat(loadedHanke.kuvaus).isEqualTo("kuvaus")
         assertThat(loadedHanke.alkuPvm).isEqualTo(date)
@@ -216,7 +216,7 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
 
     private fun createBaseHankeEntity(hankeTunnus: String) =
         HankeEntity(
-            saveType = SaveType.DRAFT,
+            status = HankeStatus.DRAFT,
             hankeTunnus = hankeTunnus,
             nimi = "nimi",
             kuvaus = "kuvaus",

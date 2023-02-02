@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
+import fi.hel.haitaton.hanke.validation.HankePublicValidator
 import java.time.ZonedDateTime
 import mu.KotlinLogging
 import org.springframework.transaction.annotation.Transactional
@@ -68,6 +69,11 @@ open class HankeServiceImpl(
     override fun loadAllHanke() =
         hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
 
+    override fun loadPublicHanke() =
+        hankeRepository.findAllByStatus(HankeStatus.PUBLIC).map {
+            createHankeDomainObjectFromEntity(it)
+        }
+
     override fun loadHankkeetByIds(ids: List<Int>) =
         hankeRepository.findAllById(ids).map { createHankeDomainObjectFromEntity(it) }
 
@@ -106,6 +112,9 @@ open class HankeServiceImpl(
         entity.createdAt = getCurrentTimeUTCAsLocalTime()
         entity.modifiedByUserId = null
         entity.modifiedAt = null
+
+        calculateTormaystarkastelu(hanke, entity)
+        entity.status = decideNewHankeStatus(entity)
 
         logger.debug { "Creating Hanke ${hanke.hankeTunnus}: ${hanke.toLogString()}" }
         val savedHankeEntity = hankeRepository.save(entity)
@@ -149,17 +158,8 @@ open class HankeServiceImpl(
         entity.modifiedByUserId = userId
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
 
-        tormaystarkasteluService.calculateTormaystarkastelu(hanke)?.let {
-            entity.tormaystarkasteluTulokset.clear()
-            entity.tormaystarkasteluTulokset.add(
-                TormaystarkasteluTulosEntity(
-                    perus = it.perusIndeksi,
-                    pyoraily = it.pyorailyIndeksi,
-                    joukkoliikenne = it.joukkoliikenneIndeksi,
-                    hanke = entity
-                )
-            )
-        }
+        calculateTormaystarkastelu(hanke, entity)
+        entity.status = decideNewHankeStatus(entity)
 
         // Save changes:
         logger.debug { "Saving Hanke ${hanke.hankeTunnus}: ${hanke.toLogString()}" }
@@ -187,6 +187,54 @@ open class HankeServiceImpl(
     //   See TormaystarkasteluRepositoryITests for a way to remove.
 
     // ======================================================================
+
+    private fun calculateTormaystarkastelu(source: Hanke, target: HankeEntity) {
+        tormaystarkasteluService.calculateTormaystarkastelu(source)?.let {
+            target.tormaystarkasteluTulokset.clear()
+            target.tormaystarkasteluTulokset.add(
+                TormaystarkasteluTulosEntity(
+                    perus = it.perusIndeksi,
+                    pyoraily = it.pyorailyIndeksi,
+                    joukkoliikenne = it.joukkoliikenneIndeksi,
+                    hanke = target
+                )
+            )
+        }
+    }
+
+    private fun decideNewHankeStatus(entity: HankeEntity): HankeStatus {
+        val validationResult =
+            HankePublicValidator.validateHankeHasMandatoryFields(
+                createHankeDomainObjectFromEntity(entity)
+            )
+
+        return when (val status = entity.status) {
+            HankeStatus.DRAFT ->
+                if (validationResult.isOk()) {
+                    HankeStatus.PUBLIC
+                } else {
+                    logger.debug {
+                        "A hanke draft wasn't ready to go public. hankeTunnus=${entity.hankeTunnus} failedFields=${validationResult.errorPaths().joinToString()}"
+                    }
+                    HankeStatus.DRAFT
+                }
+            HankeStatus.PUBLIC ->
+                if (validationResult.isOk()) {
+                    HankeStatus.PUBLIC
+                } else {
+                    logger.warn {
+                        "A public hanke wasn't updated with missing or invalid fields. hankeTunnus=${entity.hankeTunnus} failedFields=${validationResult.errorPaths().joinToString()}"
+                    }
+                    throw HankeArgumentException(
+                        "A public hanke didn't have all mandatory fields filled."
+                    )
+                }
+            else ->
+                throw HankeArgumentException(
+                    "A hanke cannot be updated when in status $status. hankeTunnus=${entity.hankeTunnus}"
+                )
+        }
+    }
 
     // --------------- Helpers for data transfer from database ------------
     private fun createHankealueDomainObjectFromEntity(hankealueEntity: HankealueEntity): Hankealue {
@@ -227,7 +275,7 @@ open class HankeServiceImpl(
                 hankeEntity.modifiedByUserId,
                 if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC)
                 else null,
-                hankeEntity.saveType
+                hankeEntity.status
             )
 
         h.tyomaaKatuosoite = hankeEntity.tyomaaKatuosoite
@@ -454,8 +502,6 @@ open class HankeServiceImpl(
 
         hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
         hanke.suunnitteluVaihe?.let { entity.suunnitteluVaihe = hanke.suunnitteluVaihe }
-
-        hanke.saveType?.let { entity.saveType = hanke.saveType }
         hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
         entity.tyomaaTyyppi = hanke.tyomaaTyyppi
         hanke.tyomaaKoko?.let { entity.tyomaaKoko = hanke.tyomaaKoko }
