@@ -36,14 +36,13 @@ import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
+import io.mockk.verifyOrder
 import java.time.OffsetDateTime
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotEquals
-import org.junit.jupiter.api.Assertions.assertNotNull
-import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -86,7 +85,6 @@ class ApplicationServiceITest : DatabaseTest() {
     @Test
     fun `create creates an audit log entry for created application`() {
         TestUtils.addMockedRequestIp()
-        every { cableReportServiceAllu.create(any()) }.returns(2)
 
         val application =
             applicationService.create(AlluDataFactory.createApplication(id = null), username)
@@ -108,25 +106,23 @@ class ApplicationServiceITest : DatabaseTest() {
         assertThat(event.target::id).isEqualTo(application.id?.toString())
         assertThat(event.target::type).isEqualTo(ObjectType.APPLICATION)
         assertThat(event.target::objectBefore).isNull()
-        val expectedObject = expectedLogObject(application.id, 2)
+        val expectedObject = expectedLogObject(application.id, null)
         JSONAssert.assertEquals(
             expectedObject,
             event.target.objectAfter,
             JSONCompareMode.NON_EXTENSIBLE
         )
-        verify { cableReportServiceAllu.create(any()) }
+        verify { cableReportServiceAllu wasNot Called }
     }
 
     @Test
     fun `updateApplicationData creates an audit log entry for updated application`() {
         TestUtils.addMockedRequestIp()
-        every { cableReportServiceAllu.create(any()) }.returns(2)
-        every { cableReportServiceAllu.getCurrentStatus(any()) }.returns(null)
-        justRun { cableReportServiceAllu.update(any(), any()) }
         val application =
             applicationService.create(AlluDataFactory.createApplication(id = null), username)
         auditLogRepository.deleteAll()
         assertThat(auditLogRepository.findAll()).isEmpty()
+        every { cableReportServiceAllu.create(any()) }.returns(2)
 
         applicationService.updateApplicationData(
             application.id!!,
@@ -150,33 +146,28 @@ class ApplicationServiceITest : DatabaseTest() {
         assertThat(event.actor::ipAddress).isEqualTo(TestUtils.mockedIp)
         assertThat(event.target::id).isEqualTo(application.id?.toString())
         assertThat(event.target::type).isEqualTo(ObjectType.APPLICATION)
-        val expectedObjectBefore = expectedLogObject(application.id, 2)
+        val expectedObjectBefore = expectedLogObject(application.id, null)
         JSONAssert.assertEquals(
             expectedObjectBefore,
             event.target.objectBefore,
             JSONCompareMode.NON_EXTENSIBLE
         )
-        val expectedObjectAfter = expectedLogObject(application.id, 2, "Modified application")
+        val expectedObjectAfter = expectedLogObject(application.id, null, "Modified application")
         JSONAssert.assertEquals(
             expectedObjectAfter,
             event.target.objectAfter,
             JSONCompareMode.NON_EXTENSIBLE
         )
-        verify { cableReportServiceAllu.create(any()) }
-        verify { cableReportServiceAllu.getCurrentStatus(2) }
-        verify { cableReportServiceAllu.update(2, any()) }
+        verify { cableReportServiceAllu wasNot Called }
     }
 
     @Test
     fun `updateApplicationData doesn't create an audit log entry if the application hasn't changed`() {
         TestUtils.addMockedRequestIp()
-        every { cableReportServiceAllu.create(any()) }.returns(2)
-        every { cableReportServiceAllu.getCurrentStatus(any()) }.returns(null)
-        justRun { cableReportServiceAllu.update(any(), any()) }
-        val application =
-            applicationService.create(AlluDataFactory.createApplication(id = null), username)
-        auditLogRepository.deleteAll()
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = 2 }
         assertThat(auditLogRepository.findAll()).isEmpty()
+        every { cableReportServiceAllu.getCurrentStatus(2) }.returns(null)
+        justRun { cableReportServiceAllu.update(any(), any()) }
 
         applicationService.updateApplicationData(
             application.id!!,
@@ -186,9 +177,10 @@ class ApplicationServiceITest : DatabaseTest() {
 
         val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
         assertThat(applicationLogs).isEmpty()
-        verify { cableReportServiceAllu.create(any()) }
-        verify { cableReportServiceAllu.getCurrentStatus(2) }
-        verify { cableReportServiceAllu.update(2, any()) }
+        verifyOrder {
+            cableReportServiceAllu.getCurrentStatus(2)
+            cableReportServiceAllu.update(2, any())
+        }
     }
 
     @Test
@@ -260,13 +252,12 @@ class ApplicationServiceITest : DatabaseTest() {
                 id = givenId,
                 applicationData = cableReportApplicationData
             )
-        every { cableReportServiceAllu.create(cableReportApplicationData.toAlluData()) } returns 21
         assertTrue(cableReportApplicationData.pendingOnClient)
 
         val response = applicationService.create(newApplication, username)
 
         assertNotEquals(givenId, response.id)
-        assertEquals(21, response.alluid)
+        assertEquals(null, response.alluid)
         assertEquals(newApplication.applicationType, response.applicationType)
         assertEquals(newApplication.applicationData, response.applicationData)
         assertTrue(response.applicationData.pendingOnClient)
@@ -276,12 +267,12 @@ class ApplicationServiceITest : DatabaseTest() {
         assertThat(savedApplications).hasSize(1)
         val savedApplication = savedApplications[0]
         assertEquals(response.id, savedApplication.id)
-        assertEquals(21, savedApplication.alluid)
+        assertEquals(null, savedApplication.alluid)
         assertEquals(newApplication.applicationType, savedApplication.applicationType)
         assertEquals(newApplication.applicationData, savedApplication.applicationData)
         assertTrue(savedApplication.applicationData.pendingOnClient)
 
-        verify { cableReportServiceAllu.create(cableReportApplicationData.toAlluData()) }
+        verify { cableReportServiceAllu wasNot Called }
     }
 
     @Test
@@ -294,41 +285,13 @@ class ApplicationServiceITest : DatabaseTest() {
                 id = givenId,
                 applicationData = cableReportApplicationData
             )
-        val expectedApplicationData = cableReportApplicationData.copy(pendingOnClient = true)
-        every { cableReportServiceAllu.create(expectedApplicationData.toAlluData()) } returns 21
 
         val response = applicationService.create(newApplication, username)
 
         assertTrue(response.applicationData.pendingOnClient)
         val savedApplication = applicationRepository.findById(response.id!!).get()
         assertTrue(savedApplication.applicationData.pendingOnClient)
-        verify { cableReportServiceAllu.create(expectedApplicationData.toAlluData()) }
-    }
-
-    @Test
-    fun `create saves new application without Allu ID if sending to Allu fails`() {
-        val cableReportApplicationData =
-            AlluDataFactory.createCableReportApplicationData(pendingOnClient = true)
-        val newApplication =
-            AlluDataFactory.createApplication(
-                id = null,
-                applicationData = cableReportApplicationData
-            )
-        every { cableReportServiceAllu.create(cableReportApplicationData.toAlluData()) } throws
-            RuntimeException()
-
-        val response = applicationService.create(newApplication, username)
-
-        assertNotNull(response.id)
-        assertNull(response.alluid)
-
-        val savedApplications = applicationRepository.findAll()
-        assertThat(savedApplications).hasSize(1)
-        val savedApplication = savedApplications[0]
-        assertNotNull(savedApplication.id)
-        assertNull(savedApplication.alluid)
-
-        verify { cableReportServiceAllu.create(cableReportApplicationData.toAlluData()) }
+        verify { cableReportServiceAllu wasNot Called }
     }
 
     @Test
@@ -373,12 +336,11 @@ class ApplicationServiceITest : DatabaseTest() {
         val application = alluDataFactory.saveApplicationEntity(username)
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(name = "Uudistettu johtoselvitys")
-        every { cableReportServiceAllu.create(newApplicationData.toAlluData()) } returns 21
 
         val response =
             applicationService.updateApplicationData(application.id!!, newApplicationData, username)
 
-        assertEquals(21, response.alluid)
+        assertEquals(null, response.alluid)
         assertEquals(application.applicationType, response.applicationType)
         assertEquals(newApplicationData, response.applicationData)
 
@@ -386,11 +348,11 @@ class ApplicationServiceITest : DatabaseTest() {
         assertThat(savedApplications).hasSize(1)
         val savedApplication = savedApplications[0]
         assertEquals(response.id, savedApplication.id)
-        assertEquals(21, savedApplication.alluid)
+        assertEquals(null, savedApplication.alluid)
         assertEquals(application.applicationType, savedApplication.applicationType)
         assertEquals(newApplicationData, savedApplication.applicationData)
 
-        verify { cableReportServiceAllu.create(newApplicationData.toAlluData()) }
+        verify { cableReportServiceAllu wasNot Called }
     }
 
     @Test

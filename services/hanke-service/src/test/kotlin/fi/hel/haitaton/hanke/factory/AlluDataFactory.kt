@@ -183,9 +183,9 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
      */
     fun saveApplicationEntity(
         username: String,
+        application: Application = createApplication(),
         mutator: (ApplicationEntity) -> Unit = {},
     ): ApplicationEntity {
-        val application = createApplication()
         val applicationEntity =
             ApplicationEntity(
                 id = null,
