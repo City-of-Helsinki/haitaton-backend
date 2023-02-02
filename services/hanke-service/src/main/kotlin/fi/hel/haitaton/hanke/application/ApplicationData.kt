@@ -25,6 +25,7 @@ sealed interface ApplicationData {
     val applicationType: ApplicationType
     val name: String
     val pendingOnClient: Boolean
+    val geometry: GeometryCollection
 
     fun copy(pendingOnClient: Boolean): ApplicationData
     fun toAlluData(): AlluApplicationData?
@@ -37,7 +38,7 @@ data class CableReportApplicationData(
     // Common, required
     override val name: String,
     val customerWithContacts: CustomerWithContacts,
-    val geometry: GeometryCollection,
+    override val geometry: GeometryCollection,
     val startTime: ZonedDateTime?,
     val endTime: ZonedDateTime?,
     override val pendingOnClient: Boolean,

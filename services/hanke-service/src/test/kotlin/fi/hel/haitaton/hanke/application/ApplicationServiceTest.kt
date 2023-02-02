@@ -11,6 +11,8 @@ import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.geometria.GeometriatDao
+import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
@@ -42,6 +44,7 @@ class ApplicationServiceTest {
     private val applicationRepo: ApplicationRepository = mockk()
     private val statusRepo: AlluStatusRepository = mockk()
     private val cableReportService: CableReportService = mockk()
+    private val geometriatDao: GeometriatDao = mockk()
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
     private val applicationLoggingService: ApplicationLoggingService = mockk(relaxUnitFun = true)
 
@@ -52,6 +55,7 @@ class ApplicationServiceTest {
             cableReportService,
             disclosureLogService,
             applicationLoggingService,
+            geometriatDao,
         )
 
     @BeforeEach
@@ -68,7 +72,8 @@ class ApplicationServiceTest {
             statusRepo,
             cableReportService,
             disclosureLogService,
-            applicationLoggingService
+            applicationLoggingService,
+            geometriatDao,
         )
     }
 
@@ -84,6 +89,7 @@ class ApplicationServiceTest {
                 val application: ApplicationEntity = firstArg()
                 application.copy(id = 1)
             }
+        every { geometriatDao.validateGeometria(any()) } returns null
 
         val created = service.create(dto, username)
 
@@ -94,7 +100,26 @@ class ApplicationServiceTest {
             cableReportService.create(any())
             applicationRepo.save(any())
             applicationLoggingService.logCreate(any(), username)
+            geometriatDao.validateGeometria(any())
         }
+    }
+
+    @Test
+    fun `create throws exception with invalid geometry`() {
+        val dto = AlluDataFactory.createApplication(id = null, applicationData = applicationData)
+        every { geometriatDao.validateGeometria(any()) } returns
+            GeometriatDaoImpl.InvalidDetail(
+                "Self-intersection",
+                """{"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
+            )
+
+        val exception = assertThrows<ApplicationGeometryException> { service.create(dto, username) }
+
+        assertThat(exception)
+            .hasMessage(
+                """Invalid geometry received when creating a new application for user $username, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
+            )
+        verify { geometriatDao.validateGeometria(any()) }
     }
 
     @Test
@@ -110,6 +135,7 @@ class ApplicationServiceTest {
         every { applicationRepo.save(applicationEntity) } returns applicationEntity
         justRun { cableReportService.update(42, any()) }
         every { cableReportService.getCurrentStatus(42) } returns null
+        every { geometriatDao.validateGeometria(any()) } returns null
 
         service.updateApplicationData(3, applicationData, username)
 
@@ -120,6 +146,38 @@ class ApplicationServiceTest {
             cableReportService.update(42, any())
             cableReportService.getCurrentStatus(42)
             applicationLoggingService.logUpdate(any(), any(), username)
+            geometriatDao.validateGeometria(any())
+        }
+    }
+
+    @Test
+    fun `updateApplicationData throws exception with invalid geometry`() {
+        val applicationEntity =
+            AlluDataFactory.createApplicationEntity(
+                id = 3,
+                alluid = 42,
+                userId = username,
+                applicationData = applicationData,
+            )
+        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+        every { geometriatDao.validateGeometria(any()) } returns
+            GeometriatDaoImpl.InvalidDetail(
+                "Self-intersection",
+                """{"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
+            )
+
+        val exception =
+            assertThrows<ApplicationGeometryException> {
+                service.updateApplicationData(3, applicationData, username)
+            }
+
+        assertThat(exception)
+            .hasMessage(
+                """Invalid geometry received when updating application for user $username, id=3, alluid=42, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
+            )
+        verify {
+            applicationRepo.findOneByIdAndUserId(3, username)
+            geometriatDao.validateGeometria(any())
         }
     }
 

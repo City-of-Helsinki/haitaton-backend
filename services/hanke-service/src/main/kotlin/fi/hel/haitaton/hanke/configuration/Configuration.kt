@@ -73,6 +73,7 @@ class Configuration {
         cableReportService: CableReportService,
         disclosureLogService: DisclosureLogService,
         applicationLoggingService: ApplicationLoggingService,
+        geometriatDao: GeometriatDao,
     ): ApplicationService =
         ApplicationService(
             applicationRepository,
@@ -80,6 +81,7 @@ class Configuration {
             cableReportService,
             disclosureLogService,
             applicationLoggingService,
+            geometriatDao,
         )
 
     @Bean
