@@ -54,6 +54,22 @@ class CableReportServiceAllu(
         }
     }
 
+    override fun getApplicationInformation(applicationId: Int): AlluApplicationResponse {
+        val token = login()!!
+        return webClient
+            .get()
+            .uri("$baseUrl/v2/applications/$applicationId")
+            .accept(MediaType.APPLICATION_JSON)
+            .headers { it.setBearerAuth(token) }
+            .retrieve()
+            .bodyToMono(AlluApplicationResponse::class.java)
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error getting application information from Allu", it)
+            }
+            .blockOptional()
+            .orElseThrow()
+    }
+
     override fun getCurrentStatus(applicationId: Int): ApplicationStatus? {
         // Allu should accept null in the eventsBefore field of this request, but returns an error
         // at the moment. As a workaround use a time from before Allu was launched.

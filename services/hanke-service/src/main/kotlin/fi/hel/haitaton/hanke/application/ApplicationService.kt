@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.application
 
+import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationHistory
@@ -120,9 +121,22 @@ open class ApplicationService(
         // The application should no longer be a draft
         application.applicationData = application.applicationData.copy(pendingOnClient = false)
         application.alluid = sendApplicationToAllu(application.alluid, application.applicationData)
+        getApplicationInformationFromAllu(application.alluid!!)?.let {
+            application.applicationIdentifier = it.applicationId
+            application.alluStatus = it.status
+        }
         logger.info("Sent application id=$id, alluid=${application.alluid}")
         // Save only if sendApplicationToAllu didn't throw an exception
         return repo.save(application).toApplication()
+    }
+
+    private fun getApplicationInformationFromAllu(alluid: Int): AlluApplicationResponse? {
+        return try {
+            cableReportService.getApplicationInformation(alluid)
+        } catch (e: Exception) {
+            logger.error(e) { "Exception while getting application information." }
+            null
+        }
     }
 
     @Transactional

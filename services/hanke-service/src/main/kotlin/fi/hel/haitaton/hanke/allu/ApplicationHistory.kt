@@ -22,6 +22,8 @@ data class ApplicationStatusEvent(
 )
 
 enum class ApplicationStatus {
+    PRE_RESERVED, // ?
+    NOTE, // ?
     PENDING_CLIENT, // Application pending on client? Missing from API docs
     PENDING, // Application received
     WAITING_INFORMATION, // Application waiting response to information request
@@ -38,6 +40,7 @@ enum class ApplicationStatus {
     FINISHED, // Application finished
     CANCELLED, // // Application cancelled
     ARCHIVED, // Application archived
+    REPLACED, // Application decision has been replaced with a new one
 }
 
 data class SupervisionEvent(
