@@ -1,0 +1,56 @@
+databaseChangeLog:
+  - changeSet:
+      id: 032-create-liitetaulut
+      comment: Create liitetaulut
+      author: Niko Junkala
+      changes:
+        - createTable:
+            tableName: attachment
+            remarks: "Contains attachments"
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  remarks: "Unique identifier for an attachment"
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: varchar(256)
+                  remarks: "Name for the attachment file"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: username
+                  type: varchar(256)
+                  remarks: "Username of the creator"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created
+                  type: timestamp
+                  remarks: "Creation date of the liite"
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: hanke_id
+                  type: bigint
+                  remarks: "Hanke that owns the attachment"
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_attachment_hanke
+                    references: hanke(id)
+              - column:
+                  name: data
+                  type: BYTEA
+                  remarks: "Binary data of the attachment"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: tila
+                  type: varchar(16)
+                  remarks: "State of the attachment"
+                  constraints:
+                    nullable: false

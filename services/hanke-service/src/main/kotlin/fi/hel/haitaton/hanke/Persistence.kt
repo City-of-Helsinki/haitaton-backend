@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationEntity
+import fi.hel.haitaton.hanke.liitteet.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.Luokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.LocalDateTime
@@ -157,7 +158,14 @@ class HankeEntity(
         cascade = [CascadeType.ALL],
         orphanRemoval = true
     )
-    var listOfHankeAlueet: MutableList<HankealueEntity> = mutableListOf()
+    var listOfHankeAlueet: MutableList<HankealueEntity> = mutableListOf(),
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        mappedBy = "hanke",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    var liitteet: MutableList<HankeAttachmentEntity> = mutableListOf(),
 ) {
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
     var tyomaaKatuosoite: String? = null

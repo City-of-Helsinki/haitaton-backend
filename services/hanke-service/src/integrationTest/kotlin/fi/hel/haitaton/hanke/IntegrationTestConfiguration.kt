@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.gdpr.GdprJsonConverter
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatService
+import fi.hel.haitaton.hanke.liitteet.AttachmentService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
@@ -61,6 +62,8 @@ class IntegrationTestConfiguration {
     @Bean fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
 
     @Bean fun disclosureLogService(): DisclosureLogService = mockk(relaxUnitFun = true)
+
+    @Bean fun attachmentsService(): AttachmentService = mockk()
 
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {

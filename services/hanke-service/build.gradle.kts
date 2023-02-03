@@ -84,6 +84,7 @@ dependencies {
 	implementation("org.liquibase:liquibase-core")
 	implementation("com.github.blagerweij:liquibase-sessionlock:1.4.0")
 	implementation("com.vladmihalcea:hibernate-types-52:2.14.0")
+	implementation("commons-fileupload:commons-fileupload:1.5")
 	implementation("com.github.librepdf:openpdf:1.3.30")
 	implementation("net.pwall.mustache:kotlin-mustache:0.10")
 

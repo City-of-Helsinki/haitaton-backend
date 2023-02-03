@@ -2,6 +2,7 @@ TRUNCATE TABLE
     applications,
     audit_logs,
     geometriat,
+    attachment,
     hanke,
     hanke_kayttaja,
     hankealue,

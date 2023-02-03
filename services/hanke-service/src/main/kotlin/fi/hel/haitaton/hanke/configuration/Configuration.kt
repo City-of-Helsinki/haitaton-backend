@@ -16,6 +16,9 @@ import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.geometria.GeometriatServiceImpl
+import fi.hel.haitaton.hanke.liitteet.AttachmentRepository
+import fi.hel.haitaton.hanke.liitteet.AttachmentService
+import fi.hel.haitaton.hanke.liitteet.AttachmentServiceImpl
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -24,13 +27,7 @@ import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotService
-import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotServiceHardCoded
-import fi.hel.haitaton.hanke.tormaystarkastelu.PerusIndeksiPainotService
-import fi.hel.haitaton.hanke.tormaystarkastelu.PerusIndeksiPainotServiceHardCoded
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
+import fi.hel.haitaton.hanke.tormaystarkastelu.*
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import mu.KotlinLogging
@@ -40,6 +37,8 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.jdbc.core.JdbcOperations
+import org.springframework.web.multipart.MultipartResolver
+import org.springframework.web.multipart.commons.CommonsMultipartResolver
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
 
@@ -73,6 +72,11 @@ class Configuration {
             SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build()
         val httpClient = HttpClient.create().secure { t -> t.sslContext(sslContext) }
         return webClientBuilder.clientConnector(ReactorClientHttpConnector(httpClient))
+    }
+
+    @Bean
+    fun multipartResolver(): MultipartResolver {
+        return CommonsMultipartResolver()
     }
 
     @Bean
@@ -162,6 +166,12 @@ class Configuration {
             perusIndeksiPainotService,
             tormaystarkasteluDao
         )
+
+    @Bean
+    fun attachmentsService(
+        hankeRepository: HankeRepository,
+        attachmentRepository: AttachmentRepository
+    ): AttachmentService = AttachmentServiceImpl(hankeRepository, attachmentRepository)
 
     companion object {
         /** Create a web client that can download large files in memory. Up to 20 megabytes. */
