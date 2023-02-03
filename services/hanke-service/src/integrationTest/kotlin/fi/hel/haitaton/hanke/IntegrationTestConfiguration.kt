@@ -1,7 +1,8 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationService
-import fi.hel.haitaton.hanke.attachment.AttachmentService
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.gdpr.GdprJsonConverter
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatService
@@ -66,7 +67,9 @@ class IntegrationTestConfiguration {
 
     @Bean fun disclosureLogService(): DisclosureLogService = mockk(relaxUnitFun = true)
 
-    @Bean fun attachmentsService(): AttachmentService = mockk()
+    @Bean fun hankeAttachmentService(): HankeAttachmentService = mockk()
+
+    @Bean fun applicationAttachmentService(): ApplicationAttachmentService = mockk()
 
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {

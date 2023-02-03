@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke.attachment
 
+import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
+import fi.hel.haitaton.hanke.attachment.common.FileNameValidator
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
