@@ -48,6 +48,7 @@ data class CableReportApplicationData(
     val clientApplicationKind: String,
     val workDescription: String,
     val contractorWithContacts: CustomerWithContacts, // työn suorittaja
+    val rockExcavation: Boolean?,
 
     // Common, not required
     val postalAddress: PostalAddress? = null,
@@ -67,6 +68,11 @@ data class CableReportApplicationData(
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
 
     override fun toAlluData(): AlluCableReportApplicationData {
+        val rockExcavation =
+            rockExcavation
+                ?: throw AlluDataException("applicationData.rockExcavation", "Can't be null")
+        val workDescription =
+            workDescription + if (rockExcavation) "\nLouhitaan" else "\nEi louhita"
         return AlluCableReportApplicationData(
             name,
             customerWithContacts.toAlluData("applicationData.customerWithContacts"),
