@@ -9,15 +9,22 @@ config_yaml="./hel-gis-data-variables.yaml"
 . ./parse_config_common.sh
 
 usage () {
-    echo "Usage: $0 <source directory>"
+    echo "Usage: $0"
     exit 2
 }
 
-if [ $# -ne 1 ] || ! [ -d "$1" ]; then
+if ! [ -f "$config_yaml" ]; then
+    echo "Configuration file: '$config_yaml' does not exist"
+    exit 1
+fi
+
+source_directory=$(parse_config "polys_dir")
+
+if ! [ -d "$source_directory" ]; then
     echo "Source directory must exist"
     usage
 else
-    source_directory=$1
+    echo "Importing data from directory: '$source_directory'"
 fi
 
 DB_NAME="haitaton"

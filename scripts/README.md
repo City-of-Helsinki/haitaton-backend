@@ -21,6 +21,13 @@ Prerequisites:
 
 Generating tormays-polygon data is instructed in `gis-material-update/README.md`
 
+## Prerequisite: copy relevant addresses to `hel-gis-data-variables.yaml`
+
+File `hel-gis-data-variables.yaml.example` should be copied to name `hel-gis-data-variables.yaml`,
+and correct addresses to dev and test environment file shares should be edited to yaml file.
+
+File share addresses are documented in project instructions in Confluence.
+
 ## Upload generated polygons to Haitaton file share
 
 Script run will resolve fileshare name and detect processed materials from
@@ -34,6 +41,8 @@ Following steps will provide commands to run:
 - select correct project, as instructed in oc login `oc project <projectname>`
 - run `sh hel-gis-print-upload-commands.sh`
 - copy and paste selected commands to run
+- alternatively, if all commands seem to be fine to run, you can pipe result to `sh`
+  to be executed in the following manner: `sh hel-gis-print-upload-commands.sh | sh`
 
 ## Download from file share to local disk
 
