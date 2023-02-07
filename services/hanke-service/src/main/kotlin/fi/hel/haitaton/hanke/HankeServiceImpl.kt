@@ -506,7 +506,10 @@ open class HankeServiceImpl(
         entity.tyomaaTyyppi = hanke.tyomaaTyyppi
         hanke.tyomaaKoko?.let { entity.tyomaaKoko = hanke.tyomaaKoko }
 
-        HaittojenHallintaEntity.toEntity(hanke.haittojenHallinta, entity.haittojenHallinta)
+        if (entity.haittojenHallinta == null) {
+            entity.haittojenHallinta = HaittojenHallintaEntity()
+        }
+        HaittojenHallintaEntity.toEntity(hanke.haittojenHallinta, entity.haittojenHallinta!!)
 
         // Merge hankealueet
         mergeDataInto(hanke.alueet, entity.listOfHankeAlueet) { source, target ->

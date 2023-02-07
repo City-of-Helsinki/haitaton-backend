@@ -184,19 +184,30 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     fun `When hanke has haittojen hallinta the object is properly mapped`() {
         val hankkeet = listOf(123)
         val hanke1 = HankeFactory.create(id = 123, hankeTunnus = mockedHankeTunnus)
-        hanke1.haittojenHallinta.put(HaittojenHallintaKentta.ALUEVUOKRAUKSET_JA_MUUT_HANKKEET, "aluevuokraukset")
+        hanke1.haittojenHallinta.put(
+            HaittojenHallintaKentta.ALUEVUOKRAUKSET_JA_MUUT_HANKKEET,
+            "aluevuokraukset"
+        )
 
         every { hankeService.loadHankkeetByIds(hankkeet) }.returns(listOf(hanke1))
         every { permissionService.getAllowedHankeIds("test", PermissionCode.VIEW) }
-                .returns(hankkeet)
+            .returns(hankkeet)
         justRun { disclosureLogService.saveDisclosureLogsForHankkeet(listOf(hanke1), "test") }
 
         mockMvc
-                .perform(get("/hankkeet").accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk)
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$[0].haittojenHallinta.kuvaukset.ALUEVUOKRAUKSET_JA_MUUT_HANKKEET.kaytossaHankkeessa").value(true))
-                .andExpect(jsonPath("$[0].haittojenHallinta.kuvaukset.ALUEVUOKRAUKSET_JA_MUUT_HANKKEET.kuvaus").value("aluevuokraukset"))
+            .perform(get("/hankkeet").accept(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk)
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(
+                jsonPath(
+                        "$[0].haittojenHallinta.kuvaukset.ALUEVUOKRAUKSET_JA_MUUT_HANKKEET.kaytossaHankkeessa"
+                    )
+                    .value(true)
+            )
+            .andExpect(
+                jsonPath("$[0].haittojenHallinta.kuvaukset.ALUEVUOKRAUKSET_JA_MUUT_HANKKEET.kuvaus")
+                    .value("aluevuokraukset")
+            )
 
         verify { hankeService.loadHankkeetByIds(hankkeet) }
         verify { disclosureLogService.saveDisclosureLogsForHankkeet(listOf(hanke1), "test") }

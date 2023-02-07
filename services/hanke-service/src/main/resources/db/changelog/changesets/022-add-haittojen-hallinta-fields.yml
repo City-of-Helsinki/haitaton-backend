@@ -18,7 +18,6 @@ databaseChangeLog:
                 type: bigint
                 constraints:
                   nullable: false
-                  unique: true
             - column:
                 name: key
                 remarks: "Haittojen hallinta description key. Uses values of enum HaittojenHallintaKentta."
@@ -29,6 +28,11 @@ databaseChangeLog:
                 name: value
                 remarks: "Haittojen hallinta description. Free text."
                 type: text
+
+        - addUniqueConstraint:
+            tableName: haittojenhallinta_kuvaukset
+            columnNames: haittojenhallinta_id, key
+            constraintName: "ck_haittojenhallinta_kuvaukset_haittojenhallinta_id_key"
 
         - createTable:
             tableName: haittojenhallinta

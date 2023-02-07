@@ -18,7 +18,6 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
-import javax.persistence.Embedded
 
 data class Hanke(
     @JsonView(ChangeLogView::class) override var id: Int?,
@@ -49,7 +48,6 @@ data class Hanke(
     @JsonView(ChangeLogView::class) var tyomaaKoko: TyomaaKoko? = null
 
     var haittojenHallinta: HaittojenHallinta = HaittojenHallinta(kuvaukset = mutableMapOf())
-
 
     // --------------- Hankkeen haitat -------------------
     fun kaistaHaitat(): Set<TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin> {

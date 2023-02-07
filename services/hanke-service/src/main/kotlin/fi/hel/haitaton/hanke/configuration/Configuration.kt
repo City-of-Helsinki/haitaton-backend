@@ -1,11 +1,6 @@
 package fi.hel.haitaton.hanke.configuration
 
-import fi.hel.haitaton.hanke.HankeRepository
-import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.HankeServiceImpl
-import fi.hel.haitaton.hanke.HanketunnusService
-import fi.hel.haitaton.hanke.HanketunnusServiceImpl
-import fi.hel.haitaton.hanke.IdCounterRepository
+import fi.hel.haitaton.hanke.*
 import fi.hel.haitaton.hanke.allu.AlluProperties
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.CableReportService

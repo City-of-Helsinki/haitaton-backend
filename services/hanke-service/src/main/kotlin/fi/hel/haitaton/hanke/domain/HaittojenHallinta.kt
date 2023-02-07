@@ -1,12 +1,13 @@
-package fi.hel.haitaton.hanke.domain;
+package fi.hel.haitaton.hanke.domain
 
+import java.util.*
 
-enum class HaittojenHallintaKentta {
-    PYORALIIKENTEEN_PAAREITIT,
-    MERKITTAVAT_JOUKKOLIIKENNEREITIT,
-    AUTOLIIKENTEEN_RUUHKAUTUMINEN,
-    OMAN_JA_MUIDEN_HANKKEIDEN_KIERTOREITIT,
-    MUUT_HANKKEET,
+enum class HaittojenHallintaKentta(val pakollinen: Boolean = true) {
+    PYORALIIKENTEEN_PAAREITIT(true),
+    MERKITTAVAT_JOUKKOLIIKENNEREITIT(true),
+    AUTOLIIKENTEEN_RUUHKAUTUMINEN(true),
+    OMAN_JA_MUIDEN_HANKKEIDEN_KIERTOREITIT(true),
+    MUUT_HANKKEET(true),
     MOOTTORI_LIIKENTEEN_VIIVYTYKSET,
     KISKOILLA_KULKEVAN_LIIKENTEEN_VIIVYTYKSET,
     SELKEA_ENNAKKO_OPASTUS_PAATOKSENTEKIJALLE,
@@ -30,13 +31,8 @@ enum class HaittojenHallintaKentta {
     TOIMIEN_ENNAKKOTIEDOTTAMINEN;
 
     companion object {
-        fun pakolliset(): Set<HaittojenHallintaKentta> {
-            return setOf(
-                    PYORALIIKENTEEN_PAAREITIT,
-                    MERKITTAVAT_JOUKKOLIIKENNEREITIT,
-                    AUTOLIIKENTEEN_RUUHKAUTUMINEN,
-                    OMAN_JA_MUIDEN_HANKKEIDEN_KIERTOREITIT,
-                    MUUT_HANKKEET)
+        val pakolliset: Set<HaittojenHallintaKentta> by lazy {
+            EnumSet.copyOf(values().filter { it.pakollinen })
         }
     }
 }
@@ -44,25 +40,7 @@ enum class HaittojenHallintaKentta {
 data class HaittojenHallintaKuvaus(
     val kaytossaHankkeessa: Boolean,
     val kuvaus: String,
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as HaittojenHallintaKuvaus
-
-        if (kaytossaHankkeessa != other.kaytossaHankkeessa) return false
-        if (kuvaus != other.kuvaus) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = kaytossaHankkeessa.hashCode()
-        result = 31 * result + kuvaus.hashCode()
-        return result
-    }
-}
+)
 
 data class HaittojenHallinta(
     var kuvaukset: MutableMap<HaittojenHallintaKentta, HaittojenHallintaKuvaus> = mutableMapOf(),

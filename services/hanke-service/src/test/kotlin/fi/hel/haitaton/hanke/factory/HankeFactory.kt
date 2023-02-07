@@ -9,7 +9,6 @@ import fi.hel.haitaton.hanke.domain.HaittojenHallintaKentta
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
-import io.mockk.InternalPlatformDsl.toStr
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
 
@@ -105,9 +104,7 @@ object HankeFactory : Factory<Hanke>() {
      * ```
      */
     fun Hanke.withHaittojenHallintaSuunnitelma(): Hanke {
-        HaittojenHallintaKentta.values().forEach {
-            this.haittojenHallinta.put(it, it.toString())
-        }
+        HaittojenHallintaKentta.values().forEach { this.haittojenHallinta.put(it, it.toString()) }
         return this
     }
 

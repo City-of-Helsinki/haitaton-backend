@@ -1,15 +1,11 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.domain.HaittojenHallintaKentta
-import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.*
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedArvioija
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistajat
-import fi.hel.haitaton.hanke.factory.HankeFactory.withHaittojenHallintaSuunnitelma
 import fi.hel.haitaton.hanke.factory.HankeFactory.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankealueFactory
@@ -161,14 +157,48 @@ class HankeServiceITests : DatabaseTest() {
         val hankeDto: Hanke = getATestHanke()
         val hanke = hankeService.createHanke(hankeDto)
         assertThat(hanke.haittojenHallinta.kuvaukset.values.map { it.kaytossaHankkeessa })
-                .allMatch { it == false }
+            .allMatch { it == false }
 
-        hanke.haittojenHallinta.put(HaittojenHallintaKentta.ALUEVUOKRAUKSET_JA_MUUT_HANKKEET, "aluevuokraukset")
-        hanke.haittojenHallinta.put(HaittojenHallintaKentta.AUTOLIIKENTEEN_RUUHKAUTUMINEN, "autoliikenteen ruuhkautuminen")
+        hanke.haittojenHallinta.put(
+            HaittojenHallintaKentta.ALUEVUOKRAUKSET_JA_MUUT_HANKKEET,
+            "aluevuokraukset"
+        )
+        hanke.haittojenHallinta.put(
+            HaittojenHallintaKentta.AUTOLIIKENTEEN_RUUHKAUTUMINEN,
+            "autoliikenteen ruuhkautuminen"
+        )
         val hanke2 = hankeService.updateHanke(hanke)
-        assertThat(hanke2.haittojenHallinta.kuvaukset[HaittojenHallintaKentta.AUTOLIIKENTEEN_RUUHKAUTUMINEN]).isEqualTo(HaittojenHallintaKuvaus(true, "autoliikenteen ruuhkautuminen"))
-        assertThat(hanke2.haittojenHallinta.kuvaukset[HaittojenHallintaKentta.ALUEVUOKRAUKSET_JA_MUUT_HANKKEET]).isEqualTo(HaittojenHallintaKuvaus(true, "aluevuokraukset"))
-        assertThat(hanke2.haittojenHallinta.kuvaukset[HaittojenHallintaKentta.KISKOILLA_KULKEVAN_LIIKENTEEN_VIIVYTYKSET]).isEqualTo(HaittojenHallintaKuvaus(false, ""))
+        assertThat(
+                hanke2.haittojenHallinta.kuvaukset[
+                        HaittojenHallintaKentta.AUTOLIIKENTEEN_RUUHKAUTUMINEN]
+            )
+            .isEqualTo(HaittojenHallintaKuvaus(true, "autoliikenteen ruuhkautuminen"))
+        assertThat(
+                hanke2.haittojenHallinta.kuvaukset[
+                        HaittojenHallintaKentta.ALUEVUOKRAUKSET_JA_MUUT_HANKKEET]
+            )
+            .isEqualTo(HaittojenHallintaKuvaus(true, "aluevuokraukset"))
+        assertThat(
+                hanke2.haittojenHallinta.kuvaukset[
+                        HaittojenHallintaKentta.KISKOILLA_KULKEVAN_LIIKENTEEN_VIIVYTYKSET]
+            )
+            .isEqualTo(HaittojenHallintaKuvaus(false, ""))
+    }
+
+    @Test
+    fun `hanke works with empty haittojen hallinta`() {
+        val hankeDto: Hanke = getATestHanke()
+        hankeDto.haittojenHallinta.kuvaukset[
+                HaittojenHallintaKentta.ALUEVUOKRAUKSET_JA_MUUT_HANKKEET] =
+            HaittojenHallintaKuvaus(true, "moi")
+        val hanke = hankeService.createHanke(hankeDto)
+
+        val hankeEntity = hankeRepository.getOne(hanke.id!!)
+        hankeEntity.haittojenHallinta = null
+        hankeRepository.save(hankeEntity)
+        val loadedHanke = hankeService.loadHanke(hanke.hankeTunnus!!)
+        val haittojenHallinta = loadedHanke!!.haittojenHallinta
+        assertThat(haittojenHallinta).isNotNull
     }
 
     @Test
