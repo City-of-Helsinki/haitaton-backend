@@ -25,7 +25,8 @@ sealed interface ApplicationData {
     val applicationType: ApplicationType
     val name: String
     val pendingOnClient: Boolean
-    val geometry: GeometryCollection
+    val geometry: GeometryCollection?
+    val areas: List<ApplicationArea>?
 
     fun copy(pendingOnClient: Boolean): ApplicationData
     fun toAlluData(): AlluApplicationData?
@@ -38,7 +39,8 @@ data class CableReportApplicationData(
     // Common, required
     override val name: String,
     val customerWithContacts: CustomerWithContacts,
-    override val geometry: GeometryCollection,
+    override val geometry: GeometryCollection?,
+    override val areas: List<ApplicationArea>?,
     val startTime: ZonedDateTime?,
     val endTime: ZonedDateTime?,
     override val pendingOnClient: Boolean,
@@ -67,35 +69,8 @@ data class CableReportApplicationData(
     override fun copy(pendingOnClient: Boolean): CableReportApplicationData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
 
-    override fun toAlluData(): AlluCableReportApplicationData {
-        val rockExcavation =
-            rockExcavation
-                ?: throw AlluDataException("applicationData.rockExcavation", "Can't be null")
-        val workDescription =
-            workDescription + if (rockExcavation) "\nLouhitaan" else "\nEi louhita"
-        return AlluCableReportApplicationData(
-            name,
-            customerWithContacts.toAlluData("applicationData.customerWithContacts"),
-            geometry,
-            startTime ?: throw AlluDataException("applicationData.startTime", "Can't be null"),
-            endTime ?: throw AlluDataException("applicationData.endTime", "Can't be null"),
-            pendingOnClient,
-            identificationNumber,
-            clientApplicationKind,
-            workDescription,
-            contractorWithContacts.toAlluData("applicationData"),
-            postalAddress?.toAlluData(),
-            representativeWithContacts?.toAlluData("applicationData"),
-            invoicingCustomer?.toAlluData("applicationData"),
-            customerReference,
-            area,
-            propertyDeveloperWithContacts?.toAlluData("applicationData"),
-            constructionWork,
-            maintenanceWork,
-            emergencyWork,
-            propertyConnectivity
-        )
-    }
+    override fun toAlluData(): AlluCableReportApplicationData =
+        ApplicationDataMapper.toAlluData(this)
 }
 
 class AlluDataException(path: String, error: String) :

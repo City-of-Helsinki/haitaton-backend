@@ -12,7 +12,6 @@ import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
-import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
@@ -109,7 +108,7 @@ class ApplicationServiceTest {
     fun `create throws exception with invalid geometry`() {
         val dto = AlluDataFactory.createApplication(id = null, applicationData = applicationData)
         every { geometriatDao.validateGeometria(any()) } returns
-            GeometriatDaoImpl.InvalidDetail(
+            GeometriatDao.InvalidDetail(
                 "Self-intersection",
                 """{"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
             )
@@ -163,7 +162,7 @@ class ApplicationServiceTest {
             )
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
         every { geometriatDao.validateGeometria(any()) } returns
-            GeometriatDaoImpl.InvalidDetail(
+            GeometriatDao.InvalidDetail(
                 "Self-intersection",
                 """{"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
             )
