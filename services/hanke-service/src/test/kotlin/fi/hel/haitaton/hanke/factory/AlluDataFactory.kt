@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Application
@@ -22,6 +23,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
     companion object {
         const val defaultApplicationId: Long = 1
         const val defaultApplicationName: String = "Johtoselvitys"
+        const val defaultApplicationIdentifier: String = "JS230014"
 
         fun createPostalAddress(
             streetAddress: StreetAddress = StreetAddress("Katu 1"),
@@ -87,7 +89,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
         ) = Contact(name, postalAddress, email, phone)
 
         fun createCableReportApplicationData(
-            name: String = "Johtoselvitys",
+            name: String = defaultApplicationName,
             customerWithContacts: CustomerWithContacts =
                 CustomerWithContacts(createCompanyCustomer(), listOf(createContact())),
             geometry: GeometryCollection = GeometryCollection(),
@@ -141,7 +143,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                         id = i,
                         applicationData =
                             createCableReportApplicationData(
-                                name = "Johtoselvitys #$i",
+                                name = "$defaultApplicationName #$i",
                                 customerWithContacts =
                                     CustomerWithContacts(
                                         createCompanyCustomer(name = "Customer #$i"),
@@ -174,6 +176,24 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 userId,
                 applicationType,
                 applicationData,
+            )
+
+        fun createAlluApplication(
+            id: Int = 42,
+            status: ApplicationStatus = ApplicationStatus.PENDING
+        ) =
+            AlluApplicationResponse(
+                id = id,
+                name = defaultApplicationName,
+                applicationId = defaultApplicationIdentifier,
+                status = status,
+                startTime = DateFactory.getStartDatetime(),
+                endTime = DateFactory.getEndDatetime(),
+                owner = null,
+                kindsWithSpecifiers = mapOf(),
+                terms = null,
+                customerReference = null,
+                surveyRequired = false
             )
     }
 
