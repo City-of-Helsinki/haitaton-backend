@@ -20,13 +20,11 @@ open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) :
             if (geometriat.id != null) hankeGeometriaDao.retrieveGeometriat(geometriat.id!!)
             else null
         val hasFeatures = geometriat.hasFeatures()
-        if (oldGeometriat == null && !hasFeatures) {
-            throw IllegalArgumentException("New Geometriat does not contain any Features")
-        }
-
         val username = SecurityContextHolder.getContext().authentication.name
 
         return when {
+            oldGeometriat == null && !hasFeatures ->
+                throw IllegalArgumentException("New Geometriat does not contain any Features")
             !hasFeatures -> {
                 // DELETE
                 geometriat.id = oldGeometriat!!.id

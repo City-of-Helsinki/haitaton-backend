@@ -71,3 +71,5 @@ databaseChangeLog:
       file: db/changelog/changesets/020-create-lock-table.yml
   - include:
       file: db/changelog/changesets/021-add-status-and-remove-savetype-in-hanke.yml
+  - include:
+      file: db/changelog/changesets/022-add-trigger-for-removing-orphaned-geometriat.sql
