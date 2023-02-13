@@ -22,6 +22,7 @@ import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
+import javax.persistence.EntityManager
 import net.pwall.mustache.Template
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -38,6 +39,7 @@ import org.skyscreamer.jsonassert.JSONAssert
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
@@ -55,6 +57,8 @@ class HankeServiceITests : DatabaseTest() {
     @Autowired private lateinit var hankeService: HankeService
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
     @Autowired private lateinit var hankeRepository: HankeRepository
+    @Autowired private lateinit var jdbcTemplate: JdbcTemplate
+    @Autowired private lateinit var entityManager: EntityManager
 
     // Some tests also use and check loadHanke()'s return value because at one time the update
     // action was returning different set of data than loadHanke (bug), so it is a sort of
@@ -851,7 +855,7 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
-    fun `updateHanke removes hankealue`() {
+    fun `updateHanke removes hankealue and geometriat`() {
         val hanke = getATestHanke()
         val hankealue =
             HankealueFactory.create(
@@ -866,6 +870,9 @@ class HankeServiceITests : DatabaseTest() {
             )
         hanke.alueet.add(hankealue)
         val createdHanke = hankeService.createHanke(hanke)
+        assertThat(createdHanke.alueet).hasSize(2)
+        assertThat(hankealueCount()).isEqualTo(2)
+        assertThat(geometriatCount()).isEqualTo(2)
         createdHanke.alueet.removeAt(0)
 
         val updatedHanke = hankeService.updateHanke(createdHanke)
@@ -883,6 +890,12 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(alue.polyHaitta).isEqualTo(Haitta13.KOLME)
         assertThat(alue.tarinaHaitta).isEqualTo(Haitta13.KOLME)
         assertThat(alue.geometriat).isNotNull
+        entityManager.flush()
+        entityManager.clear()
+        val hankeFromDb = hankeRepository.getOne(updatedHanke.id!!)
+        assertThat(hankeFromDb.listOfHankeAlueet).hasSize(1)
+        assertThat(hankealueCount()).isEqualTo(1)
+        assertThat(geometriatCount()).isEqualTo(1)
     }
 
     @Test
@@ -1265,4 +1278,10 @@ class HankeServiceITests : DatabaseTest() {
         this.findAll().filter { it.message.auditEvent.target.type == type }
 
     fun AuditLogRepository.countByType(type: ObjectType) = this.findByType(type).count()
+
+    private fun geometriatCount(): Int? =
+        jdbcTemplate.queryForObject("SELECT count(*) from geometriat", Int::class.java)
+
+    private fun hankealueCount(): Int? =
+        jdbcTemplate.queryForObject("SELECT count(*) from hankealue", Int::class.java)
 }

@@ -89,6 +89,12 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
             }
         }
 
+        private fun deleteGeometriat(geometriat: Geometriat, jdbcOperations: JdbcOperations) {
+            jdbcOperations.update("DELETE FROM Geometriat WHERE id = ?") { ps ->
+                ps.setInt(1, geometriat.id!!)
+            }
+        }
+
         private fun deleteHankeGeometriaRows(
             geometriat: Geometriat,
             jdbcOperations: JdbcOperations,
@@ -238,10 +244,8 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
 
     override fun deleteGeometriat(geometriat: Geometriat) {
         with(jdbcOperations) {
-            // update master row
-            updateGeometriat(geometriat, this)
-            // delete old geometry rows
-            deleteHankeGeometriaRows(geometriat, this)
+            // delete master row, hankegeometria rows are removed with cascading
+            deleteGeometriat(geometriat, this)
         }
     }
 }
