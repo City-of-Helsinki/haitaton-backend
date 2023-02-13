@@ -23,14 +23,14 @@ import org.springframework.stereotype.Component
 class AlluDataFactory(val applicationRepository: ApplicationRepository) {
     companion object {
         const val defaultApplicationId: Long = 1
-        const val defaultApplicationName: String = "Johtoselvitys"
+        const val defaultApplicationName: String = "Johtoselvityksen oletusnimi"
         const val defaultApplicationIdentifier: String = "JS230014"
 
         fun createPostalAddress(
-            streetAddress: StreetAddress = StreetAddress("Katu 1"),
+            streetAddress: String = "Katu 1",
             postalCode: String = "00100",
             city: String = "Helsinki",
-        ) = PostalAddress(streetAddress, postalCode, city)
+        ) = PostalAddress(StreetAddress(streetAddress), postalCode, city)
 
         fun createPersonCustomer(
             type: CustomerType? = CustomerType.PERSON,
@@ -68,7 +68,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             ovt: String? = null,
             invoicingOperator: String? = null,
             sapCustomerNumber: String? = null,
-        ) =
+        ): Customer =
             Customer(
                 type,
                 name,
@@ -82,17 +82,19 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 sapCustomerNumber
             )
 
+        fun Customer.withContacts(vararg contacts: Contact): CustomerWithContacts =
+            CustomerWithContacts(this, contacts.asList())
+
         fun createContact(
             name: String? = "Teppo Testihenkilö",
             postalAddress: PostalAddress? = createPostalAddress(),
             email: String? = "teppo@example.test",
             phone: String? = "04012345678",
-        ) = Contact(name, postalAddress, email, phone)
+            orderer: Boolean = false
+        ) = Contact(name, postalAddress, email, phone, orderer)
 
         fun createCableReportApplicationData(
             name: String = defaultApplicationName,
-            customerWithContacts: CustomerWithContacts =
-                CustomerWithContacts(createCompanyCustomer(), listOf(createContact())),
             geometry: GeometryCollection? = GeometryCollection(),
             areas: List<ApplicationArea>? = null,
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
@@ -101,14 +103,18 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             identificationNumber: String = "identification",
             clientApplicationKind: String = "applicationKind",
             workDescription: String = "Work description.",
+            customerWithContacts: CustomerWithContacts =
+                createCompanyCustomer().withContacts(createContact()),
             contractorWithContacts: CustomerWithContacts =
-                CustomerWithContacts(createCompanyCustomer(), listOf(createContact())),
+                createCompanyCustomer().withContacts(createContact()),
+            representativeWithContacts: CustomerWithContacts? = null,
+            propertyDeveloperWithContacts: CustomerWithContacts? = null,
             rockExcavation: Boolean = false,
+            postalAddress: PostalAddress? = null,
         ) =
             CableReportApplicationData(
                 applicationType = ApplicationType.CABLE_REPORT,
                 name = name,
-                customerWithContacts = customerWithContacts,
                 geometry = geometry,
                 areas = areas,
                 startTime = startTime,
@@ -117,8 +123,12 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 identificationNumber = identificationNumber,
                 clientApplicationKind = clientApplicationKind,
                 workDescription = workDescription,
+                customerWithContacts = customerWithContacts,
                 contractorWithContacts = contractorWithContacts,
-                rockExcavation = rockExcavation
+                representativeWithContacts = representativeWithContacts,
+                propertyDeveloperWithContacts = propertyDeveloperWithContacts,
+                rockExcavation = rockExcavation,
+                postalAddress = postalAddress,
             )
 
         fun createApplication(
@@ -150,15 +160,13 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                             createCableReportApplicationData(
                                 name = "$defaultApplicationName #$i",
                                 customerWithContacts =
-                                    CustomerWithContacts(
-                                        createCompanyCustomer(name = "Customer #$i"),
-                                        listOf(createContact(name = "Customer #$i Contact"))
-                                    ),
+                                    createCompanyCustomer(name = "Customer #$i")
+                                        .withContacts(createContact(name = "Customer #$i Contact")),
                                 contractorWithContacts =
-                                    CustomerWithContacts(
-                                        createCompanyCustomer(name = "Contractor #$i"),
-                                        listOf(createContact(name = "Contractor #$i Contact"))
-                                    )
+                                    createCompanyCustomer(name = "Contractor #$i")
+                                        .withContacts(
+                                            createContact(name = "Contractor #$i Contact")
+                                        )
                             )
                     )
                 }

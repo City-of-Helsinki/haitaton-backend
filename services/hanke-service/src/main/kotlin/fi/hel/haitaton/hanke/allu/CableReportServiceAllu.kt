@@ -145,12 +145,16 @@ class CableReportServiceAllu(
             .block()
     }
 
-    override fun addAttachment(applicationId: Int, metadata: AttachmentInfo, file: ByteArray) {
+    override fun addAttachment(applicationId: Int, attachment: Attachment) {
         val token = login()!!
 
         val builder = MultipartBodyBuilder()
-        builder.part("metadata", metadata, MediaType.APPLICATION_JSON).filename("metadata")
-        builder.part("file", ByteArrayResource(file), MediaType.APPLICATION_PDF).filename("file")
+        builder
+            .part("metadata", attachment.metadata, MediaType.APPLICATION_JSON)
+            .filename("metadata")
+        builder
+            .part("file", ByteArrayResource(attachment.file), MediaType.APPLICATION_PDF)
+            .filename("file")
         val multipartData = builder.build()
 
         webClient
@@ -243,7 +247,7 @@ class CableReportServiceAllu(
         return body.byteArray
     }
 
-    override fun getDecisionAttachments(applicationId: Int): List<AttachmentInfo> {
+    override fun getDecisionAttachments(applicationId: Int): List<AttachmentMetadata> {
         val token = login()!!
         return webClient
             .get()
@@ -251,7 +255,7 @@ class CableReportServiceAllu(
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
             .retrieve()
-            .bodyToFlux(AttachmentInfo::class.java)
+            .bodyToFlux(AttachmentMetadata::class.java)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error getting decision attachments from Allu", it)
             }
@@ -287,6 +291,8 @@ class CableReportServiceAllu(
 data class AlluProperties(val baseUrl: String, val username: String, val password: String)
 
 data class LoginInfo(val username: String, val password: String)
+
+data class Attachment(val metadata: AttachmentMetadata, val file: ByteArray)
 
 class AlluException(val errors: List<ErrorInfo>) : RuntimeException()
 

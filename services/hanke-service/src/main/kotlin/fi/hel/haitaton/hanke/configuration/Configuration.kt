@@ -1,11 +1,13 @@
 package fi.hel.haitaton.hanke.configuration
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.HankeServiceImpl
 import fi.hel.haitaton.hanke.HanketunnusService
 import fi.hel.haitaton.hanke.HanketunnusServiceImpl
 import fi.hel.haitaton.hanke.IdCounterRepository
+import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.allu.AlluProperties
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.CableReportService
@@ -51,20 +53,23 @@ class Configuration {
     @Value("\${haitaton.allu.insecure}") var alluTrustInsecure: Boolean = false
 
     @Bean
-    fun cableReportService(): CableReportService {
+    fun cableReportService(webClientBuilder: WebClient.Builder): CableReportService {
         val webClient =
-            if (alluTrustInsecure) createInsecureTrustingWebClient() else WebClient.create()
+            if (alluTrustInsecure) createInsecureTrustingWebClient(webClientBuilder)
+            else webClientBuilder.build()
         val alluProps =
             AlluProperties(baseUrl = alluBaseUrl, username = alluUsername, password = alluPassword)
         return CableReportServiceAllu(webClient, alluProps)
     }
 
-    private fun createInsecureTrustingWebClient(): WebClient {
+    private fun createInsecureTrustingWebClient(webClientBuilder: WebClient.Builder): WebClient {
         val sslContext =
             SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build()
-        val httpClient = HttpClient.create().secure { t -> t.sslContext(sslContext) }
-        return WebClient.builder().clientConnector(ReactorClientHttpConnector(httpClient)).build()
+        val httpClient = HttpClient.create().wiretap(true).secure { t -> t.sslContext(sslContext) }
+        return webClientBuilder.clientConnector(ReactorClientHttpConnector(httpClient)).build()
     }
+
+    @Bean fun objectMapper(): ObjectMapper = OBJECT_MAPPER
 
     @Bean
     fun applicationService(

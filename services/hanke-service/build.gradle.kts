@@ -82,6 +82,7 @@ dependencies {
 	implementation("org.liquibase:liquibase-core")
 	implementation("com.github.blagerweij:liquibase-sessionlock:1.4.0")
 	implementation("com.vladmihalcea:hibernate-types-52:2.14.0")
+	implementation("com.github.librepdf:openpdf:1.3.30")
 
 	implementation("org.postgresql:postgresql:$postgreSQLVersion")
 	// H2 is used as embedded db for some simple low level Entity and Repository class testing
