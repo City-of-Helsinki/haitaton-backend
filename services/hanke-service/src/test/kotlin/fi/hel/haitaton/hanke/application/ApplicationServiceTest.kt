@@ -24,6 +24,7 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifyOrder
 import java.util.stream.Stream
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -192,15 +193,18 @@ class ApplicationServiceTest {
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
         every { cableReportService.create(any()) } returns 42
+        every { cableReportService.getApplicationInformation(42) } returns
+            AlluDataFactory.createAlluApplication(42)
 
         service.sendApplication(3, username)
 
         val expectedApplication = applicationData.copy(pendingOnClient = false)
-        verify {
-            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
+        verifyOrder {
             applicationRepo.findOneByIdAndUserId(3, username)
-            applicationRepo.save(any())
             cableReportService.create(any())
+            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
+            cableReportService.getApplicationInformation(42)
+            applicationRepo.save(any())
         }
     }
 
