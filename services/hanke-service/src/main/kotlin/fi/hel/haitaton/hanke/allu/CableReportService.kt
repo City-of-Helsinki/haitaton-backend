@@ -4,12 +4,6 @@ import java.time.ZonedDateTime
 
 interface CableReportService {
 
-    fun getCurrentStatus(applicationId: Int): ApplicationStatus?
-    fun getApplicationStatusEvents(
-        applicationId: Int,
-        eventsAfter: ZonedDateTime
-    ): List<ApplicationStatusEvent>
-
     fun getApplicationStatusHistories(
         applicationIds: List<Int>,
         eventsAfter: ZonedDateTime
