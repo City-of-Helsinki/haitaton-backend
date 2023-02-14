@@ -707,6 +707,92 @@ class ApplicationServiceITest : DatabaseTest() {
         }
     }
 
+    @Test
+    fun `delete with unknown ID throws exception`() {
+        assertThat(applicationRepository.findAll()).isEmpty()
+
+        assertThrows<ApplicationNotFoundException> { applicationService.delete(1234, username) }
+    }
+
+    @Test
+    fun `delete with an application not yet in Allu just deletes application`() {
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = null }
+        assertThat(applicationRepository.findAll()).hasSize(1)
+
+        applicationService.delete(application.id!!, username)
+
+        assertThat(applicationRepository.findAll()).isEmpty()
+        verify { cableReportServiceAllu wasNot Called }
+    }
+
+    @Test
+    fun `delete creates an audit log entry for delete application`() {
+        TestUtils.addMockedRequestIp()
+        val application =
+            applicationService.create(AlluDataFactory.createApplication(id = null), username)
+        auditLogRepository.deleteAll()
+        assertThat(auditLogRepository.findAll()).isEmpty()
+
+        applicationService.delete(application.id!!, username)
+
+        val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
+        assertThat(applicationLogs).hasSize(1)
+        val logEntry = applicationLogs[0]
+        assertThat(logEntry::isSent).isFalse()
+        assertThat(logEntry::createdAt).isRecent()
+        val event = logEntry.message.auditEvent
+        assertThat(event::dateTime).isRecent()
+        assertThat(event::operation).isEqualTo(Operation.DELETE)
+        assertThat(event::status).isEqualTo(Status.SUCCESS)
+        assertThat(event::failureDescription).isNull()
+        assertThat(event::appVersion).isEqualTo("1")
+        assertThat(event.actor::userId).isEqualTo(username)
+        assertThat(event.actor::role).isEqualTo(UserRole.USER)
+        assertThat(event.actor::ipAddress).isEqualTo(TestUtils.mockedIp)
+        assertThat(event.target::id).isEqualTo(application.id?.toString())
+        assertThat(event.target::type).isEqualTo(ObjectType.APPLICATION)
+        val expectedObject = expectedLogObject(application.id, null)
+        JSONAssert.assertEquals(
+            expectedObject,
+            event.target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
+        )
+        assertThat(event.target::objectAfter).isNull()
+        verify { cableReportServiceAllu wasNot Called }
+    }
+
+    @Test
+    fun `delete with a pending application in Allu cancels application before deleting it`() {
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = 73 }
+        assertThat(applicationRepository.findAll()).hasSize(1)
+        every { cableReportServiceAllu.getApplicationInformation(73) } returns
+            AlluDataFactory.createAlluApplicationResponse(73, ApplicationStatus.PENDING)
+        justRun { cableReportServiceAllu.cancel(73) }
+
+        applicationService.delete(application.id!!, username)
+
+        assertThat(applicationRepository.findAll()).hasSize(0)
+        verifyOrder {
+            cableReportServiceAllu.getApplicationInformation(73)
+            cableReportServiceAllu.cancel(73)
+        }
+    }
+
+    @Test
+    fun `delete with a non-pending application in Allu throws exception`() {
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = 73 }
+        assertThat(applicationRepository.findAll()).hasSize(1)
+        every { cableReportServiceAllu.getApplicationInformation(73) } returns
+            AlluDataFactory.createAlluApplicationResponse(73, ApplicationStatus.APPROVED)
+
+        assertThrows<ApplicationAlreadyProcessingException> {
+            applicationService.delete(application.id!!, username)
+        }
+
+        assertThat(applicationRepository.findAll()).hasSize(1)
+        verifyOrder { cableReportServiceAllu.getApplicationInformation(73) }
+    }
+
     // TODO: Needs Spring 5.3, which comes with Spring Boot 2.4.
     //  Inner test classes won't inherit properties from the enclosing class until then.
     // @Nested class HandleApplicationUpdates {

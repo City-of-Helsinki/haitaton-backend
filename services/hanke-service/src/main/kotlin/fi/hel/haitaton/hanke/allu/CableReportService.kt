@@ -26,4 +26,5 @@ interface CableReportService {
     fun getDecisionAttachments(applicationId: Int): List<AttachmentInfo>
     fun getDecisionAttachmentData(applicationId: Int, attachmentId: Int): ByteArray
     fun getApplicationInformation(applicationId: Int): AlluApplicationResponse
+    fun cancel(applicationId: Int)
 }

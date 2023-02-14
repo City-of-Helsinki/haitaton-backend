@@ -93,7 +93,7 @@ open class ApplicationService(
             )
         }
 
-        if (!isStillPending(application)) {
+        if (!isStillPending(application.alluid)) {
             throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
 
@@ -115,7 +115,7 @@ open class ApplicationService(
     open fun sendApplication(id: Long, userId: String): Application {
         val application = getById(id, userId)
         logger.info("Sending application id=$id, alluid=${application.alluid}")
-        if (!isStillPending(application)) {
+        if (!isStillPending(application.alluid)) {
             throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
         // The application should no longer be a draft
@@ -130,15 +130,6 @@ open class ApplicationService(
         return repo.save(application).toApplication()
     }
 
-    private fun getApplicationInformationFromAllu(alluid: Int): AlluApplicationResponse? {
-        return try {
-            cableReportService.getApplicationInformation(alluid)
-        } catch (e: Exception) {
-            logger.error(e) { "Exception while getting application information." }
-            null
-        }
-    }
-
     @Transactional
     open fun handleApplicationUpdates(
         applicationHistories: List<ApplicationHistory>,
@@ -148,6 +139,42 @@ open class ApplicationService(
         val status = alluStatusRepository.getOne(1)
         status.historyLastUpdated = updateTime
         alluStatusRepository.save(status)
+    }
+
+    /**
+     * Deletes an application. Cancels the application in Allu if it's still pending. Refuses to
+     * delete, if the application is in Allu, and it's beyond the pending status.
+     */
+    @Transactional
+    open fun delete(id: Long, userId: String) {
+        val application = getById(id, userId)
+        val alluid = application.alluid
+        logger.info { "Deleting application, id=$id, alluid=$alluid userid=$userId" }
+
+        if (alluid == null) {
+            logger.info { "Application not sent to Allu yet, simply deleting it. id=$id" }
+        } else {
+            logger.info {
+                "Application sent to Allu yet, trying to cancel it before deleting. id=$id alluid=$alluid"
+            }
+            cancelApplication(alluid, application.id)
+        }
+        repo.deleteById(id)
+        logger.info { "Application deleted, id=$id, alluid=$alluid userid=$userId" }
+        applicationLoggingService.logDelete(application.toApplication(), userId)
+    }
+
+    /** Cancel an application that's been sent to Allu. */
+    private fun cancelApplication(alluid: Int, id: Long?) {
+        if (isStillPending(alluid)) {
+            logger.info {
+                "Application is still pending, trying to cancel it. id=$id alluid=${alluid}"
+            }
+            cableReportService.cancel(alluid)
+            logger.info { "Application canceled, proceeding to delete it. id=$id alluid=${alluid}" }
+        } else {
+            throw ApplicationAlreadyProcessingException(id, alluid)
+        }
     }
 
     private fun handleApplicationUpdate(applicationHistory: ApplicationHistory) {
@@ -179,13 +206,22 @@ open class ApplicationService(
         return repo.findOneByIdAndUserId(id, userId) ?: throw ApplicationNotFoundException(id)
     }
 
-    private fun isStillPending(application: ApplicationEntity): Boolean {
+    private fun isStillPending(alluid: Int?): Boolean {
         // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)
-        val alluid = application.alluid ?: return true
+        alluid ?: return true
 
         val currentStatus = cableReportService.getApplicationInformation(alluid).status
 
         return currentStatus in listOf(ApplicationStatus.PENDING, ApplicationStatus.PENDING_CLIENT)
+    }
+
+    private fun getApplicationInformationFromAllu(alluid: Int): AlluApplicationResponse? {
+        return try {
+            cableReportService.getApplicationInformation(alluid)
+        } catch (e: Exception) {
+            logger.error(e) { "Exception while getting application information." }
+            null
+        }
     }
 
     private fun sendApplicationToAllu(alluid: Int?, applicationData: ApplicationData): Int {

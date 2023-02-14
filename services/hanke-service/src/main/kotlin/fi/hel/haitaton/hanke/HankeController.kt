@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.validation.ValidHanke
+import io.swagger.v3.oas.annotations.Hidden
 import javax.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
@@ -128,6 +129,7 @@ class HankeController(
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(HankeArgumentException::class)
+    @Hidden
     fun handleArgumentExceptions(ex: HankeArgumentException): HankeError {
         logger.warn { ex.message }
         return HankeError.HAI1002
@@ -135,6 +137,7 @@ class HankeController(
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ConstraintViolationException::class)
+    @Hidden
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
         logger.warn { ex.message }
         return ex.toHankeError(HankeError.HAI1002)

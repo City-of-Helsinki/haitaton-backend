@@ -3,6 +3,9 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.geometria.GeometriaValidationException
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
 import io.sentry.Sentry
+import io.swagger.v3.oas.annotations.Hidden
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import java.lang.RuntimeException
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.HttpMessageNotReadableException
@@ -15,8 +18,18 @@ private val logger = KotlinLogging.logger {}
 @RestControllerAdvice
 class ControllerExceptionHandler {
 
+    /** This is a horrible hack to get the 401 error to all endpoints in OpenAPI docs. */
+    @ExceptionHandler(FakeAuthorizationException::class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ApiResponse(
+        description = "Request’s credentials are missing or invalid",
+        responseCode = "401",
+    )
+    fun forDocumentation(): HankeError = HankeError.HAI0001
+
     @ExceptionHandler(HankeNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
     fun hankeNotFound(ex: HankeNotFoundException): HankeError {
         logger.warn { ex.message }
         // notify Sentry
@@ -26,6 +39,7 @@ class ControllerExceptionHandler {
 
     @ExceptionHandler(HankeYhteystietoNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
     fun hankeYhteystietoNotFound(ex: HankeYhteystietoNotFoundException): HankeError {
         logger.warn { ex.message }
         // notify Sentry
@@ -37,6 +51,7 @@ class ControllerExceptionHandler {
     // Using 451 (since the restriction is typically due to legal reasons).
     // However, in some cases 403 forbidden might be considered correct response, too.
     @ResponseStatus(HttpStatus.UNAVAILABLE_FOR_LEGAL_REASONS)
+    @Hidden
     fun hankeYhteystietoProcessingRestricted(
         ex: HankeYhteystietoProcessingRestrictedException
     ): HankeError {
@@ -48,6 +63,7 @@ class ControllerExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
     fun illegalArgumentException(ex: IllegalArgumentException): HankeError {
         logger.error(ex) { ex.message }
         // notify Sentry
@@ -57,6 +73,7 @@ class ControllerExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
     fun httpMessageNotReadableException(ex: HttpMessageNotReadableException): HankeError {
         logger.error(ex) { ex.message }
         // notify Sentry
@@ -66,6 +83,7 @@ class ControllerExceptionHandler {
 
     @ExceptionHandler(GeometriaValidationException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
     fun invalidGeometria(ex: GeometriaValidationException): HankeError {
         logger.warn { ex.message }
         // notify Sentry
@@ -75,6 +93,7 @@ class ControllerExceptionHandler {
 
     @ExceptionHandler(UnsupportedCoordinateSystemException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
     fun unsupportedCoordinateSystem(ex: UnsupportedCoordinateSystemException): HankeError {
         logger.warn { ex.message }
         // notify Sentry
@@ -84,10 +103,16 @@ class ControllerExceptionHandler {
 
     @ExceptionHandler(Throwable::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ApiResponse(
+        description = "There has been an unexpected error during the call",
+        responseCode = "500"
+    )
     fun throwable(ex: Throwable): HankeError {
         logger.error(ex) { ex.message }
         // notify Sentry
         Sentry.captureException(ex)
         return HankeError.HAI0002
     }
+
+    class FakeAuthorizationException : RuntimeException()
 }
