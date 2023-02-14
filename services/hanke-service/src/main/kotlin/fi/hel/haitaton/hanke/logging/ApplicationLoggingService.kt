@@ -25,4 +25,11 @@ class ApplicationLoggingService(private val auditLogService: AuditLogService) {
             )
             ?.let { auditLogService.create(it) }
     }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    fun logDelete(applicationBefore: Application, userId: String) {
+        auditLogService.create(
+            AuditLogService.deleteEntry(userId, ObjectType.APPLICATION, applicationBefore)
+        )
+    }
 }

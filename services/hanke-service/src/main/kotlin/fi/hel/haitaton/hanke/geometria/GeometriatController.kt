@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.geometria
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.toHankeError
+import io.swagger.v3.oas.annotations.Hidden
 import javax.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
@@ -41,6 +42,7 @@ class GeometriaController(
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @ExceptionHandler(ConstraintViolationException::class)
+    @Hidden
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
         logger.warn { ex.message }
         return ex.toHankeError(HankeError.HAI1011)

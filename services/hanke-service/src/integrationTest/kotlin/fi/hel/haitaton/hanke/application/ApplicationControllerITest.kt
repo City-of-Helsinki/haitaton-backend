@@ -11,6 +11,7 @@ import io.mockk.Called
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -338,5 +339,44 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         post("/hakemukset/1234/send-application").andExpect(status().isConflict)
 
         verify { applicationService.sendApplication(1234, username) }
+    }
+
+    @Test
+    fun `delete without user ID returns 401`() {
+        delete("/hakemukset/1").andExpect(status().isUnauthorized)
+
+        verify { applicationService wasNot Called }
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `delete with unknown id returns 404`() {
+        every { applicationService.delete(1234, username) } throws
+            ApplicationNotFoundException(1234)
+
+        delete("/hakemukset/1234").andExpect(status().isNotFound)
+
+        verify { applicationService.delete(1234, username) }
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `delete with known id deletes application`() {
+        justRun { applicationService.delete(1234, username) }
+
+        delete("/hakemukset/1234").andExpect(status().isOk).andExpect(content().string(""))
+
+        verify { applicationService.delete(1234, username) }
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `delete with non-pending application in allu returns 409 Conflict`() {
+        every { applicationService.delete(1234, username) } throws
+            ApplicationAlreadyProcessingException(1234, 41)
+
+        delete("/hakemukset/1234").andExpect(status().isConflict)
+
+        verify { applicationService.delete(1234, username) }
     }
 }
