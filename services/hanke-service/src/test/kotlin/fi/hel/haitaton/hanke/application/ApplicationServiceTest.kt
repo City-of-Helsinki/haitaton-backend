@@ -34,6 +34,7 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
@@ -256,6 +257,42 @@ class ApplicationServiceTest {
         }
     }
 
+    @ParameterizedTest
+    @CsvSource("true,Louhitaan", "false,Ei louhita")
+    fun `sendApplication adds rock excavation information to work description`(
+        rockExcavation: Boolean,
+        expectedSuffix: String
+    ) {
+        val applicationEntity =
+            AlluDataFactory.createApplicationEntity(
+                id = 3,
+                alluid = null,
+                userId = username,
+                applicationData = applicationData.copy(rockExcavation = rockExcavation)
+            )
+        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+        every { applicationRepo.save(any()) } answers { firstArg() }
+        every { cableReportService.create(any()) } returns 852
+        every { cableReportService.getApplicationInformation(852) } returns
+            AlluDataFactory.createAlluApplicationResponse(852)
+
+        service.sendApplication(3, username)
+
+        val expectedApplicationData =
+            applicationData.copy(pendingOnClient = false, rockExcavation = rockExcavation)
+        val expectedAlluData =
+            expectedApplicationData
+                .toAlluData()
+                .copy(workDescription = applicationData.workDescription + "\n" + expectedSuffix)
+        verifyOrder {
+            applicationRepo.findOneByIdAndUserId(3, username)
+            cableReportService.create(expectedAlluData)
+            disclosureLogService.saveDisclosureLogsForAllu(expectedApplicationData, Status.SUCCESS)
+            cableReportService.getApplicationInformation(852)
+            applicationRepo.save(any())
+        }
+    }
+
     @ParameterizedTest(name = "{1} {2}")
     @MethodSource("invalidApplicationData")
     fun `sendApplication with invalid data doesn't send application to Allu`(
@@ -308,6 +345,11 @@ class ApplicationServiceTest {
             Arguments.of(
                 applicationData.copy(startTime = null),
                 "applicationData.startTime",
+                "Can't be null"
+            ),
+            Arguments.of(
+                applicationData.copy(rockExcavation = null),
+                "applicationData.rockExcavation",
                 "Can't be null"
             ),
         )

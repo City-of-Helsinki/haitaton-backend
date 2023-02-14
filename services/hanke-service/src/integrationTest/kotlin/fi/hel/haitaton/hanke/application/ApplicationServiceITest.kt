@@ -941,6 +941,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 "identificationNumber": "identification",
                 "clientApplicationKind": "applicationKind",
                 "workDescription": "Work description.",
+                "rockExcavation": false,
                 "contractorWithContacts": {
                   $customerWithContactsJson
                 },

@@ -47,6 +47,7 @@
   "maintenanceWork": true,
   "pendingOnClient": true,
   "workDescription": "Testihakemuksen kuvaus.",
+  "rockExcavation": false,
   "constructionWork": true,
   "customerReference": null,
   "invoicingCustomer": null,

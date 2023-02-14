@@ -113,7 +113,8 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 identificationNumber,
                 clientApplicationKind,
                 workDescription,
-                contractorWithContacts
+                contractorWithContacts,
+                false
             )
 
         fun createApplication(
