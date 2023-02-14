@@ -22,6 +22,7 @@ import fi.hel.haitaton.hanke.asUtc
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.findByType
+import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
@@ -851,6 +852,71 @@ class ApplicationServiceITest : DatabaseTest() {
         verifyOrder { cableReportServiceAllu.getApplicationInformation(73) }
     }
 
+    @Test
+    fun `downloadDecision with unknown ID throws exception`() {
+        assertThrows<ApplicationNotFoundException> {
+            applicationService.downloadDecision(1234, username)
+        }
+    }
+
+    @Test
+    fun `downloadDecision without alluid throws exception`() {
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = null }
+
+        assertThrows<ApplicationDecisionNotFoundException> {
+            applicationService.downloadDecision(application.id!!, username)
+        }
+
+        verify { cableReportServiceAllu wasNot Called }
+    }
+
+    @Test
+    fun `downloadDecision without decision in Allu throws exception`() {
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = 134 }
+        every { cableReportServiceAllu.getDecisionPdf(134) }
+            .throws(ApplicationDecisionNotFoundException(""))
+
+        assertThrows<ApplicationDecisionNotFoundException> {
+            applicationService.downloadDecision(application.id!!, username)
+        }
+
+        verify { cableReportServiceAllu.getDecisionPdf(134) }
+    }
+
+    @Test
+    fun `downloadDecision returns application identifier with the PDF bytes`() {
+        val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
+        val application =
+            alluDataFactory.saveApplicationEntity(username) {
+                it.alluid = 134
+                it.applicationIdentifier = "JS230001"
+            }
+        every { cableReportServiceAllu.getDecisionPdf(134) }.returns(pdfBytes)
+
+        val (filename, bytes) = applicationService.downloadDecision(application.id!!, username)
+
+        assertThat(filename).isNotNull().isEqualTo("JS230001")
+        assertThat(bytes).isEqualTo(pdfBytes)
+        verify { cableReportServiceAllu.getDecisionPdf(134) }
+    }
+
+    @Test
+    fun `downloadDecision returns default filename when application has no identifier`() {
+        val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
+        val application =
+            alluDataFactory.saveApplicationEntity(username) {
+                it.alluid = 134
+                it.applicationIdentifier = null
+            }
+        every { cableReportServiceAllu.getDecisionPdf(134) }.returns(pdfBytes)
+
+        val (filename, bytes) = applicationService.downloadDecision(application.id!!, username)
+
+        assertThat(filename).isNotNull().isEqualTo("paatos")
+        assertThat(bytes).isEqualTo(pdfBytes)
+        verify { cableReportServiceAllu.getDecisionPdf(134) }
+    }
+
     // TODO: Needs Spring 5.3, which comes with Spring Boot 2.4.
     //  Inner test classes won't inherit properties from the enclosing class until then.
     // @Nested class HandleApplicationUpdates {
@@ -864,6 +930,7 @@ class ApplicationServiceITest : DatabaseTest() {
     fun `handleApplicationUpdates with empty histories updates the last updated time`() {
         assertThat(applicationRepository.findAll()).isEmpty()
         assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
+
         applicationService.handleApplicationUpdates(listOf(), updateTime)
 
         assertEquals(updateTime, alluStatusRepository.getLastUpdateTime().asUtc())
@@ -921,6 +988,7 @@ class ApplicationServiceITest : DatabaseTest() {
             )
 
         applicationService.handleApplicationUpdates(histories, updateTime)
+
         assertEquals(updateTime, alluStatusRepository.getLastUpdateTime().asUtc())
         val applications = applicationRepository.findAll()
         assertThat(applications).hasSize(2)

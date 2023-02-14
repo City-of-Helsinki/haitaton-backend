@@ -10,7 +10,10 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import mu.KotlinLogging
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
@@ -196,6 +199,37 @@ class ApplicationController(
     fun sendApplication(@PathVariable(name = "id") id: Long): Application =
         service.sendApplication(id, currentUserId())
 
+    @GetMapping(
+        "/{id}/paatos",
+        produces = [MediaType.APPLICATION_PDF_VALUE, MediaType.APPLICATION_JSON_VALUE]
+    )
+    @Operation(
+        summary = "Download a decision",
+        description = "Downloads a decision for this application from Allu."
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "The decision PDF", responseCode = "200"),
+                ApiResponse(
+                    description =
+                        "An application was not found with the given id or the application didn't have a decision",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+            ]
+    )
+    fun downloadDecision(@PathVariable(name = "id") id: Long): ResponseEntity<ByteArray> {
+        val (filename, pdfBytes) = service.downloadDecision(id, currentUserId())
+
+        val headers = HttpHeaders()
+        headers.add("Content-Disposition", "inline; filename=$filename.pdf")
+        return ResponseEntity.ok()
+            .headers(headers)
+            .contentType(MediaType.APPLICATION_PDF)
+            .body(pdfBytes)
+    }
+
     @ExceptionHandler(ApplicationNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @Hidden
@@ -234,5 +268,13 @@ class ApplicationController(
     fun applicationGeometryException(ex: ApplicationGeometryException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2005
+    }
+
+    @ExceptionHandler(ApplicationDecisionNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
+    fun applicationDecisionNotFoundException(ex: ApplicationDecisionNotFoundException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2006
     }
 }

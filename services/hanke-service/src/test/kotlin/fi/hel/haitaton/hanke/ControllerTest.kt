@@ -11,8 +11,11 @@ interface ControllerTest {
     val mockMvc: MockMvc
 
     /** Send a GET request to the given URL. */
-    fun get(url: String): ResultActions {
-        return mockMvc.perform(MockMvcRequestBuilders.get(url).accept(MediaType.APPLICATION_JSON))
+    fun get(
+        url: String,
+        vararg accept: MediaType = arrayOf(MediaType.APPLICATION_JSON)
+    ): ResultActions {
+        return mockMvc.perform(MockMvcRequestBuilders.get(url).accept(*accept))
     }
 
     /**

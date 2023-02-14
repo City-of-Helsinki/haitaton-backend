@@ -2,14 +2,18 @@ package fi.hel.haitaton.hanke.allu
 
 import assertk.assertThat
 import assertk.assertions.hasClass
+import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFailure
 import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
+import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
+import fi.hel.haitaton.hanke.getResourceAsBytes
 import java.time.ZonedDateTime
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okio.Buffer
 import org.geojson.Crs
 import org.geojson.GeometryCollection
 import org.geojson.LngLatAlt
@@ -92,6 +96,64 @@ class CableReportServiceAlluITests {
     }
 
     @Nested
+    inner class GetDecisionPdf {
+        @Test
+        fun `returns PDF file as bytes`() {
+            val stubbedBearer = addStubbedLoginResponse()
+            val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
+            val buffer = Buffer()
+            buffer.write(pdfBytes)
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
+                    .setBody(buffer)
+            )
+
+            val response = service.getDecisionPdf(12)
+
+            assertThat(response).isEqualTo(pdfBytes)
+            val loginRequest = mockWebServer.takeRequest()
+            assertThat(loginRequest.method).isEqualTo("POST")
+            assertThat(loginRequest.path).isEqualTo("/v2/login")
+            assertThat(loginRequest.getHeader("Authorization")).isNull()
+            val createRequest = mockWebServer.takeRequest()
+            assertThat(createRequest.method).isEqualTo("GET")
+            assertThat(createRequest.path).isEqualTo("/v2/cablereports/12/decision")
+            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
+        }
+
+        @Test
+        fun `throws ApplicationDecisionNotFoundException on 404`() {
+            addStubbedLoginResponse()
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(404)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .setBody("Error message")
+            )
+
+            val exception =
+                assertThrows<ApplicationDecisionNotFoundException> { service.getDecisionPdf(12) }
+
+            assertThat(exception).hasMessage("Decision not found in Allu. alluid=12")
+        }
+
+        @Test
+        fun `throws WebClientResponseException on other error codes`() {
+            addStubbedLoginResponse()
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(500)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .setBody("Error message")
+            )
+
+            assertThrows<WebClientResponseException> { service.getDecisionPdf(12) }
+        }
+    }
+
+    @Nested
     inner class GetApplicationStatusHistories {
         @Test
         fun `returns application histories`() {
@@ -140,13 +202,12 @@ class CableReportServiceAlluITests {
         fun `throws error on bad status`() {
             val alluids = listOf(12, 13)
             val eventsAfter = ZonedDateTime.parse("2022-10-10T15:25:34.981654Z")
-            val histories = listOf(ApplicationHistoryFactory.create(applicationId = 12))
             addStubbedLoginResponse()
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(404)
                     .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                    .setBody(OBJECT_MAPPER.writeValueAsString(histories))
+                    .setBody("Error message")
             )
 
             assertThat { service.getApplicationStatusHistories(alluids, eventsAfter) }

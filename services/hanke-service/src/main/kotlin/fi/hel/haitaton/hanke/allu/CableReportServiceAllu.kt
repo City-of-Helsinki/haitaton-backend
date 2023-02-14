@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.allu
 
+import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import java.time.ZonedDateTime
 import mu.KotlinLogging
 import org.springframework.core.io.ByteArrayResource
@@ -204,18 +205,28 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
-    override fun getDecisionPDF(applicationId: Int): ByteArray {
+    override fun getDecisionPdf(applicationId: Int): ByteArray {
         val token = login()!!
         return webClient
             .get()
             .uri("$baseUrl/v2/cablereports/$applicationId/decision", applicationId)
             .accept(MediaType.APPLICATION_PDF)
             .headers { it.setBearerAuth(token) }
-            .exchange()
+            .retrieve()
+            .onStatus(
+                { httpStatus -> httpStatus.value() == 404 },
+                {
+                    Mono.error(
+                        ApplicationDecisionNotFoundException(
+                            "Decision not found in Allu. alluid=$applicationId"
+                        )
+                    )
+                }
+            )
+            .bodyToMono(ByteArrayResource::class.java)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error getting decision PDF from Allu", it)
             }
-            .flatMap { it.bodyToMono(ByteArrayResource::class.java) }
             .map { it.byteArray }
             .blockOptional()
             .orElseThrow()

@@ -54,7 +54,7 @@ data class CableReportApplicationData(
 
     // Common, not required
     val postalAddress: PostalAddress? = null,
-    val representativeWithContacts: CustomerWithContacts? = null,
+    val representativeWithContacts: CustomerWithContacts? = null, // Asianhoitaja
     val invoicingCustomer: Customer? = null,
     val customerReference: String? = null,
     val area: Double? = null,

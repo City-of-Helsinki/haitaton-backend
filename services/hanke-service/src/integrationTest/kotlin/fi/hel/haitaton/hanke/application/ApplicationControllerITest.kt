@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
 import io.mockk.clearAllMocks
@@ -20,10 +21,12 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
+import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -378,5 +381,58 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         delete("/hakemukset/1234").andExpect(status().isConflict)
 
         verify { applicationService.delete(1234, username) }
+    }
+
+    @Test
+    fun `downloadDecision without user returns 401`() {
+        get("/hakemukset/1/paatos").andExpect(status().isUnauthorized)
+
+        verify { applicationService wasNot Called }
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `downloadDecision with unknown ID returns 404`() {
+        every { applicationService.downloadDecision(11, username) } throws
+            ApplicationNotFoundException(11)
+
+        get("/hakemukset/11/paatos", MediaType.APPLICATION_PDF, MediaType.APPLICATION_JSON)
+            .andExpect(status().isNotFound)
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("errorCode").value("HAI2001"))
+            .andExpect(jsonPath("errorMessage").value("Application not found"))
+
+        verify { applicationService.downloadDecision(11, username) }
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `downloadDecision when application has no decision returns 404`() {
+        every { applicationService.downloadDecision(11, username) } throws
+            ApplicationDecisionNotFoundException("Decision not found in Allu. alluid=23")
+
+        get("/hakemukset/11/paatos", MediaType.APPLICATION_PDF, MediaType.APPLICATION_JSON)
+            .andExpect(status().isNotFound)
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("errorCode").value("HAI2006"))
+            .andExpect(jsonPath("errorMessage").value("Application decision not found"))
+
+        verify { applicationService.downloadDecision(11, username) }
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `downloadDecision with known id returns bytes and correct headers`() {
+        val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
+        every { applicationService.downloadDecision(11, username) } returns
+            Pair("JS230001", pdfBytes)
+
+        get("/hakemukset/11/paatos", MediaType.APPLICATION_PDF, MediaType.APPLICATION_JSON)
+            .andExpect(status().isOk)
+            .andExpect(header().string("Content-Disposition", "inline; filename=JS230001.pdf"))
+            .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+            .andExpect(content().bytes(pdfBytes))
+
+        verify { applicationService.downloadDecision(11, username) }
     }
 }
