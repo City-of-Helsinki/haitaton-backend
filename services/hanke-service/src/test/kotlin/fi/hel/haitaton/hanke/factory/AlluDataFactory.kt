@@ -178,7 +178,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 applicationData,
             )
 
-        fun createAlluApplication(
+        fun createAlluApplicationResponse(
             id: Int = 42,
             status: ApplicationStatus = ApplicationStatus.PENDING
         ) =

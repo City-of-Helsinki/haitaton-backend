@@ -134,19 +134,20 @@ class ApplicationServiceTest {
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
         every { applicationRepo.save(applicationEntity) } returns applicationEntity
         justRun { cableReportService.update(42, any()) }
-        every { cableReportService.getCurrentStatus(42) } returns null
+        every { cableReportService.getApplicationInformation(42) } returns
+            AlluDataFactory.createAlluApplicationResponse(42)
         every { geometriatDao.validateGeometria(any()) } returns null
 
         service.updateApplicationData(3, applicationData, username)
 
-        verify {
-            disclosureLogService.saveDisclosureLogsForAllu(applicationData, Status.SUCCESS)
+        verifyOrder {
             applicationRepo.findOneByIdAndUserId(3, username)
-            applicationRepo.save(applicationEntity)
-            cableReportService.update(42, any())
-            cableReportService.getCurrentStatus(42)
-            applicationLoggingService.logUpdate(any(), any(), username)
             geometriatDao.validateGeometria(any())
+            cableReportService.getApplicationInformation(42)
+            cableReportService.update(42, any())
+            disclosureLogService.saveDisclosureLogsForAllu(applicationData, Status.SUCCESS)
+            applicationRepo.save(applicationEntity)
+            applicationLoggingService.logUpdate(any(), any(), username)
         }
     }
 
@@ -194,7 +195,7 @@ class ApplicationServiceTest {
         every { applicationRepo.save(any()) } answers { firstArg() }
         every { cableReportService.create(any()) } returns 42
         every { cableReportService.getApplicationInformation(42) } returns
-            AlluDataFactory.createAlluApplication(42)
+            AlluDataFactory.createAlluApplicationResponse(42)
 
         service.sendApplication(3, username)
 
