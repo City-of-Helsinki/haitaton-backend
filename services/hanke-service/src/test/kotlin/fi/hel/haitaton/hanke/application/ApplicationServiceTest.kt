@@ -297,7 +297,6 @@ class ApplicationServiceTest {
     fun `sendApplication with invalid data doesn't send application to Allu`(
         applicationData: ApplicationData,
         path: String,
-        error: String,
     ) {
         val applicationEntity =
             AlluDataFactory.createApplicationEntity(
@@ -312,7 +311,7 @@ class ApplicationServiceTest {
             .isFailure()
             .all {
                 this.hasClass(AlluDataException::class)
-                this.hasMessage("Application data failed validation at $path: $error")
+                this.hasMessage("Application data failed validation at $path: Can't be null")
             }
 
         verify {
@@ -334,22 +333,18 @@ class ApplicationServiceTest {
                         )
                 ),
                 "applicationData.customerWithContacts.customer.type",
-                "Can't be null"
             ),
             Arguments.of(
                 applicationData.copy(endTime = null),
                 "applicationData.endTime",
-                "Can't be null"
             ),
             Arguments.of(
                 applicationData.copy(startTime = null),
                 "applicationData.startTime",
-                "Can't be null"
             ),
             Arguments.of(
                 applicationData.copy(rockExcavation = null),
                 "applicationData.rockExcavation",
-                "Can't be null"
             ),
         )
     }
