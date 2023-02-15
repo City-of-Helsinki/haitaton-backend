@@ -73,5 +73,13 @@ data class CableReportApplicationData(
         ApplicationDataMapper.toAlluData(this)
 }
 
-class AlluDataException(path: String, error: String) :
+class AlluDataException(path: String, error: AlluDataError) :
     RuntimeException("Application data failed validation at $path: $error")
+
+enum class AlluDataError(private val errorDescription: String) {
+    NULL("Can't be null"),
+    EMPTY_OR_NULL("Can't be empty or null"),
+    ;
+
+    override fun toString(): String = errorDescription
+}

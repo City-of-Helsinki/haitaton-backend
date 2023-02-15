@@ -2,10 +2,10 @@ package fi.hel.haitaton.hanke.application
 
 import assertk.all
 import assertk.assertThat
+import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFailure
-import assertk.assertions.matchesPredicate
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.CableReportService
@@ -306,15 +306,15 @@ class ApplicationServiceTest {
                 userId = username,
                 applicationData = applicationData,
             )
-
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
 
         assertThat { service.sendApplication(3, username) }
             .isFailure()
             .all {
-                this.matchesPredicate { it is AlluDataException }
+                this.hasClass(AlluDataException::class)
                 this.hasMessage("Application data failed validation at $path: $error")
             }
+
         verify {
             applicationRepo.findOneByIdAndUserId(3, username)
             cableReportService wasNot Called

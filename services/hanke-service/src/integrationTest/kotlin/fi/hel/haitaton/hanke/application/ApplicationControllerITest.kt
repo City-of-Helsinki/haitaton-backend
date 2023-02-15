@@ -334,7 +334,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     @WithMockUser(username)
     fun `sendApplication with invalid application data returns 409`() {
         every { applicationService.sendApplication(1234, username) } throws
-            AlluDataException("applicationData.some.path", "Some error")
+            AlluDataException("applicationData.some.path", AlluDataError.EMPTY_OR_NULL)
 
         post("/hakemukset/1234/send-application").andExpect(status().isConflict)
 

@@ -41,6 +41,7 @@ internal class ApplicationDataMapperTest {
 
     @Nested
     inner class GetGeometry {
+        private val areaName = "test area"
         private val polygon: Polygon =
             "/fi/hel/haitaton/hanke/geometria/polygon.json".asJsonResource()
         private val otherPolygon: Polygon =
@@ -52,7 +53,7 @@ internal class ApplicationDataMapperTest {
         fun `uses areas if they are present`() {
             val applicationData =
                 AlluDataFactory.createCableReportApplicationData(
-                    areas = listOf(ApplicationArea("test area", polygon)),
+                    areas = listOf(ApplicationArea(areaName, polygon)),
                     geometry = GeometryCollection().apply { this.add(otherPolygon) }
                 )
 
@@ -98,7 +99,7 @@ internal class ApplicationDataMapperTest {
                 AlluDataFactory.createCableReportApplicationData(
                     areas =
                         listOf(
-                            ApplicationArea("test area", polygon),
+                            ApplicationArea(areaName, polygon),
                             ApplicationArea("other area", otherPolygon),
                             ApplicationArea("third area", thirdPolygon),
                         ),
@@ -115,7 +116,7 @@ internal class ApplicationDataMapperTest {
         fun `remove crs from the geometries`() {
             val applicationData =
                 AlluDataFactory.createCableReportApplicationData(
-                    areas = listOf(ApplicationArea("test area", polygon))
+                    areas = listOf(ApplicationArea(areaName, polygon))
                 )
             assertThat(polygon.crs).isNotNull()
 
@@ -129,7 +130,7 @@ internal class ApplicationDataMapperTest {
         fun `add crs to the geometry collection`() {
             val applicationData =
                 AlluDataFactory.createCableReportApplicationData(
-                    areas = listOf(ApplicationArea("test area", polygon))
+                    areas = listOf(ApplicationArea(areaName, polygon))
                 )
 
             val geometry = ApplicationDataMapper.getGeometry(applicationData)
@@ -144,7 +145,7 @@ internal class ApplicationDataMapperTest {
             polygon.crs = polygon.crs.apply { this.properties["name"] = "InvalidCode" }
             val applicationData =
                 AlluDataFactory.createCableReportApplicationData(
-                    areas = listOf(ApplicationArea("test area", polygon))
+                    areas = listOf(ApplicationArea(areaName, polygon))
                 )
 
             val exception =

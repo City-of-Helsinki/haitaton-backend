@@ -74,7 +74,7 @@ data class Customer(
 
     fun toAlluData(path: String): AlluCustomer =
         AlluCustomer(
-            type ?: throw AlluDataException("$path.type", "Can't be null"),
+            type ?: throw AlluDataException("$path.type", AlluDataError.NULL),
             name,
             country,
             postalAddress?.toAlluData(),

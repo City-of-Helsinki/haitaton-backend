@@ -13,9 +13,9 @@ object ApplicationDataMapper {
             applicationData.customerWithContacts.toAlluData("applicationData.customerWithContacts"),
             getGeometry(applicationData),
             applicationData.startTime
-                ?: throw AlluDataException("applicationData.startTime", "Can't be null"),
+                ?: throw AlluDataException("applicationData.startTime", AlluDataError.NULL),
             applicationData.endTime
-                ?: throw AlluDataException("applicationData.endTime", "Can't be null"),
+                ?: throw AlluDataException("applicationData.endTime", AlluDataError.NULL),
             applicationData.pendingOnClient,
             applicationData.identificationNumber,
             applicationData.clientApplicationKind,
@@ -42,7 +42,7 @@ object ApplicationDataMapper {
     private fun getWorkDescription(applicationData: CableReportApplicationData): String {
         val rockExcavation =
             applicationData.rockExcavation
-                ?: throw AlluDataException("applicationData.rockExcavation", "Can't be null")
+                ?: throw AlluDataException("applicationData.rockExcavation", AlluDataError.NULL)
         return applicationData.workDescription +
             if (rockExcavation) "\nLouhitaan" else "\nEi louhita"
     }
@@ -68,7 +68,7 @@ object ApplicationDataMapper {
             }
         } else {
             applicationData.geometry
-                ?: throw AlluDataException("applicationData.areas", "Can't be empty or null")
+                ?: throw AlluDataException("applicationData.areas", AlluDataError.EMPTY_OR_NULL)
         }
     }
 }
