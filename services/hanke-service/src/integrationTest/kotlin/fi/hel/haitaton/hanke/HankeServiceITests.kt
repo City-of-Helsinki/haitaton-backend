@@ -855,6 +855,40 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
+    fun `updateHanke new hankealue name updates name and keeps data intact`() {
+        val createdHanke = hankeService.createHanke(getATestHanke())
+        val hankealue = createdHanke.alueet[0]
+        assertNull(hankealue.nimi)
+        val modifiedHanke =
+            createdHanke.copy().apply {
+                // manually set mutable collections due to a shallow copy.
+                this.omistajat = createdHanke.omistajat
+                this.arvioijat = createdHanke.arvioijat
+                this.toteuttajat = createdHanke.toteuttajat
+                this.tyomaaTyyppi = createdHanke.tyomaaTyyppi
+                this.alueet = mutableListOf(hankealue.copy(nimi = "Changed Name"))
+            }
+
+        val updateHankeResult = hankeService.updateHanke(modifiedHanke)
+
+        assertThat(updateHankeResult)
+            .usingRecursiveComparison()
+            .ignoringFields("modifiedAt", "modifiedBy", "version", "alueet")
+            .isEqualTo(createdHanke)
+        assertEquals(createdHanke.alueet.size, updateHankeResult.alueet.size)
+        val resultAlue = updateHankeResult.alueet[0]
+        assertThat(resultAlue)
+            .usingRecursiveComparison()
+            .ignoringFields("nimi", "geometriat")
+            .isEqualTo(hankealue)
+        assertThat(resultAlue.geometriat)
+            .usingRecursiveComparison()
+            .ignoringFields("version", "modifiedByUserId", "modifiedAt")
+            .isEqualTo(hankealue.geometriat)
+        assertEquals("Changed Name", resultAlue.nimi)
+    }
+
+    @Test
     fun `updateHanke removes hankealue and geometriat`() {
         val hanke = getATestHanke()
         val hankealue =
@@ -1199,6 +1233,7 @@ class HankeServiceITests : DatabaseTest() {
         val hankeVersion: Int = 0,
         val nextYear: Int = nextYear(),
         val tormaystarkasteluTulos: Boolean = false,
+        val alueNimi: String? = null,
     )
 
     val expectedHankeWithPolygon =
@@ -1223,6 +1258,7 @@ class HankeServiceITests : DatabaseTest() {
                 hankeVersion,
                 nextYear(),
                 tormaystarkasteluTulos,
+                alue?.nimi
             )
         return Template.parse(
                 "/fi/hel/haitaton/hanke/logging/expectedHankeWithPoints.json.mustache".getResourceAsText()
