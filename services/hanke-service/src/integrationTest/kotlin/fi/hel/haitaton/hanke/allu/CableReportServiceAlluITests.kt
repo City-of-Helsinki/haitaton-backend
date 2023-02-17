@@ -1,11 +1,13 @@
 package fi.hel.haitaton.hanke.allu
 
+import assertk.Assert
 import assertk.assertThat
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFailure
 import assertk.assertions.isNull
+import assertk.assertions.prop
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
@@ -13,6 +15,7 @@ import fi.hel.haitaton.hanke.getResourceAsBytes
 import java.time.ZonedDateTime
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import okio.Buffer
 import org.geojson.Crs
 import org.geojson.GeometryCollection
@@ -44,35 +47,28 @@ class CableReportServiceAlluITests {
     @Test
     fun testCreate() {
         val stubbedBearer = addStubbedLoginResponse()
-
         val stubbedApplicationId = 1337
         val applicationIdResponse =
             MockResponse()
                 .setResponseCode(200)
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .setBody(stubbedApplicationId.toString())
-
         mockWebServer.enqueue(applicationIdResponse)
-
         val application = getTestApplication()
+
         val actualApplicationId = service.create(application)
+
         assertThat(actualApplicationId).isEqualTo(stubbedApplicationId)
-
-        val loginRequest = mockWebServer.takeRequest()
-        assertThat(loginRequest.method).isEqualTo("POST")
-        assertThat(loginRequest.path).isEqualTo("/v2/login")
-
+        assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
         val request = mockWebServer.takeRequest()
-
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.path).isEqualTo("/v2/cablereports")
-        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer " + stubbedBearer)
+        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
     }
 
     @Test
     fun testCreateErrorHandling() {
         val stubbedBearer = addStubbedLoginResponse()
-
         val applicationIdResponse =
             MockResponse()
                 .setResponseCode(400)
@@ -84,15 +80,11 @@ class CableReportServiceAlluITests {
 
         assertThrows<WebClientResponseException.BadRequest> { service.create(getTestApplication()) }
 
-        val loginRequest = mockWebServer.takeRequest()
-        assertThat(loginRequest.method).isEqualTo("POST")
-        assertThat(loginRequest.path).isEqualTo("/v2/login")
-        assertThat(loginRequest.getHeader("Authorization")).isNull()
-
+        assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
         val createRequest = mockWebServer.takeRequest()
         assertThat(createRequest.method).isEqualTo("POST")
         assertThat(createRequest.path).isEqualTo("/v2/cablereports")
-        assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer " + stubbedBearer)
+        assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
     }
 
     @Nested
@@ -113,10 +105,7 @@ class CableReportServiceAlluITests {
             val response = service.getDecisionPdf(12)
 
             assertThat(response).isEqualTo(pdfBytes)
-            val loginRequest = mockWebServer.takeRequest()
-            assertThat(loginRequest.method).isEqualTo("POST")
-            assertThat(loginRequest.path).isEqualTo("/v2/login")
-            assertThat(loginRequest.getHeader("Authorization")).isNull()
+            assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
             val createRequest = mockWebServer.takeRequest()
             assertThat(createRequest.method).isEqualTo("GET")
             assertThat(createRequest.path).isEqualTo("/v2/cablereports/12/decision")
@@ -171,10 +160,7 @@ class CableReportServiceAlluITests {
             val response = service.getApplicationStatusHistories(alluids, eventsAfter)
 
             assertThat(response).isEqualTo(histories)
-            val loginRequest = mockWebServer.takeRequest()
-            assertThat(loginRequest.method).isEqualTo("POST")
-            assertThat(loginRequest.path).isEqualTo("/v2/login")
-            assertThat(loginRequest.getHeader("Authorization")).isNull()
+            assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
             val createRequest = mockWebServer.takeRequest()
             assertThat(createRequest.method).isEqualTo("POST")
             assertThat(createRequest.path).isEqualTo("/v2/applicationhistory")
@@ -214,6 +200,12 @@ class CableReportServiceAlluITests {
                 .isFailure()
                 .hasClass(WebClientResponseException.NotFound::class)
         }
+    }
+
+    fun Assert<RecordedRequest>.isValidLoginRequest() = given { loginRequest ->
+        prop(RecordedRequest::method).isEqualTo("POST")
+        prop(RecordedRequest::path).isEqualTo("/v2/login")
+        prop("Authorization header") { loginRequest.getHeader("Authorization") }.isNull()
     }
 
     private fun addStubbedLoginResponse(): String {
