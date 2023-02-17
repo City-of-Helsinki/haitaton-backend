@@ -24,5 +24,9 @@ interface GeometriatDao {
      *
      * @return List of indexes in the feature collection where the validation failed.
      */
-    fun validateGeometria(geometria: GeoJsonObject): GeometriatDaoImpl.InvalidDetail?
+    fun validateGeometria(geometria: GeoJsonObject): InvalidDetail?
+
+    fun validateGeometriat(geometriat: List<GeoJsonObject>): InvalidDetail?
+
+    data class InvalidDetail(val reason: String, val location: String)
 }

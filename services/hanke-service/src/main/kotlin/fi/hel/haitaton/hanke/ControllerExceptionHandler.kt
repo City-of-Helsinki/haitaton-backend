@@ -98,7 +98,7 @@ class ControllerExceptionHandler {
         logger.warn { ex.message }
         // notify Sentry
         Sentry.captureException(ex)
-        return HankeError.HAI1011
+        return HankeError.HAI1013
     }
 
     @ExceptionHandler(Throwable::class)

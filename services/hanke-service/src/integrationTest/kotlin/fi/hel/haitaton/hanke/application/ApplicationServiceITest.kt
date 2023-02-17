@@ -321,6 +321,35 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    fun `create throws exception with invalid geometry in areas`() {
+        val cableReportApplicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                areas =
+                    listOf(
+                        ApplicationArea(
+                            "area",
+                            "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json".asJsonResource()
+                        )
+                    )
+            )
+        val newApplication =
+            AlluDataFactory.createApplication(
+                id = null,
+                applicationData = cableReportApplicationData
+            )
+
+        val exception =
+            assertThrows<ApplicationGeometryException> {
+                applicationService.create(newApplication, username)
+            }
+
+        assertEquals(
+            """Invalid geometry received when creating a new application for user $username, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}""",
+            exception.message
+        )
+    }
+
+    @Test
     fun `updateApplicationData with unknown ID throws exception`() {
         assertThat(applicationRepository.findAll()).isEmpty()
 
@@ -545,6 +574,35 @@ class ApplicationServiceITest : DatabaseTest() {
             AlluDataFactory.createCableReportApplicationData(
                 geometry =
                     "/fi/hel/haitaton/hanke/geometria/invalid-geometry-collection.json".asJsonResource()
+            )
+
+        val exception =
+            assertThrows<ApplicationGeometryException> {
+                applicationService.updateApplicationData(
+                    application.id!!,
+                    cableReportApplicationData,
+                    username
+                )
+            }
+
+        assertEquals(
+            """Invalid geometry received when updating application for user $username, id=${application.id}, alluid=${application.alluid}, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}""",
+            exception.message
+        )
+    }
+
+    @Test
+    fun `updateApplicationData throws exception with invalid geometry in areas`() {
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = 21 }
+        val cableReportApplicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                areas =
+                    listOf(
+                        ApplicationArea(
+                            "area",
+                            "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json".asJsonResource()
+                        )
+                    )
             )
 
         val exception =
@@ -935,6 +993,7 @@ class ApplicationServiceITest : DatabaseTest() {
                   "type": "GeometryCollection",
                   "geometries": []
                 },
+                "areas": null,
                 "startTime": "${nextYear()}-02-20T23:45:56Z",
                 "endTime": "${nextYear()}-02-21T00:12:34Z",
                 "pendingOnClient": true,

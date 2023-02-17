@@ -41,10 +41,8 @@ open class ApplicationService(
     open fun create(application: Application, userId: String): Application {
         logger.info("Creating a new application for user $userId")
 
-        geometriatDao.validateGeometria(application.applicationData.geometry)?.let {
-            throw ApplicationGeometryException(
-                "Invalid geometry received when creating a new application for user $userId, reason = ${it.reason}, location = ${it.location}"
-            )
+        validateGeometry(application.applicationData) { validationError ->
+            "Invalid geometry received when creating a new application for user $userId, reason = ${validationError.reason}, location = ${validationError.location}"
         }
 
         val applicationEntity =
@@ -87,10 +85,8 @@ open class ApplicationService(
                 }
         }
 
-        geometriatDao.validateGeometria(newApplicationData.geometry)?.let {
-            throw ApplicationGeometryException(
-                "Invalid geometry received when updating application for user $userId, id=${application.id}, alluid=${application.alluid}, reason = ${it.reason}, location = ${it.location}"
-            )
+        validateGeometry(newApplicationData) { validationError ->
+            "Invalid geometry received when updating application for user $userId, id=${application.id}, alluid=${application.alluid}, reason = ${validationError.reason}, location = ${validationError.location}"
         }
 
         if (!isStillPending(application.alluid)) {
@@ -174,6 +170,23 @@ open class ApplicationService(
             logger.info { "Application canceled, proceeding to delete it. id=$id alluid=${alluid}" }
         } else {
             throw ApplicationAlreadyProcessingException(id, alluid)
+        }
+    }
+
+    private fun validateGeometry(
+        newApplicationData: ApplicationData,
+        customMessageOnFailure: (GeometriatDao.InvalidDetail) -> String
+    ) {
+        val areas = newApplicationData.areas
+        val geometry = newApplicationData.geometry
+        if (areas != null) {
+            geometriatDao.validateGeometriat(areas.map { it.geometry })?.let {
+                throw ApplicationGeometryException(customMessageOnFailure(it))
+            }
+        } else if (geometry != null) {
+            geometriatDao.validateGeometria(newApplicationData.geometry!!)?.let {
+                throw ApplicationGeometryException(customMessageOnFailure(it))
+            }
         }
     }
 

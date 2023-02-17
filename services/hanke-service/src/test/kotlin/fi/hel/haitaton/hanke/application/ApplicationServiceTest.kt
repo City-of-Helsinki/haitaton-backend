@@ -2,17 +2,16 @@ package fi.hel.haitaton.hanke.application
 
 import assertk.all
 import assertk.assertThat
+import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFailure
-import assertk.assertions.matchesPredicate
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
-import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
@@ -109,7 +108,7 @@ class ApplicationServiceTest {
     fun `create throws exception with invalid geometry`() {
         val dto = AlluDataFactory.createApplication(id = null, applicationData = applicationData)
         every { geometriatDao.validateGeometria(any()) } returns
-            GeometriatDaoImpl.InvalidDetail(
+            GeometriatDao.InvalidDetail(
                 "Self-intersection",
                 """{"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
             )
@@ -163,7 +162,7 @@ class ApplicationServiceTest {
             )
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
         every { geometriatDao.validateGeometria(any()) } returns
-            GeometriatDaoImpl.InvalidDetail(
+            GeometriatDao.InvalidDetail(
                 "Self-intersection",
                 """{"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
             )
@@ -298,7 +297,6 @@ class ApplicationServiceTest {
     fun `sendApplication with invalid data doesn't send application to Allu`(
         applicationData: ApplicationData,
         path: String,
-        error: String,
     ) {
         val applicationEntity =
             AlluDataFactory.createApplicationEntity(
@@ -307,15 +305,15 @@ class ApplicationServiceTest {
                 userId = username,
                 applicationData = applicationData,
             )
-
         every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
 
         assertThat { service.sendApplication(3, username) }
             .isFailure()
             .all {
-                this.matchesPredicate { it is AlluDataException }
-                this.hasMessage("Application data failed validation at $path: $error")
+                this.hasClass(AlluDataException::class)
+                this.hasMessage("Application data failed validation at $path: Can't be null")
             }
+
         verify {
             applicationRepo.findOneByIdAndUserId(3, username)
             cableReportService wasNot Called
@@ -335,22 +333,18 @@ class ApplicationServiceTest {
                         )
                 ),
                 "applicationData.customerWithContacts.customer.type",
-                "Can't be null"
             ),
             Arguments.of(
                 applicationData.copy(endTime = null),
                 "applicationData.endTime",
-                "Can't be null"
             ),
             Arguments.of(
                 applicationData.copy(startTime = null),
                 "applicationData.startTime",
-                "Can't be null"
             ),
             Arguments.of(
                 applicationData.copy(rockExcavation = null),
                 "applicationData.rockExcavation",
-                "Can't be null"
             ),
         )
     }
