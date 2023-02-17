@@ -182,9 +182,7 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
         }
     }
 
-    data class InvalidDetail(val reason: String, val location: String)
-
-    override fun validateGeometria(geometria: GeoJsonObject): InvalidDetail? {
+    override fun validateGeometria(geometria: GeoJsonObject): GeometriatDao.InvalidDetail? {
         val detailQuery =
             "select valid, reason, ST_AsGeoJSON(location) as location from ST_IsValidDetail(ST_GeomFromGeoJSON(?))"
 
@@ -193,7 +191,7 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
                 detailQuery,
                 { rs, _ ->
                     if (!rs.getBoolean("valid")) {
-                        InvalidDetail(
+                        GeometriatDao.InvalidDetail(
                             rs.getString("reason"),
                             rs.getString("location"),
                         )
@@ -204,6 +202,9 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
                 geometria.toJsonString()
             )[0]
     }
+
+    override fun validateGeometriat(geometriat: List<GeoJsonObject>): GeometriatDao.InvalidDetail? =
+        geometriat.firstNotNullOfOrNull { validateGeometria(it) }
 
     private fun retrieveHankeGeometriaRows(
         geometriatId: Int,

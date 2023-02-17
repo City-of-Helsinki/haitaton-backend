@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Application
+import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
@@ -92,7 +93,8 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             name: String = defaultApplicationName,
             customerWithContacts: CustomerWithContacts =
                 CustomerWithContacts(createCompanyCustomer(), listOf(createContact())),
-            geometry: GeometryCollection = GeometryCollection(),
+            geometry: GeometryCollection? = GeometryCollection(),
+            areas: List<ApplicationArea>? = null,
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             pendingOnClient: Boolean = false,
@@ -101,20 +103,22 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             workDescription: String = "Work description.",
             contractorWithContacts: CustomerWithContacts =
                 CustomerWithContacts(createCompanyCustomer(), listOf(createContact())),
+            rockExcavation: Boolean = false,
         ) =
             CableReportApplicationData(
-                ApplicationType.CABLE_REPORT,
-                name,
-                customerWithContacts,
-                geometry,
-                startTime,
-                endTime,
-                pendingOnClient,
-                identificationNumber,
-                clientApplicationKind,
-                workDescription,
-                contractorWithContacts,
-                false
+                applicationType = ApplicationType.CABLE_REPORT,
+                name = name,
+                customerWithContacts = customerWithContacts,
+                geometry = geometry,
+                areas = areas,
+                startTime = startTime,
+                endTime = endTime,
+                pendingOnClient = pendingOnClient,
+                identificationNumber = identificationNumber,
+                clientApplicationKind = clientApplicationKind,
+                workDescription = workDescription,
+                contractorWithContacts = contractorWithContacts,
+                rockExcavation = rockExcavation
             )
 
         fun createApplication(
