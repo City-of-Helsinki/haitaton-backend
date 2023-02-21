@@ -53,6 +53,7 @@ data class PublicHankealue(
     var meluHaitta: Haitta13? = null,
     var polyHaitta: Haitta13? = null,
     var tarinaHaitta: Haitta13? = null,
+    var nimi: String? = null,
 )
 
 data class PublicHanke(
@@ -83,6 +84,7 @@ fun hankealueToPublic(alue: Hankealue): PublicHankealue {
         alue.meluHaitta,
         alue.polyHaitta,
         alue.tarinaHaitta,
+        alue.nimi,
     )
 }
 

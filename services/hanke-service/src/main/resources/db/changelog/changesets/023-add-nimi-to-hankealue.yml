@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 023-add-nimi-to-hankealue
+      comment: Add support for hankealue name
+      author: Niko Pitkonen
+      changes:
+        - addColumn:
+            tableName: hankealue
+            columns:
+              - column:
+                  name: nimi
+                  type: varchar(100)
+                  constraints:
+                    nullable: true

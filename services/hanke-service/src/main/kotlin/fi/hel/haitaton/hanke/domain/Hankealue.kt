@@ -8,10 +8,7 @@ import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihi
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import java.time.ZonedDateTime
 
-/**
- *
- * NOTE Remember to update PublicHankealue after changes
- */
+/** NOTE Remember to update PublicHankealue after changes */
 @JsonView(ChangeLogView::class)
 data class Hankealue(
     override var id: Int? = null,
@@ -24,4 +21,5 @@ data class Hankealue(
     var meluHaitta: Haitta13? = null,
     var polyHaitta: Haitta13? = null,
     var tarinaHaitta: Haitta13? = null,
+    var nimi: String? = null,
 ) : HasId<Int>

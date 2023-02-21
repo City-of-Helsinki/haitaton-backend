@@ -73,3 +73,5 @@ databaseChangeLog:
       file: db/changelog/changesets/021-add-status-and-remove-savetype-in-hanke.yml
   - include:
       file: db/changelog/changesets/022-add-trigger-for-removing-orphaned-geometriat.sql
+  - include:
+      file: db/changelog/changesets/023-add-nimi-to-hankealue.yml
