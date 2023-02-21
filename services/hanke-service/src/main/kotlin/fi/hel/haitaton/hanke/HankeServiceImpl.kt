@@ -249,7 +249,7 @@ open class HankeServiceImpl(
             meluHaitta = hankealueEntity.meluHaitta,
             polyHaitta = hankealueEntity.polyHaitta,
             tarinaHaitta = hankealueEntity.tarinaHaitta,
-            nimi = hankealueEntity.nimi
+            nimi = hankealueEntity.nimi,
         )
     }
 

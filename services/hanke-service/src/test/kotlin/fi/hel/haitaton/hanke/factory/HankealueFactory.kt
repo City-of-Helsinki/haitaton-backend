@@ -36,7 +36,7 @@ object HankealueFactory {
             meluHaitta,
             polyHaitta,
             tarinaHaitta,
-            nimi
+            nimi,
         )
     }
 
@@ -64,7 +64,7 @@ object HankealueFactory {
             meluHaitta,
             polyHaitta,
             tarinaHaitta,
-            nimi
+            nimi,
         )
     }
 }

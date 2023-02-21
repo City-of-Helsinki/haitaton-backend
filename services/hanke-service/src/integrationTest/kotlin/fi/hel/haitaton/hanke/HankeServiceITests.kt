@@ -1258,7 +1258,7 @@ class HankeServiceITests : DatabaseTest() {
                 hankeVersion,
                 nextYear(),
                 tormaystarkasteluTulos,
-                alue?.nimi
+                alue?.nimi,
             )
         return Template.parse(
                 "/fi/hel/haitaton/hanke/logging/expectedHankeWithPoints.json.mustache".getResourceAsText()
