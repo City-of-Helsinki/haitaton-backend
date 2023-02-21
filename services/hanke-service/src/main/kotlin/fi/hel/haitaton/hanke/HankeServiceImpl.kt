@@ -248,7 +248,8 @@ open class HankeServiceImpl(
             kaistaPituusHaitta = hankealueEntity.kaistaPituusHaitta,
             meluHaitta = hankealueEntity.meluHaitta,
             polyHaitta = hankealueEntity.polyHaitta,
-            tarinaHaitta = hankealueEntity.tarinaHaitta
+            tarinaHaitta = hankealueEntity.tarinaHaitta,
+            nimi = hankealueEntity.nimi,
         )
     }
 
@@ -538,6 +539,7 @@ open class HankeServiceImpl(
             val saved = geometriatService.saveGeometriat(it)
             result.geometriat = saved?.id
         }
+        source.nimi?.let { result.nimi = source.nimi }
 
         return result
     }

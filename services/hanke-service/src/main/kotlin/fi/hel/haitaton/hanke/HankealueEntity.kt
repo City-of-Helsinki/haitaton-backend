@@ -30,6 +30,7 @@ class HankealueEntity : HasId<Int> {
     var meluHaitta: Haitta13? = null
     var polyHaitta: Haitta13? = null
     var tarinaHaitta: Haitta13? = null
+    var nimi: String? = null
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -46,6 +47,7 @@ class HankealueEntity : HasId<Int> {
         if (meluHaitta != other.meluHaitta) return false
         if (polyHaitta != other.polyHaitta) return false
         if (tarinaHaitta != other.tarinaHaitta) return false
+        if (nimi != other.nimi) return false
 
         return true
     }
@@ -60,6 +62,7 @@ class HankealueEntity : HasId<Int> {
         result = 31 * result + (meluHaitta?.hashCode() ?: 0)
         result = 31 * result + (polyHaitta?.hashCode() ?: 0)
         result = 31 * result + (tarinaHaitta?.hashCode() ?: 0)
+        result = 31 * result + (nimi?.hashCode() ?: 0)
         return result
     }
 }
