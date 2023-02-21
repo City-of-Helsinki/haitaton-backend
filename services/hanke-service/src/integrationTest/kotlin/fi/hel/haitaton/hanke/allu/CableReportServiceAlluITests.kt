@@ -89,17 +89,23 @@ class CableReportServiceAlluITests {
 
     @Nested
     inner class GetDecisionPdf {
+        private val pdfBytes =
+            "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
+
+        private fun pdfContent(): Buffer {
+            val buffer = Buffer()
+            buffer.write(pdfBytes)
+            return buffer
+        }
+
         @Test
         fun `returns PDF file as bytes`() {
             val stubbedBearer = addStubbedLoginResponse()
-            val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
-            val buffer = Buffer()
-            buffer.write(pdfBytes)
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(200)
                     .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
-                    .setBody(buffer)
+                    .setBody(pdfContent())
             )
 
             val response = service.getDecisionPdf(12)
@@ -119,7 +125,7 @@ class CableReportServiceAlluITests {
                 MockResponse()
                     .setResponseCode(404)
                     .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                    .setBody("Error message")
+                    .setBody("Not found")
             )
 
             val exception =
@@ -135,10 +141,36 @@ class CableReportServiceAlluITests {
                 MockResponse()
                     .setResponseCode(500)
                     .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                    .setBody("Error message")
+                    .setBody("Other error")
             )
 
             assertThrows<WebClientResponseException> { service.getDecisionPdf(12) }
+        }
+
+        @Test
+        fun `throws AlluApiException if the response does not have PDF Content-Type`() {
+            addStubbedLoginResponse()
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.IMAGE_PNG)
+                    .setBody(pdfContent())
+            )
+
+            assertThrows<AlluApiException> { service.getDecisionPdf(12) }
+        }
+
+        @Test
+        fun `throws AlluApiException if the response body is empty`() {
+            addStubbedLoginResponse()
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF)
+                    .setBody("")
+            )
+
+            assertThrows<AlluApiException> { service.getDecisionPdf(12) }
         }
     }
 
