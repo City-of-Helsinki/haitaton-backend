@@ -875,7 +875,7 @@ class HankeServiceITests : DatabaseTest() {
             .usingRecursiveComparison()
             .ignoringFields("modifiedAt", "modifiedBy", "version", "alueet")
             .isEqualTo(createdHanke)
-        assertThat(updateHankeResult.alueet.size).isEqualTo(1)
+        assertThat(updateHankeResult.alueet).hasSize(1)
         val resultAlue = updateHankeResult.alueet[0]
         assertThat(resultAlue)
             .usingRecursiveComparison()
@@ -885,7 +885,7 @@ class HankeServiceITests : DatabaseTest() {
             .usingRecursiveComparison()
             .ignoringFields("version", "modifiedByUserId", "modifiedAt")
             .isEqualTo(hankealue.geometriat)
-        assertEquals("Changed Name", resultAlue.nimi)
+        assertThat(resultAlue.nimi).isEqualTo("Changed Name")
     }
 
     @Test
