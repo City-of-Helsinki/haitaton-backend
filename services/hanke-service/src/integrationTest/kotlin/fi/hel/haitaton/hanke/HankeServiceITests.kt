@@ -215,6 +215,40 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
+    fun `createHanke sanitizes feature properties`() {
+        val hanke = getATestHanke().withHankealue()
+        hanke.alueet[0].geometriat?.featureCollection?.features?.forEach {
+            it.properties["something"] = "fishy"
+        }
+
+        val result = hankeService.createHanke(hanke)
+
+        assertFeaturePropertiesContainOnlyDesiredFields(
+            result,
+            mutableMapOf("hankeTunnus" to hanke.hankeTunnus)
+        )
+    }
+
+    @Test
+    fun `updateHanke sanitizes feature properties`() {
+        val hanke = getATestHanke().withHankealue()
+        val createdHanke = hankeService.createHanke(hanke)
+        val updatedHanke =
+            createdHanke.apply {
+                this.alueet[0].geometriat?.featureCollection?.features?.forEach {
+                    it.properties["something"] = "fishy"
+                }
+            }
+
+        val result = hankeService.updateHanke(updatedHanke)
+
+        assertFeaturePropertiesContainOnlyDesiredFields(
+            result,
+            mutableMapOf("hankeTunnus" to hanke.hankeTunnus)
+        )
+    }
+
+    @Test
     fun `updateHanke ignores the status field in the given hanke`() {
         // Setup Hanke (without any yhteystieto):
         val hanke = hankeService.createHanke(getATestHanke())
@@ -1222,6 +1256,21 @@ class HankeServiceITests : DatabaseTest() {
             target.objectAfter,
             JSONCompareMode.NON_EXTENSIBLE
         )
+    }
+
+    private fun assertFeaturePropertiesContainOnlyDesiredFields(
+        hanke: Hanke,
+        propertiesWanted: Map<String, Any?>
+    ) {
+        val alueet = hanke.alueet
+        assertThat(alueet.size).isEqualTo(2)
+        alueet.forEach { alue ->
+            val features = alue.geometriat?.featureCollection?.features
+            assertThat(features).isNotEmpty
+            features?.forEach { feature ->
+                assertThat(feature.properties).isEqualTo(propertiesWanted)
+            }
+        }
     }
 
     data class TemplateData(

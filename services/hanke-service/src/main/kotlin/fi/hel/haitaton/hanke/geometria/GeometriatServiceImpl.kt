@@ -74,7 +74,7 @@ open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) :
      */
     override fun loadGeometriat(hanke: Hanke): Geometriat? {
         val geometriat = hankeGeometriaDao.retrieveGeometriat(hanke.id!!)
-        geometriat?.includeHankeProperties(hanke)
+        geometriat?.sanitizeFeatureProperties(hanke)
         return geometriat
     }
 

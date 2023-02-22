@@ -287,7 +287,7 @@ open class HankeServiceImpl(
 
         hankeEntity.listOfHankeAlueet.forEach {
             val alue = createHankealueDomainObjectFromEntity(it)
-            alue.geometriat?.includeHankeProperties(h)
+            alue.geometriat?.sanitizeFeatureProperties(h)
             h.alueet.add(alue)
         }
 
@@ -535,7 +535,7 @@ open class HankeServiceImpl(
         source.tarinaHaitta?.let { result.tarinaHaitta = source.tarinaHaitta }
         source.geometriat?.let {
             it.id = result.geometriat ?: it.id
-            it.includeHankeProperties(hanke)
+            it.sanitizeFeatureProperties(hanke)
             val saved = geometriatService.saveGeometriat(it)
             result.geometriat = saved?.id
         }
