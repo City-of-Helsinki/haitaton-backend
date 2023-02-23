@@ -160,6 +160,18 @@ open class ApplicationService(
         applicationLoggingService.logDelete(application.toApplication(), userId)
     }
 
+    open fun downloadDecision(applicationId: Long, userId: String): Pair<String, ByteArray> {
+        val application = getApplicationById(applicationId, userId)
+        val alluid =
+            application.alluid
+                ?: throw ApplicationDecisionNotFoundException(
+                    "Application not in Allu, so it doesn't have a decision. id=${application.id}"
+                )
+        val filename = application.applicationIdentifier ?: "paatos"
+        val pdfBytes = cableReportService.getDecisionPdf(alluid)
+        return Pair(filename, pdfBytes)
+    }
+
     /** Cancel an application that's been sent to Allu. */
     private fun cancelApplication(alluid: Int, id: Long?) {
         if (isStillPending(alluid)) {
@@ -326,6 +338,8 @@ class ApplicationAlreadyProcessingException(id: Long?, alluid: Int?) :
     RuntimeException("Application is no longer pending in Allu, id=$id, alluid=$alluid")
 
 class ApplicationGeometryException(message: String) : RuntimeException(message)
+
+class ApplicationDecisionNotFoundException(message: String) : RuntimeException(message)
 
 @Repository
 interface ApplicationRepository : JpaRepository<ApplicationEntity, Long> {

@@ -1,15 +1,22 @@
 package fi.hel.haitaton.hanke.allu
 
+import assertk.Assert
 import assertk.assertThat
 import assertk.assertions.hasClass
+import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFailure
 import assertk.assertions.isNull
+import assertk.assertions.prop
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
+import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
+import fi.hel.haitaton.hanke.getResourceAsBytes
 import java.time.ZonedDateTime
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
+import okio.Buffer
 import org.geojson.Crs
 import org.geojson.GeometryCollection
 import org.geojson.LngLatAlt
@@ -40,35 +47,28 @@ class CableReportServiceAlluITests {
     @Test
     fun testCreate() {
         val stubbedBearer = addStubbedLoginResponse()
-
         val stubbedApplicationId = 1337
         val applicationIdResponse =
             MockResponse()
                 .setResponseCode(200)
                 .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .setBody(stubbedApplicationId.toString())
-
         mockWebServer.enqueue(applicationIdResponse)
-
         val application = getTestApplication()
+
         val actualApplicationId = service.create(application)
+
         assertThat(actualApplicationId).isEqualTo(stubbedApplicationId)
-
-        val loginRequest = mockWebServer.takeRequest()
-        assertThat(loginRequest.method).isEqualTo("POST")
-        assertThat(loginRequest.path).isEqualTo("/v2/login")
-
+        assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
         val request = mockWebServer.takeRequest()
-
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.path).isEqualTo("/v2/cablereports")
-        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer " + stubbedBearer)
+        assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
     }
 
     @Test
     fun testCreateErrorHandling() {
         val stubbedBearer = addStubbedLoginResponse()
-
         val applicationIdResponse =
             MockResponse()
                 .setResponseCode(400)
@@ -80,15 +80,98 @@ class CableReportServiceAlluITests {
 
         assertThrows<WebClientResponseException.BadRequest> { service.create(getTestApplication()) }
 
-        val loginRequest = mockWebServer.takeRequest()
-        assertThat(loginRequest.method).isEqualTo("POST")
-        assertThat(loginRequest.path).isEqualTo("/v2/login")
-        assertThat(loginRequest.getHeader("Authorization")).isNull()
-
+        assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
         val createRequest = mockWebServer.takeRequest()
         assertThat(createRequest.method).isEqualTo("POST")
         assertThat(createRequest.path).isEqualTo("/v2/cablereports")
-        assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer " + stubbedBearer)
+        assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
+    }
+
+    @Nested
+    inner class GetDecisionPdf {
+        private val pdfBytes =
+            "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
+
+        private fun pdfContent(): Buffer {
+            val buffer = Buffer()
+            buffer.write(pdfBytes)
+            return buffer
+        }
+
+        @Test
+        fun `returns PDF file as bytes`() {
+            val stubbedBearer = addStubbedLoginResponse()
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
+                    .setBody(pdfContent())
+            )
+
+            val response = service.getDecisionPdf(12)
+
+            assertThat(response).isEqualTo(pdfBytes)
+            assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
+            val createRequest = mockWebServer.takeRequest()
+            assertThat(createRequest.method).isEqualTo("GET")
+            assertThat(createRequest.path).isEqualTo("/v2/cablereports/12/decision")
+            assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
+        }
+
+        @Test
+        fun `throws ApplicationDecisionNotFoundException on 404`() {
+            addStubbedLoginResponse()
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(404)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .setBody("Not found")
+            )
+
+            val exception =
+                assertThrows<ApplicationDecisionNotFoundException> { service.getDecisionPdf(12) }
+
+            assertThat(exception).hasMessage("Decision not found in Allu. alluid=12")
+        }
+
+        @Test
+        fun `throws WebClientResponseException on other error codes`() {
+            addStubbedLoginResponse()
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(500)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .setBody("Other error")
+            )
+
+            assertThrows<WebClientResponseException> { service.getDecisionPdf(12) }
+        }
+
+        @Test
+        fun `throws AlluApiException if the response does not have PDF Content-Type`() {
+            addStubbedLoginResponse()
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.IMAGE_PNG)
+                    .setBody(pdfContent())
+            )
+
+            assertThrows<AlluApiException> { service.getDecisionPdf(12) }
+        }
+
+        @Test
+        fun `throws AlluApiException if the response body is empty`() {
+            addStubbedLoginResponse()
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF)
+                    .setBody("")
+            )
+
+            assertThrows<AlluApiException> { service.getDecisionPdf(12) }
+        }
     }
 
     @Nested
@@ -109,10 +192,7 @@ class CableReportServiceAlluITests {
             val response = service.getApplicationStatusHistories(alluids, eventsAfter)
 
             assertThat(response).isEqualTo(histories)
-            val loginRequest = mockWebServer.takeRequest()
-            assertThat(loginRequest.method).isEqualTo("POST")
-            assertThat(loginRequest.path).isEqualTo("/v2/login")
-            assertThat(loginRequest.getHeader("Authorization")).isNull()
+            assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
             val createRequest = mockWebServer.takeRequest()
             assertThat(createRequest.method).isEqualTo("POST")
             assertThat(createRequest.path).isEqualTo("/v2/applicationhistory")
@@ -140,19 +220,24 @@ class CableReportServiceAlluITests {
         fun `throws error on bad status`() {
             val alluids = listOf(12, 13)
             val eventsAfter = ZonedDateTime.parse("2022-10-10T15:25:34.981654Z")
-            val histories = listOf(ApplicationHistoryFactory.create(applicationId = 12))
             addStubbedLoginResponse()
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(404)
                     .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
-                    .setBody(OBJECT_MAPPER.writeValueAsString(histories))
+                    .setBody("Error message")
             )
 
             assertThat { service.getApplicationStatusHistories(alluids, eventsAfter) }
                 .isFailure()
                 .hasClass(WebClientResponseException.NotFound::class)
         }
+    }
+
+    fun Assert<RecordedRequest>.isValidLoginRequest() = given { loginRequest ->
+        prop(RecordedRequest::method).isEqualTo("POST")
+        prop(RecordedRequest::path).isEqualTo("/v2/login")
+        prop("Authorization header") { loginRequest.getHeader("Authorization") }.isNull()
     }
 
     private fun addStubbedLoginResponse(): String {

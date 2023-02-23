@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.allu
 
+import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import java.time.ZonedDateTime
 import mu.KotlinLogging
 import org.springframework.core.io.ByteArrayResource
@@ -204,21 +205,42 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
-    override fun getDecisionPDF(applicationId: Int): ByteArray {
+    override fun getDecisionPdf(applicationId: Int): ByteArray {
         val token = login()!!
-        return webClient
-            .get()
-            .uri("$baseUrl/v2/cablereports/$applicationId/decision", applicationId)
-            .accept(MediaType.APPLICATION_PDF)
-            .headers { it.setBearerAuth(token) }
-            .exchange()
-            .doOnError(WebClientResponseException::class.java) {
-                logError("Error getting decision PDF from Allu", it)
-            }
-            .flatMap { it.bodyToMono(ByteArrayResource::class.java) }
-            .map { it.byteArray }
-            .blockOptional()
-            .orElseThrow()
+        val requestUri = "$baseUrl/v2/cablereports/$applicationId/decision"
+        val response =
+            webClient
+                .get()
+                .uri(requestUri)
+                .accept(MediaType.APPLICATION_PDF)
+                .headers { it.setBearerAuth(token) }
+                .retrieve()
+                .onStatus(
+                    { httpStatus -> httpStatus.value() == 404 },
+                    {
+                        Mono.error(
+                            ApplicationDecisionNotFoundException(
+                                "Decision not found in Allu. alluid=$applicationId"
+                            )
+                        )
+                    }
+                )
+                .toEntity(ByteArrayResource::class.java)
+                .doOnError(WebClientResponseException::class.java) {
+                    logError("Error getting decision PDF from Allu", it)
+                }
+                .blockOptional()
+                .orElseThrow()
+
+        if (response.headers.contentType != MediaType.APPLICATION_PDF) {
+            throw AlluApiException(
+                requestUri,
+                "Decision API didn't return a PDF. RequestContent-Type header: ${response.headers.contentType}"
+            )
+        }
+        val body =
+            response.body ?: throw AlluApiException(requestUri, "Decision API returned empty body")
+        return body.byteArray
     }
 
     override fun getDecisionAttachments(applicationId: Int): List<AttachmentInfo> {
@@ -269,6 +291,10 @@ data class LoginInfo(val username: String, val password: String)
 class AlluException(val errors: List<ErrorInfo>) : RuntimeException()
 
 class AlluLoginException(cause: Throwable) : RuntimeException(cause)
+
+/** Exception to use when Allu doesn't follow their API descriptions. */
+class AlluApiException(requestUri: String, message: String) :
+    RuntimeException("$message, request URI: $requestUri")
 
 data class ErrorInfo(val errorMessage: String, val additionalInfo: String)
 
