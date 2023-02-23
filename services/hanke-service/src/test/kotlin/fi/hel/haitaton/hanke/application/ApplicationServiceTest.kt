@@ -137,15 +137,16 @@ class ApplicationServiceTest {
         every { cableReportService.getApplicationInformation(42) } returns
             AlluDataFactory.createAlluApplicationResponse(42)
         every { geometriatDao.validateGeometria(any()) } returns null
+        val updatedData = applicationData.copy(rockExcavation = !applicationData.rockExcavation!!)
 
-        service.updateApplicationData(3, applicationData, username)
+        service.updateApplicationData(3, updatedData, username)
 
         verifyOrder {
             applicationRepo.findOneByIdAndUserId(3, username)
             geometriatDao.validateGeometria(any())
             cableReportService.getApplicationInformation(42)
             cableReportService.update(42, any())
-            disclosureLogService.saveDisclosureLogsForAllu(applicationData, Status.SUCCESS)
+            disclosureLogService.saveDisclosureLogsForAllu(updatedData, Status.SUCCESS)
             applicationRepo.save(applicationEntity)
             applicationLoggingService.logUpdate(any(), any(), username)
         }
@@ -166,10 +167,11 @@ class ApplicationServiceTest {
                 "Self-intersection",
                 """{"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
             )
+        val updatedData = applicationData.copy(rockExcavation = !applicationData.rockExcavation!!)
 
         val exception =
             assertThrows<ApplicationGeometryException> {
-                service.updateApplicationData(3, applicationData, username)
+                service.updateApplicationData(3, updatedData, username)
             }
 
         assertThat(exception)

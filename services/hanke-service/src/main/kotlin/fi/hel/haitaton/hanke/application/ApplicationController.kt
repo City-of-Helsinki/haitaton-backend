@@ -73,7 +73,7 @@ class ApplicationController(
     @Operation(
         summary = "Create a new application",
         description =
-            "Creates a new application. The new application is created as a draft, " +
+            "Returns the created application. The new application is created as a draft, " +
                 "i.e. with true in pendingOnClient. The draft is not sent to Allu."
     )
     @ApiResponses(
@@ -98,12 +98,13 @@ class ApplicationController(
     @Operation(
         summary = "Update an application",
         description =
-            "Updates an application. The application can be updated until it has started " +
-                "processing on Allu, i.e. it's still pending. If the application has been " +
-                "sent to Allu, it will be updated there as well. If an Allu-update is " +
-                "required, but it fails, the local version will not be updated. The " +
-                "pendingOnClient value can't be changed with this endpoint. Use POST " +
-                "/hakemukset/{id}/send-application for that."
+            """Returns the updated application.
+               The application can be updated until it has started processing in Allu, i.e. it's still pending.
+               If the application hasn't changed since the last update, nothing more is done.
+               If the application has been sent to Allu, it will be updated there as well.
+               If an Allu-update is required, but it fails, the local version will not be updated.
+               The pendingOnClient value can't be changed with this endpoint. Use POST /hakemukset/{id}/send-application for that.
+            """
     )
     @ApiResponses(
         value =
@@ -174,10 +175,12 @@ class ApplicationController(
     @Operation(
         summary = "Send an application to Allu",
         description =
-            "Sends an application to Allu. Sets the pendingOnClient value of the application to false. " +
-                "This means the application is no longer a draft. A clerk at Allu can start " +
-                "processing the application after this call. The application can still be updated " +
-                "after this call, up until a clerk has started to process the application."
+            """Returns the application with updated status fields.
+               Sets the pendingOnClient value of the application to false. This means the application is no longer a draft.
+               A clerk at Allu can start processing the application after this call.
+               The application can still be updated after this call, up until a clerk has started to process the application.
+               Updating should be done with the update endpoint, calling this endpoint multiple times does nothing.
+            """
     )
     @ApiResponses(
         value =
