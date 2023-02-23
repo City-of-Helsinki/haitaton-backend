@@ -166,11 +166,8 @@ class ApplicationServiceITest : DatabaseTest() {
     @Test
     fun `updateApplicationData doesn't create an audit log entry if the application hasn't changed`() {
         TestUtils.addMockedRequestIp()
-        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = 2 }
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = null }
         assertThat(auditLogRepository.findAll()).isEmpty()
-        every { cableReportServiceAllu.getApplicationInformation(2) } returns
-            AlluDataFactory.createAlluApplicationResponse(2, ApplicationStatus.PENDING_CLIENT)
-        justRun { cableReportServiceAllu.update(any(), any()) }
 
         applicationService.updateApplicationData(
             application.id!!,
@@ -180,10 +177,22 @@ class ApplicationServiceITest : DatabaseTest() {
 
         val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
         assertThat(applicationLogs).isEmpty()
-        verifyOrder {
-            cableReportServiceAllu.getApplicationInformation(2)
-            cableReportServiceAllu.update(2, any())
-        }
+        verify { cableReportServiceAllu wasNot Called }
+    }
+
+    @Test
+    fun `updateApplicationData doesn't send application to Allu if it hasn't changed`() {
+        TestUtils.addMockedRequestIp()
+        val application = alluDataFactory.saveApplicationEntity(username) { it.alluid = 2 }
+        assertThat(auditLogRepository.findAll()).isEmpty()
+
+        applicationService.updateApplicationData(
+            application.id!!,
+            application.applicationData,
+            username
+        )
+
+        verify { cableReportServiceAllu wasNot Called }
     }
 
     @Test
@@ -631,38 +640,6 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `sendApplication sends pending application to Allu and sets application identifier and status`() {
-        val application =
-            alluDataFactory.saveApplicationEntity(username) {
-                it.alluid = 21
-                it.applicationData = it.applicationData.copy(pendingOnClient = false)
-            }
-        val applicationData =
-            application.applicationData.toAlluData() as AlluCableReportApplicationData
-        every { cableReportServiceAllu.getApplicationInformation(21) } returns
-            AlluDataFactory.createAlluApplicationResponse(21)
-        justRun { cableReportServiceAllu.update(21, applicationData) }
-        every { cableReportServiceAllu.getApplicationInformation(21) } returns
-            AlluDataFactory.createAlluApplicationResponse(21, ApplicationStatus.PENDING)
-
-        val response = applicationService.sendApplication(application.id!!, username)
-
-        assertEquals(ApplicationStatus.PENDING, response.alluStatus)
-        assertEquals(AlluDataFactory.defaultApplicationIdentifier, response.applicationIdentifier)
-        val savedApplication = applicationRepository.findById(application.id!!).get()
-        assertEquals(ApplicationStatus.PENDING, savedApplication.alluStatus)
-        assertEquals(
-            AlluDataFactory.defaultApplicationIdentifier,
-            savedApplication.applicationIdentifier
-        )
-        verifyOrder {
-            cableReportServiceAllu.getApplicationInformation(21)
-            cableReportServiceAllu.update(21, applicationData)
-            cableReportServiceAllu.getApplicationInformation(21)
-        }
-    }
-
-    @Test
     fun `sendApplication sets pendingOnClient to false`() {
         val application =
             alluDataFactory.saveApplicationEntity(username) {
@@ -721,6 +698,22 @@ class ApplicationServiceITest : DatabaseTest() {
             cableReportServiceAllu.create(pendingApplicationData.toAlluData())
             cableReportServiceAllu.getApplicationInformation(26)
         }
+    }
+
+    @Test
+    fun `sendApplication with application that's been sent before is not sent again`() {
+        val application =
+            alluDataFactory.saveApplicationEntity(username) {
+                it.alluid = 21
+                it.applicationData = it.applicationData.copy(pendingOnClient = false)
+            }
+        every { cableReportServiceAllu.getApplicationInformation(21) } returns
+            AlluDataFactory.createAlluApplicationResponse(21, ApplicationStatus.PENDING)
+
+        applicationService.sendApplication(application.id!!, username)
+
+        verify { cableReportServiceAllu.getApplicationInformation(21) }
+        verify(exactly = 0) { cableReportServiceAllu.update(any(), any()) }
     }
 
     @Test

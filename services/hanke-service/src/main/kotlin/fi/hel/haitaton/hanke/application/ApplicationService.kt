@@ -74,6 +74,14 @@ open class ApplicationService(
         val applicationBefore = application.toApplication()
         logger.info("Updating application id=$id, alluid=${application.alluid}")
 
+        if (applicationBefore.applicationData == newApplicationData) {
+            logger.info {
+                "Not updating unchanged application data. id=$id, " +
+                    "alluid=${application.alluid}, identifier=${application.applicationIdentifier}"
+            }
+            return applicationBefore
+        }
+
         when (application.applicationData) {
             is CableReportApplicationData ->
                 if (newApplicationData !is CableReportApplicationData) {
@@ -110,10 +118,21 @@ open class ApplicationService(
 
     open fun sendApplication(id: Long, userId: String): Application {
         val application = getById(id, userId)
+
         logger.info("Sending application id=$id, alluid=${application.alluid}")
         if (!isStillPending(application.alluid)) {
             throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
+
+        if (application.alluid != null && !application.applicationData.pendingOnClient) {
+            // Re-sending is done with update, this should only be used for initial send to Allu.
+            logger.info {
+                "Not re-sending application that was already sent. id=$id, " +
+                    "alluid=${application.alluid}, identifier=${application.applicationIdentifier}"
+            }
+            return application.toApplication()
+        }
+
         // The application should no longer be a draft
         application.applicationData = application.applicationData.copy(pendingOnClient = false)
         application.alluid = sendApplicationToAllu(application.alluid, application.applicationData)
