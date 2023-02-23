@@ -30,6 +30,7 @@ enum class HankeError(val errorMessage: String) {
     HAI2003("Application is already processing in Allu and can no longer be updated."),
     HAI2004("Application data missing information needed by Allu."),
     HAI2005("Invalid application geometry"),
+    HAI2006("Application decision not found"),
     ;
 
     val errorCode: String
