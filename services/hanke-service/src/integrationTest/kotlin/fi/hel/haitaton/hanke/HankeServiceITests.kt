@@ -223,10 +223,7 @@ class HankeServiceITests : DatabaseTest() {
 
         val result = hankeService.createHanke(hanke)
 
-        assertFeaturePropertiesIsReset(
-            result,
-            mutableMapOf("hankeTunnus" to hanke.hankeTunnus)
-        )
+        assertFeaturePropertiesIsReset(result, mutableMapOf("hankeTunnus" to hanke.hankeTunnus))
     }
 
     @Test
@@ -242,10 +239,7 @@ class HankeServiceITests : DatabaseTest() {
 
         val result = hankeService.updateHanke(updatedHanke)
 
-        assertFeaturePropertiesIsReset(
-            result,
-            mutableMapOf("hankeTunnus" to hanke.hankeTunnus)
-        )
+        assertFeaturePropertiesIsReset(result, mutableMapOf("hankeTunnus" to hanke.hankeTunnus))
     }
 
     @Test
@@ -1258,10 +1252,7 @@ class HankeServiceITests : DatabaseTest() {
         )
     }
 
-    private fun assertFeaturePropertiesIsReset(
-        hanke: Hanke,
-        propertiesWanted: Map<String, Any?>
-    ) {
+    private fun assertFeaturePropertiesIsReset(hanke: Hanke, propertiesWanted: Map<String, Any?>) {
         assertThat(hanke.alueet).isNotEmpty
         hanke.alueet.forEach { alue ->
             val features = alue.geometriat?.featureCollection?.features
