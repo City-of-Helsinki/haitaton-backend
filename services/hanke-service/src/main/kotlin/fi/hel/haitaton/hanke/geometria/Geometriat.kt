@@ -22,14 +22,10 @@ data class Geometriat(
         return this
     }
 
-    fun includeHankeProperties(hanke: Hanke) {
+    fun resetFeatureProperties(hanke: Hanke) {
         this.featureCollection?.let { featureCollection ->
             featureCollection.features.forEach { feature ->
-                if (feature.properties == null) {
-                    feature.properties = mutableMapOf()
-                }
-                feature.properties["hankeTunnus"] = hanke.hankeTunnus
-                // Add here other properties when needed
+                feature.properties = mutableMapOf<String, Any?>("hankeTunnus" to hanke.hankeTunnus)
             }
         }
     }
