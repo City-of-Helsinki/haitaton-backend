@@ -338,5 +338,4 @@ internal class DisclosureLogServiceTest {
 
     private infix fun <T> List<T>.equalsIgnoreOrder(other: List<T>): Boolean =
         this.size == other.size && this.toSet() == other.toSet()
-
 }

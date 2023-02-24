@@ -91,7 +91,12 @@ class ApplicationServiceTest {
     @Test
     fun create() {
         val hankeTunnus = "HAI-1234"
-        val dto = AlluDataFactory.createApplication(id = null, applicationData = applicationData, hankeTunnus = hankeTunnus)
+        val dto =
+            AlluDataFactory.createApplication(
+                id = null,
+                applicationData = applicationData,
+                hankeTunnus = hankeTunnus
+            )
         every { applicationRepo.save(any()) } answers
             {
                 val application: ApplicationEntity = firstArg()

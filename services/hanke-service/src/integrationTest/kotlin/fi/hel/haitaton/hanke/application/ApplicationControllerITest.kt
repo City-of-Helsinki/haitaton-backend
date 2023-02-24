@@ -3,8 +3,8 @@ package fi.hel.haitaton.hanke.application
 import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.*
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.getResourceAsBytes
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
 import io.mockk.clearAllMocks

@@ -54,9 +54,10 @@ open class ApplicationService(
         }
 
         val hanke =
-                hankeRepository.findByHankeTunnus(
-                        application.hankeTunnus ?: throw HankeNotFoundException("")
-                ) ?: throw HankeNotFoundException(application.hankeTunnus)
+            hankeRepository.findByHankeTunnus(
+                application.hankeTunnus ?: throw HankeNotFoundException("")
+            )
+                ?: throw HankeNotFoundException(application.hankeTunnus)
 
         val applicationEntity =
             ApplicationEntity(
