@@ -22,7 +22,7 @@ data class Geometriat(
         return this
     }
 
-    fun ensureOnlyRequiredFeatureProperties(hanke: Hanke) {
+    fun resetFeatureProperties(hanke: Hanke) {
         this.featureCollection?.let { featureCollection ->
             featureCollection.features.forEach { feature ->
                 feature.properties = mutableMapOf<String, Any?>("hankeTunnus" to hanke.hankeTunnus)
