@@ -18,7 +18,6 @@ import java.io.ByteArrayOutputStream
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import org.springframework.stereotype.Service
 
 /**
  * Transform an application to a PDF. The PDF is added as an attachment when sending the application
