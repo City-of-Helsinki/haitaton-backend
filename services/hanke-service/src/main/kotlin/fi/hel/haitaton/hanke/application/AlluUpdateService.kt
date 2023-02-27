@@ -21,7 +21,7 @@ class AlluUpdateService(
 
     internal val lockName = "alluHistoryUpdate"
 
-    @Scheduled(fixedDelay = 1000 * 60, initialDelay = 1000000 * 60)
+    @Scheduled(fixedDelay = 1000 * 60, initialDelay = 1000 * 60)
     fun checkApplicationStatuses() {
         logger.info("Trying to obtain lock $lockName to start uploading audit logs.")
         lockService.doIfUnlocked(lockName) { getApplicationStatuses() }

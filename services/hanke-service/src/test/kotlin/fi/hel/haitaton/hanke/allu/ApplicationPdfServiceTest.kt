@@ -10,7 +10,6 @@ import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createPostalAddress
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
-import java.io.File
 import java.time.ZonedDateTime
 import org.geojson.Polygon
 import org.junit.jupiter.api.Nested
@@ -325,7 +324,6 @@ internal class ApplicationPdfServiceTest {
         val reader = PdfReader(pdfData)
         val pages = reader.numberOfPages
         val textExtractor = PdfTextExtractor(reader)
-        File("pdfTest.pdf").writeBytes(pdfData)
         return (1..pages).joinToString("\n") { textExtractor.getTextFromPage(it) }
     }
 }

@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service
  * to Allu. It will be archived along the application and decision to show how the user inputted the
  * application in Haitaton, as the data models of Haitaton and Allu differ slightly.
  */
-@Service
 object ApplicationPdfService {
     private val titleFont = Font(Font.HELVETICA, 18f, Font.BOLD)
     private val sectionFont = Font(Font.HELVETICA, 15f, Font.BOLD)
