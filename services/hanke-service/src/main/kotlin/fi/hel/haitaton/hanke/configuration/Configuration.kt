@@ -65,7 +65,7 @@ class Configuration {
     private fun createInsecureTrustingWebClient(webClientBuilder: WebClient.Builder): WebClient {
         val sslContext =
             SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build()
-        val httpClient = HttpClient.create().wiretap(true).secure { t -> t.sslContext(sslContext) }
+        val httpClient = HttpClient.create().secure { t -> t.sslContext(sslContext) }
         return webClientBuilder.clientConnector(ReactorClientHttpConnector(httpClient)).build()
     }
 
