@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.mutate
@@ -178,9 +179,9 @@ internal class DisclosureLogServiceTest {
     @Test
     fun `saveDisclosureLogsForApplication with company customers and no contacts does nothing`() {
         val customerWithoutContacts =
-            CustomerWithContacts(AlluDataFactory.createCompanyCustomer(name = "First"), listOf())
+            AlluDataFactory.createCompanyCustomer(name = "First").withContacts()
         val contractorWithoutContacts =
-            CustomerWithContacts(AlluDataFactory.createCompanyCustomer(name = "Second"), listOf())
+            AlluDataFactory.createCompanyCustomer(name = "Second").withContacts()
         val application =
             AlluDataFactory.createApplication(
                 applicationData =
@@ -198,12 +199,10 @@ internal class DisclosureLogServiceTest {
     @Test
     fun `saveDisclosureLogsForApplication doesn't save entries for blank contacts`() {
         val customerWithoutContacts =
-            CustomerWithContacts(AlluDataFactory.createCompanyCustomer(name = "First"), listOf())
+            AlluDataFactory.createCompanyCustomer(name = "First").withContacts()
         val contractorWithoutContacts =
-            CustomerWithContacts(
-                AlluDataFactory.createCompanyCustomer(name = "Second"),
-                listOf(Contact("", PostalAddress(StreetAddress(""), "", ""), "", ""))
-            )
+            AlluDataFactory.createCompanyCustomer(name = "Second")
+                .withContacts(Contact("", PostalAddress(StreetAddress(""), "", ""), "", ""))
         val application =
             AlluDataFactory.createApplication(
                 applicationData =

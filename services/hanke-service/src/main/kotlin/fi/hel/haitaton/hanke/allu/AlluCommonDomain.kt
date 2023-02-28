@@ -51,8 +51,8 @@ enum class CustomerType {
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class AttachmentInfo(
-    val id: Int,
+data class AttachmentMetadata(
+    val id: Int?,
     val mimeType: String,
     val name: String,
     val description: String

@@ -4,17 +4,22 @@ import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationHistory
+import fi.hel.haitaton.hanke.allu.ApplicationPdfService
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.Attachment
+import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import kotlin.reflect.KClass
 import mu.KotlinLogging
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
 
@@ -293,9 +298,29 @@ open class ApplicationService(
         cableReportApplicationData: CableReportApplicationData
     ): Int {
         val alluData = cableReportApplicationData.toAlluData()
-        return withDisclosureLogging(cableReportApplicationData) {
-            cableReportService.create(alluData)
-        }
+        val attachment = getApplicationDataAsPdf(cableReportApplicationData)
+
+        val alluid =
+            withDisclosureLogging(cableReportApplicationData) {
+                cableReportService.create(alluData)
+            }
+
+        cableReportService.addAttachment(alluid, attachment)
+        return alluid
+    }
+
+    private fun getApplicationDataAsPdf(data: CableReportApplicationData): Attachment {
+        val totalArea = geometriatDao.calculateArea(data.geometry!!)
+        val areas = data.areas?.map { geometriatDao.calculateArea(it.geometry) } ?: listOf()
+        val attachmentMetadata =
+            AttachmentMetadata(
+                id = null,
+                mimeType = MediaType.APPLICATION_PDF_VALUE,
+                name = "haitaton-form-data.pdf",
+                description = "Original form data from Haitaton, dated ${LocalDateTime.now()}.",
+            )
+        val pdfData = ApplicationPdfService.createPdf(data, totalArea, areas)
+        return Attachment(attachmentMetadata, pdfData)
     }
 
     private fun updateCableReportInAllu(
@@ -303,9 +328,13 @@ open class ApplicationService(
         cableReportApplicationData: CableReportApplicationData
     ) {
         val alluData = cableReportApplicationData.toAlluData()
+        val attachment = getApplicationDataAsPdf(cableReportApplicationData)
+
         withDisclosureLogging(cableReportApplicationData) {
             cableReportService.update(alluId, alluData)
         }
+
+        cableReportService.addAttachment(alluId, attachment)
     }
 
     /**
