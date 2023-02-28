@@ -15,6 +15,8 @@ import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
+import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import kotlin.reflect.KClass
@@ -30,20 +32,25 @@ private val logger = KotlinLogging.logger {}
 const val ALLU_APPLICATION_ERROR_MSG = "Error sending application to Allu"
 
 open class ApplicationService(
-    private val repo: ApplicationRepository,
+    private val applicationRepository: ApplicationRepository,
     private val alluStatusRepository: AlluStatusRepository,
     private val cableReportService: CableReportService,
     private val disclosureLogService: DisclosureLogService,
     private val applicationLoggingService: ApplicationLoggingService,
     private val geometriatDao: GeometriatDao,
+    private val permissionService: PermissionService,
     private val hankeRepository: HankeRepository,
 ) {
+    @Transactional
     open fun getAllApplicationsForUser(userId: String): List<Application> {
-        return repo.getAllByUserId(userId).map { it.toApplication() }
+        val result = applicationRepository.getAllByUserId(userId).toMutableSet()
+        val hankkeet =
+            permissionService.getAllowedHankeIds(userId = userId, permission = PermissionCode.VIEW)
+        hankkeet.forEach { result.addAll(hankeRepository.getOne(it).hakemukset) }
+        return result.map { it.toApplication() }
     }
 
-    open fun getApplicationById(id: Long, userId: String): Application =
-        getById(id, userId).toApplication()
+    open fun getApplicationById(id: Long): Application = getById(id).toApplication()
 
     @Transactional
     open fun create(application: Application, userId: String): Application {
@@ -54,9 +61,7 @@ open class ApplicationService(
         }
 
         val hanke =
-            hankeRepository.findByHankeTunnus(
-                application.hankeTunnus ?: throw HankeNotFoundException("")
-            )
+            hankeRepository.findByHankeTunnus(application.hankeTunnus)
                 ?: throw HankeNotFoundException(application.hankeTunnus)
 
         val applicationEntity =
@@ -73,7 +78,9 @@ open class ApplicationService(
                 hanke = hanke,
             )
 
-        val savedApplication = repo.save(applicationEntity).toApplication()
+        val savedApplicationEntity = applicationRepository.save(applicationEntity)
+        hanke.hakemukset.add(savedApplicationEntity)
+        val savedApplication = savedApplicationEntity.toApplication()
         logger.info { "Created a new application with id ${savedApplication.id} for user $userId" }
         applicationLoggingService.logCreate(savedApplication, userId)
         return savedApplication
@@ -85,7 +92,7 @@ open class ApplicationService(
         newApplicationData: ApplicationData,
         userId: String,
     ): Application {
-        val application = getById(id, userId)
+        val application = getById(id)
         val applicationBefore = application.toApplication()
         logger.info("Updating application id=$id, alluid=${application.alluid}")
 
@@ -125,14 +132,14 @@ open class ApplicationService(
             updateApplicationInAllu(application.alluid!!, application.applicationData)
         }
 
-        val updatedApplication = repo.save(application).toApplication()
+        val updatedApplication = applicationRepository.save(application).toApplication()
         logger.info("Updated application id=$id, alluid=${updatedApplication.alluid}")
         applicationLoggingService.logUpdate(applicationBefore, updatedApplication, userId)
         return updatedApplication
     }
 
     open fun sendApplication(id: Long, userId: String): Application {
-        val application = getById(id, userId)
+        val application = getById(id)
 
         logger.info("Sending application id=$id, alluid=${application.alluid}")
         if (!isStillPending(application.alluid)) {
@@ -157,7 +164,7 @@ open class ApplicationService(
         }
         logger.info("Sent application id=$id, alluid=${application.alluid}")
         // Save only if sendApplicationToAllu didn't throw an exception
-        return repo.save(application).toApplication()
+        return applicationRepository.save(application).toApplication()
     }
 
     @Transactional
@@ -177,7 +184,7 @@ open class ApplicationService(
      */
     @Transactional
     open fun delete(id: Long, userId: String) {
-        val application = getById(id, userId)
+        val application = getById(id)
         val alluid = application.alluid
         logger.info { "Deleting application, id=$id, alluid=$alluid userid=$userId" }
 
@@ -189,13 +196,13 @@ open class ApplicationService(
             }
             cancelApplication(alluid, application.id)
         }
-        repo.deleteById(id)
+        applicationRepository.deleteById(id)
         logger.info { "Application deleted, id=$id, alluid=$alluid userid=$userId" }
         applicationLoggingService.logDelete(application.toApplication(), userId)
     }
 
     open fun downloadDecision(applicationId: Long, userId: String): Pair<String, ByteArray> {
-        val application = getApplicationById(applicationId, userId)
+        val application = getApplicationById(applicationId)
         val alluid =
             application.alluid
                 ?: throw ApplicationDecisionNotFoundException(
@@ -237,7 +244,7 @@ open class ApplicationService(
     }
 
     private fun handleApplicationUpdate(applicationHistory: ApplicationHistory) {
-        val application = repo.getOneByAlluid(applicationHistory.applicationId)
+        val application = applicationRepository.getOneByAlluid(applicationHistory.applicationId)
         if (application == null) {
             logger.error {
                 "Allu had events for an application we don't have anymore. alluid=${applicationHistory.applicationId}"
@@ -258,11 +265,11 @@ open class ApplicationService(
                         "event time=${event.eventTime}"
                 }
             }
-        repo.save(application)
+        applicationRepository.save(application)
     }
 
-    private fun getById(id: Long, userId: String): ApplicationEntity {
-        return repo.findOneByIdAndUserId(id, userId) ?: throw ApplicationNotFoundException(id)
+    private fun getById(id: Long): ApplicationEntity {
+        return applicationRepository.findOneById(id) ?: throw ApplicationNotFoundException(id)
     }
 
     private fun isStillPending(alluid: Int?): Boolean {
@@ -403,6 +410,8 @@ class ApplicationDecisionNotFoundException(message: String) : RuntimeException(m
 @Repository
 interface ApplicationRepository : JpaRepository<ApplicationEntity, Long> {
     fun findOneByIdAndUserId(id: Long, userId: String): ApplicationEntity?
+
+    fun findOneById(id: Long): ApplicationEntity?
 
     fun getAllByUserId(userId: String): List<ApplicationEntity>
 

@@ -4,7 +4,18 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.*
+import fi.hel.haitaton.hanke.application.Application
+import fi.hel.haitaton.hanke.application.ApplicationArea
+import fi.hel.haitaton.hanke.application.ApplicationData
+import fi.hel.haitaton.hanke.application.ApplicationEntity
+import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.application.Contact
+import fi.hel.haitaton.hanke.application.Customer
+import fi.hel.haitaton.hanke.application.CustomerWithContacts
+import fi.hel.haitaton.hanke.application.PostalAddress
+import fi.hel.haitaton.hanke.application.StreetAddress
 import java.time.ZonedDateTime
 import org.geojson.GeometryCollection
 import org.springframework.stereotype.Component
@@ -128,7 +139,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             applicationIdentifier: String? = null,
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
             applicationData: CableReportApplicationData = createCableReportApplicationData(),
-            hankeTunnus: String? = null,
+            hankeTunnus: String = "HAI-1234",
         ): Application =
             Application(
                 id = id,
@@ -148,6 +159,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 .map { i ->
                     createApplication(
                         id = i,
+                        hankeTunnus = "HAI-1234",
                         applicationData =
                             createCableReportApplicationData(
                                 name = "$defaultApplicationName #$i",
@@ -172,7 +184,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             userId: String? = null,
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
             applicationData: ApplicationData = createCableReportApplicationData(),
-            hanke: HankeEntity?,
+            hanke: HankeEntity,
         ): ApplicationEntity =
             ApplicationEntity(
                 id,
@@ -237,6 +249,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
     fun saveApplicationEntities(
         n: Long,
         username: String,
+        hanke: HankeEntity,
         mutator: (Int, ApplicationEntity) -> Unit = { _, _ -> },
     ): List<ApplicationEntity> {
         val entities =
@@ -249,7 +262,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                     userId = username,
                     applicationType = application.applicationType,
                     applicationData = application.applicationData,
-                    null
+                    hanke = hanke,
                 )
             }
         entities.withIndex().forEach { (i, application) -> mutator(i, application) }

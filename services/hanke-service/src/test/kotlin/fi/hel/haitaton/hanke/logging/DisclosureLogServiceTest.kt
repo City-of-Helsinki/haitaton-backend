@@ -29,6 +29,7 @@ import org.junit.jupiter.params.provider.EnumSource
 internal class DisclosureLogServiceTest {
 
     private val userId = "test"
+    private val hankeTunnus = "HAI-1234"
 
     private val auditLogService: AuditLogService = mockk(relaxed = true)
     private val disclosureLogService = DisclosureLogService(auditLogService)
@@ -184,7 +185,8 @@ internal class DisclosureLogServiceTest {
                     AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
                         contractorWithContacts = contractorWithoutContacts
-                    )
+                    ),
+                hankeTunnus = hankeTunnus,
             )
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
@@ -205,7 +207,8 @@ internal class DisclosureLogServiceTest {
                     AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
                         contractorWithContacts = contractorWithoutContacts
-                    )
+                    ),
+                hankeTunnus = hankeTunnus,
             )
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
@@ -227,7 +230,8 @@ internal class DisclosureLogServiceTest {
                     AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
                         contractorWithContacts = contractorWithoutContacts
-                    )
+                    ),
+                hankeTunnus = hankeTunnus,
             )
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
@@ -247,7 +251,8 @@ internal class DisclosureLogServiceTest {
                     AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
                         contractorWithContacts = contractorWithoutContacts
-                    )
+                    ),
+                hankeTunnus = hankeTunnus,
             )
         val expectedLogs =
             listOf(
@@ -265,7 +270,10 @@ internal class DisclosureLogServiceTest {
         val contact = cableReportApplication.customerWithContacts.contacts[0]
         val expectedLogs = listOf(AuditLogEntryFactory.createReadEntryForContact(contact))
         val application =
-            AlluDataFactory.createApplication(applicationData = cableReportApplication)
+            AlluDataFactory.createApplication(
+                applicationData = cableReportApplication,
+                hankeTunnus = hankeTunnus
+            )
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
@@ -318,7 +326,12 @@ internal class DisclosureLogServiceTest {
                         contractorWithContacts = customersWithContacts[3],
                     )
                 )
-                .map { AlluDataFactory.createApplication(applicationData = it) }
+                .map {
+                    AlluDataFactory.createApplication(
+                        applicationData = it,
+                        hankeTunnus = hankeTunnus
+                    )
+                }
 
         disclosureLogService.saveDisclosureLogsForApplications(applications, userId)
 

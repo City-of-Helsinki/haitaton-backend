@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
+import fi.hel.haitaton.hanke.permissions.PermissionRepository
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
@@ -51,6 +52,7 @@ fun <Source : HasId<Int>, Target : HasId<Int>> mergeDataInto(
 
 open class HankeServiceImpl(
     private val hankeRepository: HankeRepository,
+    private val permissionRepository: PermissionRepository,
     private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
     private val hanketunnusService: HanketunnusService,
     private val geometriatService: GeometriatService,

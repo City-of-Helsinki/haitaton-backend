@@ -13,3 +13,4 @@ databaseChangeLog:
                   constraints:
                     foreignKeyName: fk_application_hanke
                     references: hanke(id)
+                    nullable: false

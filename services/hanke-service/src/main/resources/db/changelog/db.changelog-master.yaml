@@ -77,3 +77,5 @@ databaseChangeLog:
       file: db/changelog/changesets/023-add-nimi-to-hankealue.yml
   - include:
       file: db/changelog/changesets/024-connect-application-to-hanke.yml
+  - include:
+      file: db/changelog/changesets/025-clear-existing-applications.sql

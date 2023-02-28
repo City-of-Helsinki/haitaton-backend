@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test
 
 internal class ApplicationLoggingServiceTest {
     private val userId = "test"
+    private val hankeTunnus = "HAI-1234"
 
     private val auditLogService: AuditLogService = mockk(relaxed = true)
     private val applicationLoggingService = ApplicationLoggingService(auditLogService)
@@ -26,7 +27,7 @@ internal class ApplicationLoggingServiceTest {
 
     @Test
     fun `logCreate creates audit log entry for created application`() {
-        val application = AlluDataFactory.createApplication()
+        val application = AlluDataFactory.createApplication(hankeTunnus = hankeTunnus)
 
         applicationLoggingService.logCreate(application, userId)
 
@@ -55,12 +56,14 @@ internal class ApplicationLoggingServiceTest {
         val applicationBefore =
             AlluDataFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #1")
+                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #1"),
+                hankeTunnus = hankeTunnus,
             )
         val applicationAfter =
             AlluDataFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #2")
+                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #2"),
+                hankeTunnus = hankeTunnus,
             )
 
         applicationLoggingService.logUpdate(applicationBefore, applicationAfter, userId)
@@ -90,12 +93,14 @@ internal class ApplicationLoggingServiceTest {
         val applicationBefore =
             AlluDataFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #1")
+                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #1"),
+                hankeTunnus = hankeTunnus,
             )
         val applicationAfter =
             AlluDataFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #1")
+                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #1"),
+                hankeTunnus = hankeTunnus,
             )
 
         applicationLoggingService.logUpdate(applicationBefore, applicationAfter, userId)

@@ -197,7 +197,7 @@ class HankeEntity(
     )
     var tormaystarkasteluTulokset: MutableList<TormaystarkasteluTulosEntity> = mutableListOf()
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "hanke", cascade = [])
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "hanke")
     var hakemukset: MutableSet<ApplicationEntity> = mutableSetOf()
 
     // ==================  Helper functions ================

@@ -12,21 +12,31 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.prop
 import com.ninjasquad.springmockk.MockkBean
-import fi.hel.haitaton.hanke.*
+import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
+import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.asUtc
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.findByType
+import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
+import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
@@ -66,6 +76,7 @@ class ApplicationServiceITest : DatabaseTest() {
     @MockkBean private lateinit var cableReportServiceAllu: CableReportService
     @Autowired private lateinit var applicationService: ApplicationService
     @Autowired private lateinit var hankeService: HankeService
+    @Autowired private lateinit var permissionService: PermissionService
 
     @Autowired private lateinit var applicationRepository: ApplicationRepository
     @Autowired private lateinit var hankeRepository: HankeRepository
@@ -100,7 +111,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         val application =
             applicationService.create(
-                AlluDataFactory.createApplication(id = null, hankeTunnus = hanke.hankeTunnus),
+                AlluDataFactory.createApplication(id = null, hankeTunnus = hanke.hankeTunnus!!),
                 username
             )
 
@@ -137,7 +148,7 @@ class ApplicationServiceITest : DatabaseTest() {
         val hanke = createHanke()
         val application =
             applicationService.create(
-                AlluDataFactory.createApplication(id = null, hankeTunnus = hanke.hankeTunnus),
+                AlluDataFactory.createApplication(id = null, hankeTunnus = hanke.hankeTunnus!!),
                 username
             )
         auditLogRepository.deleteAll()
@@ -238,7 +249,8 @@ class ApplicationServiceITest : DatabaseTest() {
     fun `getAllApplicationsForUser returns applications for the correct user`() {
         assertThat(applicationRepository.findAll()).isEmpty()
         val otherUser = "otherUser"
-        alluDataFactory.saveApplicationEntities(6, "otherUser") { i, application ->
+        val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
+        alluDataFactory.saveApplicationEntities(6, "otherUser", hanke = hanke) { i, application ->
             if (i % 2 == 0) {
                 application.userId = username
                 application.applicationData =
@@ -261,23 +273,41 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    fun `getAllApplicationsForUser returns applications for user hankkeet`() {
+        assertThat(applicationRepository.findAll()).isEmpty()
+        val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
+        val hanke2 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1235"))
+        val hanke3 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1236"))
+
+        permissionService.setPermission(hanke2.id!!, username, Role.KATSELUOIKEUS)
+
+        val application1 = alluDataFactory.saveApplicationEntity(username = username, hanke = hanke)
+        val application2 =
+            alluDataFactory.saveApplicationEntity(username = "secondUser", hanke = hanke2)
+        alluDataFactory.saveApplicationEntity(username = "thirdUser", hanke = hanke3)
+
+        assertThat(applicationRepository.findAll()).hasSize(3)
+        val response = applicationService.getAllApplicationsForUser(username).map { it.id }
+        assertThat(response).containsExactlyInAnyOrder(application1.id, application2.id)
+    }
+
+    @Test
     fun `getApplicationById with unknown ID throws error`() {
         assertThat(applicationRepository.findAll()).isEmpty()
 
-        assertThrows<ApplicationNotFoundException> {
-            applicationService.getApplicationById(1234, username)
-        }
+        assertThrows<ApplicationNotFoundException> { applicationService.getApplicationById(1234) }
 
         verify { cableReportServiceAllu wasNot Called }
     }
 
     @Test
     fun `getApplicationById returns correct application`() {
-        val applications = alluDataFactory.saveApplicationEntities(3, username)
+        val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
+        val applications = alluDataFactory.saveApplicationEntities(3, username, hanke = hanke)
         val selectedId = applications[1].id!!
         assertThat(applicationRepository.findAll()).hasSize(3)
 
-        val response = applicationService.getApplicationById(selectedId, username)
+        val response = applicationService.getApplicationById(selectedId)
 
         assertEquals(selectedId, response.id)
         verify { cableReportServiceAllu wasNot Called }
@@ -293,7 +323,7 @@ class ApplicationServiceITest : DatabaseTest() {
             AlluDataFactory.createApplication(
                 id = givenId,
                 applicationData = cableReportApplicationData,
-                hankeTunnus = hanke.hankeTunnus,
+                hankeTunnus = hanke.hankeTunnus!!,
             )
         assertTrue(cableReportApplicationData.pendingOnClient)
 
@@ -328,7 +358,7 @@ class ApplicationServiceITest : DatabaseTest() {
             AlluDataFactory.createApplication(
                 id = givenId,
                 applicationData = cableReportApplicationData,
-                hankeTunnus = hanke.hankeTunnus,
+                hankeTunnus = hanke.hankeTunnus!!,
             )
 
         val response = applicationService.create(newApplication, username)
@@ -351,7 +381,7 @@ class ApplicationServiceITest : DatabaseTest() {
             AlluDataFactory.createApplication(
                 id = null,
                 applicationData = cableReportApplicationData,
-                hankeTunnus = hanke.hankeTunnus,
+                hankeTunnus = hanke.hankeTunnus!!,
             )
 
         val exception =
@@ -853,7 +883,7 @@ class ApplicationServiceITest : DatabaseTest() {
         val hanke = createHanke()
         val application =
             applicationService.create(
-                AlluDataFactory.createApplication(id = null, hankeTunnus = hanke.hankeTunnus),
+                AlluDataFactory.createApplication(id = null, hankeTunnus = hanke.hankeTunnus!!),
                 username
             )
         auditLogRepository.deleteAll()
@@ -1086,7 +1116,7 @@ class ApplicationServiceITest : DatabaseTest() {
     fun `Creating an application without hankeTunnus fails`() {
         assertThrows<HankeNotFoundException> {
             applicationService.create(
-                AlluDataFactory.createApplication(id = null, hankeTunnus = null),
+                AlluDataFactory.createApplication(id = null, hankeTunnus = ""),
                 username
             )
         }
@@ -1103,23 +1133,24 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `hankeTunnus cannot be changed on update`() {
+    fun `Hanke of an application cannot be changed`() {
         every { cableReportServiceAllu.create(any()) }.returns(2)
 
         val hanke = createHanke()
         val application =
             applicationService.create(
-                AlluDataFactory.createApplication(id = null, hankeTunnus = hanke.hankeTunnus),
+                AlluDataFactory.createApplication(id = null, hankeTunnus = hanke.hankeTunnus!!),
                 username
             )
-        val applicationEntity = applicationRepository.getOne(application.id!!)
-        val hankeEntity = applicationEntity.hanke
-        assertThat(applicationEntity.hanke).isNotNull()
 
-        applicationEntity.hanke = null
+        assertThat(application.hankeTunnus).isEqualTo(application.hankeTunnus)
+
+        val applicationEntity = applicationRepository.getOne(application.id!!)
+        applicationEntity.hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1111"))
         applicationRepository.save(applicationEntity)
 
-        assertThat(applicationRepository.getOne(application.id!!).hanke).isEqualTo(hankeEntity)
+        assertThat(applicationRepository.getOne(application.id!!).hanke.hankeTunnus)
+            .isEqualTo(hanke.hankeTunnus)
     }
 
     val customerWithContactsJson =
