@@ -279,7 +279,6 @@ class ApplicationServiceTest {
                 Status.FAILED,
                 ALLU_APPLICATION_ERROR_MSG
             )
-            cableReportService.create(any())
         }
     }
 
