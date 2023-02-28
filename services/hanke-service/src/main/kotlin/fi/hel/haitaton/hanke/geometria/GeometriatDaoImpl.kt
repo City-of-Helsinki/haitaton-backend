@@ -203,6 +203,16 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
             )[0]
     }
 
+    override fun calculateArea(geometria: GeoJsonObject): Float? {
+        val areaQuery = "select ST_Area(ST_GeomFromGeoJSON(?))"
+
+        return jdbcOperations.queryForObject(
+            areaQuery,
+            arrayOf(geometria.toJsonString()),
+            Float::class.java
+        )
+    }
+
     override fun validateGeometriat(geometriat: List<GeoJsonObject>): GeometriatDao.InvalidDetail? =
         geometriat.firstNotNullOfOrNull { validateGeometria(it) }
 

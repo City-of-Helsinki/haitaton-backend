@@ -14,6 +14,7 @@ import assertk.assertions.prop
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
+import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
@@ -404,12 +405,12 @@ class ApplicationServiceITest : DatabaseTest() {
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
         justRun { cableReportServiceAllu.update(21, newApplicationData.toAlluData()) }
+        justRun { cableReportServiceAllu.addAttachment(21, any()) }
 
         val response =
             applicationService.updateApplicationData(application.id!!, newApplicationData, username)
 
         assertEquals(newApplicationData, response.applicationData)
-
         val savedApplication = applicationRepository.findById(application.id!!).orElseThrow()
         assertEquals(response.id, savedApplication.id)
         assertEquals(21, savedApplication.alluid)
@@ -419,6 +420,7 @@ class ApplicationServiceITest : DatabaseTest() {
         verifyOrder {
             cableReportServiceAllu.getApplicationInformation(21)
             cableReportServiceAllu.update(21, newApplicationData.toAlluData())
+            cableReportServiceAllu.addAttachment(21, any())
         }
     }
 
@@ -465,6 +467,7 @@ class ApplicationServiceITest : DatabaseTest() {
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
         justRun { cableReportServiceAllu.update(21, newApplicationData.toAlluData()) }
+        justRun { cableReportServiceAllu.addAttachment(21, any()) }
 
         val response =
             applicationService.updateApplicationData(application.id!!, newApplicationData, username)
@@ -481,6 +484,7 @@ class ApplicationServiceITest : DatabaseTest() {
         verifyOrder {
             cableReportServiceAllu.getApplicationInformation(21)
             cableReportServiceAllu.update(21, newApplicationData.toAlluData())
+            cableReportServiceAllu.addAttachment(21, any())
         }
     }
 
@@ -540,6 +544,7 @@ class ApplicationServiceITest : DatabaseTest() {
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
         justRun { cableReportServiceAllu.update(21, expectedApplicationData) }
+        justRun { cableReportServiceAllu.addAttachment(21, any()) }
 
         val response =
             applicationService.updateApplicationData(application.id!!, newApplicationData, username)
@@ -550,6 +555,7 @@ class ApplicationServiceITest : DatabaseTest() {
         verifyOrder {
             cableReportServiceAllu.getApplicationInformation(21)
             cableReportServiceAllu.update(21, expectedApplicationData)
+            cableReportServiceAllu.addAttachment(21, any())
         }
     }
 
@@ -569,7 +575,7 @@ class ApplicationServiceITest : DatabaseTest() {
         assertThat(savedApplications).hasSize(1)
         val savedApplication = savedApplications[0]
         assertEquals(
-            "Johtoselvitys",
+            AlluDataFactory.defaultApplicationName,
             (savedApplication.applicationData as CableReportApplicationData).name
         )
 
@@ -652,6 +658,7 @@ class ApplicationServiceITest : DatabaseTest() {
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
         justRun { cableReportServiceAllu.update(21, pendingApplicationData) }
+        justRun { cableReportServiceAllu.addAttachment(21, any()) }
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21, ApplicationStatus.PENDING)
 
@@ -666,6 +673,7 @@ class ApplicationServiceITest : DatabaseTest() {
         verifyOrder {
             cableReportServiceAllu.getApplicationInformation(21)
             cableReportServiceAllu.update(21, pendingApplicationData)
+            cableReportServiceAllu.addAttachment(21, any())
             cableReportServiceAllu.getApplicationInformation(21)
         }
     }
@@ -676,6 +684,7 @@ class ApplicationServiceITest : DatabaseTest() {
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
         every { cableReportServiceAllu.create(pendingApplicationData.toAlluData()) } returns 26
+        justRun { cableReportServiceAllu.addAttachment(26, any()) }
         every { cableReportServiceAllu.getApplicationInformation(26) } returns
             AlluDataFactory.createAlluApplicationResponse(26)
 
@@ -696,6 +705,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         verifyOrder {
             cableReportServiceAllu.create(pendingApplicationData.toAlluData())
+            cableReportServiceAllu.addAttachment(26, any())
             cableReportServiceAllu.getApplicationInformation(26)
         }
     }
@@ -739,7 +749,9 @@ class ApplicationServiceITest : DatabaseTest() {
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
         every { cableReportServiceAllu.create(pendingApplicationData.toAlluData()) } returns 26
-        every { cableReportServiceAllu.getApplicationInformation(26) } throws RuntimeException()
+        justRun { cableReportServiceAllu.addAttachment(26, any()) }
+        every { cableReportServiceAllu.getApplicationInformation(26) } throws
+            AlluException(listOf())
 
         val response = applicationService.sendApplication(application.id!!, username)
 
@@ -755,6 +767,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         verifyOrder {
             cableReportServiceAllu.create(pendingApplicationData.toAlluData())
+            cableReportServiceAllu.addAttachment(26, any())
             cableReportServiceAllu.getApplicationInformation(26)
         }
     }
