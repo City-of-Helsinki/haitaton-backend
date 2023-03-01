@@ -12,6 +12,8 @@ import org.geojson.Crs
 import org.geojson.Feature
 import org.geojson.FeatureCollection
 import org.geojson.GeoJsonObject
+import org.geojson.MultiPolygon
+import org.geojson.Polygon
 import org.springframework.jdbc.core.JdbcOperations
 
 class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : GeometriatDao {
@@ -204,11 +206,23 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
     }
 
     override fun calculateArea(geometria: GeoJsonObject): Float? {
-        val areaQuery = "select ST_Area(ST_GeomFromGeoJSON(?))"
+        val areaQuery = "select ST_Area(ST_SetSRID(ST_GeomFromGeoJSON(?), $SRID))"
 
         return jdbcOperations.queryForObject(
             areaQuery,
             arrayOf(geometria.toJsonString()),
+            Float::class.java
+        )
+    }
+
+    override fun calculateCombinedArea(geometriat: List<Polygon>): Float? {
+        val geometryCollection = MultiPolygon()
+        geometriat.forEach { geometryCollection.add(it) }
+
+        val areaQuery = "select ST_Area(ST_UnaryUnion(ST_SetSRID(ST_GeomFromGeoJSON(?), $SRID)))"
+        return jdbcOperations.queryForObject(
+            areaQuery,
+            arrayOf(geometryCollection.toJsonString()),
             Float::class.java
         )
     }

@@ -2,13 +2,16 @@ package fi.hel.haitaton.hanke.geometria
 
 import assertk.assertAll
 import assertk.assertThat
+import assertk.assertions.isCloseTo
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.asJsonResource
 import java.time.ZonedDateTime
 import javax.transaction.Transactional
 import org.geojson.Point
+import org.geojson.Polygon
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -21,6 +24,8 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @ActiveProfiles("default")
 @Transactional
 internal class GeometriatDaoImplITest : DatabaseTest() {
+
+    private val expectedPolygonArea = 1707f
 
     @Autowired private lateinit var geometriatDao: GeometriatDao
 
@@ -83,6 +88,31 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
         assertThat(geometriatDao.retrieveGeometriat(geometriaId)).isNull()
         assertThat(getGeometriaCount()).isEqualTo(0)
         assertThat(getHankeGeometriaCount()).isEqualTo(0)
+    }
+
+    @Test
+    fun `calculateArea correctly calculates the area of a polygon`() {
+        val polygon: Polygon = "/fi/hel/haitaton/hanke/geometria/polygon.json".asJsonResource()
+
+        val result = geometriatDao.calculateArea(polygon)!!
+
+        assertThat(result).isNotNull().isCloseTo(expectedPolygonArea, .1f)
+    }
+
+    @Test
+    fun `calculateCombinedArea returns 0 for empty list`() {
+        val result = geometriatDao.calculateCombinedArea(listOf())
+
+        assertThat(result).isEqualTo(0f)
+    }
+
+    @Test
+    fun `calculateCombinedArea counts overlapping areas only once`() {
+        val polygon: Polygon = "/fi/hel/haitaton/hanke/geometria/polygon.json".asJsonResource()
+
+        val result = geometriatDao.calculateCombinedArea(listOf(polygon, polygon))
+
+        assertThat(result).isNotNull().isCloseTo(expectedPolygonArea, .1f)
     }
 
     private fun getGeometriaCount(): Int? =

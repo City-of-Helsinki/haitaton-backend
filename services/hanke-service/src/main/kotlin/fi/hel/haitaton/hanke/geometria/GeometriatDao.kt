@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.geometria
 
 import org.geojson.GeoJsonObject
+import org.geojson.Polygon
 
 interface GeometriatDao {
     fun createGeometriat(geometriat: Geometriat): Geometriat
@@ -31,4 +32,5 @@ interface GeometriatDao {
     data class InvalidDetail(val reason: String, val location: String)
 
     fun calculateArea(geometria: GeoJsonObject): Float?
+    fun calculateCombinedArea(geometriat: List<Polygon>): Float?
 }
