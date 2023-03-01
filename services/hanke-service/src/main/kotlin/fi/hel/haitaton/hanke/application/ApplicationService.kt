@@ -310,7 +310,8 @@ open class ApplicationService(
     }
 
     private fun getApplicationDataAsPdf(data: CableReportApplicationData): Attachment {
-        val totalArea = geometriatDao.calculateArea(data.geometry!!)
+        val totalArea =
+            geometriatDao.calculateCombinedArea(data.areas?.map { it.geometry } ?: listOf())
         val areas = data.areas?.map { geometriatDao.calculateArea(it.geometry) } ?: listOf()
         val attachmentMetadata =
             AttachmentMetadata(

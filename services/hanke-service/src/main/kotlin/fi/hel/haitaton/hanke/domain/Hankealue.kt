@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.domain
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.Haitta13
@@ -11,7 +10,6 @@ import java.time.ZonedDateTime
 
 /** NOTE Remember to update PublicHankealue after changes */
 @JsonView(ChangeLogView::class)
-@JsonIgnoreProperties(ignoreUnknown = true)
 data class Hankealue(
     override var id: Int? = null,
     var hankeId: Int? = null,
