@@ -424,8 +424,10 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     fun `sendApplication without hanke permissions is not allowed`() {
         every { hankeService.getHankeId(any()) } returns 42
         every { applicationService.getApplicationById(11) } returns
-                AlluDataFactory.createApplication(id = 11, hankeTunnus = hankeTunnus)
-        every { permissionService.hasPermission(42, username, PermissionCode.EDIT_APPLICATIONS) } returns false
+            AlluDataFactory.createApplication(id = 11, hankeTunnus = hankeTunnus)
+        every {
+            permissionService.hasPermission(42, username, PermissionCode.EDIT_APPLICATIONS)
+        } returns false
 
         post("/hakemukset/11/send-application").andExpect(status().isNotFound)
 
@@ -493,8 +495,10 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     fun `delete without hanke permissions is not allowed`() {
         every { hankeService.getHankeId(any()) } returns 42
         every { applicationService.getApplicationById(11) } returns
-                AlluDataFactory.createApplication(id = 11, hankeTunnus = hankeTunnus)
-        every { permissionService.hasPermission(42, username, PermissionCode.EDIT_APPLICATIONS) } returns false
+            AlluDataFactory.createApplication(id = 11, hankeTunnus = hankeTunnus)
+        every {
+            permissionService.hasPermission(42, username, PermissionCode.EDIT_APPLICATIONS)
+        } returns false
 
         delete("/hakemukset/11").andExpect(status().isNotFound)
 
@@ -571,11 +575,11 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     fun `downloadDecision without hanke permissions is not allowed`() {
         every { hankeService.getHankeId(any()) } returns 42
         every { applicationService.getApplicationById(11) } returns
-                AlluDataFactory.createApplication(id = 11, hankeTunnus = hankeTunnus)
+            AlluDataFactory.createApplication(id = 11, hankeTunnus = hankeTunnus)
         every { permissionService.hasPermission(42, username, PermissionCode.VIEW) } returns false
 
         get("/hakemukset/11/paatos", MediaType.APPLICATION_PDF, MediaType.APPLICATION_JSON)
-                .andExpect(status().isNotFound)
+            .andExpect(status().isNotFound)
 
         verify { applicationService.getApplicationById(11) }
         verify { permissionService.hasPermission(42, username, PermissionCode.VIEW) }
@@ -585,13 +589,13 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     @WithMockUser(username)
     fun `Application and hanke can be linked`() {
         every { applicationService.getApplicationById(1234) } returns
-                AlluDataFactory.createApplication(id = 1234, hankeTunnus = hankeTunnus)
+            AlluDataFactory.createApplication(id = 1234, hankeTunnus = hankeTunnus)
         every { hankeService.getHankeId(hankeTunnus) } returns 42
         every { permissionService.hasPermission(42, username, PermissionCode.VIEW) } returns true
 
         get("/hakemukset/1234")
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.hankeTunnus").value(hankeTunnus))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.hankeTunnus").value(hankeTunnus))
 
         verify { applicationService.getApplicationById(1234) }
         verify { permissionService.hasPermission(42, username, PermissionCode.VIEW) }
@@ -620,5 +624,4 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         verify { permissionService.hasPermission(42, username, PermissionCode.EDIT_APPLICATIONS) }
     }
-
 }
