@@ -236,10 +236,8 @@ class ApplicationServiceTest {
 
         val expectedApplication = applicationData.copy(pendingOnClient = false)
         verifyOrder {
-            applicationRepo.findOneByIdAndUserId(3, username)
-            geometriatDao.calculateCombinedArea(any())
             applicationRepo.findOneById(3)
-            geometriatDao.calculateArea(any())
+            geometriatDao.calculateCombinedArea(any())
             cableReportService.create(any())
             disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
             cableReportService.addAttachment(42, any())
@@ -258,11 +256,8 @@ class ApplicationServiceTest {
                 applicationData = applicationData,
                 hanke = HankeEntity(hankeTunnus = hankeTunnus),
             )
-        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
-        every { geometriatDao.calculateCombinedArea(any()) } returns 100f
         every { applicationRepo.findOneById(3) } returns applicationEntity
-        every { cableReportService.create(any()) } throws RuntimeException()
-        every { geometriatDao.calculateArea(any()) } returns 100f
+        every { geometriatDao.calculateCombinedArea(any()) } returns 100f
         every { cableReportService.create(any()) } throws AlluException(listOf())
 
         assertThrows<AlluException> { service.sendApplication(3, username) }
@@ -270,8 +265,6 @@ class ApplicationServiceTest {
         val expectedApplication = applicationData.copy(pendingOnClient = false)
         verifyOrder {
             applicationRepo.findOneById(3)
-            geometriatDao.calculateArea(any())
-            applicationRepo.findOneByIdAndUserId(3, username)
             geometriatDao.calculateCombinedArea(any())
             cableReportService.create(any())
             disclosureLogService.saveDisclosureLogsForAllu(
@@ -292,20 +285,16 @@ class ApplicationServiceTest {
                 applicationData = applicationData,
                 hanke = HankeEntity(hankeTunnus = hankeTunnus),
             )
-        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
-        every { geometriatDao.calculateCombinedArea(any()) } returns 500f
         every { applicationRepo.findOneById(3) } returns applicationEntity
-        every { geometriatDao.calculateArea(any()) } returns 500f
+        every { geometriatDao.calculateCombinedArea(any()) } returns 500f
         every { cableReportService.create(any()) } throws AlluLoginException(RuntimeException())
 
         assertThrows<AlluLoginException> { service.sendApplication(3, username) }
 
         verifyOrder {
             disclosureLogService wasNot called
-            applicationRepo.findOneByIdAndUserId(3, username)
-            geometriatDao.calculateCombinedArea(any())
             applicationRepo.findOneById(3)
-            geometriatDao.calculateArea(any())
+            geometriatDao.calculateCombinedArea(any())
             cableReportService.create(any())
         }
     }
@@ -341,10 +330,8 @@ class ApplicationServiceTest {
                 .toAlluData()
                 .copy(workDescription = applicationData.workDescription + "\n" + expectedSuffix)
         verifyOrder {
-            applicationRepo.findOneByIdAndUserId(3, username)
-            geometriatDao.calculateCombinedArea(any())
             applicationRepo.findOneById(3)
-            geometriatDao.calculateArea(any())
+            geometriatDao.calculateCombinedArea(any())
             cableReportService.create(expectedAlluData)
             disclosureLogService.saveDisclosureLogsForAllu(expectedApplicationData, Status.SUCCESS)
             cableReportService.addAttachment(852, any())
