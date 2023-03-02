@@ -17,15 +17,15 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import java.time.LocalDateTime
-import java.time.OffsetDateTime
-import kotlin.reflect.KClass
 import mu.KotlinLogging
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import kotlin.reflect.KClass
 
 private val logger = KotlinLogging.logger {}
 
@@ -41,13 +41,12 @@ open class ApplicationService(
     private val permissionService: PermissionService,
     private val hankeRepository: HankeRepository,
 ) {
-    @Transactional
+    @Transactional(readOnly = true)
     open fun getAllApplicationsForUser(userId: String): List<Application> {
-        val result = applicationRepository.getAllByUserId(userId).toMutableSet()
-        val hankkeet =
-            permissionService.getAllowedHankeIds(userId = userId, permission = PermissionCode.VIEW)
-        hankkeet.forEach { result.addAll(hankeRepository.getOne(it).hakemukset) }
-        return result.map { it.toApplication() }
+        val hankeIds = permissionService.getAllowedHankeIds(userId = userId, permission = PermissionCode.VIEW)
+        return hankeRepository.findAllById(hankeIds)
+                .flatMap { it.hakemukset }
+                .map { it.toApplication() }
     }
 
     open fun getApplicationById(id: Long): Application = getById(id).toApplication()

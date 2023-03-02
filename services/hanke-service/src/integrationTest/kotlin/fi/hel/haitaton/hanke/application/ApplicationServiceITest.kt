@@ -47,8 +47,6 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
 import io.mockk.verifyOrder
-import java.time.OffsetDateTime
-import java.time.ZonedDateTime
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -65,6 +63,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
+import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 
 private const val username = "test7358"
 
@@ -250,15 +250,19 @@ class ApplicationServiceITest : DatabaseTest() {
         assertThat(applicationRepository.findAll()).isEmpty()
         val otherUser = "otherUser"
         val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
-        alluDataFactory.saveApplicationEntities(6, "otherUser", hanke = hanke) { i, application ->
-            if (i % 2 == 0) {
-                application.userId = username
-                application.applicationData =
+        val hanke2 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1235"))
+        permissionService.setPermission(hanke.id!!, username, Role.HAKEMUSASIOINTI)
+        permissionService.setPermission(hanke2.id!!, "otherUser", Role.HAKEMUSASIOINTI)
+
+        alluDataFactory.saveApplicationEntities(3, username, hanke = hanke) { i, application ->
+            application.userId = username
+            application.applicationData =
                     AlluDataFactory.createCableReportApplicationData(
-                        name = "Application data for $username"
+                            name = "Application data for $username"
                     )
-            }
         }
+        alluDataFactory.saveApplicationEntities(3, "otherUser", hanke = hanke2)
+
         assertThat(applicationRepository.findAll()).hasSize(6)
         assertThat(applicationRepository.getAllByUserId(username)).hasSize(3)
         assertThat(applicationRepository.getAllByUserId(otherUser)).hasSize(3)
@@ -279,14 +283,15 @@ class ApplicationServiceITest : DatabaseTest() {
         val hanke2 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1235"))
         val hanke3 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1236"))
 
-        permissionService.setPermission(hanke2.id!!, username, Role.KATSELUOIKEUS)
+        permissionService.setPermission(hanke.id!!, username, Role.HAKEMUSASIOINTI)
+        permissionService.setPermission(hanke2.id!!, username, Role.HAKEMUSASIOINTI)
 
         val application1 = alluDataFactory.saveApplicationEntity(username = username, hanke = hanke)
         val application2 =
             alluDataFactory.saveApplicationEntity(username = "secondUser", hanke = hanke2)
         alluDataFactory.saveApplicationEntity(username = "thirdUser", hanke = hanke3)
-
         assertThat(applicationRepository.findAll()).hasSize(3)
+
         val response = applicationService.getAllApplicationsForUser(username).map { it.id }
         assertThat(response).containsExactlyInAnyOrder(application1.id, application2.id)
     }
@@ -1143,7 +1148,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 username
             )
 
-        assertThat(application.hankeTunnus).isEqualTo(application.hankeTunnus)
+        assertThat(application.hankeTunnus).isEqualTo(hanke.hankeTunnus)
 
         val applicationEntity = applicationRepository.getOne(application.id!!)
         applicationEntity.hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1111"))
