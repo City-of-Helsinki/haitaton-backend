@@ -68,6 +68,8 @@ import org.testcontainers.junit.jupiter.Testcontainers
 
 private const val username = "test7358"
 
+private val dataWithoutAreas = AlluDataFactory.createCableReportApplicationData(areas = listOf())
+
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
@@ -111,7 +113,11 @@ class ApplicationServiceITest : DatabaseTest() {
 
         val application =
             applicationService.create(
-                AlluDataFactory.createApplication(id = null, hankeTunnus = hanke.hankeTunnus!!),
+                AlluDataFactory.createApplication(
+                    id = null,
+                    hankeTunnus = hanke.hankeTunnus!!,
+                    applicationData = dataWithoutAreas
+                ),
                 username
             )
 
@@ -148,7 +154,11 @@ class ApplicationServiceITest : DatabaseTest() {
         val hanke = createHanke()
         val application =
             applicationService.create(
-                AlluDataFactory.createApplication(id = null, hankeTunnus = hanke.hankeTunnus!!),
+                AlluDataFactory.createApplication(
+                    id = null,
+                    hankeTunnus = hanke.hankeTunnus!!,
+                    applicationData = dataWithoutAreas
+                ),
                 username
             )
         auditLogRepository.deleteAll()
@@ -157,7 +167,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         applicationService.updateApplicationData(
             application.id!!,
-            AlluDataFactory.createCableReportApplicationData(name = "Modified application"),
+            dataWithoutAreas.copy(name = "Modified application"),
             username
         )
 
@@ -371,32 +381,6 @@ class ApplicationServiceITest : DatabaseTest() {
         val savedApplication = applicationRepository.findById(response.id!!).get()
         assertTrue(savedApplication.applicationData.pendingOnClient)
         verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    fun `create throws exception with invalid geometry`() {
-        val cableReportApplicationData =
-            AlluDataFactory.createCableReportApplicationData(
-                geometry =
-                    "/fi/hel/haitaton/hanke/geometria/invalid-geometry-collection.json".asJsonResource()
-            )
-        val hanke = createHanke()
-        val newApplication =
-            AlluDataFactory.createApplication(
-                id = null,
-                applicationData = cableReportApplicationData,
-                hankeTunnus = hanke.hankeTunnus!!,
-            )
-
-        val exception =
-            assertThrows<ApplicationGeometryException> {
-                applicationService.create(newApplication, username)
-            }
-
-        assertEquals(
-            """Invalid geometry received when creating a new application for user $username, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}""",
-            exception.message
-        )
     }
 
     @Test
@@ -662,32 +646,6 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `updateApplicationData throws exception with invalid geometry`() {
-        val hanke = createHankeEntity()
-        val application =
-            alluDataFactory.saveApplicationEntity(username, hanke = hanke) { it.alluid = 21 }
-        val cableReportApplicationData =
-            AlluDataFactory.createCableReportApplicationData(
-                geometry =
-                    "/fi/hel/haitaton/hanke/geometria/invalid-geometry-collection.json".asJsonResource()
-            )
-
-        val exception =
-            assertThrows<ApplicationGeometryException> {
-                applicationService.updateApplicationData(
-                    application.id!!,
-                    cableReportApplicationData,
-                    username
-                )
-            }
-
-        assertEquals(
-            """Invalid geometry received when updating application for user $username, id=${application.id}, alluid=${application.alluid}, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}""",
-            exception.message
-        )
-    }
-
-    @Test
     fun `updateApplicationData throws exception with invalid geometry in areas`() {
         val hanke = createHankeEntity()
         val application =
@@ -887,7 +845,11 @@ class ApplicationServiceITest : DatabaseTest() {
         val hanke = createHanke()
         val application =
             applicationService.create(
-                AlluDataFactory.createApplication(id = null, hankeTunnus = hanke.hankeTunnus!!),
+                AlluDataFactory.createApplication(
+                    id = null,
+                    hankeTunnus = hanke.hankeTunnus!!,
+                    applicationData = dataWithoutAreas
+                ),
                 username
             )
         auditLogRepository.deleteAll()
@@ -1182,11 +1144,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 "customerWithContacts": {
                   $customerWithContactsJson
                 },
-                "geometry": {
-                  "type": "GeometryCollection",
-                  "geometries": []
-                },
-                "areas": null,
+                "areas": [],
                 "startTime": "${nextYear()}-02-20T23:45:56Z",
                 "endTime": "${nextYear()}-02-21T00:12:34Z",
                 "pendingOnClient": true,

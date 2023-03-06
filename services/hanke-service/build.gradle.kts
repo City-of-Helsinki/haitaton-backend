@@ -142,3 +142,12 @@ tasks {
 	}
 
 }
+
+tasks.register("installGitHook", Copy::class) {
+	from(file("$rootDir/githooks"))
+	into(file("$rootDir/.git/hooks"))
+	fileMode = 0b0111101101 // -rwxr-xr-x
+}
+tasks.named("build") {
+	dependsOn(tasks.named("installGitHook"))
+}

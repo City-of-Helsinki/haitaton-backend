@@ -34,6 +34,18 @@ for full API description) (and other sub-URLs similarly):
 > http://localhost:8080/hankkeet/<id> \
 > http://localhost:8080/hankkeet/<id>/geometriat
 
+### Git hooks
+
+A pre-push git hook for running all checks is created when building the project
+with Gradle. The hooks can also be added or updated manually with the command:
+```
+$ ./gradlew installGitHooks
+```
+
+This adds a hook that will build the project and run all tests and other checks
+before any push you make. The checks need to be run successfully for the push to
+happen. If necessary, the checks can be skipped with `git push --no-verify`.
+
 ### Swagger UI
 
 Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON). Note though that the swagger
