@@ -188,23 +188,6 @@ class HslBuses(GisProcessor):
             else:
                 return 0
 
-    def _route_is_trunk(self, route_id: str) -> str:
-        """Check if route is trunk route."""
-        is_trunk_route = {
-            r"^1500.*": "yes",
-            r"^2200.*": "yes",
-            r"^2510.*": "yes",
-            r"^2550.*": "yes",
-            r"^4560.*": "yes",
-            r"^1018.*": "almost",
-            r"^1039.*": "almost",
-            r"^1040.*": "almost",
-        }
-        for pattern, result in is_trunk_route.items():
-            if re.match(pattern, route_id):
-                return result
-        return "no"
-
     def _process_hsl_bus_lines(self) -> pd.DataFrame:
         """Process GTFS material."""
         service_ids_day = self._pick_service_ids_for_one_day(self.transit_day())
