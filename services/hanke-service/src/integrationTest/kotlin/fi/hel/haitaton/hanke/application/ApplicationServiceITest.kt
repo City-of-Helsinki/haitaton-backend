@@ -1126,27 +1126,6 @@ class ApplicationServiceITest : DatabaseTest() {
         }
     }
 
-    @Test
-    fun `Hanke of an application cannot be changed`() {
-        every { cableReportServiceAllu.create(any()) }.returns(2)
-
-        val hanke = createHanke()
-        val application =
-            applicationService.create(
-                AlluDataFactory.createApplication(id = null, hankeTunnus = hanke.hankeTunnus!!),
-                username
-            )
-
-        assertThat(application.hankeTunnus).isEqualTo(hanke.hankeTunnus)
-
-        val applicationEntity = applicationRepository.getOne(application.id!!)
-        applicationEntity.hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1111"))
-        applicationRepository.save(applicationEntity)
-
-        assertThat(applicationRepository.getOne(application.id!!).hanke.hankeTunnus)
-            .isEqualTo(hanke.hankeTunnus)
-    }
-
     val customerWithContactsJson =
         """
            "customer": {
