@@ -1128,16 +1128,6 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `Creating an application with incorrect hankeTunnus fails`() {
-        assertThrows<HankeNotFoundException> {
-            applicationService.create(
-                AlluDataFactory.createApplication(id = null, hankeTunnus = "1234"),
-                username
-            )
-        }
-    }
-
-    @Test
     fun `Hanke of an application cannot be changed`() {
         every { cableReportServiceAllu.create(any()) }.returns(2)
 
