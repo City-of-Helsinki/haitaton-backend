@@ -332,9 +332,9 @@ class HslBuses(GisProcessor):
     def _add_trunk_descriptor(self, shapes: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         """Add trunk line descriptor column."""
         retval = shapes.copy()
-        retval["trunk"] = retval.apply(
-            lambda r: self._route_is_trunk(r.route_id), axis=1
-        )
+        retval["trunk"] = "no"
+        # 702 - express bus service == trunk line
+        retval.loc[retval["route_type"] == 702, "trunk"] = "yes"
         return retval
 
     def process(self) -> None:
