@@ -47,8 +47,6 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
 import io.mockk.verifyOrder
-import java.time.OffsetDateTime
-import java.time.ZonedDateTime
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -65,6 +63,8 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
+import java.time.OffsetDateTime
+import java.time.ZonedDateTime
 
 private const val username = "test7358"
 
@@ -282,17 +282,16 @@ class ApplicationServiceITest : DatabaseTest() {
         val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
         val hanke2 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1235"))
         val hanke3 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1236"))
-
         permissionService.setPermission(hanke.id!!, username, Role.HAKEMUSASIOINTI)
         permissionService.setPermission(hanke2.id!!, username, Role.HAKEMUSASIOINTI)
-
         val application1 = alluDataFactory.saveApplicationEntity(username = username, hanke = hanke)
         val application2 =
             alluDataFactory.saveApplicationEntity(username = "secondUser", hanke = hanke2)
         alluDataFactory.saveApplicationEntity(username = "thirdUser", hanke = hanke3)
-        assertThat(applicationRepository.findAll()).hasSize(3)
 
         val response = applicationService.getAllApplicationsForUser(username).map { it.id }
+
+        assertThat(applicationRepository.findAll()).hasSize(3)
         assertThat(response).containsExactlyInAnyOrder(application1.id, application2.id)
     }
 
