@@ -41,7 +41,11 @@ internal class GdprJsonConverterTest {
     fun `createGdprJson returns null when no names match`() {
         val applicationData: CableReportApplicationData =
             "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
-        val application = AlluDataFactory.createApplication(applicationData = applicationData)
+        val application =
+            AlluDataFactory.createApplication(
+                applicationData = applicationData,
+                hankeTunnus = "HAI-1234"
+            )
         val hanke =
             HankeFactory.create().withYhteystiedot(
                 omistajat = listOf(1, 2),
@@ -59,7 +63,11 @@ internal class GdprJsonConverterTest {
     fun `createGdprJson combines identical results when there are several infos`() {
         val applicationData: CableReportApplicationData =
             "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
-        val application = AlluDataFactory.createApplication(applicationData = applicationData)
+        val application =
+            AlluDataFactory.createApplication(
+                applicationData = applicationData,
+                hankeTunnus = "HAI-1234"
+            )
         val hanke =
             HankeFactory.create().withYhteystiedot(
                 omistajat = listOf(1, 2),
