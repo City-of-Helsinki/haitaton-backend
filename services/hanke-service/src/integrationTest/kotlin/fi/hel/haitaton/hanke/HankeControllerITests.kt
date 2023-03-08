@@ -29,6 +29,7 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
@@ -498,5 +499,48 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             )
 
         verify { hankeService.createHanke(any()) }
+    }
+
+    @Test
+    fun `delete when user has permission and hanke exists should call delete returns no content`() {
+        val mockHankeId = 56
+        every { hankeService.getHankeId(mockedHankeTunnus) }.returns(mockHankeId)
+        every { permissionService.hasPermission(mockHankeId, username, PermissionCode.DELETE) }
+            .returns(true)
+        every { hankeService.deleteHanke(mockHankeId, username) } returns true
+
+        mockMvc
+            .perform(MockMvcRequestBuilders.delete("/hankkeet/$mockedHankeTunnus").with(csrf()))
+            .andExpect(status().isNoContent)
+
+        verify { hankeService.getHankeId(mockedHankeTunnus) }
+        verify { permissionService.hasPermission(mockHankeId, username, PermissionCode.DELETE) }
+        verify { hankeService.deleteHanke(mockHankeId, username) }
+    }
+
+    @Test
+    fun `delete when user does not have permission should not call delete returns not found`() {
+        val mockHankeId = 56
+        every { hankeService.getHankeId(mockedHankeTunnus) }.returns(mockHankeId)
+        every { permissionService.hasPermission(mockHankeId, username, PermissionCode.DELETE) }
+            .returns(false)
+
+        mockMvc
+            .perform(MockMvcRequestBuilders.delete("/hankkeet/$mockedHankeTunnus").with(csrf()))
+            .andExpect(status().isNotFound)
+
+        verify { hankeService.getHankeId(mockedHankeTunnus) }
+        verify { permissionService.hasPermission(mockHankeId, username, PermissionCode.DELETE) }
+    }
+
+    @Test
+    fun `delete when hanke does not exist should not call delete returns not found`() {
+        every { hankeService.getHankeId(mockedHankeTunnus) }.returns(null)
+
+        mockMvc
+            .perform(MockMvcRequestBuilders.delete("/hankkeet/$mockedHankeTunnus").with(csrf()))
+            .andExpect(status().isNotFound)
+
+        verify { hankeService.getHankeId(mockedHankeTunnus) }
     }
 }

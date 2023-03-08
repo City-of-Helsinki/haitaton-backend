@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
@@ -9,13 +11,13 @@ import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
-import fi.hel.haitaton.hanke.permissions.PermissionRepository
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import fi.hel.haitaton.hanke.validation.HankePublicValidator
 import java.time.ZonedDateTime
 import mu.KotlinLogging
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
@@ -52,12 +54,12 @@ fun <Source : HasId<Int>, Target : HasId<Int>> mergeDataInto(
 
 open class HankeServiceImpl(
     private val hankeRepository: HankeRepository,
-    private val permissionRepository: PermissionRepository,
     private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
     private val hanketunnusService: HanketunnusService,
     private val geometriatService: GeometriatService,
     private val auditLogService: AuditLogService,
     private val hankeLoggingService: HankeLoggingService,
+    private val applicationService: ApplicationService,
 ) : HankeService {
 
     override fun getHankeId(hankeTunnus: String): Int? =
@@ -178,10 +180,34 @@ open class HankeServiceImpl(
     }
 
     @Transactional
-    override fun deleteHanke(hanke: Hanke, userId: String) {
-        hankeRepository.deleteById(hanke.id!!)
-        hankeLoggingService.logDelete(hanke, userId)
+    override fun deleteHanke(hankeId: Int, userId: String): Boolean {
+        hankeRepository.findByIdOrNull(hankeId)?.let { entity ->
+            if (entity.anyHakemusProcessingInAllu()) {
+                throw HankeAlluConflictException(
+                    "Hanke ${entity.hankeTunnus} has hakemus in Allu processing. Cannot delete."
+                )
+            }
+            hankeRepository.deleteById(hankeId)
+            hankeLoggingService.logDelete(createHankeDomainObjectFromEntity(entity), userId)
+            return true
+        }
+        return false
     }
+
+    /**
+     * An application is being processed in Allu if status it is NOT pending anymore. Pending status
+     * needs verification from Allu to prevent race condition.
+     */
+    private fun HankeEntity.anyHakemusProcessingInAllu(): Boolean =
+        hakemukset.any {
+            logger.info { "Hakemus ${it.id} has alluStatus ${it.alluStatus}" }
+            when (it.alluStatus) {
+                null,
+                ApplicationStatus.PENDING,
+                ApplicationStatus.PENDING_CLIENT -> !applicationService.isStillPending(it.alluid)
+                else -> true
+            }
+        }
 
     // TODO: functions to remove and invalidate Hanke's tormaystarkastelu-data
     //   At least invalidation can be done purely working on the particular

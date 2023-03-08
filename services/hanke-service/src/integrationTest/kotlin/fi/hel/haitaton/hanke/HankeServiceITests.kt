@@ -1,8 +1,12 @@
 package fi.hel.haitaton.hanke
 
+import com.ninjasquad.springmockk.MockkBean
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedArvioija
@@ -20,6 +24,11 @@ import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
+import io.mockk.Called
+import io.mockk.clearAllMocks
+import io.mockk.confirmVerified
+import io.mockk.every
+import io.mockk.verify
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import javax.persistence.EntityManager
@@ -30,15 +39,20 @@ import org.assertj.core.api.Assertions.byLessThan
 import org.geojson.Feature
 import org.geojson.LngLatAlt
 import org.geojson.Polygon
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.skyscreamer.jsonassert.JSONAssert
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
@@ -54,11 +68,22 @@ private const val USER_NAME = "test7358"
 @WithMockUser(USER_NAME)
 class HankeServiceITests : DatabaseTest() {
 
+    @MockkBean private lateinit var applicationService: ApplicationService
     @Autowired private lateinit var hankeService: HankeService
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
     @Autowired private lateinit var hankeRepository: HankeRepository
     @Autowired private lateinit var jdbcTemplate: JdbcTemplate
     @Autowired private lateinit var entityManager: EntityManager
+
+    @BeforeEach
+    fun clearMocks() {
+        clearAllMocks()
+    }
+
+    @AfterEach
+    fun checkMocks() {
+        confirmVerified(applicationService)
+    }
 
     // Some tests also use and check loadHanke()'s return value because at one time the update
     // action was returning different set of data than loadHanke (bug), so it is a sort of
@@ -968,7 +993,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(0, auditLogRepository.count())
         TestUtils.addMockedRequestIp()
 
-        hankeService.deleteHanke(hankeWithTulos, "testUser")
+        hankeService.deleteHanke(hankeWithTulos.id!!, "testUser")
 
         val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
         assertEquals(1, hankeLogs.size)
@@ -1010,7 +1035,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(0, auditLogRepository.count())
         TestUtils.addMockedRequestIp()
 
-        hankeService.deleteHanke(hanke, "testUser")
+        hankeService.deleteHanke(hanke.id!!, "testUser")
 
         val logs = auditLogRepository.findByType(ObjectType.YHTEYSTIETO)
         assertEquals(3, logs.size)
@@ -1048,6 +1073,84 @@ class HankeServiceITests : DatabaseTest() {
             toteuttajaEvent.target.objectBefore,
             JSONCompareMode.NON_EXTENSIBLE
         )
+    }
+
+    @Test
+    fun `deleteHanke when hanke does not exist should not try delete`() {
+        val deleted = hankeService.deleteHanke(123, USER_NAME)
+
+        assertThat(deleted).isFalse
+        verify { applicationService wasNot Called }
+    }
+
+    @Test
+    fun `deleteHanke hanke when no hakemus should delete hanke`() {
+        val hanke = hankeService.createHanke(HankeFactory.create(id = null))
+
+        val deleted = hankeService.deleteHanke(hanke.id!!, USER_NAME)
+
+        assertThat(deleted).isTrue
+        assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNull()
+        verify { applicationService wasNot Called }
+    }
+
+    @Test
+    fun `deleteHanke when hakemus status is null in db and in pending allu should delete hanke`() {
+        val hakemusAlluId = 356
+        val hanke = initHankeWithHakemus(null, hakemusAlluId)
+        every { applicationService.isStillPending(hakemusAlluId) } returns true
+
+        val deleted = hankeService.deleteHanke(hanke.id!!, USER_NAME)
+
+        assertThat(deleted).isTrue
+        assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNull()
+        verify { applicationService.isStillPending(hakemusAlluId) }
+    }
+
+    @ParameterizedTest(name = "{displayName} ({arguments})")
+    @EnumSource(value = ApplicationStatus::class, names = ["PENDING", "PENDING_CLIENT"])
+    fun `deleteHanke when hakemus is pending in db and in allu should delete hanke`(
+        status: ApplicationStatus
+    ) {
+        val hakemusAlluId = 356
+        val hanke = initHankeWithHakemus(status, hakemusAlluId)
+        every { applicationService.isStillPending(hakemusAlluId) } returns true
+
+        val deleted = hankeService.deleteHanke(hanke.id!!, USER_NAME)
+
+        assertThat(deleted).isTrue
+        assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNull()
+        verify { applicationService.isStillPending(hakemusAlluId) }
+    }
+
+    @ParameterizedTest(name = "{displayName} ({arguments})")
+    @EnumSource(value = ApplicationStatus::class, names = ["PENDING", "PENDING_CLIENT"])
+    fun `deleteHanke hakemus is pending in db but not pending in allu should throw`(
+        status: ApplicationStatus
+    ) {
+        val hakemusAlluId = 123
+        val hanke = initHankeWithHakemus(status, hakemusAlluId)
+        every { applicationService.isStillPending(hakemusAlluId) } returns false
+
+        assertThrows<HankeAlluConflictException> { hankeService.deleteHanke(hanke.id!!, USER_NAME) }
+
+        assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNotNull
+        verify { applicationService.isStillPending(hakemusAlluId) }
+    }
+
+    @ParameterizedTest(name = "{displayName} ({arguments})")
+    @EnumSource(
+        value = ApplicationStatus::class,
+        mode = EnumSource.Mode.EXCLUDE,
+        names = ["PENDING", "PENDING_CLIENT"]
+    )
+    fun `deleteHanke not pending anymore should throw`(status: ApplicationStatus) {
+        val hanke = initHankeWithHakemus(status, 56)
+
+        assertThrows<HankeAlluConflictException> { hankeService.deleteHanke(hanke.id!!, USER_NAME) }
+
+        assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNotNull
+        verify { applicationService wasNot Called }
     }
 
     @Test
@@ -1251,6 +1354,23 @@ class HankeServiceITests : DatabaseTest() {
             JSONCompareMode.NON_EXTENSIBLE
         )
     }
+
+    private fun initHankeWithHakemus(
+        applicationStatus: ApplicationStatus?,
+        alluId: Int
+    ): HankeEntity =
+        hankeRepository.save(
+            HankeEntity(hankeTunnus = "HAI23-1").apply {
+                this.hakemukset =
+                    mutableSetOf(
+                        AlluDataFactory.createApplicationEntity(
+                            hanke = this,
+                            alluStatus = applicationStatus,
+                            alluid = alluId,
+                        )
+                    )
+            }
+        )
 
     private fun assertFeaturePropertiesIsReset(hanke: Hanke, propertiesWanted: Map<String, Any?>) {
         assertThat(hanke.alueet).isNotEmpty

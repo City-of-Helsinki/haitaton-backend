@@ -22,7 +22,6 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
-import fi.hel.haitaton.hanke.permissions.PermissionRepository
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotService
 import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotServiceHardCoded
@@ -101,17 +100,17 @@ class Configuration {
         geometriatService: GeometriatService,
         hanketunnusService: HanketunnusService,
         auditLogService: AuditLogService,
-        permissionRepository: PermissionRepository,
         hankeLoggingService: HankeLoggingService,
+        applicationService: ApplicationService,
     ): HankeService =
         HankeServiceImpl(
             hankeRepository,
-            permissionRepository,
             tormaystarkasteluLaskentaService,
             hanketunnusService,
             geometriatService,
             auditLogService,
             hankeLoggingService,
+            applicationService,
         )
 
     @Bean

@@ -14,7 +14,7 @@ interface HankeService {
 
     @Transactional fun updateHanke(hanke: Hanke): Hanke
 
-    @Transactional fun deleteHanke(hanke: Hanke, userId: String)
+    @Transactional fun deleteHanke(hankeId: Int, userId: String): Boolean
 
     fun loadAllHanke(): List<Hanke>
 

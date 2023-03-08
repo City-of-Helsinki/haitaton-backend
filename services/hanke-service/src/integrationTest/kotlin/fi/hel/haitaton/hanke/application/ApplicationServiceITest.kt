@@ -264,7 +264,7 @@ class ApplicationServiceITest : DatabaseTest() {
         permissionService.setPermission(hanke.id!!, username, Role.HAKEMUSASIOINTI)
         permissionService.setPermission(hanke2.id!!, "otherUser", Role.HAKEMUSASIOINTI)
 
-        alluDataFactory.saveApplicationEntities(3, username, hanke = hanke) { i, application ->
+        alluDataFactory.saveApplicationEntities(3, username, hanke = hanke) { _, application ->
             application.userId = username
             application.applicationData =
                 AlluDataFactory.createCableReportApplicationData(

@@ -57,6 +57,8 @@ class HankeArgumentException(message: String) : RuntimeException(message)
 class HankeYhteystietoNotFoundException(val hankeId: Int, ytId: Int) :
     RuntimeException("HankeYhteystiedot $ytId not found for Hanke $hankeId")
 
+class HankeAlluConflictException(message: String) : RuntimeException(message)
+
 class DatabaseStateException(message: String) : RuntimeException(message)
 
 class HankeYhteystietoProcessingRestrictedException(message: String) : RuntimeException(message)

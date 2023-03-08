@@ -214,6 +214,15 @@ open class ApplicationService(
         return Pair(filename, pdfBytes)
     }
 
+    open fun isStillPending(alluid: Int?): Boolean {
+        // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)
+        alluid ?: return true
+
+        val currentStatus = cableReportService.getApplicationInformation(alluid).status
+
+        return currentStatus in listOf(ApplicationStatus.PENDING, ApplicationStatus.PENDING_CLIENT)
+    }
+
     /** Cancel an application that's been sent to Allu. */
     private fun cancelApplication(alluid: Int, id: Long?) {
         if (isStillPending(alluid)) {
@@ -266,15 +275,6 @@ open class ApplicationService(
 
     private fun getById(id: Long): ApplicationEntity {
         return applicationRepository.findOneById(id) ?: throw ApplicationNotFoundException(id)
-    }
-
-    private fun isStillPending(alluid: Int?): Boolean {
-        // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)
-        alluid ?: return true
-
-        val currentStatus = cableReportService.getApplicationInformation(alluid).status
-
-        return currentStatus in listOf(ApplicationStatus.PENDING, ApplicationStatus.PENDING_CLIENT)
     }
 
     private fun getApplicationInformationFromAllu(alluid: Int): AlluApplicationResponse? {
