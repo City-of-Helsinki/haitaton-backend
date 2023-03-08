@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
@@ -138,6 +139,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             applicationIdentifier: String? = null,
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
             applicationData: CableReportApplicationData = createCableReportApplicationData(),
+            hankeTunnus: String = "HAI-1234",
         ): Application =
             Application(
                 id = id,
@@ -145,7 +147,8 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 alluStatus = alluStatus,
                 applicationIdentifier = applicationIdentifier,
                 applicationType = applicationType,
-                applicationData = applicationData
+                applicationData = applicationData,
+                hankeTunnus = hankeTunnus
             )
 
         fun createApplications(
@@ -156,6 +159,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 .map { i ->
                     createApplication(
                         id = i,
+                        hankeTunnus = "HAI-1234",
                         applicationData =
                             createCableReportApplicationData(
                                 name = "$defaultApplicationName #$i",
@@ -180,6 +184,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             userId: String? = null,
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
             applicationData: ApplicationData = createCableReportApplicationData(),
+            hanke: HankeEntity,
         ): ApplicationEntity =
             ApplicationEntity(
                 id,
@@ -189,6 +194,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 userId,
                 applicationType,
                 applicationData,
+                hanke = hanke,
             )
 
         fun createAlluApplicationResponse(
@@ -216,6 +222,8 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
      */
     fun saveApplicationEntity(
         username: String,
+        hanke: HankeEntity,
+        mapper: (ApplicationEntity) -> ApplicationEntity = { it },
         application: Application = createApplication(),
         mutator: (ApplicationEntity) -> Unit = {},
     ): ApplicationEntity {
@@ -227,7 +235,8 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 applicationIdentifier = null,
                 username,
                 application.applicationType,
-                application.applicationData
+                application.applicationData,
+                hanke,
             )
         mutator(applicationEntity)
         return applicationRepository.save(applicationEntity)
@@ -240,6 +249,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
     fun saveApplicationEntities(
         n: Long,
         username: String,
+        hanke: HankeEntity,
         mutator: (Int, ApplicationEntity) -> Unit = { _, _ -> },
     ): List<ApplicationEntity> {
         val entities =
@@ -252,6 +262,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                     userId = username,
                     applicationType = application.applicationType,
                     applicationData = application.applicationData,
+                    hanke = hanke,
                 )
             }
         entities.withIndex().forEach { (i, application) -> mutator(i, application) }

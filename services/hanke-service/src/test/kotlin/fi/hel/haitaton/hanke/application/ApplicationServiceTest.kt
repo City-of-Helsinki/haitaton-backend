@@ -6,6 +6,8 @@ import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFailure
+import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
@@ -16,6 +18,7 @@ import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.mockk.Called
 import io.mockk.called
 import io.mockk.clearAllMocks
@@ -39,6 +42,7 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
 private const val username = "test"
+private const val hankeTunnus = "HAI-1234"
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(SpringExtension::class)
@@ -49,6 +53,8 @@ class ApplicationServiceTest {
     private val geometriatDao: GeometriatDao = mockk()
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
     private val applicationLoggingService: ApplicationLoggingService = mockk(relaxUnitFun = true)
+    private val hankeRepository: HankeRepository = mockk()
+    private val permissionService: PermissionService = mockk()
 
     private val service: ApplicationService =
         ApplicationService(
@@ -58,6 +64,8 @@ class ApplicationServiceTest {
             disclosureLogService,
             applicationLoggingService,
             geometriatDao,
+            permissionService,
+            hankeRepository,
         )
 
     @BeforeEach
@@ -84,12 +92,20 @@ class ApplicationServiceTest {
 
     @Test
     fun create() {
-        val dto = AlluDataFactory.createApplication(id = null, applicationData = applicationData)
+        val hankeTunnus = "HAI-1234"
+        val dto =
+            AlluDataFactory.createApplication(
+                id = null,
+                applicationData = applicationData,
+                hankeTunnus = hankeTunnus,
+            )
         every { applicationRepo.save(any()) } answers
             {
                 val application: ApplicationEntity = firstArg()
                 application.copy(id = 1)
             }
+        val hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus)
+        every { hankeRepository.findByHankeTunnus(hankeTunnus) } returns hanke
         every { geometriatDao.validateGeometria(any()) } returns null
 
         val created = service.create(dto, username)
@@ -107,7 +123,12 @@ class ApplicationServiceTest {
 
     @Test
     fun `create throws exception with invalid geometry`() {
-        val dto = AlluDataFactory.createApplication(id = null, applicationData = applicationData)
+        val dto =
+            AlluDataFactory.createApplication(
+                id = null,
+                applicationData = applicationData,
+                hankeTunnus = hankeTunnus
+            )
         every { geometriatDao.validateGeometria(any()) } returns
             GeometriatDao.InvalidDetail(
                 "Self-intersection",
@@ -125,14 +146,17 @@ class ApplicationServiceTest {
 
     @Test
     fun `updateApplicationData saves disclosure logs when updating Allu data`() {
+        val hankeTunnus = "HAI-1234"
+        val hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus)
         val applicationEntity =
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = 42,
                 userId = username,
                 applicationData = applicationData,
+                hanke = hanke,
             )
-        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+        every { applicationRepo.findOneById(3) } returns applicationEntity
         every { applicationRepo.save(applicationEntity) } returns applicationEntity
         justRun { cableReportService.update(42, any()) }
         justRun { cableReportService.addAttachment(42, any()) }
@@ -145,7 +169,7 @@ class ApplicationServiceTest {
         service.updateApplicationData(3, updatedData, username)
 
         verifyOrder {
-            applicationRepo.findOneByIdAndUserId(3, username)
+            applicationRepo.findOneById(3)
             geometriatDao.validateGeometria(any())
             cableReportService.getApplicationInformation(42)
             geometriatDao.calculateCombinedArea(any())
@@ -165,8 +189,9 @@ class ApplicationServiceTest {
                 alluid = 42,
                 userId = username,
                 applicationData = applicationData,
+                hanke = HankeEntity(hankeTunnus = hankeTunnus),
             )
-        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+        every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.validateGeometria(any()) } returns
             GeometriatDao.InvalidDetail(
                 "Self-intersection",
@@ -184,7 +209,7 @@ class ApplicationServiceTest {
                 """Invalid geometry received when updating application for user $username, id=3, alluid=42, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
             )
         verify {
-            applicationRepo.findOneByIdAndUserId(3, username)
+            applicationRepo.findOneById(3)
             geometriatDao.validateGeometria(any())
         }
     }
@@ -196,9 +221,10 @@ class ApplicationServiceTest {
                 id = 3,
                 alluid = null,
                 userId = username,
-                applicationData = applicationData
+                applicationData = applicationData,
+                hanke = HankeEntity(hankeTunnus = hankeTunnus),
             )
-        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+        every { applicationRepo.findOneById(3) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
         every { cableReportService.create(any()) } returns 42
         justRun { cableReportService.addAttachment(42, any()) }
@@ -210,7 +236,7 @@ class ApplicationServiceTest {
 
         val expectedApplication = applicationData.copy(pendingOnClient = false)
         verifyOrder {
-            applicationRepo.findOneByIdAndUserId(3, username)
+            applicationRepo.findOneById(3)
             geometriatDao.calculateCombinedArea(any())
             cableReportService.create(any())
             disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
@@ -227,9 +253,10 @@ class ApplicationServiceTest {
                 id = 3,
                 alluid = null,
                 userId = username,
-                applicationData = applicationData
+                applicationData = applicationData,
+                hanke = HankeEntity(hankeTunnus = hankeTunnus),
             )
-        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+        every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.calculateCombinedArea(any()) } returns 100f
         every { cableReportService.create(any()) } throws AlluException(listOf())
 
@@ -237,7 +264,7 @@ class ApplicationServiceTest {
 
         val expectedApplication = applicationData.copy(pendingOnClient = false)
         verifyOrder {
-            applicationRepo.findOneByIdAndUserId(3, username)
+            applicationRepo.findOneById(3)
             geometriatDao.calculateCombinedArea(any())
             cableReportService.create(any())
             disclosureLogService.saveDisclosureLogsForAllu(
@@ -255,9 +282,10 @@ class ApplicationServiceTest {
                 id = 3,
                 alluid = null,
                 userId = username,
-                applicationData = applicationData
+                applicationData = applicationData,
+                hanke = HankeEntity(hankeTunnus = hankeTunnus),
             )
-        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+        every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.calculateCombinedArea(any()) } returns 500f
         every { cableReportService.create(any()) } throws AlluLoginException(RuntimeException())
 
@@ -265,7 +293,7 @@ class ApplicationServiceTest {
 
         verifyOrder {
             disclosureLogService wasNot called
-            applicationRepo.findOneByIdAndUserId(3, username)
+            applicationRepo.findOneById(3)
             geometriatDao.calculateCombinedArea(any())
             cableReportService.create(any())
         }
@@ -282,9 +310,10 @@ class ApplicationServiceTest {
                 id = 3,
                 alluid = null,
                 userId = username,
-                applicationData = applicationData.copy(rockExcavation = rockExcavation)
+                applicationData = applicationData.copy(rockExcavation = rockExcavation),
+                hanke = HankeEntity(hankeTunnus = hankeTunnus),
             )
-        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+        every { applicationRepo.findOneById(3) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
         every { geometriatDao.calculateCombinedArea(any()) } returns 100f
         every { cableReportService.create(any()) } returns 852
@@ -301,7 +330,7 @@ class ApplicationServiceTest {
                 .toAlluData()
                 .copy(workDescription = applicationData.workDescription + "\n" + expectedSuffix)
         verifyOrder {
-            applicationRepo.findOneByIdAndUserId(3, username)
+            applicationRepo.findOneById(3)
             geometriatDao.calculateCombinedArea(any())
             cableReportService.create(expectedAlluData)
             disclosureLogService.saveDisclosureLogsForAllu(expectedApplicationData, Status.SUCCESS)
@@ -323,8 +352,9 @@ class ApplicationServiceTest {
                 alluid = null,
                 userId = username,
                 applicationData = applicationData,
+                hanke = HankeEntity(hankeTunnus = hankeTunnus),
             )
-        every { applicationRepo.findOneByIdAndUserId(3, username) } returns applicationEntity
+        every { applicationRepo.findOneById(3) } returns applicationEntity
 
         assertThat { service.sendApplication(3, username) }
             .isFailure()
@@ -334,7 +364,7 @@ class ApplicationServiceTest {
             }
 
         verify {
-            applicationRepo.findOneByIdAndUserId(3, username)
+            applicationRepo.findOneById(3)
             cableReportService wasNot Called
             disclosureLogService wasNot Called
             applicationLoggingService wasNot Called

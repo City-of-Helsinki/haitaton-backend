@@ -1,8 +1,12 @@
 package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -31,7 +35,9 @@ private val logger = KotlinLogging.logger {}
 @RequestMapping("/hakemukset")
 class ApplicationController(
     private val service: ApplicationService,
-    private val disclosureLogService: DisclosureLogService
+    private val hankeService: HankeService,
+    private val disclosureLogService: DisclosureLogService,
+    private val permissionService: PermissionService,
 ) {
     @GetMapping
     @Operation(
@@ -63,8 +69,9 @@ class ApplicationController(
             ]
     )
     fun getById(@PathVariable(name = "id") id: Long): Application {
+        checkHakemusOikeus(id, PermissionCode.VIEW)
         val userId = currentUserId()
-        val application = service.getApplicationById(id, userId)
+        val application = service.getApplicationById(id)
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
         return application
     }
@@ -89,7 +96,18 @@ class ApplicationController(
     )
     fun create(@RequestBody application: Application): Application {
         val userId = currentUserId()
+        val hankeTunnus = application.hankeTunnus
+        val hankeId = hankeService.getHankeId(hankeTunnus)
+
+        if (
+            hankeId == null ||
+                !permissionService.hasPermission(hankeId, userId, PermissionCode.EDIT_APPLICATIONS)
+        ) {
+            throw HankeNotFoundException(hankeTunnus)
+        }
+
         val createdApplication = service.create(application, userId)
+
         disclosureLogService.saveDisclosureLogsForApplication(createdApplication, userId)
         return createdApplication
     }
@@ -132,6 +150,7 @@ class ApplicationController(
         @PathVariable(name = "id") id: Long,
         @RequestBody application: Application
     ): Application {
+        checkHakemusOikeus(id, PermissionCode.EDIT_APPLICATIONS)
         val userId = currentUserId()
         val updatedApplication =
             service.updateApplicationData(id, application.applicationData, userId)
@@ -167,7 +186,7 @@ class ApplicationController(
             ]
     )
     fun delete(@PathVariable(name = "id") id: Long) {
-        // TODO: Needs HAI-1345 to check for authorization
+        checkHakemusOikeus(id, PermissionCode.EDIT_APPLICATIONS)
         service.delete(id, currentUserId())
     }
 
@@ -199,8 +218,10 @@ class ApplicationController(
                 ),
             ]
     )
-    fun sendApplication(@PathVariable(name = "id") id: Long): Application =
-        service.sendApplication(id, currentUserId())
+    fun sendApplication(@PathVariable(name = "id") id: Long): Application {
+        checkHakemusOikeus(id, PermissionCode.EDIT_APPLICATIONS)
+        return service.sendApplication(id, currentUserId())
+    }
 
     @GetMapping(
         "/{id}/paatos",
@@ -223,6 +244,7 @@ class ApplicationController(
             ]
     )
     fun downloadDecision(@PathVariable(name = "id") id: Long): ResponseEntity<ByteArray> {
+        checkHakemusOikeus(id, PermissionCode.VIEW)
         val (filename, pdfBytes) = service.downloadDecision(id, currentUserId())
 
         val headers = HttpHeaders()
@@ -231,6 +253,16 @@ class ApplicationController(
             .headers(headers)
             .contentType(MediaType.APPLICATION_PDF)
             .body(pdfBytes)
+    }
+
+    fun checkHakemusOikeus(hakemusId: Long, permissionCode: PermissionCode) {
+        val userId = currentUserId()
+        val application = service.getApplicationById(hakemusId)
+        val hankeId = hankeService.getHankeId(application.hankeTunnus)
+
+        if (hankeId == null || !permissionService.hasPermission(hankeId, userId, permissionCode)) {
+            throw ApplicationNotFoundException(hakemusId)
+        }
     }
 
     @ExceptionHandler(ApplicationNotFoundException::class)

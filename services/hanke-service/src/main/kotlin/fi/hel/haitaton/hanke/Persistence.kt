@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.Luokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.LocalDate
@@ -195,6 +196,9 @@ class HankeEntity(
         orphanRemoval = true
     )
     var tormaystarkasteluTulokset: MutableList<TormaystarkasteluTulosEntity> = mutableListOf()
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "hanke")
+    var hakemukset: MutableSet<ApplicationEntity> = mutableSetOf()
 
     // ==================  Helper functions ================
 

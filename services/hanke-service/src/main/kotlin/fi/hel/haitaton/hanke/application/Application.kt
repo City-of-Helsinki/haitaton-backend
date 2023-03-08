@@ -13,5 +13,6 @@ data class Application(
     val alluStatus: ApplicationStatus?,
     val applicationIdentifier: String?,
     val applicationType: ApplicationType,
-    val applicationData: ApplicationData
+    val applicationData: ApplicationData,
+    val hankeTunnus: String,
 ) : HasId<Long>
