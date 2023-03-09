@@ -237,7 +237,7 @@ Files (names configured in `config.yaml`)
 
 Configure and activate python virtual environment.
 
-Run following in `gis-material_update/process` -directory.
+Run following in `gis-material-update/process` -directory.
 
 ```sh
 [(venv)::process/]$ python -m unittest discover -v

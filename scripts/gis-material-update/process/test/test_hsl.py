@@ -217,17 +217,11 @@ class TestHslInternals(unittest.TestCase):
         )
         self.assertEqual(parsed_time.get("next_day"), True)
 
-    def test_trunk_route(self):
-        candidates_true = [
-            ("1500", "yes"),
-            ("15001", "yes"),
-            (" 1500", "no"),
-            ("_2511", "no"),
-            ("1041", "no"),
-            ("1040", "almost"),
-        ]
-        for r_id, result in candidates_true:
-            self.assertEqual(self.hsl._route_is_trunk(r_id), result)
+    def test_trunk_route_assign(self):
+        df = gpd.GeoDataFrame([700, 701, 702, 703], columns=["route_type"])
+        df_trunk = self.hsl._add_trunk_descriptor(df)
+        is_trunk_line = df_trunk.loc[:, "trunk"].tolist()
+        self.assertEqual(is_trunk_line, ["no", "no", "yes", "no"])
 
 
 if __name__ == "__main__":
