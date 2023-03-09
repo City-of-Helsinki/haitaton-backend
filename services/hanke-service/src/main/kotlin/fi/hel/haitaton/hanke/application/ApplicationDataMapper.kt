@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.COORDINATE_SYSTEM_URN
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
 import org.geojson.GeometryCollection
+import org.geojson.Polygon
 
 object ApplicationDataMapper {
 
@@ -47,13 +48,12 @@ object ApplicationDataMapper {
             if (rockExcavation) "\nLouhitaan" else "\nEi louhita"
     }
 
-    /**
-     * For the switch-over period between geometry and areas, support both areas and geometry. If
-     * both are missing, throw an exception.
-     */
+    /** If areas are missing, throw an exception. */
     internal fun getGeometry(applicationData: ApplicationData): GeometryCollection {
         val areas = applicationData.areas
-        return if (!areas.isNullOrEmpty()) {
+        return if (areas.isNullOrEmpty()) {
+            throw AlluDataException("applicationData.areas", AlluDataError.EMPTY_OR_NULL)
+        } else {
             // Check that all polygons have the coordinate reference system Haitaton understands
             areas
                 .map { it.geometry.crs?.properties?.get("name") }
@@ -64,11 +64,14 @@ object ApplicationDataMapper {
                 // Read coordinate reference system from the first polygon. Remove the CRS from
                 // all polygons and add it to the GeometryCollection.
                 this.crs = areas.first().geometry.crs!!
-                this.geometries = areas.map { area -> area.geometry.apply { this.crs = null } }
+                this.geometries =
+                    areas.map { area ->
+                        Polygon(area.geometry.exteriorRing).apply {
+                            this.crs = null
+                            area.geometry.interiorRings.forEach { this.addInteriorRing(it) }
+                        }
+                    }
             }
-        } else {
-            applicationData.geometry
-                ?: throw AlluDataException("applicationData.areas", AlluDataError.EMPTY_OR_NULL)
         }
     }
 }

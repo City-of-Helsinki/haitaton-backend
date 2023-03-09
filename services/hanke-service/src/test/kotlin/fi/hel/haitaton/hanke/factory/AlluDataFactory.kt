@@ -16,8 +16,9 @@ import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
+import fi.hel.haitaton.hanke.asJsonResource
 import java.time.ZonedDateTime
-import org.geojson.GeometryCollection
+import org.geojson.Polygon
 import org.springframework.stereotype.Component
 
 @Component
@@ -94,10 +95,15 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             orderer: Boolean = false
         ) = Contact(name, postalAddress, email, phone, orderer)
 
+        fun createApplicationArea(
+            name: String = "Area name",
+            geometry: Polygon =
+                "/fi/hel/haitaton/hanke/geometria/toinen_polygoni.json".asJsonResource(),
+        ): ApplicationArea = ApplicationArea(name, geometry)
+
         fun createCableReportApplicationData(
             name: String = defaultApplicationName,
-            geometry: GeometryCollection? = GeometryCollection(),
-            areas: List<ApplicationArea>? = null,
+            areas: List<ApplicationArea>? = listOf(createApplicationArea()),
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             pendingOnClient: Boolean = false,
@@ -116,7 +122,6 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             CableReportApplicationData(
                 applicationType = ApplicationType.CABLE_REPORT,
                 name = name,
-                geometry = geometry,
                 areas = areas,
                 startTime = startTime,
                 endTime = endTime,

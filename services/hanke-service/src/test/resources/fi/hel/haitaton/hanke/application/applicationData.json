@@ -4,17 +4,17 @@
   "name": "Testihakemus",
   "startTime": "2022-10-23T21:00:00.000Z",
   "endTime": "2022-10-27T21:00:00.000Z",
-  "geometry": {
-    "crs": {
-      "type": "name",
-      "properties": {
-        "name": "EPSG:3879"
-      }
-    },
-    "type": "GeometryCollection",
-    "geometries": [
-      {
+  "areas": [
+    {
+      "name": "Ensimmäinen alue",
+      "geometry": {
         "type": "Polygon",
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "urn:ogc:def:crs:EPSG::3879"
+          }
+        },
         "coordinates": [
           [
             [
@@ -40,8 +40,8 @@
           ]
         ]
       }
-    ]
-  },
+    }
+  ],
   "emergencyWork": false,
   "postalAddress": null,
   "maintenanceWork": true,
