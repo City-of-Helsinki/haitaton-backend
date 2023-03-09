@@ -9,7 +9,6 @@ import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import java.time.ZonedDateTime
-import org.geojson.GeometryCollection
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(
@@ -25,7 +24,6 @@ sealed interface ApplicationData {
     val applicationType: ApplicationType
     val name: String
     val pendingOnClient: Boolean
-    val geometry: GeometryCollection?
     val areas: List<ApplicationArea>?
 
     fun copy(pendingOnClient: Boolean): ApplicationData
@@ -39,7 +37,6 @@ data class CableReportApplicationData(
     // Common, required
     override val name: String,
     val customerWithContacts: CustomerWithContacts,
-    override val geometry: GeometryCollection?,
     override val areas: List<ApplicationArea>?,
     val startTime: ZonedDateTime?,
     val endTime: ZonedDateTime?,

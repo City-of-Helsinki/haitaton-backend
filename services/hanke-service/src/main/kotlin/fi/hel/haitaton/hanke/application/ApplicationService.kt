@@ -232,13 +232,8 @@ open class ApplicationService(
         customMessageOnFailure: (GeometriatDao.InvalidDetail) -> String
     ) {
         val areas = newApplicationData.areas
-        val geometry = newApplicationData.geometry
         if (areas != null) {
             geometriatDao.validateGeometriat(areas.map { it.geometry })?.let {
-                throw ApplicationGeometryException(customMessageOnFailure(it))
-            }
-        } else if (geometry != null) {
-            geometriatDao.validateGeometria(newApplicationData.geometry!!)?.let {
                 throw ApplicationGeometryException(customMessageOnFailure(it))
             }
         }

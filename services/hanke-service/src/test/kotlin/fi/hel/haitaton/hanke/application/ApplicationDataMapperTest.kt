@@ -1,9 +1,11 @@
 package fi.hel.haitaton.hanke.application
 
+import assertk.all
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.endsWith
+import assertk.assertions.extracting
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
@@ -12,7 +14,6 @@ import fi.hel.haitaton.hanke.COORDINATE_SYSTEM_URN
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
-import org.geojson.GeometryCollection
 import org.geojson.Polygon
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -54,33 +55,19 @@ internal class ApplicationDataMapperTest {
             val applicationData =
                 AlluDataFactory.createCableReportApplicationData(
                     areas = listOf(ApplicationArea(areaName, polygon)),
-                    geometry = GeometryCollection().apply { this.add(otherPolygon) }
                 )
 
             val geometry = ApplicationDataMapper.getGeometry(applicationData)
 
-            assertThat(geometry.geometries).hasSize(1)
-            assertThat(geometry.geometries).containsExactly(polygon)
+            assertThat(geometry.geometries).all {
+                hasSize(1)
+                extracting { (it as Polygon).coordinates }.containsExactly(polygon.coordinates)
+            }
         }
 
         @Test
-        fun `uses geometries if areas are not present`() {
-            val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
-                    areas = null,
-                    geometry = GeometryCollection().apply { this.add(otherPolygon) }
-                )
-
-            val geometry = ApplicationDataMapper.getGeometry(applicationData)
-
-            assertThat(geometry.geometries).hasSize(1)
-            assertThat(geometry.geometries).containsExactly(otherPolygon)
-        }
-
-        @Test
-        fun `throws exception if neither areas or geometries are present`() {
-            val applicationData =
-                AlluDataFactory.createCableReportApplicationData(areas = null, geometry = null)
+        fun `throws exception if areas are not present`() {
+            val applicationData = AlluDataFactory.createCableReportApplicationData(areas = null)
 
             val exception =
                 assertThrows<AlluDataException> {
@@ -107,9 +94,15 @@ internal class ApplicationDataMapperTest {
 
             val geometry = ApplicationDataMapper.getGeometry(applicationData)
 
-            assertThat(geometry.geometries).hasSize(3)
-            assertThat(geometry.geometries)
-                .containsExactlyInAnyOrder(polygon, otherPolygon, thirdPolygon)
+            assertThat(geometry.geometries).all {
+                hasSize(3)
+                extracting { (it as Polygon).coordinates }
+                    .containsExactlyInAnyOrder(
+                        polygon.coordinates,
+                        otherPolygon.coordinates,
+                        thirdPolygon.coordinates
+                    )
+            }
         }
 
         @Test
