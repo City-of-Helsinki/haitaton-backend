@@ -29,6 +29,8 @@ interface GeometriatDao {
 
     fun validateGeometriat(geometriat: List<GeoJsonObject>): InvalidDetail?
 
+    fun isInsideHankeAlueet(hankeId: Int, geometria: GeoJsonObject): Boolean
+
     data class InvalidDetail(val reason: String, val location: String)
 
     fun calculateArea(geometria: GeoJsonObject): Float?

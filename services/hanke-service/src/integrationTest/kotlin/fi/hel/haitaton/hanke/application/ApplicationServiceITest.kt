@@ -28,6 +28,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.withHankealue
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -415,6 +416,31 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    fun `create throws exception when application area is outside hankealue`() {
+        val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
+        val cableReportApplicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                areas =
+                    listOf(
+                        ApplicationArea(
+                            "area",
+                            "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
+                        )
+                    )
+            )
+        val newApplication =
+            AlluDataFactory.createApplication(
+                id = null,
+                hankeTunnus = hanke.hankeTunnus!!,
+                applicationData = cableReportApplicationData
+            )
+
+        assertThrows<ApplicationGeometryNotInsideHankeException> {
+            applicationService.create(newApplication, username)
+        }
+    }
+
+    @Test
     fun `updateApplicationData with unknown ID throws exception`() {
         assertThat(applicationRepository.findAll()).isEmpty()
 
@@ -679,6 +705,32 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    fun `updateApplicationData throws exception when application area is outside hankealue`() {
+        val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
+        val hankeEntity = hankeRepository.getOne(hanke.id!!)
+        val application =
+            alluDataFactory.saveApplicationEntity(username, hanke = hankeEntity) { it.alluid = 21 }
+        val cableReportApplicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                areas =
+                    listOf(
+                        ApplicationArea(
+                            "area",
+                            "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
+                        )
+                    )
+            )
+
+        assertThrows<ApplicationGeometryNotInsideHankeException> {
+            applicationService.updateApplicationData(
+                application.id!!,
+                cableReportApplicationData,
+                username
+            )
+        }
+    }
+
+    @Test
     fun `sendApplication with unknown ID throws exception`() {
         assertThat(applicationRepository.findAll()).isEmpty()
 
@@ -818,6 +870,29 @@ class ApplicationServiceITest : DatabaseTest() {
             cableReportServiceAllu.create(pendingApplicationData.toAlluData())
             cableReportServiceAllu.addAttachment(26, any())
             cableReportServiceAllu.getApplicationInformation(26)
+        }
+    }
+
+    @Test
+    fun `sendApplication throws exception when application area is outside hankealue`() {
+        val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
+        val hankeEntity = hankeRepository.getOne(hanke.id!!)
+        val application =
+            alluDataFactory.saveApplicationEntity(username, hanke = hankeEntity) {
+                it.applicationData =
+                    AlluDataFactory.createCableReportApplicationData(
+                        areas =
+                            listOf(
+                                ApplicationArea(
+                                    "area",
+                                    "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
+                                )
+                            )
+                    )
+            }
+
+        assertThrows<ApplicationGeometryNotInsideHankeException> {
+            applicationService.sendApplication(application.id!!, username)
         }
     }
 

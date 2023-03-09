@@ -305,6 +305,16 @@ class ApplicationController(
         return HankeError.HAI2005
     }
 
+    @ExceptionHandler(ApplicationGeometryNotInsideHankeException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun applicationGeometryNotInsideHankeException(
+        ex: ApplicationGeometryNotInsideHankeException
+    ): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2007
+    }
+
     @ExceptionHandler(ApplicationDecisionNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @Hidden
