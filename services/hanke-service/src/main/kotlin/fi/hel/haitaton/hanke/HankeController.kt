@@ -114,9 +114,7 @@ class HankeController(
     fun deleteHanke(@PathVariable hankeTunnus: String) {
         logger.info { "Deleting hanke: $hankeTunnus" }
 
-        hankeService.getHankeHakemuksetPair(hankeTunnus).let {
-            val hanke = it.first
-            val hakemukset = it.second
+        hankeService.getHankeHakemuksetPair(hankeTunnus).let { (hanke, hakemukset) ->
             val hankeId = hanke.id!!
             val userId = currentUserId()
             if (!permissionService.hasPermission(hankeId, userId, PermissionCode.DELETE)) {
