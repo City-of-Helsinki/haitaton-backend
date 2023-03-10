@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.application.Application
+import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
@@ -9,7 +11,6 @@ import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
-import fi.hel.haitaton.hanke.permissions.PermissionRepository
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
@@ -52,16 +53,30 @@ fun <Source : HasId<Int>, Target : HasId<Int>> mergeDataInto(
 
 open class HankeServiceImpl(
     private val hankeRepository: HankeRepository,
-    private val permissionRepository: PermissionRepository,
     private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
     private val hanketunnusService: HanketunnusService,
     private val geometriatService: GeometriatService,
     private val auditLogService: AuditLogService,
     private val hankeLoggingService: HankeLoggingService,
+    private val applicationService: ApplicationService,
 ) : HankeService {
 
     override fun getHankeId(hankeTunnus: String): Int? =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.id
+
+    /**
+     * Hanke does not contain hakemukset. This function wraps Hanke and its hakemukset to a pair.
+     */
+    override fun getHankeHakemuksetPair(hankeTunnus: String): Pair<Hanke, List<Application>> =
+        hankeRepository.findByHankeTunnus(hankeTunnus).let { entity ->
+            if (entity == null) {
+                throw HankeNotFoundException(hankeTunnus)
+            }
+            return Pair(
+                createHankeDomainObjectFromEntity(entity),
+                entity.hakemukset.map { hakemus -> hakemus.toApplication() }
+            )
+        }
 
     override fun loadHanke(hankeTunnus: String) =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let {
@@ -178,10 +193,22 @@ open class HankeServiceImpl(
     }
 
     @Transactional
-    override fun deleteHanke(hanke: Hanke, userId: String) {
-        hankeRepository.deleteById(hanke.id!!)
+    override fun deleteHanke(hanke: Hanke, hakemukset: List<Application>, userId: String) {
+        val hankeId = hanke.id ?: throw HankeArgumentException("Hanke must have an id")
+        if (anyHakemusProcessingInAllu(hakemukset)) {
+            throw HankeAlluConflictException(
+                "Hanke ${hanke.hankeTunnus} has hakemus in Allu processing. Cannot delete."
+            )
+        }
+        hankeRepository.deleteById(hankeId)
         hankeLoggingService.logDelete(hanke, userId)
     }
+
+    private fun anyHakemusProcessingInAllu(hakemukset: List<Application>): Boolean =
+        hakemukset.any {
+            logger.info { "Hakemus ${it.id} has alluStatus ${it.alluStatus}" }
+            !applicationService.isStillPending(it)
+        }
 
     // TODO: functions to remove and invalidate Hanke's tormaystarkastelu-data
     //   At least invalidation can be done purely working on the particular

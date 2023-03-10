@@ -114,17 +114,15 @@ class HankeController(
     fun deleteHanke(@PathVariable hankeTunnus: String) {
         logger.info { "Deleting hanke: $hankeTunnus" }
 
-        val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-        val hankeId = hanke.id!!
-
-        val userId = currentUserId()
-        if (!permissionService.hasPermission(hankeId, userId, PermissionCode.DELETE)) {
-            throw HankeNotFoundException(hankeTunnus)
+        hankeService.getHankeHakemuksetPair(hankeTunnus).let { (hanke, hakemukset) ->
+            val hankeId = hanke.id!!
+            val userId = currentUserId()
+            if (!permissionService.hasPermission(hankeId, userId, PermissionCode.DELETE)) {
+                throw HankeNotFoundException(hankeTunnus)
+            }
+            hankeService.deleteHanke(hanke, hakemukset, userId)
+            logger.info { "Deleted Hanke: ${hanke.toLogString()}" }
         }
-
-        hankeService.deleteHanke(hanke, userId)
-
-        logger.info { "Deleted Hanke: ${hanke.toLogString()}" }
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)

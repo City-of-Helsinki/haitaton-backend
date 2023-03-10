@@ -120,7 +120,7 @@ open class ApplicationService(
             "Invalid geometry received when updating application for user $userId, id=${application.id}, alluid=${application.alluid}, reason = ${validationError.reason}, location = ${validationError.location}"
         }
 
-        if (!isStillPending(application.alluid)) {
+        if (!isStillPendingInAllu(application.alluid)) {
             throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
 
@@ -143,7 +143,7 @@ open class ApplicationService(
         val application = getById(id)
 
         logger.info("Sending application id=$id, alluid=${application.alluid}")
-        if (!isStillPending(application.alluid)) {
+        if (!isStillPendingInAllu(application.alluid)) {
             throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
 
@@ -214,9 +214,30 @@ open class ApplicationService(
         return Pair(filename, pdfBytes)
     }
 
+    /**
+     * An application is being processed in Allu if status it is NOT pending anymore. Pending status
+     * needs verification from Allu. A post-pending status can never go back to pending.
+     */
+    open fun isStillPending(application: Application): Boolean =
+        when (application.alluStatus) {
+            null,
+            ApplicationStatus.PENDING,
+            ApplicationStatus.PENDING_CLIENT -> isStillPendingInAllu(application.alluid)
+            else -> false
+        }
+
+    private fun isStillPendingInAllu(alluid: Int?): Boolean {
+        // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)
+        alluid ?: return true
+
+        val currentStatus = cableReportService.getApplicationInformation(alluid).status
+
+        return currentStatus in listOf(ApplicationStatus.PENDING, ApplicationStatus.PENDING_CLIENT)
+    }
+
     /** Cancel an application that's been sent to Allu. */
     private fun cancelApplication(alluid: Int, id: Long?) {
-        if (isStillPending(alluid)) {
+        if (isStillPendingInAllu(alluid)) {
             logger.info {
                 "Application is still pending, trying to cancel it. id=$id alluid=${alluid}"
             }
@@ -266,15 +287,6 @@ open class ApplicationService(
 
     private fun getById(id: Long): ApplicationEntity {
         return applicationRepository.findOneById(id) ?: throw ApplicationNotFoundException(id)
-    }
-
-    private fun isStillPending(alluid: Int?): Boolean {
-        // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)
-        alluid ?: return true
-
-        val currentStatus = cableReportService.getApplicationInformation(alluid).status
-
-        return currentStatus in listOf(ApplicationStatus.PENDING, ApplicationStatus.PENDING_CLIENT)
     }
 
     private fun getApplicationInformationFromAllu(alluid: Int): AlluApplicationResponse? {
