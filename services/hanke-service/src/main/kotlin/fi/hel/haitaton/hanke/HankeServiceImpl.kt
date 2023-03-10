@@ -200,6 +200,11 @@ open class HankeServiceImpl(
                 "Hanke ${hanke.hankeTunnus} has hakemus in Allu processing. Cannot delete."
             )
         }
+
+        hakemukset.forEach { hakemus ->
+            hakemus.id?.let { id -> applicationService.delete(id, userId) }
+        }
+
         hankeRepository.deleteById(hankeId)
         hankeLoggingService.logDelete(hanke, userId)
     }
