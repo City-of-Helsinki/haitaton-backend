@@ -61,6 +61,14 @@ class ControllerExceptionHandler {
         return HankeError.HAI1029
     }
 
+    @ExceptionHandler(HankeAlluConflictException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun hankeAlluConflictException(ex: HankeAlluConflictException): HankeError {
+        logger.warn { ex.message }
+        return HankeError.HAI2003
+    }
+
     @ExceptionHandler(IllegalArgumentException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden

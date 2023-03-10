@@ -58,6 +58,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.skyscreamer.jsonassert.JSONAssert
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
@@ -1086,6 +1088,51 @@ class ApplicationServiceITest : DatabaseTest() {
                 username
             )
         }
+    }
+
+    @ParameterizedTest(name = "{displayName} ({arguments})")
+    @EnumSource(value = ApplicationStatus::class, names = ["PENDING", "PENDING_CLIENT"])
+    fun `isStillPending when status is pending and allu confirms should return true`(
+        status: ApplicationStatus
+    ) {
+        val alluId = 123
+        val application = AlluDataFactory.createApplication(alluid = alluId, alluStatus = status)
+        every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
+            AlluDataFactory.createAlluApplicationResponse(status = status)
+
+        assertTrue(applicationService.isStillPending(application))
+
+        verify { cableReportServiceAllu.getApplicationInformation(alluId) }
+    }
+
+    @ParameterizedTest(name = "{displayName} ({arguments})")
+    @EnumSource(value = ApplicationStatus::class, names = ["PENDING", "PENDING_CLIENT"])
+    fun `isStillPending when status is pending but status in allu in handling should return false`(
+        status: ApplicationStatus
+    ) {
+        val alluId = 123
+        val application = AlluDataFactory.createApplication(alluid = alluId, alluStatus = status)
+        every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
+            AlluDataFactory.createAlluApplicationResponse(status = ApplicationStatus.HANDLING)
+
+        assertFalse(applicationService.isStillPending(application))
+
+        verify { cableReportServiceAllu.getApplicationInformation(alluId) }
+    }
+
+    @ParameterizedTest(name = "{displayName} ({arguments})")
+    @EnumSource(
+        value = ApplicationStatus::class,
+        mode = EnumSource.Mode.EXCLUDE,
+        names = ["PENDING", "PENDING_CLIENT"]
+    )
+    fun `isStillPending when status is not pending should return false`(status: ApplicationStatus) {
+        val alluId = 123
+        val application = AlluDataFactory.createApplication(alluid = alluId, alluStatus = status)
+
+        assertFalse(applicationService.isStillPending(application))
+
+        verify { cableReportServiceAllu wasNot Called }
     }
 
     val customerWithContactsJson =
