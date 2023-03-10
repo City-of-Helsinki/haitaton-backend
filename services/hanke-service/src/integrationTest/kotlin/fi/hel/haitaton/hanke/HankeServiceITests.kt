@@ -45,6 +45,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -261,6 +262,24 @@ class HankeServiceITests : DatabaseTest() {
         val expectedHakemus = hanke.hakemukset.first().toDomainObject()
         assertThat(result.first).usingRecursiveComparison().isEqualTo(expectedHanke)
         assertThat(result.second).hasSameElementsAs(listOf(expectedHakemus))
+    }
+
+    @Test
+    fun `getHankeHakemuksetPair hanke does not exist throws not found`() {
+        val exception =
+            assertThrows<HankeNotFoundException> { hankeService.getHankeHakemuksetPair("HAI-1234") }
+
+        assertThat(exception).hasMessage("Hanke HAI-1234 not found")
+    }
+
+    @Test
+    fun `getHankeHakemuksetPair when no hakemukset returns hanke and empty list`() {
+        val hanke = hankeService.createHanke(HankeFactory.create())
+
+        val result = hankeService.getHankeHakemuksetPair(hanke.hankeTunnus!!)
+
+        assertThat(result.first).usingRecursiveComparison().isEqualTo(hanke)
+        assertTrue(result.second.isEmpty())
     }
 
     @Test
