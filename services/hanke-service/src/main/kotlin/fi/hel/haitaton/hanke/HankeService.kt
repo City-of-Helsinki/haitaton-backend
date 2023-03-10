@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.domain.Hanke
 import org.springframework.transaction.annotation.Transactional
 
@@ -10,11 +11,13 @@ interface HankeService {
 
     fun getHankeId(hankeTunnus: String): Int?
 
+    fun getHankeHakemuksetPair(hankeTunnus: String): Pair<Hanke, List<Application>>
+
     @Transactional fun createHanke(hanke: Hanke): Hanke
 
     @Transactional fun updateHanke(hanke: Hanke): Hanke
 
-    @Transactional fun deleteHanke(hankeId: Int, userId: String): Boolean
+    @Transactional fun deleteHanke(hanke: Hanke, hakemukset: List<Application>, userId: String)
 
     fun loadAllHanke(): List<Hanke>
 

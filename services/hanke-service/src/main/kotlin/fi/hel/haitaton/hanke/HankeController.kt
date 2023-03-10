@@ -114,16 +114,16 @@ class HankeController(
     fun deleteHanke(@PathVariable hankeTunnus: String) {
         logger.info { "Deleting hanke: $hankeTunnus" }
 
-        val hankeId =
-            hankeService.getHankeId(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-
-        val userId = currentUserId()
-        if (!permissionService.hasPermission(hankeId, userId, PermissionCode.DELETE)) {
-            throw HankeNotFoundException(hankeTunnus)
-        }
-
-        hankeService.deleteHanke(hankeId, userId).let { result ->
-            logger.info { "Deletion of Hanke: $hankeTunnus successful: $result" }
+        hankeService.getHankeHakemuksetPair(hankeTunnus).let {
+            val hanke = it.first
+            val hakemukset = it.second
+            val hankeId = hanke.id!!
+            val userId = currentUserId()
+            if (!permissionService.hasPermission(hankeId, userId, PermissionCode.DELETE)) {
+                throw HankeNotFoundException(hankeTunnus)
+            }
+            hankeService.deleteHanke(hanke, hakemukset, userId)
+            logger.info { "Deleted Hanke: ${hanke.toLogString()}" }
         }
     }
 
