@@ -1,16 +1,18 @@
 import geopandas as gpd
 import pandas as pd
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, schema
 
 from modules.config import Config
 from modules.gis_processing import GisProcessor
 
 
 def dict_values_to_list(d: dict) -> dict:
+    """Transform dict values to list."""
     return {k: [v] for k, v in d.items()}
 
 
-def other_tag_to_dict(tags) -> dict:
+def other_tag_to_dict(tags: str) -> dict:
+    """Split OSM tags to dict."""
     tags = tags[1:-1]
     return {
         k: v for k, v in [s.split('"=>"') for s in tags.split('","')] if v is not None
@@ -24,6 +26,7 @@ class TramInfra(GisProcessor):
         self._cfg = cfg
         self._process_result_lines = None
         self._process_result_polygons = None
+        self._debug_result_lines = None
 
         file_name = cfg.local_file("tram_infra")
 
@@ -31,11 +34,15 @@ class TramInfra(GisProcessor):
 
     def process(self):
         lines = self._lines
-        l = lines[~lines.other_tags.isna()]
-        l2 = l.copy()
-        l2["tag_dict"] = l2.apply(lambda r: other_tag_to_dict(r.other_tags), axis=1)
-        l2_tram_index = l2.apply(lambda r: r.tag_dict.get("railway") == "tram", axis=1)
-        tram_lines = l2[l2_tram_index]
+        lines_with_tags = lines[~lines.other_tags.isna()].copy()
+
+        lines_with_tags["tag_dict"] = lines_with_tags.apply(
+            lambda r: other_tag_to_dict(r.other_tags), axis=1
+        )
+        lines_with_tags_tram_index = lines_with_tags.apply(
+            lambda r: r.tag_dict.get("railway") == "tram", axis=1
+        )
+        tram_lines = lines_with_tags[lines_with_tags_tram_index]
 
         df_list = []
         for i, r in tram_lines.iterrows():
@@ -48,6 +55,7 @@ class TramInfra(GisProcessor):
         trams["infra"] = 1
         trams = trams.astype({"infra": "int32"})
         self._process_result_lines = trams.loc[:, ["infra", "geometry"]]
+        self._debug_result_lines = trams
 
         # Buffering configuration
         buffers = self._cfg.buffer("tram_infra")
@@ -63,6 +71,20 @@ class TramInfra(GisProcessor):
 
     def persist_to_database(self):
         connection = create_engine(self._cfg.pg_conn_uri())
+
+        # persist original results for debugging and development
+        debug_schema = "debug"
+        if not connection.dialect.has_schema(connection, debug_schema):
+            connection.execute(schema.CreateSchema(debug_schema))
+
+        self._debug_result_lines.to_postgis(
+            "tram_infra",
+            connection,
+            debug_schema,
+            if_exists="replace",
+            index=True,
+            index_label="fid",
+        )
 
         # persist route lines to database
         self._process_result_lines.to_postgis(
