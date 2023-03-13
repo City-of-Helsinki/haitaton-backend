@@ -67,6 +67,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.jdbc.Sql
 import org.testcontainers.junit.jupiter.Testcontainers
 
 private const val USERNAME = "test7358"
@@ -331,11 +332,15 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `create saves new application with correct IDs`() {
         val givenId: Long = 123456789
-        val hanke = createHanke()
+        val hanke = initializedHanke()
         val cableReportApplicationData =
-            AlluDataFactory.createCableReportApplicationData(pendingOnClient = true)
+            AlluDataFactory.createCableReportApplicationData(
+                pendingOnClient = true,
+                areas = listOf(aleksanterinpatsas)
+            )
         val newApplication =
             AlluDataFactory.createApplication(
                 id = givenId,
@@ -366,11 +371,15 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `create sets pendingOnClient to true`() {
         val givenId: Long = 123456789
-        val hanke = createHanke()
+        val hanke = initializedHanke()
         val cableReportApplicationData =
-            AlluDataFactory.createCableReportApplicationData(pendingOnClient = false)
+            AlluDataFactory.createCableReportApplicationData(
+                pendingOnClient = false,
+                areas = listOf(aleksanterinpatsas)
+            )
         val newApplication =
             AlluDataFactory.createApplication(
                 id = givenId,
@@ -410,7 +419,11 @@ class ApplicationServiceITest : DatabaseTest() {
             }
 
         assertEquals(
-            """Invalid geometry received when creating a new application for user $USERNAME, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}""",
+            """Invalid geometry received when creating a new application
+                | for user $USERNAME, reason = Self-intersection,
+                | location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
+                .trimMargin()
+                .replace("\n", ""),
             exception.message
         )
     }
@@ -419,15 +432,7 @@ class ApplicationServiceITest : DatabaseTest() {
     fun `create throws exception when application area is outside hankealue`() {
         val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
         val cableReportApplicationData =
-            AlluDataFactory.createCableReportApplicationData(
-                areas =
-                    listOf(
-                        ApplicationArea(
-                            "area",
-                            "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
-                        )
-                    )
-            )
+            AlluDataFactory.createCableReportApplicationData(areas = listOf(havisAmanda))
         val newApplication =
             AlluDataFactory.createApplication(
                 id = null,
@@ -436,7 +441,7 @@ class ApplicationServiceITest : DatabaseTest() {
             )
 
         assertThrows<ApplicationGeometryNotInsideHankeException> {
-            applicationService.create(newApplication, username)
+            applicationService.create(newApplication, USERNAME)
         }
     }
 
@@ -454,11 +459,19 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `updateApplicationData saves new application data to database`() {
-        val hanke = createHankeEntity()
-        val application = alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke)
+        val application =
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea()
+            )
         val newApplicationData =
-            AlluDataFactory.createCableReportApplicationData(name = "Uudistettu johtoselvitys")
+            AlluDataFactory.createCableReportApplicationData(
+                name = "Uudistettu johtoselvitys",
+                areas = application.applicationData.areas
+            )
 
         val response =
             applicationService.updateApplicationData(application.id!!, newApplicationData, USERNAME)
@@ -466,7 +479,6 @@ class ApplicationServiceITest : DatabaseTest() {
         assertEquals(null, response.alluid)
         assertEquals(application.applicationType, response.applicationType)
         assertEquals(newApplicationData, response.applicationData)
-
         val savedApplications = applicationRepository.findAll()
         assertThat(savedApplications).hasSize(1)
         val savedApplication = savedApplications[0]
@@ -474,17 +486,23 @@ class ApplicationServiceITest : DatabaseTest() {
         assertEquals(null, savedApplication.alluid)
         assertEquals(application.applicationType, savedApplication.applicationType)
         assertEquals(newApplicationData, savedApplication.applicationData)
-
         verify { cableReportServiceAllu wasNot Called }
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `updateApplicationData with application that's already saved to Allu is updated in Allu`() {
-        val hanke = createHankeEntity()
         val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 21 }
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea()
+            ) { it.alluid = 21 }
         val newApplicationData =
-            AlluDataFactory.createCableReportApplicationData(name = "Uudistettu johtoselvitys")
+            AlluDataFactory.createCableReportApplicationData(
+                name = "Uudistettu johtoselvitys",
+                areas = application.applicationData.areas
+            )
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
         justRun { cableReportServiceAllu.update(21, newApplicationData.toAlluData()) }
@@ -508,12 +526,19 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `updateApplicationData doesn't save to database if Allu update fails`() {
-        val hanke = createHankeEntity()
         val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 21 }
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea()
+            ) { it.alluid = 21 }
         val newApplicationData =
-            AlluDataFactory.createCableReportApplicationData(name = "Uudistettu johtoselvitys")
+            AlluDataFactory.createCableReportApplicationData(
+                name = "Uudistettu johtoselvitys",
+                areas = application.applicationData.areas
+            )
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
         every { cableReportServiceAllu.update(21, newApplicationData.toAlluData()) } throws
@@ -538,17 +563,22 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `updateApplicationData with application that's pending on Allu is updated in Allu`() {
-        val hanke = createHankeEntity()
         val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea()
+            ) {
                 it.alluid = 21
                 it.applicationData = it.applicationData.copy(pendingOnClient = false)
             }
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(
                 name = "Uudistettu johtoselvitys",
-                pendingOnClient = false
+                pendingOnClient = false,
+                areas = application.applicationData.areas
             )
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
@@ -575,10 +605,14 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `updateApplicationData with application that's pending on Allu is not updated on Allu if new data is invalid`() {
-        val hanke = createHankeEntity()
         val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea()
+            ) {
                 it.apply {
                     alluid = 21
                     applicationData = applicationData.copy(pendingOnClient = false)
@@ -587,7 +621,8 @@ class ApplicationServiceITest : DatabaseTest() {
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(
                 startTime = null,
-                pendingOnClient = false
+                pendingOnClient = false,
+                areas = application.applicationData.areas
             )
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
@@ -616,10 +651,14 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `updateApplicationData doesn't update pendingOnClient`() {
-        val hanke = createHankeEntity()
         val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea()
+            ) {
                 it.alluid = 21
                 it.applicationData = it.applicationData.copy(pendingOnClient = false)
             }
@@ -627,6 +666,7 @@ class ApplicationServiceITest : DatabaseTest() {
             AlluDataFactory.createCableReportApplicationData(
                 name = "Päivitetty hakemus",
                 pendingOnClient = true,
+                areas = application.applicationData.areas
             )
         val expectedApplicationData = newApplicationData.copy(pendingOnClient = false).toAlluData()
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
@@ -648,12 +688,19 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `updateApplicationData with application that's already beyond pending in Allu is not updated`() {
-        val hanke = createHankeEntity()
         val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 21 }
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea()
+            ) { it.alluid = 21 }
         val newApplicationData =
-            AlluDataFactory.createCableReportApplicationData(name = "Uudistettu johtoselvitys")
+            AlluDataFactory.createCableReportApplicationData(
+                name = "Uudistettu johtoselvitys",
+                areas = application.applicationData.areas
+            )
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21, ApplicationStatus.HANDLING)
 
@@ -699,7 +746,12 @@ class ApplicationServiceITest : DatabaseTest() {
             }
 
         assertEquals(
-            """Invalid geometry received when updating application for user $USERNAME, id=${application.id}, alluid=${application.alluid}, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}""",
+            """Invalid geometry received when updating application for
+                | user $USERNAME, id=${application.id}, alluid=${application.alluid},
+                | reason = Self-intersection,
+                | location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
+                .trimMargin()
+                .replace("\n", ""),
             exception.message
         )
     }
@@ -709,23 +761,15 @@ class ApplicationServiceITest : DatabaseTest() {
         val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
         val hankeEntity = hankeRepository.getOne(hanke.id!!)
         val application =
-            alluDataFactory.saveApplicationEntity(username, hanke = hankeEntity) { it.alluid = 21 }
+            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hankeEntity) { it.alluid = 21 }
         val cableReportApplicationData =
-            AlluDataFactory.createCableReportApplicationData(
-                areas =
-                    listOf(
-                        ApplicationArea(
-                            "area",
-                            "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
-                        )
-                    )
-            )
+            AlluDataFactory.createCableReportApplicationData(areas = listOf(havisAmanda))
 
         assertThrows<ApplicationGeometryNotInsideHankeException> {
             applicationService.updateApplicationData(
                 application.id!!,
                 cableReportApplicationData,
-                username
+                USERNAME
             )
         }
     }
@@ -740,10 +784,20 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `sendApplication sets pendingOnClient to false`() {
-        val hanke = createHankeEntity()
         val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application =
+                    mockApplicationWithArea(
+                        AlluDataFactory.createCableReportApplicationData(
+                            pendingOnClient = true,
+                            areas = listOf(aleksanterinpatsas)
+                        )
+                    )
+            ) {
                 it.alluid = 21
                 it.applicationData = it.applicationData.copy(pendingOnClient = true)
             }
@@ -774,10 +828,14 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `sendApplication creates new application to Allu and saves ID and status to database`() {
-        val hanke = createHankeEntity()
         val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea()
+            ) { it.alluid = null }
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
         every { cableReportServiceAllu.create(pendingApplicationData.toAlluData()) } returns 26
@@ -799,7 +857,6 @@ class ApplicationServiceITest : DatabaseTest() {
             savedApplication.applicationIdentifier
         )
         assertEquals(ApplicationStatus.PENDING, savedApplication.alluStatus)
-
         verifyOrder {
             cableReportServiceAllu.create(pendingApplicationData.toAlluData())
             cableReportServiceAllu.addAttachment(26, any())
@@ -808,10 +865,14 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `sendApplication with application that's been sent before is not sent again`() {
-        val hanke = createHankeEntity()
         val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea()
+            ) {
                 it.alluid = 21
                 it.applicationData = it.applicationData.copy(pendingOnClient = false)
             }
@@ -825,10 +886,14 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `sendApplication with application that's already beyond pending in Allu is not sent`() {
-        val hanke = createHankeEntity()
         val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea()
+            ) {
                 it.alluid = 21
                 it.applicationData = it.applicationData.copy(pendingOnClient = false)
             }
@@ -843,10 +908,14 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
     fun `sendApplication sends application and saves alluid even if status query fails`() {
-        val hanke = createHankeEntity()
         val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea()
+            ) { it.alluid = null }
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
         every { cableReportServiceAllu.create(pendingApplicationData.toAlluData()) } returns 26
@@ -878,21 +947,13 @@ class ApplicationServiceITest : DatabaseTest() {
         val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
         val hankeEntity = hankeRepository.getOne(hanke.id!!)
         val application =
-            alluDataFactory.saveApplicationEntity(username, hanke = hankeEntity) {
+            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hankeEntity) {
                 it.applicationData =
-                    AlluDataFactory.createCableReportApplicationData(
-                        areas =
-                            listOf(
-                                ApplicationArea(
-                                    "area",
-                                    "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
-                                )
-                            )
-                    )
+                    AlluDataFactory.createCableReportApplicationData(areas = listOf(havisAmanda))
             }
 
         assertThrows<ApplicationGeometryNotInsideHankeException> {
-            applicationService.sendApplication(application.id!!, username)
+            applicationService.sendApplication(application.id!!, USERNAME)
         }
     }
 
@@ -1209,6 +1270,24 @@ class ApplicationServiceITest : DatabaseTest() {
 
         verify { cableReportServiceAllu wasNot Called }
     }
+
+    private fun initializedHanke(): HankeEntity =
+        hankeRepository.findByHankeTunnus("HAI23-5") ?: throw NoSuchElementException()
+
+    private val aleksanterinpatsas: ApplicationArea =
+        AlluDataFactory.createApplicationArea(
+            geometry = "/fi/hel/haitaton/hanke/geometria/aleksanterin-patsas.json".asJsonResource()
+        )
+
+    private val havisAmanda: ApplicationArea =
+        AlluDataFactory.createApplicationArea(
+            geometry = "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
+        )
+
+    private fun mockApplicationWithArea(
+        applicationData: ApplicationData =
+            AlluDataFactory.createCableReportApplicationData(areas = listOf(aleksanterinpatsas))
+    ): Application = AlluDataFactory.createApplication(applicationData = applicationData)
 
     val customerWithContactsJson =
         """

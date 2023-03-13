@@ -129,7 +129,7 @@ open class ApplicationService(
         }
 
         val hankeId = application.hanke.id!!
-        application.applicationData.areas?.let { areas ->
+        newApplicationData.areas?.let { areas ->
             checkApplicationAreasInsideHankealue(hankeId, areas) { applicationArea ->
                 "Application geometry doesn't match any hankealue when updating application for user $userId, " +
                     "hankeId = $hankeId, applicationId = ${application.id}, " +
