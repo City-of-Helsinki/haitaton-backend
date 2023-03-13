@@ -10,6 +10,7 @@ from modules.autoliikennemaarat import MakaAutoliikennemaarat
 from modules.hsl import HslBuses
 from modules.ylre_katualueet import YlreKatualueet
 from modules.ylre_katuosat import YlreKatuosat
+from modules.tram_infra import TramInfra
 
 
 def process_item(item: str, cfg: Config):
@@ -31,6 +32,8 @@ def instantiate_processor(item: str, cfg: Config) -> GisProcessor:
         return YlreKatuosat(cfg)
     elif item == "ylre_katualueet":
         return YlreKatualueet(cfg)
+    elif item == "tram_infra":
+        return TramInfra(cfg)
     else:
         try:
             raise RuntimeError("Configuration not recognized: {}".format(item))

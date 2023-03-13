@@ -1,0 +1,109 @@
+import geopandas as gpd
+import pandas as pd
+from sqlalchemy import create_engine
+
+from modules.config import Config
+from modules.gis_processing import GisProcessor
+
+
+def dict_values_to_list(d: dict) -> dict:
+    return {k: [v] for k, v in d.items()}
+
+
+def other_tag_to_dict(tags) -> dict:
+    tags = tags[1:-1]
+    return {
+        k: v for k, v in [s.split('"=>"') for s in tags.split('","')] if v is not None
+    }
+
+
+class TramInfra(GisProcessor):
+    """Process tram infra."""
+
+    def __init__(self, cfg: Config):
+        self._cfg = cfg
+        self._process_result_lines = None
+        self._process_result_polygons = None
+
+        file_name = cfg.local_file("tram_infra")
+
+        self._lines = gpd.read_file(file_name)
+
+    def process(self):
+        lines = self._lines
+        l = lines[~lines.other_tags.isna()]
+        l2 = l.copy()
+        l2["tag_dict"] = l2.apply(lambda r: other_tag_to_dict(r.other_tags), axis=1)
+        l2_tram_index = l2.apply(lambda r: r.tag_dict.get("railway") == "tram", axis=1)
+        tram_lines = l2[l2_tram_index]
+
+        df_list = []
+        for i, r in tram_lines.iterrows():
+            df_list.append(
+                pd.DataFrame(dict_values_to_list(other_tag_to_dict(r.other_tags)))
+            )
+        df_new = pd.concat(df_list)
+        df_new.index = tram_lines.index
+        trams = tram_lines.join(df_new, how="inner").drop(["tag_dict"], axis=1)
+        trams["infra"] = 1
+        trams = trams.astype({"infra": "int32"})
+        self._process_result_lines = trams.loc[:, ["infra", "geometry"]]
+
+        # Buffering configuration
+        buffers = self._cfg.buffer("tram_infra")
+        if len(buffers) != 1:
+            raise ValueError("Unkown number of buffer values")
+
+        # buffer lines
+        target_infra_polys = self._process_result_lines.copy()
+        target_infra_polys["geometry"] = target_infra_polys.buffer(buffers[0])
+
+        # save to instance
+        self._process_result_polygons = target_infra_polys
+
+    def persist_to_database(self):
+        connection = create_engine(self._cfg.pg_conn_uri())
+
+        # persist route lines to database
+        self._process_result_lines.to_postgis(
+            "tram_infra",
+            connection,
+            "public",
+            if_exists="replace",
+            index=True,
+            index_label="fid",
+        )
+
+        # persist polygons to database
+        self._process_result_polygons.to_postgis(
+            "tram_infra_polys",
+            connection,
+            "public",
+            if_exists="replace",
+            index=True,
+            index_label="fid",
+        )
+
+    def save_to_file(self):
+        """Save processing results to file."""
+        # tram line infra as debug material
+        target_infra_file_name = self._cfg.target_file("tram_infra")
+
+        tram_lines = self._process_result_lines.reset_index()
+
+        schema = gpd.io.file.infer_schema(tram_lines)
+        schema["properties"]["infra"] = "int32"
+
+        tram_lines.to_file(target_infra_file_name, schema=schema, driver="GPKG")
+
+        # tormays GIS material
+        target_buffer_file_name = self._cfg.target_buffer_file("tram_infra")
+
+        # instruct Geopandas for correct data type in file write
+        # fid is originally as index, obtain fid as column...
+        tormays_polygons = self._process_result_polygons.reset_index()
+
+        schema = gpd.io.file.infer_schema(tormays_polygons)
+        schema["properties"]["infra"] = "int32"
+
+        tormays_polygons.to_file(target_buffer_file_name, schema=schema, driver="GPKG")
