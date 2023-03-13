@@ -46,7 +46,7 @@ hki:
 tram_infra:
   local_file: "helsinki-osm-lines.gpkg"
   target_file: "tram_lines_infra.gpkg"
-  target_buffer_file: "tormays_tram_lines_infra.gpkg"
+  target_buffer_file: "tormays_tram_lines_infra_polys.gpkg"
   buffer:
     - 20
 

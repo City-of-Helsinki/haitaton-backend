@@ -1,6 +1,6 @@
 import geopandas as gpd
 import pandas as pd
-from sqlalchemy import create_engine, schema
+from sqlalchemy import create_engine, text
 
 from modules.config import Config
 from modules.gis_processing import GisProcessor
@@ -70,16 +70,18 @@ class TramInfra(GisProcessor):
         self._process_result_polygons = target_infra_polys
 
     def persist_to_database(self):
-        connection = create_engine(self._cfg.pg_conn_uri())
+        engine = create_engine(self._cfg.pg_conn_uri())
 
         # persist original results for debugging and development
         debug_schema = "debug"
-        if not connection.dialect.has_schema(connection, debug_schema):
-            connection.execute(schema.CreateSchema(debug_schema))
+
+        with engine.connect() as conn:
+            conn.execute(text("CREATE SCHEMA IF NOT EXISTS {}".format(debug_schema)))
+            conn.commit()
 
         self._debug_result_lines.to_postgis(
             "tram_infra",
-            connection,
+            engine,
             debug_schema,
             if_exists="replace",
             index=True,
@@ -89,7 +91,7 @@ class TramInfra(GisProcessor):
         # persist route lines to database
         self._process_result_lines.to_postgis(
             "tram_infra",
-            connection,
+            engine,
             "public",
             if_exists="replace",
             index=True,
@@ -99,7 +101,7 @@ class TramInfra(GisProcessor):
         # persist polygons to database
         self._process_result_polygons.to_postgis(
             "tram_infra_polys",
-            connection,
+            engine,
             "public",
             if_exists="replace",
             index=True,
