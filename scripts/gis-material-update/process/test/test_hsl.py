@@ -3,12 +3,12 @@ import geopandas as gpd
 import pandas as pd
 import unittest
 
-
+from test.compare_utils import TormaysCheckerMixin
 from modules.config import Config
 from modules.hsl import HslBuses
 
 
-class TestHslLines(unittest.TestCase):
+class TestHslLines(TormaysCheckerMixin, unittest.TestCase):
     """Test that final output contains correct geometry and attributes."""
 
     @classmethod
@@ -21,38 +21,24 @@ class TestHslLines(unittest.TestCase):
         cls._target_lines_dataframe = hsl._process_result_lines
 
     def test_line_geometry_is_linestring(self):
-        lines = self._target_lines_dataframe
-        geom_names = lines.geometry.geom_type.unique().tolist()
-
-        # Only one geometry type
-        self.assertEqual(len(geom_names), 1)
-        # Geometry is LineString
-        self.assertEqual(geom_names[0].lower(), "linestring")
+        self.check_unique_geometry_type(self._target_lines_dataframe, "linestring")
 
     def test_tormays_geometry_is_polygon(self):
-        polygons = self._target_buffer_dataframe
-        geom_names = polygons.geometry.geom_type.unique().tolist()
-
-        # Only one geometry type
-        self.assertEqual(len(geom_names), 1)
-        # Geometry is Polygon
-        self.assertEqual(geom_names[0].lower(), "polygon")
+        self.check_unique_geometry_type(self._target_buffer_dataframe, "polygon")
 
     def test_tormays_geometry_has_configured_crs(self):
-        polygons = self._target_buffer_dataframe
-
-        self.assertEqual(polygons.geometry.crs, self.cfg.crs())
+        self.check_geometry_has_configured_crs(
+            self._target_buffer_dataframe, self.cfg.crs()
+        )
 
     def test_tormays_attributes(self):
-        tormays = self._target_buffer_dataframe
-        attributes = set(["direction_id", "route_id", "rush_hour", "trunk", "geometry"])
-
-        self.assertEqual(set(tormays.columns.tolist()), attributes)
+        self.check_geom_data_attributes(
+            self._target_buffer_dataframe,
+            ["direction_id", "route_id", "rush_hour", "trunk", "geometry"],
+        )
 
     def test_tormays_min_area(self):
-        tormays = self._target_buffer_dataframe
-
-        self.assertGreater(min(tormays.area), 0.0)
+        self.check_geom_data_min_area(self._target_buffer_dataframe)
 
 
 class TestHslGtfs(unittest.TestCase):
