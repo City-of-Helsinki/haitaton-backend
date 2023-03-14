@@ -114,7 +114,6 @@ class ApplicationServiceITest : DatabaseTest() {
     fun `create creates an audit log entry for created application`() {
         TestUtils.addMockedRequestIp()
         val hanke = createHanke()
-
         val application =
             applicationService.create(
                 AlluDataFactory.createApplication(

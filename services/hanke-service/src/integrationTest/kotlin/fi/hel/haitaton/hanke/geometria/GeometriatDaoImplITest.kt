@@ -118,9 +118,6 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
 
     @Test
     fun `isInsideHankeAlueet returns false if there's no hanke with that id`() {
-        val aleksanterinPatsas: Polygon =
-            "/fi/hel/haitaton/hanke/geometria/aleksanterin-patsas.json".asJsonResource()
-
         val result = geometriatDao.isInsideHankeAlueet(5, aleksanterinPatsas)
 
         assertThat(result).isFalse()
@@ -129,9 +126,6 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
     @Test
     @Sql("/sql/alueeton-hanke.sql")
     fun `isInsideHankeAlueet returns false if hanke has no alueet`() {
-        val aleksanterinPatsas: Polygon =
-            "/fi/hel/haitaton/hanke/geometria/aleksanterin-patsas.json".asJsonResource()
-
         val result = geometriatDao.isInsideHankeAlueet(5, aleksanterinPatsas)
 
         assertThat(result).isFalse()
@@ -140,9 +134,6 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
     @Test
     @Sql("/sql/senaatintorin-hanke.sql")
     fun `isInsideHankeAlueet returns true when the object is inside a hanke alue`() {
-        val aleksanterinPatsas: Polygon =
-            "/fi/hel/haitaton/hanke/geometria/aleksanterin-patsas.json".asJsonResource()
-
         val result = geometriatDao.isInsideHankeAlueet(5, aleksanterinPatsas)
 
         assertThat(result).isTrue()
@@ -151,9 +142,6 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
     @Test
     @Sql("/sql/senaatintorin-hanke.sql")
     fun `isInsideHankeAlueet returns false when the object is outside all hanke alueet`() {
-        val havisAmanda: Polygon =
-            "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
-
         val result = geometriatDao.isInsideHankeAlueet(5, havisAmanda)
 
         assertThat(result).isFalse()
@@ -162,9 +150,6 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
     @Test
     @Sql("/sql/senaatintorin-hanke.sql")
     fun `isInsideHankeAlueet returns false when the object is partly outside every hanke alue`() {
-        val tuomiokirkonPortaat: Polygon =
-            "/fi/hel/haitaton/hanke/geometria/tuomiokirkon-portaat.json".asJsonResource()
-
         val result = geometriatDao.isInsideHankeAlueet(5, tuomiokirkonPortaat)
 
         assertThat(result).isFalse()
@@ -173,9 +158,6 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
     @Test
     @Sql("/sql/senaatintorin-hanke.sql")
     fun `isInsideHankeAlueet returns true when the object perfectly matches a hanke alue`() {
-        val senaatintori: Polygon =
-            "/fi/hel/haitaton/hanke/geometria/senaatintori.json".asJsonResource()
-
         val result = geometriatDao.isInsideHankeAlueet(5, senaatintori)
 
         assertThat(result).isTrue()
@@ -186,4 +168,16 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
 
     private fun getHankeGeometriaCount(): Int? =
         jdbcTemplate.queryForObject("SELECT COUNT(*) FROM HankeGeometria", Int::class.java)
+
+    private val senaatintori: Polygon =
+        "/fi/hel/haitaton/hanke/geometria/senaatintori.json".asJsonResource()
+
+    private val tuomiokirkonPortaat: Polygon =
+        "/fi/hel/haitaton/hanke/geometria/tuomiokirkon-portaat.json".asJsonResource()
+
+    private val havisAmanda: Polygon =
+        "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
+
+    private val aleksanterinPatsas: Polygon =
+        "/fi/hel/haitaton/hanke/geometria/aleksanterin-patsas.json".asJsonResource()
 }
