@@ -12,6 +12,8 @@ from modules.ylre_katualueet import YlreKatualueet
 from modules.ylre_katuosat import YlreKatuosat
 from modules.tram_infra import TramInfra
 
+DEFAULT_DEPLOYMENT_PROFILE = "local_development"
+
 
 def process_item(item: str, cfg: Config):
     print(f"Processing item: {item}")
@@ -44,11 +46,15 @@ def instantiate_processor(item: str, cfg: Config) -> GisProcessor:
 if __name__ == "__main__":
 
     deployment_profile = os.environ.get("TORMAYS_DEPLOYMENT_PROFILE")
-
+    use_deployment_profile = DEFAULT_DEPLOYMENT_PROFILE
     if deployment_profile in ["local_docker_development", "local_development"]:
         use_deployment_profile = deployment_profile
     else:
-        raise ValueError("Deployment profile is not detected")
+        print(
+            "Deployment profile environment variable is not set, defaulting to '{}'".format(
+                DEFAULT_DEPLOYMENT_PROFILE
+            )
+        )
 
     print("Using deployment profile: '{}'".format(use_deployment_profile))
 

@@ -14,12 +14,14 @@ class TestHslLines(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.cfg = Config()
-        filename = cls.cfg.target_buffer_file("hsl")
-        cls._target_buffer_dataframe = gpd.read_file(filename)
+        hsl = HslBuses(cls.cfg, validate_gtfs=False)
+        hsl.process()
+
+        cls._target_buffer_dataframe = hsl._process_result_polygons
+        cls._target_lines_dataframe = hsl._process_result_lines
 
     def test_line_geometry_is_linestring(self):
-        filename = self.cfg.target_file("hsl")
-        lines = gpd.read_file(filename)
+        lines = self._target_lines_dataframe
         geom_names = lines.geometry.geom_type.unique().tolist()
 
         # Only one geometry type

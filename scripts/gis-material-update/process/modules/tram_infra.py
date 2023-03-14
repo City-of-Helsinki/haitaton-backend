@@ -46,9 +46,7 @@ class TramInfra(GisProcessor):
 
         df_list = []
         for i, r in tram_lines.iterrows():
-            df_list.append(
-                pd.DataFrame(dict_values_to_list(other_tag_to_dict(r.other_tags)))
-            )
+            df_list.append(pd.DataFrame(dict_values_to_list(r.tag_dict)))
         df_new = pd.concat(df_list)
         df_new.index = tram_lines.index
         trams = tram_lines.join(df_new, how="inner").drop(["tag_dict"], axis=1)
@@ -70,7 +68,7 @@ class TramInfra(GisProcessor):
         self._process_result_polygons = target_infra_polys
 
     def persist_to_database(self):
-        engine = create_engine(self._cfg.pg_conn_uri())
+        engine = create_engine(self._cfg.pg_conn_uri(), future=True)
 
         # persist original results for debugging and development
         debug_schema = "debug"
@@ -113,7 +111,7 @@ class TramInfra(GisProcessor):
         # tram line infra as debug material
         target_infra_file_name = self._cfg.target_file("tram_infra")
 
-        tram_lines = self._process_result_lines.reset_index()
+        tram_lines = self._process_result_lines.reset_index(drop=True)
 
         schema = gpd.io.file.infer_schema(tram_lines)
         schema["properties"]["infra"] = "int32"
@@ -125,7 +123,7 @@ class TramInfra(GisProcessor):
 
         # instruct Geopandas for correct data type in file write
         # fid is originally as index, obtain fid as column...
-        tormays_polygons = self._process_result_polygons.reset_index()
+        tormays_polygons = self._process_result_polygons.reset_index(drop=True)
 
         schema = gpd.io.file.infer_schema(tormays_polygons)
         schema["properties"]["infra"] = "int32"

@@ -250,12 +250,14 @@ haitaton-gis-output
 
 Files (names configured in `config.yaml`)
 
-- tram_lines_infra.gpkg
-- tormays_tram_lines_infra_polys.gpkg
+- tram_infra.gpkg
+- tormays_tram_infra_polys.gpkg
 
 # Run tests
 
 Configure and activate python virtual environment.
+
+Fetch all source data, as described above.
 
 Run following in `gis-material-update/process` -directory.
 
