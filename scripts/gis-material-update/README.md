@@ -112,8 +112,8 @@ docker-compose run --rm gis-fetch <source_1> ... <source_N>
 Where `<source>` is currently one of:
 
 - `hsl` - HSL bus schedules
-- `hki` - Helsinki area GIS material, polygon, scale 1:1000000
-- `osm` - OpenStreetMap export of Finland
+- `hki` - Helsinki area GIS material, polygon
+- `osm` - OpenStreetMap export of Finland (with focus area clipping)
 - `helsinki_osm_lines` - line geometry export from `osm`, covering area of city of Helsinki
 - `ylre_katualue` - Helsinki YLRE street areas, polygons.
 - `ylre_katuosat` - Helsinki YLRE parts, polygons.
@@ -137,8 +137,7 @@ Prerequisites:
 
 Materials are expected to be previously fetched to local directory.
 
-Intersection is computed using OGR VRT driver in actual fetch operation. Due to
-large area in OSM material, computation takes tens of minutes to complete.
+Intersection is computed using OGR VRT driver in actual fetch operation.
 
 ## Run processing
 
@@ -235,6 +234,8 @@ Files (names configured in `config.yaml`)
 
 ### `tram_infra`
 
+Prerequisite: fetched `osm`, `hki` and `helsinki_osm_lines` -materials.
+
 Docker example run (ensure that image build and file copying is
 already performed as instructed above):
 
@@ -248,7 +249,7 @@ docker-compose stop gis-db
 Processed GIS material is available in:
 haitaton-gis-output
 
-Files (names configured in `config.yaml`)
+Output files (names configured in `config.yaml`)
 
 - tram_infra.gpkg
 - tormays_tram_infra_polys.gpkg
