@@ -30,6 +30,7 @@ import io.mockk.Called
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
+import io.mockk.justRun
 import io.mockk.verify
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -1121,12 +1122,15 @@ class HankeServiceITests : DatabaseTest() {
         val hakemusAlluId = 356
         val hanke = initHankeWithHakemus(hakemusAlluId)
         val hakemukset = hanke.hakemukset.map { it.toApplication() }
+        val hakemusId = hakemukset.first().id!!
         every { applicationService.isStillPending(hakemukset.first()) } returns true
+        justRun { applicationService.delete(hakemusId, USER_NAME) }
 
         hankeService.deleteHanke(hanke.toDomainObject(), hakemukset, USER_NAME)
 
         assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNull()
         verify { applicationService.isStillPending(hakemukset.first()) }
+        verify { applicationService.delete(hakemusId, USER_NAME) }
     }
 
     @Test
