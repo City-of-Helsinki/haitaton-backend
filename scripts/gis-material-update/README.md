@@ -115,7 +115,7 @@ Where `<source>` is currently one of:
 - `hki` - Helsinki area GIS material, polygon
 - `osm` - OpenStreetMap export of Finland (with focus area clipping)
 - `helsinki_osm_lines` - line geometry export from `osm`, covering area of city of Helsinki
-- `ylre_katualue` - Helsinki YLRE street areas, polygons.
+- `ylre_katualueet` - Helsinki YLRE street areas, polygons.
 - `ylre_katuosat` - Helsinki YLRE parts, polygons.
 - `maka_autoliikennemaarat` - Traffic volumes (car traffic)
 
