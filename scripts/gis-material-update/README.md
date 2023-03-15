@@ -112,10 +112,10 @@ docker-compose run --rm gis-fetch <source_1> ... <source_N>
 Where `<source>` is currently one of:
 
 - `hsl` - HSL bus schedules
-- `hki` - Helsinki area GIS material, polygon, scale 1:1000000
-- `osm` - OpenStreetMap export of Finland
+- `hki` - Helsinki area GIS material, polygon
+- `osm` - OpenStreetMap export of Finland (with focus area clipping)
 - `helsinki_osm_lines` - line geometry export from `osm`, covering area of city of Helsinki
-- `ylre_katualue` - Helsinki YLRE street areas, polygons.
+- `ylre_katualueet` - Helsinki YLRE street areas, polygons.
 - `ylre_katuosat` - Helsinki YLRE parts, polygons.
 - `maka_autoliikennemaarat` - Traffic volumes (car traffic)
 
@@ -137,8 +137,7 @@ Prerequisites:
 
 Materials are expected to be previously fetched to local directory.
 
-Intersection is computed using OGR VRT driver in actual fetch operation. Due to
-large area in OSM material, computation takes tens of minutes to complete.
+Intersection is computed using OGR VRT driver in actual fetch operation.
 
 ## Run processing
 
@@ -233,9 +232,33 @@ Files (names configured in `config.yaml`)
 - ylre_classes_orig_polys.gpkg
 - tormays_ylre_classes_polys.gpkg
 
+### `tram_infra`
+
+Prerequisite: fetched `osm`, `hki` and `helsinki_osm_lines` -materials.
+
+Docker example run (ensure that image build and file copying is
+already performed as instructed above):
+
+```sh
+docker-compose up -d gis-db
+docker-compose run --rm gis-fetch hki osm helsinki_osm_lines
+docker-compose run --rm gis-process tram_infra
+docker-compose stop gis-db
+```
+
+Processed GIS material is available in:
+haitaton-gis-output
+
+Output files (names configured in `config.yaml`)
+
+- tram_infra.gpkg
+- tormays_tram_infra_polys.gpkg
+
 # Run tests
 
 Configure and activate python virtual environment.
+
+Fetch all source data, as described above.
 
 Run following in `gis-material-update/process` -directory.
 
@@ -281,3 +304,29 @@ Basic principle is the following:
   - add new processing class
   - implement necessary functionality
   - add produced GIS material to database
+
+# Miscellaneous instructions
+
+## Creating python virtual environment
+
+To create python environment:
+
+```sh
+# Python installation is required
+[gis-material-update/process]$ python -m venv venv
+[gis-material-update/process]$ source venv/bin/activate
+[(venv) gis-material-update/process]$ pip install --upgrade pip
+[(venv) gis-material-update/process]$ pip install -r requirements.txt
+```
+
+To exit from already activated virtual environment:
+
+```
+[(venv) gis-material-update/process]$ ./venv/bin/deactivate
+```
+
+To activate already created virtual environment:
+
+```
+[gis-material-update/process]$ ./venv/bin/activate
+```
