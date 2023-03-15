@@ -49,6 +49,12 @@ tram_infra:
   target_buffer_file: "tormays_tram_infra_polys.gpkg"
   buffer:
     - 20
+tram_lines:
+  local_file: "hsl.zip"
+  target_file: "tram_lines.gpkg"
+  target_buffer_file: "tormays_tram_lines_polys.gpkg"
+  buffer:
+    - 35
 
 common:
   download_path: "/downloads"
