@@ -32,17 +32,23 @@ osm:
   addr: "/vsicurl/https://download.geofabrik.de/europe/finland-latest.osm.pbf"
   layer: "lines"
   local_file: "finland-latest.gpkg"
-  extra_args: "-oo INTERLEAVED_READING=YES"
+  extra_args: "-oo INTERLEAVED_READING=YES -spat 24.8105462481479 60.086424133713 25.2725829816252 60.3068159059038"
 helsinki_osm_lines:
   addr: "/haitaton-gis/osm_vrt_clip.vrt"
   local_file: "helsinki-osm-lines.gpkg"
   extra_args: "-dialect sqlite -nln lines -sql"
   extra_quoted_args: "SELECT lines.* FROM lines, area WHERE ST_Intersects(lines.geom, area.geom)"
 hki:
-  addr: "WFS:https://geo.stat.fi/geoserver/tilastointialueet/wfs"
-  layer: "tilastointialueet:kunta1000k"
-  local_file: "helsinki_alue.gpkg"
+  addr: "WFS:https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
+  layer: Seutukartta_aluejako_kuntarajat
+  local_file: helsinki_alue.gpkg
   extra_args: "-nln alue -where kunta='091'"
+tram_infra:
+  local_file: "helsinki-osm-lines.gpkg"
+  target_file: "tram_infra.gpkg"
+  target_buffer_file: "tormays_tram_infra_polys.gpkg"
+  buffer:
+    - 20
 
 common:
   download_path: "/downloads"
