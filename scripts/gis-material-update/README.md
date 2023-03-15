@@ -304,3 +304,29 @@ Basic principle is the following:
   - add new processing class
   - implement necessary functionality
   - add produced GIS material to database
+
+# Miscellaneous instructions
+
+## Creating python virtual environment
+
+To create python environment:
+
+```sh
+# Python installation is required
+[gis-material-update/process]$ python -m venv venv
+[gis-material-update/process]$ source venv/bin/activate
+[(venv) gis-material-update/process]$ pip install --upgrade pip
+[(venv) gis-material-update/process]$ pip install -r requirements.txt
+```
+
+To exit from already activated virtual environment:
+
+```
+[(venv) gis-material-update/process]$ ./venv/bin/deactivate
+```
+
+To activate already created virtual environment:
+
+```
+[gis-material-update/process]$ ./venv/bin/activate
+```
