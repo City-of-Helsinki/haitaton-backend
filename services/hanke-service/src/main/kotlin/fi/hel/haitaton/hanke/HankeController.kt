@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.application.ApplicationsResponse
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -7,6 +8,7 @@ import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.validation.ValidHanke
 import io.swagger.v3.oas.annotations.Hidden
+import io.swagger.v3.oas.annotations.Operation
 import javax.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
@@ -61,6 +63,30 @@ class HankeController(
 
         disclosureLogService.saveDisclosureLogsForHankkeet(hankeList, userid)
         return hankeList
+    }
+
+    @GetMapping("/{hankeTunnus}/hakemukset")
+    @Operation(
+        summary = "Get hanke applications.",
+        description = "Returns list of applications belonging to a given hanke."
+    )
+    fun getHankeHakemukset(@PathVariable hankeTunnus: String): ApplicationsResponse {
+        logger.info { "Finding applications for hanke $hankeTunnus" }
+
+        val userId = currentUserId()
+
+        hankeService.getHankeHakemuksetPair(hankeTunnus).let { (hanke, hakemukset) ->
+            hanke.verifyUserAuthorization(userId, PermissionCode.VIEW)
+
+            disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
+            if (hakemukset.isNotEmpty()) {
+                disclosureLogService.saveDisclosureLogsForApplications(hakemukset, userId)
+            }
+
+            return ApplicationsResponse(hakemukset).also {
+                logger.info { "Found ${it.applications.size} applications for hanke $hankeTunnus" }
+            }
+        }
     }
 
     /** Add one hanke. This method will be called when we do not have id for hanke yet */
@@ -139,5 +165,12 @@ class HankeController(
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
         logger.warn { ex.message }
         return ex.toHankeError(HankeError.HAI1002)
+    }
+
+    private fun Hanke.verifyUserAuthorization(userId: String, permissionCode: PermissionCode) {
+        val hankeId = id
+        if (hankeId == null || !permissionService.hasPermission(hankeId, userId, permissionCode)) {
+            throw HankeNotFoundException(this.hankeTunnus)
+        }
     }
 }

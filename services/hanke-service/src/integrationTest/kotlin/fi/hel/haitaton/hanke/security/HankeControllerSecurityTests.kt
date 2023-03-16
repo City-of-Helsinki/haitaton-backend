@@ -72,6 +72,7 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     @WithMockUser(username = "test7358", roles = [])
     fun `status ok with authenticated user with or without any role`() {
         performGetHankkeet().andExpect(status().isOk)
+        performGetHankeHakemukset().andExpect(status().isOk)
         performPostHankkeet().andExpect(status().isOk)
         performPutHankkeetTunnus().andExpect(status().isOk)
         performGetHankeByTunnus().andExpect(status().isOk)
@@ -81,6 +82,10 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     // Without mock user, i.e. anonymous
     fun `status unauthorized (401) without authenticated user`() {
         performGetHankkeet()
+            .andExpect(unauthenticated())
+            .andExpect(status().isUnauthorized)
+            .andExpectHankeError(HankeError.HAI0001)
+        performGetHankeHakemukset()
             .andExpect(unauthenticated())
             .andExpect(status().isUnauthorized)
             .andExpectHankeError(HankeError.HAI0001)
@@ -169,6 +174,19 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358") }
 
         return mockMvc.perform(get("/hankkeet/$testHankeTunnus").accept(MediaType.APPLICATION_JSON))
+    }
+
+    // --------- GET /hankkeet/{hankeTunnus}/hakemukset --------------
+
+    private fun performGetHankeHakemukset(): ResultActions {
+        every { hankeService.getHankeHakemuksetPair(any()) } returns
+            Pair(HankeFactory.create(id = 123, hankeTunnus = "HAI-TEST-1"), listOf())
+        every { permissionService.hasPermission(123, "test7358", PermissionCode.VIEW) } returns true
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358") }
+
+        return mockMvc.perform(
+            get("/hankkeet/$testHankeTunnus/hakemukset").accept(MediaType.APPLICATION_JSON)
+        )
     }
 
     // ===================== HELPERS ========================
