@@ -1,0 +1,19 @@
+databaseChangeLog:
+  - changeSet:
+      id: 025-add-perustaja-nimi-sahkoposti-to-hanke
+      comment: Add columns perustaja_nimi and perustaja_sahkoposti to hanke table
+      author: Niko Pitkonen
+      changes:
+        - addColumn:
+            tableName: hanke
+            columns:
+              - column:
+                  name: perustaja_nimi
+                  type: varchar(100)
+                  constraints:
+                    nullable: true
+              - column:
+                  name: perustaja_sahkoposti
+                  type: varchar(100)
+                  constraints:
+                    nullable: true

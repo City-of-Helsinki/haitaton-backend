@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
 
@@ -128,6 +129,10 @@ object HankeFactory : Factory<Hanke>() {
         this.toteuttajat.addAll(HankeYhteystietoFactory.createDifferentiated(toteuttajat, mutator))
         return this
     }
+
+    fun Hanke.withPerustaja(
+        newPerustaja: Perustaja? = Perustaja("Pertti Perustaja", "foo@bar.com")
+    ): Hanke = apply { perustaja = newPerustaja }
 
     /**
      * Add a number of omistaja to a hanke. Generates the yhteystiedot with

@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
 import fi.hel.haitaton.hanke.domain.Hankealue
@@ -7,6 +8,7 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.withPerustaja
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -30,13 +32,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -52,7 +49,7 @@ private const val HANKE_TUNNUS = "HAI21-1"
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @WithMockUser("test", roles = ["haitaton-user"])
-class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
+class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired lateinit var hankeService: HankeService // faking these calls
     @Autowired lateinit var permissionService: PermissionService
@@ -74,9 +71,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         every { hankeService.loadHanke(HANKE_TUNNUS) }.returns(HankeFactory.create())
         every { permissionService.hasPermission(any(), any(), PermissionCode.VIEW) }.returns(false)
 
-        mockMvc
-            .perform(get("/hankkeet/$HANKE_TUNNUS").accept(MediaType.APPLICATION_JSON))
-            .andExpect(status().isNotFound)
+        get("/hankkeet/$HANKE_TUNNUS").andExpect(status().isNotFound)
 
         verify { disclosureLogService wasNot Called }
         verify { hankeService.loadHanke(HANKE_TUNNUS) }
@@ -86,16 +81,15 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
     @Test
     fun `When hankeTunnus is given then return Hanke with it (GET)`() {
         val hankeId = 123
-        val userId = "test"
+        val userId = USERNAME
         val hanke = HankeFactory.create(hankeId, userId)
         // faking the service call
         every { hankeService.loadHanke(HANKE_TUNNUS) }.returns(hanke)
         every { permissionService.hasPermission(hankeId, userId, PermissionCode.VIEW) }
             .returns(true)
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(hanke, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME) }
 
-        mockMvc
-            .perform(get("/hankkeet/$HANKE_TUNNUS").accept(MediaType.APPLICATION_JSON))
+        get("/hankkeet/$HANKE_TUNNUS")
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.nimi").value("Hämeentien perusparannus ja katuvalot"))
@@ -128,11 +122,10 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         every { hankeService.loadHankkeetByIds(hankeIds) }.returns(hankkeet)
         every { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
             .returns(hankeIds)
-        justRun { disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME) }
 
         // we check that we get the two hankeTunnus we expect
-        mockMvc
-            .perform(get("/hankkeet").accept(MediaType.APPLICATION_JSON))
+        get("/hankkeet")
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$[2]").doesNotExist())
@@ -161,13 +154,12 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val hankkeet = listOf(hanke1, hanke2)
 
         every { hankeService.loadHankkeetByIds(hankeIds) }.returns(listOf(hanke1, hanke2))
-        every { permissionService.getAllowedHankeIds("test", PermissionCode.VIEW) }
+        every { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
             .returns(hankeIds)
-        justRun { disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME) }
 
         // we check that we get the two hankeTunnus and geometriat we expect
-        mockMvc
-            .perform(get("/hankkeet?geometry=true").accept(MediaType.APPLICATION_JSON))
+        get("/hankkeet?geometry=true")
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$[0].hankeTunnus").value(HANKE_TUNNUS))
@@ -178,8 +170,8 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("$[1].alueet[0].geometriat.id").value(2))
 
         verify { hankeService.loadHankkeetByIds(hankeIds) }
-        verify { disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, "test") }
-        verify { permissionService.getAllowedHankeIds("test", PermissionCode.VIEW) }
+        verify { disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME) }
+        verify { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
     }
 
     @Test
@@ -187,7 +179,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         every { hankeService.getHankeHakemuksetPair(HANKE_TUNNUS) } throws
             HankeNotFoundException(HANKE_TUNNUS)
 
-        mockMvc.perform(get("/hankkeet/$HANKE_TUNNUS/hakemukset")).andExpect(status().isNotFound)
+        get("/hankkeet/$HANKE_TUNNUS/hakemukset").andExpect(status().isNotFound)
 
         verify { hankeService.getHankeHakemuksetPair(HANKE_TUNNUS) }
     }
@@ -201,7 +193,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         every { permissionService.hasPermission(hanke.id!!, USERNAME, PermissionCode.VIEW) } returns
             false
 
-        mockMvc.perform(get("/hankkeet/$HANKE_TUNNUS/hakemukset")).andExpect(status().isNotFound)
+        get("/hankkeet/$HANKE_TUNNUS/hakemukset").andExpect(status().isNotFound)
 
         verify { hankeService.getHankeHakemuksetPair(HANKE_TUNNUS) }
         verify { permissionService.hasPermission(hanke.id!!, USERNAME, PermissionCode.VIEW) }
@@ -216,10 +208,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         justRun { disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME) }
 
         val response: ApplicationsResponse =
-            mockMvc
-                .perform(get("/hankkeet/$HANKE_TUNNUS/hakemukset"))
-                .andExpect(status().isOk)
-                .andReturnBody()
+            get("/hankkeet/$HANKE_TUNNUS/hakemukset").andExpect(status().isOk).andReturnBody()
 
         assertTrue(response.applications.isEmpty())
         verify { hankeService.getHankeHakemuksetPair(HANKE_TUNNUS) }
@@ -239,10 +228,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         justRun { disclosureLogService.saveDisclosureLogsForApplications(applications, USERNAME) }
 
         val response: ApplicationsResponse =
-            mockMvc
-                .perform(get("/hankkeet/$HANKE_TUNNUS/hakemukset"))
-                .andExpect(status().isOk)
-                .andReturnBody()
+            get("/hankkeet/$HANKE_TUNNUS/hakemukset").andExpect(status().isOk).andReturnBody()
 
         assertTrue(response.applications.isNotEmpty())
         assertEquals(ApplicationsResponse(applications), response)
@@ -267,32 +253,48 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 id = 1,
                 hankeTunnus = HANKE_TUNNUS,
                 version = 0,
-                createdBy = "test",
+                createdBy = USERNAME,
                 createdAt = getCurrentTimeUTC(),
             )
-
-        // faking the service call
         every { hankeService.createHanke(any()) }.returns(createdHanke)
         justRun { permissionService.setPermission(any(), any(), Role.KAIKKI_OIKEUDET) }
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(createdHanke, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(createdHanke, USERNAME) }
 
-        mockMvc
-            .perform(
-                post("/hankkeet")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .characterEncoding("UTF-8")
-                    .content(hankeToBeMocked.toJsonString())
-                    .with(csrf())
-                    .accept(MediaType.APPLICATION_JSON)
-            )
+        postRaw("/hankkeet", hankeToBeMocked.toJsonString())
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.hankeTunnus").value(HANKE_TUNNUS))
             .andExpect(content().json(createdHanke.toJsonString()))
 
         verify { hankeService.createHanke(any()) }
-        verify { disclosureLogService.saveDisclosureLogsForHanke(createdHanke, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(createdHanke, USERNAME) }
         verify { permissionService.setPermission(any(), any(), Role.KAIKKI_OIKEUDET) }
+    }
+
+    @Test
+    fun `createHanke when perustaja is provided should return provided information`() {
+        val hanke = HankeFactory.create().withPerustaja()
+        every { hankeService.createHanke(any()) } returns hanke
+        justRun { permissionService.setPermission(any(), any(), Role.KAIKKI_OIKEUDET) }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME) }
+
+        post("/hankkeet", hanke)
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.perustaja.nimi").value("Pertti Perustaja"))
+            .andExpect(jsonPath("$.perustaja.sahkoposti").value("foo@bar.com"))
+
+        verify { hankeService.createHanke(any()) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), any()) }
+        verify { permissionService.setPermission(any(), any(), any()) }
+    }
+
+    @Test
+    fun `create hanke with perustaja without sahkoposti returns 400`() {
+        val hakemus = HankeFactory.create().withPerustaja()
+        val content: ObjectNode = OBJECT_MAPPER.valueToTree(hakemus)
+        (content.get("perustaja") as ObjectNode).remove("sahkoposti")
+
+        post("/hankkeet", content.toJsonString()).andExpect(status().isBadRequest)
     }
 
     @Test
@@ -303,25 +305,16 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val updatedHanke =
             hankeToBeUpdated.apply {
                 modifiedAt = getCurrentTimeUTC()
-                modifiedBy = "test"
+                modifiedBy = USERNAME
             }
-
-        every { hankeService.getHankeId(hanketunnus) }.returns(updatedHanke.id)
+        every { hankeService.loadHanke(hanketunnus) } returns HankeFactory.create()
         every { permissionService.hasPermission(updatedHanke.id!!, USERNAME, PermissionCode.EDIT) }
             .returns(false)
 
-        mockMvc
-            .perform(
-                put("/hankkeet/$hanketunnus")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .characterEncoding("UTF-8")
-                    .content(hankeToBeUpdated.toJsonString())
-                    .with(csrf())
-                    .accept(MediaType.APPLICATION_JSON)
-            )
+        putRaw("/hankkeet/$hanketunnus", hankeToBeUpdated.toJsonString())
             .andExpect(status().isNotFound)
 
-        verify { hankeService.getHankeId(hanketunnus) }
+        verify { hankeService.loadHanke(hanketunnus) }
         verify { permissionService.hasPermission(updatedHanke.id!!, USERNAME, PermissionCode.EDIT) }
     }
 
@@ -333,44 +326,33 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         val updatedHanke =
             hankeToBeUpdated.apply {
                 modifiedAt = getCurrentTimeUTC()
-                modifiedBy = "test"
+                modifiedBy = USERNAME
                 status = HankeStatus.PUBLIC
             }
-
-        every { hankeService.getHankeId(hanketunnus) }.returns(updatedHanke.id)
+        every { hankeService.loadHanke(hanketunnus) } returns HankeFactory.create()
         every { permissionService.hasPermission(updatedHanke.id!!, USERNAME, PermissionCode.EDIT) }
             .returns(true)
         every { hankeService.updateHanke(any()) }.returns(updatedHanke)
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, USERNAME) }
 
-        mockMvc
-            .perform(
-                put("/hankkeet/$hanketunnus")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .characterEncoding("UTF-8")
-                    .content(hankeToBeUpdated.toJsonString())
-                    .with(csrf())
-                    .accept(MediaType.APPLICATION_JSON)
-            )
+        putRaw("/hankkeet/$hanketunnus", hankeToBeUpdated.toJsonString())
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(jsonPath("$.nimi").value(HankeFactory.defaultNimi))
             .andExpect(jsonPath("$.status").value(HankeStatus.PUBLIC.name))
 
-        verify { hankeService.getHankeId(hanketunnus) }
+        verify { hankeService.loadHanke(hanketunnus) }
         verify { permissionService.hasPermission(updatedHanke.id!!, USERNAME, PermissionCode.EDIT) }
         verify { hankeService.updateHanke(any()) }
-        verify { disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, USERNAME) }
     }
 
     @Test
     fun `Add Hanke and HankeYhteystiedot and return it with newly created hankeTunnus (POST)`() {
         val hankeToBeMocked =
-            HankeFactory.create(hankeTunnus = null, version = null, createdBy = "test")
+            HankeFactory.create(hankeTunnus = null, version = null, createdBy = USERNAME)
                 .withGeneratedOmistaja(1)
-
         val content = hankeToBeMocked.toJsonString()
-
         // changing some return values
         val expectedHanke =
             hankeToBeMocked.apply {
@@ -378,27 +360,19 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 id = 12
                 omistajat[0].id = 3
             }
-
         justRun { permissionService.setPermission(any(), any(), Role.KAIKKI_OIKEUDET) }
         every { hankeService.createHanke(any()) }.returns(expectedHanke)
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, "test") }
-
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME) }
         val expectedContent = expectedHanke.toJsonString()
-        mockMvc
-            .perform(
-                post("/hankkeet")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .characterEncoding("UTF-8")
-                    .content(content)
-                    .with(csrf())
-                    .accept(MediaType.APPLICATION_JSON)
-            )
+
+        postRaw("/hankkeet", content)
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(content().json(expectedContent))
             .andExpect(jsonPath("$.hankeTunnus").value(HANKE_TUNNUS))
+
         verify { hankeService.createHanke(any()) }
-        verify { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME) }
         verify { permissionService.setPermission(any(), any(), Role.KAIKKI_OIKEUDET) }
     }
 
@@ -411,7 +385,6 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         hankeToBeUpdated.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
         hankeToBeUpdated.tyomaaTyyppi.add(TyomaaTyyppi.KAASUJOHTO)
         hankeToBeUpdated.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
-
         val alue = Hankealue()
         alue.haittaAlkuPvm = DateFactory.getStartDatetime()
         alue.haittaLoppuPvm = DateFactory.getEndDatetime()
@@ -421,7 +394,6 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         alue.polyHaitta = Haitta13.KAKSI
         alue.tarinaHaitta = Haitta13.KOLME
         hankeToBeUpdated.alueet.add(alue)
-
         // Prepare the expected result/return
         // Note, "pvm" values should have become truncated to begin of the day
         val expectedDateAlku =
@@ -432,29 +404,21 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             hankeToBeUpdated.apply {
                 alkuPvm = expectedDateAlku
                 loppuPvm = expectedDateLoppu
-                modifiedBy = "test"
+                modifiedBy = USERNAME
                 modifiedAt = getCurrentTimeUTC()
             }
         expectedHanke.alueet[0].haittaAlkuPvm = expectedDateAlku
         expectedHanke.alueet[0].haittaLoppuPvm = expectedDateLoppu
         val expectedContent = expectedHanke.toJsonString()
-
-        every { hankeService.getHankeId(hanketunnus) }.returns(expectedHanke.id)
-        every { permissionService.hasPermission(expectedHanke.id!!, USERNAME, PermissionCode.EDIT) }
-            .returns(true)
-        every { hankeService.updateHanke(any()) }.returns(expectedHanke)
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, "test") }
+        every { hankeService.loadHanke(hanketunnus) } returns hankeToBeUpdated
+        every {
+            permissionService.hasPermission(expectedHanke.id!!, USERNAME, PermissionCode.EDIT)
+        } returns true
+        every { hankeService.updateHanke(any()) } returns expectedHanke
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME) }
 
         // Call it and check results
-        mockMvc
-            .perform(
-                put("/hankkeet/idHankkeelle123")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .characterEncoding("UTF-8")
-                    .content(hankeToBeUpdated.toJsonString())
-                    .with(csrf())
-                    .accept(MediaType.APPLICATION_JSON)
-            )
+        putRaw("/hankkeet/idHankkeelle123", hankeToBeUpdated.toJsonString())
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(content().json(expectedContent))
@@ -465,33 +429,31 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                     .value(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI.name)
             ) // Note, here as string, not the enum.
 
-        verify { hankeService.getHankeId(hanketunnus) }
+        verify { hankeService.loadHanke(hanketunnus) }
         verify {
             permissionService.hasPermission(expectedHanke.id!!, USERNAME, PermissionCode.EDIT)
         }
         verify { hankeService.updateHanke(any()) }
-        verify { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME) }
     }
 
     @Test
     fun `test dates and times do not change on a roundtrip, except for rounding to midnight`() {
         val datetimeAlku = DateFactory.getStartDatetime()
         val datetimeLoppu = DateFactory.getEndDatetime()
-
         val hankeToBeMocked =
             HankeFactory.create(
                 null,
                 hankeTunnus = null,
                 alkuPvm = datetimeAlku,
                 loppuPvm = datetimeLoppu,
-                createdBy = "test",
+                createdBy = USERNAME,
                 createdAt = getCurrentTimeUTC()
             )
         val alue = Hankealue()
         alue.haittaAlkuPvm = datetimeAlku
         alue.haittaLoppuPvm = datetimeLoppu
         hankeToBeMocked.alueet.add(alue)
-
         // Prepare the expected result/return
         // Note, "pvm" values should have become truncated to begin of the day
         val expectedDateAlku = datetimeAlku.truncatedTo(ChronoUnit.DAYS)
@@ -511,22 +473,13 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         var expectedDateLoppuJson = expectedDateLoppu.toJsonString()
         expectedDateAlkuJson = expectedDateAlkuJson.substring(1, expectedDateAlkuJson.length - 1)
         expectedDateLoppuJson = expectedDateLoppuJson.substring(1, expectedDateLoppuJson.length - 1)
-
         // faking the service call
         every { hankeService.createHanke(any()) }.returns(expectedHanke)
         justRun { permissionService.setPermission(any(), any(), Role.KAIKKI_OIKEUDET) }
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, "test") }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME) }
 
         // Call it and check results
-        mockMvc
-            .perform(
-                post("/hankkeet")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .characterEncoding("UTF-8")
-                    .content(hankeToBeMocked.toJsonString())
-                    .with(csrf())
-                    .accept(MediaType.APPLICATION_JSON)
-            )
+        postRaw("/hankkeet", hankeToBeMocked.toJsonString())
             .andExpect(status().isOk)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(content().json(expectedContent))
@@ -535,8 +488,9 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .andExpect(jsonPath("$.loppuPvm").value(expectedDateLoppuJson))
             .andExpect(jsonPath("$.alueet[0].haittaAlkuPvm").value(expectedDateAlkuJson))
             .andExpect(jsonPath("$.alueet[0].haittaLoppuPvm").value(expectedDateLoppuJson))
+
         verify { hankeService.createHanke(any()) }
-        verify { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, "test") }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME) }
         verify { permissionService.setPermission(any(), any(), Role.KAIKKI_OIKEUDET) }
     }
 
@@ -555,15 +509,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         every { hankeService.createHanke(any()) } throws RuntimeException("Some error")
 
         // Call it and check results
-        mockMvc
-            .perform(
-                post("/hankkeet")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .characterEncoding("UTF-8")
-                    .content(hanke.toJsonString())
-                    .with(csrf())
-                    .accept(MediaType.APPLICATION_JSON)
-            )
+        postRaw("/hankkeet", hanke.toJsonString())
             .andExpect(status().isInternalServerError)
             .andExpect(content().contentType(MediaType.APPLICATION_JSON))
             .andExpect(
@@ -582,9 +528,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
             .returns(true)
         justRun { hankeService.deleteHanke(pair.first, pair.second, USERNAME) }
 
-        mockMvc
-            .perform(MockMvcRequestBuilders.delete("/hankkeet/$HANKE_TUNNUS").with(csrf()))
-            .andExpect(status().isNoContent)
+        delete("/hankkeet/$HANKE_TUNNUS").andExpect(status().isNoContent)
 
         verify { hankeService.getHankeHakemuksetPair(HANKE_TUNNUS) }
         verify { permissionService.hasPermission(mockHankeId, USERNAME, PermissionCode.DELETE) }
@@ -599,9 +543,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
         every { permissionService.hasPermission(mockHankeId, USERNAME, PermissionCode.DELETE) }
             .returns(false)
 
-        mockMvc
-            .perform(MockMvcRequestBuilders.delete("/hankkeet/$HANKE_TUNNUS").with(csrf()))
-            .andExpect(status().isNotFound)
+        delete("/hankkeet/$HANKE_TUNNUS").andExpect(status().isNotFound)
 
         verify { hankeService.getHankeHakemuksetPair(HANKE_TUNNUS) }
         verify { permissionService.hasPermission(mockHankeId, USERNAME, PermissionCode.DELETE) }
@@ -614,9 +556,7 @@ class HankeControllerITests(@Autowired val mockMvc: MockMvc) {
                 throw HankeNotFoundException(HANKE_TUNNUS)
             }
 
-        mockMvc
-            .perform(MockMvcRequestBuilders.delete("/hankkeet/$HANKE_TUNNUS").with(csrf()))
-            .andExpect(status().isNotFound)
+        delete("/hankkeet/$HANKE_TUNNUS").andExpect(status().isNotFound)
 
         verify { hankeService.getHankeHakemuksetPair(HANKE_TUNNUS) }
     }

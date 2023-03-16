@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -179,7 +180,8 @@ class HankeControllerTest {
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke))
             .thenReturn(partialHanke.copy(modifiedBy = username, modifiedAt = getCurrentTimeUTC()))
-        Mockito.`when`(hankeService.getHankeId("id123")).thenReturn(123)
+        Mockito.`when`(hankeService.loadHanke("id123"))
+            .thenReturn(HankeFactory.create(hankeTunnus = "id123"))
         Mockito.`when`(permissionService.hasPermission(123, username, PermissionCode.EDIT))
             .thenReturn(true)
 
@@ -211,7 +213,8 @@ class HankeControllerTest {
                 modifiedAt = null,
                 status = HankeStatus.DRAFT
             )
-        // mock HankeService response
+
+        Mockito.`when`(hankeService.loadHanke("id123")).thenReturn(HankeFactory.create())
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
 
         // Actual call
