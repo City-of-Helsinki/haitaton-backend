@@ -2,7 +2,9 @@ import geopandas as gpd
 import pandas as pd
 from sqlalchemy import create_engine
 import gtfs_kit as gk
+from shapely.errors import ShapelyDeprecationWarning
 from shapely.geometry import LineString, Point
+import warnings
 
 
 from modules.config import Config
@@ -23,9 +25,8 @@ class TramLines(GisProcessor):
         file_name = cfg.local_file("tram_lines")
         self._feed = gk.read_feed(file_name, dist_units="km")
 
-    #    def _tram_lines(self) -> :
-
     def _tram_trips(self) -> pd.DataFrame:
+        """Pick tram trips from schedule data."""
         feed = self._feed
         tram_routes = (
             feed.routes[feed.routes.route_type == TRAM_ROUTE_TYPE]
@@ -41,17 +42,20 @@ class TramLines(GisProcessor):
         return tram_trips
 
     def _line_shapes(self) -> gpd.GeoDataFrame:
-        """All lines as geometries"""
+        """Form line geometries from schedule data."""
         shp_sorted = self._feed.shapes.sort_values(["shape_id", "shape_pt_sequence"])
-        shp_sorted["geometry"] = shp_sorted.apply(
-            lambda p: Point(p.shape_pt_lon, p.shape_pt_lat), axis=1
-        )
-        shp_lines = gpd.GeoDataFrame(
-            shp_sorted.groupby(["shape_id"])["geometry"].apply(
-                lambda x: LineString(x.tolist())
-            ),
-            geometry="geometry",
-        )
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning)
+
+            shp_sorted["geometry"] = shp_sorted.apply(
+                lambda p: Point(p.shape_pt_lon, p.shape_pt_lat), axis=1
+            )
+            shp_lines = gpd.GeoDataFrame(
+                shp_sorted.groupby(["shape_id"])["geometry"].apply(
+                    lambda x: LineString(x.tolist())
+                ),
+                geometry="geometry",
+            )
         shp_lines = shp_lines.set_crs(epsg=4326)
         shp_lines = shp_lines.to_crs(self._cfg.crs())
         return shp_lines
