@@ -362,3 +362,19 @@ To activate already created virtual environment:
 ```
 [gis-material-update/process]$ ./venv/bin/activate
 ```
+
+## Problems in virtual environment creation
+
+External dependencies are required to install `pyjq`
+
+Here are listed (some) required dependencies for Ubuntu 20.04.
+
+- software-properties-common
+- python-is-python3
+- python3.10
+- python3.10-venv
+- python3.10-dev
+- build-essential
+- autoconf
+- libtool
+- git
