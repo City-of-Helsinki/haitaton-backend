@@ -254,7 +254,31 @@ Output files (names configured in `config.yaml`)
 - tram_infra.gpkg
 - tormays_tram_infra_polys.gpkg
 
+### `tram_lines`
+
+Prerequisite: fetched `hsl` -material.
+
+Docker example run (ensure that image build and file copying is
+already performed as instructed above):
+
+```sh
+docker-compose up -d gis-db
+docker-compose run --rm gis-fetch hsl
+docker-compose run --rm gis-process tram_lines
+docker-compose stop gis-db
+```
+
+Processed GIS material is available in:
+haitaton-gis-output
+
+Output files (names configured in `config.yaml`)
+
+- tram_lines.gpkg
+- tormays_tram_lines_polys.gpkg
+
 # Run tests
+
+## Run all tests
 
 Configure and activate python virtual environment.
 
@@ -264,6 +288,14 @@ Run following in `gis-material-update/process` -directory.
 
 ```sh
 [(venv)::process/]$ python -m unittest discover -v
+```
+
+## Run specific test
+
+To run specific test (here: tram_lines)
+
+```sh
+[(venv)::process/]$ python -m unittest test/test_tram_lines.py
 ```
 
 # Run processing in IDE
