@@ -49,7 +49,7 @@ enum class HankeError(val errorMessage: String) {
     }
 }
 
-class HankeNotFoundException(val hankeTunnus: String) :
+class HankeNotFoundException(val hankeTunnus: String?) :
     RuntimeException("Hanke $hankeTunnus not found")
 
 class HankeArgumentException(message: String) : RuntimeException(message)
