@@ -11,6 +11,15 @@
   "suunnitteluVaihe": null,
   "version": {{hankeVersion}},
   "tyomaaKatuosoite": "Testikatu 1",
+  {{#hankkeenPerustaja}}
+  "perustaja": {
+    "nimi": "Pertti Perustaja",
+    "sahkoposti": "foo@bar.com"
+  },
+  {{/hankkeenPerustaja}}
+  {{^hankkeenPerustaja}}
+  "perustaja": null,
+  {{/hankkeenPerustaja}}
   "tyomaaTyyppi": [
     "MUU",
     "VESI"

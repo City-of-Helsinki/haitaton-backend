@@ -34,7 +34,8 @@ data class Hanke(
     @JsonView(NotInChangeLogView::class) val createdAt: ZonedDateTime?,
     @JsonView(NotInChangeLogView::class) var modifiedBy: String?,
     @JsonView(NotInChangeLogView::class) var modifiedAt: ZonedDateTime?,
-    @JsonView(ChangeLogView::class) var status: HankeStatus? = HankeStatus.DRAFT
+    @JsonView(ChangeLogView::class) var status: HankeStatus? = HankeStatus.DRAFT,
+    @JsonView(ChangeLogView::class) var perustaja: Perustaja? = null,
 ) : HasId<Int> {
 
     // --------------- Yhteystiedot -----------------
