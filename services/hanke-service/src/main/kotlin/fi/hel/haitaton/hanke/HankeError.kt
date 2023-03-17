@@ -31,6 +31,7 @@ enum class HankeError(val errorMessage: String) {
     HAI2004("Application data missing information needed by Allu."),
     HAI2005("Invalid application geometry"),
     HAI2006("Application decision not found"),
+    HAI2007("Application geometry not inside any hankealue"),
     ;
 
     val errorCode: String

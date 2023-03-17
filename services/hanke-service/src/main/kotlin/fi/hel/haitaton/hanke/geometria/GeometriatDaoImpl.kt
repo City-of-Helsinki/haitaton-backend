@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.toJsonString
 import java.sql.Timestamp
 import java.sql.Types
+import liquibase.pro.packaged.it
 import org.geojson.Crs
 import org.geojson.Feature
 import org.geojson.FeatureCollection
@@ -205,6 +206,24 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
             )[0]
     }
 
+    override fun validateGeometriat(geometriat: List<GeoJsonObject>): GeometriatDao.InvalidDetail? =
+        geometriat.firstNotNullOfOrNull { validateGeometria(it) }
+
+    /** Check if the given geometry is inside any hankealue of the given hanke. */
+    override fun isInsideHankeAlueet(hankeId: Int, geometria: GeoJsonObject): Boolean {
+        val query =
+            """
+            SELECT ST_Covers(hg.geometria, ST_GeomFromGeoJSON(?))
+            FROM hankealue ha
+            INNER JOIN hankegeometria hg ON hg.hankegeometriatid = ha.geometriat
+            WHERE ha.hankeid = ?
+            """.trimIndent()
+
+        return jdbcOperations
+            .queryForList(query, arrayOf(geometria.toJsonString(), hankeId), Boolean::class.java)
+            .any { it }
+    }
+
     override fun calculateArea(geometria: GeoJsonObject): Float? {
         val areaQuery = "select ST_Area(ST_SetSRID(ST_GeomFromGeoJSON(?), $SRID))"
 
@@ -226,9 +245,6 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
             Float::class.java
         )
     }
-
-    override fun validateGeometriat(geometriat: List<GeoJsonObject>): GeometriatDao.InvalidDetail? =
-        geometriat.firstNotNullOfOrNull { validateGeometria(it) }
 
     private fun retrieveHankeGeometriaRows(
         geometriatId: Int,

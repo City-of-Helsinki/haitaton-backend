@@ -109,6 +109,7 @@ class ApplicationServiceTest {
         val hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus)
         every { hankeRepository.findByHankeTunnus(hankeTunnus) } returns hanke
         every { geometriatDao.validateGeometriat(any()) } returns null
+        every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
         val created = service.create(dto, username)
 
@@ -118,6 +119,7 @@ class ApplicationServiceTest {
             applicationRepo.save(any())
             applicationLoggingService.logCreate(any(), username)
             geometriatDao.validateGeometriat(any())
+            geometriatDao.isInsideHankeAlueet(1, any())
             disclosureLogService wasNot Called
             cableReportService wasNot Called
         }
@@ -165,6 +167,7 @@ class ApplicationServiceTest {
         every { cableReportService.getApplicationInformation(42) } returns
             AlluDataFactory.createAlluApplicationResponse(42)
         every { geometriatDao.validateGeometriat(any()) } returns null
+        every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
         every { geometriatDao.calculateCombinedArea(any()) } returns 100f
         every { geometriatDao.calculateArea(any()) } returns 100f
         val updatedData = applicationData.copy(rockExcavation = !applicationData.rockExcavation!!)
@@ -174,6 +177,7 @@ class ApplicationServiceTest {
         verifyOrder {
             applicationRepo.findOneById(3)
             geometriatDao.validateGeometriat(any())
+            geometriatDao.isInsideHankeAlueet(1, any())
             cableReportService.getApplicationInformation(42)
             // any() here tries to match eq([]) for some reason
             geometriatDao.calculateCombinedArea(listOf(applicationData.areas?.first()?.geometry!!))
@@ -227,7 +231,7 @@ class ApplicationServiceTest {
                 alluid = null,
                 userId = username,
                 applicationData = applicationData,
-                hanke = HankeEntity(hankeTunnus = hankeTunnus),
+                hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
@@ -237,12 +241,14 @@ class ApplicationServiceTest {
             AlluDataFactory.createAlluApplicationResponse(42)
         every { geometriatDao.calculateCombinedArea(any()) } returns 100f
         every { geometriatDao.calculateArea(any()) } returns 100f
+        every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
         service.sendApplication(3, username)
 
         val expectedApplication = applicationData.copy(pendingOnClient = false)
         verifyOrder {
             applicationRepo.findOneById(3)
+            geometriatDao.isInsideHankeAlueet(1, any())
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(any())
@@ -261,18 +267,20 @@ class ApplicationServiceTest {
                 alluid = null,
                 userId = username,
                 applicationData = applicationData,
-                hanke = HankeEntity(hankeTunnus = hankeTunnus),
+                hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.calculateCombinedArea(any()) } returns 100f
         every { geometriatDao.calculateArea(any()) } returns 100f
         every { cableReportService.create(any()) } throws AlluException(listOf())
+        every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
         assertThrows<AlluException> { service.sendApplication(3, username) }
 
         val expectedApplication = applicationData.copy(pendingOnClient = false)
         verifyOrder {
             applicationRepo.findOneById(3)
+            geometriatDao.isInsideHankeAlueet(1, any())
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(any())
@@ -292,12 +300,13 @@ class ApplicationServiceTest {
                 alluid = null,
                 userId = username,
                 applicationData = applicationData,
-                hanke = HankeEntity(hankeTunnus = hankeTunnus),
+                hanke = HankeEntity(hankeTunnus = hankeTunnus, id = 1),
             )
         assertThat(applicationEntity.applicationData.areas).isNotNull().isNotEmpty()
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.calculateCombinedArea(any()) } returns 500f
         every { geometriatDao.calculateArea(any()) } returns 500f
+        every { geometriatDao.isInsideHankeAlueet(any(), any()) } returns true
         every { cableReportService.create(any()) } throws AlluLoginException(RuntimeException())
 
         assertThrows<AlluLoginException> { service.sendApplication(3, username) }
@@ -305,6 +314,7 @@ class ApplicationServiceTest {
         verifyOrder {
             disclosureLogService wasNot called
             applicationRepo.findOneById(3)
+            geometriatDao.isInsideHankeAlueet(any(), any())
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(any())
@@ -323,12 +333,13 @@ class ApplicationServiceTest {
                 alluid = null,
                 userId = username,
                 applicationData = applicationData.copy(rockExcavation = rockExcavation),
-                hanke = HankeEntity(hankeTunnus = hankeTunnus),
+                hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
         every { geometriatDao.calculateCombinedArea(any()) } returns 100f
         every { geometriatDao.calculateArea(any()) } returns 100f
+        every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
         every { cableReportService.create(any()) } returns 852
         justRun { cableReportService.addAttachment(852, any()) }
         every { cableReportService.getApplicationInformation(852) } returns
@@ -344,6 +355,7 @@ class ApplicationServiceTest {
                 .copy(workDescription = applicationData.workDescription + "\n" + expectedSuffix)
         verifyOrder {
             applicationRepo.findOneById(3)
+            geometriatDao.isInsideHankeAlueet(1, any())
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(expectedAlluData)
@@ -366,9 +378,10 @@ class ApplicationServiceTest {
                 alluid = null,
                 userId = username,
                 applicationData = applicationData,
-                hanke = HankeEntity(hankeTunnus = hankeTunnus),
+                hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
+        every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
         assertThat { service.sendApplication(3, username) }
             .isFailure()
@@ -379,6 +392,7 @@ class ApplicationServiceTest {
 
         verify {
             applicationRepo.findOneById(3)
+            geometriatDao.isInsideHankeAlueet(1, any())
             cableReportService wasNot Called
             disclosureLogService wasNot Called
             applicationLoggingService wasNot Called

@@ -143,7 +143,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             alluStatus: ApplicationStatus? = null,
             applicationIdentifier: String? = null,
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-            applicationData: CableReportApplicationData = createCableReportApplicationData(),
+            applicationData: ApplicationData = createCableReportApplicationData(),
             hankeTunnus: String = "HAI-1234",
         ): Application =
             Application(
