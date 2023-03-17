@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.toJsonString
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import kotlin.reflect.KClass
@@ -64,6 +65,13 @@ open class ApplicationService(
         val hanke =
             hankeRepository.findByHankeTunnus(application.hankeTunnus)
                 ?: throw HankeNotFoundException(application.hankeTunnus)
+
+        application.applicationData.areas?.let { areas ->
+            checkApplicationAreasInsideHankealue(hanke.id!!, areas) { applicationArea ->
+                "Application geometry doesn't match any hankealue when creating a new application for user $userId, " +
+                    "hankeId = ${hanke.id}, application geometry = ${applicationArea.geometry.toJsonString()}"
+            }
+        }
 
         val applicationEntity =
             ApplicationEntity(
@@ -120,6 +128,15 @@ open class ApplicationService(
             "Invalid geometry received when updating application for user $userId, id=${application.id}, alluid=${application.alluid}, reason = ${validationError.reason}, location = ${validationError.location}"
         }
 
+        val hankeId = application.hanke.id!!
+        newApplicationData.areas?.let { areas ->
+            checkApplicationAreasInsideHankealue(hankeId, areas) { applicationArea ->
+                "Application geometry doesn't match any hankealue when updating application for user $userId, " +
+                    "hankeId = $hankeId, applicationId = ${application.id}, " +
+                    "application geometry = ${applicationArea.geometry.toJsonString()}"
+            }
+        }
+
         if (!isStillPendingInAllu(application.alluid)) {
             throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
@@ -141,6 +158,15 @@ open class ApplicationService(
 
     open fun sendApplication(id: Long, userId: String): Application {
         val application = getById(id)
+
+        val hankeId = application.hanke.id!!
+        application.applicationData.areas?.let { areas ->
+            checkApplicationAreasInsideHankealue(hankeId, areas) { applicationArea ->
+                "Application geometry doesn't match any hankealue when sending application for user $userId, " +
+                    "hankeId = $hankeId, applicationId = ${application.id}, " +
+                    "application geometry = ${applicationArea.geometry.toJsonString()}"
+            }
+        }
 
         logger.info("Sending application id=$id, alluid=${application.alluid}")
         if (!isStillPendingInAllu(application.alluid)) {
@@ -257,6 +283,17 @@ open class ApplicationService(
             geometriatDao.validateGeometriat(areas.map { it.geometry })?.let {
                 throw ApplicationGeometryException(customMessageOnFailure(it))
             }
+        }
+    }
+
+    private fun checkApplicationAreasInsideHankealue(
+        hankeId: Int,
+        areas: List<ApplicationArea>,
+        customMessageOnFailure: (ApplicationArea) -> String
+    ) {
+        areas.forEach { area ->
+            if (!geometriatDao.isInsideHankeAlueet(hankeId, area.geometry))
+                throw ApplicationGeometryNotInsideHankeException(customMessageOnFailure(area))
         }
     }
 
@@ -413,12 +450,12 @@ class ApplicationAlreadyProcessingException(id: Long?, alluid: Int?) :
 
 class ApplicationGeometryException(message: String) : RuntimeException(message)
 
+class ApplicationGeometryNotInsideHankeException(message: String) : RuntimeException(message)
+
 class ApplicationDecisionNotFoundException(message: String) : RuntimeException(message)
 
 @Repository
 interface ApplicationRepository : JpaRepository<ApplicationEntity, Long> {
-    fun findOneByIdAndUserId(id: Long, userId: String): ApplicationEntity?
-
     fun findOneById(id: Long): ApplicationEntity?
 
     fun getAllByUserId(userId: String): List<ApplicationEntity>
