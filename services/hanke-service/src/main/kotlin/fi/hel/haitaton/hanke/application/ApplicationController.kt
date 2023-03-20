@@ -3,10 +3,12 @@ package fi.hel.haitaton.hanke.application
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.InvalidApplicationDataException
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.validation.ValidApplication
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -18,6 +20,7 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
@@ -31,6 +34,7 @@ import org.springframework.web.bind.annotation.RestController
 
 private val logger = KotlinLogging.logger {}
 
+@Validated
 @RestController
 @RequestMapping("/hakemukset")
 class ApplicationController(
@@ -94,7 +98,7 @@ class ApplicationController(
                 ),
             ]
     )
-    fun create(@RequestBody application: Application): Application {
+    fun create(@ValidApplication @RequestBody application: Application): Application {
         val userId = currentUserId()
         val hankeTunnus = application.hankeTunnus
         val hankeId = hankeService.getHankeId(hankeTunnus)
@@ -148,7 +152,7 @@ class ApplicationController(
     )
     fun update(
         @PathVariable(name = "id") id: Long,
-        @RequestBody application: Application
+        @ValidApplication @RequestBody application: Application
     ): Application {
         checkHakemusOikeus(id, PermissionCode.EDIT_APPLICATIONS)
         val userId = currentUserId()
@@ -321,5 +325,13 @@ class ApplicationController(
     fun applicationDecisionNotFoundException(ex: ApplicationDecisionNotFoundException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2006
+    }
+
+    @ExceptionHandler(InvalidApplicationDataException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun invalidApplicationDataException(ex: InvalidApplicationDataException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2008
     }
 }

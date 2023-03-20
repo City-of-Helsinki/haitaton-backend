@@ -383,7 +383,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         hankeToBeUpdated.tyomaaKatuosoite = "Testikatu 1"
         hankeToBeUpdated.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
         hankeToBeUpdated.tyomaaTyyppi.add(TyomaaTyyppi.KAASUJOHTO)
-        hankeToBeUpdated.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
         val alue = Hankealue()
         alue.haittaAlkuPvm = DateFactory.getStartDatetime()
         alue.haittaLoppuPvm = DateFactory.getEndDatetime()

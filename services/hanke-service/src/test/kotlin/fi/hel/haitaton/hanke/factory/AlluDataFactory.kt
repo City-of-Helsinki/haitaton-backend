@@ -38,7 +38,6 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             type: CustomerType? = CustomerType.PERSON,
             name: String = "Teppo Testihenkilö",
             country: String = "FI",
-            postalAddress: PostalAddress? = createPostalAddress(),
             email: String? = "teppo@example.test",
             phone: String? = "04012345678",
             registryKey: String? = "281192-937W",
@@ -50,7 +49,6 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 type,
                 name,
                 country,
-                postalAddress,
                 email,
                 phone,
                 registryKey,
@@ -63,7 +61,6 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             type: CustomerType? = CustomerType.COMPANY,
             name: String = "DNA",
             country: String = "FI",
-            postalAddress: PostalAddress? = createPostalAddress(),
             email: String? = "info@dna.test",
             phone: String? = "+3581012345678",
             registryKey: String? = "3766028-0",
@@ -75,7 +72,6 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 type,
                 name,
                 country,
-                postalAddress,
                 email,
                 phone,
                 registryKey,
@@ -89,11 +85,10 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
 
         fun createContact(
             name: String? = "Teppo Testihenkilö",
-            postalAddress: PostalAddress? = createPostalAddress(),
             email: String? = "teppo@example.test",
             phone: String? = "04012345678",
             orderer: Boolean = false
-        ) = Contact(name, postalAddress, email, phone, orderer)
+        ) = Contact(name, email, phone, orderer)
 
         fun createApplicationArea(
             name: String = "Area name",

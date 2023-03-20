@@ -9,7 +9,6 @@ import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
-import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.geometria.Geometriat
@@ -46,7 +45,6 @@ data class Hanke(
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
     @JsonView(ChangeLogView::class) var tyomaaKatuosoite: String? = null
     @JsonView(ChangeLogView::class) var tyomaaTyyppi = mutableSetOf<TyomaaTyyppi>()
-    @JsonView(ChangeLogView::class) var tyomaaKoko: TyomaaKoko? = null
 
     // --------------- Hankkeen haitat -------------------
     fun kaistaHaitat(): Set<TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin> {

@@ -4,8 +4,6 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
-import fi.hel.haitaton.hanke.application.PostalAddress
-import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
@@ -203,8 +201,7 @@ internal class DisclosureLogServiceTest {
         val customerWithoutContacts =
             AlluDataFactory.createCompanyCustomer(name = "First").withContacts()
         val contractorWithoutContacts =
-            AlluDataFactory.createCompanyCustomer(name = "Second")
-                .withContacts(Contact("", PostalAddress(StreetAddress(""), "", ""), "", ""))
+            AlluDataFactory.createCompanyCustomer(name = "Second").withContacts(Contact("", "", ""))
         val application =
             AlluDataFactory.createApplication(
                 applicationData =
@@ -222,10 +219,9 @@ internal class DisclosureLogServiceTest {
 
     @Test
     fun `saveDisclosureLogsForApplication doesn't save entries for blank customers`() {
-        val blankCustomer =
-            Customer(type = CustomerType.PERSON, "", "", null, "", "", "", "", "", "")
+        val blankCustomer = Customer(type = CustomerType.PERSON, "", "", "", "", "", "", "", "")
         val blankCustomerWithCountry =
-            Customer(type = CustomerType.PERSON, "", "FI", null, "", "", "", "", "", "")
+            Customer(type = CustomerType.PERSON, "", "FI", "", "", "", "", "", "")
         val customerWithoutContacts = CustomerWithContacts(blankCustomer, listOf())
         val contractorWithoutContacts = CustomerWithContacts(blankCustomerWithCountry, listOf())
         val application =

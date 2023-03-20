@@ -7,7 +7,6 @@ import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
-import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
@@ -47,7 +46,6 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
         val emails = infos.mapNotNull { it.email }.toSet()
         val ipAddresses = infos.mapNotNull { it.ipAddress }.toSet()
         val organisations = infos.mapNotNull { it.organisation }.toSet()
-        val addresses = infos.mapNotNull { it.address }.toSet()
 
         val idNode = StringNode("id", userId)
         val namesNode = combineStrings(names, "nimi", "nimet")
@@ -55,7 +53,6 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
         val emailsNode = combineStrings(emails, "sahkoposti", "sahkopostit")
         val ipAddressesNode = combineStrings(ipAddresses, "ipOsoite", "ipOsoitteet")
         val organisationsNode = combineOrganisations(organisations)
-        val addressesNode = combineAddresses(addresses)
         return listOfNotNull(
             idNode,
             namesNode,
@@ -63,7 +60,6 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
             emailsNode,
             ipAddressesNode,
             organisationsNode,
-            addressesNode
         )
     }
 
@@ -88,11 +84,6 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
             )
         )
 
-    internal fun combineAddresses(addresses: Set<GdprAddress>): Node? {
-        val nodes = addresses.map { getAddressNode(it) }
-        return combineNodes(nodes, "osoitteet")
-    }
-
     private fun combineNodes(nodes: List<Node>, pluralKey: String): Node? {
         return when (nodes.size) {
             0 -> null
@@ -100,17 +91,6 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
             else -> CollectionNode(pluralKey, nodes)
         }
     }
-
-    private fun getAddressNode(address: GdprAddress): CollectionNode =
-        CollectionNode(
-            "osoite",
-            listOfNotNull(
-                getStringNode("katuosoite", address.street),
-                getStringNode("postitoimipaikka", address.city),
-                getStringNode("postinumero", address.postalCode),
-                getStringNode("maa", address.country),
-            )
-        )
 
     private fun getStringNode(key: String, value: String?): StringNode? =
         value?.let { StringNode(key, value) }
@@ -173,7 +153,6 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
                 name = contact.name,
                 phone = contact.phone,
                 email = contact.email,
-                address = extractGdprOsoite(contact.postalAddress),
                 organisation = organisation,
             )
         }
@@ -181,21 +160,15 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
     }
 
     internal fun getGdprInfoFromCustomer(customer: Customer?, userInfo: UserInfo): GdprInfo? {
-        if (customer?.type == CustomerType.PERSON) {
-            if (matchFullName(customer.name, userInfo)) {
-                return GdprInfo(
-                    name = customer.name,
-                    phone = customer.phone,
-                    email = customer.email,
-                    address = extractGdprOsoite(customer.postalAddress, customer.country)
-                )
-            }
+        if (customer?.type == CustomerType.PERSON && matchFullName(customer.name, userInfo)) {
+            return GdprInfo(
+                name = customer.name,
+                phone = customer.phone,
+                email = customer.email,
+            )
         }
         return null
     }
-
-    internal fun extractGdprOsoite(address: PostalAddress?, country: String? = null): GdprAddress? =
-        address?.let { GdprAddress(it.streetAddress.streetName, it.city, it.postalCode, country) }
 
     /** Check if the [fullName] is the same name as the first name and last name in [userInfo]. */
     internal fun matchFullName(fullName: String?, userInfo: UserInfo): Boolean =

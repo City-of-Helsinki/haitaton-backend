@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -188,6 +189,23 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     }
 
     @Test
+    @WithMockUser(USERNAME)
+    fun `create with invalid y-tunnus returns 400`() {
+        val applicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                customerWithContacts =
+                    AlluDataFactory.createCompanyCustomer(registryKey = "281192-937W")
+                        .withContacts()
+            )
+        val application =
+            AlluDataFactory.createApplication(id = null, applicationData = applicationData)
+
+        post("/hakemukset", application).andExpect(status().isBadRequest)
+
+        verify { applicationService wasNot Called }
+    }
+
+    @Test
     fun `update without logged in user returns 401`() {
         put("/hakemukset/1234", AlluDataFactory.createApplication())
             .andExpect(status().isUnauthorized)
@@ -199,6 +217,23 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     @WithMockUser(USERNAME)
     fun `update without body returns 400`() {
         put("/hakemukset/1234").andExpect(status().isBadRequest)
+
+        verify { applicationService wasNot Called }
+    }
+
+    @Test
+    @WithMockUser(USERNAME)
+    fun `update with invalid y-tunnus returns 400`() {
+        val applicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                customerWithContacts =
+                    AlluDataFactory.createCompanyCustomer(registryKey = "281192-937W")
+                        .withContacts()
+            )
+        val application =
+            AlluDataFactory.createApplication(id = null, applicationData = applicationData)
+
+        put("/hakemukset/1234", application).andExpect(status().isBadRequest)
 
         verify { applicationService wasNot Called }
     }

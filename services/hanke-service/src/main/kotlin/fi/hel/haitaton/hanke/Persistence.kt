@@ -88,13 +88,6 @@ enum class TyomaaTyyppi {
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
-enum class TyomaaKoko {
-    SUPPEA_TAI_PISTE,
-    YLI_10M_TAI_KORTTELI,
-    LAAJA_TAI_USEA_KORTTELI
-}
-
-/** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
 enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(
     override val value: Int,
     override val explanation: String
@@ -175,8 +168,6 @@ class HankeEntity(
     @CollectionTable(name = "hanketyomaatyyppi", joinColumns = [JoinColumn(name = "hankeid")])
     @Enumerated(EnumType.STRING)
     var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
-
-    @Enumerated(EnumType.STRING) var tyomaaKoko: TyomaaKoko? = null
 
     // --------------- Hankkeen haitat -------------------
     var haittaAlkuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
