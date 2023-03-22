@@ -7,7 +7,7 @@ import javax.persistence.Embeddable
 @Embeddable
 data class PerustajaEntity(
     @Column(name = "perustajanimi") var nimi: String?,
-    @Column(name = "perustajasahkoposti") var sahkoposti: String
+    @Column(name = "perustajaemail") var email: String
 )
 
-fun PerustajaEntity.toDomainObject(): Perustaja = Perustaja(nimi, sahkoposti)
+fun PerustajaEntity.toDomainObject(): Perustaja = Perustaja(nimi, email)

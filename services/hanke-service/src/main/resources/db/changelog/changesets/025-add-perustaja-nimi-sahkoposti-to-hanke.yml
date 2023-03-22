@@ -1,7 +1,7 @@
 databaseChangeLog:
   - changeSet:
-      id: 025-add-perustaja-nimi-sahkoposti-to-hanke
-      comment: Add columns perustaja_nimi and perustaja_sahkoposti to hanke table
+      id: 025-add-perustaja-nimi-email-to-hanke
+      comment: Add columns perustajanimi and perustajaemail to hanke table
       author: Niko Pitkonen
       changes:
         - addColumn:
@@ -13,7 +13,7 @@ databaseChangeLog:
                   constraints:
                     nullable: true
               - column:
-                  name: perustajasahkoposti
+                  name: perustajaemail
                   type: varchar(100)
                   constraints:
                     nullable: true

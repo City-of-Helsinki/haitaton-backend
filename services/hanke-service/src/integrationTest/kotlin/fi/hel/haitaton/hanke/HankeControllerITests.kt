@@ -280,7 +280,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         post(BASE_URL, hanke)
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.perustaja.nimi").value("Pertti Perustaja"))
-            .andExpect(jsonPath("$.perustaja.sahkoposti").value("foo@bar.com"))
+            .andExpect(jsonPath("$.perustaja.email").value("foo@bar.com"))
 
         verify { hankeService.createHanke(any()) }
         verify { disclosureLogService.saveDisclosureLogsForHanke(any(), any()) }
