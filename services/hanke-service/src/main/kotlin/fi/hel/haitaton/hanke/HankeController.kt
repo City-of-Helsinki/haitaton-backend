@@ -112,23 +112,19 @@ class HankeController(
     /** Update one hanke. */
     @PutMapping("/{hankeTunnus}")
     fun updateHanke(
-        @ValidHanke @RequestBody hanke: Hanke?,
-        @PathVariable hankeTunnus: String?
+        @ValidHanke @RequestBody hanke: Hanke,
+        @PathVariable hankeTunnus: String
     ): Hanke {
-        logger.info { "Updating Hanke: ${hanke?.toLogString()}" }
-        if (hanke == null) {
-            throw HankeArgumentException("No hanke given when updating hanke")
-        }
-        if (hankeTunnus == null || hankeTunnus != hanke.hankeTunnus) {
-            throw HankeArgumentException("Hanketunnus not given or doesn't match the hanke data")
-        }
-        val hankeId = hankeService.getHankeId(hankeTunnus)
-        if (
-            hankeId == null ||
-                !permissionService.hasPermission(hankeId, currentUserId(), PermissionCode.EDIT)
-        ) {
-            throw HankeNotFoundException(hankeTunnus)
-        }
+        logger.info { "Updating Hanke: ${hanke.toLogString()}" }
+
+        val existingHanke =
+            hankeService.loadHanke(hankeTunnus)?.also {
+                it.verifyUserAuthorization(currentUserId(), PermissionCode.EDIT)
+            }
+                ?: throw HankeNotFoundException(hankeTunnus)
+
+        existingHanke.validateUpdatable(hanke, hankeTunnus)
+
         val updatedHanke = hankeService.updateHanke(hanke)
         logger.info { "Updated hanke ${updatedHanke.hankeTunnus}." }
         disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, updatedHanke.modifiedBy!!)
@@ -170,7 +166,16 @@ class HankeController(
     private fun Hanke.verifyUserAuthorization(userId: String, permissionCode: PermissionCode) {
         val hankeId = id
         if (hankeId == null || !permissionService.hasPermission(hankeId, userId, permissionCode)) {
-            throw HankeNotFoundException(this.hankeTunnus)
+            throw HankeNotFoundException(hankeTunnus)
+        }
+    }
+
+    private fun Hanke.validateUpdatable(newHanke: Hanke, hankeTunnusPath: String) {
+        if (hankeTunnusPath != newHanke.hankeTunnus) {
+            throw HankeArgumentException("Hanketunnus not given or doesn't match the hanke data")
+        }
+        if (perustaja != null && perustaja != newHanke.perustaja) {
+            throw HankeArgumentException("Updating perustaja not allowed.")
         }
     }
 }
