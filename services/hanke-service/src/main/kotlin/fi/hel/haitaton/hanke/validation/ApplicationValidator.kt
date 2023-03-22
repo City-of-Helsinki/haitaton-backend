@@ -1,9 +1,8 @@
 package fi.hel.haitaton.hanke.validation
 
-import fi.hel.haitaton.hanke.InvalidApplicationDataException
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.isValid
+import fi.hel.haitaton.hanke.isValidBusinessId
 import javax.validation.ConstraintValidator
 import javax.validation.ConstraintValidatorContext
 
@@ -22,7 +21,15 @@ class ApplicationValidator : ConstraintValidator<ValidApplication, Application> 
                         applicationData.representativeWithContacts?.customer,
                         applicationData.propertyDeveloperWithContacts?.customer,
                     )
-                    .all { it.registryKey == null || it.registryKey.isValid() }
+                    .all {
+                        when {
+                            it.registryKey == null -> true
+                            it.registryKey.isValidBusinessId() -> true
+                            else -> throw InvalidApplicationDataException("Y-tunnus invalid.")
+                        }
+                    }
         }
     }
 }
+
+class InvalidApplicationDataException(message: String) : RuntimeException(message)

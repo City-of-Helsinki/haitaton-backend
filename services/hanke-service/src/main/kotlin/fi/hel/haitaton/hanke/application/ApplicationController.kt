@@ -3,11 +3,11 @@ package fi.hel.haitaton.hanke.application
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.InvalidApplicationDataException
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
 import fi.hel.haitaton.hanke.validation.ValidApplication
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation

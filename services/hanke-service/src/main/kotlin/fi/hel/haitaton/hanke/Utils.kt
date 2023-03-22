@@ -3,7 +3,10 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.BusinessId
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
+import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContextHolder
+
+private val logger = KotlinLogging.logger {}
 
 /** Returns the current time in UTC, with time zone info. */
 fun getCurrentTimeUTC(): ZonedDateTime {
@@ -27,10 +30,13 @@ fun currentUserId(): String = SecurityContextHolder.getContext().authentication.
  *
  * Only verifies that the id is of valid form. It does not guarantee that it actually exists.
  */
-fun BusinessId.isValid(): Boolean {
-    if (length != 9 || this[7] != '-' || this[8] == '1') {
-        throw InvalidApplicationDataException("Y-tunnus: $this is of incorrect form.")
+fun BusinessId.isValidBusinessId(): Boolean {
+    logger.info { "Verifying businessId: $this" }
+
+    if (length != 9 || this[7] != '-') {
+        return false.also { logger.warn { "Invalid format." } }
     }
+
     substringBefore("-")
         .map { it.digitToInt() }
         .zip(listOf(7, 9, 10, 5, 8, 4, 2))
@@ -40,14 +46,10 @@ fun BusinessId.isValid(): Boolean {
             val check = substringAfter("-").toInt()
             val result = 11 - remainder
 
-            if ((remainder == 0 && 0 == check) || result == check) {
-                return true
+            return when {
+                remainder == 1 -> false.also { logger.warn { "Remainder not valid." } }
+                (remainder == 0 && 0 == check) || result == check -> true
+                else -> false.also { logger.warn { "Invalid businessId." } }
             }
-
-            throw InvalidApplicationDataException(
-                "$this has incorrect check number, expected $result"
-            )
         }
 }
-
-class InvalidApplicationDataException(message: String) : RuntimeException(message)
