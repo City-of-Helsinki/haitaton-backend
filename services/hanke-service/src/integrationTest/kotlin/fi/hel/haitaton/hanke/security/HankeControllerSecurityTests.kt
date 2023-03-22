@@ -79,7 +79,6 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     }
 
     @Test
-    // Without mock user, i.e. anonymous
     fun `status unauthorized (401) without authenticated user`() {
         performGetHankkeet()
             .andExpect(unauthenticated())
@@ -148,7 +147,7 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
         val hanke = getTestHanke(123, testHankeTunnus)
         val content = hanke.toJsonString()
 
-        every { hankeService.getHankeId(any()) }.returns(hanke.id)
+        every { hankeService.loadHanke(any()) }.returns(hanke)
         every { permissionService.hasPermission(hanke.id!!, "test7358", PermissionCode.EDIT) }
             .returns(true)
         every { hankeService.updateHanke(any()) }.returns(hanke.copy(modifiedBy = "test7358"))

@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -15,6 +16,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedArvioija
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistajat
 import fi.hel.haitaton.hanke.factory.HankeFactory.withHankealue
+import fi.hel.haitaton.hanke.factory.HankeFactory.withPerustaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.geometria.Geometriat
@@ -98,7 +100,7 @@ class HankeServiceITests : DatabaseTest() {
 
         // Setup Hanke with one Yhteystieto of each type:
         // The yhteystiedot are not in DB yet, so their id should be null.
-        val hanke: Hanke = getATestHanke().withYhteystiedot { it.id = null }
+        val hanke: Hanke = getATestHanke().withYhteystiedot { it.id = null }.withPerustaja()
 
         val datetimeAlku = hanke.alkuPvm // nextyear.2.20 23:45:56Z
         val datetimeLoppu = hanke.loppuPvm // nextyear.2.21 0:12:34Z
@@ -127,6 +129,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke.loppuPvm).isEqualTo(expectedDateLoppu)
         assertThat(returnedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
         assertThat(returnedHanke.suunnitteluVaihe).isEqualTo(SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS)
+        assertThat(returnedHanke.perustaja).isEqualTo(Perustaja("Pertti Perustaja", "foo@bar.com"))
 
         assertThat(returnedHanke.tyomaaKatuosoite).isEqualTo("Testikatu 1")
         assertThat(returnedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
@@ -1308,6 +1311,7 @@ class HankeServiceITests : DatabaseTest() {
             TemplateData(
                 updatedHanke.id!!,
                 updatedHanke.hankeTunnus!!,
+                updatedHanke.perustaja != null,
                 updatedHanke.alueet[0].id,
                 updatedHanke.alueet[0].geometriat?.id,
                 hankeVersion = 1,
@@ -1412,6 +1416,7 @@ class HankeServiceITests : DatabaseTest() {
     data class TemplateData(
         val hankeId: Int,
         val hankeTunnus: String,
+        val hankePerustaja: Boolean = false,
         val alueId: Int? = null,
         val geometriaId: Int? = null,
         val geometriaVersion: Int = 0,
@@ -1437,6 +1442,7 @@ class HankeServiceITests : DatabaseTest() {
             TemplateData(
                 hanke.id!!,
                 hanke.hankeTunnus!!,
+                hanke.perustaja != null,
                 alue?.id,
                 alue?.geometriat?.id,
                 geometriaVersion,

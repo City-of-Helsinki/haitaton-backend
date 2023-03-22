@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasId
+import fi.hel.haitaton.hanke.domain.toEntity
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
@@ -310,7 +311,8 @@ open class HankeServiceImpl(
                 hankeEntity.modifiedByUserId,
                 if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC)
                 else null,
-                hankeEntity.status
+                hankeEntity.status,
+                hankeEntity.perustaja?.toDomainObject(),
             )
 
         h.tyomaaKatuosoite = hankeEntity.tyomaaKatuosoite
@@ -535,6 +537,7 @@ open class HankeServiceImpl(
         hanke.alkuPvm?.let { entity.alkuPvm = hanke.alkuPvm?.toLocalDate() }
         hanke.loppuPvm?.let { entity.loppuPvm = hanke.loppuPvm?.toLocalDate() }
 
+        hanke.perustaja?.let { entity.perustaja = it.toEntity() }
         hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
         hanke.suunnitteluVaihe?.let { entity.suunnitteluVaihe = hanke.suunnitteluVaihe }
         hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
