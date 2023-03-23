@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasId
@@ -62,18 +63,18 @@ open class HankeServiceImpl(
     private val applicationService: ApplicationService,
 ) : HankeService {
 
-    override fun getHankeId(hankeTunnus: String): Int? =
-        hankeRepository.findByHankeTunnus(hankeTunnus)?.id
+    override fun getHankeId(hankeTunnus: String?): Int? =
+        hankeTunnus?.let { hankeRepository.findByHankeTunnus(hankeTunnus)?.id }
 
     /**
      * Hanke does not contain hakemukset. This function wraps Hanke and its hakemukset to a pair.
      */
-    override fun getHankeHakemuksetPair(hankeTunnus: String): Pair<Hanke, List<Application>> =
+    override fun getHankeWithApplications(hankeTunnus: String): HankeWithApplications =
         hankeRepository.findByHankeTunnus(hankeTunnus).let { entity ->
             if (entity == null) {
                 throw HankeNotFoundException(hankeTunnus)
             }
-            return Pair(
+            return HankeWithApplications(
                 createHankeDomainObjectFromEntity(entity),
                 entity.hakemukset.map { hakemus -> hakemus.toApplication() }
             )
@@ -146,6 +147,19 @@ open class HankeServiceImpl(
         val savedHanke = createHankeDomainObjectFromEntity(entity)
         hankeLoggingService.logCreate(savedHanke, userId)
         return savedHanke
+    }
+
+    @Transactional
+    override fun generateHankeWithApplication(
+        application: Application,
+        userId: String
+    ): HankeWithApplications {
+        val hanke = generateHankeFrom(application)
+        val tunnus = hanke.hankeTunnus ?: throw HankeArgumentException("Hanke must have tunnus")
+        val createdApplication =
+            applicationService.create(application.withHanketunnus(tunnus), userId)
+
+        return HankeWithApplications(hanke, listOf(createdApplication))
     }
 
     @Transactional
@@ -313,6 +327,7 @@ open class HankeServiceImpl(
                 else null,
                 hankeEntity.status,
                 hankeEntity.perustaja?.toDomainObject(),
+                hankeEntity.generated,
             )
 
         h.tyomaaKatuosoite = hankeEntity.tyomaaKatuosoite
@@ -537,6 +552,7 @@ open class HankeServiceImpl(
         hanke.loppuPvm?.let { entity.loppuPvm = hanke.loppuPvm?.toLocalDate() }
 
         hanke.perustaja?.let { entity.perustaja = it.toEntity() }
+        hanke.generated?.let { entity.generated = it }
         hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
         hanke.suunnitteluVaihe?.let { entity.suunnitteluVaihe = hanke.suunnitteluVaihe }
         hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
@@ -899,4 +915,38 @@ open class HankeServiceImpl(
         )
         loggingEntryHolder.saveLogEntries(auditLogService)
     }
+
+    private fun Application.withHanketunnus(hankeTunnus: String) =
+        Application(
+            id,
+            alluid,
+            alluStatus,
+            applicationIdentifier,
+            applicationType,
+            applicationData,
+            hankeTunnus
+        )
+
+    private fun generateHankeFrom(application: Application): Hanke =
+        createHanke(
+            Hanke(
+                null,
+                application.applicationData.name,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                HankeStatus.DRAFT,
+                null,
+                true,
+            )
+        )
 }

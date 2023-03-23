@@ -58,13 +58,16 @@ open class ApplicationService(
     open fun create(application: Application, userId: String): Application {
         logger.info("Creating a new application for user $userId")
 
+        val hankeTunnus =
+            application.hankeTunnus ?: throw ApplicationArgumentException("Missing hankeTunnus")
+
         validateGeometry(application.applicationData) { validationError ->
             "Invalid geometry received when creating a new application for user $userId, reason = ${validationError.reason}, location = ${validationError.location}"
         }
 
         val hanke =
-            hankeRepository.findByHankeTunnus(application.hankeTunnus)
-                ?: throw HankeNotFoundException(application.hankeTunnus)
+            hankeRepository.findByHankeTunnus(hankeTunnus)
+                ?: throw HankeNotFoundException(hankeTunnus)
 
         application.applicationData.areas?.let { areas ->
             checkApplicationAreasInsideHankealue(hanke.id!!, areas) { applicationArea ->
@@ -453,6 +456,8 @@ class ApplicationGeometryException(message: String) : RuntimeException(message)
 class ApplicationGeometryNotInsideHankeException(message: String) : RuntimeException(message)
 
 class ApplicationDecisionNotFoundException(message: String) : RuntimeException(message)
+
+class ApplicationArgumentException(message: String) : RuntimeException(message)
 
 @Repository
 interface ApplicationRepository : JpaRepository<ApplicationEntity, Long> {

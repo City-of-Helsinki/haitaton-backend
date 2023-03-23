@@ -7,8 +7,10 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.andReturnBody
+import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
@@ -205,7 +207,21 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             AlluDataFactory.createApplication(id = null, applicationData = applicationData)
 
         post(BASE_URL, application).andExpect(status().isBadRequest)
+        verify { applicationService wasNot Called }
+    }
 
+    @Test
+    @WithMockUser(USERNAME)
+    fun `create with request param luo-hakemus true calls to generate hanke returns application and 200`() {
+        val application = AlluDataFactory.createApplication()
+        every { hankeService.generateHankeWithApplication(application, USERNAME) } returns
+            HankeWithApplications(HankeFactory.create(), listOf(application))
+
+        val response: Application =
+            post("/hakemukset?luo-hanke=true", application).andExpect(status().isOk).andReturnBody()
+
+        assertEquals(response, application)
+        verify { hankeService.generateHankeWithApplication(application, USERNAME) }
         verify { applicationService wasNot Called }
     }
 

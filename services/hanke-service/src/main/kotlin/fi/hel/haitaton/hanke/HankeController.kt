@@ -75,7 +75,7 @@ class HankeController(
 
         val userId = currentUserId()
 
-        hankeService.getHankeHakemuksetPair(hankeTunnus).let { (hanke, hakemukset) ->
+        hankeService.getHankeWithApplications(hankeTunnus).let { (hanke, hakemukset) ->
             hanke.verifyUserAuthorization(userId, PermissionCode.VIEW)
 
             disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
@@ -136,7 +136,7 @@ class HankeController(
     fun deleteHanke(@PathVariable hankeTunnus: String) {
         logger.info { "Deleting hanke: $hankeTunnus" }
 
-        hankeService.getHankeHakemuksetPair(hankeTunnus).let { (hanke, hakemukset) ->
+        hankeService.getHankeWithApplications(hankeTunnus).let { (hanke, hakemukset) ->
             val hankeId = hanke.id!!
             val userId = currentUserId()
             if (!permissionService.hasPermission(hankeId, userId, PermissionCode.DELETE)) {

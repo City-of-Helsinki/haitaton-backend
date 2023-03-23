@@ -14,5 +14,5 @@ data class Application(
     val applicationIdentifier: String?,
     val applicationType: ApplicationType,
     val applicationData: ApplicationData,
-    val hankeTunnus: String,
+    val hankeTunnus: String?,
 ) : HasId<Long>
