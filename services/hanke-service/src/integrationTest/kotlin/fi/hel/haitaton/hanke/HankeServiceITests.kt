@@ -281,12 +281,14 @@ class HankeServiceITests : DatabaseTest() {
 
     @Test
     fun `getHankeHakemuksetPair when no hakemukset returns hanke and empty list`() {
-        val hanke = hankeService.createHanke(HankeFactory.create())
+        val hankeInitial = hankeService.createHanke(HankeFactory.create())
 
-        val result = hankeService.getHankeWithApplications(hanke.hankeTunnus!!)
+        val result = hankeService.getHankeWithApplications(hankeInitial.hankeTunnus!!)
 
-        assertThat(result.hanke).usingRecursiveComparison().isEqualTo(hanke)
-        assertTrue(result.applications.isEmpty())
+        with(result) {
+            assertThat(hanke).usingRecursiveComparison().isEqualTo(hankeInitial)
+            assertTrue(applications.isEmpty())
+        }
     }
 
     @Test
@@ -918,7 +920,11 @@ class HankeServiceITests : DatabaseTest() {
 
         val result = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
 
-        with(result) { assertThat(hanke.hankeTunnus).isEqualTo(applications.first().hankeTunnus) }
+        with(result) {
+            val application = applications.first()
+            assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
+            assertThat(hanke.nimi).isEqualTo(application.applicationData.name)
+        }
         verify { applicationService.create(any(), USER_NAME) }
     }
 
@@ -1370,7 +1376,7 @@ class HankeServiceITests : DatabaseTest() {
     @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
     @ActiveProfiles("default")
     @WithMockUser(USER_NAME)
-    inner class HankeServiceTransactionalityTests : DatabaseTest() {
+    inner class HankeServiceTransactionTests : DatabaseTest() {
 
         @Test
         fun `generateHankeWithApplication when exception rolls back`() {

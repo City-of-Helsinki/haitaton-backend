@@ -112,6 +112,7 @@ class ApplicationController(
         @RequestParam("luo-hanke") generateHanke: Boolean = false,
         @ValidApplication @RequestBody application: Application
     ): Application {
+        logger.info { "Creating new application, param luo-hanke: $generateHanke" }
         val userId = currentUserId()
 
         if (generateHanke) {
@@ -119,6 +120,7 @@ class ApplicationController(
                 .generateHankeWithApplication(application, userId)
                 .applications
                 .first()
+                .also { disclosureLogService.saveDisclosureLogsForApplication(it, userId) }
         }
 
         checkApplicationPermission(application.hankeTunnus, userId)

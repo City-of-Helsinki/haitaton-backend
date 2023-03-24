@@ -69,10 +69,12 @@ open class ApplicationService(
             hankeRepository.findByHankeTunnus(hankeTunnus)
                 ?: throw HankeNotFoundException(hankeTunnus)
 
-        application.applicationData.areas?.let { areas ->
-            checkApplicationAreasInsideHankealue(hanke.id!!, areas) { applicationArea ->
-                "Application geometry doesn't match any hankealue when creating a new application for user $userId, " +
-                    "hankeId = ${hanke.id}, application geometry = ${applicationArea.geometry.toJsonString()}"
+        if (!hanke.generated) {
+            application.applicationData.areas?.let { areas ->
+                checkApplicationAreasInsideHankealue(hanke.id!!, areas) { applicationArea ->
+                    "Application geometry doesn't match any hankealue when creating a new application for user $userId, " +
+                        "hankeId = ${hanke.id}, application geometry = ${applicationArea.geometry.toJsonString()}"
+                }
             }
         }
 

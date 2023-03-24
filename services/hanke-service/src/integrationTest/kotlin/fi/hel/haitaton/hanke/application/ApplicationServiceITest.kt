@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
@@ -441,6 +442,20 @@ class ApplicationServiceITest : DatabaseTest() {
 
         assertThrows<ApplicationGeometryNotInsideHankeException> {
             applicationService.create(newApplication, USERNAME)
+        }
+    }
+
+    @Test
+    fun `create when hanke was generated skips verify areas inside hankealue succeeds`() {
+        val applicationInput = AlluDataFactory.createApplication()
+
+        val result = hankeService.generateHankeWithApplication(applicationInput, USERNAME)
+
+        with(result) {
+            val application = applications.first()
+            assertEquals(application.applicationData.name, hanke.nimi)
+            assertEquals(true, hanke.generated)
+            assertEquals(HankeStatus.DRAFT, hanke.status)
         }
     }
 
