@@ -57,14 +57,7 @@
         "name": "Teppo Testihenkilö",
         "email": "teppo@example.test",
         "phone": "04012345678",
-        "orderer": true,
-        "postalAddress": {
-          "city": "Helsinki",
-          "postalCode": "00100",
-          "streetAddress": {
-            "streetName": "Katu 1"
-          }
-        }
+        "orderer": true
       }
     ],
     "customer": {
@@ -75,13 +68,6 @@
       "phone": "04012345678",
       "country": "FI",
       "registryKey": "281192-937W",
-      "postalAddress": {
-        "city": "Helsinki",
-        "postalCode": "00100",
-        "streetAddress": {
-          "streetName": "Katu 1"
-        }
-      },
       "invoicingOperator": null,
       "sapCustomerNumber": null
     }
@@ -95,14 +81,7 @@
         "name": "Teppo Testihenkilö",
         "email": "teppo@dna.test",
         "phone": "04012345678",
-        "orderer": true,
-        "postalAddress": {
-          "city": "Helsinki",
-          "postalCode": "04100",
-          "streetAddress": {
-            "streetName": "Dnapolku 3"
-          }
-        }
+        "orderer": true
       }
     ],
     "customer": {
@@ -113,13 +92,6 @@
       "phone": "+3581012345678",
       "country": "FI",
       "registryKey": "3766028-0",
-      "postalAddress": {
-        "city": "Helsinki",
-        "postalCode": "04100",
-        "streetAddress": {
-          "streetName": "Dnapolku 3"
-        }
-      },
       "invoicingOperator": null,
       "sapCustomerNumber": null
     }

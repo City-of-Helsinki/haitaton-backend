@@ -257,12 +257,6 @@ class CableReportServiceAlluITests {
                 type = CustomerType.COMPANY,
                 name = "Haitaton Oy Ab",
                 country = "FI",
-                postalAddress =
-                    PostalAddress(
-                        streetAddress = StreetAddress("Haittatie 6"),
-                        postalCode = "12345",
-                        city = "Haitaton City"
-                    ),
                 email = "info@haitaton.fi",
                 phone = "042-555-6125",
                 registryKey = "101010-FAKE",
@@ -273,12 +267,6 @@ class CableReportServiceAlluITests {
         val hannu =
             Contact(
                 name = "Hannu Haitaton",
-                postalAddress =
-                    PostalAddress(
-                        streetAddress = StreetAddress("Haittatie 8"),
-                        postalCode = "12345",
-                        city = "Haitaton City"
-                    ),
                 email = "hannu@haitaton.fi",
                 phone = "042-555-5216",
                 orderer = true
@@ -286,12 +274,6 @@ class CableReportServiceAlluITests {
         val kerttu =
             Contact(
                 name = "Kerttu Haitaton",
-                postalAddress =
-                    PostalAddress(
-                        streetAddress = StreetAddress("Haittatie 8"),
-                        postalCode = "12345",
-                        city = "Haitaton City"
-                    ),
                 email = "kerttu@haitaton.fi",
                 phone = "042-555-2182",
                 orderer = false

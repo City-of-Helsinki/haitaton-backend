@@ -87,7 +87,7 @@ internal class GdprJsonConverterTest {
         val result = gdprJsonConverter.createGdprJson(listOf(application), listOf(hanke), userInfo)
 
         assertEquals("user", result?.key)
-        assertEquals(6, result?.children?.size)
+        assertEquals(5, result?.children?.size)
         val id = getStringNodeFromChildren(result, "id").value
         assertEquals(userInfo.userId, id)
         val nimi = getStringNodeFromChildren(result, "nimi").value
@@ -110,27 +110,6 @@ internal class GdprJsonConverterTest {
             .containsExactlyInAnyOrder(
                 listOf(StringNode("nimi", "Yhteystieto Oy")),
                 listOf(StringNode("nimi", "Dna"), StringNode("tunnus", "3766028-0"))
-            )
-        val osoitteet = getCollectionNodeFromChildren(result, "osoitteet").children
-        assertThat(osoitteet.map { it.key }).each { it.isEqualTo("osoite") }
-        assertThat(osoitteet.map { (it as CollectionNode).children })
-            .containsExactlyInAnyOrder(
-                listOf(
-                    StringNode("katuosoite", "Katu 1"),
-                    StringNode("postitoimipaikka", "Helsinki"),
-                    StringNode("postinumero", "00100")
-                ),
-                listOf(
-                    StringNode("katuosoite", "Katu 1"),
-                    StringNode("postitoimipaikka", "Helsinki"),
-                    StringNode("postinumero", "00100"),
-                    StringNode("maa", "FI")
-                ),
-                listOf(
-                    StringNode("katuosoite", "Dnapolku 3"),
-                    StringNode("postitoimipaikka", "Helsinki"),
-                    StringNode("postinumero", "04100")
-                ),
             )
     }
 
@@ -235,43 +214,6 @@ internal class GdprJsonConverterTest {
     }
 
     @Test
-    fun `combineAddresses with empty set returns null`() {
-        val addresses = setOf<GdprAddress>()
-
-        assertNull(gdprJsonConverter.combineAddresses(addresses))
-    }
-
-    @Test
-    fun `combineAddresses returns single address as a collection node`() {
-        val addresses = setOf(teppoGdprAddress())
-
-        val result = gdprJsonConverter.combineAddresses(addresses)
-
-        assertNotNull(result)
-        result as CollectionNode
-        assertEquals("osoite", result.key)
-        assertNotNull(result.children)
-        assertEquals(4, result.children.size)
-        assertThat(result.children.map { it.key })
-            .containsExactlyInAnyOrder("katuosoite", "postitoimipaikka", "postinumero", "maa")
-    }
-
-    @Test
-    fun `combineAddresses combines multiple addresses under a collection node`() {
-        val addresses = setOf(teppoGdprAddress(), teppoGdprAddress(country = null))
-
-        val result = gdprJsonConverter.combineAddresses(addresses)
-
-        assertNotNull(result)
-        result as CollectionNode
-        assertEquals("osoitteet", result.key)
-        assertNotNull(result.children)
-        assertEquals(2, result.children.size)
-        assertEquals("osoite", result.children[0].key)
-        assertEquals("osoite", result.children[1].key)
-    }
-
-    @Test
     fun `getUserInfosFromApplication gets customer and contact info from application`() {
         val applicationData: CableReportApplicationData =
             "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
@@ -285,28 +227,17 @@ internal class GdprJsonConverterTest {
                     name = "Teppo Testihenkilö",
                     phone = "04012345678",
                     email = "teppo@example.test",
-                    address =
-                        GdprAddress(street = "Katu 1", city = "Helsinki", postalCode = "00100")
                 ),
                 GdprInfo(
                     name = "Teppo Testihenkilö",
                     phone = "04012345678",
                     email = "teppo@example.test",
-                    address =
-                        GdprAddress(
-                            street = "Katu 1",
-                            city = "Helsinki",
-                            postalCode = "00100",
-                            country = "FI"
-                        )
                 ),
                 GdprInfo(
                     name = "Teppo Testihenkilö",
                     phone = "04012345678",
                     email = "teppo@dna.test",
                     organisation = GdprOrganisation(name = "Dna", registryKey = "3766028-0"),
-                    address =
-                        GdprAddress(street = "Dnapolku 3", city = "Helsinki", postalCode = "04100")
                 )
             )
         assertThat(result).containsExactlyInAnyOrder(*expectedInfos)
@@ -395,13 +326,9 @@ internal class GdprJsonConverterTest {
         assertEquals(2, result.size)
         val expectedResults =
             arrayOf(
-                teppoGdprInfo(
-                    address = teppoGdprAddress(country = null),
-                    organisation = dnaGdprOrganisation()
-                ),
+                teppoGdprInfo(organisation = dnaGdprOrganisation()),
                 teppoGdprInfo(
                     email = "teppo@yksityinen.test",
-                    address = teppoGdprAddress(country = null),
                     organisation = dnaGdprOrganisation()
                 ),
             )
@@ -430,7 +357,7 @@ internal class GdprJsonConverterTest {
         val response =
             gdprJsonConverter.getGdprInfosFromApplicationContact(contact, null, teppoUserInfo())
 
-        val expectedResponse = teppoGdprInfo(address = teppoGdprAddress(country = null))
+        val expectedResponse = teppoGdprInfo()
         assertEquals(expectedResponse, response)
     }
 
@@ -445,11 +372,7 @@ internal class GdprJsonConverterTest {
                 teppoUserInfo()
             )
 
-        val expectedResponse =
-            teppoGdprInfo(
-                address = teppoGdprAddress(country = null),
-                organisation = dnaGdprOrganisation()
-            )
+        val expectedResponse = teppoGdprInfo(organisation = dnaGdprOrganisation())
         assertEquals(expectedResponse, response)
     }
 
@@ -477,30 +400,7 @@ internal class GdprJsonConverterTest {
                 teppoUserInfo()
             )
 
-        assertEquals(teppoGdprInfo(address = teppoGdprAddress()), response)
-    }
-
-    @Test
-    fun `extractGdprOsoite with address returns GdprAddress`() {
-        val address = AlluDataFactory.createPostalAddress()
-
-        val response = gdprJsonConverter.extractGdprOsoite(address, "FI")
-
-        assertEquals(teppoGdprAddress(), response)
-    }
-
-    @Test
-    fun `extractGdprOsoite with address without country returns GdprAddress without country`() {
-        val address = AlluDataFactory.createPostalAddress()
-
-        val response = gdprJsonConverter.extractGdprOsoite(address)
-
-        assertEquals(teppoGdprAddress(country = null), response)
-    }
-
-    @Test
-    fun `extractGdprOsoite with null address returns null`() {
-        assertNull(gdprJsonConverter.extractGdprOsoite(null, "Country"))
+        assertEquals(teppoGdprInfo(), response)
     }
 
     @Test
@@ -706,12 +606,8 @@ internal class GdprJsonConverterTest {
         phone: String? = "04012345678",
         email: String? = "teppo@example.test",
         ipAddress: String? = null,
-        address: GdprAddress? = null,
         organisation: GdprOrganisation? = null,
-    ) = GdprInfo(name, phone, email, ipAddress, organisation, address)
-
-    private fun teppoGdprAddress(country: String? = "FI") =
-        GdprAddress(street = "Katu 1", city = "Helsinki", postalCode = "00100", country)
+    ) = GdprInfo(name, phone, email, ipAddress, organisation)
 
     private fun dnaOrganisaatio(id: Int = 1) = Organisaatio(id, "3766028-0", "DNA")
 

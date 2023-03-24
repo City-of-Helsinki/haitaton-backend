@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
-import fi.hel.haitaton.hanke.TyomaaKoko
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
@@ -78,7 +77,6 @@ object HankeFactory : Factory<Hanke>() {
         this.tyomaaKatuosoite = "Testikatu 1"
         this.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
         this.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
-        this.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
 
         this.alueet.add(alue)
 

@@ -1294,13 +1294,6 @@ class ApplicationServiceITest : DatabaseTest() {
              "type": "COMPANY",
              "name": "DNA",
              "country": "FI",
-             "postalAddress": {
-               "streetAddress": {
-                 "streetName": "Katu 1"
-               },
-               "postalCode": "00100",
-               "city": "Helsinki"
-             },
              "email": "info@dna.test",
              "phone": "+3581012345678",
              "registryKey": "3766028-0",
@@ -1311,13 +1304,6 @@ class ApplicationServiceITest : DatabaseTest() {
            "contacts": [
              {
                "name": "Teppo Testihenkilö",
-               "postalAddress": {
-                 "streetAddress": {
-                   "streetName": "Katu 1"
-                 },
-                 "postalCode": "00100",
-                 "city": "Helsinki"
-               },
                "email": "teppo@example.test",
                "phone": "04012345678",
                "orderer": false

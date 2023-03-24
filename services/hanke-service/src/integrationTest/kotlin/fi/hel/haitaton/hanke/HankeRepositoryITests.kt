@@ -51,7 +51,6 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
         baseHankeEntity.tyomaaKatuosoite = "katu 1"
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
-        baseHankeEntity.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
         baseHankeEntity.haittaAlkuPvm = date
         baseHankeEntity.haittaLoppuPvm = date
         baseHankeEntity.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
@@ -81,7 +80,6 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
 
         assertThat(loadedHanke.tyomaaKatuosoite).isEqualTo("katu 1")
         assertThat(loadedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
-        assertThat(loadedHanke.tyomaaKoko).isEqualTo(TyomaaKoko.LAAJA_TAI_USEA_KORTTELI)
         assertThat(loadedHanke.haittaAlkuPvm).isEqualTo(date)
         assertThat(loadedHanke.haittaLoppuPvm).isEqualTo(date)
         assertThat(loadedHanke.kaistaHaitta)
