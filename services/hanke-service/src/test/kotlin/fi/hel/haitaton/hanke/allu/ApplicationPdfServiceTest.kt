@@ -55,7 +55,6 @@ internal class ApplicationPdfServiceTest {
                                 .withContacts(
                                     AlluDataFactory.createContact(
                                         "Teppo Tilaaja",
-                                        null,
                                         "teppo@tilaajat.info",
                                         "0406584321",
                                         orderer = true,

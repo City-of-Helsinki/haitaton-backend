@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts as AlluCustomerWithContacts
 import fi.hel.haitaton.hanke.allu.PostalAddress as AlluPostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress as AlluStreetAddress
+import fi.hel.haitaton.hanke.domain.BusinessId
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CustomerWithContacts(val customer: Customer, val contacts: List<Contact>) {
@@ -24,23 +25,17 @@ data class CustomerWithContacts(val customer: Customer, val contacts: List<Conta
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Contact(
     val name: String?,
-    val postalAddress: PostalAddress?,
     val email: String?,
     val phone: String?,
     val orderer: Boolean = false,
 ) {
     /** Check if this contact is blank, i.e. it doesn't contain any actual contact information. */
     @JsonIgnore
-    fun isBlank() =
-        name.isNullOrBlank() &&
-            email.isNullOrBlank() &&
-            phone.isNullOrBlank() &&
-            postalAddress.isNullOrBlank()
+    fun isBlank() = name.isNullOrBlank() && email.isNullOrBlank() && phone.isNullOrBlank()
 
     fun hasInformation() = !isBlank()
 
-    fun toAlluData(): AlluContact =
-        AlluContact(name, postalAddress?.toAlluData(), email, phone, orderer)
+    fun toAlluData(): AlluContact = AlluContact(name, email, phone, orderer)
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -49,10 +44,9 @@ data class Customer(
     val type: CustomerType?, // Mandatory in Allu, but not in drafts.
     val name: String,
     val country: String, // ISO 3166-1 alpha-2 country code
-    val postalAddress: PostalAddress?,
     val email: String?,
     val phone: String?,
-    val registryKey: String?, // ssn or y-tunnus
+    val registryKey: BusinessId?, // y-tunnus
     val ovt: String?, // e-invoice identifier (ovt-tunnus)
     val invoicingOperator: String?, // e-invoicing operator code
     val sapCustomerNumber: String?, // customer's sap number
@@ -62,7 +56,6 @@ data class Customer(
     fun isBlank() =
         name.isBlank() &&
             country.isBlank() &&
-            postalAddress.isNullOrBlank() &&
             email.isNullOrBlank() &&
             phone.isNullOrBlank() &&
             registryKey.isNullOrBlank() &&
@@ -77,7 +70,6 @@ data class Customer(
             type ?: throw AlluDataException("$path.type", AlluDataError.NULL),
             name,
             country,
-            postalAddress?.toAlluData(),
             email,
             phone,
             registryKey,
@@ -94,17 +86,9 @@ data class PostalAddress(
     val postalCode: String,
     val city: String,
 ) {
-    /** Check if this address is blank, i.e. none of fields have any information. */
-    @JsonIgnore
-    fun isBlank() =
-        streetAddress.streetName.isNullOrBlank() && postalCode.isBlank() && city.isBlank()
-
     fun toAlluData(): AlluPostalAddress =
         AlluPostalAddress(streetAddress.toAlluData(), postalCode, city)
 }
-
-/** Check if this address is blank, i.e. none of fields have any information. */
-fun PostalAddress?.isNullOrBlank() = this?.isBlank() ?: true
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonView(ChangeLogView::class)

@@ -133,7 +133,6 @@ class HankeServiceITests : DatabaseTest() {
 
         assertThat(returnedHanke.tyomaaKatuosoite).isEqualTo("Testikatu 1")
         assertThat(returnedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
-        assertThat(returnedHanke.tyomaaKoko).isEqualTo(TyomaaKoko.LAAJA_TAI_USEA_KORTTELI)
         assertThat(returnedHanke.getHaittaAlkuPvm()).isEqualTo(expectedDateAlku)
         assertThat(returnedHanke.getHaittaLoppuPvm()).isEqualTo(expectedDateLoppu)
         assertThat(returnedHanke.alueet[0].kaistaHaitta)
@@ -1188,7 +1187,6 @@ class HankeServiceITests : DatabaseTest() {
         TestUtils.addMockedRequestIp()
         val hankeBeforeSave = HankeFactory.create(id = null)
         hankeBeforeSave.tyomaaKatuosoite = "Testikatu 1"
-        hankeBeforeSave.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
         hankeBeforeSave.tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
 
         val hanke = hankeService.createHanke(hankeBeforeSave)
@@ -1222,7 +1220,6 @@ class HankeServiceITests : DatabaseTest() {
     fun `updateHanke creates audit log entry for updated hanke`() {
         val hankeBeforeSave = HankeFactory.create(id = null)
         hankeBeforeSave.tyomaaKatuosoite = "Testikatu 1"
-        hankeBeforeSave.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
         hankeBeforeSave.tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         val hanke = hankeService.createHanke(hankeBeforeSave)
         val geometria: Geometriat =
@@ -1329,7 +1326,6 @@ class HankeServiceITests : DatabaseTest() {
     fun `updateHanke creates audit log entry even if there are no changes`() {
         val hankeBeforeSave = HankeFactory.create(id = null)
         hankeBeforeSave.tyomaaKatuosoite = "Testikatu 1"
-        hankeBeforeSave.tyomaaKoko = TyomaaKoko.LAAJA_TAI_USEA_KORTTELI
         hankeBeforeSave.tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         val hanke = hankeService.createHanke(hankeBeforeSave)
         auditLogRepository.deleteAll()

@@ -317,7 +317,6 @@ open class HankeServiceImpl(
 
         h.tyomaaKatuosoite = hankeEntity.tyomaaKatuosoite
         h.tyomaaTyyppi = hankeEntity.tyomaaTyyppi
-        h.tyomaaKoko = hankeEntity.tyomaaKoko
 
         createSeparateYhteystietoListsFromEntityData(h, hankeEntity)
 
@@ -542,7 +541,6 @@ open class HankeServiceImpl(
         hanke.suunnitteluVaihe?.let { entity.suunnitteluVaihe = hanke.suunnitteluVaihe }
         hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
         entity.tyomaaTyyppi = hanke.tyomaaTyyppi
-        hanke.tyomaaKoko?.let { entity.tyomaaKoko = hanke.tyomaaKoko }
 
         // Merge hankealueet
         mergeDataInto(hanke.alueet, entity.listOfHankeAlueet) { source, target ->
