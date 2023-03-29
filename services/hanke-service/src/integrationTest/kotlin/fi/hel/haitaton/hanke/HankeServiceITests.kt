@@ -922,8 +922,11 @@ class HankeServiceITests : DatabaseTest() {
 
         with(result) {
             val application = applications.first()
+
             assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
             assertThat(hanke.nimi).isEqualTo(application.applicationData.name)
+            assertThat(application.applicationData.name)
+                .isEqualTo(inputApplication.applicationData.name)
         }
         verify { applicationService.create(any(), USER_NAME) }
     }
