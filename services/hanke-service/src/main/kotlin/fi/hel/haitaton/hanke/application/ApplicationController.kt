@@ -114,9 +114,9 @@ class ApplicationController(
         return createdApplication
     }
 
-    @PostMapping("/luo-hanke")
+    @PostMapping("/johtoselvitys")
     @Operation(
-        summary = "Generates new hanke and creates an application attached to it.",
+        summary = "Generates new hanke from cable report application and saves application to it.",
         description =
             "Returns the created application. The new application is created as a draft, " +
                 "i.e. with true in pendingOnClient. The draft is not sent to Allu. "
