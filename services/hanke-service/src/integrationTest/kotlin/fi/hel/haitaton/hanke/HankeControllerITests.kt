@@ -290,6 +290,21 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
     }
 
     @Test
+    fun `createHanke sanitizes hanke input returns 200`() {
+        val hanke = HankeFactory.create().apply { generated = true }
+        every { hankeService.createHanke(hanke.copy(id = null, generated = false)) } returns
+            hanke.copy(generated = false)
+        justRun { permissionService.setPermission(any(), any(), Role.KAIKKI_OIKEUDET) }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME) }
+
+        post(BASE_URL, hanke).andExpect(status().isOk)
+
+        verify { hankeService.createHanke(any()) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), any()) }
+        verify { permissionService.setPermission(any(), any(), any()) }
+    }
+
+    @Test
     fun `create hanke with perustaja without sahkoposti returns 400`() {
         val hakemus = HankeFactory.create().withPerustaja()
         val content: ObjectNode = OBJECT_MAPPER.valueToTree(hakemus)
@@ -317,6 +332,28 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
         verify { hankeService.loadHanke(hanketunnus) }
         verify { permissionService.hasPermission(updatedHanke.id!!, USERNAME, PermissionCode.EDIT) }
+    }
+
+    @Test
+    fun `update hanke enforces generated to be false`() {
+        val hanke = HankeFactory.create().apply { generated = true }
+        every { hankeService.loadHanke(hanke.hankeTunnus!!) } returns HankeFactory.create()
+        every { permissionService.hasPermission(hanke.id!!, USERNAME, PermissionCode.EDIT) }
+            .returns(true)
+        every { hankeService.updateHanke(hanke.copy(generated = false)) } returns
+            HankeFactory.create().apply {
+                modifiedAt = getCurrentTimeUTC()
+                modifiedBy = USERNAME
+                status = HankeStatus.PUBLIC
+            }
+        justRun { disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME) }
+
+        put("$BASE_URL/${hanke.hankeTunnus}", hanke)
+
+        verify { hankeService.loadHanke(hanke.hankeTunnus!!) }
+        verify { permissionService.hasPermission(hanke.id!!, USERNAME, PermissionCode.EDIT) }
+        verify { hankeService.updateHanke(any()) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), any()) }
     }
 
     @Test

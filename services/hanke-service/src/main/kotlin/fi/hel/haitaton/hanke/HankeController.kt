@@ -92,13 +92,15 @@ class HankeController(
     /** Add one hanke. This method will be called when we do not have id for hanke yet */
     @PostMapping
     fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): Hanke {
-        val userId = currentUserId()
-        logger.info { "Creating Hanke for user $userId: ${hanke?.toLogString()} " }
-
         if (hanke == null) {
             throw HankeArgumentException("No hanke given when creating hanke")
         }
-        val createdHanke = hankeService.createHanke(hanke)
+        val sanitizedHanke = hanke.copy(id = null, generated = false)
+
+        val userId = currentUserId()
+        logger.info { "Creating Hanke for user $userId: ${hanke.toLogString()} " }
+
+        val createdHanke = hankeService.createHanke(sanitizedHanke)
 
         permissionService.setPermission(
             createdHanke.id!!,
@@ -123,9 +125,9 @@ class HankeController(
             }
                 ?: throw HankeNotFoundException(hankeTunnus)
 
-        existingHanke.validateUpdatable(hanke, hankeTunnus)
+        val sanitizedHanke = existingHanke.ensureUpdatable(hanke, hankeTunnus)
 
-        val updatedHanke = hankeService.updateHanke(hanke)
+        val updatedHanke = hankeService.updateHanke(sanitizedHanke)
         logger.info { "Updated hanke ${updatedHanke.hankeTunnus}." }
         disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, updatedHanke.modifiedBy!!)
         return updatedHanke
@@ -170,12 +172,18 @@ class HankeController(
         }
     }
 
-    private fun Hanke.validateUpdatable(newHanke: Hanke, hankeTunnusPath: String) {
-        if (hankeTunnusPath != newHanke.hankeTunnus) {
+    /**
+     * Verifies that hanke is updatable. Sets generated false as hanke to be updated is not
+     * considered generated anymore.
+     */
+    private fun Hanke.ensureUpdatable(updatedHanke: Hanke, hankeTunnusFromPath: String): Hanke {
+        if (hankeTunnusFromPath != updatedHanke.hankeTunnus) {
             throw HankeArgumentException("Hanketunnus not given or doesn't match the hanke data")
         }
-        if (perustaja != null && perustaja != newHanke.perustaja) {
+        if (perustaja != null && perustaja != updatedHanke.perustaja) {
             throw HankeArgumentException("Updating perustaja not allowed.")
         }
+
+        return updatedHanke.apply { generated = false }
     }
 }

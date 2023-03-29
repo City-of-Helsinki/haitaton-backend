@@ -15,6 +15,8 @@ import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
+import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
@@ -63,6 +65,7 @@ open class HankeServiceImpl(
     private val auditLogService: AuditLogService,
     private val hankeLoggingService: HankeLoggingService,
     private val applicationService: ApplicationService,
+    private val permissionService: PermissionService,
 ) : HankeService {
 
     override fun getHankeId(hankeTunnus: String?): Int? =
@@ -163,7 +166,7 @@ open class HankeServiceImpl(
         val tunnus = hanke.hankeTunnus ?: throw HankeArgumentException("Hanke must have tunnus")
         val createdApplication =
             applicationService.create(cableReport.toNewApplication(tunnus), userId)
-
+        permissionService.setPermission(hanke.id!!, userId, Role.KAIKKI_OIKEUDET)
         return HankeWithApplications(hanke, listOf(createdApplication))
     }
 

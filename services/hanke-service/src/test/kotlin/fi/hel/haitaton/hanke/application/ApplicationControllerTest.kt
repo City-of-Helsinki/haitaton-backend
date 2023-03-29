@@ -94,7 +94,7 @@ class ApplicationControllerTest {
         } returns true
         every { applicationService.create(requestApplication, username) } returns createdApplication
 
-        applicationController.create(false, requestApplication)
+        applicationController.create(requestApplication)
 
         verify { permissionService.hasPermission(42, username, PermissionCode.EDIT_APPLICATIONS) }
         verify {
