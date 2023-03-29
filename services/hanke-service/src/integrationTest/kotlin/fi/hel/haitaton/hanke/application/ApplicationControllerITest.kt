@@ -218,11 +218,10 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             HankeWithApplications(HankeFactory.create(), listOf(application))
 
         val response: Application =
-            post("/hakemukset?luo-hanke=true", application).andExpect(status().isOk).andReturnBody()
+            post("/hakemukset/luo-hanke", application).andExpect(status().isOk).andReturnBody()
 
         assertEquals(response, application)
         verify { hankeService.generateHankeWithApplication(application, USERNAME) }
-        verify { applicationService wasNot Called }
     }
 
     @Test

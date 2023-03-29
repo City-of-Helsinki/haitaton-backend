@@ -89,13 +89,8 @@ class ApplicationController(
     @Operation(
         summary = "Create a new application",
         description =
-            """
-            Returns the created application. The new application is created as a draft, i.e. with true 
-            in pendingOnClient. The draft is not sent to Allu."
-            
-            If request parameter luo-hanke is true, a new draft hanke will be generated and application is attached
-            to it. Hanke name will be the same as the application name.
-        """
+            "Returns the created application. The new application is created as a draft, " +
+                "i.e. with true in pendingOnClient. The draft is not sent to Allu."
     )
     @ApiResponses(
         value =
@@ -112,21 +107,42 @@ class ApplicationController(
         @RequestParam("luo-hanke") generateHanke: Boolean = false,
         @ValidApplication @RequestBody application: Application
     ): Application {
-        logger.info { "Creating new application, param luo-hanke: $generateHanke" }
         val userId = currentUserId()
+        val hankeTunnus = application.hankeTunnus
 
-        if (generateHanke) {
-            return hankeService
-                .generateHankeWithApplication(application, userId)
-                .applications
-                .first()
-                .also { disclosureLogService.saveDisclosureLogsForApplication(it, userId) }
-        }
+        checkPermissionToCreate(hankeTunnus, userId)
 
-        checkPermissionToCreate(application.hankeTunnus, userId)
-        return service.create(application, userId).also {
-            disclosureLogService.saveDisclosureLogsForApplication(it, userId)
-        }
+        val createdApplication = service.create(application, userId)
+
+        disclosureLogService.saveDisclosureLogsForApplication(createdApplication, userId)
+        return createdApplication
+    }
+
+    @PostMapping("/luo-hanke")
+    @Operation(
+        summary = "Generates new hanke and creates an application attached to it.",
+        description =
+            "Returns the created application. The new application is created as a draft, " +
+                "i.e. with true in pendingOnClient. The draft is not sent to Allu. "
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "The created application", responseCode = "200"),
+                ApiResponse(
+                    description = "The request body was invalid",
+                    responseCode = "400",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+            ]
+    )
+    fun createWithGeneratedHanke(@RequestBody application: Application): Application {
+        val userId = currentUserId()
+        return hankeService
+            .generateHankeWithApplication(application, userId)
+            .applications
+            .first()
+            .also { disclosureLogService.saveDisclosureLogsForApplication(it, userId) }
     }
 
     @PutMapping("/{id}")
