@@ -447,7 +447,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @Test
     fun `create when hanke was generated skips verify areas inside hankealue succeeds`() {
-        val applicationInput = AlluDataFactory.createApplication()
+        val applicationInput = AlluDataFactory.cableReportWithoutHanke()
 
         val result = hankeService.generateHankeWithApplication(applicationInput, USERNAME)
 
@@ -511,7 +511,9 @@ class ApplicationServiceITest : DatabaseTest() {
                 USERNAME,
                 hanke = initializedHanke(),
                 application = mockApplicationWithArea()
-            ) { it.alluid = 21 }
+            ) {
+                it.alluid = 21
+            }
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(
                 name = "Uudistettu johtoselvitys",
@@ -547,7 +549,9 @@ class ApplicationServiceITest : DatabaseTest() {
                 USERNAME,
                 hanke = initializedHanke(),
                 application = mockApplicationWithArea()
-            ) { it.alluid = 21 }
+            ) {
+                it.alluid = 21
+            }
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(
                 name = "Uudistettu johtoselvitys",
@@ -709,7 +713,9 @@ class ApplicationServiceITest : DatabaseTest() {
                 USERNAME,
                 hanke = initializedHanke(),
                 application = mockApplicationWithArea()
-            ) { it.alluid = 21 }
+            ) {
+                it.alluid = 21
+            }
         val newApplicationData =
             AlluDataFactory.createCableReportApplicationData(
                 name = "Uudistettu johtoselvitys",
@@ -849,7 +855,9 @@ class ApplicationServiceITest : DatabaseTest() {
                 USERNAME,
                 hanke = initializedHanke(),
                 application = mockApplicationWithArea()
-            ) { it.alluid = null }
+            ) {
+                it.alluid = null
+            }
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
         every { cableReportServiceAllu.create(pendingApplicationData.toAlluData()) } returns 26
@@ -929,7 +937,9 @@ class ApplicationServiceITest : DatabaseTest() {
                 USERNAME,
                 hanke = initializedHanke(),
                 application = mockApplicationWithArea()
-            ) { it.alluid = null }
+            ) {
+                it.alluid = null
+            }
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
         every { cableReportServiceAllu.create(pendingApplicationData.toAlluData()) } returns 26

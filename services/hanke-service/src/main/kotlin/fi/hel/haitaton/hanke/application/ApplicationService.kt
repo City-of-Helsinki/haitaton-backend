@@ -58,16 +58,13 @@ open class ApplicationService(
     open fun create(application: Application, userId: String): Application {
         logger.info("Creating a new application for user $userId")
 
-        val hankeTunnus =
-            application.hankeTunnus ?: throw ApplicationArgumentException("Missing hankeTunnus")
-
         validateGeometry(application.applicationData) { validationError ->
             "Invalid geometry received when creating a new application for user $userId, reason = ${validationError.reason}, location = ${validationError.location}"
         }
 
         val hanke =
-            hankeRepository.findByHankeTunnus(hankeTunnus)
-                ?: throw HankeNotFoundException(hankeTunnus)
+            hankeRepository.findByHankeTunnus(application.hankeTunnus)
+                ?: throw HankeNotFoundException(application.hankeTunnus)
 
         if (!hanke.generated) {
             application.applicationData.areas?.let { areas ->

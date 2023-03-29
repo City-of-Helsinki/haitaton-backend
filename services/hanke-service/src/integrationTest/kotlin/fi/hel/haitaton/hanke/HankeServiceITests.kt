@@ -915,7 +915,7 @@ class HankeServiceITests : DatabaseTest() {
 
     @Test
     fun `generateHankeWithApplication generates hanke based on application`() {
-        val inputApplication = AlluDataFactory.createApplication()
+        val inputApplication = AlluDataFactory.cableReportWithoutHanke()
         every { applicationService.create(any(), USER_NAME) } returnsArgument 0
 
         val result = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
@@ -1383,7 +1383,7 @@ class HankeServiceITests : DatabaseTest() {
 
         @Test
         fun `generateHankeWithApplication when exception rolls back`() {
-            val inputApplication = AlluDataFactory.createApplication()
+            val inputApplication = AlluDataFactory.cableReportWithoutHanke()
             every { applicationService.create(any(), USER_NAME) } throws
                 ApplicationArgumentException("")
 

@@ -11,6 +11,7 @@ import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
@@ -150,6 +151,17 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 applicationData = applicationData,
                 hankeTunnus = hankeTunnus
             )
+
+        fun cableReportWithoutHanke(): CableReportWithoutHanke =
+            with(createApplication()) {
+                CableReportWithoutHanke(
+                    alluid,
+                    alluStatus,
+                    applicationIdentifier,
+                    applicationType,
+                    applicationData as CableReportApplicationData
+                )
+            }
 
         fun createApplications(
             n: Long,

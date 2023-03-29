@@ -136,10 +136,10 @@ class ApplicationController(
                 ),
             ]
     )
-    fun createWithGeneratedHanke(@RequestBody application: Application): Application {
+    fun createWithGeneratedHanke(@RequestBody cableReport: CableReportWithoutHanke): Application {
         val userId = currentUserId()
         return hankeService
-            .generateHankeWithApplication(application, userId)
+            .generateHankeWithApplication(cableReport, userId)
             .applications
             .first()
             .also { disclosureLogService.saveDisclosureLogsForApplication(it, userId) }

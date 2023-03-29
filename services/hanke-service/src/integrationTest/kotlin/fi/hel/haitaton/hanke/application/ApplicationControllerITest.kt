@@ -212,16 +212,17 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
     @Test
     @WithMockUser(USERNAME)
-    fun `create with request param luo-hakemus true calls to generate hanke returns application and 200`() {
-        val application = AlluDataFactory.createApplication()
-        every { hankeService.generateHankeWithApplication(application, USERNAME) } returns
-            HankeWithApplications(HankeFactory.create(), listOf(application))
+    fun `create with hanke generation calls succeeds and returns 200`() {
+        val applicationInput = AlluDataFactory.cableReportWithoutHanke()
+        val mockCreatedApplication = applicationInput.toNewApplication(HANKE_TUNNUS)
+        every { hankeService.generateHankeWithApplication(applicationInput, USERNAME) } returns
+            HankeWithApplications(HankeFactory.create(), listOf(mockCreatedApplication))
 
         val response: Application =
-            post("/hakemukset/luo-hanke", application).andExpect(status().isOk).andReturnBody()
+            post("/hakemukset/luo-hanke", applicationInput).andExpect(status().isOk).andReturnBody()
 
-        assertEquals(response, application)
-        verify { hankeService.generateHankeWithApplication(application, USERNAME) }
+        assertEquals(response, mockCreatedApplication)
+        verify { hankeService.generateHankeWithApplication(applicationInput, USERNAME) }
     }
 
     @Test
