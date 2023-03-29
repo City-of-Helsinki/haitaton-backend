@@ -197,6 +197,7 @@ open class HankeServiceImpl(
         // (Not changing createdBy/At fields.)
         entity.modifiedByUserId = userId
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
+        entity.generated = false
 
         calculateTormaystarkastelu(hanke, entity)
         entity.status = decideNewHankeStatus(entity)

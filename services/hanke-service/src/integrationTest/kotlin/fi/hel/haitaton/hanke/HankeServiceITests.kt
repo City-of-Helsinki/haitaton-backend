@@ -1374,6 +1374,15 @@ class HankeServiceITests : DatabaseTest() {
         )
     }
 
+    @Test
+    fun `update hanke enforces generated to be false`() {
+        val hanke = hankeService.createHanke(HankeFactory.create())
+
+        val result = hankeService.updateHanke(hanke.copy(generated = true))
+
+        assertFalse(result.generated)
+    }
+
     @Nested
     @Testcontainers
     @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)

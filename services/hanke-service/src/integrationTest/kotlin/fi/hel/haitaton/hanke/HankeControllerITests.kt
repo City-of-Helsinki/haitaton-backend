@@ -335,28 +335,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
     }
 
     @Test
-    fun `update hanke enforces generated to be false`() {
-        val hanke = HankeFactory.create().apply { generated = true }
-        every { hankeService.loadHanke(hanke.hankeTunnus!!) } returns HankeFactory.create()
-        every { permissionService.hasPermission(hanke.id!!, USERNAME, PermissionCode.EDIT) }
-            .returns(true)
-        every { hankeService.updateHanke(hanke.copy(generated = false)) } returns
-            HankeFactory.create().apply {
-                modifiedAt = getCurrentTimeUTC()
-                modifiedBy = USERNAME
-                status = HankeStatus.PUBLIC
-            }
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME) }
-
-        put("$BASE_URL/${hanke.hankeTunnus}", hanke)
-
-        verify { hankeService.loadHanke(hanke.hankeTunnus!!) }
-        verify { permissionService.hasPermission(hanke.id!!, USERNAME, PermissionCode.EDIT) }
-        verify { hankeService.updateHanke(any()) }
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), any()) }
-    }
-
-    @Test
     fun `Update Hanke with data and return it (PUT)`() {
         val hanketunnus = HankeFactory.defaultHankeTunnus
         // initializing only part of the data for Hanke

@@ -125,9 +125,9 @@ class HankeController(
             }
                 ?: throw HankeNotFoundException(hankeTunnus)
 
-        val sanitizedHanke = existingHanke.ensureUpdatable(hanke, hankeTunnus)
+        existingHanke.validateUpdatable(hanke, hankeTunnus)
 
-        val updatedHanke = hankeService.updateHanke(sanitizedHanke)
+        val updatedHanke = hankeService.updateHanke(hanke)
         logger.info { "Updated hanke ${updatedHanke.hankeTunnus}." }
         disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, updatedHanke.modifiedBy!!)
         return updatedHanke
@@ -176,14 +176,12 @@ class HankeController(
      * Verifies that hanke is updatable. Sets generated false as hanke to be updated is not
      * considered generated anymore.
      */
-    private fun Hanke.ensureUpdatable(updatedHanke: Hanke, hankeTunnusFromPath: String): Hanke {
+    private fun Hanke.validateUpdatable(updatedHanke: Hanke, hankeTunnusFromPath: String) {
         if (hankeTunnusFromPath != updatedHanke.hankeTunnus) {
             throw HankeArgumentException("Hanketunnus not given or doesn't match the hanke data")
         }
         if (perustaja != null && perustaja != updatedHanke.perustaja) {
             throw HankeArgumentException("Updating perustaja not allowed.")
         }
-
-        return updatedHanke.apply { generated = false }
     }
 }
