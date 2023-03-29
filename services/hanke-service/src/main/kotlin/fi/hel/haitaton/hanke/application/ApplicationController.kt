@@ -123,7 +123,7 @@ class ApplicationController(
                 .also { disclosureLogService.saveDisclosureLogsForApplication(it, userId) }
         }
 
-        checkApplicationPermission(application.hankeTunnus, userId)
+        checkPermissionToCreate(application.hankeTunnus, userId)
         return service.create(application, userId).also {
             disclosureLogService.saveDisclosureLogsForApplication(it, userId)
         }
@@ -276,7 +276,7 @@ class ApplicationController(
         }
     }
 
-    fun checkApplicationPermission(hankeTunnus: String?, userId: String) {
+    fun checkPermissionToCreate(hankeTunnus: String?, userId: String) {
         hankeTunnus.let { tunnus ->
             hankeService.getHankeId(tunnus).let { id ->
                 if (id == null || !permissionService.hasPermission(id, userId, EDIT_APPLICATIONS))
