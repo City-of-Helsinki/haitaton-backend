@@ -19,9 +19,6 @@ data class Application(
 
 /** Creation of an application without hanke is enabled for cable reports. */
 data class CableReportWithoutHanke(
-    val alluid: Int?,
-    val alluStatus: ApplicationStatus?,
-    val applicationIdentifier: String?,
     val applicationType: ApplicationType,
     val applicationData: CableReportApplicationData,
 )
@@ -29,9 +26,9 @@ data class CableReportWithoutHanke(
 fun CableReportWithoutHanke.toNewApplication(hankeTunnus: String) =
     Application(
         id = null,
-        alluid = alluid,
-        alluStatus = alluStatus,
-        applicationIdentifier = applicationIdentifier,
+        alluid = null,
+        alluStatus = null,
+        applicationIdentifier = null,
         applicationType = applicationType,
         applicationData = applicationData,
         hankeTunnus = hankeTunnus,

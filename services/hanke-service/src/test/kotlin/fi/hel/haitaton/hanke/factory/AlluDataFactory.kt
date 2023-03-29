@@ -155,9 +155,6 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
         fun cableReportWithoutHanke(): CableReportWithoutHanke =
             with(createApplication()) {
                 CableReportWithoutHanke(
-                    alluid,
-                    alluStatus,
-                    applicationIdentifier,
                     applicationType,
                     applicationData as CableReportApplicationData
                 )
