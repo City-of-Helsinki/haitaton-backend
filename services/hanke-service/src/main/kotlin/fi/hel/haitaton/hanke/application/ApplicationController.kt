@@ -33,7 +33,6 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -103,10 +102,7 @@ class ApplicationController(
                 ),
             ]
     )
-    fun create(
-        @RequestParam("luo-hanke") generateHanke: Boolean = false,
-        @ValidApplication @RequestBody application: Application
-    ): Application {
+    fun create(@ValidApplication @RequestBody application: Application): Application {
         val userId = currentUserId()
         val hankeTunnus = application.hankeTunnus
 
