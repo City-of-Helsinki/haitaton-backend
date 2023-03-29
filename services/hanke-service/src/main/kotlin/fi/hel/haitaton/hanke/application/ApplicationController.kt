@@ -288,13 +288,10 @@ class ApplicationController(
         }
     }
 
-    fun checkPermissionToCreate(hankeTunnus: String?, userId: String) {
-        hankeTunnus.let { tunnus ->
-            hankeService.getHankeId(tunnus).let { id ->
-                if (id == null || !permissionService.hasPermission(id, userId, EDIT_APPLICATIONS))
-                    throw HankeNotFoundException(hankeTunnus)
-            }
-        }
+    fun checkPermissionToCreate(hankeTunnus: String, userId: String) {
+        val id = hankeService.getHankeId(hankeTunnus)
+        if (id == null || !permissionService.hasPermission(id, userId, EDIT_APPLICATIONS))
+            throw HankeNotFoundException(hankeTunnus)
     }
 
     @ExceptionHandler(ApplicationNotFoundException::class)

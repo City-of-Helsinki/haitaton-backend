@@ -11,7 +11,7 @@ interface HankeService {
     /** Fetch hanke with hankeTunnus. Returns null if there is no hanke with the given tunnus. */
     fun loadHanke(hankeTunnus: String): Hanke?
 
-    fun getHankeId(hankeTunnus: String?): Int?
+    fun getHankeId(hankeTunnus: String): Int?
 
     fun getHankeWithApplications(hankeTunnus: String): HankeWithApplications
 
