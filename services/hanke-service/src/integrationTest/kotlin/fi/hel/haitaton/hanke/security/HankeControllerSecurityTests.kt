@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
@@ -178,8 +179,11 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     // --------- GET /hankkeet/{hankeTunnus}/hakemukset --------------
 
     private fun performGetHankeHakemukset(): ResultActions {
-        every { hankeService.getHankeHakemuksetPair(any()) } returns
-            Pair(HankeFactory.create(id = 123, hankeTunnus = "HAI-TEST-1"), listOf())
+        every { hankeService.getHankeWithApplications(any()) } returns
+            HankeWithApplications(
+                HankeFactory.create(id = 123, hankeTunnus = "HAI-TEST-1"),
+                listOf()
+            )
         every { permissionService.hasPermission(123, "test7358", PermissionCode.VIEW) } returns true
         justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358") }
 

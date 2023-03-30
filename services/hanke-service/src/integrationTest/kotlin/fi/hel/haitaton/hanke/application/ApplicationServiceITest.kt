@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
@@ -445,6 +446,20 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    fun `create when hanke was generated skips verify areas inside hankealue succeeds`() {
+        val applicationInput = AlluDataFactory.cableReportWithoutHanke()
+
+        val result = hankeService.generateHankeWithApplication(applicationInput, USERNAME)
+
+        with(result) {
+            val application = applications.first()
+            assertEquals(application.applicationData.name, hanke.nimi)
+            assertEquals(true, hanke.generated)
+            assertEquals(HankeStatus.DRAFT, hanke.status)
+        }
+    }
+
+    @Test
     fun `updateApplicationData with unknown ID throws exception`() {
         assertThat(applicationRepository.findAll()).isEmpty()
 
@@ -455,6 +470,32 @@ class ApplicationServiceITest : DatabaseTest() {
                 USERNAME
             )
         }
+    }
+
+    @Test
+    fun `updateApplicationData when hanke was generated should skip area inside hanke check`() {
+        val initial =
+            hankeService.generateHankeWithApplication(
+                AlluDataFactory.cableReportWithoutHanke(),
+                USERNAME
+            )
+        val initialApplication = initial.applications.first()
+        assertFalse(initialApplication.applicationData.areas.isNullOrEmpty())
+        val newApplicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                pendingOnClient = true,
+                name = "Uudistettu johtoselvitys",
+                areas = initialApplication.applicationData.areas
+            )
+
+        val response =
+            applicationService.updateApplicationData(
+                initialApplication.id!!,
+                newApplicationData,
+                USERNAME
+            )
+
+        assertEquals(newApplicationData, response.applicationData)
     }
 
     @Test
@@ -780,6 +821,28 @@ class ApplicationServiceITest : DatabaseTest() {
         assertThrows<ApplicationNotFoundException> {
             applicationService.sendApplication(1234, USERNAME)
         }
+    }
+
+    @Test
+    fun `sendApplication when generated hanke should skip area inside hanke check`() {
+        val initial =
+            hankeService.generateHankeWithApplication(
+                AlluDataFactory.cableReportWithoutHanke(),
+                USERNAME
+            )
+        val initialApplication = initial.applications.first()
+        assertFalse(initialApplication.applicationData.areas.isNullOrEmpty())
+        val alluIdMock = 123
+        every { cableReportServiceAllu.create(any()) } returns alluIdMock
+        every { cableReportServiceAllu.getApplicationInformation(alluIdMock) } returns
+            AlluDataFactory.createAlluApplicationResponse(alluIdMock)
+        justRun { cableReportServiceAllu.addAttachment(any(), any()) }
+
+        applicationService.sendApplication(initialApplication.id!!, USERNAME)
+
+        verify { cableReportServiceAllu.create(any()) }
+        verify { cableReportServiceAllu.addAttachment(any(), any()) }
+        verify { cableReportServiceAllu.getApplicationInformation(any()) }
     }
 
     @Test

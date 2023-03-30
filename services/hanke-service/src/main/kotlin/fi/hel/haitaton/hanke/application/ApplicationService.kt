@@ -66,10 +66,12 @@ open class ApplicationService(
             hankeRepository.findByHankeTunnus(application.hankeTunnus)
                 ?: throw HankeNotFoundException(application.hankeTunnus)
 
-        application.applicationData.areas?.let { areas ->
-            checkApplicationAreasInsideHankealue(hanke.id!!, areas) { applicationArea ->
-                "Application geometry doesn't match any hankealue when creating a new application for user $userId, " +
-                    "hankeId = ${hanke.id}, application geometry = ${applicationArea.geometry.toJsonString()}"
+        if (!hanke.generated) {
+            application.applicationData.areas?.let { areas ->
+                checkApplicationAreasInsideHankealue(hanke.id!!, areas) { applicationArea ->
+                    "Application geometry doesn't match any hankealue when creating a new application for user $userId, " +
+                        "hankeId = ${hanke.id}, application geometry = ${applicationArea.geometry.toJsonString()}"
+                }
             }
         }
 
@@ -128,12 +130,15 @@ open class ApplicationService(
             "Invalid geometry received when updating application for user $userId, id=${application.id}, alluid=${application.alluid}, reason = ${validationError.reason}, location = ${validationError.location}"
         }
 
-        val hankeId = application.hanke.id!!
-        newApplicationData.areas?.let { areas ->
-            checkApplicationAreasInsideHankealue(hankeId, areas) { applicationArea ->
-                "Application geometry doesn't match any hankealue when updating application for user $userId, " +
-                    "hankeId = $hankeId, applicationId = ${application.id}, " +
-                    "application geometry = ${applicationArea.geometry.toJsonString()}"
+        val hanke = application.hanke
+        val hankeId = hanke.id!!
+        if (!hanke.generated) {
+            newApplicationData.areas?.let { areas ->
+                checkApplicationAreasInsideHankealue(hankeId, areas) { applicationArea ->
+                    "Application geometry doesn't match any hankealue when updating application for user $userId, " +
+                        "hankeId = $hankeId, applicationId = ${application.id}, " +
+                        "application geometry = ${applicationArea.geometry.toJsonString()}"
+                }
             }
         }
 
@@ -159,12 +164,15 @@ open class ApplicationService(
     open fun sendApplication(id: Long, userId: String): Application {
         val application = getById(id)
 
-        val hankeId = application.hanke.id!!
-        application.applicationData.areas?.let { areas ->
-            checkApplicationAreasInsideHankealue(hankeId, areas) { applicationArea ->
-                "Application geometry doesn't match any hankealue when sending application for user $userId, " +
-                    "hankeId = $hankeId, applicationId = ${application.id}, " +
-                    "application geometry = ${applicationArea.geometry.toJsonString()}"
+        val hanke = application.hanke
+        val hankeId = hanke.id!!
+        if (!hanke.generated) {
+            application.applicationData.areas?.let { areas ->
+                checkApplicationAreasInsideHankealue(hankeId, areas) { applicationArea ->
+                    "Application geometry doesn't match any hankealue when sending application for user $userId, " +
+                        "hankeId = $hankeId, applicationId = ${application.id}, " +
+                        "application geometry = ${applicationArea.geometry.toJsonString()}"
+                }
             }
         }
 
@@ -453,6 +461,8 @@ class ApplicationGeometryException(message: String) : RuntimeException(message)
 class ApplicationGeometryNotInsideHankeException(message: String) : RuntimeException(message)
 
 class ApplicationDecisionNotFoundException(message: String) : RuntimeException(message)
+
+class ApplicationArgumentException(message: String) : RuntimeException(message)
 
 @Repository
 interface ApplicationRepository : JpaRepository<ApplicationEntity, Long> {

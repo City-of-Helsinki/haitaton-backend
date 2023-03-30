@@ -13,7 +13,8 @@ INSERT INTO hanke (id,
                    modifiedbyuserid,
                    modifiedat,
                    tyomaakatuosoite,
-                   status)
+                   status,
+                   generated)
 VALUES (5,
         'HAI23-5',
         'Neliöhanke',
@@ -28,4 +29,5 @@ VALUES (5,
         '5296012a-117d-11ed-96cc-0a580a820245',
         '2023-03-07 16:24:20.847656',
         'Senaatintori',
-        'DRAFT');
+        'DRAFT',
+        false);
