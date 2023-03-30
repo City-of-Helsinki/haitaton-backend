@@ -139,6 +139,7 @@ class HankeEntity(
     var modifiedByUserId: String? = null,
     var modifiedAt: LocalDateTime? = null,
     @Embedded var perustaja: PerustajaEntity? = null,
+    var generated: Boolean = false,
     // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
     // can be a performance problem if there is a need to do bulk inserts.
     // Using SEQUENCE would allow getting multiple ids more efficiently.

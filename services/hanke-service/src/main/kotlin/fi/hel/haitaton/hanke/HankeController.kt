@@ -75,7 +75,7 @@ class HankeController(
 
         val userId = currentUserId()
 
-        hankeService.getHankeHakemuksetPair(hankeTunnus).let { (hanke, hakemukset) ->
+        hankeService.getHankeWithApplications(hankeTunnus).let { (hanke, hakemukset) ->
             hanke.verifyUserAuthorization(userId, PermissionCode.VIEW)
 
             disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
@@ -92,13 +92,15 @@ class HankeController(
     /** Add one hanke. This method will be called when we do not have id for hanke yet */
     @PostMapping
     fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): Hanke {
-        val userId = currentUserId()
-        logger.info { "Creating Hanke for user $userId: ${hanke?.toLogString()} " }
-
         if (hanke == null) {
             throw HankeArgumentException("No hanke given when creating hanke")
         }
-        val createdHanke = hankeService.createHanke(hanke)
+        val sanitizedHanke = hanke.copy(id = null, generated = false)
+
+        val userId = currentUserId()
+        logger.info { "Creating Hanke for user $userId: ${hanke.toLogString()} " }
+
+        val createdHanke = hankeService.createHanke(sanitizedHanke)
 
         permissionService.setPermission(
             createdHanke.id!!,
@@ -136,7 +138,7 @@ class HankeController(
     fun deleteHanke(@PathVariable hankeTunnus: String) {
         logger.info { "Deleting hanke: $hankeTunnus" }
 
-        hankeService.getHankeHakemuksetPair(hankeTunnus).let { (hanke, hakemukset) ->
+        hankeService.getHankeWithApplications(hankeTunnus).let { (hanke, hakemukset) ->
             val hankeId = hanke.id!!
             val userId = currentUserId()
             if (!permissionService.hasPermission(hankeId, userId, PermissionCode.DELETE)) {
@@ -170,11 +172,15 @@ class HankeController(
         }
     }
 
-    private fun Hanke.validateUpdatable(newHanke: Hanke, hankeTunnusPath: String) {
-        if (hankeTunnusPath != newHanke.hankeTunnus) {
+    /**
+     * Verifies that hanke is updatable. Sets generated false as hanke to be updated is not
+     * considered generated anymore.
+     */
+    private fun Hanke.validateUpdatable(updatedHanke: Hanke, hankeTunnusFromPath: String) {
+        if (hankeTunnusFromPath != updatedHanke.hankeTunnus) {
             throw HankeArgumentException("Hanketunnus not given or doesn't match the hanke data")
         }
-        if (perustaja != null && perustaja != newHanke.perustaja) {
+        if (perustaja != null && perustaja != updatedHanke.perustaja) {
             throw HankeArgumentException("Updating perustaja not allowed.")
         }
     }

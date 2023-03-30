@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.Application
+import fi.hel.haitaton.hanke.application.ApplicationArgumentException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.domain.Hanke
@@ -50,6 +51,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.skyscreamer.jsonassert.JSONAssert
@@ -259,30 +261,34 @@ class HankeServiceITests : DatabaseTest() {
     fun `getHankeHakemuksetPair maps hanke and hakemukset to a pair correctly`() {
         val hanke = initHankeWithHakemus(123)
 
-        val result = hankeService.getHankeHakemuksetPair(hanke.hankeTunnus!!)
+        val result = hankeService.getHankeWithApplications(hanke.hankeTunnus!!)
 
         val expectedHanke = hanke.toDomainObject().apply { tyomaaTyyppi = hanke.tyomaaTyyppi }
         val expectedHakemus = hanke.hakemukset.first().toDomainObject()
-        assertThat(result.first).usingRecursiveComparison().isEqualTo(expectedHanke)
-        assertThat(result.second).hasSameElementsAs(listOf(expectedHakemus))
+        assertThat(result.hanke).usingRecursiveComparison().isEqualTo(expectedHanke)
+        assertThat(result.applications).hasSameElementsAs(listOf(expectedHakemus))
     }
 
     @Test
     fun `getHankeHakemuksetPair hanke does not exist throws not found`() {
         val exception =
-            assertThrows<HankeNotFoundException> { hankeService.getHankeHakemuksetPair("HAI-1234") }
+            assertThrows<HankeNotFoundException> {
+                hankeService.getHankeWithApplications("HAI-1234")
+            }
 
         assertThat(exception).hasMessage("Hanke HAI-1234 not found")
     }
 
     @Test
     fun `getHankeHakemuksetPair when no hakemukset returns hanke and empty list`() {
-        val hanke = hankeService.createHanke(HankeFactory.create())
+        val hankeInitial = hankeService.createHanke(HankeFactory.create())
 
-        val result = hankeService.getHankeHakemuksetPair(hanke.hankeTunnus!!)
+        val result = hankeService.getHankeWithApplications(hankeInitial.hankeTunnus!!)
 
-        assertThat(result.first).usingRecursiveComparison().isEqualTo(hanke)
-        assertTrue(result.second.isEmpty())
+        with(result) {
+            assertThat(hanke).usingRecursiveComparison().isEqualTo(hankeInitial)
+            assertTrue(applications.isEmpty())
+        }
     }
 
     @Test
@@ -908,6 +914,24 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
+    fun `generateHankeWithApplication generates hanke based on application`() {
+        val inputApplication = AlluDataFactory.cableReportWithoutHanke()
+        every { applicationService.create(any(), USER_NAME) } returnsArgument 0
+
+        val result = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
+
+        with(result) {
+            val application = applications.first()
+
+            assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
+            assertThat(hanke.nimi).isEqualTo(application.applicationData.name)
+            assertThat(application.applicationData.name)
+                .isEqualTo(inputApplication.applicationData.name)
+        }
+        verify { applicationService.create(any(), USER_NAME) }
+    }
+
+    @Test
     fun `updateHanke creates new hankealue`() {
         val hanke = getATestHanke()
         val hankealue =
@@ -1350,6 +1374,37 @@ class HankeServiceITests : DatabaseTest() {
         )
     }
 
+    @Test
+    fun `update hanke enforces generated to be false`() {
+        val hanke = hankeService.createHanke(HankeFactory.create())
+
+        val result = hankeService.updateHanke(hanke.copy(generated = true))
+
+        assertFalse(result.generated)
+    }
+
+    @Nested
+    @Testcontainers
+    @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+    @ActiveProfiles("default")
+    @WithMockUser(USER_NAME)
+    inner class HankeServiceTransactionTests : DatabaseTest() {
+
+        @Test
+        fun `generateHankeWithApplication when exception rolls back`() {
+            val inputApplication = AlluDataFactory.cableReportWithoutHanke()
+            every { applicationService.create(any(), USER_NAME) } throws
+                ApplicationArgumentException("")
+
+            assertThrows<ApplicationArgumentException> {
+                hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
+            }
+
+            assertEquals(0, hankeCount())
+            verify { applicationService.create(any(), USER_NAME) }
+        }
+    }
+
     private fun initHankeWithHakemus(alluId: Int): HankeEntity =
         hankeRepository.save(
             HankeEntity(hankeTunnus = "HAI23-1").apply {
@@ -1507,4 +1562,7 @@ class HankeServiceITests : DatabaseTest() {
 
     private fun hankealueCount(): Int? =
         jdbcTemplate.queryForObject("SELECT count(*) from hankealue", Int::class.java)
+
+    private fun hankeCount(): Int? =
+        jdbcTemplate.queryForObject("SELECT count(*) from hanke", Int::class.java)
 }
