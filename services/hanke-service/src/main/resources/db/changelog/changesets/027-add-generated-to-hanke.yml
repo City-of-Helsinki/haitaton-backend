@@ -10,5 +10,9 @@ databaseChangeLog:
               - column:
                   name: generated
                   type: boolean
+                  defaultValueBoolean: false
                   constraints:
                     nullable: false
+        - dropDefaultValue:
+            tableName: hanke
+            columnName: generated
