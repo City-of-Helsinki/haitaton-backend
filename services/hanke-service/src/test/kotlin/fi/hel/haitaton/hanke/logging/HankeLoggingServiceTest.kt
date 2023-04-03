@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.logging
 
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import io.mockk.called
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified

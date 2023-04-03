@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 
-object HankeYhteystietoFactory : Factory<HankeYhteystieto>() {
+object HankeYhteystietoFactory {
 
     /** Create a test yhteystieto with values in all fields. */
     fun create(id: Int? = 1, organisaatioId: Int? = 1): HankeYhteystieto {
@@ -50,5 +50,5 @@ object HankeYhteystietoFactory : Factory<HankeYhteystieto>() {
         intValues: List<Int>,
         mutator: (HankeYhteystieto) -> Unit = {}
     ): MutableList<HankeYhteystieto> =
-        intValues.map { createDifferentiated(it).mutate(mutator) }.toMutableList()
+        intValues.map { createDifferentiated(it).apply(mutator) }.toMutableList()
 }

@@ -6,9 +6,9 @@ import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
 import fi.hel.haitaton.hanke.PublicHankeController
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.withHankealue
-import fi.hel.haitaton.hanke.factory.HankeFactory.withTormaystarkasteluTulos
-import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every

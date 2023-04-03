@@ -22,6 +22,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotService
 import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotServiceHardCoded
@@ -74,6 +75,7 @@ class Configuration {
         cableReportService: CableReportService,
         disclosureLogService: DisclosureLogService,
         applicationLoggingService: ApplicationLoggingService,
+        hankeKayttajaService: HankeKayttajaService,
         geometriatDao: GeometriatDao,
         permissionService: PermissionService,
         hankeRepository: HankeRepository,
@@ -84,6 +86,7 @@ class Configuration {
             cableReportService,
             disclosureLogService,
             applicationLoggingService,
+            hankeKayttajaService,
             geometriatDao,
             permissionService,
             hankeRepository,

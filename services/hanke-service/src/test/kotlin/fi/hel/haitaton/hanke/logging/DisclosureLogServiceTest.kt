@@ -8,11 +8,10 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.mutate
-import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedArvioija
-import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistaja
-import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedToteuttaja
-import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedArvioija
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedToteuttaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.gdpr.StringNode
@@ -108,10 +107,10 @@ internal class DisclosureLogServiceTest {
         val yhteystieto = HankeYhteystietoFactory.createDifferentiated(1)
         yhteystieto.id = 1
         val hanke =
-            HankeFactory.create().mutate {
-                it.omistajat = mutableListOf(yhteystieto)
-                it.arvioijat = mutableListOf(yhteystieto)
-                it.toteuttajat = mutableListOf(yhteystieto)
+            HankeFactory.create().apply {
+                omistajat = mutableListOf(yhteystieto)
+                arvioijat = mutableListOf(yhteystieto)
+                toteuttajat = mutableListOf(yhteystieto)
             }
         val expectedLogs =
             listOf(AuditLogEntryFactory.createReadEntry(objectBefore = yhteystieto.toJsonString()))

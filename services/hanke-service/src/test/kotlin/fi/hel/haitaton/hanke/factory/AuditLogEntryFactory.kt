@@ -10,7 +10,7 @@ import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.toJsonString
 
-object AuditLogEntryFactory : Factory<AuditLogEntry>() {
+object AuditLogEntryFactory {
 
     fun createReadEntry(
         userId: String? = "test",

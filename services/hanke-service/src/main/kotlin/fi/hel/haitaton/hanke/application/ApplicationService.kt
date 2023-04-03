@@ -15,6 +15,7 @@ import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
@@ -22,10 +23,7 @@ import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import kotlin.reflect.KClass
 import mu.KotlinLogging
-import org.springframework.data.jpa.repository.JpaRepository
-import org.springframework.data.jpa.repository.Query
 import org.springframework.http.MediaType
-import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
@@ -38,6 +36,7 @@ open class ApplicationService(
     private val cableReportService: CableReportService,
     private val disclosureLogService: DisclosureLogService,
     private val applicationLoggingService: ApplicationLoggingService,
+    private val hankeKayttajaService: HankeKayttajaService,
     private val geometriatDao: GeometriatDao,
     private val permissionService: PermissionService,
     private val hankeRepository: HankeRepository,
@@ -189,6 +188,8 @@ open class ApplicationService(
             }
             return application.toApplication()
         }
+
+        hankeKayttajaService.saveNewTokensFromApplication(application.applicationData, hanke.id!!)
 
         // The application should no longer be a draft
         application.applicationData = application.applicationData.copy(pendingOnClient = false)
@@ -463,15 +464,3 @@ class ApplicationGeometryNotInsideHankeException(message: String) : RuntimeExcep
 class ApplicationDecisionNotFoundException(message: String) : RuntimeException(message)
 
 class ApplicationArgumentException(message: String) : RuntimeException(message)
-
-@Repository
-interface ApplicationRepository : JpaRepository<ApplicationEntity, Long> {
-    fun findOneById(id: Long): ApplicationEntity?
-
-    fun getAllByUserId(userId: String): List<ApplicationEntity>
-
-    @Query("select alluid from ApplicationEntity where alluid is not null")
-    fun getAllAlluIds(): List<Int>
-
-    fun getOneByAlluid(alluid: Int): ApplicationEntity?
-}
