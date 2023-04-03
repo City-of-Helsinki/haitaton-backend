@@ -59,7 +59,7 @@ cycle_infra:
   addr: "/local_data/helsinki_cycleways.gpkg"
   local_file: "helsinki_cycleways.gpkg"
   target_file: "cycle_infra.gpkg"
-  target_buffer_file: "tormays_cycle_infra.gpkg"
+  target_buffer_file: "tormays_cycle_infra_polys.gpkg"
   buffer:
     - 20
 

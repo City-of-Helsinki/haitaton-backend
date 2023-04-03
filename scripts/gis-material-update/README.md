@@ -34,6 +34,8 @@ Local development database is set up with PostGIS spatial support.
 
 ## Volume mappings
 
+Local directory `data` is mapped to fetch container.
+
 Local directory `haitaton-downloads` is mapped to fetch and processing containers.
 
 Local directory `haitaton-gis-output` is mapped to processing container.
@@ -118,6 +120,7 @@ Where `<source>` is currently one of:
 - `ylre_katualueet` - Helsinki YLRE street areas, polygons.
 - `ylre_katuosat` - Helsinki YLRE parts, polygons.
 - `maka_autoliikennemaarat` - Traffic volumes (car traffic)
+- `cycle_infra` - Cycle infra (local file)
 
 Data files are downloaded to `./haitaton-downloads` -directory.
 
@@ -275,6 +278,26 @@ Output files (names configured in `config.yaml`)
 
 - tram_lines.gpkg
 - tormays_tram_lines_polys.gpkg
+
+### `cycle_infra`
+
+Docker example run (ensure that image build and file copying is
+already performed as instructed above):
+
+```sh
+docker-compose up -d gis-db
+docker-compose run --rm gis-fetch cycle_infra
+docker-compose run --rm gis-process cycle_infra
+docker-compose stop gis-db
+```
+
+Processed GIS material is available in:
+haitaton-gis-output
+
+Output files (names configured in `config.yaml`)
+
+- cycle_infra.gpkg
+- tormays_cycle_infra_polys.gpkg
 
 # Run tests
 
