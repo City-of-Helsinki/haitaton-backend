@@ -55,6 +55,13 @@ tram_lines:
   target_buffer_file: "tormays_tram_lines_polys.gpkg"
   buffer:
     - 35
+cycle_infra:
+  addr: "/local_data/helsinki_cycleways.gpkg"
+  local_file: "helsinki_cycleways.gpkg"
+  target_file: "cycle_infra.gpkg"
+  target_buffer_file: "tormays_cycle_infra.gpkg"
+  buffer:
+    - 20
 
 common:
   download_path: "/downloads"
