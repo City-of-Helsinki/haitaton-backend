@@ -70,8 +70,6 @@ common:
 # pyynnöstä toimitetut
 bussiliikenne_kriittinen:
 pienalueet_kantakaupunki_yleiskaava:
-polkupyora_prioriteetti:
-polkupyora_paareitti:
 liikennevaylat:
 
 local_development:
