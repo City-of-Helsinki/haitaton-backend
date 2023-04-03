@@ -33,7 +33,7 @@ object HankePublicValidator {
             .andAllIn(hanke.alueet, "alueet", ::validateAlue)
             .and { notEmpty(hanke.omistajat, "omistajat") }
             .andAllIn(hanke.omistajat, "omistajat", ::validateYhteystieto)
-            .andAllIn(hanke.arvioijat, "arvioijat", ::validateYhteystieto)
+            .andAllIn(hanke.rakennuttajat, "rakennuttajat", ::validateYhteystieto)
             .andAllIn(hanke.toteuttajat, "toteuttajat", ::validateYhteystieto)
     }
 
@@ -71,7 +71,6 @@ object HankePublicValidator {
      * - Email
      */
     private fun validateYhteystieto(yhteystieto: HankeYhteystieto, path: String): ValidationResult =
-        validate { notBlank(yhteystieto.etunimi, "$path.etunimi") }
-            .and { notBlank(yhteystieto.sukunimi, "$path.sukunimi") }
+        validate { notBlank(yhteystieto.nimi, "$path.etunimi") }
             .and { notBlank(yhteystieto.email, "$path.email") }
 }

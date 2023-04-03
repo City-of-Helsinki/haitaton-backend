@@ -1,19 +1,26 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import java.time.LocalDateTime
+import javax.persistence.EntityManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
-import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.transaction.annotation.Transactional
+import org.testcontainers.junit.jupiter.Testcontainers
 
-/** Testing the HankeRepository with a database. */
-@DataJpaTest(properties = ["spring.liquibase.enabled=false"])
-class HankeRepositoryITests
-@Autowired
-constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepository) {
+@Testcontainers
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ActiveProfiles("default")
+internal class HankeRepositoryITests : DatabaseTest() {
+
+    @Autowired private lateinit var entityManager: EntityManager
+    @Autowired private lateinit var hankeRepository: HankeRepository
 
     @Test
+    @Transactional
     fun `findByHankeTunnus returns existing hanke`() {
         // First insert one hanke to the repository (using entityManager directly):
         val hankeEntity = createBaseHankeEntity("ABC-123")
@@ -26,6 +33,7 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
     }
 
     @Test
+    @Transactional
     fun `findByHankeTunnus does not return anything for non-existing hanke`() {
         // First insert one hanke to the repository (using entityManager directly):
         val hankeEntity = createBaseHankeEntity("ABC-123")
@@ -39,10 +47,8 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
 
     // Purpose of these field tests is to ensure that entity mappings and liquibase columns work
     // correctly.
-    // Note that due to using DataJpaTest, liquibase may map the field types slightly differently
-    // here than
-    // in production mode, but these are quite usual field types, so shouldn't be an issue.
     @Test
+    @Transactional
     fun `basic fields, tyomaa and haitat fields can be round-trip saved and loaded`() {
         val datetime = LocalDateTime.of(2020, 2, 20, 20, 20)
         val date = datetime.toLocalDate()
@@ -91,13 +97,14 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
     }
 
     @Test
+    @Transactional
     fun `yhteystieto fields can be round-trip saved and loaded`() {
         // Setup test fields
         val baseHankeEntity = createBaseHankeEntity("ABC-124")
 
         // Note, leaving id and hanke fields unset on purpose (Hibernate should set them as needed)
         val hankeYhteystietoEntity1 = createOmistaja(baseHankeEntity)
-        val hankeYhteystietoEntity2 = createArvioija(baseHankeEntity)
+        val hankeYhteystietoEntity2 = createRakennuttaja(baseHankeEntity)
         val hankeYhteystietoEntity3 = createToteuttaja(baseHankeEntity)
 
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity1)
@@ -123,8 +130,7 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
 
         // Check every field from one yhteystieto:
         assertThat(loadedHankeYhteystietoEntity1).isNotNull
-        assertThat(loadedHankeYhteystietoEntity1.sukunimi).isEqualTo("Suku1")
-        assertThat(loadedHankeYhteystietoEntity1.etunimi).isEqualTo("Etu1")
+        assertThat(loadedHankeYhteystietoEntity1.nimi).isEqualTo("Etu1 Suku1")
         assertThat(loadedHankeYhteystietoEntity1.email).isEqualTo("email1")
         assertThat(loadedHankeYhteystietoEntity1.puhelinnumero).isEqualTo("0101111111")
         assertThat(loadedHankeYhteystietoEntity1.organisaatioId).isEqualTo(1)
@@ -134,12 +140,13 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
         assertThat(loadedHankeYhteystietoEntity1.createdAt).isEqualTo(datetime())
         assertThat(loadedHankeYhteystietoEntity1.modifiedByUserId).isEqualTo("11")
         assertThat(loadedHankeYhteystietoEntity1.modifiedAt).isEqualTo(datetime())
+        assertThat(loadedHankeYhteystietoEntity1.alikontaktit)
+            .hasSameElementsAs(listOf(createAlikontakti()))
         // Check the back reference to parent Hanke:
         assertThat(loadedHankeYhteystietoEntity1.hanke).isSameAs(loadedHanke)
         // Check other yhteystietos:
         assertThat(loadedHankeYhteystietoEntity2).isNotNull
-        assertThat(loadedHankeYhteystietoEntity2.sukunimi).isEqualTo("Suku2")
-        assertThat(loadedHankeYhteystietoEntity2.etunimi).isEqualTo("Etu2")
+        assertThat(loadedHankeYhteystietoEntity2.nimi).isEqualTo("Etu2 Suku2")
         assertThat(loadedHankeYhteystietoEntity2.email).isEqualTo("email2")
         assertThat(loadedHankeYhteystietoEntity2.puhelinnumero).isEqualTo("0102222222")
         assertThat(loadedHankeYhteystietoEntity2.organisaatioId).isEqualTo(2)
@@ -149,10 +156,11 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
         assertThat(loadedHankeYhteystietoEntity2.createdAt).isEqualTo(datetime())
         assertThat(loadedHankeYhteystietoEntity2.modifiedByUserId).isEqualTo("22")
         assertThat(loadedHankeYhteystietoEntity2.modifiedAt).isEqualTo(datetime())
+        assertThat(loadedHankeYhteystietoEntity2.alikontaktit)
+            .hasSameElementsAs(listOf(createAlikontakti()))
 
         assertThat(loadedHankeYhteystietoEntity3).isNotNull
-        assertThat(loadedHankeYhteystietoEntity3.sukunimi).isEqualTo("Suku3")
-        assertThat(loadedHankeYhteystietoEntity3.etunimi).isEqualTo("Etu3")
+        assertThat(loadedHankeYhteystietoEntity3.nimi).isEqualTo("Etu3 Suku3")
         assertThat(loadedHankeYhteystietoEntity3.email).isEqualTo("email3")
         assertThat(loadedHankeYhteystietoEntity3.puhelinnumero).isEqualTo("0103333333")
         assertThat(loadedHankeYhteystietoEntity3.organisaatioId).isEqualTo(3)
@@ -162,16 +170,19 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
         assertThat(loadedHankeYhteystietoEntity3.createdAt).isEqualTo(datetime())
         assertThat(loadedHankeYhteystietoEntity3.modifiedByUserId).isEqualTo("33")
         assertThat(loadedHankeYhteystietoEntity3.modifiedAt).isEqualTo(datetime())
+        assertThat(loadedHankeYhteystietoEntity3.alikontaktit)
+            .hasSameElementsAs(listOf(createAlikontakti()))
     }
 
     @Test
+    @Transactional
     fun `yhteystieto entry can be round-trip deleted`() {
         // Setup test fields
         val baseHankeEntity = createBaseHankeEntity("ABC-124")
 
         // Note, leaving id and hanke fields unset on purpose (Hibernate should set them as needed)
         val hankeYhteystietoEntity1 = createOmistaja(baseHankeEntity)
-        val hankeYhteystietoEntity2 = createArvioija(baseHankeEntity)
+        val hankeYhteystietoEntity2 = createRakennuttaja(baseHankeEntity)
 
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity1)
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity2)
@@ -227,7 +238,7 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
             createdByUserId = null,
             createdAt = null,
             modifiedByUserId = null,
-            modifiedAt = null
+            modifiedAt = null,
         )
 
     /* Keeping just seconds so that database truncation does not affect testing. */
@@ -236,8 +247,7 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
     private fun createOmistaja(baseHankeEntity: HankeEntity) =
         HankeYhteystietoEntity(
             contactType = ContactType.OMISTAJA,
-            sukunimi = "Suku1",
-            etunimi = "Etu1",
+            nimi = "Etu1 Suku1",
             email = "email1",
             puhelinnumero = "0101111111",
             organisaatioId = 1,
@@ -250,14 +260,15 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
             modifiedByUserId = "11",
             modifiedAt = datetime(),
             id = null,
-            hanke = baseHankeEntity
+            alikontaktit = listOf(createAlikontakti()),
+            tyyppi = YRITYS,
+            hanke = baseHankeEntity,
         )
 
-    private fun createArvioija(baseHankeEntity: HankeEntity) =
+    private fun createRakennuttaja(baseHankeEntity: HankeEntity) =
         HankeYhteystietoEntity(
-            contactType = ContactType.ARVIOIJA,
-            sukunimi = "Suku2",
-            etunimi = "Etu2",
+            contactType = ContactType.RAKENNUTTAJA,
+            nimi = "Etu2 Suku2",
             email = "email2",
             puhelinnumero = "0102222222",
             organisaatioId = 2,
@@ -270,14 +281,15 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
             modifiedByUserId = "22",
             modifiedAt = datetime(),
             id = null,
-            hanke = baseHankeEntity
+            alikontaktit = listOf(createAlikontakti()),
+            tyyppi = YRITYS,
+            hanke = baseHankeEntity,
         )
 
     private fun createToteuttaja(baseHankeEntity: HankeEntity) =
         HankeYhteystietoEntity(
             contactType = ContactType.TOTEUTTAJA,
-            sukunimi = "Suku3",
-            etunimi = "Etu3",
+            nimi = "Etu3 Suku3",
             email = "email3",
             puhelinnumero = "0103333333",
             organisaatioId = 3,
@@ -290,6 +302,11 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
             modifiedByUserId = "33",
             modifiedAt = datetime(),
             id = null,
-            hanke = baseHankeEntity
+            alikontaktit = listOf(createAlikontakti()),
+            tyyppi = YRITYS,
+            hanke = baseHankeEntity,
         )
+
+    private fun createAlikontakti() =
+        Alikontakti("Ali", "Kontakti", "ali.kontakti@testi.com", "050-3785641")
 }
