@@ -4,23 +4,27 @@ import org.springframework.stereotype.Service
 
 @Service
 class PermissionService(
-    private val repo: PermissionRepository,
+    private val permissionRepository: PermissionRepository,
     private val roleRepository: RoleRepository
 ) {
     fun getAllowedHankeIds(userId: String, permission: PermissionCode): List<Int> =
-        repo.findAllByUserIdAndPermission(userId, permission.code).map { it.hankeId }
+        permissionRepository.findAllByUserIdAndPermission(userId, permission.code).map {
+            it.hankeId
+        }
 
     fun hasPermission(hankeId: Int, userId: String, permission: PermissionCode): Boolean {
-        val role = repo.findOneByHankeIdAndUserId(hankeId, userId)?.role
+        val role = permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.role
         return hasPermission(role, permission)
     }
 
     fun setPermission(hankeId: Int, userId: String, role: Role) {
         val roleEntity = roleRepository.findOneByRole(role)
         val entity =
-            repo.findOneByHankeIdAndUserId(hankeId, userId)?.apply { this.role = roleEntity }
+            permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.apply {
+                this.role = roleEntity
+            }
                 ?: PermissionEntity(userId = userId, hankeId = hankeId, role = roleEntity)
-        repo.save(entity)
+        permissionRepository.save(entity)
     }
 
     companion object {

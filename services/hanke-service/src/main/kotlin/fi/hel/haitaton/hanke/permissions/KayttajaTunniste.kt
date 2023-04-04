@@ -18,7 +18,7 @@ import org.springframework.stereotype.Repository
 @Entity
 @Table(name = "kayttaja_tunniste")
 class KayttajaTunnisteEntity(
-    @Id val id: UUID,
+    @Id val id: UUID = UUID.randomUUID(),
     val tunniste: String,
     @Column(name = "created_at") val createdAt: OffsetDateTime,
     @Column(name = "sent_at") val sentAt: OffsetDateTime?,
@@ -27,7 +27,6 @@ class KayttajaTunnisteEntity(
 ) {
     constructor() :
         this(
-            id = UUID.randomUUID(),
             tunniste = randomToken(),
             createdAt = getCurrentTimeUTC().toOffsetDateTime(),
             sentAt = null,

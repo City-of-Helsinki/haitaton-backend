@@ -17,7 +17,6 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import java.time.OffsetDateTime
-import java.util.UUID
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -26,6 +25,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
 
 private const val USERNAME = "test7358"
+const val kayttajaTunnistePattern = "[a-zA-z0-9]{24}"
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -83,7 +83,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             tunniste.transform { it.role }.isEqualTo(Role.KATSELUOIKEUS)
             tunniste.transform { it.createdAt }.isRecent()
             tunniste.transform { it.sentAt }.isNull()
-            tunniste.transform { it.tunniste }.matches(Regex("[a-zA-z0-9]{24}"))
+            tunniste.transform { it.tunniste }.matches(Regex(kayttajaTunnistePattern))
             tunniste.transform { it.hankeKayttaja }.isNotNull()
         }
         val kayttajat = hankeKayttajaRepository.findAll()
@@ -218,7 +218,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         val kayttajaTunnisteEntity =
             kayttajaTunnisteRepository.save(
                 KayttajaTunnisteEntity(
-                    id = UUID.randomUUID(),
                     tunniste = "existing",
                     createdAt = OffsetDateTime.parse("2023-03-31T15:41:21Z"),
                     sentAt = null,
@@ -228,7 +227,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             )
         return hankeKayttajaRepository.save(
             HankeKayttajaEntity(
-                id = UUID.randomUUID(),
                 hankeId = hanke.id!!,
                 nimi = nimi,
                 sahkoposti = sahkoposti,
@@ -254,7 +252,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         return hankeKayttajaRepository.save(
             HankeKayttajaEntity(
-                id = UUID.randomUUID(),
                 hankeId = hanke.id!!,
                 nimi = nimi,
                 sahkoposti = sahkoposti,

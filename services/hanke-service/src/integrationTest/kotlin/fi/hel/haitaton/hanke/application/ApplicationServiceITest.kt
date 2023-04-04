@@ -41,6 +41,7 @@ import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.permissions.Role
+import fi.hel.haitaton.hanke.permissions.kayttajaTunnistePattern
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
@@ -952,7 +953,7 @@ class ApplicationServiceITest : DatabaseTest() {
         assertThat(tunnisteet[0].role).isEqualTo(Role.KATSELUOIKEUS)
         assertThat(tunnisteet[0].createdAt).isRecent()
         assertThat(tunnisteet[0].sentAt).isNull()
-        assertThat(tunnisteet[0].tunniste).matches(Regex("[a-zA-z0-9]{24}"))
+        assertThat(tunnisteet[0].tunniste).matches(Regex(kayttajaTunnistePattern))
         assertThat(tunnisteet[0].hankeKayttaja).isNotNull()
         val kayttaja = tunnisteet[0].hankeKayttaja!!
         assertThat(kayttaja.nimi).isEqualTo("Teppo Testihenkilö")

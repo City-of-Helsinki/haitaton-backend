@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.permissions
 
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.Contact
-import java.util.UUID
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -21,8 +20,6 @@ class HankeKayttajaService(
                 .flatMap { it.contacts }
                 .filter { !it.email.isNullOrBlank() && !it.name.isNullOrBlank() }
 
-        // Emails that already exist for the hanke, from either the hanke contacts or from other
-        // applications
         val existingEmails =
             hankeKayttajaRepository
                 .findByHankeIdAndSahkopostiIn(hankeId, newContacts.map { it.email!! })
@@ -40,7 +37,6 @@ class HankeKayttajaService(
 
         hankeKayttajaRepository.save(
             HankeKayttajaEntity(
-                id = UUID.randomUUID(),
                 hankeId = hankeId,
                 nimi = contact.name!!,
                 sahkoposti = contact.email!!,
