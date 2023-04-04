@@ -12,7 +12,7 @@ import org.springframework.web.context.request.ServletRequestAttributes
 
 /** Service for methods common to all types of audit logs. */
 @Service
-class AuditLogService(private val auditLogRepository: AuditLogRepository) {
+open class AuditLogService(private val auditLogRepository: AuditLogRepository) {
 
     /**
      * Save new audit log entries. Converts them to entities and saves them.
@@ -20,7 +20,9 @@ class AuditLogService(private val auditLogRepository: AuditLogRepository) {
      * Sets the date_time and ip_address fields for every entry.
      */
     @Transactional(propagation = Propagation.SUPPORTS)
-    fun createAll(auditLogEntries: Collection<AuditLogEntry>): MutableList<AuditLogEntryEntity> {
+    open fun createAll(
+        auditLogEntries: Collection<AuditLogEntry>
+    ): MutableList<AuditLogEntryEntity> {
         // Make sure all related logs have the same time
         val now = OffsetDateTime.now()
         return auditLogRepository.saveAll(auditLogEntries.map { it.toEntity(now, getIpAddress()) })
@@ -32,7 +34,7 @@ class AuditLogService(private val auditLogRepository: AuditLogRepository) {
      * Sets the date_time and ip_address fields for the entry.
      */
     @Transactional(propagation = Propagation.SUPPORTS)
-    fun create(auditLogEntry: AuditLogEntry): MutableList<AuditLogEntryEntity> =
+    open fun create(auditLogEntry: AuditLogEntry): MutableList<AuditLogEntryEntity> =
         createAll(listOf(auditLogEntry))
 
     companion object {

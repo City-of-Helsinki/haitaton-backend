@@ -8,8 +8,8 @@ import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.withGeneratedOmistaja
-import fi.hel.haitaton.hanke.factory.HankeFactory.withPerustaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withPerustaja
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -25,7 +25,8 @@ import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import org.geojson.FeatureCollection
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired

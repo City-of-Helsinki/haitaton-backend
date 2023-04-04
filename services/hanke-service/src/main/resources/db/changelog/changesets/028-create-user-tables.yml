@@ -1,0 +1,84 @@
+databaseChangeLog:
+  - changeSet:
+      id: 028-create-user-tables
+      comment: Create tables for user information and invitation tokens.
+      author: Topias Heinonen
+      changes:
+        - createTable:
+            tableName: kayttaja_tunniste
+            remarks: "Token for inviting users to hankkeet."
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+              - column:
+                  name: tunniste
+                  type: varchar
+                  constraints:
+                    nullable: false
+                  remarks: "Token for identifying the invited user."
+              - column:
+                  name: created_at
+                  type: timestamp with timezone
+                  constraints:
+                    nullable: false
+                  remarks: "Time when the token was created. Can be used to expire the token."
+              - column:
+                  name: sent_at
+                  type: timestamp with timezone
+                  constraints:
+                    nullable: true
+                  remarks: "Time when the token was sent by email. Null until it has been sent."
+              - column:
+                  name: role
+                  type: varchar
+                  constraints:
+                    nullable: false
+                  remarks: "The role the user is invited to. Will be copied to permissions table when the user logs in."
+        - createTable:
+            tableName: hanke_kayttaja
+            remarks: "User information shown in the UI."
+            columns:
+              - column:
+                  name: id
+                  type: uuid
+                  constraints:
+                    nullable: false
+                    primaryKey: true
+              - column:
+                  name: hanke_id
+                  type: int
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_hankekayttaja_hanke
+                    references: hanke(id)
+                  remarks: "The hanke this user is associated with."
+              - column:
+                  name: nimi
+                  type: varchar
+                  constraints:
+                    nullable: false
+                  remarks: "Name shown on the hanke permissions page."
+              - column:
+                  name: sahkoposti
+                  type: varchar
+                  constraints:
+                    nullable: false
+                  remarks: "Email shown on the hanke permissions page."
+              - column:
+                  name: permission_id
+                  type: integer
+                  constraints:
+                    foreignKeyName: fk_hankekayttaja_permissions
+                    references: permissions(id)
+                  remarks: "The permissions of this user. Specified if the user has identified with the user token."
+              - column:
+                  name: tunniste_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_hankekayttaja_kayttajatunniste
+                    references: kayttaja_tunniste(id)
+                  remarks: "The token associated with this user. The token is removed after the user has identified with the user token."

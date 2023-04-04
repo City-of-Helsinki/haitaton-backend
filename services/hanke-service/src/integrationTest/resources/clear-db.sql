@@ -3,11 +3,13 @@ TRUNCATE TABLE
     audit_logs,
     geometriat,
     hanke,
+    hanke_kayttaja,
     hankealue,
     hankegeometria,
     hanketyomaatyyppi,
     hankeyhteystieto,
     int_lock,
+    kayttaja_tunniste,
     organisaatio,
     permissions,
     tormaystarkastelutulos;
