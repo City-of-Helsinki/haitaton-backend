@@ -20,6 +20,7 @@ import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.mockk.Called
 import io.mockk.called
@@ -57,6 +58,7 @@ class ApplicationServiceTest {
     private val applicationLoggingService: ApplicationLoggingService = mockk(relaxUnitFun = true)
     private val hankeRepository: HankeRepository = mockk()
     private val permissionService: PermissionService = mockk()
+    private val hankeKayttajaService: HankeKayttajaService = mockk(relaxUnitFun = true)
 
     private val service: ApplicationService =
         ApplicationService(
@@ -65,6 +67,7 @@ class ApplicationServiceTest {
             cableReportService,
             disclosureLogService,
             applicationLoggingService,
+            hankeKayttajaService,
             geometriatDao,
             permissionService,
             hankeRepository,
@@ -85,6 +88,7 @@ class ApplicationServiceTest {
             cableReportService,
             disclosureLogService,
             applicationLoggingService,
+            hankeKayttajaService,
             geometriatDao,
         )
     }
@@ -249,6 +253,7 @@ class ApplicationServiceTest {
         verifyOrder {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
+            hankeKayttajaService.saveNewTokensFromApplication(applicationData, 1)
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(any())
@@ -281,6 +286,7 @@ class ApplicationServiceTest {
         verifyOrder {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
+            hankeKayttajaService.saveNewTokensFromApplication(applicationData, 1)
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(any())
@@ -315,6 +321,7 @@ class ApplicationServiceTest {
             disclosureLogService wasNot called
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(any(), any())
+            hankeKayttajaService.saveNewTokensFromApplication(applicationData, 1)
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(any())
@@ -356,6 +363,7 @@ class ApplicationServiceTest {
         verifyOrder {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
+            hankeKayttajaService.saveNewTokensFromApplication(any(), 1)
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(expectedAlluData)
@@ -393,6 +401,7 @@ class ApplicationServiceTest {
         verify {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
+            hankeKayttajaService.saveNewTokensFromApplication(applicationData, 1)
             cableReportService wasNot Called
             disclosureLogService wasNot Called
             applicationLoggingService wasNot Called

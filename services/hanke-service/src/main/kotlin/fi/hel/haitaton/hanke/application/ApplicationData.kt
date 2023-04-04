@@ -28,6 +28,7 @@ sealed interface ApplicationData {
 
     fun copy(pendingOnClient: Boolean): ApplicationData
     fun toAlluData(): AlluApplicationData?
+    fun customersWithContacts(): List<CustomerWithContacts>
 }
 
 @JsonView(ChangeLogView::class)
@@ -68,6 +69,14 @@ data class CableReportApplicationData(
 
     override fun toAlluData(): AlluCableReportApplicationData =
         ApplicationDataMapper.toAlluData(this)
+
+    override fun customersWithContacts(): List<CustomerWithContacts> =
+        listOfNotNull(
+            customerWithContacts,
+            contractorWithContacts,
+            propertyDeveloperWithContacts,
+            representativeWithContacts
+        )
 }
 
 class AlluDataException(path: String, error: AlluDataError) :

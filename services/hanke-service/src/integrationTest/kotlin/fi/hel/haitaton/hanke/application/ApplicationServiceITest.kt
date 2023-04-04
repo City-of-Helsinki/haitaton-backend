@@ -10,6 +10,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.matches
 import assertk.assertions.prop
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.DatabaseTest
@@ -29,7 +30,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.withHankealue
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -37,8 +38,10 @@ import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
+import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.permissions.Role
+import fi.hel.haitaton.hanke.permissions.kayttajaTunnistePattern
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
@@ -89,6 +92,7 @@ class ApplicationServiceITest : DatabaseTest() {
     @Autowired private lateinit var hankeRepository: HankeRepository
     @Autowired private lateinit var alluStatusRepository: AlluStatusRepository
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
+    @Autowired private lateinit var kayttajaTunnisteRepository: KayttajaTunnisteRepository
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
 
     @BeforeEach
@@ -919,6 +923,44 @@ class ApplicationServiceITest : DatabaseTest() {
             savedApplication.applicationIdentifier
         )
         assertEquals(ApplicationStatus.PENDING, savedApplication.alluStatus)
+        verifyOrder {
+            cableReportServiceAllu.create(pendingApplicationData.toAlluData())
+            cableReportServiceAllu.addAttachment(26, any())
+            cableReportServiceAllu.getApplicationInformation(26)
+        }
+    }
+
+    @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
+    fun `sendApplication saves user tokens from application contacts`() {
+        val application =
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea()
+            ) { it.alluid = null }
+        val applicationData = application.applicationData as CableReportApplicationData
+        val pendingApplicationData = applicationData.copy(pendingOnClient = false)
+        every { cableReportServiceAllu.create(pendingApplicationData.toAlluData()) } returns 26
+        justRun { cableReportServiceAllu.addAttachment(26, any()) }
+        every { cableReportServiceAllu.getApplicationInformation(26) } returns
+            AlluDataFactory.createAlluApplicationResponse(26)
+
+        applicationService.sendApplication(application.id!!, USERNAME)
+
+        val tunnisteet = kayttajaTunnisteRepository.findAll()
+        assertThat(tunnisteet).hasSize(1)
+        assertThat(tunnisteet[0].role).isEqualTo(Role.KATSELUOIKEUS)
+        assertThat(tunnisteet[0].createdAt).isRecent()
+        assertThat(tunnisteet[0].sentAt).isNull()
+        assertThat(tunnisteet[0].tunniste).matches(Regex(kayttajaTunnistePattern))
+        assertThat(tunnisteet[0].hankeKayttaja).isNotNull()
+        val kayttaja = tunnisteet[0].hankeKayttaja!!
+        assertThat(kayttaja.nimi).isEqualTo("Teppo Testihenkilö")
+        assertThat(kayttaja.sahkoposti).isEqualTo("teppo@example.test")
+        assertThat(kayttaja.hankeId).isEqualTo(application.hanke.id)
+        assertThat(kayttaja.permission).isNull()
+        assertThat(kayttaja.kayttajaTunniste).isNotNull()
         verifyOrder {
             cableReportServiceAllu.create(pendingApplicationData.toAlluData())
             cableReportServiceAllu.addAttachment(26, any())

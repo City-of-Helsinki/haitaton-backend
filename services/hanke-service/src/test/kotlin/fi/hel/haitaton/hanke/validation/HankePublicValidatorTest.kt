@@ -6,9 +6,9 @@ import assertk.assertions.containsExactlyInAnyOrder
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.withHankealue
-import fi.hel.haitaton.hanke.factory.HankeFactory.withTormaystarkasteluTulos
-import fi.hel.haitaton.hanke.factory.HankeFactory.withYhteystiedot
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.touch
 import java.util.stream.Stream
 import org.junit.jupiter.api.Assertions.assertFalse
