@@ -106,6 +106,7 @@ class Configuration {
         hankeLoggingService: HankeLoggingService,
         applicationService: ApplicationService,
         permissionService: PermissionService,
+        hankeKayttajaService: HankeKayttajaService,
     ): HankeService =
         HankeServiceImpl(
             hankeRepository,
@@ -115,7 +116,8 @@ class Configuration {
             auditLogService,
             hankeLoggingService,
             applicationService,
-            permissionService
+            permissionService,
+            hankeKayttajaService,
         )
 
     @Bean

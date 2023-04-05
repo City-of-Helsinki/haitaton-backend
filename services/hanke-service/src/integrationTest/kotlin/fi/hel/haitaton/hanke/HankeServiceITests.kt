@@ -30,6 +30,8 @@ import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaRepository
+import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import io.mockk.Called
@@ -86,6 +88,8 @@ class HankeServiceITests : DatabaseTest() {
     @Autowired private lateinit var hankeService: HankeService
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
     @Autowired private lateinit var hankeRepository: HankeRepository
+    @Autowired private lateinit var hankeKayttajaRepository: HankeKayttajaRepository
+    @Autowired private lateinit var kayttajaTunnisteRepository: KayttajaTunnisteRepository
     @Autowired private lateinit var jdbcTemplate: JdbcTemplate
     @Autowired private lateinit var entityManager: EntityManager
 
@@ -99,17 +103,8 @@ class HankeServiceITests : DatabaseTest() {
         confirmVerified(applicationService)
     }
 
-    // Some tests also use and check loadHanke()'s return value because at one time the update
-    // action was returning different set of data than loadHanke (bug), so it is a sort of
-    // regression test.
-
     @Test
     fun `create Hanke with full data set succeeds and returns a new domain object with the correct values`() {
-        // Also tests that dates/times do not make timezone-related shifting on the roundtrip.
-        // NOTE: times sent in and returned are expected to be in UTC ("Z" or +00:00 offset)
-
-        // Setup Hanke with one Yhteystieto of each type:
-        // The yhteystiedot are not in DB yet, so their id should be null.
         val hanke: Hanke = getATestHanke().withYhteystiedot { it.id = null }.withPerustaja()
         val datetimeAlku = hanke.alkuPvm // nextyear.2.20 23:45:56Z
         val datetimeLoppu = hanke.loppuPvm // nextyear.2.21 0:12:34Z
@@ -201,6 +196,8 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(rakennuttaja.id).isNotEqualTo(firstId)
         assertThat(toteuttaja.id).isNotEqualTo(firstId)
         assertThat(toteuttaja.id).isNotEqualTo(rakennuttaja.id)
+        assertThat(hankeKayttajaRepository.findAll()).hasSize(4)
+        assertThat(kayttajaTunnisteRepository.findAll()).hasSize(4)
     }
 
     @Test
@@ -1554,8 +1551,16 @@ class HankeServiceITests : DatabaseTest() {
           "osasto":"osasto$i",
           "rooli": "Isännöitsijä$i",
           "tyyppi": "YHTEISO",
-          "alikontaktit": [{"etunimi":"etu$i","sukunimi":"suku$i","email":"email$i","puhelinnumero":"010$i$i$i$i$i$i$i"}]
+          "alikontaktit": ${expectedYhteyshenkilot(i)}
         }"""
+
+    private fun expectedYhteyshenkilot(i: Int) =
+        """[{
+            | "etunimi": "etu$i$i",
+            | "sukunimi": "suku$i$i",
+            | "email": "email$i$i",
+            | "puhelinnumero": "010$i$i$i$i$i$i$i"
+            | }]""".trimMargin()
 
     /**
      * Fills a new Hanke domain object with test values and returns it. The audit and id/tunnus

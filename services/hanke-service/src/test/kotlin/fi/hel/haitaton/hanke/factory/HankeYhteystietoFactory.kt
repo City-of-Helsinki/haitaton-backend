@@ -47,9 +47,9 @@ object HankeYhteystietoFactory {
             alikontaktit =
                 listOf(
                     Yhteyshenkilo(
-                        sukunimi = "suku$i",
-                        etunimi = "etu$i",
-                        email = "email$i",
+                        sukunimi = "suku$i$i",
+                        etunimi = "etu$i$i",
+                        email = "email$i$i",
                         puhelinnumero = dummyPhoneNumber(i),
                     )
                 )

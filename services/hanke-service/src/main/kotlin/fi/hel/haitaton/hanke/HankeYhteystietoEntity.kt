@@ -121,4 +121,6 @@ data class Yhteyshenkilo(
     val sukunimi: String,
     val email: String,
     val puhelinnumero: String,
-)
+) {
+    fun wholeName(): String = "$etunimi $sukunimi".trim()
+}
