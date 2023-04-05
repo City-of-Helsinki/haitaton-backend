@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.Luokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
-import java.time.LocalDate
 import java.time.LocalDateTime
 import javax.persistence.CascadeType
 import javax.persistence.CollectionTable
@@ -125,8 +124,6 @@ class HankeEntity(
     var hankeTunnus: String? = null,
     var nimi: String? = null,
     var kuvaus: String? = null,
-    var alkuPvm: LocalDate? = null, // NOTE: stored and handled in UTC, not in "local" time
-    var loppuPvm: LocalDate? = null, // NOTE: stored and handled in UTC, not in "local" time
     @Enumerated(EnumType.STRING) var vaihe: Vaihe? = null,
     @Enumerated(EnumType.STRING) var suunnitteluVaihe: SuunnitteluVaihe? = null,
     var onYKTHanke: Boolean? = false,
@@ -171,9 +168,6 @@ class HankeEntity(
     var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
 
     // --------------- Hankkeen haitat -------------------
-    var haittaAlkuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
-    var haittaLoppuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
-
     // These five fields have generic string values, so can just as well store them with the ordinal
     // number.
     var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null

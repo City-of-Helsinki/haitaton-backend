@@ -5,8 +5,18 @@
   "onYKTHanke": true,
   "nimi": "Hämeentien perusparannus ja katuvalot",
   "kuvaus": "lorem ipsum dolor sit amet...",
-  "alkuPvm": "{{nextYear}}-02-20T00:00:00Z",
-  "loppuPvm": "{{nextYear}}-02-21T00:00:00Z",
+{{#alkuPvm}}
+  "alkuPvm": "{{alkuPvm}}",
+{{/alkuPvm}}
+{{^alkuPvm}}
+  "alkuPvm": null,
+{{/alkuPvm}}
+{{#loppuPvm}}
+  "loppuPvm": "{{loppuPvm}}",
+{{/loppuPvm}}
+{{^loppuPvm}}
+  "loppuPvm": null,
+{{/loppuPvm}}
   "vaihe": "OHJELMOINTI",
   "suunnitteluVaihe": null,
   "version": {{hankeVersion}},

@@ -28,39 +28,6 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             ok = false
         }
 
-        // Must be earlier than some relevant maximum date.
-        // The starting date can be in the past, since sometimes the permission to dig a hole is
-        // applied for after the hole has already been dug.
-        if (hanke.alkuPvm == null || hanke.alkuPvm!!.isAfter(MAXIMUM_DATE)) {
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("alkuPvm")
-                .addConstraintViolation()
-            ok = false
-        }
-        // Must be from the and earlier than some relevant maximum date,
-        // and same or later than alkuPvm.
-        // The end date can be in the past, since sometimes the permission to dig a hole is
-        // applied for only after the hole has already been dug and covered.
-        if (hanke.loppuPvm == null || hanke.loppuPvm!!.isAfter(MAXIMUM_DATE)) {
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("loppuPvm")
-                .addConstraintViolation()
-            ok = false
-        }
-        if (
-            hanke.alkuPvm != null &&
-                hanke.loppuPvm != null &&
-                hanke.loppuPvm!!.isBefore(hanke.alkuPvm)
-        ) {
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("loppuPvm")
-                .addConstraintViolation()
-            ok = false
-        }
-
         if (hanke.vaihe == null) {
             context
                 .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
@@ -76,10 +43,52 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             ok = false
         }
 
+        ok = ok && checkHankealueet(hanke, context)
         ok = ok && checkTyomaaTiedot(hanke, context)
-        ok = ok && checkHaitat(hanke, context)
 
         return ok
+    }
+
+    private fun checkHankealueet(hanke: Hanke, context: ConstraintValidatorContext): Boolean {
+        for (hankealue in hanke.alueet) {
+            // Must be earlier than some relevant maximum date.
+            // The starting date can be in the past, since sometimes the permission to dig a hole is
+            // applied for after the hole has already been dug.
+            if (
+                hankealue.haittaAlkuPvm == null || hankealue.haittaAlkuPvm!!.isAfter(MAXIMUM_DATE)
+            ) {
+                context
+                    .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
+                    .addPropertyNode("haittaAlkuPvm")
+                    .addConstraintViolation()
+                return false
+            }
+            // Must be from the and earlier than some relevant maximum date,
+            // and same or later than alkuPvm.
+            // The end date can be in the past, since sometimes the permission to dig a hole is
+            // applied for only after the hole has already been dug and covered.
+            if (
+                hankealue.haittaLoppuPvm == null || hankealue.haittaLoppuPvm!!.isAfter(MAXIMUM_DATE)
+            ) {
+                context
+                    .buildConstraintViolationWithTemplate(HankeError.HAI1032.toString())
+                    .addPropertyNode("haittaLoppuPvm")
+                    .addConstraintViolation()
+                return false
+            }
+            if (
+                hankealue.haittaAlkuPvm != null &&
+                    hankealue.haittaLoppuPvm != null &&
+                    hankealue.haittaLoppuPvm!!.isBefore(hankealue.haittaAlkuPvm)
+            ) {
+                context
+                    .buildConstraintViolationWithTemplate(HankeError.HAI1032.toString())
+                    .addPropertyNode("haittaLoppuPvm")
+                    .addConstraintViolation()
+                return false
+            }
+        }
+        return true
     }
 
     private fun checkTyomaaTiedot(hanke: Hanke, context: ConstraintValidatorContext): Boolean {
@@ -92,33 +101,6 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             context
                 .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
                 .addPropertyNode("tyomaaKatuosoite")
-                .addConstraintViolation()
-            ok = false
-        }
-
-        return ok
-    }
-
-    private fun checkHaitat(hanke: Hanke, context: ConstraintValidatorContext): Boolean {
-        var ok = true
-        // TODO: can haitta alku/loppu pvm be after the hanke ends?
-        //  E.g. if agreed that another hanke will continue with the same hole soon after?
-        // haittaAlkuPvm - either null or after alkuPvm and before maximum end date
-        val alku = hanke.getHaittaAlkuPvm()
-        val loppu = hanke.getHaittaLoppuPvm()
-
-        if (alku != null && (alku.isBefore(hanke.alkuPvm) || alku.isAfter(MAXIMUM_DATE))) {
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("haittaAlkuPvm")
-                .addConstraintViolation()
-            ok = false
-        }
-        // haittaLoppuPvm - either null or after haittaAlkuPvm and before maximum end date
-        if (loppu != null && (loppu.isBefore(alku) || loppu.isAfter(MAXIMUM_DATE))) {
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("haittaLoppuPvm")
                 .addConstraintViolation()
             ok = false
         }
