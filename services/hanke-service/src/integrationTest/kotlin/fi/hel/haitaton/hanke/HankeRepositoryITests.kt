@@ -51,8 +51,6 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
         baseHankeEntity.tyomaaKatuosoite = "katu 1"
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
-        baseHankeEntity.haittaAlkuPvm = date
-        baseHankeEntity.haittaLoppuPvm = date
         baseHankeEntity.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
         baseHankeEntity.kaistaPituusHaitta = KaistajarjestelynPituus.KOLME
         baseHankeEntity.meluHaitta = Haitta13.YKSI
@@ -73,15 +71,13 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
         assertThat(loadedHanke!!.status).isEqualTo(HankeStatus.DRAFT)
         assertThat(loadedHanke.nimi).isEqualTo("nimi")
         assertThat(loadedHanke.kuvaus).isEqualTo("kuvaus")
-        assertThat(loadedHanke.alkuPvm).isEqualTo(date)
-        assertThat(loadedHanke.loppuPvm).isEqualTo(date)
+        assertThat(loadedHanke.alkuPvm()).isNull()
+        assertThat(loadedHanke.loppuPvm()).isNull()
         assertThat(loadedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
         assertThat(loadedHanke.suunnitteluVaihe).isEqualTo(SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS)
 
         assertThat(loadedHanke.tyomaaKatuosoite).isEqualTo("katu 1")
         assertThat(loadedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
-        assertThat(loadedHanke.haittaAlkuPvm).isEqualTo(date)
-        assertThat(loadedHanke.haittaLoppuPvm).isEqualTo(date)
         assertThat(loadedHanke.kaistaHaitta)
             .isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI)
         assertThat(loadedHanke.kaistaPituusHaitta).isEqualTo(KaistajarjestelynPituus.KOLME)
@@ -218,8 +214,6 @@ constructor(val entityManager: TestEntityManager, val hankeRepository: HankeRepo
             hankeTunnus = hankeTunnus,
             nimi = "nimi",
             kuvaus = "kuvaus",
-            alkuPvm = datetime().toLocalDate(),
-            loppuPvm = datetime().toLocalDate(),
             vaihe = Vaihe.SUUNNITTELU,
             suunnitteluVaihe = SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS,
             onYKTHanke = true,

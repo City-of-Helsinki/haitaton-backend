@@ -73,8 +73,6 @@ class HankeFactory(private val hankeService: HankeService) {
                 true,
                 nimi,
                 "lorem ipsum dolor sit amet...",
-                alkuPvm,
-                loppuPvm,
                 vaihe,
                 suunnitteluVaihe,
                 version,
@@ -97,8 +95,8 @@ class HankeFactory(private val hankeService: HankeService) {
             alue: Hankealue =
                 HankealueFactory.create(
                     hankeId = this.id,
-                    haittaAlkuPvm = this.alkuPvm,
-                    haittaLoppuPvm = this.loppuPvm
+                    haittaAlkuPvm = DateFactory.getStartDatetime(),
+                    haittaLoppuPvm = DateFactory.getEndDatetime()
                 )
         ): Hanke {
             this.tyomaaKatuosoite = "Testikatu 1"

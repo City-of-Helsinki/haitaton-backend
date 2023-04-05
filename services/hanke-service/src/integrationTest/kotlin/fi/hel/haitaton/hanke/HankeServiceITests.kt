@@ -102,10 +102,11 @@ class HankeServiceITests : DatabaseTest() {
 
         // Setup Hanke with one Yhteystieto of each type:
         // The yhteystiedot are not in DB yet, so their id should be null.
-        val hanke: Hanke = getATestHanke().withYhteystiedot { it.id = null }.withPerustaja()
+        val hanke: Hanke =
+            getATestHanke().withYhteystiedot { it.id = null }.withPerustaja().withHankealue()
 
-        val datetimeAlku = hanke.alkuPvm // nextyear.2.20 23:45:56Z
-        val datetimeLoppu = hanke.loppuPvm // nextyear.2.21 0:12:34Z
+        val datetimeAlku = hanke.alueet[0].haittaAlkuPvm // nextyear.2.20 23:45:56Z
+        val datetimeLoppu = hanke.alueet[0].haittaLoppuPvm // nextyear.2.21 0:12:34Z
         // For checking audit field datetimes (with some minutes of margin for test running delay):
         val currentDatetime = getCurrentTimeUTC()
 
@@ -135,8 +136,6 @@ class HankeServiceITests : DatabaseTest() {
 
         assertThat(returnedHanke.tyomaaKatuosoite).isEqualTo("Testikatu 1")
         assertThat(returnedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
-        assertThat(returnedHanke.getHaittaAlkuPvm()).isEqualTo(expectedDateAlku)
-        assertThat(returnedHanke.getHaittaLoppuPvm()).isEqualTo(expectedDateLoppu)
         assertThat(returnedHanke.alueet[0].kaistaHaitta)
             .isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI)
         assertThat(returnedHanke.alueet[0].kaistaPituusHaitta)
@@ -932,6 +931,36 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
+    fun `Hanke alku and loppu calculated from alueet`() {
+        val hanke = getATestHanke()
+        val a = DateFactory.getEndDatetime()
+        val b = DateFactory.getEndDatetime().plusMonths(1)
+        val c = DateFactory.getEndDatetime().plusMonths(2)
+        val d = DateFactory.getEndDatetime().plusMonths(3)
+        hanke.alueet[0].haittaAlkuPvm = a
+        hanke.alueet[0].haittaLoppuPvm = c
+        val hankealue =
+            HankealueFactory.create(
+                haittaAlkuPvm = b,
+                haittaLoppuPvm = d,
+                kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KOLME,
+                kaistaPituusHaitta = KaistajarjestelynPituus.KOLME,
+                meluHaitta = Haitta13.KOLME,
+                polyHaitta = Haitta13.KOLME,
+                tarinaHaitta = Haitta13.KOLME,
+            )
+        hanke.alueet.add(hankealue)
+        val createdHanke = hankeService.createHanke(hanke)
+
+        val alkuPvm = createdHanke.alkuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE)
+        val aFormatted = a.format(DateTimeFormatter.BASIC_ISO_DATE)
+        val loppuPvm = createdHanke.loppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE)
+        val dFormatted = d.format(DateTimeFormatter.BASIC_ISO_DATE)
+        assertThat(alkuPvm).isEqualTo(aFormatted)
+        assertThat(loppuPvm).isEqualTo(dFormatted)
+    }
+
+    @Test
     fun `updateHanke creates new hankealue`() {
         val hanke = getATestHanke()
         val hankealue =
@@ -1179,6 +1208,8 @@ class HankeServiceITests : DatabaseTest() {
         TestUtils.addMockedRequestIp()
 
         val hanke = hankeService.createHanke(HankeFactory.create(id = null).withHankealue())
+        val alkuPvm = hanke.alueet[0].haittaAlkuPvm!!.toLocalDate()
+        val loppuPvm = hanke.alueet[0].haittaLoppuPvm!!.toLocalDate()
 
         val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
         assertEquals(1, hankeLogs.size)
@@ -1232,7 +1263,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(hanke.id?.toString(), event.target.id)
         assertEquals(ObjectType.HANKE, event.target.type)
         assertNull(event.target.objectBefore)
-        val expectedObject = expectedHankeLogObject(hanke)
+        val expectedObject = expectedHankeLogObject(hanke, alkuPvm = null, loppuPvm = null)
         JSONAssert.assertEquals(
             expectedObject,
             event.target.objectAfter,
@@ -1273,7 +1304,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(TestUtils.mockedIp, event.actor.ipAddress)
         assertEquals(hanke.id?.toString(), event.target.id)
         assertEquals(ObjectType.HANKE, event.target.type)
-        val expectedObjectBefore = expectedHankeLogObject(hanke)
+        val expectedObjectBefore = expectedHankeLogObject(hanke, alkuPvm = null, loppuPvm = null)
         JSONAssert.assertEquals(
             expectedObjectBefore,
             event.target.objectBefore,
@@ -1338,9 +1369,13 @@ class HankeServiceITests : DatabaseTest() {
                 hankeVersion = 1,
                 geometriaVersion = 1,
                 tormaystarkasteluTulos = true,
+                alkuPvm = updatedHanke.alkuPvm?.format(DateTimeFormatter.ISO_INSTANT),
+                loppuPvm = updatedHanke.loppuPvm?.format(DateTimeFormatter.ISO_INSTANT)
             )
+
+        val expectedHankeObject = expectedHankeWithPolygon.processToString(templateData)
         JSONAssert.assertEquals(
-            expectedHankeWithPolygon.processToString(templateData),
+            expectedHankeObject,
             event.target.objectAfter,
             JSONCompareMode.NON_EXTENSIBLE
         )
@@ -1360,13 +1395,14 @@ class HankeServiceITests : DatabaseTest() {
         val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
         assertThat(hankeLogs).hasSize(1)
         val target = hankeLogs[0]!!.message.auditEvent.target
-        val expectedObjectBefore = expectedHankeLogObject(hanke)
+        val expectedObjectBefore = expectedHankeLogObject(hanke, alkuPvm = null, loppuPvm = null)
         JSONAssert.assertEquals(
             expectedObjectBefore,
             target.objectBefore,
             JSONCompareMode.NON_EXTENSIBLE
         )
-        val expectedObjectAfter = expectedHankeLogObject(hanke, hankeVersion = 1)
+        val expectedObjectAfter =
+            expectedHankeLogObject(hanke, hankeVersion = 1, alkuPvm = null, loppuPvm = null)
         JSONAssert.assertEquals(
             expectedObjectAfter,
             target.objectAfter,
@@ -1427,8 +1463,6 @@ class HankeServiceITests : DatabaseTest() {
                 onYKTHanke,
                 nimi,
                 kuvaus,
-                alkuPvm?.atStartOfDay(TZ_UTC),
-                loppuPvm?.atStartOfDay(TZ_UTC),
                 vaihe,
                 suunnitteluVaihe,
                 version,
@@ -1475,6 +1509,8 @@ class HankeServiceITests : DatabaseTest() {
         val nextYear: Int = nextYear(),
         val tormaystarkasteluTulos: Boolean = false,
         val alueNimi: String? = null,
+        val alkuPvm: String? = null,
+        val loppuPvm: String? = null,
     )
 
     val expectedHankeWithPolygon =
@@ -1488,6 +1524,8 @@ class HankeServiceITests : DatabaseTest() {
         geometriaVersion: Int = 0,
         hankeVersion: Int = 0,
         tormaystarkasteluTulos: Boolean = false,
+        alkuPvm: String? = "${nextYear()}-02-20T00:00:00Z",
+        loppuPvm: String? = "${nextYear()}-02-21T00:00:00Z",
     ): String {
         val templateData =
             TemplateData(
@@ -1501,6 +1539,8 @@ class HankeServiceITests : DatabaseTest() {
                 nextYear(),
                 tormaystarkasteluTulos,
                 alue?.nimi,
+                alkuPvm,
+                loppuPvm,
             )
         return Template.parse(
                 "/fi/hel/haitaton/hanke/logging/expectedHankeWithPoints.json.mustache".getResourceAsText()

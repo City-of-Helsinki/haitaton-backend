@@ -3,8 +3,8 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.Luokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
-import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZonedDateTime
 import javax.persistence.CascadeType
 import javax.persistence.CollectionTable
 import javax.persistence.ElementCollection
@@ -125,8 +125,6 @@ class HankeEntity(
     var hankeTunnus: String? = null,
     var nimi: String? = null,
     var kuvaus: String? = null,
-    var alkuPvm: LocalDate? = null, // NOTE: stored and handled in UTC, not in "local" time
-    var loppuPvm: LocalDate? = null, // NOTE: stored and handled in UTC, not in "local" time
     @Enumerated(EnumType.STRING) var vaihe: Vaihe? = null,
     @Enumerated(EnumType.STRING) var suunnitteluVaihe: SuunnitteluVaihe? = null,
     var onYKTHanke: Boolean? = false,
@@ -171,9 +169,6 @@ class HankeEntity(
     var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
 
     // --------------- Hankkeen haitat -------------------
-    var haittaAlkuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
-    var haittaLoppuPvm: LocalDate? = null // NOTE: stored and handled in UTC, not in "local" time
-
     // These five fields have generic string values, so can just as well store them with the ordinal
     // number.
     var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null
@@ -209,6 +204,22 @@ class HankeEntity(
             listOfHankeYhteystieto.remove(yhteystieto)
             yhteystieto.hanke = null
         }
+    }
+
+    fun alkuPvm(): ZonedDateTime? {
+        return listOfHankeAlueet
+            .map { it.haittaAlkuPvm }
+            .filterNotNull()
+            .minOfOrNull { it }
+            ?.atStartOfDay(TZ_UTC)
+    }
+
+    fun loppuPvm(): ZonedDateTime? {
+        return listOfHankeAlueet
+            .map { it.haittaLoppuPvm }
+            .filterNotNull()
+            .maxOfOrNull { it }
+            ?.atStartOfDay(TZ_UTC)
     }
 
     override fun equals(other: Any?): Boolean {

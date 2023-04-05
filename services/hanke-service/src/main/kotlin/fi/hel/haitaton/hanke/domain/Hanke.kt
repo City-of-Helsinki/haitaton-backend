@@ -24,8 +24,6 @@ data class Hanke(
     @JsonView(ChangeLogView::class) var onYKTHanke: Boolean?,
     @JsonView(ChangeLogView::class) var nimi: String?,
     @JsonView(ChangeLogView::class) var kuvaus: String?,
-    @JsonView(ChangeLogView::class) var alkuPvm: ZonedDateTime?,
-    @JsonView(ChangeLogView::class) var loppuPvm: ZonedDateTime?,
     @JsonView(ChangeLogView::class) var vaihe: Vaihe?,
     @JsonView(ChangeLogView::class) var suunnitteluVaihe: SuunnitteluVaihe?,
     @JsonView(ChangeLogView::class) var version: Int?,
@@ -68,6 +66,12 @@ data class Hanke(
         return alueet.map { it.tarinaHaitta }.filterNotNull().toSet()
     }
 
+    val alkuPvm: ZonedDateTime?
+        get(): ZonedDateTime? = alueet.map { it.haittaAlkuPvm }.filterNotNull().minOfOrNull { it }
+
+    val loppuPvm: ZonedDateTime?
+        get(): ZonedDateTime? = alueet.map { it.haittaLoppuPvm }.filterNotNull().maxOfOrNull { it }
+
     @JsonView(ChangeLogView::class) var alueet = mutableListOf<Hankealue>()
 
     @JsonView(NotInChangeLogView::class) var permissions: List<PermissionCode>? = null
@@ -76,8 +80,8 @@ data class Hanke(
     val haittaAjanKestoDays: Int?
         @JsonIgnore
         get() =
-            if (getHaittaAlkuPvm() != null && getHaittaLoppuPvm() != null) {
-                ChronoUnit.DAYS.between(getHaittaAlkuPvm()!!, getHaittaLoppuPvm()!!).toInt() + 1
+            if (alkuPvm != null && loppuPvm != null) {
+                ChronoUnit.DAYS.between(alkuPvm!!, loppuPvm!!).toInt() + 1
             } else {
                 null
             }
@@ -87,16 +91,6 @@ data class Hanke(
         tormaystarkasteluTulos?.liikennehaittaIndeksi
 
     @JsonView(ChangeLogView::class) var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
-
-    @JsonView(NotInChangeLogView::class)
-    fun getHaittaAlkuPvm(): ZonedDateTime? {
-        return alueet.map { it.haittaAlkuPvm }.filterNotNull().minOfOrNull { it }
-    }
-
-    @JsonView(NotInChangeLogView::class)
-    fun getHaittaLoppuPvm(): ZonedDateTime? {
-        return alueet.map { it.haittaLoppuPvm }.filterNotNull().maxOfOrNull { it }
-    }
 
     fun toLogString(): String {
         return toString()
