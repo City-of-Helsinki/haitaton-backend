@@ -85,8 +85,6 @@ dependencies {
 	implementation("com.github.librepdf:openpdf:1.3.30")
 
 	implementation("org.postgresql:postgresql:$postgreSQLVersion")
-	// H2 is used as embedded db for some simple low level Entity and Repository class testing
-	runtimeOnly("com.h2database:h2")
 	implementation("org.springdoc:springdoc-openapi-kotlin:$springDocVersion")
 	implementation("org.springdoc:springdoc-openapi-ui:$springDocVersion")
 
@@ -113,10 +111,6 @@ dependencies {
 	implementation("io.sentry:sentry-spring-boot-starter:4.0.0")
 	implementation("io.sentry:sentry-logback:4.0.0")
 }
-
-//tasks.withType<Test> {
-//	useJUnitPlatform()
-//}
 
 tasks.withType<KotlinCompile> {
 	kotlinOptions {
