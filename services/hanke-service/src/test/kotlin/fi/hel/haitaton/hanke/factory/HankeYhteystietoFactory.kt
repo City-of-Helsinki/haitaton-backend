@@ -33,25 +33,24 @@ object HankeYhteystietoFactory {
      * Create a new Yhteystieto with values differentiated by the given integer. The audit and id
      * fields are left null.
      */
-    fun createDifferentiated(intValue: Int): HankeYhteystieto {
+    fun createDifferentiated(i: Int): HankeYhteystieto {
         return HankeYhteystieto(
             id = null,
-            nimi = "etu$intValue suku$intValue",
-            email = "email$intValue",
-            puhelinnumero = "010$intValue$intValue$intValue$intValue$intValue$intValue$intValue",
-            organisaatioId = intValue,
-            organisaatioNimi = "org$intValue",
-            osasto = "osasto$intValue",
-            rooli = "Isännöitsijä$intValue",
+            nimi = "etu$i suku$i",
+            email = "email$i",
+            puhelinnumero = "010$i$i$i$i$i$i$i",
+            organisaatioId = i,
+            organisaatioNimi = "org$i",
+            osasto = "osasto$i",
+            rooli = "Isännöitsijä$i",
             tyyppi = YHTEISO,
             alikontaktit =
                 listOf(
                     Alikontakti(
-                        sukunimi = "suku$intValue",
-                        etunimi = "etu$intValue",
-                        email = "email$intValue",
-                        puhelinnumero =
-                            "010$intValue$intValue$intValue$intValue$intValue$intValue$intValue",
+                        sukunimi = "suku$i",
+                        etunimi = "etu$i",
+                        email = "email$i",
+                        puhelinnumero = dummyPhoneNumber(i),
                     )
                 )
         )
@@ -68,4 +67,6 @@ object HankeYhteystietoFactory {
         mutator: (HankeYhteystieto) -> Unit = {}
     ): MutableList<HankeYhteystieto> =
         intValues.map { createDifferentiated(it).apply(mutator) }.toMutableList()
+
+    private fun dummyPhoneNumber(i: Int) = "010$i$i$i$i$i$i$i"
 }

@@ -14,6 +14,7 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
+import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.factory.UserInfoFactory.teppoUserInfo
 import fi.hel.haitaton.hanke.organisaatio.Organisaatio
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
@@ -28,8 +29,6 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
-
-private const val TEPPO_TESTI = "Teppo Testihenkilö"
 
 internal class GdprJsonConverterTest {
 
