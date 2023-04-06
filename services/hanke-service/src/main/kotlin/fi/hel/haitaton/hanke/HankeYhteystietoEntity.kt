@@ -34,11 +34,16 @@ class HankeYhteystietoEntity(
     @JsonView(ChangeLogView::class) @Enumerated(STRING) var contactType: ContactType,
     @JsonView(ChangeLogView::class) var nimi: String,
     @JsonView(ChangeLogView::class) var email: String,
-    @JsonView(ChangeLogView::class) var puhelinnumero: String,
+
+    // optional
+    @JsonView(ChangeLogView::class) var puhelinnumero: String? = null,
     @JsonView(ChangeLogView::class) var organisaatioId: Int? = 0,
     @JsonView(ChangeLogView::class) var organisaatioNimi: String? = null,
     @JsonView(ChangeLogView::class) var osasto: String? = null,
     @JsonView(ChangeLogView::class) var rooli: String? = null,
+    @Type(type = "json")
+    @Column(columnDefinition = "jsonb")
+    var alikontaktit: List<Alikontakti> = listOf(),
 
     // Personal data processing restriction (or other needs to prevent changes)
     @JsonView(NotInChangeLogView::class) var dataLocked: Boolean? = false,
@@ -56,9 +61,6 @@ class HankeYhteystietoEntity(
     @ManyToOne(fetch = EAGER)
     @JoinColumn(name = "hankeid")
     var hanke: HankeEntity? = null,
-    @Type(type = "json")
-    @Column(columnDefinition = "jsonb")
-    var alikontaktit: List<Alikontakti> = listOf(),
 ) {
 
     // Must consider both id and all non-audit fields for correct operations in certain collections
@@ -115,8 +117,8 @@ class HankeYhteystietoEntity(
 
 @TypeDef(name = "json", typeClass = JsonType::class)
 data class Alikontakti(
-    val etunimi: String?,
-    val sukunimi: String?,
+    val etunimi: String,
+    val sukunimi: String,
     val email: String,
-    val puhelinnumero: String?
+    val puhelinnumero: String,
 )

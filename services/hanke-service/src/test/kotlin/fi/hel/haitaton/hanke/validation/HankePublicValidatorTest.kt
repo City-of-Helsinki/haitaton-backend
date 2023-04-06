@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.validation
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
+import fi.hel.haitaton.hanke.Alikontakti
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -34,6 +35,34 @@ internal class HankePublicValidatorTest {
     }
 
     @Test
+    fun `Empty alikontaktit is ok`() {
+        val hanke = completeHanke().apply { omistajat.first().apply { alikontaktit = emptyList() } }
+
+        val result = HankePublicValidator.validateHankeHasMandatoryFields(hanke)
+
+        assertTrue(result.isOk())
+    }
+
+    @Test
+    fun `Alikontaktit missing data is not ok`() {
+        val hanke =
+            completeHanke().apply {
+                omistajat.first().apply { alikontaktit = listOf(Alikontakti("", "", "", "")) }
+            }
+
+        val result = HankePublicValidator.validateHankeHasMandatoryFields(hanke)
+
+        assertFalse(result.isOk())
+        assertThat(result.errorPaths())
+            .containsExactlyInAnyOrder(
+                "alikontaktit[0].etunimi",
+                "alikontaktit[0].sukunimi",
+                "alikontaktit[0].email",
+                "alikontaktit[0].puhelinnumero"
+            )
+    }
+
+    @Test
     fun `No errors when rakennuttajat missing`() {
         val result =
             HankePublicValidator.validateHankeHasMandatoryFields(
@@ -58,7 +87,11 @@ internal class HankePublicValidatorTest {
         val result =
             HankePublicValidator.validateHankeHasMandatoryFields(
                 completeHanke().apply {
-                    toteuttajat[0].nimi = ""
+                    with(toteuttajat[0]) {
+                        nimi = ""
+                        email = ""
+                    }
+
                     alueet[0].geometriat!!.featureCollection!!.features = null
                     kuvaus = null
                 }
@@ -67,7 +100,8 @@ internal class HankePublicValidatorTest {
         assertFalse(result.isOk())
         assertThat(result.errorPaths())
             .containsExactlyInAnyOrder(
-                "toteuttajat[0].etunimi",
+                "toteuttajat[0].nimi",
+                "toteuttajat[0].email",
                 "alueet[0].geometriat.featureCollection.features",
                 "kuvaus",
             )
@@ -184,12 +218,12 @@ internal class HankePublicValidatorTest {
                 completeHanke().apply { omistajat = mutableListOf() }
             ),
             Arguments.of(
-                "omistajat[0].etunimi",
+                "omistajat[0].nimi",
                 "empty",
                 completeHanke().apply { omistajat[0].nimi = "" }
             ),
             Arguments.of(
-                "omistajat[0].etunimi",
+                "omistajat[0].nimi",
                 "blank",
                 completeHanke().apply { omistajat[0].nimi = BLANK }
             ),
@@ -204,12 +238,12 @@ internal class HankePublicValidatorTest {
                 completeHanke().apply { omistajat[0].email = BLANK }
             ),
             Arguments.of(
-                "rakennuttajat[0].etunimi",
+                "rakennuttajat[0].nimi",
                 "empty",
                 completeHanke().apply { rakennuttajat[0].nimi = "" }
             ),
             Arguments.of(
-                "rakennuttajat[0].etunimi",
+                "rakennuttajat[0].nimi",
                 "blank",
                 completeHanke().apply { rakennuttajat[0].nimi = BLANK }
             ),
@@ -224,12 +258,12 @@ internal class HankePublicValidatorTest {
                 completeHanke().apply { rakennuttajat[0].email = BLANK }
             ),
             Arguments.of(
-                "toteuttajat[0].etunimi",
+                "toteuttajat[0].nimi",
                 "empty",
                 completeHanke().apply { toteuttajat[0].nimi = "" }
             ),
             Arguments.of(
-                "toteuttajat[0].etunimi",
+                "toteuttajat[0].nimi",
                 "blank",
                 completeHanke().apply { toteuttajat[0].nimi = BLANK }
             ),

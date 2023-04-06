@@ -19,12 +19,12 @@ data class HankeYhteystieto(
     // Mandatory info (person or juridical person):
     @JsonView(ChangeLogView::class) var nimi: String,
     @JsonView(ChangeLogView::class) var email: String,
-    @JsonView(ChangeLogView::class) var puhelinnumero: String,
 
     // Optional subcontacts (person)
     @JsonView(ChangeLogView::class) var alikontaktit: List<Alikontakti> = emptyList(),
 
     // Optional
+    @JsonView(ChangeLogView::class) var puhelinnumero: String?,
     @JsonView(ChangeLogView::class) var organisaatioId: Int?,
     @JsonView(ChangeLogView::class) var organisaatioNimi: String?,
     @JsonView(ChangeLogView::class) var osasto: String?,
@@ -55,6 +55,6 @@ data class HankeYhteystieto(
      */
     @JsonIgnore
     fun isAnyMandatoryFieldSet(): Boolean {
-        return nimi.isNotBlank() || email.isNotBlank() || puhelinnumero.isNotBlank()
+        return nimi.isNotBlank() || email.isNotBlank()
     }
 }

@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.validation
 
+import fi.hel.haitaton.hanke.Alikontakti
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
@@ -35,6 +36,7 @@ object HankePublicValidator {
             .andAllIn(hanke.omistajat, "omistajat", ::validateYhteystieto)
             .andAllIn(hanke.rakennuttajat, "rakennuttajat", ::validateYhteystieto)
             .andAllIn(hanke.toteuttajat, "toteuttajat", ::validateYhteystieto)
+            .andAllIn(hanke.muut, "muut", ::validateYhteystieto)
     }
 
     private fun validateAlue(alue: Hankealue, path: String): ValidationResult =
@@ -59,18 +61,14 @@ object HankePublicValidator {
                 )
             }
 
-    /**
-     * Mandatory fields after Yhteystiedot have been redone:
-     * - Tyyppi
-     * - Nimi
-     * - Y-tunnus tai henkilötunnus
-     * - Email
-     *
-     * For cantacs the mandatory fields are:
-     * - Nimi
-     * - Email
-     */
     private fun validateYhteystieto(yhteystieto: HankeYhteystieto, path: String): ValidationResult =
-        validate { notBlank(yhteystieto.nimi, "$path.etunimi") }
+        validate { notBlank(yhteystieto.nimi, "$path.nimi") }
             .and { notBlank(yhteystieto.email, "$path.email") }
+            .andAllIn(yhteystieto.alikontaktit, "alikontaktit", ::validateAlikontakti)
+
+    private fun validateAlikontakti(alikontakti: Alikontakti, path: String): ValidationResult =
+        validate { notBlank(alikontakti.etunimi, "$path.etunimi") }
+            .and { notBlank(alikontakti.sukunimi, "$path.sukunimi") }
+            .and { notBlank(alikontakti.email, "$path.email") }
+            .and { notBlank(alikontakti.puhelinnumero, "$path.puhelinnumero") }
 }
