@@ -1107,9 +1107,9 @@ class HankeServiceITests : DatabaseTest() {
         hankeService.deleteHanke(hanke, listOf(), "testUser")
 
         val logs = auditLogRepository.findByType(ObjectType.YHTEYSTIETO)
-        assertEquals(3, logs.size)
+        assertEquals(4, logs.size)
         val deleteLogs = logs.filter { it.message.auditEvent.operation == Operation.DELETE }
-        assertThat(deleteLogs).hasSize(3).allSatisfy { log ->
+        assertThat(deleteLogs).hasSize(4).allSatisfy { log ->
             assertFalse(log.isSent)
             assertThat(log.createdAt).isCloseToUtcNow(byLessThan(1, ChronoUnit.MINUTES))
             val event = log.message.auditEvent
@@ -1140,6 +1140,13 @@ class HankeServiceITests : DatabaseTest() {
         JSONAssert.assertEquals(
             expectedYhteystietoDeleteLogObject(toteuttajaId, 3),
             toteuttajaEvent.target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
+        )
+        val muuId = hanke.muut[0].id!!
+        val muuEvent = deleteLogs.findByTargetId(muuId).message.auditEvent
+        JSONAssert.assertEquals(
+            expectedYhteystietoDeleteLogObject(muuId, 4),
+            muuEvent.target.objectBefore,
             JSONCompareMode.NON_EXTENSIBLE
         )
     }

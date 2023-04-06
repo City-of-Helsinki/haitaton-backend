@@ -64,7 +64,7 @@ internal class HankeLoggingServiceTest {
             auditLogService.createAll(
                 withArg { entries ->
                     Assertions.assertThat(entries)
-                        .hasSize(4)
+                        .hasSize(5)
                         .allSatisfy { entry ->
                             assertEquals(Operation.DELETE, entry.operation)
                             assertEquals(Status.SUCCESS, entry.status)
@@ -75,7 +75,7 @@ internal class HankeLoggingServiceTest {
                             assertNotNull(entry.objectBefore)
                         }
                         .areExactly(
-                            3,
+                            4,
                             Condition({ it.objectType == ObjectType.YHTEYSTIETO }, "Yhteystieto")
                         )
                         .areExactly(1, Condition({ it.objectType == ObjectType.HANKE }, "Hanke"))

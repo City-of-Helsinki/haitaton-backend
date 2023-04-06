@@ -171,7 +171,7 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
     }
 
     internal fun getGdprInfosFromHanke(hanke: Hanke, userInfo: UserInfo): List<GdprInfo> {
-        return (hanke.omistajat + hanke.rakennuttajat + hanke.toteuttajat + hanke.muut).mapNotNull {
+        return hanke.extractYhteystiedot().mapNotNull {
             getGdprInfoFromHankeYhteystieto(it, userInfo)
         }
     }

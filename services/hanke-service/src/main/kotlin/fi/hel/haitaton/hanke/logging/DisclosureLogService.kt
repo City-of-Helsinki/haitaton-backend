@@ -75,7 +75,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         saveDisclosureLogs(
             userId,
             UserRole.USER,
-            auditLogEntriesForYhteystiedot(extractYhteystiedot(hanke))
+            auditLogEntriesForYhteystiedot(hanke.extractYhteystiedot())
         )
     }
 
@@ -87,7 +87,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         saveDisclosureLogs(
             userId,
             UserRole.USER,
-            auditLogEntriesForYhteystiedot(hankkeet.flatMap { extractYhteystiedot(it) })
+            auditLogEntriesForYhteystiedot(hankkeet.flatMap { it.extractYhteystiedot() })
         )
     }
 
@@ -150,9 +150,6 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
                     // Only personal data needs to be logged, not other types of customers.
                     .filter { it.type == CustomerType.PERSON }
         }
-
-    fun extractYhteystiedot(hanke: Hanke) =
-        hanke.omistajat + hanke.rakennuttajat + hanke.toteuttajat + hanke.muut
 
     private fun auditLogEntriesForYhteystiedot(yhteystiedot: List<HankeYhteystieto>) =
         yhteystiedot.toSet().map { disclosureLogEntry(ObjectType.YHTEYSTIETO, it.id, it) }

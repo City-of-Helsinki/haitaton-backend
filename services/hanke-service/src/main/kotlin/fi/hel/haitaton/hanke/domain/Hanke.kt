@@ -106,4 +106,7 @@ data class Hanke(
     fun alueidenGeometriat(): List<Geometriat> {
         return this.alueet.map { it.geometriat }.filterNotNull()
     }
+
+    fun extractYhteystiedot(): List<HankeYhteystieto> =
+        omistajat + rakennuttajat + toteuttajat + muut
 }
