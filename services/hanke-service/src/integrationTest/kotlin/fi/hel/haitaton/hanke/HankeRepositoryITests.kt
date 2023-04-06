@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import java.time.LocalDateTime
-import javax.persistence.EntityManager
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -16,43 +15,31 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @ActiveProfiles("default")
 internal class HankeRepositoryITests : DatabaseTest() {
 
-    @Autowired private lateinit var entityManager: EntityManager
     @Autowired private lateinit var hankeRepository: HankeRepository
 
     @Test
-    @Transactional
+    @Transactional // due to lazy initialized fields being accessed
     fun `findByHankeTunnus returns existing hanke`() {
-        // First insert one hanke to the repository (using entityManager directly):
-        val hankeEntity = createBaseHankeEntity("ABC-123")
-        entityManager.persist(hankeEntity)
-        entityManager.flush()
+        val saved = hankeRepository.save(createBaseHankeEntity("ABC-123"))
 
-        // Try to find that (using our Repository implementation):
         val testResultEntity = hankeRepository.findByHankeTunnus("ABC-123")
-        assertThat(testResultEntity).isEqualTo(hankeEntity)
+        assertThat(testResultEntity?.id).isNotNull
+        assertThat(testResultEntity).usingRecursiveComparison().isEqualTo(saved)
     }
 
     @Test
-    @Transactional
     fun `findByHankeTunnus does not return anything for non-existing hanke`() {
-        // First insert one hanke to the repository (using entityManager directly):
-        val hankeEntity = createBaseHankeEntity("ABC-123")
-        entityManager.persist(hankeEntity)
-        entityManager.flush()
+        createBaseHankeEntity("ABC-123")
 
-        // Check that non-existing hanke returns nothing:
         val testResultEntity = hankeRepository.findByHankeTunnus("NOT-000")
+
         assertThat(testResultEntity).isNull()
     }
 
-    // Purpose of these field tests is to ensure that entity mappings and liquibase columns work
-    // correctly.
     @Test
-    @Transactional
     fun `basic fields, tyomaa and haitat fields can be round-trip saved and loaded`() {
         val datetime = LocalDateTime.of(2020, 2, 20, 20, 20)
         val date = datetime.toLocalDate()
-        // Setup test fields
         val baseHankeEntity = createBaseHankeEntity("ABC-123")
         baseHankeEntity.tyomaaKatuosoite = "katu 1"
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
@@ -64,18 +51,11 @@ internal class HankeRepositoryITests : DatabaseTest() {
         baseHankeEntity.meluHaitta = Haitta13.YKSI
         baseHankeEntity.polyHaitta = Haitta13.KAKSI
         baseHankeEntity.tarinaHaitta = Haitta13.KOLME
-
-        // Save it
         hankeRepository.save(baseHankeEntity)
-        // Make sure the stuff is run to database (though not necessarily committed)
-        entityManager.flush()
-        // Ensure the original entity is no longer in Hibernate's 1st level cache
-        entityManager.clear()
 
-        // Load it back to different entity and check the fields
         val loadedHanke = hankeRepository.findByHankeTunnus("ABC-123")
-        assertThat(loadedHanke).isNotNull
 
+        assertThat(loadedHanke).isNotNull
         assertThat(loadedHanke!!.status).isEqualTo(HankeStatus.DRAFT)
         assertThat(loadedHanke.nimi).isEqualTo("nimi")
         assertThat(loadedHanke.kuvaus).isEqualTo("kuvaus")
@@ -83,7 +63,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHanke.loppuPvm).isEqualTo(date)
         assertThat(loadedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
         assertThat(loadedHanke.suunnitteluVaihe).isEqualTo(SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS)
-
         assertThat(loadedHanke.tyomaaKatuosoite).isEqualTo("katu 1")
         assertThat(loadedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         assertThat(loadedHanke.haittaAlkuPvm).isEqualTo(date)
@@ -97,38 +76,25 @@ internal class HankeRepositoryITests : DatabaseTest() {
     }
 
     @Test
-    @Transactional
+    @Transactional // due to lazy initialized fields being accessed
     fun `yhteystieto fields can be round-trip saved and loaded`() {
-        // Setup test fields
         val baseHankeEntity = createBaseHankeEntity("ABC-124")
-
-        // Note, leaving id and hanke fields unset on purpose (Hibernate should set them as needed)
         val hankeYhteystietoEntity1 = createOmistaja(baseHankeEntity)
         val hankeYhteystietoEntity2 = createRakennuttaja(baseHankeEntity)
         val hankeYhteystietoEntity3 = createToteuttaja(baseHankeEntity)
-
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity1)
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity2)
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity3)
-
-        // Save it:
         hankeRepository.save(baseHankeEntity)
-        // Make sure the stuff is run to database (though not necessarily committed)
-        entityManager.flush()
-        // Ensure the original entity is no longer in Hibernate's 1st level cache
-        entityManager.clear()
 
-        // Load it back to different entity and check the fields
         val loadedHanke = hankeRepository.findByHankeTunnus("ABC-124")
+
         assertThat(loadedHanke).isNotNull
         assertThat(loadedHanke!!.listOfHankeYhteystieto).isNotNull
         assertThat(loadedHanke.listOfHankeYhteystieto).hasSize(3)
-
         val loadedHankeYhteystietoEntity1 = loadedHanke.listOfHankeYhteystieto[0]
         val loadedHankeYhteystietoEntity2 = loadedHanke.listOfHankeYhteystieto[1]
         val loadedHankeYhteystietoEntity3 = loadedHanke.listOfHankeYhteystieto[2]
-
-        // Check every field from one yhteystieto:
         assertThat(loadedHankeYhteystietoEntity1).isNotNull
         assertThat(loadedHankeYhteystietoEntity1.nimi).isEqualTo("Etu1 Suku1")
         assertThat(loadedHankeYhteystietoEntity1.email).isEqualTo("email1")
@@ -140,11 +106,10 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHankeYhteystietoEntity1.createdAt).isEqualTo(datetime())
         assertThat(loadedHankeYhteystietoEntity1.modifiedByUserId).isEqualTo("11")
         assertThat(loadedHankeYhteystietoEntity1.modifiedAt).isEqualTo(datetime())
+        assertThat(loadedHankeYhteystietoEntity1.tyyppi).isEqualTo(YRITYS)
         assertThat(loadedHankeYhteystietoEntity1.alikontaktit)
             .hasSameElementsAs(listOf(createAlikontakti()))
-        // Check the back reference to parent Hanke:
         assertThat(loadedHankeYhteystietoEntity1.hanke).isSameAs(loadedHanke)
-        // Check other yhteystietos:
         assertThat(loadedHankeYhteystietoEntity2).isNotNull
         assertThat(loadedHankeYhteystietoEntity2.nimi).isEqualTo("Etu2 Suku2")
         assertThat(loadedHankeYhteystietoEntity2.email).isEqualTo("email2")
@@ -158,7 +123,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHankeYhteystietoEntity2.modifiedAt).isEqualTo(datetime())
         assertThat(loadedHankeYhteystietoEntity2.alikontaktit)
             .hasSameElementsAs(listOf(createAlikontakti()))
-
         assertThat(loadedHankeYhteystietoEntity3).isNotNull
         assertThat(loadedHankeYhteystietoEntity3.nimi).isEqualTo("Etu3 Suku3")
         assertThat(loadedHankeYhteystietoEntity3.email).isEqualTo("email3")
@@ -175,33 +139,20 @@ internal class HankeRepositoryITests : DatabaseTest() {
     }
 
     @Test
-    @Transactional
+    @Transactional // due to lazy initialized fields being accessed
     fun `yhteystieto entry can be round-trip deleted`() {
-        // Setup test fields
         val baseHankeEntity = createBaseHankeEntity("ABC-124")
-
-        // Note, leaving id and hanke fields unset on purpose (Hibernate should set them as needed)
         val hankeYhteystietoEntity1 = createOmistaja(baseHankeEntity)
         val hankeYhteystietoEntity2 = createRakennuttaja(baseHankeEntity)
-
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity1)
         baseHankeEntity.addYhteystieto(hankeYhteystietoEntity2)
-
-        // Save it:
         hankeRepository.save(baseHankeEntity)
-        // Make sure the stuff is run to database (though not necessarily committed)
-        entityManager.flush()
-        // Ensure the original entity is no longer in Hibernate's 1st level cache
-        entityManager.clear()
 
-        // Load it back to different entity and check there is two yhteystietos:
         val loadedHanke = hankeRepository.findByHankeTunnus("ABC-124")
+
         assertThat(loadedHanke).isNotNull
         assertThat(loadedHanke!!.listOfHankeYhteystieto).isNotNull
         assertThat(loadedHanke.listOfHankeYhteystieto).hasSize(2)
-
-        // Remove the first yhteystieto, and save again; (also record the other one's organisaatioId
-        // for later confirmation):
         val loadedHankeYhteystietoEntity1 = loadedHanke.listOfHankeYhteystieto[0]
         val loadedHankeYhteystietoEntity2 = loadedHanke.listOfHankeYhteystieto[1]
         val loadedHankeYhteystietoOrgId2 = loadedHankeYhteystietoEntity2.organisaatioId
@@ -209,12 +160,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
         loadedHanke.removeYhteystieto(loadedHankeYhteystietoEntity1)
 
         hankeRepository.save(loadedHanke)
-        entityManager
-            .flush() // Make sure the stuff is run to database (though not necessarily committed)
-        entityManager
-            .clear() // Ensure the original entity is no longer in Hibernate's 1st level cache
 
-        // Reload the hanke and check that only the second hanke remains:
         val loadedHanke2 = hankeRepository.findByHankeTunnus("ABC-124")
         assertThat(loadedHanke2).isNotNull
         assertThat(loadedHanke2!!.listOfHankeYhteystieto).isNotNull
