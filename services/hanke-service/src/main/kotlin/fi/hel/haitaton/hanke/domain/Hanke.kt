@@ -40,8 +40,9 @@ data class Hanke(
 
     // --------------- Yhteystiedot -----------------
     @JsonView(NotInChangeLogView::class) var omistajat = mutableListOf<HankeYhteystieto>()
-    @JsonView(NotInChangeLogView::class) var arvioijat = mutableListOf<HankeYhteystieto>()
+    @JsonView(NotInChangeLogView::class) var rakennuttajat = mutableListOf<HankeYhteystieto>()
     @JsonView(NotInChangeLogView::class) var toteuttajat = mutableListOf<HankeYhteystieto>()
+    @JsonView(NotInChangeLogView::class) var muut = mutableListOf<HankeYhteystieto>()
 
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
     @JsonView(ChangeLogView::class) var tyomaaKatuosoite: String? = null
@@ -105,4 +106,7 @@ data class Hanke(
     fun alueidenGeometriat(): List<Geometriat> {
         return this.alueet.map { it.geometriat }.filterNotNull()
     }
+
+    fun extractYhteystiedot(): List<HankeYhteystieto> =
+        omistajat + rakennuttajat + toteuttajat + muut
 }

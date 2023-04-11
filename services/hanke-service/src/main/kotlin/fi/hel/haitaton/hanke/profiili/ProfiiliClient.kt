@@ -12,6 +12,5 @@ class ProfiiliClient {
 
 data class UserInfo(
     val userId: String,
-    val firstName: String,
-    val lastName: String,
+    val name: String,
 )

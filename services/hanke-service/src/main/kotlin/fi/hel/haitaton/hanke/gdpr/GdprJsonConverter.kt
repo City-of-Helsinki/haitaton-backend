@@ -148,7 +148,7 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
         organisation: GdprOrganisation?,
         userInfo: UserInfo,
     ): GdprInfo? {
-        if (matchFullName(contact.name, userInfo)) {
+        if (contact.name == userInfo.name) {
             return GdprInfo(
                 name = contact.name,
                 phone = contact.phone,
@@ -160,7 +160,7 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
     }
 
     internal fun getGdprInfoFromCustomer(customer: Customer?, userInfo: UserInfo): GdprInfo? {
-        if (customer?.type == CustomerType.PERSON && matchFullName(customer.name, userInfo)) {
+        if (customer?.type == CustomerType.PERSON && customer.name == userInfo.name) {
             return GdprInfo(
                 name = customer.name,
                 phone = customer.phone,
@@ -170,21 +170,8 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
         return null
     }
 
-    /** Check if the [fullName] is the same name as the first name and last name in [userInfo]. */
-    internal fun matchFullName(fullName: String?, userInfo: UserInfo): Boolean =
-        matchFullName(fullName, userInfo.firstName, userInfo.lastName)
-
-    internal fun matchFullName(fullName: String?, firstName: String, lastName: String): Boolean {
-        if (fullName == null) return false
-
-        return """(^|\s)${lastName}($|\s)"""
-            .toRegex(RegexOption.IGNORE_CASE)
-            .containsMatchIn(fullName) &&
-            """\b${firstName}\b""".toRegex(RegexOption.IGNORE_CASE).containsMatchIn(fullName)
-    }
-
     internal fun getGdprInfosFromHanke(hanke: Hanke, userInfo: UserInfo): List<GdprInfo> {
-        return (hanke.omistajat + hanke.arvioijat + hanke.toteuttajat).mapNotNull {
+        return hanke.extractYhteystiedot().mapNotNull {
             getGdprInfoFromHankeYhteystieto(it, userInfo)
         }
     }
@@ -193,15 +180,13 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
         yhteystieto: HankeYhteystieto,
         userInfo: UserInfo
     ): GdprInfo? {
-        if (
-            yhteystieto.etunimi != userInfo.firstName || yhteystieto.sukunimi != userInfo.lastName
-        ) {
+        if (yhteystieto.nimi != userInfo.name) {
             return null
         }
 
         val organisaatio = extractOrganisation(yhteystieto)
         return GdprInfo(
-            name = "${yhteystieto.etunimi} ${yhteystieto.sukunimi}",
+            name = yhteystieto.nimi,
             phone = yhteystieto.puhelinnumero,
             email = yhteystieto.email,
             organisation = organisaatio

@@ -10,12 +10,15 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.Perustaja
+import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
+import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
+import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedArvioija
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistajat
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withPerustaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
@@ -66,6 +69,11 @@ import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.junit.jupiter.Testcontainers
 
 private const val USER_NAME = "test7358"
+private const val NAME_1 = "etu1 suku1"
+private const val NAME_2 = "etu2 suku2"
+private const val NAME_3 = "etu3 suku3"
+private const val NAME_4 = "etu4 suku4"
+private const val NAME_SOMETHING = "Som Et Hing"
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -103,7 +111,6 @@ class HankeServiceITests : DatabaseTest() {
         // Setup Hanke with one Yhteystieto of each type:
         // The yhteystiedot are not in DB yet, so their id should be null.
         val hanke: Hanke = getATestHanke().withYhteystiedot { it.id = null }.withPerustaja()
-
         val datetimeAlku = hanke.alkuPvm // nextyear.2.20 23:45:56Z
         val datetimeLoppu = hanke.loppuPvm // nextyear.2.21 0:12:34Z
         // For checking audit field datetimes (with some minutes of margin for test running delay):
@@ -116,14 +123,12 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke).isNotNull
         assertThat(returnedHanke).isNotSameAs(hanke)
         assertThat(returnedHanke.id).isNotNull
-
         // Check the fields:
         // Note, "pvm" values should have become truncated to begin of the day
         val expectedDateAlku = // nextyear.2.20 00:00:00Z
             datetimeAlku!!.truncatedTo(ChronoUnit.DAYS)
         val expectedDateLoppu = // nextyear.2.21 00:00:00Z
             datetimeLoppu!!.truncatedTo(ChronoUnit.DAYS)
-
         assertThat(returnedHanke.status).isEqualTo(HankeStatus.PUBLIC)
         assertThat(returnedHanke.nimi).isEqualTo("Hämeentien perusparannus ja katuvalot")
         assertThat(returnedHanke.kuvaus).isEqualTo("lorem ipsum dolor sit amet...")
@@ -132,7 +137,6 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
         assertThat(returnedHanke.suunnitteluVaihe).isEqualTo(SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS)
         assertThat(returnedHanke.perustaja).isEqualTo(Perustaja("Pertti Perustaja", "foo@bar.com"))
-
         assertThat(returnedHanke.tyomaaKatuosoite).isEqualTo("Testikatu 1")
         assertThat(returnedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         assertThat(returnedHanke.getHaittaAlkuPvm()).isEqualTo(expectedDateAlku)
@@ -144,7 +148,6 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke.alueet[0].meluHaitta).isEqualTo(Haitta13.YKSI)
         assertThat(returnedHanke.alueet[0].polyHaitta).isEqualTo(Haitta13.KAKSI)
         assertThat(returnedHanke.alueet[0].tarinaHaitta).isEqualTo(Haitta13.KOLME)
-
         assertThat(returnedHanke.version).isZero
         assertThat(returnedHanke.createdAt).isNotNull
         assertThat(returnedHanke.createdAt!!.toEpochSecond() - currentDatetime.toEpochSecond())
@@ -153,19 +156,32 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke.createdBy).isEqualTo(USER_NAME)
         assertThat(returnedHanke.modifiedAt).isNull()
         assertThat(returnedHanke.modifiedBy).isNull()
-
         val omistaja: HankeYhteystieto = returnedHanke.omistajat[0]
-        val arvioija: HankeYhteystieto = returnedHanke.arvioijat[0]
+        val rakennuttaja: HankeYhteystieto = returnedHanke.rakennuttajat[0]
         val toteuttaja: HankeYhteystieto = returnedHanke.toteuttajat[0]
+        val muu: HankeYhteystieto = returnedHanke.muut[0]
         assertThat(omistaja).isNotNull
-        assertThat(arvioija).isNotNull
+        assertThat(rakennuttaja).isNotNull
         assertThat(toteuttaja).isNotNull
+        assertThat(muu).isNotNull
+        // Check yhteystieto tyyppi
+        listOf(omistaja, rakennuttaja, toteuttaja, muu).forEach {
+            assertThat(listOf(YRITYS, YKSITYISHENKILO, YHTEISO)).contains(it.tyyppi)
+        }
         // Check that fields have not somehow gone mixed between yhteystietos:
-        assertThat(omistaja.sukunimi).isEqualTo("suku1")
-        assertThat(arvioija.sukunimi).isEqualTo("suku2")
-        assertThat(toteuttaja.sukunimi).isEqualTo("suku3")
+        assertThat(omistaja.nimi).isEqualTo(NAME_1)
+        assertThat(rakennuttaja.nimi).isEqualTo(NAME_2)
+        assertThat(toteuttaja.nimi).isEqualTo(NAME_3)
+        assertThat(muu.nimi).isEqualTo(NAME_4)
+        // Check muu specific fields
+        assertThat(muu.organisaatioId).isNotNull
+        assertThat(muu.organisaatioNimi).isNotEmpty
+        assertThat(muu.osasto).isNotEmpty
+        assertThat(muu.rooli).isNotEmpty
+        listOf(omistaja, rakennuttaja, toteuttaja, muu).forEach {
+            verifyYhteyshenkilot(it.alikontaktit)
+        }
         // Check that all fields got there and back (with just one of the Yhteystietos):
-        assertThat(omistaja.etunimi).isEqualTo("etu1")
         assertThat(omistaja.email).isEqualTo("email1")
         assertThat(omistaja.puhelinnumero).isEqualTo("0101111111")
         assertThat(omistaja.organisaatioId).isEqualTo(1)
@@ -180,13 +196,11 @@ class HankeServiceITests : DatabaseTest() {
             .isBetween(-600, 600) // +/-10 minutes
         assertThat(omistaja.createdBy).isNotNull
         assertThat(omistaja.createdBy).isEqualTo(USER_NAME)
-
         assertThat(omistaja.modifiedAt).isNull()
         assertThat(omistaja.modifiedBy).isNull()
-
-        assertThat(arvioija.id).isNotEqualTo(firstId)
+        assertThat(rakennuttaja.id).isNotEqualTo(firstId)
         assertThat(toteuttaja.id).isNotEqualTo(firstId)
-        assertThat(toteuttaja.id).isNotEqualTo(arvioija.id)
+        assertThat(toteuttaja.id).isNotEqualTo(rakennuttaja.id)
     }
 
     @Test
@@ -347,10 +361,9 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke.omistajat[0].id).isNotNull
         val ytid = returnedHanke.omistajat[0].id!!
 
-        // Add a new Yhteystieto to the omistajat-group, and another to arvioijat-group:
         returnedHanke
             .withGeneratedOmistaja(2) { it.id = null }
-            .withGeneratedArvioija(3) { it.id = null }
+            .withGeneratedRakennuttaja(3) { it.id = null }
 
         // For checking audit field datetimes (with some minutes of margin for test running delay):
         val currentDatetime = getCurrentTimeUTC()
@@ -374,17 +387,17 @@ class HankeServiceITests : DatabaseTest() {
 
         // Check that all 3 Yhteystietos are there:
         assertThat(returnedHanke2.omistajat).hasSize(2)
-        assertThat(returnedHanke2.arvioijat).hasSize(1)
+        assertThat(returnedHanke2.rakennuttajat).hasSize(1)
         // Check that the first Yhteystieto has not changed, and the two new ones are as expected:
         // (Not checking all fields, just ensuring the code is not accidentally mixing whole
         // entries).
         assertThat(returnedHanke2.omistajat[0].id).isEqualTo(ytid)
-        assertThat(returnedHanke2.omistajat[0].sukunimi).isEqualTo("suku1")
-        assertThat(returnedHanke2.omistajat[1].sukunimi).isEqualTo("suku2")
-        assertThat(returnedHanke2.arvioijat[0].sukunimi).isEqualTo("suku3")
+        assertThat(returnedHanke2.omistajat[0].nimi).isEqualTo(NAME_1)
+        assertThat(returnedHanke2.omistajat[1].nimi).isEqualTo(NAME_2)
+        assertThat(returnedHanke2.rakennuttajat[0].nimi).isEqualTo(NAME_3)
         assertThat(returnedHanke2.omistajat[1].id).isNotEqualTo(ytid)
-        assertThat(returnedHanke2.arvioijat[0].id).isNotEqualTo(ytid)
-        assertThat(returnedHanke2.arvioijat[0].id).isNotEqualTo(returnedHanke2.omistajat[1].id)
+        assertThat(returnedHanke2.rakennuttajat[0].id).isNotEqualTo(ytid)
+        assertThat(returnedHanke2.rakennuttajat[0].id).isNotEqualTo(returnedHanke2.omistajat[1].id)
 
         // Use loadHanke and check it returns the same data:
         val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus!!)
@@ -396,14 +409,14 @@ class HankeServiceITests : DatabaseTest() {
 
         // Check that the returned hanke has the same 3 Yhteystietos:
         assertThat(returnedHanke3.omistajat).hasSize(2)
-        assertThat(returnedHanke3.arvioijat).hasSize(1)
+        assertThat(returnedHanke3.rakennuttajat).hasSize(1)
         assertThat(returnedHanke3.omistajat[0].id).isEqualTo(ytid)
-        assertThat(returnedHanke3.omistajat[0].sukunimi).isEqualTo("suku1")
-        assertThat(returnedHanke3.omistajat[1].sukunimi).isEqualTo("suku2")
-        assertThat(returnedHanke3.arvioijat[0].sukunimi).isEqualTo("suku3")
+        assertThat(returnedHanke3.omistajat[0].nimi).isEqualTo(NAME_1)
+        assertThat(returnedHanke3.omistajat[1].nimi).isEqualTo(NAME_2)
+        assertThat(returnedHanke3.rakennuttajat[0].nimi).isEqualTo(NAME_3)
         assertThat(returnedHanke3.omistajat[1].id).isNotEqualTo(ytid)
-        assertThat(returnedHanke3.arvioijat[0].id).isNotEqualTo(ytid)
-        assertThat(returnedHanke3.arvioijat[0].id).isNotEqualTo(returnedHanke3.omistajat[1].id)
+        assertThat(returnedHanke3.rakennuttajat[0].id).isNotEqualTo(ytid)
+        assertThat(returnedHanke3.rakennuttajat[0].id).isNotEqualTo(returnedHanke3.omistajat[1].id)
 
         // A small side-check here for audit fields handling on load:
         assertThat(returnedHanke3.omistajat[0].createdAt)
@@ -431,10 +444,10 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke.omistajat[1].id).isNotNull
         val ytid1 = returnedHanke.omistajat[0].id!!
         val ytid2 = returnedHanke.omistajat[1].id!!
-        assertThat(returnedHanke.omistajat[1].sukunimi).isEqualTo("suku2")
+        assertThat(returnedHanke.omistajat[1].nimi).isEqualTo(NAME_2)
 
         // Change a value:
-        returnedHanke.omistajat[1].sukunimi = "Som Et Hing"
+        returnedHanke.omistajat[1].nimi = NAME_SOMETHING
 
         // For checking audit field datetimes (with some minutes of margin for test running delay):
         val currentDatetime = getCurrentTimeUTC()
@@ -450,8 +463,8 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke2.omistajat).hasSize(2)
         assertThat(returnedHanke2.omistajat[0].id).isEqualTo(ytid1)
         assertThat(returnedHanke2.omistajat[1].id).isEqualTo(ytid2)
-        assertThat(returnedHanke2.omistajat[0].sukunimi).isEqualTo("suku1")
-        assertThat(returnedHanke2.omistajat[1].sukunimi).isEqualTo("Som Et Hing")
+        assertThat(returnedHanke2.omistajat[0].nimi).isEqualTo(NAME_1)
+        assertThat(returnedHanke2.omistajat[1].nimi).isEqualTo(NAME_SOMETHING)
 
         // Use loadHanke and check it returns the same data:
         val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus!!)
@@ -465,8 +478,8 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke3.omistajat).hasSize(2)
         assertThat(returnedHanke3.omistajat[0].id).isEqualTo(ytid1)
         assertThat(returnedHanke3.omistajat[1].id).isEqualTo(ytid2)
-        assertThat(returnedHanke3.omistajat[0].sukunimi).isEqualTo("suku1")
-        assertThat(returnedHanke3.omistajat[1].sukunimi).isEqualTo("Som Et Hing")
+        assertThat(returnedHanke3.omistajat[0].nimi).isEqualTo(NAME_1)
+        assertThat(returnedHanke3.omistajat[1].nimi).isEqualTo(NAME_SOMETHING)
 
         // Check that audit modifiedXx-fields got updated:
         assertThat(returnedHanke3.omistajat[1].modifiedAt).isNotNull
@@ -496,8 +509,7 @@ class HankeServiceITests : DatabaseTest() {
         val ytid1 = returnedHanke.omistajat[0].id!!
 
         // Clear all main fields (note, not id!) in the second yhteystieto:
-        returnedHanke.omistajat[1].sukunimi = ""
-        returnedHanke.omistajat[1].etunimi = ""
+        returnedHanke.omistajat[1].nimi = ""
         returnedHanke.omistajat[1].email = ""
         returnedHanke.omistajat[1].puhelinnumero = ""
         returnedHanke.omistajat[1].organisaatioId = 0 // does not really matter, but...
@@ -515,7 +527,7 @@ class HankeServiceITests : DatabaseTest() {
         // affected:
         assertThat(returnedHanke2.omistajat).hasSize(1)
         assertThat(returnedHanke2.omistajat[0].id).isEqualTo(ytid1)
-        assertThat(returnedHanke2.omistajat[0].sukunimi).isEqualTo("suku1")
+        assertThat(returnedHanke2.omistajat[0].nimi).isEqualTo(NAME_1)
 
         // Use loadHanke and check it returns the same data:
         val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus!!)
@@ -528,7 +540,7 @@ class HankeServiceITests : DatabaseTest() {
         // Check that the returned hanke has the same Yhteystieto:
         assertThat(returnedHanke3.omistajat).hasSize(1)
         assertThat(returnedHanke3.omistajat[0].id).isEqualTo(ytid1)
-        assertThat(returnedHanke3.omistajat[0].sukunimi).isEqualTo("suku1")
+        assertThat(returnedHanke3.omistajat[0].nimi).isEqualTo(NAME_1)
     }
 
     @Test
@@ -537,7 +549,7 @@ class HankeServiceITests : DatabaseTest() {
         val hanke: Hanke =
             getATestHanke()
                 .withGeneratedOmistaja(1) { it.id = null }
-                .withGeneratedArvioija(1) { it.id = null }
+                .withGeneratedRakennuttaja(1) { it.id = null }
 
         // Call create, get the return object, and make some general checks:
         val returnedHanke = hankeService.createHanke(hanke)
@@ -547,20 +559,19 @@ class HankeServiceITests : DatabaseTest() {
         // Check and record the Yhteystieto ids, and that the ids are different:
         assertThat(returnedHanke.omistajat).hasSize(1)
         assertThat(returnedHanke.omistajat[0].id).isNotNull
-        assertThat(returnedHanke.arvioijat).hasSize(1)
-        assertThat(returnedHanke.arvioijat[0].id).isNotNull
+        assertThat(returnedHanke.rakennuttajat).hasSize(1)
+        assertThat(returnedHanke.rakennuttajat[0].id).isNotNull
         val ytid1 = returnedHanke.omistajat[0].id!!
-        val ytid2 = returnedHanke.arvioijat[0].id!!
+        val ytid2 = returnedHanke.rakennuttajat[0].id!!
         assertThat(ytid1).isNotEqualTo(ytid2)
 
-        // Remove the arvioija-yhteystieto:
-        returnedHanke.arvioijat[0].sukunimi = ""
-        returnedHanke.arvioijat[0].etunimi = ""
-        returnedHanke.arvioijat[0].email = ""
-        returnedHanke.arvioijat[0].puhelinnumero = ""
-        returnedHanke.arvioijat[0].organisaatioId = 0 // does not really matter, but...
-        returnedHanke.arvioijat[0].organisaatioNimi = ""
-        returnedHanke.arvioijat[0].osasto = ""
+        // Remove the rakennuttaja-yhteystieto:
+        returnedHanke.rakennuttajat[0].nimi = ""
+        returnedHanke.rakennuttajat[0].email = ""
+        returnedHanke.rakennuttajat[0].puhelinnumero = ""
+        returnedHanke.rakennuttajat[0].organisaatioId = 0 // does not really matter, but...
+        returnedHanke.rakennuttajat[0].organisaatioNimi = ""
+        returnedHanke.rakennuttajat[0].osasto = ""
 
         // Call update, get the returned object, make some general checks:
         val returnedHanke2 = hankeService.updateHanke(returnedHanke)
@@ -569,12 +580,13 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke2).isNotSameAs(returnedHanke)
         assertThat(returnedHanke2.id).isNotNull
 
-        // Check that arvioija-yhteystieto got removed, the first one remaining, and its fields not
+        // Check that rakennuttaja-yhteystieto got removed, the first one remaining, and its fields
+        // not
         // affected:
-        assertThat(returnedHanke2.arvioijat).hasSize(0)
+        assertThat(returnedHanke2.rakennuttajat).hasSize(0)
         assertThat(returnedHanke2.omistajat).hasSize(1)
         assertThat(returnedHanke2.omistajat[0].id).isEqualTo(ytid1)
-        assertThat(returnedHanke2.omistajat[0].sukunimi).isEqualTo("suku1")
+        assertThat(returnedHanke2.omistajat[0].nimi).isEqualTo(NAME_1)
 
         // Use loadHanke and check it returns the same data:
         val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus!!)
@@ -585,10 +597,10 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke has the same 2 Yhteystietos:
-        assertThat(returnedHanke3.arvioijat).hasSize(0)
+        assertThat(returnedHanke3.rakennuttajat).hasSize(0)
         assertThat(returnedHanke3.omistajat).hasSize(1)
         assertThat(returnedHanke3.omistajat[0].id).isEqualTo(ytid1)
-        assertThat(returnedHanke3.omistajat[0].sukunimi).isEqualTo("suku1")
+        assertThat(returnedHanke3.omistajat[0].nimi).isEqualTo(NAME_1)
     }
 
     @Test
@@ -660,7 +672,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(createdHanke.omistajat[1].id).isNotNull
         val yhteystietoId1 = createdHanke.omistajat[0].id!!
         val yhteystietoId2 = createdHanke.omistajat[1].id!!
-        assertThat(createdHanke.omistajat[1].sukunimi).isEqualTo("suku2")
+        assertThat(createdHanke.omistajat[1].nimi).isEqualTo(NAME_2)
 
         var auditLogEvents =
             auditLogRepository.findByType(ObjectType.YHTEYSTIETO).map { it.message.auditEvent }
@@ -680,7 +692,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(auditLogEvents1[0].failureDescription).isNull()
         assertThat(auditLogEvents1[0].target.type).isEqualTo(ObjectType.YHTEYSTIETO)
         assertThat(auditLogEvents1[0].target.objectBefore).isNull()
-        assertThat(auditLogEvents1[0].target.objectAfter).contains("suku1")
+        assertThat(auditLogEvents1[0].target.objectAfter).contains(NAME_1)
 
         assertThat(auditLogEvents2[0].operation).isEqualTo(Operation.CREATE)
         assertThat(auditLogEvents2[0].actor.userId).isEqualTo(USER_NAME)
@@ -689,12 +701,12 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(auditLogEvents2[0].failureDescription).isNull()
         assertThat(auditLogEvents2[0].target.type).isEqualTo(ObjectType.YHTEYSTIETO)
         assertThat(auditLogEvents2[0].target.objectBefore).isNull()
-        assertThat(auditLogEvents2[0].target.objectAfter).contains("suku2")
+        assertThat(auditLogEvents2[0].target.objectAfter).contains(NAME_2)
 
         // Update one yhteystieto. This should create one update row in the log. ObjectBefore and
         // objectAfter fields should exist and have correct values.
         // Change a value:
-        createdHanke.omistajat[1].sukunimi = "Som Et Hing"
+        createdHanke.omistajat[1].nimi = NAME_SOMETHING
         // Call update, get the returned object, make some general checks:
         val hankeAfterUpdate = hankeService.updateHanke(createdHanke)
         assertThat(hankeAfterUpdate).isNotNull
@@ -705,8 +717,8 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(hankeAfterUpdate.omistajat).hasSize(2)
         assertThat(hankeAfterUpdate.omistajat[0].id).isEqualTo(yhteystietoId1)
         assertThat(hankeAfterUpdate.omistajat[1].id).isEqualTo(yhteystietoId2)
-        assertThat(hankeAfterUpdate.omistajat[0].sukunimi).isEqualTo("suku1")
-        assertThat(hankeAfterUpdate.omistajat[1].sukunimi).isEqualTo("Som Et Hing")
+        assertThat(hankeAfterUpdate.omistajat[0].nimi).isEqualTo(NAME_1)
+        assertThat(hankeAfterUpdate.omistajat[1].nimi).isEqualTo(NAME_SOMETHING)
 
         auditLogEvents =
             auditLogRepository.findByType(ObjectType.YHTEYSTIETO).map { it.message.auditEvent }
@@ -724,14 +736,13 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(auditLogEvents2[1].status).isEqualTo(Status.SUCCESS)
         assertThat(auditLogEvents2[1].failureDescription).isNull()
         assertThat(auditLogEvents2[1].target.type).isEqualTo(ObjectType.YHTEYSTIETO)
-        assertThat(auditLogEvents2[1].target.objectBefore).contains("suku2")
-        assertThat(auditLogEvents2[1].target.objectAfter).contains("Som Et Hing")
+        assertThat(auditLogEvents2[1].target.objectBefore).contains(NAME_2)
+        assertThat(auditLogEvents2[1].target.objectAfter).contains(NAME_SOMETHING)
 
         // Delete the other yhteystieto. This should create one update in log, with null
         // objectAfter.
         hankeAfterUpdate.omistajat[1].apply {
-            etunimi = ""
-            sukunimi = ""
+            nimi = ""
             puhelinnumero = ""
             email = ""
             organisaatioNimi = ""
@@ -742,7 +753,7 @@ class HankeServiceITests : DatabaseTest() {
         // Check that first yhteystieto remains, second one got removed:
         assertThat(hankeAfterDelete.omistajat).hasSize(1)
         assertThat(hankeAfterDelete.omistajat[0].id).isEqualTo(yhteystietoId1)
-        assertThat(hankeAfterDelete.omistajat[0].sukunimi).isEqualTo("suku1")
+        assertThat(hankeAfterDelete.omistajat[0].nimi).isEqualTo(NAME_1)
 
         auditLogEvents =
             auditLogRepository.findByType(ObjectType.YHTEYSTIETO).map { it.message.auditEvent }
@@ -760,18 +771,18 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(auditLogEvents2[2].status).isEqualTo(Status.SUCCESS)
         assertThat(auditLogEvents2[2].failureDescription).isNull()
         assertThat(auditLogEvents2[2].target.type).isEqualTo(ObjectType.YHTEYSTIETO)
-        assertThat(auditLogEvents2[2].target.objectBefore).contains("Som Et Hing")
+        assertThat(auditLogEvents2[2].target.objectBefore).contains(NAME_SOMETHING)
         assertThat(auditLogEvents2[2].target.objectAfter).isNull()
     }
 
     @Test
     fun `test personal data processing restriction`() {
         // Setup Hanke with two Yhteystietos in different groups. The test will only manipulate the
-        // arvioija.
+        // rakennuttaja.
         val hanke: Hanke =
             getATestHanke()
                 .withGeneratedOmistaja(1) { it.id = null }
-                .withGeneratedArvioija(2) { it.id = null }
+                .withGeneratedRakennuttaja(2) { it.id = null }
         // Call create, get the return object:
         val returnedHanke = hankeService.createHanke(hanke)
         // Logs must have 2 entries (two yhteystietos were created):
@@ -784,9 +795,10 @@ class HankeServiceITests : DatabaseTest() {
         val hankeId = returnedHanke.id
         var hankeEntity = hankeRepository.findById(hankeId!!).get()
         var yhteystietos = hankeEntity.listOfHankeYhteystieto
-        var arvioijaEntity = yhteystietos.filter { it.contactType == ContactType.ARVIOIJA }[0]
-        val arvioijaId = arvioijaEntity.id.toString()
-        arvioijaEntity.dataLocked = true
+        var rakennuttajaEntity =
+            yhteystietos.filter { it.contactType == ContactType.RAKENNUTTAJA }[0]
+        val rakennuttajaId = rakennuttajaEntity.id.toString()
+        rakennuttajaEntity.dataLocked = true
         // Not setting the info field, or adding audit log entry, since the idea is to only test
         // that the locking actually prevents processing.
         // Saving the hanke will save the yhteystieto in it, too:
@@ -794,7 +806,7 @@ class HankeServiceITests : DatabaseTest() {
 
         // Try to update the yhteystieto. It should fail and add a new log entry.
         val hankeWithLockedYT = hankeService.loadHanke(returnedHanke.hankeTunnus!!)
-        hankeWithLockedYT!!.arvioijat[0].etunimi = "Muhaha-Evil-Change"
+        hankeWithLockedYT!!.rakennuttajat[0].nimi = "Muhaha-Evil-Change"
 
         assertThatExceptionOfType(HankeYhteystietoProcessingRestrictedException::class.java)
             .isThrownBy { hankeService.updateHanke(hankeWithLockedYT) }
@@ -805,7 +817,7 @@ class HankeServiceITests : DatabaseTest() {
             auditLogRepository
                 .findByType(ObjectType.YHTEYSTIETO)
                 .map { it.message.auditEvent }
-                .filter { it.target.id == arvioijaId }
+                .filter { it.target.id == rakennuttajaId }
         // For the second yhteystieto, there should be one entry for the earlier creation and
         // another for this failed update.
         assertThat(auditLogEvents).hasSize(2)
@@ -816,13 +828,12 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(auditLogEvents[1].failureDescription)
             .isEqualTo("update hanke yhteystieto BLOCKED by data processing restriction")
         assertThat(auditLogEvents[1].target.type).isEqualTo(ObjectType.YHTEYSTIETO)
-        assertThat(auditLogEvents[1].target.objectBefore).contains("suku2")
+        assertThat(auditLogEvents[1].target.objectBefore).contains(NAME_2)
         assertThat(auditLogEvents[1].target.objectAfter).contains("Muhaha-Evil-Change")
 
         // Try to delete the yhteystieto. It should fail and add a new log entry.
-        hankeWithLockedYT.arvioijat[0].apply {
-            etunimi = ""
-            sukunimi = ""
+        hankeWithLockedYT.rakennuttajat[0].apply {
+            nimi = ""
             puhelinnumero = ""
             email = ""
             organisaatioNimi = ""
@@ -836,7 +847,7 @@ class HankeServiceITests : DatabaseTest() {
             auditLogRepository
                 .findByType(ObjectType.YHTEYSTIETO)
                 .map { it.message.auditEvent }
-                .filter { it.target.id == arvioijaId }
+                .filter { it.target.id == rakennuttajaId }
         // For the second yhteystieto, there should be one more audit log entry for this failed
         // deletion:
         assertThat(auditLogEvents).hasSize(3)
@@ -847,36 +858,36 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(auditLogEvents[2].failureDescription)
             .isEqualTo("delete hanke yhteystieto BLOCKED by data processing restriction")
         assertThat(auditLogEvents[2].target.type).isEqualTo(ObjectType.YHTEYSTIETO)
-        assertThat(auditLogEvents[2].target.objectBefore).contains("suku2")
+        assertThat(auditLogEvents[2].target.objectBefore).contains(NAME_2)
         assertThat(auditLogEvents[2].target.objectAfter).isNull()
 
         // Check that both yhteystietos still exist and the values have not gotten changed.
         val returnedHankeAfterBlockedActions = hankeService.loadHanke(returnedHanke.hankeTunnus!!)
-        val arvioijat = returnedHankeAfterBlockedActions!!.arvioijat
-        assertThat(arvioijat).hasSize(1)
-        assertThat(arvioijat[0].etunimi).isEqualTo("etu2")
+        val rakennuttajat = returnedHankeAfterBlockedActions!!.rakennuttajat
+        assertThat(rakennuttajat).hasSize(1)
+        assertThat(rakennuttajat[0].nimi).isEqualTo(NAME_2)
 
         // Unset the processing restriction flag:
         hankeEntity = hankeRepository.findById(hankeId).get()
         yhteystietos = hankeEntity.listOfHankeYhteystieto
-        arvioijaEntity = yhteystietos.filter { it.contactType == ContactType.ARVIOIJA }[0]
-        arvioijaEntity.dataLocked = false
+        rakennuttajaEntity = yhteystietos.filter { it.contactType == ContactType.RAKENNUTTAJA }[0]
+        rakennuttajaEntity.dataLocked = false
         hankeRepository.save(hankeEntity)
 
         // Updating the yhteystieto should now work:
         val hankeWithUnlockedYT = hankeService.loadHanke(returnedHanke.hankeTunnus!!)
-        hankeWithUnlockedYT!!.arvioijat[0].etunimi = "Hopefully-Not-Evil-Change"
+        hankeWithUnlockedYT!!.rakennuttajat[0].nimi = "Hopefully-Not-Evil-Change"
         val finalHanke = hankeService.updateHanke(hankeWithUnlockedYT)
 
         // Check that the change went through:
-        assertThat(finalHanke.arvioijat[0].etunimi).isEqualTo("Hopefully-Not-Evil-Change")
+        assertThat(finalHanke.rakennuttajat[0].nimi).isEqualTo("Hopefully-Not-Evil-Change")
         // There should be one more entry in the log.
         assertThat(auditLogRepository.countByType(ObjectType.YHTEYSTIETO)).isEqualTo(5)
         auditLogEvents =
             auditLogRepository
                 .findByType(ObjectType.YHTEYSTIETO)
                 .map { it.message.auditEvent }
-                .filter { it.target.id == arvioijaId }
+                .filter { it.target.id == rakennuttajaId }
         // For the second yhteystieto, there should be one more entry in the log:
         assertThat(auditLogEvents).hasSize(4)
     }
@@ -974,7 +985,7 @@ class HankeServiceITests : DatabaseTest() {
             createdHanke.copy().apply {
                 // manually set mutable collections due to a shallow copy.
                 this.omistajat = createdHanke.omistajat
-                this.arvioijat = createdHanke.arvioijat
+                this.rakennuttajat = createdHanke.rakennuttajat
                 this.toteuttajat = createdHanke.toteuttajat
                 this.tyomaaTyyppi = createdHanke.tyomaaTyyppi
                 this.alueet = mutableListOf(hankealue.copy(nimi = "Changed Name"))
@@ -1096,9 +1107,9 @@ class HankeServiceITests : DatabaseTest() {
         hankeService.deleteHanke(hanke, listOf(), "testUser")
 
         val logs = auditLogRepository.findByType(ObjectType.YHTEYSTIETO)
-        assertEquals(3, logs.size)
+        assertEquals(4, logs.size)
         val deleteLogs = logs.filter { it.message.auditEvent.operation == Operation.DELETE }
-        assertThat(deleteLogs).hasSize(3).allSatisfy { log ->
+        assertThat(deleteLogs).hasSize(4).allSatisfy { log ->
             assertFalse(log.isSent)
             assertThat(log.createdAt).isCloseToUtcNow(byLessThan(1, ChronoUnit.MINUTES))
             val event = log.message.auditEvent
@@ -1117,11 +1128,11 @@ class HankeServiceITests : DatabaseTest() {
             omistajaEvent.target.objectBefore,
             JSONCompareMode.NON_EXTENSIBLE
         )
-        val arvioijaId = hanke.arvioijat[0].id!!
-        val arvioijaEvent = deleteLogs.findByTargetId(arvioijaId).message.auditEvent
+        val rakennuttajaId = hanke.rakennuttajat[0].id!!
+        val rakennuttajaEvent = deleteLogs.findByTargetId(rakennuttajaId).message.auditEvent
         JSONAssert.assertEquals(
-            expectedYhteystietoDeleteLogObject(arvioijaId, 2),
-            arvioijaEvent.target.objectBefore,
+            expectedYhteystietoDeleteLogObject(rakennuttajaId, 2),
+            rakennuttajaEvent.target.objectBefore,
             JSONCompareMode.NON_EXTENSIBLE
         )
         val toteuttajaId = hanke.toteuttajat[0].id!!
@@ -1129,6 +1140,13 @@ class HankeServiceITests : DatabaseTest() {
         JSONAssert.assertEquals(
             expectedYhteystietoDeleteLogObject(toteuttajaId, 3),
             toteuttajaEvent.target.objectBefore,
+            JSONCompareMode.NON_EXTENSIBLE
+        )
+        val muuId = hanke.muut[0].id!!
+        val muuEvent = deleteLogs.findByTargetId(muuId).message.auditEvent
+        JSONAssert.assertEquals(
+            expectedYhteystietoDeleteLogObject(muuId, 4),
+            muuEvent.target.objectBefore,
             JSONCompareMode.NON_EXTENSIBLE
         )
     }
@@ -1405,6 +1423,16 @@ class HankeServiceITests : DatabaseTest() {
         }
     }
 
+    private fun verifyYhteyshenkilot(yhteyshenkilot: List<Yhteyshenkilo>) {
+        assertThat(yhteyshenkilot).isNotEmpty
+        yhteyshenkilot.forEach {
+            assertThat(it.etunimi).isNotBlank
+            assertThat(it.sukunimi).isNotBlank
+            assertThat(it.email).isNotBlank
+            assertThat(it.puhelinnumero).isNotBlank
+        }
+    }
+
     private fun initHankeWithHakemus(alluId: Int): HankeEntity =
         hankeRepository.save(
             HankeEntity(hankeTunnus = "HAI23-1").apply {
@@ -1518,13 +1546,15 @@ class HankeServiceITests : DatabaseTest() {
     private fun expectedYhteystietoDeleteLogObject(id: Int?, i: Int) =
         """{
           "id":$id,
-          "sukunimi":"suku$i",
-          "etunimi":"etu$i",
+          "nimi":"etu$i suku$i",
           "email":"email$i",
           "puhelinnumero":"010$i$i$i$i$i$i$i",
           "organisaatioId":$i,
           "organisaatioNimi":"org$i",
-          "osasto":"osasto$i"
+          "osasto":"osasto$i",
+          "rooli": "Isännöitsijä$i",
+          "tyyppi": "YHTEISO",
+          "alikontaktit": [{"etunimi":"etu$i","sukunimi":"suku$i","email":"email$i","puhelinnumero":"010$i$i$i$i$i$i$i"}]
         }"""
 
     /**
