@@ -281,6 +281,8 @@ Output files (names configured in `config.yaml`)
 
 ### `cycle_infra`
 
+Prerequisite: copy source file to `data` -directory. See `data/README.md`
+
 Docker example run (ensure that image build and file copying is
 already performed as instructed above):
 
