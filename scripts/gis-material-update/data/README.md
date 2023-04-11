@@ -12,9 +12,10 @@ Materials that are not yet available via public sources, are listed in this docu
 
 ## Cycling infra
 
-In the near future, cycling routes are obtained from API.
+Current implementation assumes cycling infra source file in this directory.
 
-Currently cycling infra is read from combined Geopackage [file](https://helsinginkaupunki.sharepoint.com/:u:/r/sites/KYMPHaitaton/Jaetut%20asiakirjat/General/02_Taustamateriaalit/Laastariaineisto/haitaton_2_input/helsinki_cycleways.gpkg?csf=1&web=1&e=pR3rqm)
+Copy [source file](https://helsinginkaupunki.sharepoint.com/:u:/r/sites/KYMPHaitaton/Jaetut%20asiakirjat/General/02_Taustamateriaalit/Laastariaineisto/haitaton_2_input/helsinki_cycleways.gpkg?csf=1&web=1&e=pR3rqm)
+from Sharepoint to this directory.
 
 ### Instructions to generate combined file
 
