@@ -2,9 +2,9 @@ package fi.hel.haitaton.hanke.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonView
-import fi.hel.haitaton.hanke.Alikontakti
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.NotInChangeLogView
+import fi.hel.haitaton.hanke.Yhteyshenkilo
 import java.time.ZonedDateTime
 
 enum class YhteystietoTyyppi {
@@ -21,7 +21,7 @@ data class HankeYhteystieto(
     @JsonView(ChangeLogView::class) var email: String,
 
     // Optional subcontacts (person)
-    @JsonView(ChangeLogView::class) var alikontaktit: List<Alikontakti> = emptyList(),
+    @JsonView(ChangeLogView::class) var alikontaktit: List<Yhteyshenkilo> = emptyList(),
 
     // Optional
     @JsonView(ChangeLogView::class) var puhelinnumero: String?,

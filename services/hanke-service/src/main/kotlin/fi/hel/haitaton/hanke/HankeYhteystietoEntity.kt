@@ -43,7 +43,7 @@ class HankeYhteystietoEntity(
     @JsonView(ChangeLogView::class) var rooli: String? = null,
     @Type(type = "json")
     @Column(columnDefinition = "jsonb")
-    var alikontaktit: List<Alikontakti> = listOf(),
+    var yhteyshenkilot: List<Yhteyshenkilo> = listOf(),
 
     // Personal data processing restriction (or other needs to prevent changes)
     @JsonView(NotInChangeLogView::class) var dataLocked: Boolean? = false,
@@ -79,7 +79,7 @@ class HankeYhteystietoEntity(
         if (organisaatioId != other.organisaatioId) return false
         if (organisaatioNimi != other.organisaatioNimi) return false
         if (osasto != other.osasto) return false
-        if (alikontaktit != other.alikontaktit) return false
+        if (yhteyshenkilot != other.yhteyshenkilot) return false
 
         return true
     }
@@ -93,7 +93,7 @@ class HankeYhteystietoEntity(
         result = 31 * result + (organisaatioId ?: 0)
         result = 31 * result + (organisaatioNimi?.hashCode() ?: 0)
         result = 31 * result + (osasto?.hashCode() ?: 0)
-        result = 31 * result + alikontaktit.hashCode()
+        result = 31 * result + yhteyshenkilot.hashCode()
         return result
     }
 
@@ -116,7 +116,7 @@ class HankeYhteystietoEntity(
 }
 
 @TypeDef(name = "json", typeClass = JsonType::class)
-data class Alikontakti(
+data class Yhteyshenkilo(
     val etunimi: String,
     val sukunimi: String,
     val email: String,

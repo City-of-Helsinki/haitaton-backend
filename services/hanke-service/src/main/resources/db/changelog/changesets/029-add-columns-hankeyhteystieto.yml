@@ -6,7 +6,7 @@ databaseChangeLog:
         - addColumn:
             tableName: hankeyhteystieto
             columns:
-              - column: { name: alikontaktit, type: jsonb, constraints: { nullable: true } }
+              - column: { name: yhteyshenkilot, type: jsonb, constraints: { nullable: true } }
               - column: { name: nimi, type: text, constraints: { nullable: true } }
               - column: { name: rooli, type: text, constraints: { nullable: true } }
               - column: { name: tyyppi, type: text, constraints: { nullable: true } }

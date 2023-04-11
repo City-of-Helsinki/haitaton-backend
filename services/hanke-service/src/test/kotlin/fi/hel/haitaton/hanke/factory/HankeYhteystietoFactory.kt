@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.Alikontakti
+import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
@@ -25,7 +25,7 @@ object HankeYhteystietoFactory {
             rooli = "Isännöitsijä",
             tyyppi = YRITYS,
             alikontaktit =
-                listOf(Alikontakti("Ali", "Kontakti", "ali.kontakti@meili.com", "050-4567890"))
+                listOf(Yhteyshenkilo("Ali", "Kontakti", "ali.kontakti@meili.com", "050-4567890"))
         )
     }
 
@@ -46,7 +46,7 @@ object HankeYhteystietoFactory {
             tyyppi = YHTEISO,
             alikontaktit =
                 listOf(
-                    Alikontakti(
+                    Yhteyshenkilo(
                         sukunimi = "suku$i",
                         etunimi = "etu$i",
                         email = "email$i",

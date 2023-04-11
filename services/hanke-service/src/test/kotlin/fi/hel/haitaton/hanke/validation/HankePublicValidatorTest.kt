@@ -3,8 +3,8 @@ package fi.hel.haitaton.hanke.validation
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
-import fi.hel.haitaton.hanke.Alikontakti
 import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
@@ -47,7 +47,7 @@ internal class HankePublicValidatorTest {
     fun `Alikontaktit missing data is not ok`() {
         val hanke =
             completeHanke().apply {
-                omistajat.first().apply { alikontaktit = listOf(Alikontakti("", "", "", "")) }
+                omistajat.first().apply { alikontaktit = listOf(Yhteyshenkilo("", "", "", "")) }
             }
 
         val result = HankePublicValidator.validateHankeHasMandatoryFields(hanke)

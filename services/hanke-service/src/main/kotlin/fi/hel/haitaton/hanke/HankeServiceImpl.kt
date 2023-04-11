@@ -409,7 +409,7 @@ open class HankeServiceImpl(
                 modifiedBy = modifiedByUserId,
                 createdAt = createdAt,
                 modifiedAt = modifiedAt,
-                alikontaktit = alikontaktit,
+                alikontaktit = yhteyshenkilot,
                 rooli = rooli,
                 tyyppi = tyyppi,
             )
@@ -789,7 +789,7 @@ open class HankeServiceImpl(
                     modifiedByUserId = null,
                     modifiedAt = null,
                     id = null, // will be set by the database
-                    alikontaktit = hankeYht.alikontaktit,
+                    yhteyshenkilot = hankeYht.alikontaktit,
                     hanke = hankeEntity // reference back to parent hanke
                 )
             hankeEntity.addYhteystieto(hankeYhtEntity)
@@ -836,7 +836,7 @@ open class HankeServiceImpl(
                 existingYT.email = hankeYht.email
                 existingYT.puhelinnumero = hankeYht.puhelinnumero
                 existingYT.organisaatioId = hankeYht.organisaatioId
-                existingYT.alikontaktit = hankeYht.alikontaktit
+                existingYT.yhteyshenkilot = hankeYht.alikontaktit
                 hankeYht.organisaatioNimi?.let {
                     existingYT.organisaatioNimi = hankeYht.organisaatioNimi
                 }
@@ -888,7 +888,7 @@ open class HankeServiceImpl(
         if (incoming.organisaatioId != existing.organisaatioId) return false
         if (incoming.organisaatioNimi != existing.organisaatioNimi) return false
         if (incoming.osasto != existing.osasto) return false
-        if (incoming.alikontaktit != existing.alikontaktit) return false
+        if (incoming.alikontaktit != existing.yhteyshenkilot) return false
         return true
     }
 

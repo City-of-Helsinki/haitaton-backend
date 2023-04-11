@@ -107,8 +107,8 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHankeYhteystietoEntity1.modifiedByUserId).isEqualTo("11")
         assertThat(loadedHankeYhteystietoEntity1.modifiedAt).isEqualTo(datetime())
         assertThat(loadedHankeYhteystietoEntity1.tyyppi).isEqualTo(YRITYS)
-        assertThat(loadedHankeYhteystietoEntity1.alikontaktit)
-            .hasSameElementsAs(listOf(createAlikontakti()))
+        assertThat(loadedHankeYhteystietoEntity1.yhteyshenkilot)
+            .hasSameElementsAs(listOf(createYhteyshenkilo()))
         assertThat(loadedHankeYhteystietoEntity1.hanke).isSameAs(loadedHanke)
         assertThat(loadedHankeYhteystietoEntity2).isNotNull
         assertThat(loadedHankeYhteystietoEntity2.nimi).isEqualTo("Etu2 Suku2")
@@ -121,8 +121,8 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHankeYhteystietoEntity2.createdAt).isEqualTo(datetime())
         assertThat(loadedHankeYhteystietoEntity2.modifiedByUserId).isEqualTo("22")
         assertThat(loadedHankeYhteystietoEntity2.modifiedAt).isEqualTo(datetime())
-        assertThat(loadedHankeYhteystietoEntity2.alikontaktit)
-            .hasSameElementsAs(listOf(createAlikontakti()))
+        assertThat(loadedHankeYhteystietoEntity2.yhteyshenkilot)
+            .hasSameElementsAs(listOf(createYhteyshenkilo()))
         assertThat(loadedHankeYhteystietoEntity3).isNotNull
         assertThat(loadedHankeYhteystietoEntity3.nimi).isEqualTo("Etu3 Suku3")
         assertThat(loadedHankeYhteystietoEntity3.email).isEqualTo("email3")
@@ -134,8 +134,8 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHankeYhteystietoEntity3.createdAt).isEqualTo(datetime())
         assertThat(loadedHankeYhteystietoEntity3.modifiedByUserId).isEqualTo("33")
         assertThat(loadedHankeYhteystietoEntity3.modifiedAt).isEqualTo(datetime())
-        assertThat(loadedHankeYhteystietoEntity3.alikontaktit)
-            .hasSameElementsAs(listOf(createAlikontakti()))
+        assertThat(loadedHankeYhteystietoEntity3.yhteyshenkilot)
+            .hasSameElementsAs(listOf(createYhteyshenkilo()))
     }
 
     @Test
@@ -206,7 +206,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
             modifiedByUserId = "11",
             modifiedAt = datetime(),
             id = null,
-            alikontaktit = listOf(createAlikontakti()),
+            yhteyshenkilot = listOf(createYhteyshenkilo()),
             tyyppi = YRITYS,
             hanke = baseHankeEntity,
         )
@@ -227,7 +227,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
             modifiedByUserId = "22",
             modifiedAt = datetime(),
             id = null,
-            alikontaktit = listOf(createAlikontakti()),
+            yhteyshenkilot = listOf(createYhteyshenkilo()),
             tyyppi = YRITYS,
             hanke = baseHankeEntity,
         )
@@ -248,11 +248,11 @@ internal class HankeRepositoryITests : DatabaseTest() {
             modifiedByUserId = "33",
             modifiedAt = datetime(),
             id = null,
-            alikontaktit = listOf(createAlikontakti()),
+            yhteyshenkilot = listOf(createYhteyshenkilo()),
             tyyppi = YRITYS,
             hanke = baseHankeEntity,
         )
 
-    private fun createAlikontakti() =
-        Alikontakti("Ali", "Kontakti", "ali.kontakti@testi.com", "050-3785641")
+    private fun createYhteyshenkilo() =
+        Yhteyshenkilo("Ali", "Kontakti", "ali.kontakti@testi.com", "050-3785641")
 }

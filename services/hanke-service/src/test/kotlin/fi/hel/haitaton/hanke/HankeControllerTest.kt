@@ -262,7 +262,12 @@ class HankeControllerTest {
                     tyyppi = YKSITYISHENKILO,
                     alikontaktit =
                         listOf(
-                            Alikontakti("Ali", "Kontakti", "ali.kontakti@meili.com", "050-3789354")
+                            Yhteyshenkilo(
+                                "Ali",
+                                "Kontakti",
+                                "ali.kontakti@meili.com",
+                                "050-3789354"
+                            )
                         ),
                 )
             )
