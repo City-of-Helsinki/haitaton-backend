@@ -14,6 +14,7 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
+import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.factory.UserInfoFactory.teppoUserInfo
 import fi.hel.haitaton.hanke.organisaatio.Organisaatio
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
@@ -23,13 +24,10 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
 
 internal class GdprJsonConverterTest {
@@ -49,10 +47,10 @@ internal class GdprJsonConverterTest {
         val hanke =
             HankeFactory.create().withYhteystiedot(
                 omistajat = listOf(1, 2),
-                arvioijat = listOf(3, 2),
+                rakennuttajat = listOf(3, 2),
                 toteuttajat = listOf(4, 2)
             ) { it.organisaatioId = null }
-        val userInfo = teppoUserInfo(firstName = "Other")
+        val userInfo = teppoUserInfo(name = "Other")
 
         val result = gdprJsonConverter.createGdprJson(listOf(application), listOf(hanke), userInfo)
 
@@ -71,12 +69,11 @@ internal class GdprJsonConverterTest {
         val hanke =
             HankeFactory.create().withYhteystiedot(
                 omistajat = listOf(1, 2),
-                arvioijat = listOf(3, 2),
+                rakennuttajat = listOf(3, 2),
                 toteuttajat = listOf(4, 2)
             ) {
                 it.organisaatioId = null
-                it.etunimi = "Teppo"
-                it.sukunimi = "Testihenkilö"
+                it.nimi = TEPPO_TESTI
                 it.puhelinnumero = "12345678"
                 it.email = "teppo@yhteystieto.test"
                 it.organisaatioNimi = "Yhteystieto Oy"
@@ -91,7 +88,7 @@ internal class GdprJsonConverterTest {
         val id = getStringNodeFromChildren(result, "id").value
         assertEquals(userInfo.userId, id)
         val nimi = getStringNodeFromChildren(result, "nimi").value
-        assertEquals("Teppo Testihenkilö", nimi)
+        assertEquals(TEPPO_TESTI, nimi)
         val puhelinnumerot = getCollectionNodeFromChildren(result, "puhelinnumerot").children
         assertThat(puhelinnumerot.map { it.key }).each { it.isEqualTo("puhelinnumero") }
         assertThat(puhelinnumerot.map { (it as StringNode).value })
@@ -136,7 +133,7 @@ internal class GdprJsonConverterTest {
         assertThat(result)
             .containsExactlyInAnyOrder(
                 StringNode("id", "1"),
-                StringNode("nimi", "Teppo Testihenkilö"),
+                StringNode("nimi", TEPPO_TESTI),
                 StringNode("puhelinnumero", "04012345678"),
                 StringNode("sahkoposti", "teppo@example.test"),
             )
@@ -157,7 +154,7 @@ internal class GdprJsonConverterTest {
         assertThat(result)
             .containsExactlyInAnyOrder(
                 StringNode("id", "1"),
-                StringNode("nimi", "Teppo Testihenkilö"),
+                StringNode("nimi", TEPPO_TESTI),
                 CollectionNode(
                     "puhelinnumerot",
                     listOf(
@@ -224,17 +221,17 @@ internal class GdprJsonConverterTest {
         val expectedInfos =
             arrayOf(
                 GdprInfo(
-                    name = "Teppo Testihenkilö",
+                    name = TEPPO_TESTI,
                     phone = "04012345678",
                     email = "teppo@example.test",
                 ),
                 GdprInfo(
-                    name = "Teppo Testihenkilö",
+                    name = TEPPO_TESTI,
                     phone = "04012345678",
                     email = "teppo@example.test",
                 ),
                 GdprInfo(
-                    name = "Teppo Testihenkilö",
+                    name = TEPPO_TESTI,
                     phone = "04012345678",
                     email = "teppo@dna.test",
                     organisation = GdprOrganisation(name = "Dna", registryKey = "3766028-0"),
@@ -310,10 +307,7 @@ internal class GdprJsonConverterTest {
                     name = "Teppo Toissijainen",
                     email = "toissijainen@example.test"
                 ),
-                AlluDataFactory.createContact(
-                    name = "Teppo Testihenkilö",
-                    email = "teppo@yksityinen.test"
-                ),
+                AlluDataFactory.createContact(name = TEPPO_TESTI, email = "teppo@yksityinen.test"),
             )
 
         val result =
@@ -339,7 +333,7 @@ internal class GdprJsonConverterTest {
     fun `getGdprInfosFromApplicationContact with another name returns null`() {
         val otherContact = AlluDataFactory.createContact(name = "Another name")
         val teppoContact = AlluDataFactory.createContact()
-        val otherUserInfo = teppoUserInfo(firstName = "Another")
+        val otherUserInfo = teppoUserInfo(name = "Another")
         val teppoUserInfo = teppoUserInfo()
 
         assertNull(
@@ -404,57 +398,14 @@ internal class GdprJsonConverterTest {
     }
 
     @Test
-    fun `matchFullName with UserInfo matches the names from the UserInfo`() {
-        val userInfo = UserInfo(userId = "id", firstName = "Rane", lastName = "Rakentaja")
-
-        assertTrue(gdprJsonConverter.matchFullName("Rane Rakentaja", userInfo))
-        assertFalse(gdprJsonConverter.matchFullName("Ranelin Rakentaja", userInfo))
-    }
-
-    @ParameterizedTest(name = "{displayName}({arguments})")
-    @CsvSource(
-        "Rane Rakentaja,Rane,Rakentaja",
-        "Rakentaja Rane,Rane,Rakentaja",
-        "Rane Rakentaja,rane,rakentaja",
-        "rane rakentaja,Rane,Rakentaja",
-        "Rane Petteri Rakentaja,Rane,Rakentaja",
-        "Rane-Petteri Rakentaja,Rane,Rakentaja",
-        "Rane-Petteri Rakentaja,Rane-Petteri,Rakentaja",
-        "Rane Rakentaja-Tarkistaja,Rane,Rakentaja-Tarkistaja",
-    )
-    fun `matchFullName with positive cases`(fullName: String, firstName: String, lastName: String) {
-        assertTrue(gdprJsonConverter.matchFullName(fullName, firstName, lastName))
-    }
-
-    @ParameterizedTest(name = "{displayName}({arguments})")
-    @CsvSource(
-        "Ranelin Rakentaja,Rane,Rakentaja",
-        "Rane Rakentaja,Ranelin,Rakentaja",
-        "Rane Rakentaja,Rane,Rakentajainen",
-        "Rane Rakentajainen,Rane,Rakentaja",
-        "Rane Rakentaja-Tarkistaja,Rane,Rakentaja",
-        "Rane Rakentaja,Rane,Rakentaja-Tarkistaja",
-        "Rane Rakentaja,Rane-Petteri,Rakentaja",
-        "Rane Rakentaja,Rane Petteri,Rakentaja",
-    )
-    fun `matchFullName with negative cases`(fullName: String, firstName: String, lastName: String) {
-        assertFalse(gdprJsonConverter.matchFullName(fullName, firstName, lastName))
-    }
-
-    @Test
-    fun `matchFullName with null name returns false`() {
-        assertFalse(gdprJsonConverter.matchFullName(null, "Rane", "Rakentaja"))
-    }
-
-    @Test
     fun `getGdprInfosFromHanke returns GdprInfos for Yhteystieto with matching names`() {
         val hanke =
             HankeFactory.create().withYhteystiedot(
                 omistajat = listOf(1, 2),
-                arvioijat = listOf(3, 2),
+                rakennuttajat = listOf(3, 2),
                 toteuttajat = listOf(4, 2)
             ) { it.organisaatioId = null }
-        val userInfo = UserInfo("id", "etu2", "suku2")
+        val userInfo = UserInfo("id", "etu2 suku2")
 
         val response = gdprJsonConverter.getGdprInfosFromHanke(hanke, userInfo)
 
@@ -497,21 +448,9 @@ internal class GdprJsonConverterTest {
     }
 
     @Test
-    fun `getGdprInfoFromHankeYhteystieto with different first name`() {
-        val yhteystieto = HankeYhteystietoFactory.create().copy(etunimi = "Jaska")
+    fun `getGdprInfoFromHankeYhteystieto with different name`() {
+        val yhteystieto = HankeYhteystietoFactory.create().copy(nimi = "Jaska Jokunen")
         val userInfo = teppoUserInfo()
-        every { organisaatioService.get(1) }.returns(dnaOrganisaatio())
-
-        val response = gdprJsonConverter.getGdprInfoFromHankeYhteystieto(yhteystieto, userInfo)
-
-        assertNull(response)
-        verify { organisaatioService wasNot Called }
-    }
-
-    @Test
-    fun `getGdprInfoFromHankeYhteystieto with different last name`() {
-        val userInfo = teppoUserInfo()
-        val yhteystieto = HankeYhteystietoFactory.create().copy(sukunimi = "Jokunen")
         every { organisaatioService.get(1) }.returns(dnaOrganisaatio())
 
         val response = gdprJsonConverter.getGdprInfoFromHankeYhteystieto(yhteystieto, userInfo)
@@ -602,7 +541,7 @@ internal class GdprJsonConverterTest {
     }
 
     private fun teppoGdprInfo(
-        name: String? = "Teppo Testihenkilö",
+        name: String? = TEPPO_TESTI,
         phone: String? = "04012345678",
         email: String? = "teppo@example.test",
         ipAddress: String? = null,

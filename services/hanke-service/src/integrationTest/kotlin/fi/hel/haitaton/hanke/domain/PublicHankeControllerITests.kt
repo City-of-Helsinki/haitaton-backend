@@ -101,7 +101,8 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
             .andExpect(jsonPath("[0].omistajat[0].email").doesNotExist())
             .andExpect(jsonPath("[0].omistajat[0].puhelinnumero").doesNotExist())
             .andExpect(jsonPath("[0].toteuttajat").doesNotExist())
-            .andExpect(jsonPath("[0].arvioijat").doesNotExist())
+            .andExpect(jsonPath("[0].rakennuttajat").doesNotExist())
+            .andExpect(jsonPath("[0].muut").doesNotExist())
 
         verify { hankeService.loadPublicHanke() }
     }

@@ -85,3 +85,5 @@ databaseChangeLog:
       file: db/changelog/changesets/027-add-generated-to-hanke.yml
   - include:
       file: db/changelog/changesets/028-create-user-tables.yml
+  - include:
+      file: db/changelog/changesets/029-add-columns-hankeyhteystieto.yml

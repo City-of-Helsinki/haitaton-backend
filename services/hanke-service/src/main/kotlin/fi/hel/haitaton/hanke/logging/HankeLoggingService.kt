@@ -18,7 +18,7 @@ class HankeLoggingService(private val auditLogService: AuditLogService) {
     fun logDelete(hanke: Hanke, userId: String) {
         val auditLogEntry = AuditLogService.deleteEntry(userId, ObjectType.HANKE, hanke)
         val yhteystietoEntries =
-            (hanke.arvioijat + hanke.toteuttajat + hanke.omistajat).map {
+            hanke.extractYhteystiedot().map {
                 AuditLogService.deleteEntry(userId, ObjectType.YHTEYSTIETO, it)
             }
 

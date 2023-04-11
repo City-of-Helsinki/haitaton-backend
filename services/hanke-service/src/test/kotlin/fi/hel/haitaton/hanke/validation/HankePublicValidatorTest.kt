@@ -4,6 +4,7 @@ import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
@@ -19,6 +20,8 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 
+private const val BLANK = "   \t\n\t   "
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 internal class HankePublicValidatorTest {
     private fun completeHanke() =
@@ -32,10 +35,38 @@ internal class HankePublicValidatorTest {
     }
 
     @Test
-    fun `No errors when arvioijat missing`() {
+    fun `Empty alikontaktit is ok`() {
+        val hanke = completeHanke().apply { omistajat.first().apply { alikontaktit = emptyList() } }
+
+        val result = HankePublicValidator.validateHankeHasMandatoryFields(hanke)
+
+        assertTrue(result.isOk())
+    }
+
+    @Test
+    fun `Alikontaktit missing data is not ok`() {
+        val hanke =
+            completeHanke().apply {
+                omistajat.first().apply { alikontaktit = listOf(Yhteyshenkilo("", "", "", "")) }
+            }
+
+        val result = HankePublicValidator.validateHankeHasMandatoryFields(hanke)
+
+        assertFalse(result.isOk())
+        assertThat(result.errorPaths())
+            .containsExactlyInAnyOrder(
+                "alikontaktit[0].etunimi",
+                "alikontaktit[0].sukunimi",
+                "alikontaktit[0].email",
+                "alikontaktit[0].puhelinnumero"
+            )
+    }
+
+    @Test
+    fun `No errors when rakennuttajat missing`() {
         val result =
             HankePublicValidator.validateHankeHasMandatoryFields(
-                completeHanke().apply { arvioijat = mutableListOf() }
+                completeHanke().apply { rakennuttajat = mutableListOf() }
             )
 
         assertTrue(result.isOk())
@@ -56,7 +87,11 @@ internal class HankePublicValidatorTest {
         val result =
             HankePublicValidator.validateHankeHasMandatoryFields(
                 completeHanke().apply {
-                    toteuttajat[0].etunimi = ""
+                    with(toteuttajat[0]) {
+                        nimi = ""
+                        email = ""
+                    }
+
                     alueet[0].geometriat!!.featureCollection!!.features = null
                     kuvaus = null
                 }
@@ -65,7 +100,8 @@ internal class HankePublicValidatorTest {
         assertFalse(result.isOk())
         assertThat(result.errorPaths())
             .containsExactlyInAnyOrder(
-                "toteuttajat[0].etunimi",
+                "toteuttajat[0].nimi",
+                "toteuttajat[0].email",
                 "alueet[0].geometriat.featureCollection.features",
                 "kuvaus",
             )
@@ -90,10 +126,10 @@ internal class HankePublicValidatorTest {
         Stream.of(
             Arguments.of("nimi", "missing", completeHanke().apply { nimi = null }),
             Arguments.of("nimi", "empty", completeHanke().apply { nimi = "" }),
-            Arguments.of("nimi", "blank", completeHanke().apply { nimi = "   \t\n\t   " }),
+            Arguments.of("nimi", "blank", completeHanke().apply { nimi = BLANK }),
             Arguments.of("kuvaus", "missing", completeHanke().apply { kuvaus = null }),
             Arguments.of("kuvaus", "empty", completeHanke().apply { kuvaus = "" }),
-            Arguments.of("kuvaus", "blank", completeHanke().apply { kuvaus = "   \t\n\t   " }),
+            Arguments.of("kuvaus", "blank", completeHanke().apply { kuvaus = BLANK }),
             Arguments.of(
                 "tyomaaKatuosoite",
                 "missing",
@@ -107,7 +143,7 @@ internal class HankePublicValidatorTest {
             Arguments.of(
                 "tyomaaKatuosoite",
                 "blank",
-                completeHanke().apply { tyomaaKatuosoite = "   \t\n\t   " }
+                completeHanke().apply { tyomaaKatuosoite = BLANK }
             ),
             Arguments.of("vaihe", "missing", completeHanke().apply { vaihe = null }),
             Arguments.of(
@@ -182,24 +218,14 @@ internal class HankePublicValidatorTest {
                 completeHanke().apply { omistajat = mutableListOf() }
             ),
             Arguments.of(
-                "omistajat[0].etunimi",
+                "omistajat[0].nimi",
                 "empty",
-                completeHanke().apply { omistajat[0].etunimi = "" }
+                completeHanke().apply { omistajat[0].nimi = "" }
             ),
             Arguments.of(
-                "omistajat[0].etunimi",
+                "omistajat[0].nimi",
                 "blank",
-                completeHanke().apply { omistajat[0].etunimi = "   \t\n\t   " }
-            ),
-            Arguments.of(
-                "omistajat[0].sukunimi",
-                "empty",
-                completeHanke().apply { omistajat[0].sukunimi = "" }
-            ),
-            Arguments.of(
-                "omistajat[0].sukunimi",
-                "blank",
-                completeHanke().apply { omistajat[0].sukunimi = "   \t\n\t   " }
+                completeHanke().apply { omistajat[0].nimi = BLANK }
             ),
             Arguments.of(
                 "omistajat[0].email",
@@ -209,57 +235,37 @@ internal class HankePublicValidatorTest {
             Arguments.of(
                 "omistajat[0].email",
                 "blank",
-                completeHanke().apply { omistajat[0].email = "   \t\n\t   " }
+                completeHanke().apply { omistajat[0].email = BLANK }
             ),
             Arguments.of(
-                "arvioijat[0].etunimi",
+                "rakennuttajat[0].nimi",
                 "empty",
-                completeHanke().apply { arvioijat[0].etunimi = "" }
+                completeHanke().apply { rakennuttajat[0].nimi = "" }
             ),
             Arguments.of(
-                "arvioijat[0].etunimi",
+                "rakennuttajat[0].nimi",
                 "blank",
-                completeHanke().apply { arvioijat[0].etunimi = "   \t\n\t   " }
+                completeHanke().apply { rakennuttajat[0].nimi = BLANK }
             ),
             Arguments.of(
-                "arvioijat[0].sukunimi",
+                "rakennuttajat[0].email",
                 "empty",
-                completeHanke().apply { arvioijat[0].sukunimi = "" }
+                completeHanke().apply { rakennuttajat[0].email = "" }
             ),
             Arguments.of(
-                "arvioijat[0].sukunimi",
+                "rakennuttajat[0].email",
                 "blank",
-                completeHanke().apply { arvioijat[0].sukunimi = "   \t\n\t   " }
+                completeHanke().apply { rakennuttajat[0].email = BLANK }
             ),
             Arguments.of(
-                "arvioijat[0].email",
+                "toteuttajat[0].nimi",
                 "empty",
-                completeHanke().apply { arvioijat[0].email = "" }
+                completeHanke().apply { toteuttajat[0].nimi = "" }
             ),
             Arguments.of(
-                "arvioijat[0].email",
+                "toteuttajat[0].nimi",
                 "blank",
-                completeHanke().apply { arvioijat[0].email = "   \t\n\t   " }
-            ),
-            Arguments.of(
-                "toteuttajat[0].etunimi",
-                "empty",
-                completeHanke().apply { toteuttajat[0].etunimi = "" }
-            ),
-            Arguments.of(
-                "toteuttajat[0].etunimi",
-                "blank",
-                completeHanke().apply { toteuttajat[0].etunimi = "   \t\n\t   " }
-            ),
-            Arguments.of(
-                "toteuttajat[0].sukunimi",
-                "empty",
-                completeHanke().apply { toteuttajat[0].sukunimi = "" }
-            ),
-            Arguments.of(
-                "toteuttajat[0].sukunimi",
-                "blank",
-                completeHanke().apply { toteuttajat[0].sukunimi = "   \t\n\t   " }
+                completeHanke().apply { toteuttajat[0].nimi = BLANK }
             ),
             Arguments.of(
                 "toteuttajat[0].email",
@@ -269,7 +275,7 @@ internal class HankePublicValidatorTest {
             Arguments.of(
                 "toteuttajat[0].email",
                 "blank",
-                completeHanke().apply { toteuttajat[0].email = "   \t\n\t   " }
+                completeHanke().apply { toteuttajat[0].email = BLANK }
             ),
         )
 }

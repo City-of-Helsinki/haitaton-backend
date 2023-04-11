@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.validation
 
 import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
@@ -33,8 +34,9 @@ object HankePublicValidator {
             .andAllIn(hanke.alueet, "alueet", ::validateAlue)
             .and { notEmpty(hanke.omistajat, "omistajat") }
             .andAllIn(hanke.omistajat, "omistajat", ::validateYhteystieto)
-            .andAllIn(hanke.arvioijat, "arvioijat", ::validateYhteystieto)
+            .andAllIn(hanke.rakennuttajat, "rakennuttajat", ::validateYhteystieto)
             .andAllIn(hanke.toteuttajat, "toteuttajat", ::validateYhteystieto)
+            .andAllIn(hanke.muut, "muut", ::validateYhteystieto)
     }
 
     private fun validateAlue(alue: Hankealue, path: String): ValidationResult =
@@ -59,19 +61,14 @@ object HankePublicValidator {
                 )
             }
 
-    /**
-     * Mandatory fields after Yhteystiedot have been redone:
-     * - Tyyppi
-     * - Nimi
-     * - Y-tunnus tai henkilötunnus
-     * - Email
-     *
-     * For cantacs the mandatory fields are:
-     * - Nimi
-     * - Email
-     */
     private fun validateYhteystieto(yhteystieto: HankeYhteystieto, path: String): ValidationResult =
-        validate { notBlank(yhteystieto.etunimi, "$path.etunimi") }
-            .and { notBlank(yhteystieto.sukunimi, "$path.sukunimi") }
+        validate { notBlank(yhteystieto.nimi, "$path.nimi") }
             .and { notBlank(yhteystieto.email, "$path.email") }
+            .andAllIn(yhteystieto.alikontaktit, "alikontaktit", ::validateAlikontakti)
+
+    private fun validateAlikontakti(yhteyshenkilo: Yhteyshenkilo, path: String): ValidationResult =
+        validate { notBlank(yhteyshenkilo.etunimi, "$path.etunimi") }
+            .and { notBlank(yhteyshenkilo.sukunimi, "$path.sukunimi") }
+            .and { notBlank(yhteyshenkilo.email, "$path.email") }
+            .and { notBlank(yhteyshenkilo.puhelinnumero, "$path.puhelinnumero") }
 }
