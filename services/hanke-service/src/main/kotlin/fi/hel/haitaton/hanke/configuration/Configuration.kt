@@ -55,17 +55,19 @@ class Configuration {
     fun cableReportService(webClientBuilder: WebClient.Builder): CableReportService {
         val webClient =
             if (alluTrustInsecure) createInsecureTrustingWebClient(webClientBuilder)
-            else webClientBuilder.build()
+            else webClientBuilder
         val alluProps =
             AlluProperties(baseUrl = alluBaseUrl, username = alluUsername, password = alluPassword)
-        return CableReportServiceAllu(webClient, alluProps)
+        return CableReportServiceAllu(webClientWithLargeBuffer(webClient), alluProps)
     }
 
-    private fun createInsecureTrustingWebClient(webClientBuilder: WebClient.Builder): WebClient {
+    private fun createInsecureTrustingWebClient(
+        webClientBuilder: WebClient.Builder
+    ): WebClient.Builder {
         val sslContext =
             SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build()
         val httpClient = HttpClient.create().secure { t -> t.sslContext(sslContext) }
-        return webClientBuilder.clientConnector(ReactorClientHttpConnector(httpClient)).build()
+        return webClientBuilder.clientConnector(ReactorClientHttpConnector(httpClient))
     }
 
     @Bean
@@ -153,4 +155,12 @@ class Configuration {
             perusIndeksiPainotService,
             tormaystarkasteluDao
         )
+
+    companion object {
+        /** Create a web client that can download large files in memory. Up to 20 megabytes. */
+        fun webClientWithLargeBuffer(webClientBuilder: WebClient.Builder): WebClient =
+            webClientBuilder
+                .codecs { codecs -> codecs.defaultCodecs().maxInMemorySize(20 * 1024 * 1024) }
+                .build()
+    }
 }
