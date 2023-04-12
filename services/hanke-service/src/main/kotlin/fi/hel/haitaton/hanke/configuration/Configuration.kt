@@ -54,11 +54,13 @@ class Configuration {
     @Bean
     fun cableReportService(webClientBuilder: WebClient.Builder): CableReportService {
         val webClient =
-            if (alluTrustInsecure) createInsecureTrustingWebClient(webClientBuilder)
-            else webClientBuilder
+            webClientWithLargeBuffer(
+                if (alluTrustInsecure) createInsecureTrustingWebClient(webClientBuilder)
+                else webClientBuilder
+            )
         val alluProps =
             AlluProperties(baseUrl = alluBaseUrl, username = alluUsername, password = alluPassword)
-        return CableReportServiceAllu(webClientWithLargeBuffer(webClient), alluProps)
+        return CableReportServiceAllu(webClient, alluProps)
     }
 
     private fun createInsecureTrustingWebClient(
