@@ -38,6 +38,7 @@ services:
       context: .
       dockerfile: fetch/Dockerfile
     volumes:
+      - ./data:/local_data
       - haitaton_gis_prepare:/haitaton-gis
       - ./haitaton-downloads:/downloads
       - ./haitaton-gis-output:/gis-output
