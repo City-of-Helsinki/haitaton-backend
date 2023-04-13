@@ -10,6 +10,7 @@ import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
+import fi.hel.haitaton.hanke.configuration.Configuration.Companion.webClientWithLargeBuffer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import java.time.ZonedDateTime
@@ -41,7 +42,8 @@ class CableReportServiceAlluITests {
 
         val baseUrl = mockWebServer.url("/").toUrl().toString()
         val properties = AlluProperties(baseUrl, "fake_username", "any_password")
-        service = CableReportServiceAllu(WebClient.create(), properties)
+        val webClient = webClientWithLargeBuffer(WebClient.builder())
+        service = CableReportServiceAllu(webClient, properties)
     }
 
     @Test
@@ -116,6 +118,23 @@ class CableReportServiceAlluITests {
             assertThat(createRequest.method).isEqualTo("GET")
             assertThat(createRequest.path).isEqualTo("/v2/cablereports/12/decision")
             assertThat(createRequest.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
+        }
+
+        @Test
+        fun `returns big PDF file as bytes`() {
+            addStubbedLoginResponse()
+            val content = Buffer()
+            repeat(1000000 / pdfBytes.size + 1) { content.write(pdfBytes) }
+            mockWebServer.enqueue(
+                MockResponse()
+                    .setResponseCode(200)
+                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
+                    .setBody(content)
+            )
+
+            val response = service.getDecisionPdf(12)
+
+            assertThat(response).isEqualTo(content.readByteArray())
         }
 
         @Test
