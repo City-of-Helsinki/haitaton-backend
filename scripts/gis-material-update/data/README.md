@@ -34,8 +34,8 @@ Create one cycling output file combining both infra data:
 ```sh
 $ ogr2ogr -nln pp -nlt MULTILINESTRING \
     -f GPKG helsinki_cycleways.gpkg \
-    -sql "SELECT 'main' as type FROM Helsinki_pp_paareitit" Helsinki_pp_paareitit Helsinki_pp_paareitit
+    -sql "SELECT 'main' as type FROM Helsinki_pp_paareitit" Helsinki_pp_paareitit.shp Helsinki_pp_paareitit
 $ ogr2ogr -nln pp -nlt MULTILINESTRING \
     -f GPKG helsinki_cycleways.gpkg \
-    -sql "SELECT 'prio' as type FROM priorisoidut_reitit" -append priorisoidut_reitit priorisoidut_reitit
+    -sql "SELECT 'prio' as type FROM priorisoidut_reitit" -append priorisoidut_reitit.shp priorisoidut_reitit
 ```
