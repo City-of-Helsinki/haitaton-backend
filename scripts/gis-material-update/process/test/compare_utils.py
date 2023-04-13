@@ -26,3 +26,10 @@ class TormaysCheckerMixin(object):
 
     def check_geom_data_min_area(self, data: gpd.GeoDataFrame = None):
         self.assertGreater(min(data.area), 0.0)
+
+    def check_geometry_type_is_in_list(
+        self, data: gpd.GeoDataFrame = None, geometries: list[str] = None
+    ):
+        geom_names = data.geometry.geom_type.unique().tolist()
+        for gn in geom_names:
+            self.assertIn(gn.lower(), geometries)

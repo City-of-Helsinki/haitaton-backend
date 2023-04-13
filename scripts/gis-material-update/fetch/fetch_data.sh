@@ -64,6 +64,10 @@ case $data_object in
 hsl)
     wget -O "$local_file" "$addr"
     ;;
+# plain cp from local file system
+cycle_infra)
+    cp "$addr" "$local_file"
+    ;;
 # plain WFS fetch
 hki|ylre_katualueet|ylre_katuosat|maka_autoliikennemaarat|osm|helsinki_osm_lines)
     ogr2ogr -progress -f GPKG "$local_file" ${extra_args:+$extra_args} ${extra_quoted_args:+"$extra_quoted_args"} "$addr" "$layer"
