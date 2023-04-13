@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.permissions
 
+import assertk.Assert
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
@@ -82,7 +83,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         val tunnisteet = kayttajaTunnisteRepository.findAll()
         assertThat(tunnisteet).hasSize(4)
-        assertTunnisteet(tunnisteet)
+        assertThat(tunnisteet).areValid()
         val kayttajat = hankeKayttajaRepository.findAll()
         assertThat(kayttajat).hasSize(4)
         assertThat(kayttajat).each { kayttaja ->
@@ -236,8 +237,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         val kayttajat: List<HankeKayttajaEntity> = hankeKayttajaRepository.findAll()
         assertThat(tunnisteet).hasSize(4) // 4 yhteyshenkilo subcontacts.
         assertThat(kayttajat).hasSize(4)
-        assertTunnisteet(tunnisteet)
-        assertKayttajat(kayttajat, hanke.id)
+        assertThat(tunnisteet).areValid()
+        assertThat(kayttajat).areValid(hanke.id)
     }
 
     @Test
@@ -251,7 +252,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         val tunnisteet = kayttajaTunnisteRepository.findAll()
         assertThat(tunnisteet).isEmpty()
-        assertTunnisteet(tunnisteet)
+        assertThat(tunnisteet).areValid()
         val kayttajat = hankeKayttajaRepository.findAll()
         assertThat(kayttajat).hasSize(1)
         assertThat(kayttajat.map { it.sahkoposti })
@@ -260,25 +261,23 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             )
     }
 
-    private fun assertTunnisteet(tunnisteet: List<KayttajaTunnisteEntity>) =
-        assertThat(tunnisteet).each { t ->
-            t.transform { it.id }.isNotNull()
-            t.transform { it.role }.isEqualTo(Role.KATSELUOIKEUS)
-            t.transform { it.createdAt }.isRecent()
-            t.transform { it.sentAt }.isNull()
-            t.transform { it.tunniste }.matches(Regex(kayttajaTunnistePattern))
-            t.transform { it.hankeKayttaja }.isNotNull()
-        }
+    private fun Assert<List<KayttajaTunnisteEntity>>.areValid() = each { t ->
+        t.transform { it.id }.isNotNull()
+        t.transform { it.role }.isEqualTo(Role.KATSELUOIKEUS)
+        t.transform { it.createdAt }.isRecent()
+        t.transform { it.sentAt }.isNull()
+        t.transform { it.tunniste }.matches(Regex(kayttajaTunnistePattern))
+        t.transform { it.hankeKayttaja }.isNotNull()
+    }
 
-    private fun assertKayttajat(kayttajat: List<HankeKayttajaEntity>, hankeId: Int?) =
-        assertThat(kayttajat).each { k ->
-            k.transform { it.id }.isNotNull()
-            k.transform { it.nimi }.isIn(*expectedNames)
-            k.transform { it.sahkoposti }.isIn(*expectedEmails)
-            k.transform { it.hankeId }.isEqualTo(hankeId)
-            k.transform { it.permission }.isNull()
-            k.transform { it.kayttajaTunniste }.isNotNull()
-        }
+    private fun Assert<List<HankeKayttajaEntity>>.areValid(hankeId: Int?) = each { k ->
+        k.transform { it.id }.isNotNull()
+        k.transform { it.nimi }.isIn(*expectedNames)
+        k.transform { it.sahkoposti }.isIn(*expectedEmails)
+        k.transform { it.hankeId }.isEqualTo(hankeId)
+        k.transform { it.permission }.isNull()
+        k.transform { it.kayttajaTunniste }.isNotNull()
+    }
 
     /** Single digit: main contact, double-digit: sub contact. */
     private val expectedNames =
