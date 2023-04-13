@@ -31,13 +31,8 @@ class HankeKayttajaService(
             hanke
                 .extractYhteystiedot()
                 .flatMap { it.alikontaktit }
-                .mapNotNull { person ->
-                    val name = person.fullName()
-                    when {
-                        name.isBlank() || person.email.isBlank() -> null
-                        else -> UserContact(name, person.email)
-                    }
-                }
+                .filterNot { it.fullName().isBlank() || it.email.isBlank() }
+                .map { UserContact(it.fullName(), it.email) }
 
         filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
     }
