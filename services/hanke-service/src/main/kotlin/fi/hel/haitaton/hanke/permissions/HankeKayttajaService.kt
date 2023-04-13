@@ -18,13 +18,8 @@ class HankeKayttajaService(
             applicationData
                 .customersWithContacts()
                 .flatMap { it.contacts }
-                .mapNotNull { (name, email) ->
-                    when {
-                        name.isNullOrBlank() -> null
-                        email.isNullOrBlank() -> null
-                        else -> UserContactDto(name, email)
-                    }
-                }
+                .filterNot { it.email.isNullOrBlank() || it.name.isNullOrBlank() }
+                .map { UserContact(it.name!!, it.email!!) }
 
         filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
     }
@@ -39,16 +34,15 @@ class HankeKayttajaService(
                 .mapNotNull { person ->
                     val name = person.wholeName()
                     when {
-                        name.isBlank() -> null
-                        person.email.isBlank() -> null
-                        else -> UserContactDto(name, person.email)
+                        name.isBlank() || person.email.isBlank() -> null
+                        else -> UserContact(name, person.email)
                     }
                 }
 
         filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
     }
 
-    private fun createToken(hankeId: Int, contact: UserContactDto) {
+    private fun createToken(hankeId: Int, contact: UserContact) {
         val kayttajaTunnisteEntity = kayttajaTunnisteRepository.save(KayttajaTunnisteEntity())
 
         hankeKayttajaRepository.save(
@@ -62,10 +56,7 @@ class HankeKayttajaService(
         )
     }
 
-    private fun filterNewContacts(
-        hankeId: Int,
-        contacts: List<UserContactDto>
-    ): List<UserContactDto> {
+    private fun filterNewContacts(hankeId: Int, contacts: List<UserContact>): List<UserContact> {
         val existingEmails = hankeExistingEmails(hankeId, contacts)
 
         return contacts
@@ -73,8 +64,10 @@ class HankeKayttajaService(
             .distinctBy { it.email }
     }
 
-    private fun hankeExistingEmails(hankeId: Int, contacts: List<UserContactDto>): List<String> =
+    private fun hankeExistingEmails(hankeId: Int, contacts: List<UserContact>): List<String> =
         hankeKayttajaRepository
             .findByHankeIdAndSahkopostiIn(hankeId, contacts.map { it.email })
             .map { it.sahkoposti }
 }
+
+data class UserContact(val name: String, val email: String)
