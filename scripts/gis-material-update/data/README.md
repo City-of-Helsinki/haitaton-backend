@@ -19,7 +19,7 @@ from Sharepoint to this directory.
 
 ### Instructions to generate combined file
 
-If (for any reason) there is a need to generate combined cycling infra file,
+If (for any reason) there is a need to regenerate the cycling infra source file,
 it can be done using following procedure.
 
 Cycling infra source materials are available:
