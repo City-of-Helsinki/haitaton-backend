@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 
@@ -21,7 +20,7 @@ class YhteyshenkiloTest {
         expectedResult: String
     ) {
         Yhteyshenkilo(firstName, lastName, "dummymail", "04012345678").let {
-            assertThat(it.wholeName()).isEqualTo(expectedResult)
+            assertThat(it.fullName()).isEqualTo(expectedResult)
         }
     }
 }

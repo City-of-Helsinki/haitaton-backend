@@ -1556,9 +1556,9 @@ class HankeServiceITests : DatabaseTest() {
 
     private fun expectedYhteyshenkilot(i: Int) =
         """[{
-            | "etunimi": "etu$i$i",
-            | "sukunimi": "suku$i$i",
-            | "email": "email$i$i",
+            | "etunimi": "yhteys-etu$i",
+            | "sukunimi": "yhteys-suku$i",
+            | "email": "yhteys-email$i",
             | "puhelinnumero": "010$i$i$i$i$i$i$i"
             | }]""".trimMargin()
 

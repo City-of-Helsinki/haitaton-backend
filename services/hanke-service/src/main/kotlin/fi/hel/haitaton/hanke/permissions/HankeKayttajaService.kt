@@ -32,7 +32,7 @@ class HankeKayttajaService(
                 .extractYhteystiedot()
                 .flatMap { it.alikontaktit }
                 .mapNotNull { person ->
-                    val name = person.wholeName()
+                    val name = person.fullName()
                     when {
                         name.isBlank() || person.email.isBlank() -> null
                         else -> UserContact(name, person.email)

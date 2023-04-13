@@ -243,7 +243,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Test
     fun `saveNewTokensFromHanke with pre-existing permissions does not create duplicate`() {
-        val hanke = hankeFactory.save(HankeFactory.create())
+        val hanke = hankeFactory.save()
         saveUserAndPermission(hanke, "Existing User One", "ali.kontakti@meili.com")
 
         hankeKayttajaService.saveNewTokensFromHanke(
@@ -282,19 +282,19 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     /** Single digit: main contact, double-digit: sub contact. */
     private val expectedNames =
         arrayOf(
-            "etu11 suku11",
-            "etu22 suku22",
-            "etu33 suku33",
-            "etu44 suku44",
+            "yhteys-etu1 yhteys-suku1",
+            "yhteys-etu2 yhteys-suku2",
+            "yhteys-etu3 yhteys-suku3",
+            "yhteys-etu4 yhteys-suku4",
         )
 
     /** Single digit: main contact, double-digit: sub contact. */
     private val expectedEmails =
         arrayOf(
-            "email11",
-            "email22",
-            "email33",
-            "email44",
+            "yhteys-email1",
+            "yhteys-email2",
+            "yhteys-email3",
+            "yhteys-email4",
         )
 
     private fun saveUserAndToken(
