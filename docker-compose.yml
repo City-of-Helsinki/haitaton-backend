@@ -28,20 +28,20 @@ services:
     restart: unless-stopped
     networks:
       - backbone
-  api:
+  clamav-api:
     image: benzino77/clamav-rest-api
     container_name: clamav-rest
     restart: unless-stopped
-    command: ['/usr/bin/wait-for-it', '-h', 'clamd', '-p', '3310', '-s', '-t', '120', '--', 'npm', 'start']
+    command: [ '/usr/bin/wait-for-it', '-h', 'clamd', '-p', '3310', '-s', '-t', '120', '--', 'npm', 'start' ]
     depends_on:
       - clamd
     environment:
       - NODE_ENV=production
       - CLAMD_IP=clamd
       - APP_FORM_KEY=FILES
-      - APP_PORT=3000
+      - APP_PORT=3030
     ports:
-      - '3030:3000'
+      - '3030:3030'
     networks:
       - backbone
 
@@ -75,7 +75,7 @@ services:
       HAITATON_PASSWORD: haitaton
       HAITATON_OAUTH2_CLIENT_ID: https://api.hel.fi/auth/haitatonapidev
       HAITATON_OAUTH2_USER_INFO_URI: https://tunnistamo.test.hel.ninja/openid/userinfo
-#      HAITATON_CORS_ALLOWED_ORIGINS: http://localhost:8000
+      #      HAITATON_CORS_ALLOWED_ORIGINS: http://localhost:8000
       ALLU_BASEURL: ${ALLU_BASEURL}
       ALLU_USERNAME: ${ALLU_USERNAME}
       ALLU_PASSWORD: ${ALLU_PASSWORD}
@@ -84,9 +84,10 @@ services:
       MAIL_SENDER_HOST: smtp4dev
       MAIL_SENDER_PORT: 25
       HAITATON_EMAIL_ENABLED: true
+      CLAMAV_BASE_URL: http://clamav-api:3030
     depends_on:
       - db
-      - api
+      - clamav-api
     command: [ "./wait-for-it.sh", "-t", "30", "--strict", "db:5432", "--", "java", "-jar", "haitaton.jar" ]
     networks:
       backbone:

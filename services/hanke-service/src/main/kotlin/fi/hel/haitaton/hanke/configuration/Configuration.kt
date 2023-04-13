@@ -33,6 +33,7 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
+import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -42,6 +43,8 @@ import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
 
+private val logger = KotlinLogging.logger {}
+
 @Configuration
 @Profile("default")
 class Configuration {
@@ -50,6 +53,8 @@ class Configuration {
     @Value("\${haitaton.allu.username}") lateinit var alluUsername: String
     @Value("\${haitaton.allu.password}") lateinit var alluPassword: String
     @Value("\${haitaton.allu.insecure}") var alluTrustInsecure: Boolean = false
+
+    @Value("\${haitaton.clamav.baseUrl}") lateinit var clamAvUrl: String
 
     @Bean
     fun cableReportService(webClientBuilder: WebClient.Builder): CableReportService {
@@ -62,6 +67,12 @@ class Configuration {
             AlluProperties(baseUrl = alluBaseUrl, username = alluUsername, password = alluPassword)
         return CableReportServiceAllu(webClient, alluProps)
     }
+
+    @Bean
+    fun fileScanClient(webClientBuilder: WebClient.Builder): WebClient =
+        webClientBuilder.baseUrl(clamAvUrl).build().also {
+            logger.info { "Initialized file scan client with base-url: $clamAvUrl" }
+        }
 
     private fun createInsecureTrustingWebClient(
         webClientBuilder: WebClient.Builder
