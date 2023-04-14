@@ -279,7 +279,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         k.transform { it.kayttajaTunniste }.isNotNull()
     }
 
-    /** Single digit: main contact, double-digit: sub contact. */
     private val expectedNames =
         arrayOf(
             "yhteys-etu1 yhteys-suku1",
@@ -288,7 +287,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             "yhteys-etu4 yhteys-suku4",
         )
 
-    /** Single digit: main contact, double-digit: sub contact. */
     private val expectedEmails =
         arrayOf(
             "yhteys-email1",
