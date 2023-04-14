@@ -121,4 +121,6 @@ data class Yhteyshenkilo(
     val sukunimi: String,
     val email: String,
     val puhelinnumero: String,
-)
+) {
+    fun fullName(): String = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
+}

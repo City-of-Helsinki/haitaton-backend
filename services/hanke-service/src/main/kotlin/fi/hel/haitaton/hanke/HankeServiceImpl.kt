@@ -19,6 +19,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
@@ -70,6 +71,7 @@ open class HankeServiceImpl(
     private val hankeLoggingService: HankeLoggingService,
     private val applicationService: ApplicationService,
     private val permissionService: PermissionService,
+    private val hankeKayttajaService: HankeKayttajaService,
 ) : HankeService {
 
     override fun getHankeId(hankeTunnus: String): Int? =
@@ -150,12 +152,10 @@ open class HankeServiceImpl(
 
         postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
-        // Creating a new domain object for the return value; it will have the updated values from
-        // the database, e.g. the main date values truncated to midnight, and the added id and
-        // hanketunnus.
-        val savedHanke = createHankeDomainObjectFromEntity(entity)
-        hankeLoggingService.logCreate(savedHanke, userId)
-        return savedHanke
+        return createHankeDomainObjectFromEntity(entity).also {
+            hankeKayttajaService.saveNewTokensFromHanke(it)
+            hankeLoggingService.logCreate(it, userId)
+        }
     }
 
     /**
@@ -213,11 +213,10 @@ open class HankeServiceImpl(
 
         postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
-        // Creating a new domain object for the return value; it will have the updated values from
-        // the database, e.g. the main date values truncated to midnight.
-        val updatedHanke = createHankeDomainObjectFromEntity(entity)
-        hankeLoggingService.logUpdate(hankeBeforeUpdate, updatedHanke, userId)
-        return updatedHanke
+        return createHankeDomainObjectFromEntity(entity).also {
+            hankeKayttajaService.saveNewTokensFromHanke(it)
+            hankeLoggingService.logUpdate(hankeBeforeUpdate, it, userId)
+        }
     }
 
     @Transactional
