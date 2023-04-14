@@ -38,6 +38,8 @@ class HankeFactory(private val hankeService: HankeService) {
             )
         )
 
+    fun save(hanke: Hanke) = hankeService.createHanke(hanke)
+
     companion object {
 
         const val defaultHankeTunnus = "HAI21-1"

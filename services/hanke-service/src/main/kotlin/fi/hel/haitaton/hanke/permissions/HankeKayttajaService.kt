@@ -1,7 +1,8 @@
 package fi.hel.haitaton.hanke.permissions
 
+import fi.hel.haitaton.hanke.HankeArgumentException
 import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.Contact
+import fi.hel.haitaton.hanke.domain.Hanke
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -13,36 +14,55 @@ class HankeKayttajaService(
 
     @Transactional
     fun saveNewTokensFromApplication(applicationData: ApplicationData, hankeId: Int) {
-        // Contacts new for this application
-        val newContacts =
+        val contacts =
             applicationData
                 .customersWithContacts()
                 .flatMap { it.contacts }
-                .filter { !it.email.isNullOrBlank() && !it.name.isNullOrBlank() }
+                .filterNot { it.email.isNullOrBlank() || it.name.isNullOrBlank() }
+                .map { UserContact(it.name!!, it.email!!) }
 
-        val existingEmails =
-            hankeKayttajaRepository
-                .findByHankeIdAndSahkopostiIn(hankeId, newContacts.map { it.email!! })
-                .map { it.sahkoposti }
-
-        val contactsToCreate =
-            newContacts
-                .filter { contact -> !existingEmails.contains(contact.email) }
-                .distinctBy { it.email }
-        contactsToCreate.forEach { createToken(hankeId, it) }
+        filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
     }
 
-    private fun createToken(hankeId: Int, contact: Contact) {
+    @Transactional
+    fun saveNewTokensFromHanke(hanke: Hanke) {
+        val hankeId = hanke.id ?: throw HankeArgumentException("Hanke without id")
+        val contacts =
+            hanke
+                .extractYhteystiedot()
+                .flatMap { it.alikontaktit }
+                .filterNot { it.fullName().isBlank() || it.email.isBlank() }
+                .map { UserContact(it.fullName(), it.email) }
+
+        filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
+    }
+
+    private fun createToken(hankeId: Int, contact: UserContact) {
         val kayttajaTunnisteEntity = kayttajaTunnisteRepository.save(KayttajaTunnisteEntity())
 
         hankeKayttajaRepository.save(
             HankeKayttajaEntity(
                 hankeId = hankeId,
-                nimi = contact.name!!,
-                sahkoposti = contact.email!!,
+                nimi = contact.name,
+                sahkoposti = contact.email,
                 permission = null,
                 kayttajaTunniste = kayttajaTunnisteEntity
             )
         )
     }
+
+    private fun filterNewContacts(hankeId: Int, contacts: List<UserContact>): List<UserContact> {
+        val existingEmails = hankeExistingEmails(hankeId, contacts)
+
+        return contacts
+            .filter { contact -> !existingEmails.contains(contact.email) }
+            .distinctBy { it.email }
+    }
+
+    private fun hankeExistingEmails(hankeId: Int, contacts: List<UserContact>): List<String> =
+        hankeKayttajaRepository
+            .findByHankeIdAndSahkopostiIn(hankeId, contacts.map { it.email })
+            .map { it.sahkoposti }
 }
+
+data class UserContact(val name: String, val email: String)
