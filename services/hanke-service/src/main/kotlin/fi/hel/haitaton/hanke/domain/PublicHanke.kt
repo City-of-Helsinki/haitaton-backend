@@ -9,8 +9,8 @@ import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
-import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
+import java.time.ZonedDateTime
 
 data class PublicHankeYhteystieto(
     val organisaatioId: Int?,
@@ -61,8 +61,8 @@ data class PublicHanke(
     val hankeTunnus: String,
     val nimi: String,
     val kuvaus: String,
-    val alkuPvm: ZonedDateTime?,
-    val loppuPvm: ZonedDateTime?,
+    val alkuPvm: ZonedDateTime,
+    val loppuPvm: ZonedDateTime,
     val vaihe: Vaihe,
     val suunnitteluVaihe: SuunnitteluVaihe?,
     val tyomaaTyyppi: MutableSet<TyomaaTyyppi>,
@@ -101,8 +101,8 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
         hanke.hankeTunnus!!,
         hanke.nimi!!,
         hanke.kuvaus!!,
-        hanke.alkuPvm,
-        hanke.loppuPvm,
+        hanke.alkuPvm!!,
+        hanke.loppuPvm!!,
         hanke.vaihe!!,
         hanke.suunnitteluVaihe,
         hanke.tyomaaTyyppi,
