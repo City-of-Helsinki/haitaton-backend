@@ -58,7 +58,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
                 hankealue.haittaAlkuPvm == null || hankealue.haittaAlkuPvm!!.isAfter(MAXIMUM_DATE)
             ) {
                 context
-                    .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
+                    .buildConstraintViolationWithTemplate(HankeError.HAI1032.toString())
                     .addPropertyNode("haittaAlkuPvm")
                     .addConstraintViolation()
                 return false
