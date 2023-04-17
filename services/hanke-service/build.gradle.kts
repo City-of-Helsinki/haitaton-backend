@@ -42,6 +42,7 @@ springBoot {
 
 tasks.getByName<BootRun>("bootRun") {
 	environment("HAITATON_SWAGGER_PATH_PREFIX", "/v3")
+	environment("HAITATON_EMAIL_ENABLED", "true")
 }
 
 spotless {
@@ -69,6 +70,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-web")
 	implementation("org.springframework.boot:spring-boot-starter-webflux")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
+	implementation("org.springframework.boot:spring-boot-starter-mail")
 	implementation("org.springframework.integration:spring-integration-jdbc")
 	implementation("com.fasterxml.jackson.core:jackson-databind")
 	implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
@@ -83,6 +85,7 @@ dependencies {
 	implementation("com.github.blagerweij:liquibase-sessionlock:1.4.0")
 	implementation("com.vladmihalcea:hibernate-types-52:2.14.0")
 	implementation("com.github.librepdf:openpdf:1.3.30")
+	implementation("net.pwall.mustache:kotlin-mustache:0.10")
 
 	implementation("org.postgresql:postgresql:$postgreSQLVersion")
 	implementation("org.springdoc:springdoc-openapi-kotlin:$springDocVersion")
@@ -98,7 +101,7 @@ dependencies {
 	testImplementation("org.testcontainers:postgresql:1.15.2")
 	testImplementation("com.squareup.okhttp3:okhttp:4.9.3")
 	testImplementation("com.squareup.okhttp3:mockwebserver:4.9.3")
-	testImplementation("net.pwall.mustache:kotlin-mustache:0.10")
+	testImplementation("com.icegreen:greenmail-junit5:1.6.14")
 
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
