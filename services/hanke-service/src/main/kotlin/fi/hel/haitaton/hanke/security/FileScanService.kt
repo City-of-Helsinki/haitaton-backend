@@ -24,13 +24,10 @@ class FileScanService(
     private val fileScanClient: WebClient,
 ) {
 
-    fun scanFiles(files: Set<Pair<String, ByteArray>>): FileScanResult {
+    fun scanFiles(files: Set<Pair<String, ByteArray>>): FileScanResponse {
         logger.info { "Scanning ${files.size} files." }
-        val response = getResults(files).also { it.validateStatus() }
-
-        val virusDetected = response.data.result.any { isNotFalse(it.isInfected) }
-
-        return FileScanResult(virusDetected, response).also { it.logStatus() }
+        val result = getResults(files).also { response -> response.validateStatus() }
+        return result.also { logStatus(it) }
     }
 
     private fun getResults(files: Set<Pair<String, ByteArray>>): FileScanResponse {
@@ -65,8 +62,8 @@ class FileScanService(
         }
     }
 
-    private fun FileScanResult.logStatus() {
-        if (virusDetected) {
+    private fun logStatus(result: FileScanResponse) {
+        if (result.hasInfected()) {
             logger.error { "Infected file detected, scan result: ${this.toJsonString()}" }
         } else {
             logger.info { "Files scanned successfully." }
@@ -74,9 +71,9 @@ class FileScanService(
     }
 }
 
-data class FileScanResult(val virusDetected: Boolean, val scanResponse: FileScanResponse)
-
-data class FileScanResponse(val success: Boolean, val data: FileScanData)
+data class FileScanResponse(val success: Boolean, val data: FileScanData) {
+    fun hasInfected(): Boolean = data.result.any { isNotFalse(it.isInfected) }
+}
 
 data class FileScanData(val result: List<FileResult>)
 

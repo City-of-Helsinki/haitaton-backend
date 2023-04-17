@@ -62,7 +62,7 @@ class FileScanServiceITest : DatabaseTest() {
                 )
             )
 
-        assertThat(result.virusDetected).isFalse()
+        assertThat(result.hasInfected()).isFalse()
         assertThat(result).isDataClassEqualTo(expectedSuccessResult())
     }
 
@@ -73,7 +73,7 @@ class FileScanServiceITest : DatabaseTest() {
         val result =
             service.scanFiles(setOf(Pair(FILE_ONE, ByteArray(100)), Pair(FILE_TWO, ByteArray(150))))
 
-        assertThat(result.virusDetected).isTrue()
+        assertThat(result.hasInfected()).isTrue()
         assertThat(result).isDataClassEqualTo(expectedFailResult())
     }
 
@@ -115,33 +115,28 @@ class FileScanServiceITest : DatabaseTest() {
             FileResult(name = "file$it.pdf", isInfected = false, viruses = emptyList())
         }
 
-    private fun expectedSuccessResult(): FileScanResult =
-        FileScanResult(
-            virusDetected = false,
-            FileScanResponse(
-                true,
-                FileScanData(
-                    result =
-                        listOf(
-                            FileResult(FILE_ONE, isInfected = false, viruses = emptyList()),
-                            FileResult(FILE_TWO, isInfected = false, viruses = emptyList()),
-                            FileResult(FILE_THREE, isInfected = false, viruses = emptyList()),
-                        )
-                )
+    private fun expectedSuccessResult(): FileScanResponse =
+        FileScanResponse(
+            true,
+            FileScanData(
+                result =
+                    listOf(
+                        FileResult(FILE_ONE, isInfected = false, viruses = emptyList()),
+                        FileResult(FILE_TWO, isInfected = false, viruses = emptyList()),
+                        FileResult(FILE_THREE, isInfected = false, viruses = emptyList()),
+                    )
             )
         )
-    private fun expectedFailResult(): FileScanResult =
-        FileScanResult(
-            virusDetected = true,
-            FileScanResponse(
-                true,
-                FileScanData(
-                    result =
-                        listOf(
-                            FileResult(FILE_ONE, isInfected = false, viruses = emptyList()),
-                            FileResult(FILE_ONE, isInfected = true, viruses = listOf("virus1")),
-                        )
-                )
+
+    private fun expectedFailResult(): FileScanResponse =
+        FileScanResponse(
+            true,
+            FileScanData(
+                result =
+                    listOf(
+                        FileResult(FILE_ONE, isInfected = false, viruses = emptyList()),
+                        FileResult(FILE_ONE, isInfected = true, viruses = listOf("virus1")),
+                    )
             )
         )
 }
