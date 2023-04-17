@@ -322,8 +322,6 @@ open class HankeServiceImpl(
                 hankeEntity.onYKTHanke,
                 hankeEntity.nimi,
                 hankeEntity.kuvaus,
-                hankeEntity.alkuPvm?.atStartOfDay(TZ_UTC),
-                hankeEntity.loppuPvm?.atStartOfDay(TZ_UTC),
                 hankeEntity.vaihe,
                 hankeEntity.suunnitteluVaihe,
                 hankeEntity.version,
@@ -566,11 +564,6 @@ open class HankeServiceImpl(
         hanke.onYKTHanke?.let { entity.onYKTHanke = hanke.onYKTHanke }
         hanke.nimi?.let { entity.nimi = hanke.nimi }
         hanke.kuvaus?.let { entity.kuvaus = hanke.kuvaus }
-        // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
-        // be simply dropped here.
-        // Note, .toLocalDate() does not do any time zone conversion.
-        hanke.alkuPvm?.let { entity.alkuPvm = hanke.alkuPvm?.toLocalDate() }
-        hanke.loppuPvm?.let { entity.loppuPvm = hanke.loppuPvm?.toLocalDate() }
 
         hanke.perustaja?.let { entity.perustaja = it.toEntity() }
         entity.generated = hanke.generated
@@ -949,8 +942,6 @@ open class HankeServiceImpl(
                 onYKTHanke = null,
                 nimi = cableReport.applicationData.name,
                 kuvaus = null,
-                alkuPvm = null,
-                loppuPvm = null,
                 vaihe = null,
                 suunnitteluVaihe = null,
                 version = null,

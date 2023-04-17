@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 030-update-hanke-date-fields
+      author: Niko Junkala
+      comment: "Dates are now calculated from Hankealueet"
+      changes:
+        - dropColumn:
+            tableName: hanke
+            columnName: haittaalkupvm
+        - dropColumn:
+            tableName: hanke
+            columnName: haittaloppupvm
+        - dropColumn:
+            tableName: hanke
+            columnName: alkupvm
+        - dropColumn:
+            tableName: hanke
+            columnName: loppupvm

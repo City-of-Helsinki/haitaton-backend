@@ -1,4 +1,4 @@
-FROM openjdk:11.0.9.1-jdk as builder
+FROM openjdk:11 as builder
 USER root
 
 # Copy gradle to avoid redownloading it
@@ -6,6 +6,7 @@ COPY *.gradle gradle.* gradlew /builder/
 COPY gradle /builder/gradle
 WORKDIR /builder
 RUN ./gradlew --version
+RUN java -version
 
 ADD . /builder
 WORKDIR /builder

@@ -25,6 +25,7 @@ enum class HankeError(val errorMessage: String) {
     HAI1029("HankeYhteystieto personal data processing restricted"),
     HAI1030("Problem with classification of geometries"),
     HAI1031("Invalid state: Missing needed data"),
+    HAI1032("Invalid Hankealue data"),
     HAI2001("Application not found"),
     HAI2002("Incompatible application data type"),
     HAI2003("Application is already processing in Allu and can no longer be updated."),

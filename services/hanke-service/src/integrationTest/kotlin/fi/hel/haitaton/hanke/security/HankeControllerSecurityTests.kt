@@ -211,8 +211,6 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
             true,
             "Testihanke",
             "Testihankkeen kuvaus",
-            getDatetimeAlku(),
-            getDatetimeLoppu(),
             Vaihe.OHJELMOINTI,
             null,
             1,
