@@ -68,9 +68,11 @@ data class Hanke(
     }
 
     val alkuPvm: ZonedDateTime?
+        @JsonView(ChangeLogView::class)
         get(): ZonedDateTime? = alueet.mapNotNull { it.haittaAlkuPvm }.minOfOrNull { it }
 
     val loppuPvm: ZonedDateTime?
+        @JsonView(ChangeLogView::class)
         get(): ZonedDateTime? = alueet.mapNotNull { it.haittaLoppuPvm }.maxOfOrNull { it }
 
     @JsonView(ChangeLogView::class) var alueet = mutableListOf<Hankealue>()

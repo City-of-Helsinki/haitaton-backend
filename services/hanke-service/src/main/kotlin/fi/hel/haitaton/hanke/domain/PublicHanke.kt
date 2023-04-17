@@ -9,8 +9,8 @@ import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
-import org.geojson.FeatureCollection
 import java.time.ZonedDateTime
+import org.geojson.FeatureCollection
 
 data class PublicHankeYhteystieto(
     val organisaatioId: Int?,
