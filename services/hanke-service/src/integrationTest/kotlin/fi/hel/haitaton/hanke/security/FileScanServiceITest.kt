@@ -55,7 +55,7 @@ class FileScanServiceITest : DatabaseTest() {
 
         val result =
             service.scanFiles(
-                setOf(
+                listOf(
                     Pair(FILE_ONE, ByteArray(100)),
                     Pair(FILE_TWO, ByteArray(150)),
                     Pair(FILE_THREE, ByteArray(200))
@@ -71,7 +71,9 @@ class FileScanServiceITest : DatabaseTest() {
         mockWebServer.enqueue(response(body(results = successResults(1).plus(failResults(1)))))
 
         val result =
-            service.scanFiles(setOf(Pair(FILE_ONE, ByteArray(100)), Pair(FILE_TWO, ByteArray(150))))
+            service.scanFiles(
+                listOf(Pair(FILE_ONE, ByteArray(100)), Pair(FILE_TWO, ByteArray(150)))
+            )
 
         assertThat(result.hasInfected()).isTrue()
         assertThat(result).isDataClassEqualTo(expectedFailResult())
@@ -83,7 +85,7 @@ class FileScanServiceITest : DatabaseTest() {
         mockWebServer.enqueue(MockResponse().setResponseCode(status))
 
         assertThrows<WebClientResponseException> {
-            service.scanFiles(setOf(Pair(FILE_ONE, ByteArray(100))))
+            service.scanFiles(listOf(Pair(FILE_ONE, ByteArray(100))))
         }
     }
 
@@ -92,7 +94,9 @@ class FileScanServiceITest : DatabaseTest() {
         mockWebServer.enqueue(response(body(success = false, results = failResults(2))))
 
         assertThrows<FileScanException> {
-            service.scanFiles(setOf(Pair(FILE_ONE, ByteArray(100)), Pair(FILE_TWO, ByteArray(300))))
+            service.scanFiles(
+                listOf(Pair(FILE_ONE, ByteArray(100)), Pair(FILE_TWO, ByteArray(300)))
+            )
         }
     }
 

@@ -7,7 +7,7 @@ import mu.KotlinLogging
 import org.apache.commons.lang3.BooleanUtils.isNotFalse
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType.APPLICATION_JSON
-import org.springframework.http.MediaType.APPLICATION_PDF
+import org.springframework.http.MediaType.APPLICATION_OCTET_STREAM
 import org.springframework.http.MediaType.MULTIPART_FORM_DATA
 import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.stereotype.Service
@@ -24,18 +24,19 @@ class FileScanService(
     private val fileScanClient: WebClient,
 ) {
 
-    fun scanFiles(files: Set<Pair<String, ByteArray>>): FileScanResponse {
+    fun scanFiles(files: List<Pair<String, ByteArray>>): FileScanResponse {
         logger.info { "Scanning ${files.size} files." }
         val result = getResults(files).also { response -> response.validateStatus() }
         return result.also { logStatus(it) }
     }
 
-    private fun getResults(files: Set<Pair<String, ByteArray>>): FileScanResponse {
+    private fun getResults(files: List<Pair<String, ByteArray>>): FileScanResponse {
         val data =
             MultipartBodyBuilder()
                 .apply {
                     files.forEach { (name, bytes) ->
-                        part(FORM_KEY, ByteArrayResource(bytes), APPLICATION_PDF).filename(name)
+                        part(FORM_KEY, ByteArrayResource(bytes), APPLICATION_OCTET_STREAM)
+                            .filename(name)
                     }
                 }
                 .build()
