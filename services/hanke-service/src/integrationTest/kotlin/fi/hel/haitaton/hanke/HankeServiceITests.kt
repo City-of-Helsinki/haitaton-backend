@@ -14,7 +14,6 @@ import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistajat
@@ -1194,8 +1193,6 @@ class HankeServiceITests : DatabaseTest() {
         TestUtils.addMockedRequestIp()
 
         val hanke = hankeService.createHanke(HankeFactory.create(id = null).withHankealue())
-        val alkuPvm = hanke.alueet[0].haittaAlkuPvm!!.toLocalDate()
-        val loppuPvm = hanke.alueet[0].haittaLoppuPvm!!.toLocalDate()
 
         val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
         assertEquals(1, hankeLogs.size)
@@ -1581,8 +1578,6 @@ class HankeServiceITests : DatabaseTest() {
         HankeFactory.create(
                 id = null,
                 hankeTunnus = null,
-                alkuPvm = DateFactory.getStartDatetime(),
-                loppuPvm = DateFactory.getEndDatetime(),
                 vaihe = Vaihe.SUUNNITTELU,
                 suunnitteluVaihe = SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS,
                 version = null,
