@@ -418,8 +418,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             DateFactory.getEndDatetime().truncatedTo(ChronoUnit.DAYS) // nextyear.2.21 00:00:00Z
         val expectedHanke =
             hankeToBeUpdated.apply {
-                alkuPvm = expectedDateAlku
-                loppuPvm = expectedDateLoppu
                 modifiedBy = USERNAME
                 modifiedAt = getCurrentTimeUTC()
             }
@@ -461,8 +459,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             HankeFactory.create(
                 null,
                 hankeTunnus = null,
-                alkuPvm = datetimeAlku,
-                loppuPvm = datetimeLoppu,
                 createdBy = USERNAME,
                 createdAt = getCurrentTimeUTC()
             )
@@ -478,8 +474,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             hankeToBeMocked.apply {
                 hankeTunnus = HANKE_TUNNUS
                 id = 12
-                alkuPvm = expectedDateAlku
-                loppuPvm = expectedDateLoppu
             }
         expectedHanke.alueet[0].haittaAlkuPvm = expectedDateAlku
         expectedHanke.alueet[0].haittaLoppuPvm = expectedDateLoppu
