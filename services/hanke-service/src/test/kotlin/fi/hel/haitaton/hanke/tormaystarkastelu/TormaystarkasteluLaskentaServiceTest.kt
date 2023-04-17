@@ -74,12 +74,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
             )
 
         val alkuPvm = ZonedDateTime.of(2021, 3, 4, 0, 0, 0, 0, TZ_UTC)
-        val loppuPvm = alkuPvm!!.plusDays(7)
         val hanke =
             HankeFactory.create(
                 nimi = "hanke",
-                alkuPvm = alkuPvm,
-                loppuPvm = loppuPvm,
                 vaihe = Vaihe.OHJELMOINTI,
                 hankeStatus = HankeStatus.DRAFT
             )
