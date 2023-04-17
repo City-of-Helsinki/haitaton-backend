@@ -26,6 +26,21 @@ class EmailSenderService(
     }
     */
 
+    fun sendJohtoselvitysCompleteEmail(
+        to: String,
+        hankeTunnus: String,
+        applicationIdentifier: String,
+    ) {
+        logger.info { "Sending email for completed johtoselvitys $applicationIdentifier" }
+        val templateData =
+            mapOf(
+                "baseUrl" to baseUrl,
+                "hankeTunnus" to hankeTunnus,
+                "applicationIdentifier" to applicationIdentifier,
+            )
+        sendHybridEmail(to, "johtoselvitys-valmis", templateData)
+    }
+
     private fun sendHybridEmail(to: String, template: String, templateData: Map<String, String>) {
         if (!enabled) {
             logger.info { "Email sending not enabled, ignoring email" }
@@ -50,20 +65,5 @@ class EmailSenderService(
         helper.setSubject(subject)
         helper.setFrom(from)
         mailSender.send(mimeMessage)
-    }
-
-    fun sendJohtoselvitysCompleteEmail(
-        to: String,
-        hankeTunnus: String,
-        applicationIdentifier: String
-    ) {
-        logger.info { "Sending email for completed johtoselvitys $applicationIdentifier" }
-        val templateData =
-            mapOf(
-                "baseUrl" to baseUrl,
-                "hankeTunnus" to hankeTunnus,
-                "applicationIdentifier" to applicationIdentifier,
-            )
-        sendHybridEmail(to, "johtoselvitys-valmis", templateData)
     }
 }

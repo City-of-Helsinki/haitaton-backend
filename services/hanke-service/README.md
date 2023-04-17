@@ -167,10 +167,10 @@ cd haitaton-backend
 .\scripts\HEL-GIS-data-import.cmd
 ```
 
-# Emails
-When running locally, when sending emails from the system the emails are sent to smtp4dev, which is
-started as part of the Docker Compose setup. You can access sent email by opening
-http://localhost:3003.
+## Emails
+
+When running locally, the system the emails are sent to smtp4dev, which is started as part of the
+Docker Compose setup. You can access the sent emails by opening http://localhost:3003.
 
 ## Authentication
 JWT/OIDC-based authentication using Keycloak and Spring Security. 

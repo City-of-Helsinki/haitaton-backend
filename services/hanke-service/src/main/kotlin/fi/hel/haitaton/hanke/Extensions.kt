@@ -12,7 +12,7 @@ fun Any?.toJsonPrettyString(): String =
 
 fun String.getResource() =
     // The class here is arbitrary, could be any class. Using ClassLoader might be cleaner, but it
-    // would require changing every resource file path anywhere in the test files.
+    // would require changing every resource file path throughout the project.
     JsonNode::class.java.getResource(this)!!
 
 fun String.getResourceAsText(): String = this.getResource().readText(Charsets.UTF_8)
