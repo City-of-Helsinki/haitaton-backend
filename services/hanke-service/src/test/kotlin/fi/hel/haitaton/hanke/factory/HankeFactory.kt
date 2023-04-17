@@ -23,16 +23,12 @@ class HankeFactory(private val hankeService: HankeService) {
      */
     fun save(
         nimi: String? = defaultNimi,
-        alkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
-        loppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
         vaihe: Vaihe? = Vaihe.OHJELMOINTI,
         suunnitteluVaihe: SuunnitteluVaihe? = null,
     ) =
         hankeService.createHanke(
             create(
                 nimi = nimi,
-                alkuPvm = alkuPvm,
-                loppuPvm = loppuPvm,
                 vaihe = vaihe,
                 suunnitteluVaihe = suunnitteluVaihe,
             )
@@ -60,8 +56,6 @@ class HankeFactory(private val hankeService: HankeService) {
             id: Int? = defaultId,
             hankeTunnus: String? = defaultHankeTunnus,
             nimi: String? = defaultNimi,
-            alkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
-            loppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
             vaihe: Vaihe? = Vaihe.OHJELMOINTI,
             suunnitteluVaihe: SuunnitteluVaihe? = null,
             version: Int? = 1,

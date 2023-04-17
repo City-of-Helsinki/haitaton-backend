@@ -21,7 +21,6 @@ import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
-import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import org.geojson.FeatureCollection
 import org.junit.jupiter.api.AfterEach
@@ -110,8 +109,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             listOf(
                 HankeFactory.create(
                     id = 123,
-                    alkuPvm = DateFactory.getStartDatetime().minusDays(500),
-                    loppuPvm = DateFactory.getEndDatetime().minusDays(450),
                 ),
                 HankeFactory.create(
                     id = 444,
@@ -511,8 +508,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 id = null,
                 hankeTunnus = null,
                 nimi = "Testihanke",
-                alkuPvm = ZonedDateTime.of(2021, 1, 1, 0, 0, 0, 0, TZ_UTC),
-                loppuPvm = ZonedDateTime.of(2021, 12, 31, 0, 0, 0, 0, TZ_UTC),
                 vaihe = Vaihe.OHJELMOINTI,
             )
         every { hankeService.createHanke(any()) } throws RuntimeException("Some error")

@@ -38,8 +38,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
 
     @Test
     fun `basic fields, tyomaa and haitat fields can be round-trip saved and loaded`() {
-        val datetime = LocalDateTime.of(2020, 2, 20, 20, 20)
-        val date = datetime.toLocalDate()
         val baseHankeEntity = createBaseHankeEntity("ABC-123")
         baseHankeEntity.tyomaaKatuosoite = "katu 1"
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
