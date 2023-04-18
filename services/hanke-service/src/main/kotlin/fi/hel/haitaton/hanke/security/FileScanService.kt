@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonProperty
 import fi.hel.haitaton.hanke.toJsonString
 import java.time.Duration.ofSeconds
 import mu.KotlinLogging
-import org.apache.commons.lang3.BooleanUtils.isNotFalse
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType.APPLICATION_JSON
@@ -93,6 +92,6 @@ data class FileResult(
 
 class FileScanException(message: String) : RuntimeException(message)
 
-fun List<FileResult>.hasInfected(): Boolean = any { isNotFalse(it.isInfected) }
+fun List<FileResult>.hasInfected(): Boolean = any { it.isInfected != false }
 
-fun List<FileResult>.filterInfected(): List<FileResult> = filter { isNotFalse(it.isInfected) }
+fun List<FileResult>.filterInfected(): List<FileResult> = filter { it.isInfected != false }
