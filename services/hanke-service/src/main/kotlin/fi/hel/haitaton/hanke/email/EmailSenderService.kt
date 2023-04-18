@@ -19,13 +19,6 @@ class EmailSenderService(
     @Value("\${haitaton.email.baseUrl}") private val baseUrl: String,
 ) {
 
-    /* Uncomment to send test email at startup. Will be removed before merge to master.
-    @EventListener(ApplicationReadyEvent::class)
-    fun test() {
-        sendJohtoselvitysCompleteEmail("vastaanottaja@ref.test", "HAI23-12", "JS2300013")
-    }
-    */
-
     fun sendJohtoselvitysCompleteEmail(
         to: String,
         hankeTunnus: String,
