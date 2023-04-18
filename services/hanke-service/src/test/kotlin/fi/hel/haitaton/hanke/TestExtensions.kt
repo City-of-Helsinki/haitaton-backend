@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.readValue
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
@@ -19,14 +18,7 @@ inline fun <reified T : Any> String.asJsonResource(): T =
 inline fun <reified T> ResultActions.andReturnBody(): T =
     OBJECT_MAPPER.readValue(andReturn().response.getContentAsString(StandardCharsets.UTF_8))
 
-fun String.getResourceAsText(): String = this.getResource().readText(Charsets.UTF_8)
-
 fun String.getResourceAsBytes(): ByteArray = this.getResource().readBytes()
-
-private fun String.getResource() =
-    // The class here is arbitrary, could be any class. Using ClassLoader might be cleaner, but it
-    // would require changing every resource file path anywhere in the test files.
-    JsonNode::class.java.getResource(this)!!
 
 /**
  * Find all audit logs for a specific object type. Getting all and filtering would obviously not be

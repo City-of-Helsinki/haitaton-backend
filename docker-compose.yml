@@ -45,6 +45,20 @@ services:
     networks:
       - backbone
 
+  smtp4dev:
+    image: rnwood/smtp4dev:v3
+    container_name: smtp4dev
+    restart: always
+    ports:
+      - '3003:80' # Web UI
+      - '2525:25' # Port for receiving SMTP
+    networks:
+      backbone:
+        aliases:
+          - smtp4dev
+    environment:
+      - ServerOptions__HostName=smtp4dev
+
   haitaton-hanke:
     build:
       context: ${BUILD_ROOT}/haitaton-backend
@@ -66,6 +80,10 @@ services:
       ALLU_USERNAME: ${ALLU_USERNAME}
       ALLU_PASSWORD: ${ALLU_PASSWORD}
       ALLU_INSECURE: ${ALLU_INSECURE}
+      ALLU_UPDATE_INITIAL_DELAY: ${ALLU_UPDATE_INITIAL_DELAY:-}
+      MAIL_SENDER_HOST: smtp4dev
+      MAIL_SENDER_PORT: 25
+      HAITATON_EMAIL_ENABLED: true
     depends_on:
       - db
       - api
@@ -74,6 +92,8 @@ services:
       backbone:
         aliases:
           - haitaton-hanke
+    links:
+      - smtp4dev
 
   haitaton-ui:
     build:
