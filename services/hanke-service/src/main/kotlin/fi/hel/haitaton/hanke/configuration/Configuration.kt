@@ -54,8 +54,6 @@ class Configuration {
     @Value("\${haitaton.allu.password}") lateinit var alluPassword: String
     @Value("\${haitaton.allu.insecure}") var alluTrustInsecure: Boolean = false
 
-    @Value("\${haitaton.clamav.baseUrl}") lateinit var clamAvUrl: String
-
     @Bean
     fun cableReportService(webClientBuilder: WebClient.Builder): CableReportService {
         val webClient =
@@ -67,12 +65,6 @@ class Configuration {
             AlluProperties(baseUrl = alluBaseUrl, username = alluUsername, password = alluPassword)
         return CableReportServiceAllu(webClient, alluProps)
     }
-
-    @Bean
-    fun fileScanClient(webClientBuilder: WebClient.Builder): WebClient =
-        webClientBuilder.baseUrl(clamAvUrl).build().also {
-            logger.info { "Initialized file scan client with base-url: $clamAvUrl" }
-        }
 
     private fun createInsecureTrustingWebClient(
         webClientBuilder: WebClient.Builder

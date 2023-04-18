@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.toJsonString
 import java.time.Duration.ofSeconds
 import mu.KotlinLogging
 import org.apache.commons.lang3.BooleanUtils.isNotFalse
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.http.MediaType.APPLICATION_OCTET_STREAM
@@ -21,16 +22,18 @@ private const val FORM_KEY = "FILES"
 
 @Service
 class FileScanService(
-    private val fileScanClient: WebClient,
+    webClientBuilder: WebClient.Builder,
+    @Value("\${haitaton.clamav.baseUrl}") clamAvUrl: String,
 ) {
 
-    fun scanFiles(files: List<Pair<String, ByteArray>>): FileScanResponse {
-        logger.info { "Scanning ${files.size} files." }
-        val result = getResults(files).also { response -> response.validateStatus() }
-        return result.also { logStatus(it) }
-    }
+    private val fileScanClient: WebClient =
+        webClientBuilder.baseUrl(clamAvUrl).build().also {
+            logger.info { "Initialized file scan client with base-url: $clamAvUrl" }
+        }
 
-    private fun getResults(files: List<Pair<String, ByteArray>>): FileScanResponse {
+    fun scanFiles(files: List<Pair<String, ByteArray>>): List<FileResult> {
+        logger.info { "Scanning ${files.size} files." }
+
         val data =
             MultipartBodyBuilder()
                 .apply {
@@ -41,40 +44,44 @@ class FileScanService(
                 }
                 .build()
 
-        return fileScanClient
-            .post()
-            .uri("/api/v1/scan")
-            .contentType(MULTIPART_FORM_DATA)
-            .accept(APPLICATION_JSON)
-            .body(fromMultipartData(data))
-            .retrieve()
-            .bodyToMono(FileScanResponse::class.java)
-            .timeout(ofSeconds(60))
-            .doOnError(WebClientResponseException::class.java) {
-                logger.error { "Error uploading file: $it" }
-            }
-            .blockOptional()
-            .orElseThrow()
+        val response =
+            fileScanClient
+                .post()
+                .uri("/api/v1/scan")
+                .contentType(MULTIPART_FORM_DATA)
+                .accept(APPLICATION_JSON)
+                .body(fromMultipartData(data))
+                .retrieve()
+                .bodyToMono(FileScanResponse::class.java)
+                .timeout(ofSeconds(60))
+                .doOnError(WebClientResponseException::class.java) {
+                    logger.error { "Error uploading file: $it" }
+                }
+                .blockOptional()
+                .orElseThrow()
+
+        return extractResults(response).also { results -> logStatus(results) }
     }
 
-    private fun FileScanResponse.validateStatus() {
-        if (!success) {
+    private fun extractResults(response: FileScanResponse): List<FileResult> {
+        if (!response.success) {
             throw FileScanException("Scan failed, result: ${this.toJsonString()}")
         }
+        return response.data.result
     }
 
-    private fun logStatus(result: FileScanResponse) {
-        if (result.hasInfected()) {
-            logger.error { "Infected file detected, scan result: ${this.toJsonString()}" }
+    private fun logStatus(results: List<FileResult>) {
+        if (results.hasInfected()) {
+            results.filterInfected().forEach {
+                logger.warn { "Infected file detected, scan result: ${it.toJsonString()}" }
+            }
         } else {
             logger.info { "Files scanned successfully." }
         }
     }
 }
 
-data class FileScanResponse(val success: Boolean, val data: FileScanData) {
-    fun hasInfected(): Boolean = data.result.any { isNotFalse(it.isInfected) }
-}
+data class FileScanResponse(val success: Boolean, val data: FileScanData)
 
 data class FileScanData(val result: List<FileResult>)
 
@@ -85,3 +92,7 @@ data class FileResult(
 )
 
 class FileScanException(message: String) : RuntimeException(message)
+
+fun List<FileResult>.hasInfected(): Boolean = any { isNotFalse(it.isInfected) }
+
+fun List<FileResult>.filterInfected(): List<FileResult> = filter { isNotFalse(it.isInfected) }

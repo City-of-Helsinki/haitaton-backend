@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.security
 
 import assertk.assertThat
-import assertk.assertions.isDataClassEqualTo
+import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.DatabaseTest
@@ -63,7 +63,7 @@ class FileScanServiceITest : DatabaseTest() {
             )
 
         assertThat(result.hasInfected()).isFalse()
-        assertThat(result).isDataClassEqualTo(expectedSuccessResult())
+        assertThat(result).isEqualTo(expectedSuccessResult())
     }
 
     @Test
@@ -76,7 +76,7 @@ class FileScanServiceITest : DatabaseTest() {
             )
 
         assertThat(result.hasInfected()).isTrue()
-        assertThat(result).isDataClassEqualTo(expectedFailResult())
+        assertThat(result).isEqualTo(expectedFailResult())
     }
 
     @ValueSource(ints = [400, 500])
@@ -119,28 +119,16 @@ class FileScanServiceITest : DatabaseTest() {
             FileResult(name = "file$it.pdf", isInfected = false, viruses = emptyList())
         }
 
-    private fun expectedSuccessResult(): FileScanResponse =
-        FileScanResponse(
-            true,
-            FileScanData(
-                result =
-                    listOf(
-                        FileResult(FILE_ONE, isInfected = false, viruses = emptyList()),
-                        FileResult(FILE_TWO, isInfected = false, viruses = emptyList()),
-                        FileResult(FILE_THREE, isInfected = false, viruses = emptyList()),
-                    )
-            )
+    private fun expectedSuccessResult(): List<FileResult> =
+        listOf(
+            FileResult(FILE_ONE, isInfected = false, viruses = emptyList()),
+            FileResult(FILE_TWO, isInfected = false, viruses = emptyList()),
+            FileResult(FILE_THREE, isInfected = false, viruses = emptyList()),
         )
 
-    private fun expectedFailResult(): FileScanResponse =
-        FileScanResponse(
-            true,
-            FileScanData(
-                result =
-                    listOf(
-                        FileResult(FILE_ONE, isInfected = false, viruses = emptyList()),
-                        FileResult(FILE_ONE, isInfected = true, viruses = listOf("virus1")),
-                    )
-            )
+    private fun expectedFailResult(): List<FileResult> =
+        listOf(
+            FileResult(FILE_ONE, isInfected = false, viruses = emptyList()),
+            FileResult(FILE_ONE, isInfected = true, viruses = listOf("virus1")),
         )
 }
