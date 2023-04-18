@@ -33,6 +33,7 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
+import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -41,6 +42,8 @@ import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
+
+private val logger = KotlinLogging.logger {}
 
 @Configuration
 @Profile("default")
