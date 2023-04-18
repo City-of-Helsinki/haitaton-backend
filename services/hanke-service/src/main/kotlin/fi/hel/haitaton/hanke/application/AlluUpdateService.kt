@@ -21,7 +21,10 @@ class AlluUpdateService(
 
     internal val lockName = "alluHistoryUpdate"
 
-    @Scheduled(fixedDelay = 1000 * 60, initialDelay = 1000 * 60)
+    @Scheduled(
+        fixedDelayString = "\${haitaton.allu.updateIntervalMilliSeconds}",
+        initialDelayString = "\${haitaton.allu.updateInitialDelayMilliSeconds}"
+    )
     fun checkApplicationStatuses() {
         logger.info("Trying to obtain lock $lockName to start uploading audit logs.")
         lockService.doIfUnlocked(lockName) { getApplicationStatuses() }
