@@ -1,0 +1,6 @@
+databaseChangeLog:
+  - changeSet:
+      id: 031-add-default-value-for-hankeyhteystieto-yhteyshenkilo
+      author: Niko Pitkonen
+      changes:
+        - addNotNullConstraint: { tableName: hankeyhteystieto, columnName: yhteyshenkilot, defaultNullValue: '[]' }
