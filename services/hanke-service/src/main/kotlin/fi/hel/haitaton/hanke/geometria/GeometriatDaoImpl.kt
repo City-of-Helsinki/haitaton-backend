@@ -8,7 +8,6 @@ import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.toJsonString
 import java.sql.Timestamp
 import java.sql.Types
-import liquibase.pro.packaged.it
 import org.geojson.Crs
 import org.geojson.Feature
 import org.geojson.FeatureCollection
@@ -220,7 +219,7 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
             """.trimIndent()
 
         return jdbcOperations
-            .queryForList(query, arrayOf(geometria.toJsonString(), hankeId), Boolean::class.java)
+            .queryForList(query, Boolean::class.java, geometria.toJsonString(), hankeId)
             .any { it }
     }
 
@@ -229,8 +228,8 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
 
         return jdbcOperations.queryForObject(
             areaQuery,
-            arrayOf(geometria.toJsonString()),
-            Float::class.java
+            Float::class.java,
+            geometria.toJsonString(),
         )
     }
 
@@ -241,8 +240,8 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
         val areaQuery = "select ST_Area(ST_UnaryUnion(ST_SetSRID(ST_GeomFromGeoJSON(?), $SRID)))"
         return jdbcOperations.queryForObject(
             areaQuery,
-            arrayOf(geometryCollection.toJsonString()),
-            Float::class.java
+            Float::class.java,
+            geometryCollection.toJsonString(),
         )
     }
 

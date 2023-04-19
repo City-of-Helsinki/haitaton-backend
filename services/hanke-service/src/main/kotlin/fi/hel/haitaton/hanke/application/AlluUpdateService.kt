@@ -26,7 +26,7 @@ class AlluUpdateService(
         initialDelayString = "\${haitaton.allu.updateInitialDelayMilliSeconds}"
     )
     fun checkApplicationStatuses() {
-        logger.info("Trying to obtain lock $lockName to start uploading audit logs.")
+        logger.info("Trying to obtain lock $lockName to start checking Allu application histories.")
         lockService.doIfUnlocked(lockName) { getApplicationStatuses() }
     }
 

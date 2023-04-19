@@ -55,7 +55,7 @@ spotless {
 }
 
 plugins {
-	id("org.springframework.boot") version "2.3.4.RELEASE"
+	id("org.springframework.boot") version "2.4.13"
 	id("io.spring.dependency-management") version "1.0.10.RELEASE"
 	id("com.diffplug.spotless") version "6.10.0"
 	kotlin("jvm") version "1.6.10"
@@ -106,10 +106,8 @@ dependencies {
 
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
-	// Spring Security (pre-Spring 2.4.x)
 	implementation("org.springframework.boot:spring-boot-starter-security")
-	implementation("org.springframework.cloud:spring-cloud-starter-oauth2:2.2.4.RELEASE")
-	implementation("org.springframework.security:spring-security-oauth2-resource-server:5.3.6.RELEASE")
+	implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 	testImplementation("org.springframework.security:spring-security-test")
 	// Sentry
 	implementation("io.sentry:sentry-spring-boot-starter:4.0.0")

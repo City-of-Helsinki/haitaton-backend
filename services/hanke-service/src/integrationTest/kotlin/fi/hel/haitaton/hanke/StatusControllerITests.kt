@@ -13,7 +13,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 
 @WebMvcTest(StatusController::class)
-@Import(IntegrationTestConfiguration::class, IntegrationTestResourceServerConfig::class)
+@Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 class StatusControllerITests(@Autowired val mockMvc: MockMvc) {
 
