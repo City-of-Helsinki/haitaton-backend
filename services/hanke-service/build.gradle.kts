@@ -5,7 +5,6 @@ import org.springframework.boot.gradle.tasks.run.BootRun
 group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_11
-val postgreSQLVersion = "42.2.18"
 val springDocVersion = "1.6.12"
 val geoJsonJacksonVersion = "1.14"
 val mockkVersion = "1.13.5"
@@ -55,14 +54,14 @@ spotless {
 }
 
 plugins {
-	id("org.springframework.boot") version "2.5.14"
+	id("org.springframework.boot") version "2.6.14"
 	id("io.spring.dependency-management") version "1.1.0"
 	id("com.diffplug.spotless") version "6.10.0"
-	kotlin("jvm") version "1.6.10"
+	kotlin("jvm") version "1.6.21"
 	// Gives kotlin-allopen, which auto-opens classes with certain annotations
-	kotlin("plugin.spring") version "1.6.10"
+	kotlin("plugin.spring") version "1.6.21"
 	// Gives kotlin-noarg for @Entity, @Embeddable
-	kotlin("plugin.jpa") version "1.6.10"
+	kotlin("plugin.jpa") version "1.6.21"
 	idea
 }
 
@@ -88,7 +87,7 @@ dependencies {
 	implementation("com.github.librepdf:openpdf:1.3.30")
 	implementation("net.pwall.mustache:kotlin-mustache:0.10")
 
-	implementation("org.postgresql:postgresql:$postgreSQLVersion")
+	implementation("org.postgresql:postgresql")
 	implementation("org.springdoc:springdoc-openapi-kotlin:$springDocVersion")
 	implementation("org.springdoc:springdoc-openapi-ui:$springDocVersion")
 
@@ -98,11 +97,14 @@ dependencies {
 	testImplementation("io.mockk:mockk:$mockkVersion")
 	testImplementation("com.ninja-squad:springmockk:$springmockkVersion")
 	testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
-	testImplementation("org.testcontainers:junit-jupiter:1.15.3")
-	testImplementation("org.testcontainers:postgresql:1.15.2")
 	testImplementation("com.squareup.okhttp3:okhttp:4.9.3")
 	testImplementation("com.squareup.okhttp3:mockwebserver:4.9.3")
 	testImplementation("com.icegreen:greenmail-junit5:1.6.14")
+
+	// Testcontainers
+	implementation(platform("org.testcontainers:testcontainers-bom:1.18.0"))
+	testImplementation("org.testcontainers:junit-jupiter")
+	testImplementation("org.testcontainers:postgresql")
 
 	// Spring Boot Management
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -136,7 +138,6 @@ tasks {
 		shouldRunAfter("test")
 		outputs.upToDateWhen { false }
 	}
-
 }
 
 tasks.register("installGitHook", Copy::class) {
