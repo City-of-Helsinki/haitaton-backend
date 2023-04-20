@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke.liitteet
 
 import fi.hel.haitaton.hanke.HankeEntity
 import java.time.LocalDateTime
-import java.util.*
+import java.util.UUID
 import javax.persistence.Basic
 import javax.persistence.Column
 import javax.persistence.Entity
@@ -26,20 +26,20 @@ class HankeAttachmentEntity(
     @Type(type = "org.hibernate.type.BinaryType")
     @Basic(fetch = FetchType.LAZY)
     @NotNull
-    var data: ByteArray,
-    @Column(updatable = false, nullable = false) var username: String,
-    @Column(updatable = false, nullable = false) var created: LocalDateTime,
+    var content: ByteArray,
+    @Column(updatable = false, nullable = false) var createdByUserId: String,
+    @Column(updatable = false, nullable = false) var createdAt: LocalDateTime,
     @ManyToOne(cascade = []) var hanke: HankeEntity,
-    @Enumerated(EnumType.STRING) var tila: AttachmentTila = AttachmentTila.PENDING
+    @Enumerated(EnumType.STRING) var scanStatus: AttachmentScanStatus = AttachmentScanStatus.PENDING
 ) {
-    fun toAttachment(): HankeAttachment {
-        return HankeAttachment(
+    fun toAttachment(): AttachmentMetadata {
+        return AttachmentMetadata(
             id = id,
             name = name,
-            created = created,
-            tila = tila,
-            hankeId = hanke.id,
-            user = username,
+            createdAt = createdAt,
+            scanStatus = scanStatus,
+            hankeTunnus = hanke.hankeTunnus!!,
+            createdByUserId = createdByUserId,
         )
     }
 
@@ -51,11 +51,11 @@ class HankeAttachmentEntity(
 
         if (id != other.id) return false
         if (name != other.name) return false
-        if (!data.contentEquals(other.data)) return false
-        if (username != other.username) return false
-        if (created != other.created) return false
+        if (!content.contentEquals(other.content)) return false
+        if (createdByUserId != other.createdByUserId) return false
+        if (createdAt != other.createdAt) return false
         if (hanke != other.hanke) return false
-        if (tila != other.tila) return false
+        if (scanStatus != other.scanStatus) return false
 
         return true
     }
@@ -63,16 +63,16 @@ class HankeAttachmentEntity(
     override fun hashCode(): Int {
         var result = id?.hashCode() ?: 0
         result = 31 * result + name.hashCode()
-        result = 31 * result + data.contentHashCode()
-        result = 31 * result + username.hashCode()
-        result = 31 * result + created.hashCode()
+        result = 31 * result + content.contentHashCode()
+        result = 31 * result + createdByUserId.hashCode()
+        result = 31 * result + createdAt.hashCode()
         result = 31 * result + hanke.hashCode()
-        result = 31 * result + tila.hashCode()
+        result = 31 * result + scanStatus.hashCode()
         return result
     }
 }
 
-enum class AttachmentTila {
+enum class AttachmentScanStatus {
     PENDING,
     FAILED,
     OK

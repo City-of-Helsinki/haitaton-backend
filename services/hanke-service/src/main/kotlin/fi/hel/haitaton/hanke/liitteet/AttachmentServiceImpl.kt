@@ -3,20 +3,19 @@ package fi.hel.haitaton.hanke.liitteet
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.getCurrentTimeUTCAsLocalTime
-import java.util.*
+import java.util.UUID
 import javax.persistence.EntityNotFoundException
 import org.springframework.orm.jpa.JpaObjectRetrievalFailureException
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 
 private val supportedFiletypes =
-    setOf(
-        "application/pdf",
-        "application/msword",
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "image/jpeg",
-        "image/png",
-        "image/vnd.dwg"
+    mapOf(
+        "application/pdf" to setOf("pdf"),
+        "application/msword" to setOf("docx", "doc"),
+        "image/jpeg" to setOf("jpg", "jpeg"),
+        "image/png" to setOf("png"),
+        "image/vnd.dwg" to setOf("dwg", "dws")
     )
 
 private const val FILESIZE_MAXIMUM_MEGABYTES = 10
@@ -25,35 +24,57 @@ class AttachmentServiceImpl(
     val hankeRepository: HankeRepository,
     val attachmentRepository: AttachmentRepository,
 ) : AttachmentService {
+
+    fun getExtension(filename: String): String {
+        return filename.split(".").last().trim()
+    }
+
+    fun sanitize(filename: String): String {
+        return Regex("[^0-9a-zA-ZäåöÄÖÅ.\\s]").replace(filename.trim(), "")
+    }
+
     @Transactional
-    override fun add(hankeTunnus: String, liite: MultipartFile): HankeAttachment {
-        if (!supportedFiletypes.contains(liite.contentType)) {
-            throw AttachmentUploadError("Filetype not supported: " + liite.contentType)
-        }
-
-        if (liite.size > 1024 * 1024 * FILESIZE_MAXIMUM_MEGABYTES) {
-            throw AttachmentUploadError(
-                "File size should not exceed ${FILESIZE_MAXIMUM_MEGABYTES}Mb"
-            )
-        }
-
+    override fun add(hankeTunnus: String, liite: MultipartFile): AttachmentMetadata {
         val hanke =
             hankeRepository.findByHankeTunnus(hankeTunnus)
                 ?: throw AttachmentUploadError("Hanke not found")
 
+        if (!supportedFiletypes.contains(liite.contentType)) {
+            throw AttachmentUploadError("Content type not supported: " + liite.contentType)
+        }
+
+        if (liite.name.length > 128) {
+            throw AttachmentUploadError("File name too long. Maximum is 128.")
+        }
+
+        val extension = getExtension(liite.name)
+        if (!supportedFiletypes.get(liite.contentType)!!.contains(extension)) {
+            throw AttachmentUploadError(
+                "File extension does not match content type ${liite.contentType}"
+            )
+        }
+
+        if (liite.size > 1024 * 1024 * FILESIZE_MAXIMUM_MEGABYTES) {
+            throw AttachmentUploadError(
+                "File size should not exceed ${FILESIZE_MAXIMUM_MEGABYTES}MB"
+            )
+        }
+
+        val sanitizedFilename = sanitize(liite.name)
+
         val attachment =
             HankeAttachmentEntity(
-                name = liite.name,
-                data = liite.bytes,
-                created = getCurrentTimeUTCAsLocalTime(),
-                username = currentUserId(),
+                name = sanitizedFilename,
+                content = liite.bytes,
+                createdAt = getCurrentTimeUTCAsLocalTime(),
+                createdByUserId = currentUserId(),
                 hanke = hanke,
-                tila = AttachmentTila.OK // FIXME this should be set to PENDING before launch
+                scanStatus =
+                    AttachmentScanStatus.OK // FIXME this should be set to PENDING before launch
             )
 
         val savedAttachment = attachmentRepository.save(attachment)
-        val result = savedAttachment.toAttachment()
-        return result
+        return savedAttachment.toAttachment()
     }
 
     @Transactional
@@ -62,7 +83,7 @@ class AttachmentServiceImpl(
         attachmentRepository.flush()
     }
 
-    override fun getHankeAttachments(hankeTunnus: String): List<HankeAttachment> {
+    override fun getHankeAttachments(hankeTunnus: String): List<AttachmentMetadata> {
         val hanke =
             hankeRepository.findByHankeTunnus(hankeTunnus)
                 ?: throw AttachmentUploadError("Hanke not found")
@@ -70,7 +91,7 @@ class AttachmentServiceImpl(
         return allByHanke.map { it.toAttachment() }
     }
 
-    override fun get(uuid: UUID): HankeAttachment {
+    override fun get(uuid: UUID): AttachmentMetadata {
         try {
             val attachment = attachmentRepository.getOne(uuid)
             return attachment.toAttachment()
@@ -81,11 +102,11 @@ class AttachmentServiceImpl(
         }
     }
 
-    override fun getData(id: UUID): ByteArray {
+    override fun getContent(id: UUID): ByteArray {
         try {
             val attachment = attachmentRepository.getOne(id)
-            if (attachment.tila == AttachmentTila.OK) {
-                return attachment.data
+            if (attachment.scanStatus == AttachmentScanStatus.OK) {
+                return attachment.content
             } else {
                 throw AttachmentNotFoundException()
             }

@@ -2,6 +2,8 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.liitteet.AttachmentMetadata
+import fi.hel.haitaton.hanke.liitteet.AttachmentService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.multipart.MultipartFile
 
 private val logger = KotlinLogging.logger {}
 
@@ -34,6 +37,7 @@ private val logger = KotlinLogging.logger {}
 class HankeController(
     @Autowired private val hankeService: HankeService,
     @Autowired private val permissionService: PermissionService,
+    @Autowired private val attachmentService: AttachmentService,
     @Autowired private val disclosureLogService: DisclosureLogService,
 ) {
 
@@ -147,6 +151,48 @@ class HankeController(
             hankeService.deleteHanke(hanke, hakemukset, userId)
             logger.info { "Deleted Hanke: ${hanke.toLogString()}" }
         }
+    }
+
+    @GetMapping("/{hankeTunnus}/liitteet")
+    @Operation(
+        summary = "Get attachments related to Hanke",
+        description = """
+                Returns all attachments of a Hanke.
+            """
+    )
+    fun getAttachments(@PathVariable hankeTunnus: String): List<AttachmentMetadata> {
+        val currentUserId = currentUserId()
+        val hankeId =
+            hankeService.getHankeId(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
+
+        if (!permissionService.hasPermission(hankeId, currentUserId, PermissionCode.VIEW)) {
+            throw HankeNotFoundException(hankeTunnus)
+        }
+
+        return attachmentService.getHankeAttachments(hankeTunnus)
+    }
+
+    @PostMapping("/{hankeTunnus}/liitteet")
+    @Operation(
+        summary = "Upload an attachment for Hanke",
+        description =
+            """
+                The file will be available for downloading after succesful virus scan.
+            """
+    )
+    fun postAttachment(
+        @PathVariable hankeTunnus: String,
+        @RequestParam("liite") attachment: MultipartFile
+    ): AttachmentMetadata {
+        val currentUserId = currentUserId()
+        val hankeId =
+            hankeService.getHankeId(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
+
+        if (!permissionService.hasPermission(hankeId, currentUserId, PermissionCode.EDIT)) {
+            throw HankeNotFoundException(hankeTunnus)
+        }
+
+        return attachmentService.add(hankeTunnus, attachment)
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)

@@ -42,12 +42,12 @@ class AttachmentServiceITests() : DatabaseTest() {
             )
 
         assertThat(result.id).isNotNull
-        assertThat(result.user).isEqualTo(username)
+        assertThat(result.createdByUserId).isEqualTo(username)
         assertThat(result.name).isEqualTo("tiedosto.pdf")
-        assertThat(result.created).isNotNull
-        assertThat(result.hankeId).isEqualTo(createdHanke.id)
-        assertThat(result.tila)
-            .isEqualTo(AttachmentTila.OK) // FIXME should be PENDING with virus scan
+        assertThat(result.createdAt).isNotNull
+        assertThat(result.hankeTunnus).isEqualTo(createdHanke.hankeTunnus)
+        assertThat(result.scanStatus)
+            .isEqualTo(AttachmentScanStatus.OK) // FIXME should be PENDING with virus scan
     }
 
     @Test
@@ -59,6 +59,53 @@ class AttachmentServiceITests() : DatabaseTest() {
                 MockMultipartFile("tiedosto.pdf", "tiedosto.pdf", "application/pdf", null)
             )
         }
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `File extension must match content type`() {
+        val hanke = HankeFactory.create()
+        val createdHanke = hankeService.createHanke(hanke)
+        val invalidFilename = "hello.html"
+
+        val ex =
+            assertThrows<AttachmentUploadError> {
+                attachmentService.add(
+                    createdHanke.hankeTunnus!!,
+                    MockMultipartFile(
+                        invalidFilename,
+                        invalidFilename,
+                        "application/pdf",
+                        byteArrayOf(1, 2, 3, 4)
+                    )
+                )
+            }
+
+        assertThat(ex.message)
+            .isEqualTo(
+                "Attachment upload error: File extension does not match content type application/pdf"
+            )
+    }
+
+    @Test
+    @WithMockUser(username)
+    fun `Filenames are sanitized`() {
+        val hanke = HankeFactory.create()
+        val createdHanke = hankeService.createHanke(hanke)
+        val invalidFilename = " \t$=hei=ö£@.pdf "
+
+        val file =
+            attachmentService.add(
+                createdHanke.hankeTunnus!!,
+                MockMultipartFile(
+                    invalidFilename,
+                    invalidFilename,
+                    "application/pdf",
+                    byteArrayOf(1, 2, 3, 4)
+                )
+            )
+
+        assertThat(file.name).isEqualTo("heiö.pdf")
     }
 
     @Test
@@ -113,7 +160,7 @@ class AttachmentServiceITests() : DatabaseTest() {
                 MockMultipartFile("tiedosto.pdf", null, "application/pdf", byteArrayOf(1, 2, 3, 4))
             )
 
-        val data = attachmentService.getData(result.id!!)
+        val data = attachmentService.getContent(result.id!!)
 
         assertThat(data).isEqualTo(byteArrayOf(1, 2, 3, 4))
     }
@@ -129,10 +176,10 @@ class AttachmentServiceITests() : DatabaseTest() {
                 MockMultipartFile("tiedosto.pdf", null, "application/pdf", byteArrayOf(1, 2, 3, 4))
             )
         val att = attachmentRepository.getOne(result.id!!)
-        att.tila = AttachmentTila.PENDING
+        att.scanStatus = AttachmentScanStatus.PENDING
         attachmentRepository.save(att)
 
-        assertThrows<AttachmentNotFoundException>() { attachmentService.getData(result.id!!) }
+        assertThrows<AttachmentNotFoundException>() { attachmentService.getContent(result.id!!) }
     }
 
     @Test
@@ -146,10 +193,10 @@ class AttachmentServiceITests() : DatabaseTest() {
                 MockMultipartFile("tiedosto.pdf", null, "application/pdf", byteArrayOf(1, 2, 3, 4))
             )
         val att = attachmentRepository.getOne(result.id!!)
-        att.tila = AttachmentTila.FAILED
+        att.scanStatus = AttachmentScanStatus.FAILED
         attachmentRepository.save(att)
 
-        assertThrows<AttachmentNotFoundException>() { attachmentService.getData(result.id!!) }
+        assertThrows<AttachmentNotFoundException>() { attachmentService.getContent(result.id!!) }
     }
 
     @Test

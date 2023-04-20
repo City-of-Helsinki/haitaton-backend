@@ -27,7 +27,13 @@ import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.tormaystarkastelu.*
+import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotService
+import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotServiceHardCoded
+import fi.hel.haitaton.hanke.tormaystarkastelu.PerusIndeksiPainotService
+import fi.hel.haitaton.hanke.tormaystarkastelu.PerusIndeksiPainotServiceHardCoded
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import mu.KotlinLogging

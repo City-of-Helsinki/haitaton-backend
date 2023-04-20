@@ -6,11 +6,15 @@ import fi.hel.haitaton.hanke.application.ApplicationsResponse
 import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withPerustaja
 import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.liitteet.AttachmentMetadata
+import fi.hel.haitaton.hanke.liitteet.AttachmentScanStatus
+import fi.hel.haitaton.hanke.liitteet.AttachmentService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -22,6 +26,7 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
 import java.time.temporal.ChronoUnit
+import java.util.UUID
 import org.geojson.FeatureCollection
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -32,17 +37,22 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
+import org.springframework.mock.web.MockMultipartFile
+import org.springframework.security.test.context.support.WithAnonymousUser
 import org.springframework.security.test.context.support.WithMockUser
+import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.ResultActions
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 private const val USERNAME = "test"
 private const val HANKE_TUNNUS = "HAI21-1"
-
 private const val BASE_URL = "/hankkeet"
+
 /**
  * Testing the Hanke Controller through a full REST request.
  *
@@ -51,11 +61,12 @@ private const val BASE_URL = "/hankkeet"
 @WebMvcTest(HankeController::class)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
-@WithMockUser("test", roles = ["haitaton-user"])
+@WithMockUser(USERNAME, roles = ["haitaton-user"])
 class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired lateinit var hankeService: HankeService // faking these calls
     @Autowired lateinit var permissionService: PermissionService
+    @Autowired lateinit var attachmentService: AttachmentService
     @Autowired lateinit var disclosureLogService: DisclosureLogService
 
     @BeforeEach
@@ -582,5 +593,104 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         return (1..5).map {
             AlluDataFactory.createApplication(it.toLong(), hankeTunnus = HANKE_TUNNUS)
         }
+    }
+
+    @Test
+    fun `List of attachments can be loaded`() {
+        val hankeTunnus = "HAI-123"
+        val hankeId = 123
+        val userId = currentUserId()
+
+        every { hankeService.getHankeId(hankeTunnus) }.returns(hankeId)
+        every { permissionService.hasPermission(hankeId, userId, PermissionCode.VIEW) }
+            .returns(true)
+        every { attachmentService.getHankeAttachments(hankeTunnus) }
+            .returns(
+                listOf(
+                    AttachmentFactory.create(hankeTunnus, name = "file1.pdf"),
+                    AttachmentFactory.create(hankeTunnus, name = "file2.pdf"),
+                    AttachmentFactory.create(hankeTunnus, name = "file3.pdf"),
+                )
+            )
+
+        get("/hankkeet/${hankeTunnus}/liitteet").andExpect(status().`is`(200))
+
+        verify { hankeService.getHankeId(hankeTunnus) }
+        verify { permissionService.hasPermission(hankeId, userId, PermissionCode.VIEW) }
+        verify { attachmentService.getHankeAttachments(hankeTunnus) }
+    }
+
+    @Test
+    @WithAnonymousUser
+    fun `Uploading without a session should fail`() {
+        val file = MockMultipartFile("liite", "text.txt", "text/plain", "ABC".toByteArray())
+        sendAttachment("HAI-123", file).andExpect(status().`is`(401))
+    }
+
+    @Test
+    fun `Uploading with unknown hankeTunnus should fail`() {
+        val file = MockMultipartFile("liite", "text.txt", "text/plain", "ABC".toByteArray())
+        val hankeTunnus = "123"
+
+        every { hankeService.getHankeId(hankeTunnus) }.returns(null)
+
+        sendAttachment(hankeTunnus, file).andExpect(status().`is`(404))
+
+        verify { hankeService.getHankeId(hankeTunnus) }
+    }
+
+    @Test
+    fun `Upload should fail when no rights for hanke`() {
+        val file = MockMultipartFile("liite", "text.txt", "text/plain", "ABC".toByteArray())
+        val hankeTunnus = "HAI-123"
+        val hankeId = 123
+        val userId = currentUserId()
+
+        every { hankeService.getHankeId(hankeTunnus) }.returns(hankeId)
+        every { permissionService.hasPermission(hankeId, userId, PermissionCode.EDIT) }
+            .returns(false)
+
+        sendAttachment(hankeTunnus, file).andExpect(status().`is`(404))
+
+        verify { hankeService.getHankeId(hankeTunnus) }
+        verify { permissionService.hasPermission(hankeId, userId, PermissionCode.EDIT) }
+    }
+
+    @Test
+    fun `Uploading a file with user and project should work`() {
+        val file = MockMultipartFile("liite", "text.txt", "text/plain", "ABC".toByteArray())
+        val hankeTunnus = "HAI-123"
+        val hankeId = 123
+        val userId = currentUserId()
+        val uuid = UUID.randomUUID()
+
+        every { hankeService.getHankeId(hankeTunnus) }.returns(hankeId)
+        every { permissionService.hasPermission(hankeId, userId, PermissionCode.EDIT) }
+            .returns(true)
+        every { attachmentService.add(hankeTunnus, file) }
+            .returns(
+                AttachmentMetadata(
+                    id = uuid,
+                    name = "text.txt",
+                    createdByUserId = USERNAME,
+                    createdAt = DateFactory.getEndDatetime().toLocalDateTime(),
+                    AttachmentScanStatus.PENDING,
+                    hankeTunnus
+                )
+            )
+
+        sendAttachment(hankeTunnus, file).andExpect(status().`is`(200))
+
+        verify { hankeService.getHankeId(hankeTunnus) }
+        verify { permissionService.hasPermission(hankeId, userId, PermissionCode.EDIT) }
+        verify { attachmentService.add(hankeTunnus, file) }
+    }
+
+    fun sendAttachment(tunnus: String, file: MockMultipartFile): ResultActions {
+        return mockMvc.perform(
+            MockMvcRequestBuilders.multipart("/hankkeet/${tunnus}/liitteet")
+                .file(file)
+                .with(SecurityMockMvcRequestPostProcessors.csrf())
+        )
     }
 }

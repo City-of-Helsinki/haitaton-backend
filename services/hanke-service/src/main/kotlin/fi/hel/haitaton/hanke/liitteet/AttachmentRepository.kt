@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.liitteet
 
 import fi.hel.haitaton.hanke.HankeEntity
-import java.util.*
+import java.util.UUID
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 

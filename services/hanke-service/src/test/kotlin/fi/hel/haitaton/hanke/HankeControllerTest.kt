@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.liitteet.AttachmentService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -46,14 +47,24 @@ class HankeControllerTest {
         @Bean
         fun permissionService(): PermissionService = Mockito.mock(PermissionService::class.java)
 
+        @Bean
+        fun attachmentService(): AttachmentService = Mockito.mock(AttachmentService::class.java)
+
         @Bean fun yhteystietoLoggingService(): DisclosureLogService = mockk(relaxUnitFun = true)
 
         @Bean
         fun hankeController(
             hankeService: HankeService,
             permissionService: PermissionService,
+            attachmentService: AttachmentService,
             disclosureLogService: DisclosureLogService,
-        ): HankeController = HankeController(hankeService, permissionService, disclosureLogService)
+        ): HankeController =
+            HankeController(
+                hankeService,
+                permissionService,
+                attachmentService,
+                disclosureLogService
+            )
     }
 
     private val mockedHankeTunnus = "AFC1234"
