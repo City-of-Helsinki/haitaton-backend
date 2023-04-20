@@ -18,8 +18,7 @@ class HankeKayttajaService(
             applicationData
                 .customersWithContacts()
                 .flatMap { it.contacts }
-                .filterNot { it.email.isNullOrBlank() || it.name.isNullOrBlank() }
-                .map { UserContact(it.name!!, it.email!!) }
+                .mapNotNull { userContactOrNull(it.fullName(), it.email) }
 
         filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
     }
@@ -31,8 +30,7 @@ class HankeKayttajaService(
             hanke
                 .extractYhteystiedot()
                 .flatMap { it.alikontaktit }
-                .filterNot { it.fullName().isBlank() || it.email.isBlank() }
-                .map { UserContact(it.fullName(), it.email) }
+                .mapNotNull { userContactOrNull(it.fullName(), it.email) }
 
         filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
     }
@@ -49,6 +47,13 @@ class HankeKayttajaService(
                 kayttajaTunniste = kayttajaTunnisteEntity
             )
         )
+    }
+
+    private fun userContactOrNull(name: String?, email: String?): UserContact? {
+        return when {
+            name.isNullOrBlank() || email.isNullOrBlank() -> null
+            else -> UserContact(name, email)
+        }
     }
 
     private fun filterNewContacts(hankeId: Int, contacts: List<UserContact>): List<UserContact> {

@@ -85,11 +85,12 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             CustomerWithContacts(this, contacts.asList())
 
         fun createContact(
-            name: String? = "Teppo Testihenkilö",
+            firstName: String? = "Teppo",
+            lastName: String? = "Testihenkilö",
             email: String? = "teppo@example.test",
             phone: String? = "04012345678",
             orderer: Boolean = false
-        ) = Contact(name, email, phone, orderer)
+        ) = Contact(firstName, lastName, email, phone, orderer)
 
         fun createApplicationArea(
             name: String = "Area name",
@@ -174,11 +175,19 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                                 name = "$defaultApplicationName #$i",
                                 customerWithContacts =
                                     createCompanyCustomer(name = "Customer #$i")
-                                        .withContacts(createContact(name = "Customer #$i Contact")),
+                                        .withContacts(
+                                            createContact(
+                                                firstName = "Customer #$i",
+                                                lastName = "Contact #$i",
+                                            )
+                                        ),
                                 contractorWithContacts =
                                     createCompanyCustomer(name = "Contractor #$i")
                                         .withContacts(
-                                            createContact(name = "Contractor #$i Contact")
+                                            createContact(
+                                                firstName = "Contractor #$i",
+                                                lastName = "Contact #$i",
+                                            )
                                         )
                             )
                     )

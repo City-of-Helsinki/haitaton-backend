@@ -148,9 +148,9 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
         organisation: GdprOrganisation?,
         userInfo: UserInfo,
     ): GdprInfo? {
-        if (contact.name == userInfo.name) {
+        if (contact.fullName() == userInfo.name) {
             return GdprInfo(
-                name = contact.name,
+                name = contact.fullName(),
                 phone = contact.phone,
                 email = contact.email,
                 organisation = organisation,
