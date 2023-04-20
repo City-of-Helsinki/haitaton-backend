@@ -8,12 +8,14 @@ import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.just
 import io.mockk.runs
 import io.mockk.verify
+import io.mockk.verifyOrder
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.junit.jupiter.api.AfterEach
@@ -46,6 +48,7 @@ private const val HANKE_TUNNUS = "HAI-123"
 @WebMvcTest(AttachmentController::class)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
+@WithMockUser(USERNAME)
 class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired private lateinit var attachmentService: AttachmentService
@@ -61,11 +64,11 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
 
     @AfterEach
     fun checkMocks() {
-        confirmVerified(attachmentService)
+        checkUnnecessaryStub()
+        confirmVerified(attachmentService, hankeService, permissionService)
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Get hanke metadata fails without permissions`() {
         val hankeId = 123
         val liiteId = UUID.randomUUID()
@@ -76,12 +79,14 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
 
         get("/liitteet/${liiteId}").andExpect(MockMvcResultMatchers.status().`is`(404))
 
-        verify { attachmentService.getMetadata(liiteId) }
-        verify { permissionService.hasPermission(hankeId, USERNAME, VIEW) }
+        verifyOrder {
+            attachmentService.getMetadata(liiteId)
+            hankeService.getHankeId(HANKE_TUNNUS)
+            permissionService.hasPermission(hankeId, USERNAME, VIEW)
+        }
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Get attachment metadata`() {
         val hankeId = 123
         val liiteId = UUID.randomUUID()
@@ -92,12 +97,14 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
 
         get("/liitteet/${liiteId}").andExpect(MockMvcResultMatchers.status().`is`(200))
 
-        verify { attachmentService.getMetadata(liiteId) }
-        verify { permissionService.hasPermission(hankeId, USERNAME, VIEW) }
+        verifyOrder {
+            attachmentService.getMetadata(liiteId)
+            hankeService.getHankeId(HANKE_TUNNUS)
+            permissionService.hasPermission(hankeId, USERNAME, VIEW)
+        }
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Get attachment data`() {
         val hankeId = 123
         val liiteId = UUID.randomUUID()
@@ -113,13 +120,15 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
             .andExpect(content().contentType(APPLICATION_PDF))
             .andExpect(content().bytes(byteArrayOf(1, 2, 3, 4)))
 
-        verify { attachmentService.getMetadata(liiteId) }
-        verify { attachmentService.getContent(liiteId) }
-        verify { permissionService.hasPermission(hankeId, USERNAME, VIEW) }
+        verifyOrder {
+            attachmentService.getMetadata(liiteId)
+            hankeService.getHankeId(HANKE_TUNNUS)
+            permissionService.hasPermission(hankeId, USERNAME, VIEW)
+            attachmentService.getContent(liiteId)
+        }
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Attachment can be removed`() {
         val hankeId = 123
         val userId = currentUserId()
@@ -132,13 +141,15 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
 
         delete("/liitteet/${liiteId}").andExpect(MockMvcResultMatchers.status().`is`(200))
 
-        verify { attachmentService.getMetadata(liiteId) }
-        verify { permissionService.hasPermission(hankeId, userId, EDIT) }
-        verify { attachmentService.removeAttachment(liiteId) }
+        verifyOrder {
+            attachmentService.getMetadata(liiteId)
+            hankeService.getHankeId(HANKE_TUNNUS)
+            permissionService.hasPermission(hankeId, userId, EDIT)
+            attachmentService.removeAttachment(liiteId)
+        }
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `List of attachments can be loaded`() {
         val hankeId = 123
         val userId = currentUserId()
@@ -156,13 +167,14 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
         get("/hankkeet/${HANKE_TUNNUS}/liitteet")
             .andExpect(MockMvcResultMatchers.status().`is`(200))
 
-        verify { hankeService.getHankeId(HANKE_TUNNUS) }
-        verify { permissionService.hasPermission(hankeId, userId, VIEW) }
-        verify { attachmentService.getHankeAttachments(HANKE_TUNNUS) }
+        verifyOrder {
+            hankeService.getHankeId(HANKE_TUNNUS)
+            permissionService.hasPermission(hankeId, userId, VIEW)
+            attachmentService.getHankeAttachments(HANKE_TUNNUS)
+        }
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Uploading a file with user and project should work`() {
         val file = MockMultipartFile(FILE_PARAM, FILE_TXT, TEXT_PLAIN_VALUE, dummyData)
         val hankeId = 123
@@ -184,13 +196,14 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
 
         sendAttachment(file).andExpect(MockMvcResultMatchers.status().`is`(200))
 
-        verify { hankeService.getHankeId(HANKE_TUNNUS) }
-        verify { permissionService.hasPermission(hankeId, userId, EDIT) }
-        verify { attachmentService.add(HANKE_TUNNUS, file) }
+        verifyOrder {
+            hankeService.getHankeId(HANKE_TUNNUS)
+            permissionService.hasPermission(hankeId, userId, EDIT)
+            attachmentService.add(HANKE_TUNNUS, file)
+        }
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Uploading with unknown hankeTunnus should fail`() {
         val file = MockMultipartFile(FILE_PARAM, FILE_TXT, TEXT_PLAIN_VALUE, dummyData)
         every { hankeService.getHankeId(HANKE_TUNNUS) }.returns(null)
@@ -201,7 +214,6 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Upload should fail when no rights for hanke`() {
         val file = MockMultipartFile(FILE_PARAM, FILE_TXT, TEXT_PLAIN_VALUE, dummyData)
         val hankeId = 123
@@ -211,8 +223,10 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
 
         sendAttachment(file).andExpect(MockMvcResultMatchers.status().`is`(404))
 
-        verify { hankeService.getHankeId(HANKE_TUNNUS) }
-        verify { permissionService.hasPermission(hankeId, userId, EDIT) }
+        verifyOrder {
+            hankeService.getHankeId(HANKE_TUNNUS)
+            permissionService.hasPermission(hankeId, userId, EDIT)
+        }
     }
 
     @Test

@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.logging
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import io.mockk.called
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.mockk
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
 internal class HankeLoggingServiceTest {
@@ -21,12 +23,15 @@ internal class HankeLoggingServiceTest {
     private val auditLogService: AuditLogService = mockk(relaxed = true)
     private val hankeLoggingService = HankeLoggingService(auditLogService)
 
+    @BeforeEach
+    fun clearMocks() {
+        clearAllMocks()
+    }
+
     @AfterEach
     fun cleanUp() {
-        // TODO: Needs newer MockK, which needs newer Spring test dependencies
-        // checkUnnecessaryStub()
+        checkUnnecessaryStub()
         confirmVerified(auditLogService)
-        clearAllMocks()
     }
 
     @Test

@@ -24,6 +24,7 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.mockk.Called
 import io.mockk.called
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
@@ -75,13 +76,12 @@ class ApplicationServiceTest {
 
     @BeforeEach
     fun cleanup() {
-        // TODO: Needs newer MockK, which needs newer Spring test dependencies
-        // checkUnnecessaryStub()
         clearAllMocks()
     }
 
     @AfterEach
     fun verifyMocks() {
+        checkUnnecessaryStub()
         confirmVerified(
             applicationRepo,
             statusRepo,

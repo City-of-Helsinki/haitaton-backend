@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
@@ -37,6 +38,7 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
 
     @AfterEach
     fun checkMocks() {
+        checkUnnecessaryStub()
         confirmVerified(hankeService)
     }
 

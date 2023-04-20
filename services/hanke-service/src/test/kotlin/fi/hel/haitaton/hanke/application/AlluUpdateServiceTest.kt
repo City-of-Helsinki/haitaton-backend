@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.configuration.LockService
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import io.mockk.Called
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
@@ -50,6 +51,7 @@ class AlluUpdateServiceTest {
 
     @AfterEach
     fun confirmMocks() {
+        checkUnnecessaryStub()
         confirmVerified(
             alluStatusRepository,
             applicationRepository,
