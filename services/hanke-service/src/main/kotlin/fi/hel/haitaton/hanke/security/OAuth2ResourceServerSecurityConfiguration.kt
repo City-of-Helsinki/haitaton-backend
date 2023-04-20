@@ -2,31 +2,32 @@ package fi.hel.haitaton.hanke.security
 
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal
 import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector
+import org.springframework.security.web.SecurityFilterChain
 import org.springframework.web.reactive.function.client.WebClient
 
-@EnableWebSecurity
+@Configuration
 class OAuth2ResourceServerSecurityConfiguration(
-    @Value("\${security.oauth2.resource.user-info-uri}") private val userinfoUri: String
-) : WebSecurityConfigurerAdapter() {
+    @Value("\${security.oauth2.resource.user-info-uri}") private val userinfoUri: String,
+) {
     @Bean
     fun introspector(): OpaqueTokenIntrospector {
         return UserInfoOpaqueTokenIntrospector(userinfoUri)
     }
 
-    override fun configure(http: HttpSecurity) {
+    @Bean
+    fun filterChain(http: HttpSecurity): SecurityFilterChain {
         AccessRules.configureHttpAccessRules(http)
-
         http.oauth2ResourceServer { resourceServer: OAuth2ResourceServerConfigurer<HttpSecurity?> ->
             resourceServer.opaqueToken { opaqueToken -> opaqueToken.introspector(introspector()) }
         }
+        return http.build()
     }
 }
 

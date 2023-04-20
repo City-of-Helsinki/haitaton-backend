@@ -1066,7 +1066,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(alue.geometriat).isNotNull
         entityManager.flush()
         entityManager.clear()
-        val hankeFromDb = hankeRepository.getById(updatedHanke.id!!)
+        val hankeFromDb = hankeRepository.getReferenceById(updatedHanke.id!!)
         assertThat(hankeFromDb.listOfHankeAlueet).hasSize(1)
         assertThat(hankealueCount()).isEqualTo(1)
         assertThat(geometriatCount()).isEqualTo(1)

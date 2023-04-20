@@ -209,7 +209,7 @@ open class ApplicationService(
         updateTime: OffsetDateTime
     ) {
         applicationHistories.forEach { handleApplicationUpdate(it) }
-        val status = alluStatusRepository.getById(1)
+        val status = alluStatusRepository.getReferenceById(1)
         status.historyLastUpdated = updateTime
         alluStatusRepository.save(status)
     }
