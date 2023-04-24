@@ -24,18 +24,26 @@ data class CustomerWithContacts(val customer: Customer, val contacts: List<Conta
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class Contact(
-    val name: String?,
+    val firstName: String?,
+    val lastName: String?,
     val email: String?,
     val phone: String?,
     val orderer: Boolean = false,
 ) {
     /** Check if this contact is blank, i.e. it doesn't contain any actual contact information. */
-    @JsonIgnore
-    fun isBlank() = name.isNullOrBlank() && email.isNullOrBlank() && phone.isNullOrBlank()
+    @JsonIgnore fun isBlank() = listOf(firstName, lastName, email, phone).any { it.isNullOrBlank() }
 
     fun hasInformation() = !isBlank()
 
-    fun toAlluData(): AlluContact = AlluContact(name, email, phone, orderer)
+    fun toAlluData(): AlluContact = AlluContact(fullName(), email, phone, orderer)
+
+    fun fullName(): String? {
+        val names = listOf(firstName, lastName)
+        if (names.all { it == null }) {
+            return null
+        }
+        return names.filter { !it.isNullOrBlank() }.joinToString(" ")
+    }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)

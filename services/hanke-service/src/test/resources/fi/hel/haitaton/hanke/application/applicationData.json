@@ -54,7 +54,8 @@
   "customerWithContacts": {
     "contacts": [
       {
-        "name": "Teppo Testihenkilö",
+        "firstName": "Teppo",
+        "lastName": "Testihenkilö",
         "email": "teppo@example.test",
         "phone": "04012345678",
         "orderer": true
@@ -78,7 +79,8 @@
   "contractorWithContacts": {
     "contacts": [
       {
-        "name": "Teppo Testihenkilö",
+        "firstName": "Teppo",
+        "lastName": "Testihenkilö",
         "email": "teppo@dna.test",
         "phone": "04012345678",
         "orderer": true

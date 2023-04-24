@@ -111,7 +111,11 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                         .withContacts(
                             AlluDataFactory.createContact(email = "email1"),
                             AlluDataFactory.createContact(email = "email2"),
-                            AlluDataFactory.createContact(email = "email2", name = "Other Name"),
+                            AlluDataFactory.createContact(
+                                email = "email2",
+                                firstName = "Other",
+                                lastName = "Name"
+                            ),
                         ),
                 contractorWithContacts =
                     AlluDataFactory.createCompanyCustomer()

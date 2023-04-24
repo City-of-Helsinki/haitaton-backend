@@ -300,14 +300,20 @@ internal class GdprJsonConverterTest {
             listOf(
                 AlluDataFactory.createContact(),
                 AlluDataFactory.createContact(
-                    name = "Toinen Testihenkilö",
+                    firstName = "Toinen",
+                    lastName = "Testihenkilö",
                     email = "toinen@example.test"
                 ),
                 AlluDataFactory.createContact(
-                    name = "Teppo Toissijainen",
+                    firstName = "Teppo",
+                    lastName = "Toissijainen",
                     email = "toissijainen@example.test"
                 ),
-                AlluDataFactory.createContact(name = TEPPO_TESTI, email = "teppo@yksityinen.test"),
+                AlluDataFactory.createContact(
+                    firstName = TEPPO_TESTI.split(" ")[0],
+                    lastName = TEPPO_TESTI.split(" ")[1],
+                    email = "teppo@yksityinen.test"
+                ),
             )
 
         val result =
@@ -331,7 +337,7 @@ internal class GdprJsonConverterTest {
 
     @Test
     fun `getGdprInfosFromApplicationContact with another name returns null`() {
-        val otherContact = AlluDataFactory.createContact(name = "Another name")
+        val otherContact = AlluDataFactory.createContact(firstName = "Another", lastName = "name")
         val teppoContact = AlluDataFactory.createContact()
         val otherUserInfo = teppoUserInfo(name = "Another")
         val teppoUserInfo = teppoUserInfo()
