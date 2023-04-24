@@ -74,7 +74,7 @@ object ApplicationPdfService {
         "${this.streetAddress.streetName}\n${this.postalCode} ${this.city}"
 
     private fun Contact.format(): String =
-        listOfNotNull(this.name, this.email, this.phone)
+        listOfNotNull(this.fullName(), this.email, this.phone)
             .filter { it.isNotBlank() }
             .joinToString("\n")
 

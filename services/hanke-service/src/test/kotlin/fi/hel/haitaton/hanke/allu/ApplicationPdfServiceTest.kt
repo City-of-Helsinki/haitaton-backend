@@ -235,12 +235,14 @@ internal class ApplicationPdfServiceTest {
                             )
                             .withContacts(
                                 AlluDataFactory.createContact(
-                                    name = "Cole Contact",
+                                    firstName = "Cole Contact",
+                                    lastName = "",
                                     email = "cole@company.test",
                                     phone = "050987654321",
                                 ),
                                 AlluDataFactory.createContact(
-                                    name = "Seth Secondary",
+                                    firstName = "Seth",
+                                    lastName = "Secondary",
                                     email = "seth@company.test",
                                     phone = "0505556666",
                                 ),
@@ -254,7 +256,8 @@ internal class ApplicationPdfServiceTest {
                             )
                             .withContacts(
                                 AlluDataFactory.createContact(
-                                    name = "Cody Contractor",
+                                    firstName = "Cody",
+                                    lastName = "Contractor",
                                     email = "cody@contractor.test",
                                     phone = "0501111111",
                                     orderer = true
@@ -277,7 +280,8 @@ internal class ApplicationPdfServiceTest {
                             )
                             .withContacts(
                                 AlluDataFactory.createContact(
-                                    name = "Denise Developer",
+                                    firstName = "Denise",
+                                    lastName = "Developer",
                                     email = "denise@developer.test",
                                     phone = "0502222222"
                                 ),

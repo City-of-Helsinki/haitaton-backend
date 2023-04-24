@@ -1408,7 +1408,8 @@ class ApplicationServiceITest : DatabaseTest() {
            },
            "contacts": [
              {
-               "name": "Teppo Testihenkilö",
+               "firstName": "Teppo",
+               "lastName": "Testihenkilö",
                "email": "teppo@example.test",
                "phone": "04012345678",
                "orderer": false

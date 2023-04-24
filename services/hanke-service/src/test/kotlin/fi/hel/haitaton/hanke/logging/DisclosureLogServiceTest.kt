@@ -200,7 +200,8 @@ internal class DisclosureLogServiceTest {
         val customerWithoutContacts =
             AlluDataFactory.createCompanyCustomer(name = "First").withContacts()
         val contractorWithoutContacts =
-            AlluDataFactory.createCompanyCustomer(name = "Second").withContacts(Contact("", "", ""))
+            AlluDataFactory.createCompanyCustomer(name = "Second")
+                .withContacts(Contact("", "", "", ""))
         val application =
             AlluDataFactory.createApplication(
                 applicationData =
@@ -301,7 +302,8 @@ internal class DisclosureLogServiceTest {
 
     @Test
     fun `saveDisclosureLogsForApplications logs customers and contacts from all applications while ignoring duplicates`() {
-        val contacts = (1..8).map { AlluDataFactory.createContact(name = "Contact $it") }
+        val contacts =
+            (1..8).map { AlluDataFactory.createContact(firstName = "Contact", lastName = "$it") }
         val customers = (1..4).map { AlluDataFactory.createPersonCustomer(name = "Customer $it") }
         val expectedLogs =
             (contacts.map { AuditLogEntryFactory.createReadEntryForContact(it) } +
