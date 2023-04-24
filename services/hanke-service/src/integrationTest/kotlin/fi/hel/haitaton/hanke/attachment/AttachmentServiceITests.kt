@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.liitteet
+package fi.hel.haitaton.hanke.attachment
 
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeService
@@ -10,17 +10,21 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
+import org.springframework.http.MediaType.TEXT_HTML_VALUE
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
 
-private const val username = "username"
+private const val USERNAME = "username"
+private const val FILE_NAME = "tiedosto.pdf"
+private const val FILE_PARAM = "liite"
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
-class AttachmentServiceITests() : DatabaseTest() {
+class AttachmentServiceITests : DatabaseTest() {
     @Autowired private lateinit var attachmentService: AttachmentService
     @Autowired private lateinit var attachmentRepository: AttachmentRepository
     @Autowired private lateinit var hankeService: HankeService
@@ -31,19 +35,24 @@ class AttachmentServiceITests() : DatabaseTest() {
     }
 
     @Test
-    @WithMockUser(username)
+    @WithMockUser(USERNAME)
     fun `Saving an attachment is possible`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
         val result =
             attachmentService.add(
                 createdHanke.hankeTunnus!!,
-                MockMultipartFile("tiedosto.pdf", null, "application/pdf", byteArrayOf(1, 2, 3, 4))
+                MockMultipartFile(
+                    FILE_PARAM,
+                    FILE_NAME,
+                    APPLICATION_PDF_VALUE,
+                    byteArrayOf(1, 2, 3, 4)
+                )
             )
 
         assertThat(result.id).isNotNull
-        assertThat(result.createdByUserId).isEqualTo(username)
-        assertThat(result.name).isEqualTo("tiedosto.pdf")
+        assertThat(result.createdByUserId).isEqualTo(USERNAME)
+        assertThat(result.fileName).isEqualTo(FILE_NAME)
         assertThat(result.createdAt).isNotNull
         assertThat(result.hankeTunnus).isEqualTo(createdHanke.hankeTunnus)
         assertThat(result.scanStatus)
@@ -51,31 +60,31 @@ class AttachmentServiceITests() : DatabaseTest() {
     }
 
     @Test
-    @WithMockUser(username)
+    @WithMockUser(USERNAME)
     fun `Attachments can't be saved without hanke`() {
-        assertThrows<AttachmentUploadError> {
+        assertThrows<AttachmentUploadException> {
             attachmentService.add(
                 "",
-                MockMultipartFile("tiedosto.pdf", "tiedosto.pdf", "application/pdf", null)
+                MockMultipartFile(FILE_PARAM, FILE_NAME, APPLICATION_PDF_VALUE, null)
             )
         }
     }
 
     @Test
-    @WithMockUser(username)
+    @WithMockUser(USERNAME)
     fun `File extension must match content type`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
         val invalidFilename = "hello.html"
 
         val ex =
-            assertThrows<AttachmentUploadError> {
+            assertThrows<AttachmentUploadException> {
                 attachmentService.add(
                     createdHanke.hankeTunnus!!,
                     MockMultipartFile(
                         invalidFilename,
                         invalidFilename,
-                        "application/pdf",
+                        APPLICATION_PDF_VALUE,
                         byteArrayOf(1, 2, 3, 4)
                     )
                 )
@@ -83,12 +92,12 @@ class AttachmentServiceITests() : DatabaseTest() {
 
         assertThat(ex.message)
             .isEqualTo(
-                "Attachment upload error: File extension does not match content type application/pdf"
+                "Attachment upload exception: File $invalidFilename extension does not match content type application/pdf"
             )
     }
 
     @Test
-    @WithMockUser(username)
+    @WithMockUser(USERNAME)
     fun `Filenames are sanitized`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
@@ -98,51 +107,51 @@ class AttachmentServiceITests() : DatabaseTest() {
             attachmentService.add(
                 createdHanke.hankeTunnus!!,
                 MockMultipartFile(
+                    FILE_PARAM,
                     invalidFilename,
-                    invalidFilename,
-                    "application/pdf",
+                    APPLICATION_PDF_VALUE,
                     byteArrayOf(1, 2, 3, 4)
                 )
             )
 
-        assertThat(file.name).isEqualTo("heiö.pdf")
+        assertThat(file.fileName).isEqualTo("heiö.pdf")
     }
 
     @Test
-    @WithMockUser(username)
+    @WithMockUser(USERNAME)
     fun `Non supported file cannot be uploaded`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
-        assertThrows<AttachmentUploadError> {
+        assertThrows<AttachmentUploadException> {
             attachmentService.add(
                 createdHanke.hankeTunnus!!,
-                MockMultipartFile("tiedosto.html", "tiedosto.html", "text/html", null)
+                MockMultipartFile(FILE_PARAM, FILE_NAME, TEXT_HTML_VALUE, null)
             )
         }
     }
 
     @Test
-    @WithMockUser(username)
+    @WithMockUser(USERNAME)
     fun `Can't upload files bigger than 10Mb`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
         attachmentService.add(
             createdHanke.hankeTunnus!!,
             MockMultipartFile(
-                "tiedosto.pdf",
-                "tiedosto.pdf",
-                "application/pdf",
+                FILE_PARAM,
+                FILE_NAME,
+                APPLICATION_PDF_VALUE,
                 ByteArray(1024 * 1024 * 10)
             )
         )
 
-        assertThrows<AttachmentUploadError> {
+        assertThrows<AttachmentUploadException> {
             attachmentService.add(
                 hanke.hankeTunnus!!,
                 MockMultipartFile(
-                    "tiedosto.pdf",
-                    "tiedosto.pdf",
-                    "application/pdf",
+                    FILE_PARAM,
+                    FILE_NAME,
+                    APPLICATION_PDF_VALUE,
                     ByteArray(1024 * 1024 * 11)
                 )
             )
@@ -150,14 +159,19 @@ class AttachmentServiceITests() : DatabaseTest() {
     }
 
     @Test
-    @WithMockUser(username)
+    @WithMockUser(USERNAME)
     fun `Hanke data is downloadable when data is ok`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
         val result =
             attachmentService.add(
                 createdHanke.hankeTunnus!!,
-                MockMultipartFile("tiedosto.pdf", null, "application/pdf", byteArrayOf(1, 2, 3, 4))
+                MockMultipartFile(
+                    FILE_PARAM,
+                    FILE_NAME,
+                    APPLICATION_PDF_VALUE,
+                    byteArrayOf(1, 2, 3, 4)
+                )
             )
 
         val data = attachmentService.getContent(result.id!!)
@@ -166,48 +180,63 @@ class AttachmentServiceITests() : DatabaseTest() {
     }
 
     @Test
-    @WithMockUser(username)
+    @WithMockUser(USERNAME)
     fun `Hanke data not downloadable when state is PENDING`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
         val result =
             attachmentService.add(
                 createdHanke.hankeTunnus!!,
-                MockMultipartFile("tiedosto.pdf", null, "application/pdf", byteArrayOf(1, 2, 3, 4))
+                MockMultipartFile(
+                    FILE_PARAM,
+                    FILE_NAME,
+                    APPLICATION_PDF_VALUE,
+                    byteArrayOf(1, 2, 3, 4)
+                )
             )
         val att = attachmentRepository.getOne(result.id!!)
         att.scanStatus = AttachmentScanStatus.PENDING
         attachmentRepository.save(att)
 
-        assertThrows<AttachmentNotFoundException>() { attachmentService.getContent(result.id!!) }
+        assertThrows<AttachmentNotFoundException> { attachmentService.getContent(result.id!!) }
     }
 
     @Test
-    @WithMockUser(username)
+    @WithMockUser(USERNAME)
     fun `Hanke data not downloadable when state is FAILED`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
         val result =
             attachmentService.add(
                 createdHanke.hankeTunnus!!,
-                MockMultipartFile("tiedosto.pdf", null, "application/pdf", byteArrayOf(1, 2, 3, 4))
+                MockMultipartFile(
+                    FILE_PARAM,
+                    FILE_NAME,
+                    APPLICATION_PDF_VALUE,
+                    byteArrayOf(1, 2, 3, 4)
+                )
             )
         val att = attachmentRepository.getOne(result.id!!)
         att.scanStatus = AttachmentScanStatus.FAILED
         attachmentRepository.save(att)
 
-        assertThrows<AttachmentNotFoundException>() { attachmentService.getContent(result.id!!) }
+        assertThrows<AttachmentNotFoundException> { attachmentService.getContent(result.id!!) }
     }
 
     @Test
-    @WithMockUser(username)
+    @WithMockUser(USERNAME)
     fun `Removing an attachment is possible`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
         val result =
             attachmentService.add(
                 createdHanke.hankeTunnus!!,
-                MockMultipartFile("tiedosto.pdf", null, "application/pdf", byteArrayOf(1, 2, 3, 4))
+                MockMultipartFile(
+                    FILE_PARAM,
+                    FILE_NAME,
+                    APPLICATION_PDF_VALUE,
+                    byteArrayOf(1, 2, 3, 4)
+                )
             )
 
         attachmentService.removeAttachment(result.id!!)

@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.liitteet
+package fi.hel.haitaton.hanke.attachment
 
 import fi.hel.haitaton.hanke.HankeEntity
 import java.time.LocalDateTime
@@ -21,21 +21,24 @@ import org.hibernate.annotations.Type
 @Table(name = "attachment")
 class HankeAttachmentEntity(
     @Id @GeneratedValue var id: UUID? = null,
-    @Column(nullable = false) var name: String,
+    @Column(name = "file_name", nullable = false) var fileName: String,
     @Lob
     @Type(type = "org.hibernate.type.BinaryType")
     @Basic(fetch = FetchType.LAZY)
     @NotNull
     var content: ByteArray,
-    @Column(updatable = false, nullable = false) var createdByUserId: String,
-    @Column(updatable = false, nullable = false) var createdAt: LocalDateTime,
+    @Column(name = "created_by_user_id", updatable = false, nullable = false)
+    var createdByUserId: String,
+    @Column(name = "created_at", updatable = false, nullable = false) var createdAt: LocalDateTime,
     @ManyToOne(cascade = []) var hanke: HankeEntity,
-    @Enumerated(EnumType.STRING) var scanStatus: AttachmentScanStatus = AttachmentScanStatus.PENDING
+    @Column(name = "scan_status")
+    @Enumerated(EnumType.STRING)
+    var scanStatus: AttachmentScanStatus = AttachmentScanStatus.PENDING
 ) {
-    fun toAttachment(): AttachmentMetadata {
+    fun toMetadata(): AttachmentMetadata {
         return AttachmentMetadata(
             id = id,
-            name = name,
+            fileName = fileName,
             createdAt = createdAt,
             scanStatus = scanStatus,
             hankeTunnus = hanke.hankeTunnus!!,
@@ -50,7 +53,7 @@ class HankeAttachmentEntity(
         other as HankeAttachmentEntity
 
         if (id != other.id) return false
-        if (name != other.name) return false
+        if (fileName != other.fileName) return false
         if (!content.contentEquals(other.content)) return false
         if (createdByUserId != other.createdByUserId) return false
         if (createdAt != other.createdAt) return false
@@ -62,7 +65,7 @@ class HankeAttachmentEntity(
 
     override fun hashCode(): Int {
         var result = id?.hashCode() ?: 0
-        result = 31 * result + name.hashCode()
+        result = 31 * result + fileName.hashCode()
         result = 31 * result + content.contentHashCode()
         result = 31 * result + createdByUserId.hashCode()
         result = 31 * result + createdAt.hashCode()

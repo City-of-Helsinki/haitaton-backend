@@ -1,10 +1,10 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.attachment.AttachmentService
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.liitteet.AttachmentService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -56,15 +56,8 @@ class HankeControllerTest {
         fun hankeController(
             hankeService: HankeService,
             permissionService: PermissionService,
-            attachmentService: AttachmentService,
             disclosureLogService: DisclosureLogService,
-        ): HankeController =
-            HankeController(
-                hankeService,
-                permissionService,
-                attachmentService,
-                disclosureLogService
-            )
+        ): HankeController = HankeController(hankeService, permissionService, disclosureLogService)
     }
 
     private val mockedHankeTunnus = "AFC1234"

@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.liitteet.HankeAttachmentEntity
+import fi.hel.haitaton.hanke.attachment.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.Luokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.LocalDateTime

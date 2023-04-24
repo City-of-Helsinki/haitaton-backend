@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.liitteet
+package fi.hel.haitaton.hanke.attachment
 
 import java.util.UUID
 import org.springframework.stereotype.Service
@@ -17,6 +17,7 @@ interface AttachmentService {
     fun removeAttachment(uuid: UUID)
 }
 
-class AttachmentUploadError(str: String) : RuntimeException("Attachment upload error: $str")
+class AttachmentUploadException(str: String) :
+    RuntimeException("Attachment upload exception: $str")
 
 class AttachmentNotFoundException() : RuntimeException("Attachment not found")

@@ -1,10 +1,10 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationService
+import fi.hel.haitaton.hanke.attachment.AttachmentService
 import fi.hel.haitaton.hanke.gdpr.GdprJsonConverter
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatService
-import fi.hel.haitaton.hanke.liitteet.AttachmentService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService

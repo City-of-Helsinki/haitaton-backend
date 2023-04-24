@@ -1,8 +1,8 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.attachment.AttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.AttachmentScanStatus
 import fi.hel.haitaton.hanke.currentUserId
-import fi.hel.haitaton.hanke.liitteet.AttachmentMetadata
-import fi.hel.haitaton.hanke.liitteet.AttachmentScanStatus
 import java.time.LocalDateTime
 import java.util.UUID
 

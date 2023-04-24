@@ -1,13 +1,15 @@
-package fi.hel.haitaton.hanke.liitteet
+package fi.hel.haitaton.hanke.attachment
 
+import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.getCurrentTimeUTCAsLocalTime
 import java.util.UUID
-import javax.persistence.EntityNotFoundException
-import org.springframework.orm.jpa.JpaObjectRetrievalFailureException
+import mu.KotlinLogging
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
+
+private val logger = KotlinLogging.logger {}
 
 private val supportedFiletypes =
     mapOf(
@@ -37,34 +39,32 @@ class AttachmentServiceImpl(
     override fun add(hankeTunnus: String, liite: MultipartFile): AttachmentMetadata {
         val hanke =
             hankeRepository.findByHankeTunnus(hankeTunnus)
-                ?: throw AttachmentUploadError("Hanke not found")
+                ?: throw AttachmentUploadException("Hanke not found")
 
-        if (!supportedFiletypes.contains(liite.contentType)) {
-            throw AttachmentUploadError("Content type not supported: " + liite.contentType)
+        val fileName =
+            liite.originalFilename ?: throw AttachmentUploadException("Attachment file name null")
+
+        if (fileName.length > 128) {
+            throw AttachmentUploadException("File name too long. Maximum is 128.")
         }
 
-        if (liite.name.length > 128) {
-            throw AttachmentUploadError("File name too long. Maximum is 128.")
-        }
+        val sanitizedFileName = sanitize(fileName)
 
-        val extension = getExtension(liite.name)
-        if (!supportedFiletypes.get(liite.contentType)!!.contains(extension)) {
-            throw AttachmentUploadError(
-                "File extension does not match content type ${liite.contentType}"
+        if (!contentTypeMatchesExtension(liite.contentType, getExtension(sanitizedFileName))) {
+            throw AttachmentUploadException(
+                "File $sanitizedFileName extension does not match content type ${liite.contentType}"
             )
         }
 
         if (liite.size > 1024 * 1024 * FILESIZE_MAXIMUM_MEGABYTES) {
-            throw AttachmentUploadError(
+            throw AttachmentUploadException(
                 "File size should not exceed ${FILESIZE_MAXIMUM_MEGABYTES}MB"
             )
         }
 
-        val sanitizedFilename = sanitize(liite.name)
-
         val attachment =
             HankeAttachmentEntity(
-                name = sanitizedFilename,
+                fileName = sanitizedFileName,
                 content = liite.bytes,
                 createdAt = getCurrentTimeUTCAsLocalTime(),
                 createdByUserId = currentUserId(),
@@ -74,7 +74,7 @@ class AttachmentServiceImpl(
             )
 
         val savedAttachment = attachmentRepository.save(attachment)
-        return savedAttachment.toAttachment()
+        return savedAttachment.toMetadata()
     }
 
     @Transactional
@@ -86,32 +86,30 @@ class AttachmentServiceImpl(
     override fun getHankeAttachments(hankeTunnus: String): List<AttachmentMetadata> {
         val hanke =
             hankeRepository.findByHankeTunnus(hankeTunnus)
-                ?: throw AttachmentUploadError("Hanke not found")
-        val allByHanke = attachmentRepository.findAllByHanke(hanke)
-        return allByHanke.map { it.toAttachment() }
+                ?: throw HankeNotFoundException(hankeTunnus)
+        return hanke.liitteet.map { it.toMetadata() }
     }
 
     override fun get(uuid: UUID): AttachmentMetadata {
-        try {
-            val attachment = attachmentRepository.getOne(uuid)
-            return attachment.toAttachment()
-        } catch (ex: EntityNotFoundException) {
-            throw AttachmentNotFoundException()
-        } catch (ex: JpaObjectRetrievalFailureException) {
+        val attachment =
+            attachmentRepository.findById(uuid).orElseThrow { AttachmentNotFoundException() }
+        return attachment.toMetadata()
+    }
+
+    override fun getContent(id: UUID): ByteArray {
+        val attachment =
+            attachmentRepository.findById(id).orElseThrow { AttachmentNotFoundException() }
+        if (attachment.scanStatus == AttachmentScanStatus.OK) {
+            return attachment.content
+        } else {
             throw AttachmentNotFoundException()
         }
     }
 
-    override fun getContent(id: UUID): ByteArray {
-        try {
-            val attachment = attachmentRepository.getOne(id)
-            if (attachment.scanStatus == AttachmentScanStatus.OK) {
-                return attachment.content
-            } else {
-                throw AttachmentNotFoundException()
-            }
-        } catch (ex: EntityNotFoundException) {
-            throw AttachmentNotFoundException()
+    private fun contentTypeMatchesExtension(contentType: String?, extension: String): Boolean {
+        if (contentType.isNullOrBlank()) {
+            return false
         }
+        return supportedFiletypes[contentType]?.contains(extension) ?: false
     }
 }

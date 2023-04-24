@@ -16,19 +16,19 @@ databaseChangeLog:
                     primaryKey: true
                     nullable: false
               - column:
-                  name: name
+                  name: file_name
                   type: varchar(256)
                   remarks: "Name for the attachment file"
                   constraints:
                     nullable: false
               - column:
-                  name: createdbyuserid
+                  name: created_by_user_id
                   type: varchar(40)
                   remarks: "User id of the creator"
                   constraints:
                     nullable: false
               - column:
-                  name: createdat
+                  name: created_at
                   type: timestamp
                   remarks: "Creation date of the liite"
                   defaultValueComputed: CURRENT_TIMESTAMP
@@ -49,7 +49,7 @@ databaseChangeLog:
                   constraints:
                     nullable: false
               - column:
-                  name: scanstatus
+                  name: scan_status
                   type: varchar(16)
                   remarks: "State of the virus scan"
                   constraints:
