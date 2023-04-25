@@ -92,4 +92,4 @@ databaseChangeLog:
   - include:
       file: db/changelog/changesets/031-add-default-value-for-hankeyhteystieto-yhteyshenkilo.yml
   - include:
-      file: db/changelog/changesets/032-create-liitetaulut.yml
+      file: db/changelog/changesets/032-create-liitetaulu-hanke.yml

@@ -8,13 +8,13 @@ import org.springframework.web.multipart.MultipartFile
 interface AttachmentService {
     fun getHankeAttachments(hankeTunnus: String): List<AttachmentMetadata>
 
-    fun get(uuid: UUID): AttachmentMetadata
+    fun getMetadata(id: UUID): AttachmentMetadata
 
     fun getContent(id: UUID): ByteArray
 
     fun add(hankeTunnus: String, liite: MultipartFile): AttachmentMetadata
 
-    fun removeAttachment(uuid: UUID)
+    fun removeAttachment(id: UUID)
 }
 
 class AttachmentUploadException(str: String) :

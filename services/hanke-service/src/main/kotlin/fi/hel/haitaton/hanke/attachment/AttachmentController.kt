@@ -40,7 +40,7 @@ class AttachmentController(
     @Autowired private val permissionService: PermissionService,
 ) {
 
-    @GetMapping("liite/{uuid}")
+    @GetMapping("liite/{id}")
     @Operation(
         summary = "Get attachment metadata by UUID",
         description = "Return information about an attachment without binary data."
@@ -65,8 +65,8 @@ class AttachmentController(
                 ),
             ]
     )
-    fun getAttachment(@PathVariable uuid: UUID): AttachmentMetadata {
-        val attachmentMetadata = attachmentService.get(uuid)
+    fun getAttachment(@PathVariable id: UUID): AttachmentMetadata {
+        val attachmentMetadata = attachmentService.getMetadata(id)
         val hankeId = hankeService.getHankeId(attachmentMetadata.hankeTunnus)
 
         checkAttachmentPermission(hankeId, currentUserId(), VIEW)
@@ -74,7 +74,7 @@ class AttachmentController(
         return attachmentMetadata
     }
 
-    @GetMapping("liite/{uuid}/content")
+    @GetMapping("liite/{id}/content")
     @Operation(summary = "Download attachment file.", description = "Returns the uploaded file.")
     @ApiResponses(
         value =
@@ -96,15 +96,15 @@ class AttachmentController(
             ]
     )
     fun getAttachmentContent(
-        @PathVariable uuid: UUID,
+        @PathVariable id: UUID,
         response: HttpServletResponse
     ): ResponseEntity<ByteArray> {
-        val attachmentMetadata = attachmentService.get(uuid)
+        val attachmentMetadata = attachmentService.getMetadata(id)
         val hankeId = hankeService.getHankeId(attachmentMetadata.hankeTunnus)
 
         checkAttachmentPermission(hankeId, currentUserId(), VIEW)
 
-        val metadata = attachmentService.get(uuid)
+        val metadata = attachmentService.getMetadata(id)
         val mimeType = URLConnection.guessContentTypeFromName(metadata.fileName)
 
         val responseHeaders =
@@ -113,11 +113,11 @@ class AttachmentController(
                 add(CONTENT_DISPOSITION, "attachment; filename=${metadata.fileName}")
             }
 
-        val file = attachmentService.getContent(uuid)
+        val file = attachmentService.getContent(id)
         return ResponseEntity.ok().headers(responseHeaders).body(file)
     }
 
-    @DeleteMapping("liite/{uuid}")
+    @DeleteMapping("liite/{id}")
     @ApiResponses(
         value =
             [
@@ -134,13 +134,13 @@ class AttachmentController(
                 ),
             ]
     )
-    fun removeAttachment(@PathVariable uuid: UUID) {
-        val info = attachmentService.get(uuid)
+    fun removeAttachment(@PathVariable id: UUID) {
+        val info = attachmentService.getMetadata(id)
         val hankeId = hankeService.getHankeId(info.hankeTunnus)
 
         checkAttachmentPermission(hankeId, currentUserId(), EDIT)
 
-        return attachmentService.removeAttachment(uuid)
+        return attachmentService.removeAttachment(id)
     }
 
     @GetMapping("/hanke/{hankeTunnus}/liite")

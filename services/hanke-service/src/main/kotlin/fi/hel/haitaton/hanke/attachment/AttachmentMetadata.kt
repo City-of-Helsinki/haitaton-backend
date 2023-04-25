@@ -1,13 +1,13 @@
 package fi.hel.haitaton.hanke.attachment
 
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.util.UUID
 
 data class AttachmentMetadata(
     val id: UUID?,
-    val fileName: String?,
-    val createdByUserId: String?,
-    val createdAt: LocalDateTime?,
-    val scanStatus: AttachmentScanStatus?,
+    val fileName: String,
+    val createdByUserId: String,
+    val createdAt: OffsetDateTime,
+    val scanStatus: AttachmentScanStatus,
     val hankeTunnus: String,
 )

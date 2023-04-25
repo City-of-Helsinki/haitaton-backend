@@ -1,11 +1,11 @@
 databaseChangeLog:
   - changeSet:
-      id: 032-create-liitetaulut
-      comment: Create liitetaulut
+      id: 032-create-liitetaulu-hanke
+      comment: Create liitetaulu hanke
       author: Niko Junkala
       changes:
         - createTable:
-            tableName: attachment
+            tableName: hanke_attachment
             remarks: "Contains attachments"
             columns:
               - column:

@@ -4,7 +4,10 @@ import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import io.mockk.clearAllMocks
+import java.time.OffsetDateTime
+import java.time.temporal.ChronoUnit
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.byLessThan
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -26,7 +29,7 @@ private const val FILE_PARAM = "liite"
 @ActiveProfiles("default")
 class AttachmentServiceITests : DatabaseTest() {
     @Autowired private lateinit var attachmentService: AttachmentService
-    @Autowired private lateinit var attachmentRepository: AttachmentRepository
+    @Autowired private lateinit var hankeAttachmentRepository: HankeAttachmentRepository
     @Autowired private lateinit var hankeService: HankeService
 
     @BeforeEach
@@ -50,10 +53,11 @@ class AttachmentServiceITests : DatabaseTest() {
                 )
             )
 
+        val now = OffsetDateTime.now()
         assertThat(result.id).isNotNull
         assertThat(result.createdByUserId).isEqualTo(USERNAME)
         assertThat(result.fileName).isEqualTo(FILE_NAME)
-        assertThat(result.createdAt).isNotNull
+        assertThat(result.createdAt).isBefore(now).isCloseTo(now, byLessThan(1, ChronoUnit.SECONDS))
         assertThat(result.hankeTunnus).isEqualTo(createdHanke.hankeTunnus)
         assertThat(result.scanStatus)
             .isEqualTo(AttachmentScanStatus.OK) // FIXME should be PENDING with virus scan
@@ -194,9 +198,9 @@ class AttachmentServiceITests : DatabaseTest() {
                     byteArrayOf(1, 2, 3, 4)
                 )
             )
-        val att = attachmentRepository.getOne(result.id!!)
+        val att = hankeAttachmentRepository.getOne(result.id!!)
         att.scanStatus = AttachmentScanStatus.PENDING
-        attachmentRepository.save(att)
+        hankeAttachmentRepository.save(att)
 
         assertThrows<AttachmentNotFoundException> { attachmentService.getContent(result.id!!) }
     }
@@ -216,9 +220,9 @@ class AttachmentServiceITests : DatabaseTest() {
                     byteArrayOf(1, 2, 3, 4)
                 )
             )
-        val att = attachmentRepository.getOne(result.id!!)
+        val att = hankeAttachmentRepository.getOne(result.id!!)
         att.scanStatus = AttachmentScanStatus.FAILED
-        attachmentRepository.save(att)
+        hankeAttachmentRepository.save(att)
 
         assertThrows<AttachmentNotFoundException> { attachmentService.getContent(result.id!!) }
     }
@@ -241,6 +245,6 @@ class AttachmentServiceITests : DatabaseTest() {
 
         attachmentService.removeAttachment(result.id!!)
 
-        assertThrows<AttachmentNotFoundException> { attachmentService.get(result.id!!) }
+        assertThrows<AttachmentNotFoundException> { attachmentService.getMetadata(result.id!!) }
     }
 }

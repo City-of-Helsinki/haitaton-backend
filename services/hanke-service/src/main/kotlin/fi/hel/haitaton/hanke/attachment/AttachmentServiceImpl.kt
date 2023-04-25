@@ -3,13 +3,10 @@ package fi.hel.haitaton.hanke.attachment
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.currentUserId
-import fi.hel.haitaton.hanke.getCurrentTimeUTCAsLocalTime
+import java.time.OffsetDateTime
 import java.util.UUID
-import mu.KotlinLogging
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
-
-private val logger = KotlinLogging.logger {}
 
 private val supportedFiletypes =
     mapOf(
@@ -24,7 +21,7 @@ private const val FILESIZE_MAXIMUM_MEGABYTES = 10
 
 class AttachmentServiceImpl(
     val hankeRepository: HankeRepository,
-    val attachmentRepository: AttachmentRepository,
+    val hankeAttachmentRepository: HankeAttachmentRepository,
 ) : AttachmentService {
 
     fun getExtension(filename: String): String {
@@ -64,23 +61,22 @@ class AttachmentServiceImpl(
 
         val attachment =
             HankeAttachmentEntity(
+                id = null,
                 fileName = sanitizedFileName,
                 content = liite.bytes,
-                createdAt = getCurrentTimeUTCAsLocalTime(),
+                createdAt = OffsetDateTime.now(),
                 createdByUserId = currentUserId(),
+                scanStatus = AttachmentScanStatus.OK,
                 hanke = hanke,
-                scanStatus =
-                    AttachmentScanStatus.OK // FIXME this should be set to PENDING before launch
             )
 
-        val savedAttachment = attachmentRepository.save(attachment)
-        return savedAttachment.toMetadata()
+        return hankeAttachmentRepository.save(attachment).toMetadata()
     }
 
     @Transactional
-    override fun removeAttachment(uuid: UUID) {
-        attachmentRepository.deleteById(uuid)
-        attachmentRepository.flush()
+    override fun removeAttachment(id: UUID) {
+        hankeAttachmentRepository.deleteById(id)
+        hankeAttachmentRepository.flush()
     }
 
     override fun getHankeAttachments(hankeTunnus: String): List<AttachmentMetadata> {
@@ -90,21 +86,20 @@ class AttachmentServiceImpl(
         return hanke.liitteet.map { it.toMetadata() }
     }
 
-    override fun get(uuid: UUID): AttachmentMetadata {
-        val attachment =
-            attachmentRepository.findById(uuid).orElseThrow { AttachmentNotFoundException() }
-        return attachment.toMetadata()
-    }
+    override fun getMetadata(id: UUID): AttachmentMetadata = findAttachment(id).toMetadata()
 
     override fun getContent(id: UUID): ByteArray {
-        val attachment =
-            attachmentRepository.findById(id).orElseThrow { AttachmentNotFoundException() }
+        val attachment = findAttachment(id)
+
         if (attachment.scanStatus == AttachmentScanStatus.OK) {
             return attachment.content
         } else {
             throw AttachmentNotFoundException()
         }
     }
+
+    private fun findAttachment(id: UUID) =
+        hankeAttachmentRepository.findById(id).orElseThrow { AttachmentNotFoundException() }
 
     private fun contentTypeMatchesExtension(contentType: String?, extension: String): Boolean {
         if (contentType.isNullOrBlank()) {

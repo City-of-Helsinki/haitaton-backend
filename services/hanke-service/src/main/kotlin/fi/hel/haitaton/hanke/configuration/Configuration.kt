@@ -12,9 +12,9 @@ import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.CableReportServiceAllu
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationService
-import fi.hel.haitaton.hanke.attachment.AttachmentRepository
 import fi.hel.haitaton.hanke.attachment.AttachmentService
 import fi.hel.haitaton.hanke.attachment.AttachmentServiceImpl
+import fi.hel.haitaton.hanke.attachment.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
 import fi.hel.haitaton.hanke.geometria.GeometriatService
@@ -173,8 +173,8 @@ class Configuration {
     @Bean
     fun attachmentsService(
         hankeRepository: HankeRepository,
-        attachmentRepository: AttachmentRepository
-    ): AttachmentService = AttachmentServiceImpl(hankeRepository, attachmentRepository)
+        hankeAttachmentRepository: HankeAttachmentRepository
+    ): AttachmentService = AttachmentServiceImpl(hankeRepository, hankeAttachmentRepository)
 
     companion object {
         /** Create a web client that can download large files in memory. Up to 20 megabytes. */
