@@ -8,9 +8,11 @@ import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationHistory
 import fi.hel.haitaton.hanke.allu.ApplicationPdfService
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
+import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -37,6 +39,7 @@ open class ApplicationService(
     private val disclosureLogService: DisclosureLogService,
     private val applicationLoggingService: ApplicationLoggingService,
     private val hankeKayttajaService: HankeKayttajaService,
+    private val emailSenderService: EmailSenderService,
     private val geometriatDao: GeometriatDao,
     private val permissionService: PermissionService,
     private val hankeRepository: HankeRepository,
@@ -316,19 +319,80 @@ open class ApplicationService(
         }
         applicationHistory.events
             .sortedBy { it.eventTime }
-            .forEach { event ->
-                application.alluStatus = event.newStatus
-                application.applicationIdentifier = event.applicationIdentifier
-                logger.info {
-                    "Updating application with new status, " +
-                        "id=${application.id}, " +
-                        "alluid=${application.alluid}, " +
-                        "application identifier=${application.applicationIdentifier}, " +
-                        "new status=${application.alluStatus}, " +
-                        "event time=${event.eventTime}"
-                }
-            }
+            .forEach { handleApplicationEvent(application, it) }
         applicationRepository.save(application)
+    }
+
+    private fun handleApplicationEvent(
+        application: ApplicationEntity,
+        event: ApplicationStatusEvent
+    ) {
+        application.alluStatus = event.newStatus
+        application.applicationIdentifier = event.applicationIdentifier
+        logger.info {
+            "Updating application with new status, " +
+                "id=${application.id}, " +
+                "alluid=${application.alluid}, " +
+                "application identifier=${application.applicationIdentifier}, " +
+                "new status=${application.alluStatus}, " +
+                "event time=${event.eventTime}"
+        }
+        if (event.newStatus == ApplicationStatus.DECISION) {
+            sendDecisionReadyEmails(application, event.applicationIdentifier)
+        }
+    }
+
+    private fun sendDecisionReadyEmails(
+        application: ApplicationEntity,
+        applicationIdentifier: String
+    ) {
+        val receivers =
+            application.applicationData
+                .customersWithContacts()
+                .flatMap { it.contacts }
+                .filter { it.orderer }
+
+        if (receivers.isEmpty()) {
+            logger.error {
+                "No receivers found for decision ready email, not sending any." +
+                    "applicationId=${application.id}, applicationIdentifier=${applicationIdentifier}"
+            }
+            return
+        }
+        logger.info { "Sending application ready emails to ${receivers.size} receivers" }
+
+        // Check even things that should never be null, because NPE here would cause the
+        // scheduled check to repeat the error every minute indefinitely, without giving
+        // other applications a chance to get their statuses checked.
+        val hankeTunnus = application.hanke.hankeTunnus
+        if (hankeTunnus == null) {
+            logger.error {
+                "Can't send decision ready emails, because hankeTunnus is null. " +
+                    "applicationId=${application.id}, applicationIdentifier=$applicationIdentifier"
+            }
+            return
+        }
+
+        receivers.forEach {
+            sendDecisionReadyEmail(it.email, hankeTunnus, applicationIdentifier, application.id)
+        }
+    }
+
+    private fun sendDecisionReadyEmail(
+        email: String?,
+        hankeTunnus: String,
+        applicationIdentifier: String,
+        applicationId: Long?,
+    ) {
+        if (email == null) {
+            logger.error {
+                "Can't send decision ready email, because contact email is null. " +
+                    "applicationId=$applicationId, applicationIdentifier=${applicationIdentifier}"
+            }
+            return
+        }
+
+        emailSenderService.sendJohtoselvitysCompleteEmail(email, hankeTunnus, applicationIdentifier)
     }
 
     private fun getById(id: Long): ApplicationEntity {

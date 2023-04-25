@@ -12,6 +12,9 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.matches
 import assertk.assertions.prop
+import com.icegreen.greenmail.configuration.GreenMailConfiguration
+import com.icegreen.greenmail.junit5.GreenMailExtension
+import com.icegreen.greenmail.util.ServerSetupTest
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
@@ -28,10 +31,13 @@ import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.findByType
+import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
@@ -65,6 +71,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.skyscreamer.jsonassert.JSONAssert
@@ -82,9 +89,10 @@ private val dataWithoutAreas = AlluDataFactory.createCableReportApplicationData(
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("default")
+@ActiveProfiles("default", "emailtest")
 @WithMockUser(USERNAME)
 class ApplicationServiceITest : DatabaseTest() {
+
     @MockkBean private lateinit var cableReportServiceAllu: CableReportService
     @Autowired private lateinit var applicationService: ApplicationService
     @Autowired private lateinit var hankeService: HankeService
@@ -957,7 +965,7 @@ class ApplicationServiceITest : DatabaseTest() {
         assertThat(tunnisteet[0].hankeKayttaja).isNotNull()
         val kayttaja = tunnisteet[0].hankeKayttaja!!
         assertThat(kayttaja.nimi).isEqualTo("Teppo Testihenkilö")
-        assertThat(kayttaja.sahkoposti).isEqualTo("teppo@example.test")
+        assertThat(kayttaja.sahkoposti).isEqualTo(teppoEmail)
         assertThat(kayttaja.hankeId).isEqualTo(application.hanke.id)
         assertThat(kayttaja.permission).isNull()
         assertThat(kayttaja.kayttajaTunniste).isNotNull()
@@ -1236,10 +1244,17 @@ class ApplicationServiceITest : DatabaseTest() {
     @Nested
     inner class HandleApplicationUpdates {
 
+        @JvmField
+        @RegisterExtension
+        val greenMail: GreenMailExtension =
+            GreenMailExtension(ServerSetupTest.SMTP)
+                .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication())
+
         /** The timestamp used in the initial DB migration. */
         private val placeholderUpdateTime = OffsetDateTime.parse("2017-01-01T00:00:00Z")
         private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
         private val alluid = 42
+        private val identifier = ApplicationHistoryFactory.defaultApplicationIdentifier
 
         @Test
         fun `updates the last updated time with empty histories`() {
@@ -1259,24 +1274,21 @@ class ApplicationServiceITest : DatabaseTest() {
             alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = alluid }
             val firstEventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
             val history =
-                ApplicationHistoryFactory.create(applicationId = alluid)
-                    .copy(
-                        events =
-                            listOf(
-                                ApplicationHistoryFactory.createEvent(
-                                    firstEventTime.plusDays(5),
-                                    ApplicationStatus.PENDING
-                                ),
-                                ApplicationHistoryFactory.createEvent(
-                                    firstEventTime.plusDays(10),
-                                    ApplicationStatus.HANDLING
-                                ),
-                                ApplicationHistoryFactory.createEvent(
-                                    firstEventTime,
-                                    ApplicationStatus.PENDING
-                                ),
-                            )
-                    )
+                ApplicationHistoryFactory.create(
+                    alluid,
+                    ApplicationHistoryFactory.createEvent(
+                        firstEventTime.plusDays(5),
+                        ApplicationStatus.PENDING
+                    ),
+                    ApplicationHistoryFactory.createEvent(
+                        firstEventTime.plusDays(10),
+                        ApplicationStatus.HANDLING
+                    ),
+                    ApplicationHistoryFactory.createEvent(
+                        firstEventTime,
+                        ApplicationStatus.PENDING
+                    ),
+                )
 
             applicationService.handleApplicationUpdates(listOf(history), updateTime)
 
@@ -1319,6 +1331,37 @@ class ApplicationServiceITest : DatabaseTest() {
                 )
             assertThat(applications.map { it.applicationIdentifier })
                 .containsExactlyInAnyOrder("JS2300082", "JS2300084")
+        }
+
+        @Test
+        fun `sends email to the orderer when application gets a decision`() {
+            val hanke = createHankeEntity()
+            applicationRepository.save(
+                AlluDataFactory.createApplicationEntity(
+                        alluid = alluid,
+                        applicationIdentifier = identifier,
+                        userId = "user",
+                        hanke = hanke,
+                    )
+                    .withCustomer(AlluDataFactory.createCompanyCustomerWithOrderer())
+            )
+            val histories =
+                listOf(
+                    ApplicationHistoryFactory.create(
+                        alluid,
+                        ApplicationHistoryFactory.createEvent(
+                            applicationIdentifier = identifier,
+                            newStatus = ApplicationStatus.DECISION
+                        )
+                    ),
+                )
+
+            applicationService.handleApplicationUpdates(histories, updateTime)
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.allRecipients).hasSize(1)
+            assertThat(email.allRecipients[0].toString()).isEqualTo(teppoEmail)
+            assertThat(email.subject).isEqualTo("Hakemanne johtoselvitys $identifier on käsitelty")
         }
     }
 
