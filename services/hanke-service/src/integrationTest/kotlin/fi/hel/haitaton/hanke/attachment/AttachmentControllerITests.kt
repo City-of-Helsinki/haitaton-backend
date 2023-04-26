@@ -74,7 +74,7 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
             .returns(AttachmentFactory.create(HANKE_TUNNUS, liiteId))
         every { permissionService.hasPermission(hankeId, USERNAME, VIEW) }.returns(false)
 
-        get("/liite/${liiteId}").andExpect(MockMvcResultMatchers.status().`is`(404))
+        get("/liitteet/${liiteId}").andExpect(MockMvcResultMatchers.status().`is`(404))
 
         verify { attachmentService.getMetadata(liiteId) }
         verify { permissionService.hasPermission(hankeId, USERNAME, VIEW) }
@@ -90,7 +90,7 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
             .returns(AttachmentFactory.create(HANKE_TUNNUS, liiteId, FILE_PDF))
         every { permissionService.hasPermission(hankeId, USERNAME, VIEW) }.returns(true)
 
-        get("/liite/${liiteId}").andExpect(MockMvcResultMatchers.status().`is`(200))
+        get("/liitteet/${liiteId}").andExpect(MockMvcResultMatchers.status().`is`(200))
 
         verify { attachmentService.getMetadata(liiteId) }
         verify { permissionService.hasPermission(hankeId, USERNAME, VIEW) }
@@ -107,7 +107,7 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
         every { attachmentService.getContent(liiteId) }.returns(byteArrayOf(1, 2, 3, 4))
         every { permissionService.hasPermission(hankeId, USERNAME, VIEW) }.returns(true)
 
-        get("/liite/${liiteId}/content")
+        get("/liitteet/${liiteId}/content")
             .andExpect(MockMvcResultMatchers.status().`is`(200))
             .andExpect(header().string(CONTENT_DISPOSITION, "attachment; filename=${FILE_PDF}"))
             .andExpect(content().contentType(APPLICATION_PDF))
@@ -130,7 +130,7 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
         every { permissionService.hasPermission(hankeId, userId, EDIT) }.returns(true)
         every { attachmentService.removeAttachment(liiteId) } just runs
 
-        delete("/liite/${liiteId}").andExpect(MockMvcResultMatchers.status().`is`(200))
+        delete("/liitteet/${liiteId}").andExpect(MockMvcResultMatchers.status().`is`(200))
 
         verify { attachmentService.getMetadata(liiteId) }
         verify { permissionService.hasPermission(hankeId, userId, EDIT) }
@@ -153,7 +153,8 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
                 )
             )
 
-        get("/hanke/${HANKE_TUNNUS}/liite").andExpect(MockMvcResultMatchers.status().`is`(200))
+        get("/hankkeet/${HANKE_TUNNUS}/liitteet")
+            .andExpect(MockMvcResultMatchers.status().`is`(200))
 
         verify { hankeService.getHankeId(HANKE_TUNNUS) }
         verify { permissionService.hasPermission(hankeId, userId, VIEW) }
@@ -224,7 +225,7 @@ class AttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : Con
 
     private fun sendAttachment(file: MockMultipartFile): ResultActions {
         return mockMvc.perform(
-            MockMvcRequestBuilders.multipart("/hanke/${HANKE_TUNNUS}/liite")
+            MockMvcRequestBuilders.multipart("/hankkeet/${HANKE_TUNNUS}/liitteet")
                 .file(file)
                 .with(SecurityMockMvcRequestPostProcessors.csrf())
         )

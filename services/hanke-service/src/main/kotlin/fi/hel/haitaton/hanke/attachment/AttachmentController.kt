@@ -40,7 +40,7 @@ class AttachmentController(
     @Autowired private val permissionService: PermissionService,
 ) {
 
-    @GetMapping("liite/{id}")
+    @GetMapping("liitteet/{id}")
     @Operation(
         summary = "Get attachment metadata by UUID",
         description = "Return information about an attachment without binary data."
@@ -74,7 +74,7 @@ class AttachmentController(
         return attachmentMetadata
     }
 
-    @GetMapping("liite/{id}/content")
+    @GetMapping("liitteet/{id}/content")
     @Operation(summary = "Download attachment file.", description = "Returns the uploaded file.")
     @ApiResponses(
         value =
@@ -107,17 +107,15 @@ class AttachmentController(
         val metadata = attachmentService.getMetadata(id)
         val mimeType = URLConnection.guessContentTypeFromName(metadata.fileName)
 
-        val responseHeaders =
-            HttpHeaders().apply {
-                contentType = MediaType.parseMediaType(mimeType)
-                add(CONTENT_DISPOSITION, "attachment; filename=${metadata.fileName}")
-            }
+        val headers = HttpHeaders()
+        headers.contentType = MediaType.parseMediaType(mimeType)
+        headers.add(CONTENT_DISPOSITION, "attachment; filename=${metadata.fileName}")
 
         val file = attachmentService.getContent(id)
-        return ResponseEntity.ok().headers(responseHeaders).body(file)
+        return ResponseEntity.ok().headers(headers).body(file)
     }
 
-    @DeleteMapping("liite/{id}")
+    @DeleteMapping("liitteet/{id}")
     @ApiResponses(
         value =
             [
@@ -143,7 +141,7 @@ class AttachmentController(
         return attachmentService.removeAttachment(id)
     }
 
-    @GetMapping("/hanke/{hankeTunnus}/liite")
+    @GetMapping("/hankkeet/{hankeTunnus}/liitteet")
     @Operation(summary = "Get attachments related to Hanke")
     @ApiResponses(
         value =
@@ -169,7 +167,7 @@ class AttachmentController(
         return attachmentService.getHankeAttachments(hankeTunnus)
     }
 
-    @PostMapping("/hanke/{hankeTunnus}/liite")
+    @PostMapping("/hankkeet/{hankeTunnus}/liitteet")
     @Operation(summary = "Upload an attachment for Hanke")
     @ApiResponses(
         value =

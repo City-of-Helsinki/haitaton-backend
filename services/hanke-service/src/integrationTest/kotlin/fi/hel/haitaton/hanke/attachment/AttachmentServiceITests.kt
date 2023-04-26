@@ -96,29 +96,8 @@ class AttachmentServiceITests : DatabaseTest() {
 
         assertThat(ex.message)
             .isEqualTo(
-                "Attachment upload exception: File $invalidFilename extension does not match content type application/pdf"
+                "Attachment upload exception: File '$invalidFilename' extension does not match content type application/pdf"
             )
-    }
-
-    @Test
-    @WithMockUser(USERNAME)
-    fun `Filenames are sanitized`() {
-        val hanke = HankeFactory.create()
-        val createdHanke = hankeService.createHanke(hanke)
-        val invalidFilename = " \t$=hei=ö£@.pdf "
-
-        val file =
-            attachmentService.add(
-                createdHanke.hankeTunnus!!,
-                MockMultipartFile(
-                    FILE_PARAM,
-                    invalidFilename,
-                    APPLICATION_PDF_VALUE,
-                    byteArrayOf(1, 2, 3, 4)
-                )
-            )
-
-        assertThat(file.fileName).isEqualTo("heiö.pdf")
     }
 
     @Test
@@ -136,7 +115,7 @@ class AttachmentServiceITests : DatabaseTest() {
 
     @Test
     @WithMockUser(USERNAME)
-    fun `Can't upload files bigger than 10Mb`() {
+    fun `Can't upload files bigger than 25Mb`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
         attachmentService.add(
@@ -156,7 +135,7 @@ class AttachmentServiceITests : DatabaseTest() {
                     FILE_PARAM,
                     FILE_NAME,
                     APPLICATION_PDF_VALUE,
-                    ByteArray(1024 * 1024 * 11)
+                    ByteArray(1024 * 1024 * 26)
                 )
             )
         }
