@@ -164,7 +164,7 @@ class AttachmentServiceITests : DatabaseTest() {
                     byteArrayOf(1, 2, 3, 4)
                 )
             )
-        val att = hankeAttachmentRepository.getOne(result.id!!)
+        val att = hankeAttachmentRepository.getById(result.id!!)
         att.scanStatus = AttachmentScanStatus.PENDING
         hankeAttachmentRepository.save(att)
 
@@ -185,7 +185,7 @@ class AttachmentServiceITests : DatabaseTest() {
                     byteArrayOf(1, 2, 3, 4)
                 )
             )
-        val att = hankeAttachmentRepository.getOne(result.id!!)
+        val att = hankeAttachmentRepository.getById(result.id!!)
         att.scanStatus = AttachmentScanStatus.FAILED
         hankeAttachmentRepository.save(att)
 

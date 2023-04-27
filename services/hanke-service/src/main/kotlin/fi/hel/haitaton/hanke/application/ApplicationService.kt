@@ -209,7 +209,7 @@ open class ApplicationService(
         updateTime: OffsetDateTime
     ) {
         applicationHistories.forEach { handleApplicationUpdate(it) }
-        val status = alluStatusRepository.getOne(1)
+        val status = alluStatusRepository.getById(1)
         status.historyLastUpdated = updateTime
         alluStatusRepository.save(status)
     }
@@ -354,6 +354,7 @@ open class ApplicationService(
     }
 
     private fun updateApplicationInAllu(alluid: Int, applicationData: ApplicationData) {
+        logger.info { "Uploading updated application with alluId $alluid" }
         when (applicationData) {
             is CableReportApplicationData -> updateCableReportInAllu(alluid, applicationData)
         }
