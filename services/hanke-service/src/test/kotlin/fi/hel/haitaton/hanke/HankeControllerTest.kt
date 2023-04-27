@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.attachment.AttachmentService
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
@@ -45,6 +46,9 @@ class HankeControllerTest {
 
         @Bean
         fun permissionService(): PermissionService = Mockito.mock(PermissionService::class.java)
+
+        @Bean
+        fun attachmentService(): AttachmentService = Mockito.mock(AttachmentService::class.java)
 
         @Bean fun yhteystietoLoggingService(): DisclosureLogService = mockk(relaxUnitFun = true)
 

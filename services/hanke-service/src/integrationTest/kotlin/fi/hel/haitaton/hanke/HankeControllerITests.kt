@@ -41,8 +41,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 private const val USERNAME = "test"
 private const val HANKE_TUNNUS = "HAI21-1"
-
 private const val BASE_URL = "/hankkeet"
+
 /**
  * Testing the Hanke Controller through a full REST request.
  *
@@ -51,7 +51,7 @@ private const val BASE_URL = "/hankkeet"
 @WebMvcTest(HankeController::class)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
-@WithMockUser("test", roles = ["haitaton-user"])
+@WithMockUser(USERNAME, roles = ["haitaton-user"])
 class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired lateinit var hankeService: HankeService // faking these calls

@@ -34,6 +34,8 @@ enum class HankeError(val errorMessage: String) {
     HAI2006("Application decision not found"),
     HAI2007("Application geometry not inside any hankealue"),
     HAI2008("Application contains invalid data"),
+    HAI3001("Attachment upload failed"),
+    HAI3002("Loading attachment failed"),
     ;
 
     val errorCode: String
