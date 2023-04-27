@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.security
 
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
-import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
 import fi.hel.haitaton.hanke.organisaatio.Organisaatio
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioController
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
@@ -19,17 +18,16 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 /**
- * Tests to ensure OrganisaatioController has correct authentication and
- * authorization restrictions and handling.
+ * Tests to ensure OrganisaatioController has correct authentication and authorization restrictions
+ * and handling.
  */
 @WebMvcTest(OrganisaatioController::class)
-@Import(IntegrationTestConfiguration::class, IntegrationTestResourceServerConfig::class)
+@Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class OrganisaatioControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
 
-    @Autowired
-    lateinit var organisaatioService: OrganisaatioService
+    @Autowired lateinit var organisaatioService: OrganisaatioService
 
     @Test
     @WithMockUser(username = "test7358", roles = ["haitaton-user"])
@@ -56,10 +54,8 @@ class OrganisaatioControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     }
 
     private fun performGetOrganisaatiot(): ResultActions {
-        val organisations = listOf(
-                Organisaatio(1, "DNA", "DNA Oy"),
-                Organisaatio(2, "WELHO", "DNA WELHO Oy")
-        )
+        val organisations =
+            listOf(Organisaatio(1, "DNA", "DNA Oy"), Organisaatio(2, "WELHO", "DNA WELHO Oy"))
 
         every { organisaatioService.getAll() }.returns(organisations)
 

@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.security
 
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
-import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.geometria.GeometriaController
@@ -35,7 +34,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
  * "ok" (when authenticated correctly), it will be usable as an authentication test's operation.
  */
 @WebMvcTest(GeometriaController::class)
-@Import(IntegrationTestConfiguration::class, IntegrationTestResourceServerConfig::class)
+@Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class GeometriaControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
