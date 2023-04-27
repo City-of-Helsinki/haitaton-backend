@@ -46,6 +46,7 @@ import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import io.mockk.Called
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
@@ -61,6 +62,7 @@ import org.junit.jupiter.api.Assertions.assertNotEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -102,8 +104,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @AfterEach
     fun checkMocks() {
-        // TODO: Needs newer MockK, which needs newer Spring test dependencies
-        // checkUnnecessaryStub()
+        checkUnnecessaryStub()
         confirmVerified(cableReportServiceAllu)
     }
 
@@ -171,7 +172,6 @@ class ApplicationServiceITest : DatabaseTest() {
             )
         auditLogRepository.deleteAll()
         assertThat(auditLogRepository.findAll()).isEmpty()
-        every { cableReportServiceAllu.create(any()) }.returns(2)
 
         applicationService.updateApplicationData(
             application.id!!,
@@ -1233,91 +1233,93 @@ class ApplicationServiceITest : DatabaseTest() {
         verify { cableReportServiceAllu.getDecisionPdf(134) }
     }
 
-    // TODO: Needs Spring 5.3, which comes with Spring Boot 2.4.
-    //  Inner test classes won't inherit properties from the enclosing class until then.
-    // @Nested class HandleApplicationUpdates {
+    @Nested
+    inner class HandleApplicationUpdates {
 
-    /** The timestamp used in the initial DB migration. */
-    private val placeholderUpdateTime = OffsetDateTime.parse("2017-01-01T00:00:00Z")
-    private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
-    private val alluid = 42
+        /** The timestamp used in the initial DB migration. */
+        private val placeholderUpdateTime = OffsetDateTime.parse("2017-01-01T00:00:00Z")
+        private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
+        private val alluid = 42
 
-    @Test
-    fun `handleApplicationUpdates with empty histories updates the last updated time`() {
-        assertThat(applicationRepository.findAll()).isEmpty()
-        assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
+        @Test
+        fun `updates the last updated time with empty histories`() {
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
 
-        applicationService.handleApplicationUpdates(listOf(), updateTime)
+            applicationService.handleApplicationUpdates(listOf(), updateTime)
 
-        assertEquals(updateTime, alluStatusRepository.getLastUpdateTime().asUtc())
-    }
+            assertEquals(updateTime, alluStatusRepository.getLastUpdateTime().asUtc())
+        }
 
-    @Test
-    fun `handleApplicationUpdates updates the application statuses in the correct order`() {
-        assertThat(applicationRepository.findAll()).isEmpty()
-        assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
-        val hanke = createHankeEntity()
-        alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = alluid }
-        val firstEventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
-        val history =
-            ApplicationHistoryFactory.create(applicationId = alluid)
-                .copy(
-                    events =
-                        listOf(
-                            ApplicationHistoryFactory.createEvent(
-                                firstEventTime.plusDays(5),
-                                ApplicationStatus.PENDING
-                            ),
-                            ApplicationHistoryFactory.createEvent(
-                                firstEventTime.plusDays(10),
-                                ApplicationStatus.HANDLING
-                            ),
-                            ApplicationHistoryFactory.createEvent(
-                                firstEventTime,
-                                ApplicationStatus.PENDING
-                            ),
-                        )
+        @Test
+        fun `updates the application statuses in the correct order`() {
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
+            val hanke = createHankeEntity()
+            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = alluid }
+            val firstEventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
+            val history =
+                ApplicationHistoryFactory.create(applicationId = alluid)
+                    .copy(
+                        events =
+                            listOf(
+                                ApplicationHistoryFactory.createEvent(
+                                    firstEventTime.plusDays(5),
+                                    ApplicationStatus.PENDING
+                                ),
+                                ApplicationHistoryFactory.createEvent(
+                                    firstEventTime.plusDays(10),
+                                    ApplicationStatus.HANDLING
+                                ),
+                                ApplicationHistoryFactory.createEvent(
+                                    firstEventTime,
+                                    ApplicationStatus.PENDING
+                                ),
+                            )
+                    )
+
+            applicationService.handleApplicationUpdates(listOf(history), updateTime)
+
+            assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isEqualTo(updateTime)
+            val application = applicationRepository.getOneByAlluid(alluid)
+            assertThat(application)
+                .isNotNull()
+                .prop("alluStatus", ApplicationEntity::alluStatus)
+                .isEqualTo(ApplicationStatus.HANDLING)
+            assertThat(application!!.applicationIdentifier)
+                .isEqualTo(ApplicationHistoryFactory.defaultApplicationIdentifier)
+        }
+
+        @Test
+        fun `ignores missing application`() {
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
+            val hanke = createHankeEntity()
+            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = alluid }
+            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
+                it.alluid = alluid + 2
+            }
+            val histories =
+                listOf(
+                    ApplicationHistoryFactory.create(alluid, "JS2300082"),
+                    ApplicationHistoryFactory.create(alluid + 1, "JS2300083"),
+                    ApplicationHistoryFactory.create(alluid + 2, "JS2300084"),
                 )
 
-        applicationService.handleApplicationUpdates(listOf(history), updateTime)
+            applicationService.handleApplicationUpdates(histories, updateTime)
 
-        assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isEqualTo(updateTime)
-        val application = applicationRepository.getOneByAlluid(alluid)
-        assertThat(application)
-            .isNotNull()
-            .prop("alluStatus", ApplicationEntity::alluStatus)
-            .isEqualTo(ApplicationStatus.HANDLING)
-        assertThat(application!!.applicationIdentifier)
-            .isEqualTo(ApplicationHistoryFactory.defaultApplicationIdentifier)
-    }
-
-    @Test
-    fun `handleApplicationUpdates ignores missing application`() {
-        assertThat(applicationRepository.findAll()).isEmpty()
-        assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
-        val hanke = createHankeEntity()
-        alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = alluid }
-        alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = alluid + 2 }
-        val histories =
-            listOf(
-                ApplicationHistoryFactory.create(alluid, "JS2300082"),
-                ApplicationHistoryFactory.create(alluid + 1, "JS2300083"),
-                ApplicationHistoryFactory.create(alluid + 2, "JS2300084"),
-            )
-
-        applicationService.handleApplicationUpdates(histories, updateTime)
-
-        assertEquals(updateTime, alluStatusRepository.getLastUpdateTime().asUtc())
-        val applications = applicationRepository.findAll()
-        assertThat(applications).hasSize(2)
-        assertThat(applications.map { it.alluid }).containsExactlyInAnyOrder(alluid, alluid + 2)
-        assertThat(applications.map { it.alluStatus })
-            .containsExactlyInAnyOrder(
-                ApplicationStatus.PENDING_CLIENT,
-                ApplicationStatus.PENDING_CLIENT
-            )
-        assertThat(applications.map { it.applicationIdentifier })
-            .containsExactlyInAnyOrder("JS2300082", "JS2300084")
+            assertEquals(updateTime, alluStatusRepository.getLastUpdateTime().asUtc())
+            val applications = applicationRepository.findAll()
+            assertThat(applications).hasSize(2)
+            assertThat(applications.map { it.alluid }).containsExactlyInAnyOrder(alluid, alluid + 2)
+            assertThat(applications.map { it.alluStatus })
+                .containsExactlyInAnyOrder(
+                    ApplicationStatus.PENDING_CLIENT,
+                    ApplicationStatus.PENDING_CLIENT
+                )
+            assertThat(applications.map { it.applicationIdentifier })
+                .containsExactlyInAnyOrder("JS2300082", "JS2300084")
+        }
     }
 
     @Test

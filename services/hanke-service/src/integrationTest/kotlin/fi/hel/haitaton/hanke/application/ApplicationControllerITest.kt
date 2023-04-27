@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
@@ -60,8 +61,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
     @AfterEach
     fun checkMocks() {
-        // TODO: Needs newer MockK, which needs newer Spring test dependencies
-        // checkUnnecessaryStub()
+        checkUnnecessaryStub()
         confirmVerified(applicationService, permissionService)
     }
 
@@ -425,7 +425,6 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     @WithMockUser(USERNAME)
     fun `sendApplication with unknown id returns 404`() {
         val id = 1234L
-        every { hankeService.getHankeId(HANKE_TUNNUS) } returns 42
         every { applicationService.getApplicationById(id) } throws ApplicationNotFoundException(id)
 
         post("$BASE_URL/$id/send-application").andExpect(status().isNotFound)

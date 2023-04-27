@@ -17,12 +17,14 @@ import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.gdpr.StringNode
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
@@ -35,12 +37,15 @@ internal class DisclosureLogServiceTest {
     private val auditLogService: AuditLogService = mockk(relaxed = true)
     private val disclosureLogService = DisclosureLogService(auditLogService)
 
+    @BeforeEach
+    fun clearMocks() {
+        clearAllMocks()
+    }
+
     @AfterEach
     fun cleanUp() {
-        // TODO: Needs newer MockK, which needs newer Spring test dependencies
-        // checkUnnecessaryStub()
+        checkUnnecessaryStub()
         confirmVerified(auditLogService)
-        clearAllMocks()
     }
 
     @Test

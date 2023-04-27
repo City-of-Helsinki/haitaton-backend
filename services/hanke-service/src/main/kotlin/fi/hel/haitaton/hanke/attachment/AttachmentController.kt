@@ -104,12 +104,11 @@ class AttachmentController(
 
         checkAttachmentPermission(hankeId, currentUserId(), VIEW)
 
-        val metadata = attachmentService.getMetadata(id)
-        val mimeType = URLConnection.guessContentTypeFromName(metadata.fileName)
+        val mimeType = URLConnection.guessContentTypeFromName(attachmentMetadata.fileName)
 
         val headers = HttpHeaders()
         headers.contentType = MediaType.parseMediaType(mimeType)
-        headers.add(CONTENT_DISPOSITION, "attachment; filename=${metadata.fileName}")
+        headers.add(CONTENT_DISPOSITION, "attachment; filename=${attachmentMetadata.fileName}")
 
         val file = attachmentService.getContent(id)
         return ResponseEntity.ok().headers(headers).body(file)
