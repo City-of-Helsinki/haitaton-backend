@@ -42,8 +42,6 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.jdbc.core.JdbcOperations
-import org.springframework.web.multipart.MultipartResolver
-import org.springframework.web.multipart.commons.CommonsMultipartResolver
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
 
@@ -75,11 +73,6 @@ class Configuration {
             SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build()
         val httpClient = HttpClient.create().secure { t -> t.sslContext(sslContext) }
         return webClientBuilder.clientConnector(ReactorClientHttpConnector(httpClient))
-    }
-
-    @Bean
-    fun multipartResolver(): MultipartResolver {
-        return CommonsMultipartResolver()
     }
 
     @Bean
