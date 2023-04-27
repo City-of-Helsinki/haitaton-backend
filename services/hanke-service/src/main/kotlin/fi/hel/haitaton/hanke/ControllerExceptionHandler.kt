@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.attachment.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.attachment.AttachmentUploadException
 import fi.hel.haitaton.hanke.geometria.GeometriaValidationException
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
 import io.sentry.Sentry
@@ -107,6 +109,24 @@ class ControllerExceptionHandler {
         // notify Sentry
         Sentry.captureException(ex)
         return HankeError.HAI1013
+    }
+
+    @ExceptionHandler(AttachmentNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
+    fun attachmentArgumentException(ex: AttachmentNotFoundException): HankeError {
+        logger.warn { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI3002
+    }
+
+    @ExceptionHandler(AttachmentUploadException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
+    fun attachmentUploadException(ex: AttachmentUploadException): HankeError {
+        logger.warn { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI3001
     }
 
     @ExceptionHandler(Throwable::class)

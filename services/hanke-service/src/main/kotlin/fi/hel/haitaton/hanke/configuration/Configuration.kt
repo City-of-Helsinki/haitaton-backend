@@ -12,6 +12,9 @@ import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.CableReportServiceAllu
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationService
+import fi.hel.haitaton.hanke.attachment.AttachmentService
+import fi.hel.haitaton.hanke.attachment.AttachmentServiceImpl
+import fi.hel.haitaton.hanke.attachment.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
 import fi.hel.haitaton.hanke.geometria.GeometriatService
@@ -33,17 +36,16 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
-import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.context.annotation.Profile
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.jdbc.core.JdbcOperations
+import org.springframework.web.multipart.MultipartResolver
+import org.springframework.web.multipart.commons.CommonsMultipartResolver
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
-
-private val logger = KotlinLogging.logger {}
 
 @Configuration
 @Profile("default")
@@ -73,6 +75,11 @@ class Configuration {
             SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE).build()
         val httpClient = HttpClient.create().secure { t -> t.sslContext(sslContext) }
         return webClientBuilder.clientConnector(ReactorClientHttpConnector(httpClient))
+    }
+
+    @Bean
+    fun multipartResolver(): MultipartResolver {
+        return CommonsMultipartResolver()
     }
 
     @Bean
@@ -162,6 +169,12 @@ class Configuration {
             perusIndeksiPainotService,
             tormaystarkasteluDao
         )
+
+    @Bean
+    fun attachmentsService(
+        hankeRepository: HankeRepository,
+        hankeAttachmentRepository: HankeAttachmentRepository
+    ): AttachmentService = AttachmentServiceImpl(hankeRepository, hankeAttachmentRepository)
 
     companion object {
         /** Create a web client that can download large files in memory. Up to 20 megabytes. */
