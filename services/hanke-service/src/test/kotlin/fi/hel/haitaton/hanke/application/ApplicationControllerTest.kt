@@ -5,12 +5,14 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.security.test.context.support.WithMockUser
@@ -36,12 +38,15 @@ class ApplicationControllerTest {
             permissionService
         )
 
+    @BeforeEach
+    fun clearMocks() {
+        clearAllMocks()
+    }
+
     @AfterEach
     fun cleanUp() {
-        // TODO: Needs newer MockK, which needs newer Spring test dependencies
-        // checkUnnecessaryStub()
+        checkUnnecessaryStub()
         confirmVerified(applicationService, disclosureLogService, permissionService)
-        clearAllMocks()
     }
 
     @Test

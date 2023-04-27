@@ -34,6 +34,7 @@ import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import io.mockk.Called
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
@@ -99,6 +100,7 @@ class HankeServiceITests : DatabaseTest() {
 
     @AfterEach
     fun checkMocks() {
+        checkUnnecessaryStub()
         confirmVerified(applicationService)
     }
 

@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.permissions.Role
 import io.mockk.Called
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
@@ -65,6 +66,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
     @AfterEach
     fun checkMocks() {
+        checkUnnecessaryStub()
         confirmVerified(permissionService, disclosureLogService, hankeService)
     }
 
@@ -87,7 +89,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         every { hankeService.loadHanke(HANKE_TUNNUS) }.returns(hanke)
         every { permissionService.hasPermission(hankeId, USERNAME, PermissionCode.VIEW) }
             .returns(true)
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME) }
 
         get("$BASE_URL/$HANKE_TUNNUS")
             .andExpect(status().isOk)
@@ -120,7 +121,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         every { hankeService.loadHankkeetByIds(hankeIds) }.returns(hankkeet)
         every { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
             .returns(hankeIds)
-        justRun { disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME) }
 
         // we check that we get the two hankeTunnus we expect
         get(BASE_URL)
@@ -154,7 +154,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         every { hankeService.loadHankkeetByIds(hankeIds) }.returns(listOf(hanke1, hanke2))
         every { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
             .returns(hankeIds)
-        justRun { disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME) }
 
         // we check that we get the two hankeTunnus and geometriat we expect
         get("$BASE_URL?geometry=true")
@@ -204,7 +203,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             HankeWithApplications(hanke, listOf())
         every { permissionService.hasPermission(hanke.id!!, USERNAME, PermissionCode.VIEW) } returns
             true
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME) }
 
         val response: ApplicationsResponse =
             get("$BASE_URL/$HANKE_TUNNUS/hakemukset").andExpect(status().isOk).andReturnBody()
@@ -223,8 +221,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             HankeWithApplications(hanke, applications)
         every { permissionService.hasPermission(hanke.id!!, USERNAME, PermissionCode.VIEW) } returns
             true
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME) }
-        justRun { disclosureLogService.saveDisclosureLogsForApplications(applications, USERNAME) }
 
         val response: ApplicationsResponse =
             get("$BASE_URL/$HANKE_TUNNUS/hakemukset").andExpect(status().isOk).andReturnBody()
@@ -257,7 +253,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             )
         every { hankeService.createHanke(any()) }.returns(createdHanke)
         justRun { permissionService.setPermission(any(), any(), Role.KAIKKI_OIKEUDET) }
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(createdHanke, USERNAME) }
 
         postRaw(BASE_URL, hankeToBeMocked.toJsonString())
             .andExpect(status().isOk)
@@ -275,7 +270,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         val hanke = HankeFactory.create().withPerustaja()
         every { hankeService.createHanke(any()) } returns hanke
         justRun { permissionService.setPermission(any(), any(), Role.KAIKKI_OIKEUDET) }
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME) }
 
         post(BASE_URL, hanke)
             .andExpect(status().isOk)
@@ -293,7 +287,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         every { hankeService.createHanke(hanke.copy(id = null, generated = false)) } returns
             hanke.copy(generated = false)
         justRun { permissionService.setPermission(any(), any(), Role.KAIKKI_OIKEUDET) }
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME) }
 
         post(BASE_URL, hanke).andExpect(status().isOk)
 
@@ -347,7 +340,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         every { permissionService.hasPermission(updatedHanke.id!!, USERNAME, PermissionCode.EDIT) }
             .returns(true)
         every { hankeService.updateHanke(any()) }.returns(updatedHanke)
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, USERNAME) }
 
         putRaw("$BASE_URL/$hanketunnus", hankeToBeUpdated.toJsonString())
             .andExpect(status().isOk)
@@ -376,7 +368,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             }
         justRun { permissionService.setPermission(any(), any(), Role.KAIKKI_OIKEUDET) }
         every { hankeService.createHanke(any()) }.returns(expectedHanke)
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME) }
         val expectedContent = expectedHanke.toJsonString()
 
         postRaw(BASE_URL, content)
@@ -426,7 +417,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             permissionService.hasPermission(expectedHanke.id!!, USERNAME, PermissionCode.EDIT)
         } returns true
         every { hankeService.updateHanke(any()) } returns expectedHanke
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME) }
 
         // Call it and check results
         putRaw("$BASE_URL/idHankkeelle123", hankeToBeUpdated.toJsonString())
@@ -483,7 +473,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         // faking the service call
         every { hankeService.createHanke(any()) }.returns(expectedHanke)
         justRun { permissionService.setPermission(any(), any(), Role.KAIKKI_OIKEUDET) }
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME) }
 
         // Call it and check results
         postRaw(BASE_URL, hankeToBeMocked.toJsonString())

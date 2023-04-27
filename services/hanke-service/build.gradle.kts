@@ -8,9 +8,9 @@ java.sourceCompatibility = JavaVersion.VERSION_11
 val postgreSQLVersion = "42.2.18"
 val springDocVersion = "1.6.12"
 val geoJsonJacksonVersion = "1.14"
-val mockkVersion = "1.10.2"
-val springmockkVersion = "2.0.3"
-val assertkVersion = "0.23"
+val mockkVersion = "1.13.5"
+val springmockkVersion = "3.1.2"
+val assertkVersion = "0.25"
 
 repositories {
 	mavenCentral()

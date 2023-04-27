@@ -3,12 +3,10 @@ package fi.hel.haitaton.hanke.attachment
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import io.mockk.clearAllMocks
 import java.time.OffsetDateTime
 import java.time.temporal.ChronoUnit
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.byLessThan
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
@@ -27,18 +25,13 @@ private const val FILE_PARAM = "liite"
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
+@WithMockUser(USERNAME)
 class AttachmentServiceITests : DatabaseTest() {
     @Autowired private lateinit var attachmentService: AttachmentService
     @Autowired private lateinit var hankeAttachmentRepository: HankeAttachmentRepository
     @Autowired private lateinit var hankeService: HankeService
 
-    @BeforeEach
-    fun clearMocks() {
-        clearAllMocks()
-    }
-
     @Test
-    @WithMockUser(USERNAME)
     fun `Saving an attachment is possible`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
@@ -64,7 +57,6 @@ class AttachmentServiceITests : DatabaseTest() {
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Attachments can't be saved without hanke`() {
         assertThrows<AttachmentUploadException> {
             attachmentService.add(
@@ -75,7 +67,6 @@ class AttachmentServiceITests : DatabaseTest() {
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `File extension must match content type`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
@@ -101,7 +92,6 @@ class AttachmentServiceITests : DatabaseTest() {
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Non supported file cannot be uploaded`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
@@ -114,7 +104,6 @@ class AttachmentServiceITests : DatabaseTest() {
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Can't upload files bigger than 25Mb`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
@@ -142,7 +131,6 @@ class AttachmentServiceITests : DatabaseTest() {
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Hanke data is downloadable when data is ok`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
@@ -163,7 +151,6 @@ class AttachmentServiceITests : DatabaseTest() {
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Hanke data not downloadable when state is PENDING`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
@@ -185,7 +172,6 @@ class AttachmentServiceITests : DatabaseTest() {
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Hanke data not downloadable when state is FAILED`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
@@ -207,7 +193,6 @@ class AttachmentServiceITests : DatabaseTest() {
     }
 
     @Test
-    @WithMockUser(USERNAME)
     fun `Removing an attachment is possible`() {
         val hanke = HankeFactory.create()
         val createdHanke = hankeService.createHanke(hanke)
