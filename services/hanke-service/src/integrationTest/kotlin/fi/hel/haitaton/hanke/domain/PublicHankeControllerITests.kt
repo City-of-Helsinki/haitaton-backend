@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.domain
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
-import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
 import fi.hel.haitaton.hanke.PublicHankeController
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
@@ -25,7 +24,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 
 @WebMvcTest(PublicHankeController::class)
-@Import(IntegrationTestConfiguration::class, IntegrationTestResourceServerConfig::class)
+@Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 

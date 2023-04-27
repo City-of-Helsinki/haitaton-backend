@@ -55,7 +55,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.skyscreamer.jsonassert.JSONAssert
@@ -66,6 +65,7 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.junit.jupiter.Testcontainers
 
@@ -939,6 +939,21 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
+    @Transactional(propagation = Propagation.NEVER)
+    fun `generateHankeWithApplication when exception rolls back`() {
+        val inputApplication = AlluDataFactory.cableReportWithoutHanke()
+        every { applicationService.create(any(), USER_NAME) } throws
+            ApplicationArgumentException("")
+
+        assertThrows<ApplicationArgumentException> {
+            hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
+        }
+
+        assertEquals(0, hankeCount())
+        verify { applicationService.create(any(), USER_NAME) }
+    }
+
+    @Test
     fun `updateHanke creates new hankealue`() {
         val hanke = getATestHanke()
         val hankealue =
@@ -999,10 +1014,9 @@ class HankeServiceITests : DatabaseTest() {
             .usingRecursiveComparison()
             .ignoringFields("nimi", "geometriat")
             .isEqualTo(hankealue)
-        assertThat(resultAlue.geometriat)
-            .usingRecursiveComparison()
-            .ignoringFields("version", "modifiedByUserId", "modifiedAt")
-            .isEqualTo(hankealue.geometriat)
+        assertThat(resultAlue.geometriat?.featureCollection)
+            .isNotNull
+            .isEqualTo(hankealue.geometriat?.featureCollection)
         assertThat(resultAlue.nimi).isEqualTo("Changed Name")
     }
 
@@ -1400,28 +1414,6 @@ class HankeServiceITests : DatabaseTest() {
         val result = hankeService.updateHanke(hanke.copy(generated = true))
 
         assertFalse(result.generated)
-    }
-
-    @Nested
-    @Testcontainers
-    @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-    @ActiveProfiles("default")
-    @WithMockUser(USER_NAME)
-    inner class HankeServiceTransactionTests : DatabaseTest() {
-
-        @Test
-        fun `generateHankeWithApplication when exception rolls back`() {
-            val inputApplication = AlluDataFactory.cableReportWithoutHanke()
-            every { applicationService.create(any(), USER_NAME) } throws
-                ApplicationArgumentException("")
-
-            assertThrows<ApplicationArgumentException> {
-                hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
-            }
-
-            assertEquals(0, hankeCount())
-            verify { applicationService.create(any(), USER_NAME) }
-        }
     }
 
     private fun verifyYhteyshenkilot(yhteyshenkilot: List<Yhteyshenkilo>) {

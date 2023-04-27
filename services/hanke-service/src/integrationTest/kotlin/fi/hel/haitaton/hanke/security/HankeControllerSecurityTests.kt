@@ -5,7 +5,6 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
-import fi.hel.haitaton.hanke.IntegrationTestResourceServerConfig
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
@@ -54,7 +53,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
  * things are not implemented.
  */
 @WebMvcTest(HankeController::class)
-@Import(IntegrationTestConfiguration::class, IntegrationTestResourceServerConfig::class)
+@Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {

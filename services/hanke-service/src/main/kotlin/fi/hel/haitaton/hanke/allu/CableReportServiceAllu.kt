@@ -14,6 +14,7 @@ import org.springframework.web.reactive.function.client.ExchangeFunction
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 import org.springframework.web.reactive.function.client.body
+import org.springframework.web.reactive.function.client.bodyToMono
 import reactor.core.publisher.Mono
 
 private val logger = KotlinLogging.logger {}
@@ -164,12 +165,12 @@ class CableReportServiceAllu(
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
             .body(BodyInserters.fromMultipartData(multipartData))
-            .exchange()
+            .retrieve()
+            .bodyToMono<Void>()
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error uploading attachment to Allu", it)
             }
-            .blockOptional()
-            .orElseThrow()
+            .block()
     }
 
     override fun getInformationRequests(applicationId: Int): List<InformationRequest> {
@@ -205,8 +206,7 @@ class CableReportServiceAllu(
             .body(Mono.just(CableReportInformationRequestResponse(cableReport, updatedFields)))
             .retrieve()
             .toBodilessEntity()
-            .blockOptional()
-            .orElseThrow()
+            .block()
     }
 
     override fun getDecisionPdf(applicationId: Int): ByteArray {
@@ -271,11 +271,11 @@ class CableReportServiceAllu(
             .uri("$baseUrl/v2/applications/$applicationId/attachments/$attachmentId")
             .accept(MediaType.APPLICATION_PDF)
             .headers { it.setBearerAuth(token) }
-            .exchange()
+            .retrieve()
+            .bodyToMono(ByteArrayResource::class.java)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error getting decision attachment data from Allu", it)
             }
-            .flatMap { it.bodyToMono(ByteArrayResource::class.java) }
             .map { it.byteArray }
             .blockOptional()
             .orElseThrow()
