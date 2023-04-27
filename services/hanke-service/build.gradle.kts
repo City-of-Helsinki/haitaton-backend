@@ -97,8 +97,7 @@ dependencies {
 	testImplementation("io.mockk:mockk:$mockkVersion")
 	testImplementation("com.ninja-squad:springmockk:$springmockkVersion")
 	testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
-	testImplementation("com.squareup.okhttp3:okhttp:4.9.3")
-	testImplementation("com.squareup.okhttp3:mockwebserver:4.9.3")
+	testImplementation("com.squareup.okhttp3:mockwebserver")
 	testImplementation("com.icegreen:greenmail-junit5:1.6.14")
 
 	// Testcontainers
