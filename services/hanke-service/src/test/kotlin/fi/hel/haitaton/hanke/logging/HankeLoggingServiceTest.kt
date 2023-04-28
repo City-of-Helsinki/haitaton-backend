@@ -1,5 +1,14 @@
 package fi.hel.haitaton.hanke.logging
 
+import assertk.all
+import assertk.assertThat
+import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.each
+import assertk.assertions.extracting
+import assertk.assertions.hasSize
+import assertk.assertions.isEqualTo
+import assertk.assertions.isNotNull
+import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import io.mockk.called
@@ -8,8 +17,6 @@ import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.mockk
 import io.mockk.verify
-import org.assertj.core.api.Assertions
-import org.assertj.core.api.Condition
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -68,22 +75,26 @@ internal class HankeLoggingServiceTest {
         verify {
             auditLogService.createAll(
                 withArg { entries ->
-                    Assertions.assertThat(entries)
-                        .hasSize(5)
-                        .allSatisfy { entry ->
-                            assertEquals(Operation.DELETE, entry.operation)
-                            assertEquals(Status.SUCCESS, entry.status)
-                            assertNull(entry.failureDescription)
-                            assertEquals(userId, entry.userId)
-                            assertEquals(UserRole.USER, entry.userRole)
-                            assertNull(entry.objectAfter)
-                            assertNotNull(entry.objectBefore)
+                    assertThat(entries).all {
+                        hasSize(5)
+                        each { entry ->
+                            entry.transform { it.operation }.isEqualTo(Operation.DELETE)
+                            entry.transform { it.status }.isEqualTo(Status.SUCCESS)
+                            entry.transform { it.failureDescription }.isNull()
+                            entry.transform { it.userId }.isEqualTo(userId)
+                            entry.transform { it.userRole }.isEqualTo(UserRole.USER)
+                            entry.transform { it.objectAfter }.isNull()
+                            entry.transform { it.objectBefore }.isNotNull()
                         }
-                        .areExactly(
-                            4,
-                            Condition({ it.objectType == ObjectType.YHTEYSTIETO }, "Yhteystieto")
-                        )
-                        .areExactly(1, Condition({ it.objectType == ObjectType.HANKE }, "Hanke"))
+                        extracting { it.objectType }
+                            .containsExactlyInAnyOrder(
+                                ObjectType.YHTEYSTIETO,
+                                ObjectType.YHTEYSTIETO,
+                                ObjectType.YHTEYSTIETO,
+                                ObjectType.YHTEYSTIETO,
+                                ObjectType.HANKE
+                            )
+                    }
                 }
             )
         }

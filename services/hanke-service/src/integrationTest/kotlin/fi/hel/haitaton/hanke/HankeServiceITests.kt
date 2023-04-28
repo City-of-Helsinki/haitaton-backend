@@ -1,5 +1,10 @@
 package fi.hel.haitaton.hanke
 
+import assertk.assertions.each
+import assertk.assertions.hasSize
+import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
+import assertk.assertions.isNull
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.Application
@@ -31,6 +36,7 @@ import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaRepository
 import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
+import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import io.mockk.Called
@@ -1121,17 +1127,18 @@ class HankeServiceITests : DatabaseTest() {
         val logs = auditLogRepository.findByType(ObjectType.YHTEYSTIETO)
         assertEquals(4, logs.size)
         val deleteLogs = logs.filter { it.message.auditEvent.operation == Operation.DELETE }
-        assertThat(deleteLogs).hasSize(4).allSatisfy { log ->
-            assertFalse(log.isSent)
-            assertThat(log.createdAt).isCloseToUtcNow(byLessThan(1, ChronoUnit.MINUTES))
-            val event = log.message.auditEvent
-            assertThat(event.dateTime).isCloseToUtcNow(byLessThan(1, ChronoUnit.MINUTES))
-            assertEquals(Status.SUCCESS, event.status)
-            assertNull(event.failureDescription)
-            assertEquals("1", event.appVersion)
-            assertEquals("testUser", event.actor.userId)
-            assertEquals(UserRole.USER, event.actor.role)
-            assertEquals(TestUtils.mockedIp, event.actor.ipAddress)
+        assertk.assertThat(deleteLogs).hasSize(4)
+        assertk.assertThat(deleteLogs).each { log ->
+            log.transform { it.isSent }.isFalse()
+            log.transform { it.createdAt }.isRecent()
+            val event = log.transform { it.message.auditEvent }
+            event.transform { it.dateTime }.isRecent()
+            event.transform { it.status }.isEqualTo(Status.SUCCESS)
+            event.transform { it.failureDescription }.isNull()
+            event.transform { it.appVersion }.isEqualTo("1")
+            event.transform { it.actor.userId }.isEqualTo("testUser")
+            event.transform { it.actor.role }.isEqualTo(UserRole.USER)
+            event.transform { it.actor.ipAddress }.isEqualTo(TestUtils.mockedIp)
         }
         val omistajaId = hanke.omistajat[0].id!!
         val omistajaEvent = deleteLogs.findByTargetId(omistajaId).message.auditEvent
