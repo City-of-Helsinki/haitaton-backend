@@ -1,14 +1,11 @@
 package fi.hel.haitaton.hanke
 
-import org.springframework.jdbc.core.RowMapper
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlMergeMode
 import org.testcontainers.junit.jupiter.Container
 import org.testcontainers.utility.MountableFile
-
-val countMapper = RowMapper { rs, _ -> rs.getInt(1) }
 
 /**
  * Start a Docker container running PostgreSQL with the PostGIS extension. Tests extending this
@@ -27,10 +24,9 @@ abstract class DatabaseTest {
         @Container
         private val container: HaitatonPostgreSQLContainer =
             HaitatonPostgreSQLContainer()
-                .withExposedPorts(5433) // use non-default port
                 .withPassword("test")
                 .withUsername("test")
-                .withCopyFileToContainer(
+                .withCopyToContainer(
                     MountableFile.forClasspathResource(
                         "/fi/hel/haitaton/hanke/tormaystarkastelu/HEL-GIS-data-test.sql"
                     ),
