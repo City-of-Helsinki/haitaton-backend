@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.email
 
-import fi.hel.haitaton.hanke.getResourceAsText
+import fi.hel.haitaton.hanke.getResource
 import javax.mail.internet.MimeMessage
 import mu.KotlinLogging
 import net.pwall.mustache.Template
@@ -39,16 +39,10 @@ class EmailSenderService(
             logger.info { "Email sending not enabled, ignoring email" }
             return
         }
-        val textBody =
-            Template.parse("/email/template/$template.text.mustache".getResourceAsText())
-                .processToString(templateData)
-        val htmlBody =
-            Template.parse("/email/template/$template.html.mustache".getResourceAsText())
-                .processToString(templateData)
+        val textBody = parseTemplate("/email/template/$template.text.mustache", templateData)
+        val htmlBody = parseTemplate("/email/template/$template.html.mustache", templateData)
         val subject =
-            Template.parse("/email/template/$template.subject.mustache".getResourceAsText())
-                .processToString(templateData)
-                .trimEnd()
+            parseTemplate("/email/template/$template.subject.mustache", templateData).trimEnd()
 
         val mimeMessage: MimeMessage = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(mimeMessage, true, "utf-8")
@@ -59,4 +53,7 @@ class EmailSenderService(
         helper.setFrom(from)
         mailSender.send(mimeMessage)
     }
+
+    private fun parseTemplate(path: String, contextObject: Any): String =
+        Template.parse(path.getResource().openStream()).processToString(contextObject)
 }
