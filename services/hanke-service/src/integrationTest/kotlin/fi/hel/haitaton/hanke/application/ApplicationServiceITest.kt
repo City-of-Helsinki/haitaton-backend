@@ -803,7 +803,7 @@ class ApplicationServiceITest : DatabaseTest() {
     @Test
     fun `updateApplicationData throws exception when application area is outside hankealue`() {
         val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
-        val hankeEntity = hankeRepository.getById(hanke.id!!)
+        val hankeEntity = hankeRepository.getReferenceById(hanke.id!!)
         val application =
             alluDataFactory.saveApplicationEntity(USERNAME, hanke = hankeEntity) { it.alluid = 21 }
         val cableReportApplicationData =
@@ -1049,7 +1049,7 @@ class ApplicationServiceITest : DatabaseTest() {
     @Test
     fun `sendApplication throws exception when application area is outside hankealue`() {
         val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
-        val hankeEntity = hankeRepository.getById(hanke.id!!)
+        val hankeEntity = hankeRepository.getReferenceById(hanke.id!!)
         val application =
             alluDataFactory.saveApplicationEntity(USERNAME, hanke = hankeEntity) {
                 it.applicationData =

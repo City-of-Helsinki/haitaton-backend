@@ -5,7 +5,6 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
-import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeWithApplications
@@ -19,8 +18,6 @@ import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.every
 import io.mockk.justRun
-import java.time.ZonedDateTime
-import java.time.temporal.ChronoUnit
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
@@ -192,16 +189,6 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
     }
 
     // ===================== HELPERS ========================
-
-    private fun getDatetimeAlku(): ZonedDateTime {
-        val year = getCurrentTimeUTC().year + 1
-        return ZonedDateTime.of(year, 2, 20, 23, 45, 56, 0, TZ_UTC).truncatedTo(ChronoUnit.MILLIS)
-    }
-
-    private fun getDatetimeLoppu(): ZonedDateTime {
-        val year = getCurrentTimeUTC().year + 1
-        return ZonedDateTime.of(year, 2, 21, 0, 12, 34, 0, TZ_UTC).truncatedTo(ChronoUnit.MILLIS)
-    }
 
     private fun getTestHanke(id: Int?, tunnus: String?): Hanke {
         return Hanke(

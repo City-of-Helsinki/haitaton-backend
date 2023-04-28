@@ -13,8 +13,6 @@ import io.mockk.Called
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.verify
-import java.time.ZonedDateTime
-import java.time.temporal.ChronoUnit
 import javax.validation.ConstraintViolationException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -346,15 +344,5 @@ class HankeControllerTest {
         assertThat(response).isNotNull
         Mockito.verify(permissionService).setPermission(12, username, Role.KAIKKI_OIKEUDET)
         verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
-    }
-
-    private fun getDatetimeAlku(): ZonedDateTime {
-        val year = getCurrentTimeUTC().year + 1
-        return ZonedDateTime.of(year, 2, 20, 23, 45, 56, 0, TZ_UTC).truncatedTo(ChronoUnit.MILLIS)
-    }
-
-    private fun getDatetimeLoppu(): ZonedDateTime {
-        val year = getCurrentTimeUTC().year + 1
-        return ZonedDateTime.of(year, 2, 21, 0, 12, 34, 0, TZ_UTC).truncatedTo(ChronoUnit.MILLIS)
     }
 }
