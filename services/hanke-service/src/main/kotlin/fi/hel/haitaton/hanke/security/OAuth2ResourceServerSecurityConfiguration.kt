@@ -41,7 +41,7 @@ class UserInfoOpaqueTokenIntrospector(private val userinfoUri: String) : OpaqueT
                 .uri(userinfoUri)
                 .headers { it.setBearerAuth(token) }
                 .retrieve()
-                .bodyToMono(object : ParameterizedTypeReference<Map<String, String>>() {})
+                .bodyToMono(object : ParameterizedTypeReference<Map<String, Any>>() {})
                 .block()
 
         return DefaultOAuth2User(listOf(), attributes, "sub")
