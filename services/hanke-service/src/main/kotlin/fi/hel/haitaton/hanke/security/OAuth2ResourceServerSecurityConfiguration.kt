@@ -1,9 +1,9 @@
 package fi.hel.haitaton.hanke.security
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.ParameterizedTypeReference
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configurers.oauth2.server.resource.OAuth2ResourceServerConfigurer
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal
@@ -41,9 +41,11 @@ class UserInfoOpaqueTokenIntrospector(private val userinfoUri: String) : OpaqueT
                 .uri(userinfoUri)
                 .headers { it.setBearerAuth(token) }
                 .retrieve()
-                .bodyToMono(object : ParameterizedTypeReference<Map<String, String>>() {})
+                .bodyToMono(UserInfoResponse::class.java)
                 .block()
 
-        return DefaultOAuth2User(listOf(), attributes, "sub")
+        return DefaultOAuth2User(listOf(), mapOf("sub" to attributes?.sub), "sub")
     }
 }
+
+@JsonIgnoreProperties(ignoreUnknown = true) data class UserInfoResponse(val sub: String)
