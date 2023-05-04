@@ -70,7 +70,7 @@ class ApplicationAttachmentController(
     fun getApplicationAttachments(
         @PathVariable applicationId: Long
     ): List<ApplicationAttachmentMetadata> {
-        permissionOrThrow(applicationId, VIEW, ApplicationNotFoundException(applicationId))
+        permissionOrThrow(applicationId, VIEW)
         return applicationAttachmentService.getMetadataList(applicationId)
     }
 
@@ -96,7 +96,7 @@ class ApplicationAttachmentController(
         @PathVariable applicationId: Long,
         @PathVariable attachmentId: UUID,
     ): ResponseEntity<ByteArray> {
-        permissionOrThrow(applicationId, VIEW, ApplicationNotFoundException(applicationId))
+        permissionOrThrow(applicationId, VIEW)
         applicationAttachmentService.getContent(applicationId, attachmentId).let {
             (fileName, content) ->
             return ResponseEntity.ok().headers(buildHeaders(fileName)).body(content)
@@ -140,7 +140,7 @@ class ApplicationAttachmentController(
         @RequestParam("tyyppi") tyyppi: ApplicationAttachmentType,
         @RequestParam("liite") attachment: MultipartFile
     ): ApplicationAttachmentMetadata {
-        permissionOrThrow(applicationId, EDIT, ApplicationNotFoundException(applicationId))
+        permissionOrThrow(applicationId, EDIT)
         return applicationAttachmentService.addAttachment(applicationId, tyyppi, attachment)
     }
 
@@ -162,20 +162,16 @@ class ApplicationAttachmentController(
             ]
     )
     fun removeAttachment(@PathVariable applicationId: Long, @PathVariable attachmentId: UUID) {
-        permissionOrThrow(applicationId, EDIT, AttachmentNotFoundException())
+        permissionOrThrow(applicationId, EDIT)
         return applicationAttachmentService.deleteAttachment(applicationId, attachmentId)
     }
 
-    fun permissionOrThrow(
-        applicationId: Long,
-        permissionCode: PermissionCode,
-        exception: RuntimeException
-    ) {
+    fun permissionOrThrow(applicationId: Long, permissionCode: PermissionCode) {
         val userId = currentUserId()
         val application = applicationService.getApplicationById(applicationId)
         val hankeId = hankeService.getHankeId(application.hankeTunnus)
         if (hankeId == null || !permissionService.hasPermission(hankeId, userId, permissionCode)) {
-            throw exception
+            throw ApplicationNotFoundException(applicationId)
         }
     }
 
