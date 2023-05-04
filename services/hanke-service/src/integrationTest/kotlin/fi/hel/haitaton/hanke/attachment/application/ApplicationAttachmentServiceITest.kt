@@ -112,12 +112,15 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 attachment = testFile(),
             )
 
-        assertThrows<AttachmentNotFoundException> {
-            applicationAttachmentService.getContent(
-                applicationId = firstApplication.id!!,
-                attachmentId = secondAttachment.id!!,
-            )
-        }
+        val exception =
+            assertThrows<AttachmentNotFoundException> {
+                applicationAttachmentService.getContent(
+                    applicationId = firstApplication.id!!,
+                    attachmentId = secondAttachment.id!!,
+                )
+            }
+
+        assertThat(exception.message).isEqualTo("Attachment ${secondAttachment.id} not found")
     }
 
     @EnumSource(ApplicationAttachmentType::class)

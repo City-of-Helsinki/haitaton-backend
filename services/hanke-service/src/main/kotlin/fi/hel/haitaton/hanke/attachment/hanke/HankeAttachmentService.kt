@@ -33,7 +33,7 @@ class HankeAttachmentService(
         val attachment = findHanke(hankeTunnus).liitteet.findBy(attachmentId)
 
         if (attachment.scanStatus != OK) {
-            throw AttachmentNotFoundException()
+            throw AttachmentNotFoundException(attachmentId)
         }
 
         return Pair(attachment.fileName, attachment.content)
@@ -70,5 +70,5 @@ class HankeAttachmentService(
         hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
 
     private fun List<HankeAttachmentEntity>.findBy(attachmentId: UUID): HankeAttachmentEntity =
-        find { it.id == attachmentId } ?: throw AttachmentNotFoundException()
+        find { it.id == attachmentId } ?: throw AttachmentNotFoundException(attachmentId)
 }

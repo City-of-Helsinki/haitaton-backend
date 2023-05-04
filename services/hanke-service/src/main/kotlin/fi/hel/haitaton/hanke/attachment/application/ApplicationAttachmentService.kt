@@ -34,7 +34,7 @@ class ApplicationAttachmentService(
         val attachment = findApplication(applicationId).attachments.findBy(attachmentId)
 
         if (attachment.scanStatus != OK) {
-            throw AttachmentNotFoundException()
+            throw AttachmentNotFoundException(attachmentId)
         }
 
         return Pair(attachment.fileName, attachment.content)
@@ -80,5 +80,5 @@ class ApplicationAttachmentService(
     private fun List<ApplicationAttachmentEntity>.findBy(
         attachmentId: UUID
     ): ApplicationAttachmentEntity =
-        find { it.id == attachmentId } ?: throw AttachmentNotFoundException()
+        find { it.id == attachmentId } ?: throw AttachmentNotFoundException(attachmentId)
 }
