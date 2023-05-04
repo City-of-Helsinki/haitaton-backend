@@ -12,9 +12,10 @@ import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.CableReportServiceAllu
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationService
-import fi.hel.haitaton.hanke.attachment.AttachmentService
-import fi.hel.haitaton.hanke.attachment.AttachmentServiceImpl
-import fi.hel.haitaton.hanke.attachment.HankeAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
 import fi.hel.haitaton.hanke.geometria.GeometriatService
@@ -164,10 +165,17 @@ class Configuration {
         )
 
     @Bean
-    fun attachmentsService(
+    fun hankeAttachmentsService(
         hankeRepository: HankeRepository,
         hankeAttachmentRepository: HankeAttachmentRepository
-    ): AttachmentService = AttachmentServiceImpl(hankeRepository, hankeAttachmentRepository)
+    ): HankeAttachmentService = HankeAttachmentService(hankeRepository, hankeAttachmentRepository)
+
+    @Bean
+    fun applicationAttachmentsService(
+        applicationRepository: ApplicationRepository,
+        applicationAttachmentRepository: ApplicationAttachmentRepository,
+    ): ApplicationAttachmentService =
+        ApplicationAttachmentService(applicationRepository, applicationAttachmentRepository)
 
     companion object {
         /** Create a web client that can download large files in memory. Up to 20 megabytes. */

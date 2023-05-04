@@ -3,15 +3,19 @@ package fi.hel.haitaton.hanke.application
 import com.vladmihalcea.hibernate.type.json.JsonType
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
+import javax.persistence.CascadeType
 import javax.persistence.Column
 import javax.persistence.Entity
 import javax.persistence.EnumType
 import javax.persistence.Enumerated
+import javax.persistence.FetchType
 import javax.persistence.GeneratedValue
 import javax.persistence.GenerationType
 import javax.persistence.Id
 import javax.persistence.JoinColumn
 import javax.persistence.ManyToOne
+import javax.persistence.OneToMany
 import javax.persistence.Table
 import org.hibernate.annotations.Type
 import org.hibernate.annotations.TypeDef
@@ -28,6 +32,13 @@ data class ApplicationEntity(
     @Enumerated(EnumType.STRING) val applicationType: ApplicationType,
     @Type(type = "json") @Column(columnDefinition = "jsonb") var applicationData: ApplicationData,
     @ManyToOne @JoinColumn(updatable = false, nullable = false) var hanke: HankeEntity,
+    @OneToMany(
+        mappedBy = "application",
+        fetch = FetchType.LAZY,
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    var attachments: MutableList<ApplicationAttachmentEntity> = mutableListOf()
 ) {
     fun toApplication() =
         Application(

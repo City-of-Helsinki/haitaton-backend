@@ -1,6 +1,7 @@
-package fi.hel.haitaton.hanke.attachment
+package fi.hel.haitaton.hanke.attachment.common
 
 import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.application.ApplicationEntity
 import java.time.OffsetDateTime
 import java.util.UUID
 import javax.persistence.Basic
@@ -18,6 +19,10 @@ import javax.persistence.MappedSuperclass
 import javax.persistence.Table
 import javax.validation.constraints.NotNull
 import org.hibernate.annotations.Type
+import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Modifying
+import org.springframework.data.jpa.repository.Query
+import org.springframework.stereotype.Repository
 
 @MappedSuperclass
 abstract class AttachmentEntity(
@@ -45,7 +50,6 @@ abstract class AttachmentEntity(
     @Enumerated(EnumType.STRING)
     var scanStatus: AttachmentScanStatus = AttachmentScanStatus.PENDING
 ) {
-
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
@@ -83,8 +87,8 @@ class HankeAttachmentEntity(
     /** Hanke in which this attachment belongs to. */
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "hanke_id") var hanke: HankeEntity,
 ) : AttachmentEntity(id, fileName, content, createdByUserId, createdAt, scanStatus) {
-    fun toMetadata(): AttachmentMetadata {
-        return AttachmentMetadata(
+    fun toMetadata(): HankeAttachmentMetadata {
+        return HankeAttachmentMetadata(
             id = id,
             fileName = fileName,
             createdAt = createdAt,
@@ -111,6 +115,79 @@ class HankeAttachmentEntity(
         result = 31 * result + hanke.hashCode()
         return result
     }
+}
+
+@Entity
+@Table(name = "application_attachment")
+class ApplicationAttachmentEntity(
+    id: UUID?,
+    fileName: String,
+    content: ByteArray,
+    createdByUserId: String,
+    createdAt: OffsetDateTime,
+    scanStatus: AttachmentScanStatus,
+
+    /** Attachment type: MUU, LIIKENNEJARJESTELY, VALTAKIRJA. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "attachment_type")
+    var attachmentType: ApplicationAttachmentType,
+
+    /** Hanke in which this attachment belongs to. */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "application_id")
+    var application: ApplicationEntity,
+) : AttachmentEntity(id, fileName, content, createdByUserId, createdAt, scanStatus) {
+    fun toMetadata(): ApplicationAttachmentMetadata {
+        return ApplicationAttachmentMetadata(
+            id = id,
+            fileName = fileName,
+            createdAt = createdAt,
+            scanStatus = scanStatus,
+            createdByUserId = createdByUserId,
+            applicationId = application.id!!,
+            attachmentType = attachmentType,
+        )
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        if (!super.equals(other)) return false
+
+        other as ApplicationAttachmentEntity
+
+        if (attachmentType != other.attachmentType) return false
+        if (application != other.application) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = super.hashCode()
+        result = 31 * result + attachmentType.hashCode()
+        result = 31 * result + application.hashCode()
+        return result
+    }
+}
+
+@Repository
+interface HankeAttachmentRepository : JpaRepository<HankeAttachmentEntity, UUID> {
+    @Modifying
+    @Query("DELETE FROM HankeAttachmentEntity WHERE id = :id")
+    fun deleteAttachment(id: UUID)
+}
+
+@Repository
+interface ApplicationAttachmentRepository : JpaRepository<ApplicationAttachmentEntity, UUID> {
+    @Modifying
+    @Query("DELETE FROM ApplicationAttachmentEntity WHERE id = :id")
+    fun deleteAttachment(id: UUID)
+}
+
+enum class ApplicationAttachmentType {
+    MUU,
+    LIIKENNEJARJESTELY,
+    VALTAKIRJA,
 }
 
 enum class AttachmentScanStatus {

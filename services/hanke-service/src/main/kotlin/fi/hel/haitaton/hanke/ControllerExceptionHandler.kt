@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.attachment.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.AttachmentUploadException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
 import fi.hel.haitaton.hanke.geometria.GeometriaValidationException
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
 import io.sentry.Sentry
