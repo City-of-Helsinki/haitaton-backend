@@ -32,11 +32,14 @@ class HankeAttachmentService(
     fun getContent(hankeTunnus: String, attachmentId: UUID): Pair<String, ByteArray> {
         val attachment = findHanke(hankeTunnus).liitteet.findBy(attachmentId)
 
-        if (attachment.scanStatus != OK) {
-            throw AttachmentNotFoundException(attachmentId)
-        }
+        with(attachment) {
+            if (scanStatus != OK) {
+                logger.warn { "Attachment $id with scan status: $scanStatus cannot be viewed." }
+                throw AttachmentNotFoundException(attachmentId)
+            }
 
-        return Pair(attachment.fileName, attachment.content)
+            return Pair(fileName, content)
+        }
     }
 
     @Transactional
