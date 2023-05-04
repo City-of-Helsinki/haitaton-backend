@@ -63,6 +63,7 @@ plugins {
 	// Gives kotlin-noarg for @Entity, @Embeddable
 	kotlin("plugin.jpa") version "1.6.21"
 	idea
+	id("com.github.ben-manes.versions") version "0.42.0"
 }
 
 dependencies {
@@ -110,9 +111,10 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 	testImplementation("org.springframework.security:spring-security-test")
+
 	// Sentry
-	implementation("io.sentry:sentry-spring-boot-starter:4.0.0")
-	implementation("io.sentry:sentry-logback:4.0.0")
+	implementation("io.sentry:sentry-spring-boot-starter:6.18.1")
+	implementation("io.sentry:sentry-logback:6.18.1")
 }
 
 tasks.withType<KotlinCompile> {
