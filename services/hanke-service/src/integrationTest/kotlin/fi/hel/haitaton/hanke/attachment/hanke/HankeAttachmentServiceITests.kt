@@ -19,7 +19,7 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.dummyData
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import java.util.*
+import java.util.Optional
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -73,6 +73,25 @@ class HankeAttachmentServiceITests : DatabaseTest() {
             (fileName, content) ->
             assertThat(fileName).isEqualTo(FILE_NAME_PDF)
             assertThat(content).isEqualTo(dummyData)
+        }
+    }
+
+    @Test
+    fun `getContent when attachment is not in requested hanke should throw`() {
+        val firstHanke = hankeService.createHanke(HankeFactory.create())
+        val secondHanke = hankeService.createHanke(HankeFactory.create())
+        hankeAttachmentService.addAttachment(
+            hankeTunnus = firstHanke.hankeTunnus!!,
+            attachment = testFile(),
+        )
+        val secondAttachment =
+            hankeAttachmentService.addAttachment(
+                hankeTunnus = secondHanke.hankeTunnus!!,
+                attachment = testFile(),
+            )
+
+        assertThrows<AttachmentNotFoundException> {
+            hankeAttachmentService.getContent(firstHanke.hankeTunnus!!, secondAttachment.id!!)
         }
     }
 

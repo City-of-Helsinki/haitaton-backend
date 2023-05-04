@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.attachment.HANKE_TUNNUS
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.LIIKENNEJARJESTELY
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.VALTAKIRJA
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
@@ -25,7 +26,7 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
 import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import java.util.*
+import java.util.Optional
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -92,6 +93,30 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         data.let { (fileName, content) ->
             assertThat(fileName).isEqualTo(FILE_NAME_PDF)
             assertThat(content).isEqualTo(file.bytes)
+        }
+    }
+
+    @Test
+    fun `getContent when attachment is not in requested application should throw`() {
+        val firstApplication = initApplication()
+        val secondApplication = initApplication()
+        applicationAttachmentService.addAttachment(
+            applicationId = firstApplication.id!!,
+            attachmentType = VALTAKIRJA,
+            attachment = testFile(),
+        )
+        val secondAttachment =
+            applicationAttachmentService.addAttachment(
+                applicationId = secondApplication.id!!,
+                attachmentType = LIIKENNEJARJESTELY,
+                attachment = testFile(),
+            )
+
+        assertThrows<AttachmentNotFoundException> {
+            applicationAttachmentService.getContent(
+                applicationId = firstApplication.id!!,
+                attachmentId = secondAttachment.id!!,
+            )
         }
     }
 
