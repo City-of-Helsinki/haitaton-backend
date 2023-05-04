@@ -11,7 +11,6 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
-import fi.hel.haitaton.hanke.attachment.APPLICATION_ID
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.HANKE_TUNNUS
 import fi.hel.haitaton.hanke.attachment.USERNAME
@@ -69,7 +68,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             d.transform { it.createdByUserId }.isEqualTo(USERNAME)
             d.transform { it.createdAt }.isRecent()
             d.transform { it.scanStatus }.isEqualTo(OK)
-            d.transform { it.applicationId }.isEqualTo(APPLICATION_ID)
+            d.transform { it.applicationId }.isEqualTo(application.id)
             d.transform { it.attachmentType }.isEqualTo(MUU)
         }
     }
