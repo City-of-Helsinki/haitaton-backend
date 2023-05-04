@@ -1,7 +1,8 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.BusinessId
-import org.junit.jupiter.api.Assertions.*
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 

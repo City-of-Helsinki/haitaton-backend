@@ -1,12 +1,10 @@
-package fi.hel.haitaton.hanke.attachment
+package fi.hel.haitaton.hanke.attachment.common
 
 import java.util.Locale
 import java.util.regex.Pattern
 import org.apache.commons.io.FilenameUtils.getExtension
 import org.apache.commons.io.FilenameUtils.removeExtension
 import org.springframework.web.multipart.MultipartFile
-
-private const val MAX_MB = 25
 
 private val supportedFiletypes =
     mapOf(
@@ -18,7 +16,6 @@ private val supportedFiletypes =
     )
 
 object AttachmentValidator {
-
     fun validate(input: MultipartFile): MultipartFile {
         val fileName = FileNameValidator.validateFileName(input.originalFilename)
 
@@ -28,10 +25,6 @@ object AttachmentValidator {
             )
         }
 
-        if (input.size > 1024 * 1024 * MAX_MB) {
-            throw AttachmentUploadException("File size should not exceed ${MAX_MB}MB")
-        }
-
         return input
     }
 
@@ -39,7 +32,6 @@ object AttachmentValidator {
         if (contentType.isNullOrBlank()) {
             return false
         }
-
         return supportedFiletypes[contentType]?.contains(extension) ?: false
     }
 }

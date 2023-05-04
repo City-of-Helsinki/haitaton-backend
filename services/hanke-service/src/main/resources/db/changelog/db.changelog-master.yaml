@@ -93,3 +93,6 @@ databaseChangeLog:
       file: db/changelog/changesets/031-add-default-value-for-hankeyhteystieto-yhteyshenkilo.yml
   - include:
       file: db/changelog/changesets/032-create-liitetaulu-hanke.yml
+  - include:
+      file: db/changelog/changesets/033-create-liitetaulu-hakemus.yml
+

@@ -1,0 +1,62 @@
+databaseChangeLog:
+  - changeSet:
+      id: 033-create-liitetaulu-applications
+      comment: Create liitetaulu applications
+      author: Niko Junkala
+      changes:
+        - createTable:
+            tableName: application_attachment
+            remarks: "Contains attachments"
+            columns:
+              - column:
+                  name: id
+                  type: UUID
+                  remarks: "Unique identifier for an attachment"
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: file_name
+                  type: varchar(256)
+                  remarks: "Name for the attachment file"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_by_user_id
+                  type: varchar(40)
+                  remarks: "User id of the creator"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: timestamp
+                  remarks: "Creation date of the liite"
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false
+              - column:
+                  name: application_id
+                  type: bigint
+                  remarks: "Appliction that owns the attachment"
+                  constraints:
+                    nullable: false
+                    foreignKeyName: fk_attachment_applications
+                    references: applications(id)
+              - column:
+                  name: content
+                  type: BYTEA
+                  remarks: "Binary data of the attachment"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: scan_status
+                  type: varchar(16)
+                  remarks: "State of the virus scan"
+                  constraints:
+                    nullable: false
+              - column:
+                  name: attachment_type
+                  type: varchar(128)
+                  remarks: "Description of what type of attachment this is"
+                  constraints:
+                    nullable: false
