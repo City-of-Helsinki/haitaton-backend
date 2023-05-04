@@ -40,6 +40,7 @@ services:
       - CLAMD_IP=clamd
       - APP_FORM_KEY=FILES
       - APP_PORT=3030
+      - APP_MAX_FILE_SIZE=104857600
     ports:
       - '3030:3030'
     networks:
