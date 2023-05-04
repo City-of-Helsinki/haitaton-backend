@@ -1,16 +1,18 @@
-package fi.hel.haitaton.hanke.security
+package fi.hel.haitaton.hanke.attachment.common
 
 import com.fasterxml.jackson.annotation.JsonProperty
+import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator.validScanInput
 import fi.hel.haitaton.hanke.toJsonString
 import java.time.Duration.ofSeconds
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType.APPLICATION_JSON
-import org.springframework.http.MediaType.APPLICATION_OCTET_STREAM
 import org.springframework.http.MediaType.MULTIPART_FORM_DATA
+import org.springframework.http.MediaType.parseMediaType
 import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.stereotype.Service
+import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.reactive.function.BodyInserters.fromMultipartData
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -30,14 +32,26 @@ class FileScanService(
             logger.info { "Initialized file scan client with base-url: $clamAvUrl" }
         }
 
-    fun scanFiles(files: List<Pair<String, ByteArray>>): List<FileResult> {
+    fun validate(file: MultipartFile): MultipartFile {
+        val scanInput = validScanInput(file)
+
+        val result = scan(listOf(scanInput))
+
+        if (result.hasInfected()) {
+            throw AttachmentUploadException("Infected file detected, see previous logs.")
+        }
+
+        return file
+    }
+
+    private fun scan(files: List<FileScanInput>): List<FileResult> {
         logger.info { "Scanning ${files.size} files." }
 
         val data =
             MultipartBodyBuilder()
                 .apply {
-                    files.forEach { (name, bytes) ->
-                        part(FORM_KEY, ByteArrayResource(bytes), APPLICATION_OCTET_STREAM)
+                    files.forEach { (name, type, bytes) ->
+                        part(FORM_KEY, ByteArrayResource(bytes), parseMediaType(type))
                             .filename(name)
                     }
                 }
@@ -77,6 +91,26 @@ class FileScanService(
         } else {
             logger.info { "Files scanned successfully." }
         }
+    }
+}
+
+data class FileScanInput(val name: String, val type: String, val bytes: ByteArray) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as FileScanInput
+
+        if (name != other.name) return false
+        if (type != other.type) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = 31 * result + type.hashCode()
+        return result
     }
 }
 

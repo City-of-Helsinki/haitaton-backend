@@ -16,16 +16,21 @@ private val supportedFiletypes =
     )
 
 object AttachmentValidator {
-    fun validate(input: MultipartFile): MultipartFile {
-        val fileName = FileNameValidator.validateFileName(input.originalFilename)
+    fun validScanInput(attachment: MultipartFile): FileScanInput {
+        val fileName = FileNameValidator.validFileName(attachment.originalFilename)
+        val contentType = attachment.contentType.orEmpty()
 
-        if (!contentTypeMatchesExtension(input.contentType, getExtension(fileName))) {
+        if (!contentTypeMatchesExtension(contentType, getExtension(fileName))) {
             throw AttachmentUploadException(
-                "File '$fileName' extension does not match content type ${input.contentType}"
+                "File '$fileName' extension does not match content type $contentType"
             )
         }
 
-        return input
+        return FileScanInput(
+            name = fileName,
+            type = attachment.contentType!!,
+            bytes = attachment.bytes
+        )
     }
 
     private fun contentTypeMatchesExtension(contentType: String?, extension: String): Boolean {
@@ -68,7 +73,7 @@ object FileNameValidator {
             "LPT9"
         )
 
-    fun validateFileName(input: String?): String {
+    fun validFileName(input: String?): String {
         if (input.isNullOrBlank()) {
             throw AttachmentUploadException("Attachment file name null or blank")
         }

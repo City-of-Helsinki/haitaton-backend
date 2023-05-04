@@ -9,7 +9,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
-import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator.validate
+import fi.hel.haitaton.hanke.attachment.common.FileScanService
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime.now
 import java.util.UUID
@@ -23,7 +23,8 @@ private val logger = KotlinLogging.logger {}
 @Service
 class ApplicationAttachmentService(
     private val applicationRepository: ApplicationRepository,
-    private val attachmentRepository: ApplicationAttachmentRepository
+    private val attachmentRepository: ApplicationAttachmentRepository,
+    private val scanService: FileScanService,
 ) {
     @Transactional(readOnly = true)
     fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadata> =
@@ -50,7 +51,8 @@ class ApplicationAttachmentService(
         attachment: MultipartFile
     ): ApplicationAttachmentMetadata {
         val application = findApplication(applicationId)
-        val file = validate(attachment)
+        val file = scanService.validate(attachment)
+
         val applicationAttachment =
             ApplicationAttachmentEntity(
                 id = null,

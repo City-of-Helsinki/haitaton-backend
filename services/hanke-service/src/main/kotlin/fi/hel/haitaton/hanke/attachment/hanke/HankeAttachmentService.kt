@@ -4,7 +4,7 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
-import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator.validate
+import fi.hel.haitaton.hanke.attachment.common.FileScanService
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
@@ -22,6 +22,7 @@ private val logger = KotlinLogging.logger {}
 class HankeAttachmentService(
     val hankeRepository: HankeRepository,
     val attachmentRepository: HankeAttachmentRepository,
+    val scanClient: FileScanService,
 ) {
 
     @Transactional(readOnly = true)
@@ -44,8 +45,8 @@ class HankeAttachmentService(
 
     @Transactional
     fun addAttachment(hankeTunnus: String, attachment: MultipartFile): HankeAttachmentMetadata {
-        val file = validate(attachment)
         val hanke = findHanke(hankeTunnus)
+        val file = scanClient.validate(attachment)
         val result =
             HankeAttachmentEntity(
                 id = null,
