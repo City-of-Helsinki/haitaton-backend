@@ -128,6 +128,8 @@ tasks {
 		useJUnitPlatform()
 		systemProperty("spring.profiles.active", "test")
 		testLogging {
+			events("passed", "skipped", "failed")
+			showStackTraces = true
 			exceptionFormat = TestExceptionFormat.FULL
 		}
 	}
@@ -140,6 +142,11 @@ tasks {
 		classpath = sourceSets["integrationTest"].runtimeClasspath
 		shouldRunAfter("test")
 		outputs.upToDateWhen { false }
+		testLogging {
+			events("passed", "skipped", "failed")
+			showStackTraces = true
+			exceptionFormat = TestExceptionFormat.FULL
+		}
 	}
 }
 
