@@ -26,6 +26,7 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
 import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import java.util.Optional
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -66,7 +67,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             d.transform { it.id }.isNotNull()
             d.transform { it.fileName }.endsWith("file.pdf")
             d.transform { it.createdByUserId }.isEqualTo(USERNAME)
-            d.transform { it.createdAt }.isNotNull()
+            d.transform { it.createdAt }.isRecent()
             d.transform { it.scanStatus }.isEqualTo(OK)
             d.transform { it.applicationId }.isEqualTo(APPLICATION_ID)
             d.transform { it.attachmentType }.isEqualTo(MUU)
@@ -139,7 +140,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(result.id).isNotNull()
         assertThat(result.createdByUserId).isEqualTo(USERNAME)
         assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-        assertThat(result.createdAt).isNotNull()
+        assertThat(result.createdAt).isRecent()
         assertThat(result.applicationId).isEqualTo(application.id)
         assertThat(result.attachmentType).isEqualTo(typeInput)
         assertThat(result.scanStatus).isEqualTo(OK)

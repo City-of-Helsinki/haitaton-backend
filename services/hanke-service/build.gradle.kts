@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.run.BootRun
@@ -126,6 +127,9 @@ tasks {
 	test {
 		useJUnitPlatform()
 		systemProperty("spring.profiles.active", "test")
+		testLogging {
+			exceptionFormat = TestExceptionFormat.FULL
+		}
 	}
 
 	create("integrationTest", Test::class) {
