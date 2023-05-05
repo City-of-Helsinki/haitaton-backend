@@ -7,10 +7,14 @@ import assertk.assertions.isFalse
 import assertk.assertions.isNull
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.Application
-import fi.hel.haitaton.hanke.application.ApplicationArgumentException
+import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationService
+import fi.hel.haitaton.hanke.application.ApplicationGeometryException
+import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
@@ -39,16 +43,15 @@ import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
-import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
+import io.mockk.verifySequence
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import javax.persistence.EntityManager
 import net.pwall.mustache.Template
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
@@ -72,7 +75,6 @@ import org.springframework.data.repository.findByIdOrNull
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.junit.jupiter.Testcontainers
 
@@ -86,18 +88,17 @@ private const val NAME_SOMETHING = "Som Et Hing"
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
-@Transactional
 @WithMockUser(USER_NAME)
 class HankeServiceITests : DatabaseTest() {
 
-    @MockkBean private lateinit var applicationService: ApplicationService
+    @MockkBean private lateinit var cableReportService: CableReportService
     @Autowired private lateinit var hankeService: HankeService
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
+    @Autowired private lateinit var applicationRepository: ApplicationRepository
     @Autowired private lateinit var hankeRepository: HankeRepository
     @Autowired private lateinit var hankeKayttajaRepository: HankeKayttajaRepository
     @Autowired private lateinit var kayttajaTunnisteRepository: KayttajaTunnisteRepository
     @Autowired private lateinit var jdbcTemplate: JdbcTemplate
-    @Autowired private lateinit var entityManager: EntityManager
 
     @BeforeEach
     fun clearMocks() {
@@ -107,7 +108,7 @@ class HankeServiceITests : DatabaseTest() {
     @AfterEach
     fun checkMocks() {
         checkUnnecessaryStub()
-        confirmVerified(applicationService)
+        confirmVerified(cableReportService)
     }
 
     @Test
@@ -282,7 +283,7 @@ class HankeServiceITests : DatabaseTest() {
         val result = hankeService.getHankeWithApplications(hanke.hankeTunnus!!)
 
         val expectedHanke = hanke.toDomainObject().apply { tyomaaTyyppi = hanke.tyomaaTyyppi }
-        val expectedHakemus = hanke.hakemukset.first().toDomainObject()
+        val expectedHakemus = applicationRepository.findAll().first().toDomainObject()
         assertThat(result.hanke).usingRecursiveComparison().isEqualTo(expectedHanke)
         assertThat(result.applications).hasSameElementsAs(listOf(expectedHakemus))
     }
@@ -780,6 +781,7 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
+    @Transactional // due to lazy initialized fields being accessed
     fun `test personal data processing restriction`() {
         // Setup Hanke with two Yhteystietos in different groups. The test will only manipulate the
         // rakennuttaja.
@@ -931,7 +933,6 @@ class HankeServiceITests : DatabaseTest() {
     @Test
     fun `generateHankeWithApplication generates hanke based on application`() {
         val inputApplication = AlluDataFactory.cableReportWithoutHanke()
-        every { applicationService.create(any(), USER_NAME) } returnsArgument 0
 
         val result = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
 
@@ -943,22 +944,30 @@ class HankeServiceITests : DatabaseTest() {
             assertThat(application.applicationData.name)
                 .isEqualTo(inputApplication.applicationData.name)
         }
-        verify { applicationService.create(any(), USER_NAME) }
     }
 
     @Test
-    @Transactional(propagation = Propagation.NEVER)
     fun `generateHankeWithApplication when exception rolls back`() {
-        val inputApplication = AlluDataFactory.cableReportWithoutHanke()
-        every { applicationService.create(any(), USER_NAME) } throws
-            ApplicationArgumentException("")
+        // Use an intersecting geometry so that ApplicationService will throw an exception
+        val inputApplication =
+            CableReportWithoutHanke(
+                ApplicationType.CABLE_REPORT,
+                AlluDataFactory.createCableReportApplicationData(
+                    areas =
+                        listOf(
+                            ApplicationArea(
+                                "area",
+                                "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json".asJsonResource()
+                            )
+                        )
+                ),
+            )
 
-        assertThrows<ApplicationArgumentException> {
+        assertThrows<ApplicationGeometryException> {
             hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
         }
 
         assertEquals(0, hankeCount())
-        verify { applicationService.create(any(), USER_NAME) }
     }
 
     @Test
@@ -1064,10 +1073,8 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(alue.polyHaitta).isEqualTo(Haitta13.KOLME)
         assertThat(alue.tarinaHaitta).isEqualTo(Haitta13.KOLME)
         assertThat(alue.geometriat).isNotNull
-        entityManager.flush()
-        entityManager.clear()
-        val hankeFromDb = hankeRepository.getReferenceById(updatedHanke.id!!)
-        assertThat(hankeFromDb.listOfHankeAlueet).hasSize(1)
+        val hankeFromDb = hankeService.loadHanke(hanke.hankeTunnus!!)
+        assertThat(hankeFromDb?.alueet).hasSize(1)
         assertThat(hankealueCount()).isEqualTo(1)
         assertThat(geometriatCount()).isEqualTo(1)
     }
@@ -1177,7 +1184,6 @@ class HankeServiceITests : DatabaseTest() {
         hankeService.deleteHanke(hanke, listOf(), USER_NAME)
 
         assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNull()
-        verify { applicationService wasNot Called }
     }
 
     @Test
@@ -1185,15 +1191,18 @@ class HankeServiceITests : DatabaseTest() {
         val hakemusAlluId = 356
         val hanke = initHankeWithHakemus(hakemusAlluId)
         val hakemukset = hanke.hakemukset.map { it.toApplication() }
-        val hakemusId = hakemukset.first().id!!
-        every { applicationService.isStillPending(hakemukset.first()) } returns true
-        justRun { applicationService.delete(hakemusId, USER_NAME) }
+        every { cableReportService.getApplicationInformation(hakemusAlluId) } returns
+            AlluDataFactory.createAlluApplicationResponse(status = ApplicationStatus.PENDING)
+        justRun { cableReportService.cancel(hakemusAlluId) }
 
         hankeService.deleteHanke(hanke.toDomainObject(), hakemukset, USER_NAME)
 
         assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNull()
-        verify { applicationService.isStillPending(hakemukset.first()) }
-        verify { applicationService.delete(hakemusId, USER_NAME) }
+        verifySequence {
+            cableReportService.getApplicationInformation(hakemusAlluId)
+            cableReportService.getApplicationInformation(hakemusAlluId)
+            cableReportService.cancel(hakemusAlluId)
+        }
     }
 
     @Test
@@ -1201,14 +1210,15 @@ class HankeServiceITests : DatabaseTest() {
         val hakemusAlluId = 123
         val hanke = initHankeWithHakemus(hakemusAlluId)
         val hakemukset = hanke.hakemukset.map { it.toApplication() }
-        every { applicationService.isStillPending(hakemukset.first()) } returns false
+        every { cableReportService.getApplicationInformation(hakemusAlluId) } returns
+            AlluDataFactory.createAlluApplicationResponse(status = ApplicationStatus.HANDLING)
 
         assertThrows<HankeAlluConflictException> {
             hankeService.deleteHanke(hanke.toDomainObject(), hakemukset, USER_NAME)
         }
 
         assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNotNull
-        verify { applicationService.isStillPending(hakemukset.first()) }
+        verify { cableReportService.getApplicationInformation(hakemusAlluId) }
     }
 
     @Test
@@ -1435,19 +1445,19 @@ class HankeServiceITests : DatabaseTest() {
         }
     }
 
-    private fun initHankeWithHakemus(alluId: Int): HankeEntity =
-        hankeRepository.save(
-            HankeEntity(hankeTunnus = "HAI23-1").apply {
-                this.hakemukset =
-                    mutableSetOf(
-                        AlluDataFactory.createApplicationEntity(
-                            hanke = this,
-                            alluStatus = ApplicationStatus.PENDING,
-                            alluid = alluId,
-                        )
-                    )
-            }
-        )
+    private fun initHankeWithHakemus(alluId: Int): HankeEntity {
+        val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI23-1"))
+        val application =
+            applicationRepository.save(
+                AlluDataFactory.createApplicationEntity(
+                    hanke = hanke,
+                    alluStatus = ApplicationStatus.PENDING,
+                    alluid = alluId,
+                    userId = USER_NAME
+                )
+            )
+        return hanke.apply { hakemukset = mutableSetOf(application) }
+    }
 
     private fun HankeEntity.toDomainObject(): Hanke =
         with(this) {

@@ -11,7 +11,6 @@ import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.asJsonResource
 import java.time.ZonedDateTime
-import javax.transaction.Transactional
 import org.geojson.Point
 import org.geojson.Polygon
 import org.junit.jupiter.api.Test
@@ -25,7 +24,6 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
-@Transactional
 internal class GeometriatDaoImplITest : DatabaseTest() {
 
     private val expectedPolygonArea = 1707f

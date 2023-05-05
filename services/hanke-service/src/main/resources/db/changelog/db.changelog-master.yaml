@@ -95,4 +95,5 @@ databaseChangeLog:
       file: db/changelog/changesets/032-create-liitetaulu-hanke.yml
   - include:
       file: db/changelog/changesets/033-create-liitetaulu-hakemus.yml
-
+  - include:
+      file: db/changelog/changesets/034-add-delete-cascade-to-hankekayttajat.yml

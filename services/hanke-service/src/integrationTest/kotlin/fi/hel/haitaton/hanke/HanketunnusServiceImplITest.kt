@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
@@ -17,7 +16,6 @@ internal class HanketunnusServiceImplITest : DatabaseTest() {
     @Autowired lateinit var hanketunnusService: HanketunnusService
 
     @Test
-    @Transactional
     fun newHanketunnus() {
         val hanketunnus1 = hanketunnusService.newHanketunnus()
         val hanketunnus2 = hanketunnusService.newHanketunnus()

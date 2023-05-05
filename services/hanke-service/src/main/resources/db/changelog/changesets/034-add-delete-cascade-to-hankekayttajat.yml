@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 034-add-delete-cascade-to-hankekayttajat
+      author: Topias Heinonen
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: hanke_kayttaja
+            constraintName: fk_hankekayttaja_hanke
+        - addForeignKeyConstraint:
+            baseTableName: hanke_kayttaja
+            baseColumnNames: hanke_id
+            constraintName: fk_hankekayttaja_hanke
+            referencedTableName: hanke
+            referencedColumnNames: id
+            onDelete: CASCADE

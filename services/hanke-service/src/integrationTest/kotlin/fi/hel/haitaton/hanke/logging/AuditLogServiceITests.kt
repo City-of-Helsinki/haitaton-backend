@@ -13,7 +13,6 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.junit.jupiter.Testcontainers
 
 /**
@@ -27,7 +26,6 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
-@Transactional
 class AuditLogServiceITests : DatabaseTest() {
 
     @Autowired private lateinit var entityManager: EntityManager
@@ -52,10 +50,6 @@ class AuditLogServiceITests : DatabaseTest() {
         val savedAuditLogEntry = auditLogService.createAll(listOf(auditLogEntry))[0]
 
         val id = savedAuditLogEntry.id
-        // Make sure the stuff is run to database (though not necessarily committed)
-        entityManager.flush()
-        // Ensure the original entity is no longer in Hibernate's 1st level cache
-        entityManager.clear()
         // Check it is there (using something else than the repository):
         val foundAuditLogEntry = entityManager.find(AuditLogEntryEntity::class.java, id)
         assertThat(foundAuditLogEntry).isNotNull()
