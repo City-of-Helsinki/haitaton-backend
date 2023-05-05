@@ -6,7 +6,7 @@ import org.springframework.boot.gradle.tasks.run.BootRun
 group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
 java.sourceCompatibility = JavaVersion.VERSION_11
-val springDocVersion = "1.6.12"
+val springDocVersion = "1.7.0"
 val geoJsonJacksonVersion = "1.14"
 val mockkVersion = "1.13.5"
 val springmockkVersion = "3.1.2"
@@ -57,13 +57,14 @@ spotless {
 plugins {
 	id("org.springframework.boot") version "2.7.11"
 	id("io.spring.dependency-management") version "1.1.0"
-	id("com.diffplug.spotless") version "6.10.0"
+	id("com.diffplug.spotless") version "6.18.0"
 	kotlin("jvm") version "1.6.21"
 	// Gives kotlin-allopen, which auto-opens classes with certain annotations
 	kotlin("plugin.spring") version "1.6.21"
 	// Gives kotlin-noarg for @Entity, @Embeddable
 	kotlin("plugin.jpa") version "1.6.21"
 	idea
+	id("com.github.ben-manes.versions") version "0.42.0"
 }
 
 dependencies {
@@ -77,13 +78,13 @@ dependencies {
 	implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
 	implementation("io.github.microutils:kotlin-logging:3.0.5")
 	implementation("ch.qos.logback:logback-access")
-	implementation("net.logstash.logback:logstash-logback-encoder:6.5")
+	implementation("net.logstash.logback:logstash-logback-encoder:7.3")
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
 	implementation("de.grundid.opendatalab:geojson-jackson:$geoJsonJacksonVersion")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.liquibase:liquibase-core")
 	implementation("com.github.blagerweij:liquibase-sessionlock:1.6.2")
-	implementation("com.vladmihalcea:hibernate-types-52:2.14.0")
+	implementation("com.vladmihalcea:hibernate-types-52:2.21.1")
 	implementation("commons-io:commons-io:2.11.0")
 	implementation("com.github.librepdf:openpdf:1.3.30")
 	implementation("net.pwall.mustache:kotlin-mustache:0.10")
@@ -111,9 +112,10 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-security")
 	implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 	testImplementation("org.springframework.security:spring-security-test")
+
 	// Sentry
-	implementation("io.sentry:sentry-spring-boot-starter:4.0.0")
-	implementation("io.sentry:sentry-logback:4.0.0")
+	implementation("io.sentry:sentry-spring-boot-starter:6.18.1")
+	implementation("io.sentry:sentry-logback:6.18.1")
 }
 
 tasks.withType<KotlinCompile> {
