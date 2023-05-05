@@ -128,7 +128,7 @@ tasks {
 		useJUnitPlatform()
 		systemProperty("spring.profiles.active", "test")
 		testLogging {
-			events("passed", "skipped", "failed")
+			events("skipped", "failed")
 			showStackTraces = true
 			exceptionFormat = TestExceptionFormat.FULL
 		}
@@ -143,7 +143,7 @@ tasks {
 		shouldRunAfter("test")
 		outputs.upToDateWhen { false }
 		testLogging {
-			events("passed", "skipped", "failed")
+			events("skipped", "failed")
 			showStackTraces = true
 			exceptionFormat = TestExceptionFormat.FULL
 		}
