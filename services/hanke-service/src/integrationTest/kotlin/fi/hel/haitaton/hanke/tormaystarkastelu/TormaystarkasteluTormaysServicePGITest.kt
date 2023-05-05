@@ -9,7 +9,6 @@ import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
-import javax.transaction.Transactional
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -19,7 +18,6 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
-@Transactional
 internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
 
     @Autowired private lateinit var geometriatDao: GeometriatDao

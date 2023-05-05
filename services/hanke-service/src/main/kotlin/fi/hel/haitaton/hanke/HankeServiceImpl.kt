@@ -80,6 +80,7 @@ open class HankeServiceImpl(
     /**
      * Hanke does not contain hakemukset. This function wraps Hanke and its hakemukset to a pair.
      */
+    @Transactional(readOnly = true)
     override fun getHankeWithApplications(hankeTunnus: String): HankeWithApplications =
         hankeRepository.findByHankeTunnus(hankeTunnus).let { entity ->
             if (entity == null) {
@@ -91,22 +92,27 @@ open class HankeServiceImpl(
             )
         }
 
+    @Transactional(readOnly = true)
     override fun loadHanke(hankeTunnus: String) =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let {
             createHankeDomainObjectFromEntity(it)
         }
 
+    @Transactional(readOnly = true)
     override fun loadAllHanke() =
         hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
 
+    @Transactional(readOnly = true)
     override fun loadPublicHanke() =
         hankeRepository.findAllByStatus(HankeStatus.PUBLIC).map {
             createHankeDomainObjectFromEntity(it)
         }
 
+    @Transactional(readOnly = true)
     override fun loadHankkeetByIds(ids: List<Int>) =
         hankeRepository.findAllById(ids).map { createHankeDomainObjectFromEntity(it) }
 
+    @Transactional(readOnly = true)
     override fun loadHankkeetByUserId(userId: String) =
         hankeRepository.findAllByCreatedByUserIdOrModifiedByUserId(userId, userId).map {
             createHankeDomainObjectFromEntity(it)
