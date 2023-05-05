@@ -26,14 +26,19 @@ import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
+import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createAttachmentMetadata
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
+import fi.hel.haitaton.hanke.factory.AttachmentFactory.applicationAttachmentEntity
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.findByType
@@ -905,15 +910,21 @@ class ApplicationServiceITest : DatabaseTest() {
     @Sql("/sql/senaatintorin-hanke.sql")
     fun `sendApplication creates new application to Allu and saves ID and status to database`() {
         val application =
-            alluDataFactory.saveApplicationEntity(
-                USERNAME,
-                hanke = initializedHanke(),
-                application = mockApplicationWithArea()
-            ) { it.alluid = null }
+            alluDataFactory
+                .saveApplicationEntity(
+                    USERNAME,
+                    hanke = initializedHanke(),
+                    application = mockApplicationWithArea()
+                )
+                .apply {
+                    attachments = mutableListOf(applicationAttachmentEntity(application = this))
+                    applicationRepository.save(this)
+                }
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
         every { cableReportServiceAllu.create(pendingApplicationData.toAlluData()) } returns 26
         justRun { cableReportServiceAllu.addAttachment(26, any()) }
+        justRun { cableReportServiceAllu.addAttachments(26, any()) }
         every { cableReportServiceAllu.getApplicationInformation(26) } returns
             AlluDataFactory.createAlluApplicationResponse(26)
 
@@ -934,6 +945,7 @@ class ApplicationServiceITest : DatabaseTest() {
         verifyOrder {
             cableReportServiceAllu.create(pendingApplicationData.toAlluData())
             cableReportServiceAllu.addAttachment(26, any())
+            cableReportServiceAllu.addAttachments(26, any())
             cableReportServiceAllu.getApplicationInformation(26)
         }
     }
@@ -1431,6 +1443,14 @@ class ApplicationServiceITest : DatabaseTest() {
     private val havisAmanda: ApplicationArea =
         AlluDataFactory.createApplicationArea(
             geometry = "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
+        )
+
+    private fun attachments(): List<Attachment> =
+        listOf(
+            Attachment(
+                metadata = createAttachmentMetadata(description = MUU.toString()),
+                file = testFile().bytes
+            )
         )
 
     private fun mockApplicationWithArea(

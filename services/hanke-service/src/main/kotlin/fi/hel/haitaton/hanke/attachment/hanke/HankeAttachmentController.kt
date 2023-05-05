@@ -80,9 +80,11 @@ class HankeAttachmentController(
         @PathVariable attachmentId: UUID,
     ): ResponseEntity<ByteArray> {
         permissionOrThrow(hankeTunnus, VIEW)
-        hankeAttachmentService.getContent(hankeTunnus, attachmentId).let { (fileName, content) ->
-            return ResponseEntity.ok().headers(buildHeaders(fileName)).body(content)
-        }
+        val content = hankeAttachmentService.getContent(hankeTunnus, attachmentId)
+
+        return ResponseEntity.ok()
+            .headers(buildHeaders(content.fileName, content.contentType))
+            .body(content.bytes)
     }
 
     @PostMapping

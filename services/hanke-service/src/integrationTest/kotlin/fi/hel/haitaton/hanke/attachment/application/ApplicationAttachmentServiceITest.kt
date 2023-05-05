@@ -41,6 +41,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.http.MediaType.TEXT_HTML_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
@@ -110,16 +111,15 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 attachment = file
             )
 
-        val data =
+        val result =
             applicationAttachmentService.getContent(
                 applicationId = application.id!!,
                 attachmentId = attachment.id!!
             )
 
-        data.let { (fileName, content) ->
-            assertThat(fileName).isEqualTo(FILE_NAME_PDF)
-            assertThat(content).isEqualTo(file.bytes)
-        }
+        assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
+        assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
+        assertThat(result.bytes).isEqualTo(file.bytes)
     }
 
     @Test

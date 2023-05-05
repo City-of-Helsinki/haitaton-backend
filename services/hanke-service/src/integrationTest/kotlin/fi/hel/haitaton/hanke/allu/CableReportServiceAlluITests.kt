@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.allu
 
 import assertk.Assert
 import assertk.assertThat
+import assertk.assertions.each
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
@@ -11,6 +12,7 @@ import assertk.assertions.prop
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.configuration.Configuration.Companion.webClientWithLargeBuffer
+import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import java.time.ZonedDateTime
@@ -66,6 +68,45 @@ class CableReportServiceAlluITests {
         assertThat(request.method).isEqualTo("POST")
         assertThat(request.path).isEqualTo("/v2/cablereports")
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
+    }
+
+    @Test
+    fun `addAttachment should upload attachment`() {
+        addStubbedLoginResponse()
+        val alluId = 123
+        val metadata = AlluDataFactory.createAttachmentMetadata()
+        val file = "test file content".toByteArray()
+        val attachment = Attachment(metadata, file)
+        val mockResponse = MockResponse().setResponseCode(200)
+        mockWebServer.enqueue(mockResponse)
+
+        service.addAttachment(alluId, attachment)
+
+        assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
+        val request = mockWebServer.takeRequest()
+        assertThat(request.method).isEqualTo("POST")
+        assertThat(request.path).isEqualTo("/v2/applications/$alluId/attachments")
+    }
+
+    @Test
+    fun `addAttachments should upload attachments successfully`() {
+        addStubbedLoginResponse()
+        val alluId = 123
+        val metadata = AlluDataFactory.createAttachmentMetadata()
+        val file = "test file content".toByteArray()
+        val attachment = Attachment(metadata, file)
+        val mockResponse = MockResponse().setResponseCode(200)
+        (1..3).forEach { _ -> mockWebServer.enqueue(mockResponse) }
+        val attachments = listOf(attachment, attachment, attachment)
+
+        service.addAttachments(alluId, attachments)
+
+        assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
+        assertThat(attachments).each {
+            val request = mockWebServer.takeRequest()
+            assertThat(request.method).isEqualTo("POST")
+            assertThat(request.path).isEqualTo("/v2/applications/$alluId/attachments")
+        }
     }
 
     @Test

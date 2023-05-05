@@ -34,6 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.http.MediaType.TEXT_HTML_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
@@ -92,14 +93,13 @@ class HankeAttachmentServiceITests : DatabaseTest() {
     fun `getContent when status is OK should succeed`() {
         mockWebServer.enqueue(response(body(results = successResult())))
         val hanke = hankeService.createHanke(HankeFactory.create())
+        val attachment = hankeAttachmentService.addAttachment(hanke.hankeTunnus!!, testFile())
 
-        val result = hankeAttachmentService.addAttachment(hanke.hankeTunnus!!, testFile())
+        val result = hankeAttachmentService.getContent(hanke.hankeTunnus!!, attachment.id!!)
 
-        hankeAttachmentService.getContent(hanke.hankeTunnus!!, result.id!!).let {
-            (fileName, content) ->
-            assertThat(fileName).isEqualTo(FILE_NAME_PDF)
-            assertThat(content).isEqualTo(dummyData)
-        }
+        assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
+        assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
+        assertThat(result.bytes).isEqualTo(dummyData)
     }
 
     @Test

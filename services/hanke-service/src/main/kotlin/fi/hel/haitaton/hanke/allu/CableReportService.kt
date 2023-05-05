@@ -10,11 +10,15 @@ interface CableReportService {
     ): List<ApplicationHistory>
 
     fun create(cableReport: AlluCableReportApplicationData): Int
+
     fun update(applicationId: Int, cableReport: AlluCableReportApplicationData)
 
     fun addAttachment(applicationId: Int, attachment: Attachment)
 
+    fun addAttachments(alluId: Int, attachments: List<Attachment>)
+
     fun getInformationRequests(applicationId: Int): List<InformationRequest>
+
     fun respondToInformationRequest(
         applicationId: Int,
         requestId: Int,
@@ -23,8 +27,12 @@ interface CableReportService {
     )
 
     fun getDecisionPdf(applicationId: Int): ByteArray
+
     fun getDecisionAttachments(applicationId: Int): List<AttachmentMetadata>
+
     fun getDecisionAttachmentData(applicationId: Int, attachmentId: Int): ByteArray
+
     fun getApplicationInformation(applicationId: Int): AlluApplicationResponse
+
     fun cancel(applicationId: Int)
 }

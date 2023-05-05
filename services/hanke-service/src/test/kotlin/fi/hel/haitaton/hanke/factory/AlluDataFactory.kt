@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationArea
@@ -21,6 +22,7 @@ import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import java.time.ZonedDateTime
 import org.geojson.Polygon
+import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.stereotype.Component
 
 @Component
@@ -252,6 +254,19 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 terms = null,
                 customerReference = null,
                 surveyRequired = false
+            )
+
+        fun createAttachmentMetadata(
+            id: Int? = null,
+            mimeType: String = APPLICATION_PDF_VALUE,
+            name: String = "file.pdf",
+            description: String = "Test description."
+        ) =
+            AttachmentMetadata(
+                id = id,
+                mimeType = mimeType,
+                name = name,
+                description = description,
             )
     }
 

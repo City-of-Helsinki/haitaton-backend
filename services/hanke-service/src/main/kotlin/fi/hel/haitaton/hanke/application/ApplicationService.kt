@@ -8,10 +8,13 @@ import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationHistory
 import fi.hel.haitaton.hanke.allu.ApplicationPdfService
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
 import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
@@ -54,6 +57,7 @@ open class ApplicationService(
             .map { it.toApplication() }
     }
 
+    @Transactional(readOnly = true)
     open fun getApplicationById(id: Long): Application = getById(id).toApplication()
 
     @Transactional
@@ -154,7 +158,7 @@ open class ApplicationService(
 
         // Update the application in Allu, if it's been already uploaded
         if (application.alluid != null) {
-            updateApplicationInAllu(application.alluid!!, application.applicationData)
+            updateApplicationInAllu(application)
         }
 
         val updatedApplication = applicationRepository.save(application).toApplication()
@@ -163,6 +167,7 @@ open class ApplicationService(
         return updatedApplication
     }
 
+    @Transactional
     open fun sendApplication(id: Long, userId: String): Application {
         val application = getById(id)
 
@@ -196,7 +201,7 @@ open class ApplicationService(
 
         // The application should no longer be a draft
         application.applicationData = application.applicationData.copy(pendingOnClient = false)
-        application.alluid = sendApplicationToAllu(application.alluid, application.applicationData)
+        application.alluid = sendApplicationToAllu(application)
         getApplicationInformationFromAllu(application.alluid!!)?.let {
             application.applicationIdentifier = it.applicationId
             application.alluStatus = it.status
@@ -240,6 +245,7 @@ open class ApplicationService(
         applicationLoggingService.logDelete(application.toApplication(), userId)
     }
 
+    @Transactional(readOnly = true)
     open fun downloadDecision(applicationId: Long, userId: String): Pair<String, ByteArray> {
         val application = getApplicationById(applicationId)
         val alluid =
@@ -259,8 +265,8 @@ open class ApplicationService(
     open fun isStillPending(application: Application): Boolean =
         when (application.alluStatus) {
             null,
-            ApplicationStatus.PENDING,
-            ApplicationStatus.PENDING_CLIENT -> isStillPendingInAllu(application.alluid)
+            PENDING,
+            PENDING_CLIENT -> isStillPendingInAllu(application.alluid)
             else -> false
         }
 
@@ -270,7 +276,7 @@ open class ApplicationService(
 
         val currentStatus = cableReportService.getApplicationInformation(alluid).status
 
-        return currentStatus in listOf(ApplicationStatus.PENDING, ApplicationStatus.PENDING_CLIENT)
+        return currentStatus in listOf(PENDING, PENDING_CLIENT)
     }
 
     /** Cancel an application that's been sent to Allu. */
@@ -408,26 +414,45 @@ open class ApplicationService(
         }
     }
 
-    private fun sendApplicationToAllu(alluid: Int?, applicationData: ApplicationData): Int {
-        return if (alluid == null) {
-            createApplicationInAllu(applicationData)
+    private fun sendApplicationToAllu(application: ApplicationEntity): Int {
+        return if (application.alluid == null) {
+            createApplicationInAllu(application)
         } else {
-            updateApplicationInAllu(alluid, applicationData)
-            alluid
+            updateApplicationInAllu(application)
         }
     }
 
-    private fun updateApplicationInAllu(alluid: Int, applicationData: ApplicationData) {
-        logger.info { "Uploading updated application with alluId $alluid" }
-        when (applicationData) {
-            is CableReportApplicationData -> updateCableReportInAllu(alluid, applicationData)
+    private fun updateApplicationInAllu(application: ApplicationEntity): Int {
+        val alluId =
+            application.alluid ?: throw ApplicationArgumentException("AlluId null in update.")
+        logger.info { "Uploading updated application with alluId $alluId" }
+
+        when (val applicationData = application.applicationData) {
+            is CableReportApplicationData -> updateCableReportInAllu(alluId, applicationData)
         }
+
+        return alluId
     }
 
-    private fun createApplicationInAllu(applicationData: ApplicationData): Int {
-        return when (applicationData) {
-            is CableReportApplicationData -> createCableReportToAllu(applicationData)
+    /** Creates new application in Allu. All attachments are sent after creation. */
+    private fun createApplicationInAllu(application: ApplicationEntity): Int {
+        val alluId =
+            when (val applicationData = application.applicationData) {
+                is CableReportApplicationData -> createCableReportToAllu(applicationData)
+            }
+
+        sendAllAttachments(alluId, application.attachments)
+
+        return alluId
+    }
+
+    private fun sendAllAttachments(alluId: Int, attachments: List<ApplicationAttachmentEntity>) {
+        if (attachments.isEmpty()) {
+            logger.info { "No attachments to send for alluId $alluId" }
+            return
         }
+        val alluAttachments = attachments.map { it.toAlluAttachment() }
+        cableReportService.addAttachments(alluId, alluAttachments)
     }
 
     private fun createCableReportToAllu(
