@@ -4,10 +4,14 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
-import fi.hel.haitaton.hanke.attachment.common.FileScanService
+import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
+import fi.hel.haitaton.hanke.attachment.common.FileScanClient
+import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.common.hasInfected
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime.now
 import java.util.UUID
@@ -22,7 +26,7 @@ private val logger = KotlinLogging.logger {}
 class HankeAttachmentService(
     val hankeRepository: HankeRepository,
     val attachmentRepository: HankeAttachmentRepository,
-    val scanClient: FileScanService,
+    val scanClient: FileScanClient,
 ) {
 
     @Transactional(readOnly = true)
@@ -46,12 +50,14 @@ class HankeAttachmentService(
     @Transactional
     fun addAttachment(hankeTunnus: String, attachment: MultipartFile): HankeAttachmentMetadata {
         val hanke = findHanke(hankeTunnus)
-        val file = scanClient.validate(attachment)
+
+        validateAttachment(attachment)
+
         val result =
             HankeAttachmentEntity(
                 id = null,
-                fileName = file.originalFilename!!,
-                content = file.bytes,
+                fileName = attachment.originalFilename!!,
+                content = attachment.bytes,
                 createdAt = now(),
                 createdByUserId = currentUserId(),
                 scanStatus = OK,
@@ -75,4 +81,13 @@ class HankeAttachmentService(
 
     private fun List<HankeAttachmentEntity>.findBy(attachmentId: UUID): HankeAttachmentEntity =
         find { it.id == attachmentId } ?: throw AttachmentNotFoundException(attachmentId)
+
+    private fun validateAttachment(attachment: MultipartFile) {
+        AttachmentValidator.validate(attachment)
+        val scanResult =
+            scanClient.scan(listOf(FileScanInput(attachment.originalFilename!!, attachment.bytes)))
+        if (scanResult.hasInfected()) {
+            throw AttachmentUploadException("Infected file detected, see previous logs.")
+        }
+    }
 }

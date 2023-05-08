@@ -16,21 +16,17 @@ private val supportedFiletypes =
     )
 
 object AttachmentValidator {
-    fun validScanInput(attachment: MultipartFile): FileScanInput {
-        val fileName = FileNameValidator.validFileName(attachment.originalFilename)
-        val contentType = attachment.contentType.orEmpty()
+    fun validate(attachment: MultipartFile) {
+        val fileName =
+            FileNameValidator.validate(attachment.originalFilename).let {
+                attachment.originalFilename!!
+            }
 
-        if (!contentTypeMatchesExtension(contentType, getExtension(fileName))) {
+        if (!contentTypeMatchesExtension(attachment.contentType, getExtension(fileName))) {
             throw AttachmentUploadException(
-                "File '$fileName' extension does not match content type $contentType"
+                "File '$fileName' extension does not match content type '${attachment.contentType}'"
             )
         }
-
-        return FileScanInput(
-            name = fileName,
-            type = attachment.contentType!!,
-            bytes = attachment.bytes
-        )
     }
 
     private fun contentTypeMatchesExtension(contentType: String?, extension: String): Boolean {
@@ -73,27 +69,25 @@ object FileNameValidator {
             "LPT9"
         )
 
-    fun validFileName(input: String?): String {
-        if (input.isNullOrBlank()) {
+    fun validate(fileName: String?) {
+        if (fileName.isNullOrBlank()) {
             throw AttachmentUploadException("Attachment file name null or blank")
         }
 
-        if (input.length > 128) {
+        if (fileName.length > 128) {
             throw AttachmentUploadException("File name is too long")
         }
 
-        if (input.contains("..")) {
+        if (fileName.contains("..")) {
             throw AttachmentUploadException("File name contains path traversal characters")
         }
 
-        if (INVALID_CHARS_PATTERN.matcher(input).find()) {
+        if (INVALID_CHARS_PATTERN.matcher(fileName).find()) {
             throw AttachmentUploadException("File name contains invalid characters")
         }
 
-        if (RESERVED_NAMES.contains(removeExtension(input).uppercase(Locale.getDefault()))) {
+        if (RESERVED_NAMES.contains(removeExtension(fileName).uppercase(Locale.getDefault()))) {
             throw AttachmentUploadException("File name is reserved")
         }
-
-        return input
     }
 }

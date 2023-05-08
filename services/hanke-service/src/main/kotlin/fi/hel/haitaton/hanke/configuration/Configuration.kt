@@ -14,7 +14,7 @@ import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
-import fi.hel.haitaton.hanke.attachment.common.FileScanService
+import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -169,7 +169,7 @@ class Configuration {
     fun hankeAttachmentsService(
         hankeRepository: HankeRepository,
         hankeAttachmentRepository: HankeAttachmentRepository,
-        scanClient: FileScanService,
+        scanClient: FileScanClient,
     ): HankeAttachmentService =
         HankeAttachmentService(hankeRepository, hankeAttachmentRepository, scanClient)
 
@@ -177,7 +177,7 @@ class Configuration {
     fun applicationAttachmentsService(
         applicationRepository: ApplicationRepository,
         applicationAttachmentRepository: ApplicationAttachmentRepository,
-        scanClient: FileScanService,
+        scanClient: FileScanClient,
     ): ApplicationAttachmentService =
         ApplicationAttachmentService(
             applicationRepository,

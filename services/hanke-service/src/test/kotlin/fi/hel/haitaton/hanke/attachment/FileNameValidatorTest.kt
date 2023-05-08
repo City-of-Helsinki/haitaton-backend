@@ -11,14 +11,14 @@ class FileNameValidatorTest {
     @Test
     fun validFileName() {
         val fileName = "example.txt"
-        FileNameValidator.validFileName(fileName)
+        FileNameValidator.validate(fileName)
     }
 
     @Test
     fun fileNameTooLong() {
         val fileName = "a".repeat(129)
         val exception =
-            assertThrows<AttachmentUploadException> { FileNameValidator.validFileName(fileName) }
+            assertThrows<AttachmentUploadException> { FileNameValidator.validate(fileName) }
         assertEquals("Attachment upload exception: File name is too long", exception.message)
     }
 
@@ -26,7 +26,7 @@ class FileNameValidatorTest {
     fun invalidCharacters() {
         val fileName = "exa*mple.txt"
         val exception =
-            assertThrows<AttachmentUploadException> { FileNameValidator.validFileName(fileName) }
+            assertThrows<AttachmentUploadException> { FileNameValidator.validate(fileName) }
         assertEquals(
             "Attachment upload exception: File name contains invalid characters",
             exception.message
@@ -37,7 +37,7 @@ class FileNameValidatorTest {
     fun reservedFileName() {
         val fileName = "con.txt"
         val exception =
-            assertThrows<AttachmentUploadException> { FileNameValidator.validFileName(fileName) }
+            assertThrows<AttachmentUploadException> { FileNameValidator.validate(fileName) }
         assertEquals("Attachment upload exception: File name is reserved", exception.message)
     }
 
@@ -45,7 +45,7 @@ class FileNameValidatorTest {
     fun pathTraversal() {
         val fileName = "../example.txt"
         val exception =
-            assertThrows<AttachmentUploadException> { FileNameValidator.validFileName(fileName) }
+            assertThrows<AttachmentUploadException> { FileNameValidator.validate(fileName) }
         assertEquals(
             "Attachment upload exception: File name contains path traversal characters",
             exception.message

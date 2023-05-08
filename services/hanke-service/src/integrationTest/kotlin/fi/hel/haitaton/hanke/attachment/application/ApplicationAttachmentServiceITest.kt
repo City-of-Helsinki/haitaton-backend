@@ -204,7 +204,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
         assertThat(exception.message)
             .isEqualTo(
-                "Attachment upload exception: File '$invalidFilename' extension does not match content type application/pdf"
+                "Attachment upload exception: File '$invalidFilename' extension does not match content type 'application/pdf'"
             )
         assertThat(applicationAttachmentRepository.findAll()).isEmpty()
     }

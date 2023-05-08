@@ -165,7 +165,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
 
         assertThat(ex.message)
             .isEqualTo(
-                "Attachment upload exception: File '$invalidFilename' extension does not match content type application/pdf"
+                "Attachment upload exception: File '$invalidFilename' extension does not match content type 'application/pdf'"
             )
         assertThat(hankeAttachmentRepository.findAll()).isEmpty()
     }

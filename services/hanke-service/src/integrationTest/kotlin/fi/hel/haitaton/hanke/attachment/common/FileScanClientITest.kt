@@ -1,7 +1,8 @@
 package fi.hel.haitaton.hanke.attachment.common
 
 import assertk.assertThat
-import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
+import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.failResult
@@ -27,13 +28,13 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
 @TestPropertySource(locations = ["classpath:application-test.properties"])
-class FileScanServiceITest : DatabaseTest() {
+class FileScanClientITest : DatabaseTest() {
 
-    @Autowired private lateinit var service: FileScanService
+    @Autowired private lateinit var scanClient: FileScanClient
 
     private lateinit var mockWebServer: MockWebServer
 
-    private val testFile = testFile()
+    private val testFiles = with(testFile()) { listOf(FileScanInput(originalFilename, bytes)) }
 
     @BeforeEach
     fun setup() {
@@ -47,22 +48,21 @@ class FileScanServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `scanFiles when files are ok should return scanned file`() {
+    fun `scanFiles when files are ok should pass`() {
         mockWebServer.enqueue(response(body(results = successResult())))
 
-        val result = service.validate(testFile)
+        val result = scanClient.scan(testFiles)
 
-        assertThat(result).isEqualTo(testFile)
+        assertThat(result.hasInfected()).isFalse()
     }
 
     @Test
     fun `scanFiles when problematic file present should detect`() {
         mockWebServer.enqueue(response(body(results = successResult().plus(failResult()))))
 
-        val exception = assertThrows<AttachmentUploadException> { service.validate(testFile) }
+        val result = scanClient.scan(testFiles)
 
-        assertThat(exception.message)
-            .isEqualTo("Attachment upload exception: Infected file detected, see previous logs.")
+        assertThat(result.hasInfected()).isTrue()
     }
 
     @ValueSource(ints = [400, 500])
@@ -70,13 +70,13 @@ class FileScanServiceITest : DatabaseTest() {
     fun `scanFiles when http error should throw`(status: Int) {
         mockWebServer.enqueue(MockResponse().setResponseCode(status))
 
-        assertThrows<WebClientResponseException> { service.validate(testFile) }
+        assertThrows<WebClientResponseException> { scanClient.scan(testFiles) }
     }
 
     @Test
     fun `scanFiles when scan fails should throw`() {
         mockWebServer.enqueue(response(body(success = false, results = failResult())))
 
-        assertThrows<FileScanException> { service.validate(testFile) }
+        assertThrows<FileScanException> { scanClient.scan(testFiles) }
     }
 }
