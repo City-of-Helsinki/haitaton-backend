@@ -11,9 +11,9 @@ import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.firstReceivedMessage
 import javax.mail.internet.MimeMessage
 import javax.mail.internet.MimeMultipart
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
@@ -42,7 +42,7 @@ class EmailSenderServiceITest : DatabaseTest() {
             "JS2300001"
         )
 
-        val email = firstReceivedMessage()
+        val email = greenMail.firstReceivedMessage()
         assertThat(email.allRecipients).hasSize(1)
         assertThat(email.allRecipients[0].toString()).isEqualTo("test@test.test")
     }
@@ -55,7 +55,7 @@ class EmailSenderServiceITest : DatabaseTest() {
             "JS2300001"
         )
 
-        val email = firstReceivedMessage()
+        val email = greenMail.firstReceivedMessage()
         assertThat(email.from).hasSize(1)
         assertThat(email.from[0].toString()).isEqualTo("no-reply@hel.fi")
     }
@@ -68,7 +68,7 @@ class EmailSenderServiceITest : DatabaseTest() {
             "JS2300001"
         )
 
-        val email = firstReceivedMessage()
+        val email = greenMail.firstReceivedMessage()
         assertThat(email.subject).isEqualTo("Hakemanne johtoselvitys JS2300001 on käsitelty")
     }
 
@@ -80,7 +80,7 @@ class EmailSenderServiceITest : DatabaseTest() {
             "JS2300001"
         )
 
-        val email = firstReceivedMessage()
+        val email = greenMail.firstReceivedMessage()
         val (textBody, htmlBody) = getBodiesFromHybridEmail(email)
         assertThat(textBody).all {
             contains("JS2300001")
@@ -90,12 +90,6 @@ class EmailSenderServiceITest : DatabaseTest() {
             contains("JS2300001")
             contains("""<a href="http://localhost:3001/fi/hankesalkku/HAI23-001">""")
         }
-    }
-
-    private fun firstReceivedMessage(): MimeMessage {
-        val receivedMessages = greenMail.receivedMessages
-        assertEquals(1, receivedMessages.size)
-        return receivedMessages[0]
     }
 
     /** Returns a (text body, HTML body) pair. */

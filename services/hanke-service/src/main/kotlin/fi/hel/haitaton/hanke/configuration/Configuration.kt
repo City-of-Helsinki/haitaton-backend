@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
+import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
 import fi.hel.haitaton.hanke.geometria.GeometriatService
@@ -84,6 +85,7 @@ class Configuration {
         disclosureLogService: DisclosureLogService,
         applicationLoggingService: ApplicationLoggingService,
         hankeKayttajaService: HankeKayttajaService,
+        emailSenderService: EmailSenderService,
         geometriatDao: GeometriatDao,
         permissionService: PermissionService,
         hankeRepository: HankeRepository,
@@ -95,6 +97,7 @@ class Configuration {
             disclosureLogService,
             applicationLoggingService,
             hankeKayttajaService,
+            emailSenderService,
             geometriatDao,
             permissionService,
             hankeRepository,

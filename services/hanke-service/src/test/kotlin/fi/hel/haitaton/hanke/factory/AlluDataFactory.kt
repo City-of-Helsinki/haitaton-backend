@@ -18,6 +18,7 @@ import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import java.time.ZonedDateTime
 import org.geojson.Polygon
 import org.springframework.stereotype.Component
@@ -28,6 +29,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
         const val defaultApplicationId: Long = 1
         const val defaultApplicationName: String = "Johtoselvityksen oletusnimi"
         const val defaultApplicationIdentifier: String = "JS230014"
+        const val teppoEmail = "teppo@example.test"
 
         fun createPostalAddress(
             streetAddress: String = "Katu 1",
@@ -39,7 +41,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             type: CustomerType? = CustomerType.PERSON,
             name: String = "Teppo Testihenkilö",
             country: String = "FI",
-            email: String? = "teppo@example.test",
+            email: String? = teppoEmail,
             phone: String? = "04012345678",
             registryKey: String? = "281192-937W",
             ovt: String? = null,
@@ -81,13 +83,27 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 sapCustomerNumber
             )
 
+        fun createCompanyCustomerWithOrderer(): CustomerWithContacts {
+            val customer = createCompanyCustomer()
+            val contact = createContact(orderer = true)
+            return CustomerWithContacts(customer, listOf(contact))
+        }
+
+        fun ApplicationEntity.withCustomer(customer: CustomerWithContacts): ApplicationEntity {
+            applicationData =
+                (applicationData as CableReportApplicationData).copy(
+                    customerWithContacts = customer
+                )
+            return this
+        }
+
         fun Customer.withContacts(vararg contacts: Contact): CustomerWithContacts =
             CustomerWithContacts(this, contacts.asList())
 
         fun createContact(
             firstName: String? = "Teppo",
             lastName: String? = "Testihenkilö",
-            email: String? = "teppo@example.test",
+            email: String? = teppoEmail,
             phone: String? = "04012345678",
             orderer: Boolean = false
         ) = Contact(firstName, lastName, email, phone, orderer)
@@ -214,6 +230,11 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 applicationData,
                 hanke = hanke,
             )
+
+        fun ApplicationEntity.withHanke(hanke: HankeEntity): ApplicationEntity {
+            this.hanke = hanke
+            return this
+        }
 
         fun createAlluApplicationResponse(
             id: Int = 42,

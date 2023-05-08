@@ -1,11 +1,14 @@
 package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.icegreen.greenmail.junit5.GreenMailExtension
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
 import java.nio.charset.StandardCharsets
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
+import javax.mail.internet.MimeMessage
+import org.junit.jupiter.api.Assertions
 import org.springframework.test.web.servlet.ResultActions
 
 fun <T> String.asJsonResource(type: Class<T>): T =
@@ -31,6 +34,11 @@ fun AuditLogRepository.findByType(type: ObjectType) =
     this.findAll().filter { it.message.auditEvent.target.type == type }
 
 fun OffsetDateTime.asUtc(): OffsetDateTime = this.withOffsetSameInstant(ZoneOffset.UTC)
+
+fun GreenMailExtension.firstReceivedMessage(): MimeMessage {
+    Assertions.assertEquals(1, receivedMessages.size)
+    return receivedMessages[0]
+}
 
 /**
  * "Uses" a variable without doing anything with it. Used to avoid "Parameter is never used"
