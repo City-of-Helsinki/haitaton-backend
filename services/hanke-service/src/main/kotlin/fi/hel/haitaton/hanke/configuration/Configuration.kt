@@ -178,14 +178,16 @@ class Configuration {
 
     @Bean
     fun applicationAttachmentsService(
+        applicationService: ApplicationService,
         applicationRepository: ApplicationRepository,
         applicationAttachmentRepository: ApplicationAttachmentRepository,
         scanClient: FileScanClient,
     ): ApplicationAttachmentService =
         ApplicationAttachmentService(
+            applicationService,
             applicationRepository,
             applicationAttachmentRepository,
-            scanClient
+            scanClient,
         )
 
     companion object {

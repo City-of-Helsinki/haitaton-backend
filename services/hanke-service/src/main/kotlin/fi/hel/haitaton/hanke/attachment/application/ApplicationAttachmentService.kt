@@ -1,8 +1,12 @@
 package fi.hel.haitaton.hanke.attachment.application
 
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
+import fi.hel.haitaton.hanke.application.Application
+import fi.hel.haitaton.hanke.application.ApplicationArgumentException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
@@ -27,6 +31,7 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 class ApplicationAttachmentService(
+    private val applicationService: ApplicationService,
     private val applicationRepository: ApplicationRepository,
     private val attachmentRepository: ApplicationAttachmentRepository,
     private val scanClient: FileScanClient,
@@ -72,7 +77,11 @@ class ApplicationAttachmentService(
                 application = application,
             )
 
-        return attachmentRepository.save(applicationAttachment).toMetadata().also {
+        val savedAttachment = attachmentRepository.save(applicationAttachment)
+
+        sendIfPending(application.toApplication(), savedAttachment)
+
+        return savedAttachment.toMetadata().also {
             logger.info { "Added attachment ${it.id} to application $applicationId" }
         }
     }
@@ -102,4 +111,19 @@ class ApplicationAttachmentService(
             throw AttachmentUploadException("Infected file detected, see previous logs.")
         }
     }
+
+    /**
+     * Attachment should be sent if application is in Allu but has not yet proceeded to handling
+     * (status PENDING). If PENDING, application is in Allu and alluId should exist.
+     */
+    private fun sendIfPending(application: Application, attachment: ApplicationAttachmentEntity) =
+        with(application) {
+            logger.info {
+                "Check application if should send attachment, alluId: '$alluid', alluStatus: '$alluStatus'"
+            }
+            if (alluStatus == PENDING) {
+                val id = alluid ?: throw ApplicationArgumentException("AlluId null")
+                applicationService.sendAttachment(id, attachment.toAlluAttachment())
+            }
+        }
 }

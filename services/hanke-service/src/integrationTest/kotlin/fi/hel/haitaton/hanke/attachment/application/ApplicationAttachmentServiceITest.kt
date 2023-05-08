@@ -7,11 +7,14 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
+import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.HANKE_TUNNUS
 import fi.hel.haitaton.hanke.attachment.USERNAME
@@ -31,6 +34,8 @@ import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
+import io.mockk.justRun
+import io.mockk.verify
 import java.util.Optional
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
@@ -54,6 +59,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @WithMockUser(USERNAME)
 @TestPropertySource(locations = ["classpath:application-test.properties"])
 class ApplicationAttachmentServiceITest : DatabaseTest() {
+    @MockkBean private lateinit var applicationService: ApplicationService
     @Autowired private lateinit var applicationAttachmentService: ApplicationAttachmentService
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
@@ -172,6 +178,26 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(result.applicationId).isEqualTo(application.id)
         assertThat(result.attachmentType).isEqualTo(typeInput)
         assertThat(result.scanStatus).isEqualTo(OK)
+    }
+
+    @Test
+    fun `addAttachment when application pending should send also`() {
+        val alluId = 123
+        justRun { applicationService.sendAttachment(alluId, any()) }
+        mockWebServer.enqueue(response(body(results = successResult())))
+        val application =
+            alluDataFactory.saveApplicationEntity(username = USERNAME, hanke = hankeEntity()) {
+                it.alluid = alluId
+                it.alluStatus = PENDING
+            }
+
+        applicationAttachmentService.addAttachment(
+            applicationId = application.id!!,
+            attachmentType = LIIKENNEJARJESTELY,
+            attachment = testFile(),
+        )
+
+        verify { applicationService.sendAttachment(alluId, any()) }
     }
 
     @Test
