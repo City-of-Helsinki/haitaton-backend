@@ -1,10 +1,9 @@
 package fi.hel.haitaton.hanke.attachment.application
 
-import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.Application
+import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
@@ -43,7 +42,7 @@ class ApplicationAttachmentService(
 
     @Transactional(readOnly = true)
     fun getContent(applicationId: Long, attachmentId: UUID): AttachmentContent {
-        val attachment = findApplication(applicationId).attachments.findBy(attachmentId)
+        val attachment = findApplication(applicationId).attachments.findOrThrow(attachmentId)
 
         with(attachment) {
             if (scanStatus != OK) {
@@ -55,6 +54,10 @@ class ApplicationAttachmentService(
         }
     }
 
+    /**
+     * Attachment can be added if application has not proceeded to HANDLING or later status. It will
+     * be sent immediately if application is in Allu (alluId present).
+     */
     @Transactional
     fun addAttachment(
         applicationId: Long,
@@ -63,9 +66,14 @@ class ApplicationAttachmentService(
     ): ApplicationAttachmentMetadata {
         val application = findApplication(applicationId)
 
+        if (gonePastHandling(application)) {
+            logger.warn { "Application is processing, cannot add attachment." }
+            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
+        }
+
         validateAttachment(attachment)
 
-        val applicationAttachment =
+        val entity =
             ApplicationAttachmentEntity(
                 id = null,
                 fileName = attachment.originalFilename!!,
@@ -78,20 +86,27 @@ class ApplicationAttachmentService(
                 application = application,
             )
 
-        val savedAttachment = attachmentRepository.save(applicationAttachment)
+        val newAttachment = attachmentRepository.save(entity)
 
-        sendIfPending(application.toApplication(), savedAttachment)
+        application.alluid?.let { sendAttachment(it, newAttachment) } // no need to re-check status
 
-        return savedAttachment.toMetadata().also {
+        return newAttachment.toMetadata().also {
             logger.info { "Added attachment ${it.id} to application $applicationId" }
         }
     }
 
     @Transactional
     fun deleteAttachment(applicationId: Long, attachmentId: UUID) {
-        val attachment = findApplication(applicationId).attachments.findBy(attachmentId)
+        val application = findApplication(applicationId)
+
+        if (gonePastHandling(application)) {
+            logger.warn { "Application is processing, cannot delete attachment." }
+            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
+        }
+
+        val attachment = application.attachments.findOrThrow(attachmentId)
         attachmentRepository.deleteAttachment(attachment.id!!)
-        logger.info { "Deleted hanke attachment ${attachment.id}" }
+        logger.info { "Deleted application attachment ${attachment.id}" }
     }
 
     fun sendAllAttachments(alluId: Int, attachments: List<ApplicationAttachmentEntity>) {
@@ -108,7 +123,7 @@ class ApplicationAttachmentService(
             ApplicationNotFoundException(applicationId)
         }
 
-    private fun List<ApplicationAttachmentEntity>.findBy(
+    private fun List<ApplicationAttachmentEntity>.findOrThrow(
         attachmentId: UUID
     ): ApplicationAttachmentEntity =
         find { it.id == attachmentId } ?: throw AttachmentNotFoundException(attachmentId)
@@ -122,27 +137,28 @@ class ApplicationAttachmentService(
         }
     }
 
-    /**
-     * Attachment should be sent if application is in Allu (alluId present) but not yet in handling.
-     */
-    private fun sendIfPending(application: Application, attachment: ApplicationAttachmentEntity) =
-        with(application) {
-            logger.info { "Check application if should send attachment, alluId: '$alluid'" }
-            if (alluid != null && sendable(alluid, alluStatus)) {
-                cableReportService.addAttachment(alluid, attachment.toAlluAttachment())
-            }
-        }
+    private fun gonePastHandling(application: ApplicationEntity): Boolean = !isPending(application)
 
-    private fun sendable(alluid: Int, alluStatus: ApplicationStatus?): Boolean =
-        when (alluStatus) {
+    /** Application considered pending if no alluId or status null, pending, or pending_client. */
+    private fun isPending(application: ApplicationEntity): Boolean {
+        val alluId = application.alluid
+        alluId ?: return true
+        return when (application.alluStatus) {
             null,
             PENDING,
-            PENDING_CLIENT -> pendsInAllu(alluid)
+            PENDING_CLIENT -> alluPending(alluId)
             else -> false
         }
+    }
 
-    private fun pendsInAllu(alluid: Int): Boolean =
-        cableReportService.getApplicationInformation(alluid).let {
-            listOf(PENDING, PENDING_CLIENT).contains(it.status)
-        }
+    /** Check current status from Allu. */
+    private fun alluPending(alluid: Int): Boolean {
+        val status = cableReportService.getApplicationInformation(alluid).status
+        return listOf(PENDING, PENDING_CLIENT).contains(status)
+    }
+
+    /** Attachment should be sent if application is in Allu. Must check status before sending. */
+    private fun sendAttachment(alluId: Int, attachment: ApplicationAttachmentEntity) {
+        cableReportService.addAttachment(alluId, attachment.toAlluAttachment())
+    }
 }

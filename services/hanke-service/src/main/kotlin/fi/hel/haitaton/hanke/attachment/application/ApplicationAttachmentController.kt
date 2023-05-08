@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.attachment.application
 
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
@@ -135,6 +136,20 @@ class ApplicationAttachmentController(
                             )
                         ]
                 ),
+                ApiResponse(
+                    description = "Application already processing.",
+                    responseCode = "409",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation =
+                                            ApplicationAlreadyProcessingException::class
+                                    )
+                            )
+                        ]
+                ),
             ]
     )
     fun postAttachment(
@@ -161,6 +176,20 @@ class ApplicationAttachmentController(
                             )
                         ]
                 ),
+                ApiResponse(
+                    description = "Application already processing.",
+                    responseCode = "409",
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(
+                                        implementation =
+                                            ApplicationAlreadyProcessingException::class
+                                    )
+                            )
+                        ]
+                ),
             ]
     )
     fun removeAttachment(@PathVariable applicationId: Long, @PathVariable attachmentId: UUID) {
@@ -182,4 +211,10 @@ class ApplicationAttachmentController(
     @Hidden
     fun applicationNotFound(ex: ApplicationNotFoundException): HankeError =
         HankeError.HAI2001.also { logger.warn(ex) { ex.message } }
+
+    @ExceptionHandler(ApplicationAlreadyProcessingException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun applicationAlreadyProcessing(ex: ApplicationAlreadyProcessingException): HankeError =
+        HankeError.HAI2003.also { logger.warn(ex) { ex.message } }
 }

@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.HankeError.HAI0001
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
+import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.APPLICATION_ID
@@ -169,6 +170,25 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     }
 
     @Test
+    fun `postAttachment when application processing should return conflict`() {
+        val file = testFile()
+        every { applicationService.getApplicationById(APPLICATION_ID) } returns createApplication()
+        every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
+        every { permissionService.hasPermission(HANKE_ID, USERNAME, EDIT) } returns true
+        every { applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file) } throws
+            ApplicationAlreadyProcessingException(APPLICATION_ID, 123)
+
+        postAttachment(file = file).andExpect(status().isConflict)
+
+        verifyOrder {
+            applicationService.getApplicationById(APPLICATION_ID)
+            hankeService.getHankeId(HANKE_TUNNUS)
+            permissionService.hasPermission(HANKE_ID, USERNAME, EDIT)
+            applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file)
+        }
+    }
+
+    @Test
     fun `postAttachment when unknown application should fail`() {
         every { applicationService.getApplicationById(APPLICATION_ID) } throws
             ApplicationNotFoundException(APPLICATION_ID)
@@ -202,6 +222,25 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         justRun { applicationAttachmentService.deleteAttachment(APPLICATION_ID, attachmentId) }
 
         deleteAttachment(attachmentId = attachmentId).andExpect(status().isOk)
+
+        verifyOrder {
+            applicationService.getApplicationById(APPLICATION_ID)
+            hankeService.getHankeId(HANKE_TUNNUS)
+            permissionService.hasPermission(HANKE_ID, USERNAME, EDIT)
+            applicationAttachmentService.deleteAttachment(APPLICATION_ID, attachmentId)
+        }
+    }
+
+    @Test
+    fun `deleteAttachment when application processing should return conflict`() {
+        val attachmentId = randomUUID()
+        every { applicationService.getApplicationById(APPLICATION_ID) } returns createApplication()
+        every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
+        every { permissionService.hasPermission(HANKE_ID, USERNAME, EDIT) } returns true
+        every { applicationAttachmentService.deleteAttachment(APPLICATION_ID, attachmentId) } throws
+            ApplicationAlreadyProcessingException(APPLICATION_ID, 123)
+
+        deleteAttachment(attachmentId = attachmentId).andExpect(status().isConflict)
 
         verifyOrder {
             applicationService.getApplicationById(APPLICATION_ID)
