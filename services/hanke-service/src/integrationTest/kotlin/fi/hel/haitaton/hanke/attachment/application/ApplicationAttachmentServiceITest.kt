@@ -4,6 +4,7 @@ import assertk.assertThat
 import assertk.assertions.each
 import assertk.assertions.endsWith
 import assertk.assertions.hasSize
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.DatabaseTest
@@ -14,6 +15,7 @@ import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.HANKE_TUNNUS
 import fi.hel.haitaton.hanke.attachment.USERNAME
+import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.LIIKENNEJARJESTELY
@@ -23,10 +25,16 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
 import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
+import fi.hel.haitaton.hanke.attachment.failResult
+import fi.hel.haitaton.hanke.attachment.response
+import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import java.util.Optional
+import okhttp3.mockwebserver.MockWebServer
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
@@ -36,20 +44,37 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType.TEXT_HTML_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.TestPropertySource
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
 @WithMockUser(USERNAME)
+@TestPropertySource(locations = ["classpath:application-test.properties"])
 class ApplicationAttachmentServiceITest : DatabaseTest() {
     @Autowired private lateinit var applicationAttachmentService: ApplicationAttachmentService
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
     @Autowired private lateinit var hankeRepository: HankeRepository
 
+    private lateinit var mockWebServer: MockWebServer
+
+    @BeforeEach
+    fun setup() {
+        mockWebServer = MockWebServer()
+        mockWebServer.start(6789)
+    }
+
+    @AfterEach
+    fun tearDown() {
+        mockWebServer.shutdown()
+    }
+
     @Test
     fun `getMetadataList should return related metadata list`() {
+        mockWebServer.enqueue(response(body(results = successResult())))
+        mockWebServer.enqueue(response(body(results = successResult())))
         val application = initApplication()
         (1..2).forEach { _ ->
             applicationAttachmentService.addAttachment(
@@ -75,6 +100,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
     @Test
     fun `getContent when status is OK should succeed`() {
+        mockWebServer.enqueue(response(body(results = successResult())))
         val application = initApplication()
         val file = testFile()
         val attachment =
@@ -98,6 +124,8 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
     @Test
     fun `getContent when attachment is not in requested application should throw`() {
+        mockWebServer.enqueue(response(body(results = successResult())))
+        mockWebServer.enqueue(response(body(results = successResult())))
         val firstApplication = initApplication()
         val secondApplication = initApplication()
         applicationAttachmentService.addAttachment(
@@ -126,6 +154,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     @EnumSource(ApplicationAttachmentType::class)
     @ParameterizedTest
     fun `addAttachment when valid data should succeed`(typeInput: ApplicationAttachmentType) {
+        mockWebServer.enqueue(response(body(results = successResult())))
         val application =
             alluDataFactory.saveApplicationEntity(username = USERNAME, hanke = hankeEntity())
 
@@ -154,6 +183,8 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 attachment = testFile(),
             )
         }
+
+        assertThat(applicationAttachmentRepository.findAll()).isEmpty()
     }
 
     @Test
@@ -173,8 +204,9 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
         assertThat(exception.message)
             .isEqualTo(
-                "Attachment upload exception: File '$invalidFilename' extension does not match content type application/pdf"
+                "Attachment upload exception: File '$invalidFilename' extension does not match content type 'application/pdf'"
             )
+        assertThat(applicationAttachmentRepository.findAll()).isEmpty()
     }
 
     @Test
@@ -189,11 +221,34 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 attachment = testFile(contentType = TEXT_HTML_VALUE)
             )
         }
+
+        assertThat(applicationAttachmentRepository.findAll()).isEmpty()
+    }
+
+    @Test
+    fun `addAttachment when scan fails should throw`() {
+        mockWebServer.enqueue(response(body(results = failResult())))
+        val application =
+            alluDataFactory.saveApplicationEntity(username = USERNAME, hanke = hankeEntity())
+
+        val exception =
+            assertThrows<AttachmentUploadException> {
+                applicationAttachmentService.addAttachment(
+                    applicationId = application.id!!,
+                    attachmentType = VALTAKIRJA,
+                    attachment = testFile()
+                )
+            }
+
+        assertThat(exception.message)
+            .isEqualTo("Attachment upload exception: Infected file detected, see previous logs.")
+        assertThat(applicationAttachmentRepository.findAll()).isEmpty()
     }
 
     @EnumSource(value = AttachmentScanStatus::class, names = ["PENDING", "FAILED"])
     @ParameterizedTest
     fun `getContent when status is not OK should throw`(scanStatus: AttachmentScanStatus) {
+        mockWebServer.enqueue(response(body(results = successResult())))
         val application = initApplication()
         val result =
             applicationAttachmentService.addAttachment(
@@ -216,6 +271,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
     @Test
     fun `deleteAttachment when valid input should succeed`() {
+        mockWebServer.enqueue(response(body(results = successResult())))
         val application = initApplication()
         val attachment =
             applicationAttachmentService.addAttachment(

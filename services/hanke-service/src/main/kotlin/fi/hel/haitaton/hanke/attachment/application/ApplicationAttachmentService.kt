@@ -9,7 +9,11 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
-import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator.validate
+import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
+import fi.hel.haitaton.hanke.attachment.common.FileScanClient
+import fi.hel.haitaton.hanke.attachment.common.FileScanInput
+import fi.hel.haitaton.hanke.attachment.common.hasInfected
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime.now
 import java.util.UUID
@@ -23,7 +27,8 @@ private val logger = KotlinLogging.logger {}
 @Service
 class ApplicationAttachmentService(
     private val applicationRepository: ApplicationRepository,
-    private val attachmentRepository: ApplicationAttachmentRepository
+    private val attachmentRepository: ApplicationAttachmentRepository,
+    private val scanClient: FileScanClient,
 ) {
     @Transactional(readOnly = true)
     fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadata> =
@@ -50,12 +55,14 @@ class ApplicationAttachmentService(
         attachment: MultipartFile
     ): ApplicationAttachmentMetadata {
         val application = findApplication(applicationId)
-        val file = validate(attachment)
+
+        validateAttachment(attachment)
+
         val applicationAttachment =
             ApplicationAttachmentEntity(
                 id = null,
-                fileName = file.originalFilename!!,
-                content = file.bytes,
+                fileName = attachment.originalFilename!!,
+                content = attachment.bytes,
                 createdByUserId = currentUserId(),
                 createdAt = now(),
                 scanStatus = OK,
@@ -84,4 +91,13 @@ class ApplicationAttachmentService(
         attachmentId: UUID
     ): ApplicationAttachmentEntity =
         find { it.id == attachmentId } ?: throw AttachmentNotFoundException(attachmentId)
+
+    private fun validateAttachment(attachment: MultipartFile) {
+        AttachmentValidator.validate(attachment)
+        val scanResult =
+            scanClient.scan(listOf(FileScanInput(attachment.originalFilename!!, attachment.bytes)))
+        if (scanResult.hasInfected()) {
+            throw AttachmentUploadException("Infected file detected, see previous logs.")
+        }
+    }
 }
