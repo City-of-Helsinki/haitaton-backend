@@ -39,6 +39,12 @@ object ApplicationHistoryFactory {
             supervisionEvents = listOf()
         )
 
+    fun create(
+        applicationId: Int = defaultApplicationId,
+        vararg events: ApplicationStatusEvent,
+    ): ApplicationHistory =
+        ApplicationHistory(applicationId, events = events.toList(), supervisionEvents = listOf())
+
     /** Create a status event for an application. */
     fun createEvent(
         eventTime: ZonedDateTime = defaultEventTime,

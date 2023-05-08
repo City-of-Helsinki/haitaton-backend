@@ -13,7 +13,7 @@ object HankeYhteystietoFactory {
         return HankeYhteystieto(
             id = id,
             nimi = "Teppo Testihenkilö",
-            email = "teppo@example.test",
+            email = AlluDataFactory.teppoEmail,
             puhelinnumero = "04012345678",
             organisaatioId = organisaatioId,
             organisaatioNimi = "Organisaatio",

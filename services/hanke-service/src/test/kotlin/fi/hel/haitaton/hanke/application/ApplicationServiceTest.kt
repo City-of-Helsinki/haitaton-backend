@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.application
 
 import assertk.all
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
@@ -12,10 +13,17 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluLoginException
+import fi.hel.haitaton.hanke.allu.AlluStatus
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withHanke
+import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -31,10 +39,12 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
-import io.mockk.verifyOrder
+import io.mockk.verifySequence
+import java.time.OffsetDateTime
 import java.util.stream.Stream
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.assertThrows
@@ -43,6 +53,8 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
+import org.springframework.boot.test.system.CapturedOutput
+import org.springframework.boot.test.system.OutputCaptureExtension
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
 private const val username = "test"
@@ -59,9 +71,10 @@ class ApplicationServiceTest {
     private val applicationLoggingService: ApplicationLoggingService = mockk(relaxUnitFun = true)
     private val hankeRepository: HankeRepository = mockk()
     private val permissionService: PermissionService = mockk()
+    private val emailSenderService: EmailSenderService = mockk()
     private val hankeKayttajaService: HankeKayttajaService = mockk(relaxUnitFun = true)
 
-    private val service: ApplicationService =
+    private val applicationService: ApplicationService =
         ApplicationService(
             applicationRepo,
             statusRepo,
@@ -69,6 +82,7 @@ class ApplicationServiceTest {
             disclosureLogService,
             applicationLoggingService,
             hankeKayttajaService,
+            emailSenderService,
             geometriatDao,
             permissionService,
             hankeRepository,
@@ -89,7 +103,10 @@ class ApplicationServiceTest {
             disclosureLogService,
             applicationLoggingService,
             hankeKayttajaService,
+            emailSenderService,
             geometriatDao,
+            permissionService,
+            hankeRepository,
         )
     }
 
@@ -115,15 +132,16 @@ class ApplicationServiceTest {
         every { geometriatDao.validateGeometriat(any()) } returns null
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
-        val created = service.create(dto, username)
+        val created = applicationService.create(dto, username)
 
         assertThat(created.id).isEqualTo(1)
         assertThat(created.alluid).isEqualTo(null)
-        verify {
+        verifySequence {
+            geometriatDao.validateGeometriat(any())
+            hankeRepository.findByHankeTunnus(hankeTunnus)
+            geometriatDao.isInsideHankeAlueet(1, any())
             applicationRepo.save(any())
             applicationLoggingService.logCreate(any(), username)
-            geometriatDao.validateGeometriat(any())
-            geometriatDao.isInsideHankeAlueet(1, any())
             disclosureLogService wasNot Called
             cableReportService wasNot Called
         }
@@ -143,13 +161,14 @@ class ApplicationServiceTest {
                 """{"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
             )
 
-        val exception = assertThrows<ApplicationGeometryException> { service.create(dto, username) }
+        val exception =
+            assertThrows<ApplicationGeometryException> { applicationService.create(dto, username) }
 
         assertThat(exception)
             .hasMessage(
                 """Invalid geometry received when creating a new application for user $username, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
             )
-        verify { geometriatDao.validateGeometriat(any()) }
+        verifySequence { geometriatDao.validateGeometriat(any()) }
     }
 
     @Test
@@ -176,9 +195,9 @@ class ApplicationServiceTest {
         every { geometriatDao.calculateArea(any()) } returns 100f
         val updatedData = applicationData.copy(rockExcavation = !applicationData.rockExcavation!!)
 
-        service.updateApplicationData(3, updatedData, username)
+        applicationService.updateApplicationData(3, updatedData, username)
 
-        verifyOrder {
+        verifySequence {
             applicationRepo.findOneById(3)
             geometriatDao.validateGeometriat(any())
             geometriatDao.isInsideHankeAlueet(1, any())
@@ -214,14 +233,14 @@ class ApplicationServiceTest {
 
         val exception =
             assertThrows<ApplicationGeometryException> {
-                service.updateApplicationData(3, updatedData, username)
+                applicationService.updateApplicationData(3, updatedData, username)
             }
 
         assertThat(exception)
             .hasMessage(
                 """Invalid geometry received when updating application for user $username, id=3, alluid=42, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
             )
-        verify {
+        verifySequence {
             applicationRepo.findOneById(3)
             geometriatDao.validateGeometriat(any())
         }
@@ -247,10 +266,10 @@ class ApplicationServiceTest {
         every { geometriatDao.calculateArea(any()) } returns 100f
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
-        service.sendApplication(3, username)
+        applicationService.sendApplication(3, username)
 
         val expectedApplication = applicationData.copy(pendingOnClient = false)
-        verifyOrder {
+        verifySequence {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
             hankeKayttajaService.saveNewTokensFromApplication(applicationData, 1)
@@ -280,10 +299,10 @@ class ApplicationServiceTest {
         every { cableReportService.create(any()) } throws AlluException(listOf())
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
-        assertThrows<AlluException> { service.sendApplication(3, username) }
+        assertThrows<AlluException> { applicationService.sendApplication(3, username) }
 
         val expectedApplication = applicationData.copy(pendingOnClient = false)
-        verifyOrder {
+        verifySequence {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
             hankeKayttajaService.saveNewTokensFromApplication(applicationData, 1)
@@ -315,9 +334,9 @@ class ApplicationServiceTest {
         every { geometriatDao.isInsideHankeAlueet(any(), any()) } returns true
         every { cableReportService.create(any()) } throws AlluLoginException(RuntimeException())
 
-        assertThrows<AlluLoginException> { service.sendApplication(3, username) }
+        assertThrows<AlluLoginException> { applicationService.sendApplication(3, username) }
 
-        verifyOrder {
+        verifySequence {
             disclosureLogService wasNot called
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(any(), any())
@@ -352,7 +371,7 @@ class ApplicationServiceTest {
         every { cableReportService.getApplicationInformation(852) } returns
             AlluDataFactory.createAlluApplicationResponse(852)
 
-        service.sendApplication(3, username)
+        applicationService.sendApplication(3, username)
 
         val expectedApplicationData =
             applicationData.copy(pendingOnClient = false, rockExcavation = rockExcavation)
@@ -360,7 +379,7 @@ class ApplicationServiceTest {
             expectedApplicationData
                 .toAlluData()
                 .copy(workDescription = applicationData.workDescription + "\n" + expectedSuffix)
-        verifyOrder {
+        verifySequence {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
             hankeKayttajaService.saveNewTokensFromApplication(any(), 1)
@@ -391,14 +410,14 @@ class ApplicationServiceTest {
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
-        assertThat { service.sendApplication(3, username) }
+        assertThat { applicationService.sendApplication(3, username) }
             .isFailure()
             .all {
                 this.hasClass(AlluDataException::class)
                 this.hasMessage("Application data failed validation at $path: Can't be null")
             }
 
-        verify {
+        verifySequence {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
             hankeKayttajaService.saveNewTokensFromApplication(applicationData, 1)
@@ -433,5 +452,157 @@ class ApplicationServiceTest {
                 "applicationData.rockExcavation",
             ),
         )
+    }
+
+    @Nested
+    @ExtendWith(OutputCaptureExtension::class)
+    inner class HandleApplicationUpdates {
+        private val alluid = 42
+        private val hankeTunnus = "HAI23-1"
+        private val receiver = AlluDataFactory.teppoEmail
+        private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
+        private val identifier = ApplicationHistoryFactory.defaultApplicationIdentifier
+
+        @Test
+        fun `sends email to the orderer when application gets a decision`() {
+            every { applicationRepo.getOneByAlluid(42) } returns applicationEntity()
+            justRun {
+                emailSenderService.sendJohtoselvitysCompleteEmail(receiver, hankeTunnus, identifier)
+            }
+            every { applicationRepo.save(any()) } answers { firstArg() }
+            every { statusRepo.getReferenceById(1) } returns AlluStatus(1, updateTime)
+            every { statusRepo.save(any()) } answers { firstArg() }
+
+            applicationService.handleApplicationUpdates(historiesWithDecision(), updateTime)
+
+            verifySequence {
+                applicationRepo.getOneByAlluid(42)
+                emailSenderService.sendJohtoselvitysCompleteEmail(receiver, hankeTunnus, identifier)
+                applicationRepo.save(any())
+                statusRepo.getReferenceById(1)
+                statusRepo.save(any())
+            }
+        }
+
+        @Test
+        fun `doesn't send email when status is not decision`() {
+            every { applicationRepo.getOneByAlluid(42) } returns applicationEntity()
+            every { applicationRepo.save(any()) } answers { firstArg() }
+            every { statusRepo.getReferenceById(1) } returns AlluStatus(1, updateTime)
+            every { statusRepo.save(any()) } answers { firstArg() }
+            val histories =
+                listOf(
+                    ApplicationHistoryFactory.create(
+                        alluid,
+                        ApplicationHistoryFactory.createEvent(
+                            applicationIdentifier = identifier,
+                            newStatus = ApplicationStatus.HANDLING
+                        )
+                    ),
+                )
+
+            applicationService.handleApplicationUpdates(histories, updateTime)
+
+            verifySequence {
+                applicationRepo.getOneByAlluid(42)
+                applicationRepo.save(any())
+                statusRepo.getReferenceById(1)
+                statusRepo.save(any())
+            }
+            verify { emailSenderService wasNot Called }
+        }
+
+        @Test
+        fun `logs error when there no receivers`(output: CapturedOutput) {
+            every { applicationRepo.getOneByAlluid(42) } returns
+                applicationEntity()
+                    .withCustomer(
+                        AlluDataFactory.createCompanyCustomer()
+                            .withContacts(AlluDataFactory.createContact(orderer = false))
+                    )
+            every { applicationRepo.save(any()) } answers { firstArg() }
+            every { statusRepo.getReferenceById(1) } returns AlluStatus(1, updateTime)
+            every { statusRepo.save(any()) } answers { firstArg() }
+
+            applicationService.handleApplicationUpdates(historiesWithDecision(), updateTime)
+
+            assertThat(output)
+                .contains("No receivers found for decision ready email, not sending any.")
+            verifySequence {
+                applicationRepo.getOneByAlluid(42)
+                applicationRepo.save(any())
+                statusRepo.getReferenceById(1)
+                statusRepo.save(any())
+            }
+            verify { emailSenderService wasNot Called }
+        }
+
+        @Test
+        fun `logs error if hanketunnus is null`(output: CapturedOutput) {
+            every { applicationRepo.getOneByAlluid(42) } returns
+                applicationEntity().withHanke(HankeEntity(id = 1, hankeTunnus = null))
+            every { applicationRepo.save(any()) } answers { firstArg() }
+            every { statusRepo.getReferenceById(1) } returns AlluStatus(1, updateTime)
+            every { statusRepo.save(any()) } answers { firstArg() }
+
+            applicationService.handleApplicationUpdates(historiesWithDecision(), updateTime)
+
+            assertThat(output)
+                .contains("Can't send decision ready emails, because hankeTunnus is null.")
+            verifySequence {
+                applicationRepo.getOneByAlluid(42)
+                applicationRepo.save(any())
+                statusRepo.getReferenceById(1)
+                statusRepo.save(any())
+            }
+            verify { emailSenderService wasNot Called }
+        }
+
+        @Test
+        fun `logs error if receiver email is null`(output: CapturedOutput) {
+            every { applicationRepo.getOneByAlluid(42) } returns
+                applicationEntity()
+                    .withCustomer(
+                        AlluDataFactory.createCompanyCustomer()
+                            .withContacts(
+                                AlluDataFactory.createContact(orderer = true, email = null)
+                            )
+                    )
+            every { applicationRepo.save(any()) } answers { firstArg() }
+            every { statusRepo.getReferenceById(1) } returns AlluStatus(1, updateTime)
+            every { statusRepo.save(any()) } answers { firstArg() }
+
+            applicationService.handleApplicationUpdates(historiesWithDecision(), updateTime)
+
+            assertThat(output)
+                .contains("Can't send decision ready email, because contact email is null.")
+            verifySequence {
+                applicationRepo.getOneByAlluid(42)
+                applicationRepo.save(any())
+                statusRepo.getReferenceById(1)
+                statusRepo.save(any())
+            }
+            verify { emailSenderService wasNot Called }
+        }
+
+        private fun applicationEntity() =
+            AlluDataFactory.createApplicationEntity(
+                    alluid = alluid,
+                    applicationIdentifier = identifier,
+                    userId = "user",
+                    hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus),
+                )
+                .withCustomer(AlluDataFactory.createCompanyCustomerWithOrderer())
+
+        private fun historiesWithDecision() =
+            listOf(
+                ApplicationHistoryFactory.create(
+                    alluid,
+                    ApplicationHistoryFactory.createEvent(
+                        applicationIdentifier = identifier,
+                        newStatus = ApplicationStatus.DECISION
+                    )
+                ),
+            )
     }
 }
