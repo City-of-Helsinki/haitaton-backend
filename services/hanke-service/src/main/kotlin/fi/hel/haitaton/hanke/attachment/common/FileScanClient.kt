@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.security
+package fi.hel.haitaton.hanke.attachment.common
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import fi.hel.haitaton.hanke.toJsonString
@@ -7,10 +7,9 @@ import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType.APPLICATION_JSON
-import org.springframework.http.MediaType.APPLICATION_OCTET_STREAM
 import org.springframework.http.MediaType.MULTIPART_FORM_DATA
 import org.springframework.http.client.MultipartBodyBuilder
-import org.springframework.stereotype.Service
+import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.BodyInserters.fromMultipartData
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
@@ -19,8 +18,8 @@ private val logger = KotlinLogging.logger {}
 
 private const val FORM_KEY = "FILES"
 
-@Service
-class FileScanService(
+@Component
+class FileScanClient(
     webClientBuilder: WebClient.Builder,
     @Value("\${haitaton.clamav.baseUrl}") clamAvUrl: String,
 ) {
@@ -30,15 +29,14 @@ class FileScanService(
             logger.info { "Initialized file scan client with base-url: $clamAvUrl" }
         }
 
-    fun scanFiles(files: List<Pair<String, ByteArray>>): List<FileResult> {
+    fun scan(files: List<FileScanInput>): List<FileResult> {
         logger.info { "Scanning ${files.size} files." }
 
         val data =
             MultipartBodyBuilder()
                 .apply {
                     files.forEach { (name, bytes) ->
-                        part(FORM_KEY, ByteArrayResource(bytes), APPLICATION_OCTET_STREAM)
-                            .filename(name)
+                        part(FORM_KEY, ByteArrayResource(bytes)).filename(name)
                     }
                 }
                 .build()
@@ -79,6 +77,8 @@ class FileScanService(
         }
     }
 }
+
+data class FileScanInput(val name: String, @Suppress("ArrayInDataClass") val bytes: ByteArray)
 
 data class FileScanResponse(val success: Boolean, val data: FileScanData)
 
