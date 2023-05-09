@@ -10,7 +10,6 @@ import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.security.AccessRules
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
@@ -44,8 +43,6 @@ class IntegrationTestConfiguration {
     @Bean fun hankeService(): HankeService = mockk()
 
     @Bean fun applicationService(): ApplicationService = mockk()
-
-    @Bean fun profiiliClient(): ProfiiliClient = mockk()
 
     @Bean fun gdprJsonConverter(): GdprJsonConverter = mockk()
 

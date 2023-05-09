@@ -19,11 +19,14 @@ import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createApplication
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import java.time.ZonedDateTime
 import org.geojson.Polygon
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.stereotype.Component
+
+const val TEPPO_TESTI = "Teppo Testihenkilö"
 
 @Component
 class AlluDataFactory(val applicationRepository: ApplicationRepository) {
@@ -41,7 +44,7 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
 
         fun createPersonCustomer(
             type: CustomerType? = CustomerType.PERSON,
-            name: String = "Teppo Testihenkilö",
+            name: String = TEPPO_TESTI,
             country: String = "FI",
             email: String? = teppoEmail,
             phone: String? = "04012345678",
@@ -169,6 +172,20 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 applicationType = applicationType,
                 applicationData = applicationData,
                 hankeTunnus = hankeTunnus
+            )
+
+        fun Application.withCustomer(customer: CustomerWithContacts): Application =
+            this.copy(
+                applicationData =
+                    (applicationData as CableReportApplicationData).copy(
+                        customerWithContacts = customer
+                    )
+            )
+        fun Application.withCustomerContacts(contacts: List<Contact>): Application =
+            this.withCustomer(
+                (applicationData as CableReportApplicationData)
+                    .customerWithContacts
+                    .copy(contacts = contacts)
             )
 
         fun cableReportWithoutHanke(): CableReportWithoutHanke =
