@@ -332,7 +332,7 @@ class ApplicationServiceTest {
         every { geometriatDao.calculateCombinedArea(any()) } returns 500f
         every { geometriatDao.calculateArea(any()) } returns 500f
         every { geometriatDao.isInsideHankeAlueet(any(), any()) } returns true
-        every { cableReportService.create(any()) } throws AlluLoginException("")
+        every { cableReportService.create(any()) } throws AlluLoginException(RuntimeException())
 
         assertThrows<AlluLoginException> { applicationService.sendApplication(3, username) }
 

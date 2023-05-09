@@ -10,6 +10,7 @@ import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType
+import org.springframework.http.MediaType.parseMediaType
 import org.springframework.http.client.MultipartBodyBuilder
 import org.springframework.web.reactive.function.BodyInserters
 import org.springframework.web.reactive.function.client.WebClient
@@ -30,26 +31,25 @@ class CableReportServiceAllu(
 
     private fun login(): String {
         try {
-            val token =
-                webClient
-                    .post()
-                    .uri("$baseUrl/v2/login")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .accept(MediaType.TEXT_PLAIN)
-                    .body(Mono.just(LoginInfo(properties.username, properties.password)))
-                    .retrieve()
-                    .bodyToMono(String::class.java)
-                    .doOnError(WebClientResponseException::class.java) {
-                        logError("Error logging in to Allu", it)
-                    }
-                    // Allu has gone back and forth on whether it returns the login token surrounded
-                    // with quotes or not. To be safe, remove them if they are found.
-                    .map { it.trim('"') }
-                    .block()
-
-            return token ?: throw AlluLoginException("Login token null")
+            val uri = "$baseUrl/v2/login"
+            return webClient
+                .post()
+                .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
+                .accept(MediaType.TEXT_PLAIN)
+                .body(Mono.just(LoginInfo(properties.username, properties.password)))
+                .retrieve()
+                .bodyToMono(String::class.java)
+                .doOnError(WebClientResponseException::class.java) {
+                    logError("Error logging in to Allu", it)
+                }
+                // Allu has gone back and forth on whether it returns the login token surrounded
+                // with quotes or not. To be safe, remove them if they are found.
+                .map { it.trim('"') }
+                .block()
+                ?: throw AlluApiException(uri, "Login token null")
         } catch (e: Throwable) {
-            throw AlluLoginException(e.message)
+            throw AlluLoginException(e)
         }
     }
 
@@ -281,7 +281,11 @@ class CableReportServiceAllu(
             .part("metadata", attachment.metadata, MediaType.APPLICATION_JSON)
             .filename("metadata")
         builder
-            .part("file", ByteArrayResource(attachment.file), MediaType.APPLICATION_PDF)
+            .part(
+                "file",
+                ByteArrayResource(attachment.file),
+                parseMediaType(attachment.metadata.mimeType)
+            )
             .filename("file")
         val multipartData = builder.build()
 
@@ -318,7 +322,7 @@ data class Attachment(
 
 class AlluException(val errors: List<ErrorInfo>) : RuntimeException()
 
-class AlluLoginException(message: String?) : RuntimeException(message)
+class AlluLoginException(cause: Throwable) : RuntimeException(cause)
 
 /** Exception to use when Allu doesn't follow their API descriptions. */
 class AlluApiException(requestUri: String, message: String) :

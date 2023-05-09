@@ -163,7 +163,7 @@ class ApplicationAttachmentEntity(
                     id = null,
                     mimeType = contentType,
                     name = fileName,
-                    description = attachmentType.toString()
+                    description = null,
                 ),
             file = content
         )

@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.allu
 
 import assertk.Assert
 import assertk.assertThat
-import assertk.assertions.each
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
@@ -102,7 +101,7 @@ class CableReportServiceAlluITests {
         service.addAttachments(alluId, attachments)
 
         assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
-        assertThat(attachments).each {
+        attachments.forEach { _ ->
             val request = mockWebServer.takeRequest()
             assertThat(request.method).isEqualTo("POST")
             assertThat(request.path).isEqualTo("/v2/applications/$alluId/attachments")
