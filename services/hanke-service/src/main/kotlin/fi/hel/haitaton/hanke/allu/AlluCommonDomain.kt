@@ -54,5 +54,5 @@ data class AttachmentMetadata(
     val id: Int?,
     val mimeType: String,
     val name: String,
-    val description: String
+    val description: String?,
 )

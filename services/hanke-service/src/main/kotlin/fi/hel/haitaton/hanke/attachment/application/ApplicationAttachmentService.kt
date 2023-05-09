@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
 import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
@@ -35,7 +36,7 @@ class ApplicationAttachmentService(
         findApplication(applicationId).attachments.map { it.toMetadata() }
 
     @Transactional(readOnly = true)
-    fun getContent(applicationId: Long, attachmentId: UUID): Pair<String, ByteArray> {
+    fun getContent(applicationId: Long, attachmentId: UUID): AttachmentContent {
         val attachment = findApplication(applicationId).attachments.findBy(attachmentId)
 
         with(attachment) {
@@ -44,7 +45,7 @@ class ApplicationAttachmentService(
                 throw AttachmentNotFoundException(attachmentId)
             }
 
-            return Pair(fileName, content)
+            return AttachmentContent(fileName, contentType, content)
         }
     }
 
@@ -63,6 +64,7 @@ class ApplicationAttachmentService(
                 id = null,
                 fileName = attachment.originalFilename!!,
                 content = attachment.bytes,
+                contentType = attachment.contentType!!,
                 createdByUserId = currentUserId(),
                 createdAt = now(),
                 scanStatus = OK,
