@@ -1,9 +1,7 @@
 package fi.hel.haitaton.hanke.gdpr
 
-import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
@@ -14,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
@@ -29,9 +28,6 @@ private val logger = KotlinLogging.logger {}
 @Validated
 class GdprController(
     private val applicationService: ApplicationService,
-    private val hankeService: HankeService,
-    private val profiiliClient: ProfiiliClient,
-    private val gdprJsonConverter: GdprJsonConverter,
     private val disclosureLogService: DisclosureLogService,
 ) {
 
@@ -43,10 +39,10 @@ class GdprController(
         description =
             "Helsinki profiili calls this endpoint when the a user makes a GDPR request for all " +
                 "their personal information. We return all personal information we can link up " +
-                "with that user id. Information is returned if the person has created or modified " +
-                "a hanke or an application and any of the contacts in those matches the user's " +
-                "name. The API has a specific format for the response, it's documented in " +
-                "https://helsinkisolutionoffice.atlassian.net/wiki/spaces/DD/pages/80969736/GDPR+API."
+                "with that user id. Information is returned if the person has created an " +
+                "application. We return the information they wrote down as their own info. " +
+                "The API has a specific format for the response, it's documented in " +
+                "https://helsinkisolutionoffice.atlassian.net/wiki/spaces/DD/pages/80969736/GDPR+API.",
     )
     @ApiResponses(
         value =
@@ -67,49 +63,32 @@ class GdprController(
                 ApiResponse(
                     description = "There has been an unexpected error during the call",
                     responseCode = "500",
-                    content = [Content(schema = Schema(implementation = GdprErrorResponse::class))]
+                    content = [Content(schema = Schema(implementation = GdprErrorResponse::class))],
                 ),
-            ]
+            ],
     )
-    fun getByUserId(@PathVariable userId: String): CollectionNode {
+    fun getByUserId(@PathVariable userId: String): ResponseEntity<CollectionNode> {
         if (gdprDisabled) {
             throw NotImplementedError("/gdpr-api/$userId")
         }
 
         logger.info { "Finding GDPR information for user $userId" }
-        val applications = applicationService.getAllApplicationsForUser(userId)
-        val hankkeet = hankeService.loadHankkeetByUserId(userId)
-        if (hankkeet.isEmpty() && applications.isEmpty()) {
-            logger.warn { "No GDPR information found for user $userId" }
-            throw UserNotFoundException(userId)
-        }
+        val applications = applicationService.getAllApplicationsCreatedByUser(userId)
 
-        val userInfo = profiiliClient.getInfo(userId)
-        val gdprInfo = gdprJsonConverter.createGdprJson(applications, hankkeet, userInfo)
+        val gdprInfo = GdprJsonConverter.createGdprJson(applications, userId)
 
         if (gdprInfo == null) {
-            logger.warn { "No matching information found for GDPR request for user $userId" }
-            throw UserNotFoundException(userId)
+            logger.warn { "No applications found for user $userId" }
+            return ResponseEntity.notFound().build()
         }
 
         disclosureLogService.saveDisclosureLogsForProfiili(userId, gdprInfo)
         logger.info { "Returning GDPR information for user $userId" }
-        return gdprInfo
+        return ResponseEntity.ok().body(gdprInfo)
     }
-
-    class UserNotFoundException(val userId: String) :
-        RuntimeException("No data not found for user $userId")
 
     class NotImplementedError(endpointName: String) :
         RuntimeException("$endpointName called, but not yet implemented")
-
-    @ExceptionHandler(UserNotFoundException::class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    @Hidden
-    fun userNotFound(ex: UserNotFoundException) {
-        logger.warn { ex.message }
-        Sentry.captureException(ex)
-    }
 
     @ExceptionHandler(NotImplementedError::class)
     @ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
@@ -126,7 +105,7 @@ class GdprController(
         logger.error(ex) { "Error while retrieving GDPR info" }
         Sentry.captureException(ex)
         return GdprErrorResponse(
-            listOf(GdprError("HAI0002", LocalizedMessage("Tuntematon virhe", "Unknown error")))
+            listOf(GdprError("HAI0002", LocalizedMessage("Tuntematon virhe", "Unknown error"))),
         )
     }
 

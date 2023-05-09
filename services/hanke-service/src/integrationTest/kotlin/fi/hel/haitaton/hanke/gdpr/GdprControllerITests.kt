@@ -1,17 +1,19 @@
 package fi.hel.haitaton.hanke.gdpr
 
-import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.application.ApplicationService
-import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.UserInfoFactory
+import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
-import io.mockk.called
+import io.mockk.Called
+import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
+import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -24,111 +26,145 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 
+private const val USERID = "test-user"
+
 @WebMvcTest(controllers = [GdprController::class], properties = ["haitaton.gdpr.disabled=false"])
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
-@WithMockUser("test", roles = ["haitaton-user"])
+@WithMockUser(USERID, roles = ["haitaton-user"])
 class GdprControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Autowired lateinit var applicationService: ApplicationService
-    @Autowired lateinit var hankeService: HankeService
-    @Autowired lateinit var profiiliClient: ProfiiliClient
-    @Autowired lateinit var gdprJsonConverter: GdprJsonConverter
+
     @Autowired lateinit var disclosureLogService: DisclosureLogService
 
-    @AfterEach
+    @BeforeEach
     fun cleanup() {
         clearAllMocks()
     }
 
+    @AfterEach
+    fun checkMocks() {
+        checkUnnecessaryStub()
+        confirmVerified(applicationService, disclosureLogService)
+    }
+
     @Test
-    fun `When user has no information, return 404`() {
-        every { applicationService.getAllApplicationsForUser("test") }.returns(listOf())
-        every { hankeService.loadHankkeetByUserId("test") }.returns(listOf())
+    fun `When user has not created any applications, return 404`() {
+        every { applicationService.getAllApplicationsCreatedByUser(USERID) }.returns(listOf())
 
         mockMvc
             .perform(
-                MockMvcRequestBuilders.get("/gdpr-api/test").accept(MediaType.APPLICATION_JSON)
+                MockMvcRequestBuilders.get("/gdpr-api/$USERID").accept(MediaType.APPLICATION_JSON),
             )
             .andExpect(MockMvcResultMatchers.status().isNotFound)
             .andExpect(content().string(""))
 
-        verify { applicationService.getAllApplicationsForUser("test") }
-        verify { hankeService.loadHankkeetByUserId("test") }
-        verify { profiiliClient wasNot called }
-        verify { gdprJsonConverter wasNot called }
+        verify { applicationService.getAllApplicationsCreatedByUser(USERID) }
+        verify { disclosureLogService wasNot Called }
     }
 
     @Test
     fun `When there's an internal error, return gdpr error response`() {
-        every { applicationService.getAllApplicationsForUser("test") }.throws(RuntimeException())
-
+        every { applicationService.getAllApplicationsCreatedByUser(USERID) }
+            .throws(RuntimeException())
         val expectedError =
             """{"errors": [{"code": "HAI0002", "message": {"fi": "Tuntematon virhe", "en": "Unknown error"}}]}"""
+
         mockMvc
             .perform(
-                MockMvcRequestBuilders.get("/gdpr-api/test").accept(MediaType.APPLICATION_JSON)
+                MockMvcRequestBuilders.get("/gdpr-api/$USERID").accept(MediaType.APPLICATION_JSON),
             )
             .andExpect(MockMvcResultMatchers.status().`is`(500))
             .andExpect(content().json(expectedError))
 
-        verify { applicationService.getAllApplicationsForUser("test") }
-        verify { hankeService wasNot called }
-        verify { profiiliClient wasNot called }
-        verify { gdprJsonConverter wasNot called }
+        verify { applicationService.getAllApplicationsCreatedByUser(USERID) }
+        verify { disclosureLogService wasNot Called }
     }
 
     @Test
     fun `When there's no matching names, return 404`() {
-        every { applicationService.getAllApplicationsForUser("test") }.returns(listOf())
-        every { hankeService.loadHankkeetByUserId("test") }.returns(listOf(HankeFactory.create()))
-        every { profiiliClient.getInfo("test") }.returns(UserInfoFactory.teppoUserInfo())
-        every { gdprJsonConverter.createGdprJson(any(), listOf(HankeFactory.create()), any()) }
-            .returns(null)
+        every { applicationService.getAllApplicationsCreatedByUser(USERID) }.returns(listOf())
 
         mockMvc
             .perform(
-                MockMvcRequestBuilders.get("/gdpr-api/test").accept(MediaType.APPLICATION_JSON)
+                MockMvcRequestBuilders.get("/gdpr-api/$USERID").accept(MediaType.APPLICATION_JSON),
             )
             .andExpect(MockMvcResultMatchers.status().`is`(404))
             .andExpect(content().string(""))
 
-        verify { applicationService.getAllApplicationsForUser("test") }
-        verify { hankeService.loadHankkeetByUserId("test") }
-        verify { profiiliClient.getInfo("test") }
-        verify { gdprJsonConverter.createGdprJson(any(), listOf(HankeFactory.create()), any()) }
+        verify { applicationService.getAllApplicationsCreatedByUser(USERID) }
     }
 
     @Test
-    fun `When there are matching names, return json response`() {
-        val gdprInfo =
-            CollectionNode(
-                "user",
-                listOf(
-                    StringNode("id", "test"),
-                    StringNode("nimi", "Teppo"),
-                    StringNode("puhelinnumero", "1234")
-                )
-            )
-        every { applicationService.getAllApplicationsForUser("test") }.returns(listOf())
-        every { hankeService.loadHankkeetByUserId("test") }.returns(listOf(HankeFactory.create()))
-        every { profiiliClient.getInfo("test") }.returns(UserInfoFactory.teppoUserInfo())
-        every { gdprJsonConverter.createGdprJson(any(), listOf(HankeFactory.create()), any()) }
-            .returns(gdprInfo)
+    fun `When there are applications, return json response`() {
+        CollectionNode(
+            "user",
+            listOf(
+                StringNode("id", USERID),
+                StringNode("nimi", "Teppo"),
+                StringNode("puhelinnumero", "1234"),
+            ),
+        )
+        val applicationData: CableReportApplicationData =
+            "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
+        val application = AlluDataFactory.createApplication(applicationData = applicationData)
+        every { applicationService.getAllApplicationsCreatedByUser(USERID) }
+            .returns(listOf(application))
         val expectedResponse =
-            """{"key": "user", "children": [{"key": "id", "value": "test"},{"key": "nimi", "value": "Teppo"},{"key": "puhelinnumero", "value": "1234"}]}"""
+            """{
+                "key":"user",
+                "children": [
+                  {
+                    "key":"id",
+                    "value":"test-user"
+                  },
+                  {
+                    "key":"nimi",
+                    "value":"Teppo Testihenkilö"
+                  },
+                  {
+                    "key":"puhelinnumero",
+                    "value":"04012345678"
+                  },
+                  {
+                    "key":"sahkopostit",
+                    "children": [
+                      {
+                        "key":"sahkoposti",
+                        "value":"teppo@example.test"
+                      },
+                      {
+                        "key":"sahkoposti",
+                        "value":"teppo@dna.test"
+                      }
+                    ]
+                  },
+                  {
+                    "key":"organisaatio",
+                    "children":[
+                      {
+                        "key":"nimi",
+                        "value":"Dna"
+                      },
+                      {
+                        "key":"tunnus",
+                        "value":"3766028-0"
+                      }
+                    ]
+                  }
+                ]
+              }
+            """.trimIndent()
 
         mockMvc
             .perform(
-                MockMvcRequestBuilders.get("/gdpr-api/test").accept(MediaType.APPLICATION_JSON)
+                MockMvcRequestBuilders.get("/gdpr-api/$USERID").accept(MediaType.APPLICATION_JSON),
             )
             .andExpect(MockMvcResultMatchers.status().`is`(200))
             .andExpect(content().json(expectedResponse))
 
-        verify { applicationService.getAllApplicationsForUser("test") }
-        verify { hankeService.loadHankkeetByUserId("test") }
-        verify { profiiliClient.getInfo("test") }
-        verify { gdprJsonConverter.createGdprJson(any(), listOf(HankeFactory.create()), any()) }
-        verify { disclosureLogService.saveDisclosureLogsForProfiili("test", gdprInfo) }
+        verify { applicationService.getAllApplicationsCreatedByUser(USERID) }
+        verify { disclosureLogService.saveDisclosureLogsForProfiili(USERID, any<CollectionNode>()) }
     }
 }

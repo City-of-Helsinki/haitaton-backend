@@ -58,6 +58,11 @@ open class ApplicationService(
     }
 
     @Transactional(readOnly = true)
+    open fun getAllApplicationsCreatedByUser(userId: String): List<Application> {
+        return applicationRepository.getAllByUserId(userId).map { it.toApplication() }
+    }
+
+    @Transactional(readOnly = true)
     open fun getApplicationById(id: Long): Application = getById(id).toApplication()
 
     @Transactional
