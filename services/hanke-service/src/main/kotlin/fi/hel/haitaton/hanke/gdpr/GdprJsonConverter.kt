@@ -7,30 +7,14 @@ import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
-import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
-import fi.hel.haitaton.hanke.profiili.UserInfo
-import org.springframework.stereotype.Component
 
-@Component
-class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
+object GdprJsonConverter {
 
-    fun createGdprJson(
-        applications: List<Application>,
-        hankkeet: List<Hanke>,
-        userInfo: UserInfo
-    ): CollectionNode? {
+    fun createGdprJson(applications: List<Application>, userId: String): CollectionNode? {
         val infos: Set<GdprInfo> =
-            hankkeet
-                .flatMap { getGdprInfosFromHanke(it, userInfo) }
-                .union(
-                    applications.flatMap {
-                        getUserInfosFromApplication(it.applicationData, userInfo)
-                    }
-                )
+            applications.flatMap { getCreatorInfoFromApplication(it.applicationData) }.toSet()
 
-        val combinedNodes = combineGdprInfos(infos, userInfo.userId)
+        val combinedNodes = combineGdprInfos(infos, userId)
         if (combinedNodes.isEmpty()) {
             return null
         }
@@ -97,29 +81,24 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
 
     private fun getIntNode(key: String, value: Int?): IntNode? = value?.let { IntNode(key, value) }
 
-    internal fun getUserInfosFromApplication(
-        applicationData: ApplicationData,
-        userInfo: UserInfo
-    ): List<GdprInfo> {
+    internal fun getCreatorInfoFromApplication(applicationData: ApplicationData): List<GdprInfo> {
         return when (applicationData) {
             is CableReportApplicationData ->
-                listOfNotNull(
-                        applicationData.customerWithContacts,
-                        applicationData.contractorWithContacts
-                    )
-                    .flatMap { getGdprInfosFromCustomerWithContacts(it, userInfo) }
+                applicationData
+                    .customersWithContacts()
+                    .filter { it.contacts.any { contact -> contact.orderer } }
+                    .flatMap { getCreatorInfoFromCustomerWithContacts(it) }
         }
     }
 
-    internal fun getGdprInfosFromCustomerWithContacts(
+    internal fun getCreatorInfoFromCustomerWithContacts(
         customerWithContacts: CustomerWithContacts,
-        userInfo: UserInfo
     ): List<GdprInfo> {
         val organisation = getOrganisationFromCustomer(customerWithContacts.customer)
 
-        return getGdprInfosFromContacts(customerWithContacts.contacts, organisation, userInfo)
-            .plus(getGdprInfoFromCustomer(customerWithContacts.customer, userInfo))
-            .filterNotNull()
+        val orderers = customerWithContacts.contacts.filter { it.orderer }
+
+        return getGdprInfosFromContacts(orderers, organisation)
     }
 
     internal fun getOrganisationFromCustomer(customer: Customer): GdprOrganisation? =
@@ -139,77 +118,17 @@ class GdprJsonConverter(private val organisaatioService: OrganisaatioService) {
     internal fun getGdprInfosFromContacts(
         contacts: List<Contact>,
         organisation: GdprOrganisation?,
-        userInfo: UserInfo,
-    ): List<GdprInfo> =
-        contacts.mapNotNull { getGdprInfosFromApplicationContact(it, organisation, userInfo) }
+    ): List<GdprInfo> = contacts.map { getGdprInfosFromApplicationContact(it, organisation) }
 
     internal fun getGdprInfosFromApplicationContact(
         contact: Contact,
         organisation: GdprOrganisation?,
-        userInfo: UserInfo,
-    ): GdprInfo? {
-        if (contact.fullName() == userInfo.name) {
-            return GdprInfo(
-                name = contact.fullName(),
-                phone = contact.phone,
-                email = contact.email,
-                organisation = organisation,
-            )
-        }
-        return null
-    }
-
-    internal fun getGdprInfoFromCustomer(customer: Customer?, userInfo: UserInfo): GdprInfo? {
-        if (customer?.type == CustomerType.PERSON && customer.name == userInfo.name) {
-            return GdprInfo(
-                name = customer.name,
-                phone = customer.phone,
-                email = customer.email,
-            )
-        }
-        return null
-    }
-
-    internal fun getGdprInfosFromHanke(hanke: Hanke, userInfo: UserInfo): List<GdprInfo> {
-        return hanke.extractYhteystiedot().mapNotNull {
-            getGdprInfoFromHankeYhteystieto(it, userInfo)
-        }
-    }
-
-    internal fun getGdprInfoFromHankeYhteystieto(
-        yhteystieto: HankeYhteystieto,
-        userInfo: UserInfo
-    ): GdprInfo? {
-        if (yhteystieto.nimi != userInfo.name) {
-            return null
-        }
-
-        val organisaatio = extractOrganisation(yhteystieto)
+    ): GdprInfo {
         return GdprInfo(
-            name = yhteystieto.nimi,
-            phone = yhteystieto.puhelinnumero,
-            email = yhteystieto.email,
-            organisation = organisaatio
+            name = contact.fullName(),
+            phone = contact.phone,
+            email = contact.email,
+            organisation = organisation,
         )
-    }
-
-    internal fun extractOrganisation(yhteystieto: HankeYhteystieto): GdprOrganisation? {
-        if (yhteystieto.organisaatioId != null) {
-            val organisaatio = organisaatioService.get(yhteystieto.organisaatioId!!)
-            return organisaatio?.let {
-                GdprOrganisation(
-                    organisaatio.id,
-                    organisaatio.nimi,
-                    organisaatio.tunnus,
-                    yhteystieto.osasto
-                )
-            }
-        } else if (yhteystieto.organisaatioNimi != null) {
-            return GdprOrganisation(
-                name = yhteystieto.organisaatioNimi,
-                department = yhteystieto.osasto
-            )
-        }
-        return null
     }
 }
