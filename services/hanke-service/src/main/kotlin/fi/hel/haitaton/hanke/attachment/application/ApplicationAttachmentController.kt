@@ -97,10 +97,11 @@ class ApplicationAttachmentController(
         @PathVariable attachmentId: UUID,
     ): ResponseEntity<ByteArray> {
         permissionOrThrow(applicationId, VIEW)
-        applicationAttachmentService.getContent(applicationId, attachmentId).let {
-            (fileName, content) ->
-            return ResponseEntity.ok().headers(buildHeaders(fileName)).body(content)
-        }
+        val content = applicationAttachmentService.getContent(applicationId, attachmentId)
+
+        return ResponseEntity.ok()
+            .headers(buildHeaders(content.fileName, content.contentType))
+            .body(content.bytes)
     }
 
     @PostMapping

@@ -21,3 +21,9 @@ data class ApplicationAttachmentMetadata(
     val applicationId: Long,
     val attachmentType: ApplicationAttachmentType,
 )
+
+data class AttachmentContent(
+    val fileName: String,
+    val contentType: String,
+    @Suppress("ArrayInDataClass") val bytes: ByteArray
+)

@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
 import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
@@ -34,7 +35,7 @@ class HankeAttachmentService(
         findHanke(hankeTunnus).liitteet.map { it.toMetadata() }
 
     @Transactional(readOnly = true)
-    fun getContent(hankeTunnus: String, attachmentId: UUID): Pair<String, ByteArray> {
+    fun getContent(hankeTunnus: String, attachmentId: UUID): AttachmentContent {
         val attachment = findHanke(hankeTunnus).liitteet.findBy(attachmentId)
 
         with(attachment) {
@@ -43,7 +44,7 @@ class HankeAttachmentService(
                 throw AttachmentNotFoundException(attachmentId)
             }
 
-            return Pair(fileName, content)
+            return AttachmentContent(fileName, contentType, content)
         }
     }
 
@@ -58,6 +59,7 @@ class HankeAttachmentService(
                 id = null,
                 fileName = attachment.originalFilename!!,
                 content = attachment.bytes,
+                contentType = attachment.contentType!!,
                 createdAt = now(),
                 createdByUserId = currentUserId(),
                 scanStatus = OK,

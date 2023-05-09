@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.allu
 
 import assertk.Assert
 import assertk.assertThat
+import assertk.assertions.containsExactly
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
@@ -11,9 +12,11 @@ import assertk.assertions.prop
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.configuration.Configuration.Companion.webClientWithLargeBuffer
+import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import java.time.ZonedDateTime
+import okhttp3.MultipartReader
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
@@ -26,8 +29,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.http.HttpHeaders
-import org.springframework.http.MediaType
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
+import org.springframework.http.HttpHeaders.CONTENT_TYPE
+import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
+import org.springframework.http.MediaType.APPLICATION_PDF
+import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
+import org.springframework.http.MediaType.IMAGE_PNG
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 
@@ -53,7 +61,7 @@ class CableReportServiceAlluITests {
         val applicationIdResponse =
             MockResponse()
                 .setResponseCode(200)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                 .setBody(stubbedApplicationId.toString())
         mockWebServer.enqueue(applicationIdResponse)
         val application = getTestApplication()
@@ -68,13 +76,59 @@ class CableReportServiceAlluITests {
         assertThat(request.getHeader("Authorization")).isEqualTo("Bearer $stubbedBearer")
     }
 
+    @CsvSource("pdf,application/pdf", "png,image/png")
+    @ParameterizedTest(name = "{displayName} ({arguments})")
+    fun `addAttachment should upload attachment`(extension: String, contentType: String) {
+        addStubbedLoginResponse()
+        val alluId = 123
+        val metadata =
+            AlluDataFactory.createAttachmentMetadata(
+                mimeType = contentType,
+                name = "file.$extension"
+            )
+        val file = "test file content".toByteArray()
+        val attachment = Attachment(metadata, file)
+        val mockResponse = MockResponse().setResponseCode(200)
+        mockWebServer.enqueue(mockResponse)
+
+        service.addAttachment(alluId, attachment)
+
+        assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
+        val request = mockWebServer.takeRequest()
+        assertThat(request.method).isEqualTo("POST")
+        assertThat(request.path).isEqualTo("/v2/applications/$alluId/attachments")
+        assertThat(request.multiPartContentTypes())
+            .containsExactly(APPLICATION_JSON_VALUE, contentType)
+    }
+
+    @Test
+    fun `addAttachments should upload attachments successfully`() {
+        addStubbedLoginResponse()
+        val alluId = 123
+        val metadata = AlluDataFactory.createAttachmentMetadata()
+        val file = "test file content".toByteArray()
+        val attachment = Attachment(metadata, file)
+        val mockResponse = MockResponse().setResponseCode(200)
+        (1..3).forEach { _ -> mockWebServer.enqueue(mockResponse) }
+        val attachments = listOf(attachment, attachment, attachment)
+
+        service.addAttachments(alluId, attachments)
+
+        assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
+        attachments.forEach { _ ->
+            val request = mockWebServer.takeRequest()
+            assertThat(request.method).isEqualTo("POST")
+            assertThat(request.path).isEqualTo("/v2/applications/$alluId/attachments")
+        }
+    }
+
     @Test
     fun testCreateErrorHandling() {
         val stubbedBearer = addStubbedLoginResponse()
         val applicationIdResponse =
             MockResponse()
                 .setResponseCode(400)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                 .setBody(
                     """[{"errorMessage":"Cable report should have one orderer contact","additionalInfo":"customerWithContacts"}]"""
                 )
@@ -106,7 +160,7 @@ class CableReportServiceAlluITests {
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(200)
-                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
+                    .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
                     .setBody(pdfContent())
             )
 
@@ -128,7 +182,7 @@ class CableReportServiceAlluITests {
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(200)
-                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF_VALUE)
+                    .setHeader(CONTENT_TYPE, APPLICATION_PDF_VALUE)
                     .setBody(content)
             )
 
@@ -143,7 +197,7 @@ class CableReportServiceAlluITests {
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(404)
-                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                     .setBody("Not found")
             )
 
@@ -159,7 +213,7 @@ class CableReportServiceAlluITests {
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(500)
-                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                     .setBody("Other error")
             )
 
@@ -172,7 +226,7 @@ class CableReportServiceAlluITests {
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(200)
-                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.IMAGE_PNG)
+                    .setHeader(CONTENT_TYPE, IMAGE_PNG)
                     .setBody(pdfContent())
             )
 
@@ -185,7 +239,7 @@ class CableReportServiceAlluITests {
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(200)
-                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_PDF)
+                    .setHeader(CONTENT_TYPE, APPLICATION_PDF)
                     .setBody("")
             )
 
@@ -204,7 +258,7 @@ class CableReportServiceAlluITests {
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(200)
-                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                     .setBody(OBJECT_MAPPER.writeValueAsString(histories))
             )
 
@@ -226,7 +280,7 @@ class CableReportServiceAlluITests {
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(200)
-                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                     .setBody("[]")
             )
 
@@ -243,7 +297,7 @@ class CableReportServiceAlluITests {
             mockWebServer.enqueue(
                 MockResponse()
                     .setResponseCode(404)
-                    .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                     .setBody("Error message")
             )
 
@@ -259,12 +313,18 @@ class CableReportServiceAlluITests {
         prop("Authorization header") { loginRequest.getHeader("Authorization") }.isNull()
     }
 
+    private fun RecordedRequest.multiPartContentTypes(): List<String> {
+        val boundary: String = headers[CONTENT_TYPE]?.split(";boundary=")?.last()!!
+        val reader = MultipartReader(body, boundary)
+        return generateSequence { reader.nextPart()?.headers?.get(CONTENT_TYPE) }.toList()
+    }
+
     private fun addStubbedLoginResponse(): String {
         val stubbedBearer = "123dynamite-789wohoo"
         val loginResponse =
             MockResponse()
                 .setResponseCode(200)
-                .setHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .setHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
                 .setBody(stubbedBearer)
         mockWebServer.enqueue(loginResponse)
         return stubbedBearer

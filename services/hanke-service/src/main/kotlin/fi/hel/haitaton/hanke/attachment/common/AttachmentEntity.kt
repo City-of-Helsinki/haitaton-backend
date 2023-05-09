@@ -1,6 +1,8 @@
 package fi.hel.haitaton.hanke.attachment.common
 
 import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.allu.Attachment
+import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -37,6 +39,9 @@ abstract class AttachmentEntity(
     @Basic(fetch = FetchType.LAZY)
     @NotNull
     var content: ByteArray,
+
+    /** File type, e.g. application/pdf. */
+    @Column(name = "content_type") var contentType: String,
 
     /** Person who uploaded this attachment. */
     @Column(name = "created_by_user_id", updatable = false, nullable = false)
@@ -80,13 +85,14 @@ class HankeAttachmentEntity(
     id: UUID?,
     fileName: String,
     content: ByteArray,
+    contentType: String,
     createdByUserId: String,
     createdAt: OffsetDateTime,
     scanStatus: AttachmentScanStatus,
 
     /** Hanke in which this attachment belongs to. */
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "hanke_id") var hanke: HankeEntity,
-) : AttachmentEntity(id, fileName, content, createdByUserId, createdAt, scanStatus) {
+) : AttachmentEntity(id, fileName, content, contentType, createdByUserId, createdAt, scanStatus) {
     fun toMetadata(): HankeAttachmentMetadata {
         return HankeAttachmentMetadata(
             id = id,
@@ -123,6 +129,7 @@ class ApplicationAttachmentEntity(
     id: UUID?,
     fileName: String,
     content: ByteArray,
+    contentType: String,
     createdByUserId: String,
     createdAt: OffsetDateTime,
     scanStatus: AttachmentScanStatus,
@@ -136,7 +143,7 @@ class ApplicationAttachmentEntity(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id")
     var application: ApplicationEntity,
-) : AttachmentEntity(id, fileName, content, createdByUserId, createdAt, scanStatus) {
+) : AttachmentEntity(id, fileName, content, contentType, createdByUserId, createdAt, scanStatus) {
     fun toMetadata(): ApplicationAttachmentMetadata {
         return ApplicationAttachmentMetadata(
             id = id,
@@ -146,6 +153,19 @@ class ApplicationAttachmentEntity(
             createdByUserId = createdByUserId,
             applicationId = application.id!!,
             attachmentType = attachmentType,
+        )
+    }
+
+    fun toAlluAttachment(): Attachment {
+        return Attachment(
+            metadata =
+                AttachmentMetadata(
+                    id = null,
+                    mimeType = contentType,
+                    name = fileName,
+                    description = null,
+                ),
+            file = content
         )
     }
 

@@ -21,11 +21,12 @@ import fi.hel.haitaton.hanke.attachment.andExpectError
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
+import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus
 import fi.hel.haitaton.hanke.attachment.dummyData
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createApplication
-import fi.hel.haitaton.hanke.factory.AttachmentFactory.applicationAttachment
+import fi.hel.haitaton.hanke.factory.AttachmentFactory.applicationAttachmentMetadata
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -46,6 +47,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpHeaders.CONTENT_DISPOSITION
 import org.springframework.http.MediaType.APPLICATION_PDF
+import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.security.test.context.support.WithAnonymousUser
 import org.springframework.security.test.context.support.WithMockUser
@@ -87,7 +89,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
 
     @Test
     fun `getMetadataList when valid request should return metadata list`() {
-        val data = (1..3).map { applicationAttachment(fileName = "${it}file.pdf") }
+        val data = (1..3).map { applicationAttachmentMetadata(fileName = "${it}file.pdf") }
         every { applicationService.getApplicationById(APPLICATION_ID) } returns createApplication()
         every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
         every { permissionService.hasPermission(HANKE_ID, USERNAME, VIEW) } returns true
@@ -121,7 +123,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         every { hankeService.getHankeId(HANKE_TUNNUS) } returns (HANKE_ID)
         every { permissionService.hasPermission(HANKE_ID, USERNAME, VIEW) } returns true
         every { applicationAttachmentService.getContent(APPLICATION_ID, attachmentId) } returns
-            Pair(FILE_NAME_PDF, dummyData)
+            AttachmentContent(FILE_NAME_PDF, APPLICATION_PDF_VALUE, dummyData)
 
         getAttachmentContent(attachmentId = attachmentId)
             .andExpect(status().isOk)
@@ -144,7 +146,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
         every { permissionService.hasPermission(HANKE_ID, USERNAME, EDIT) } returns true
         every { applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file) } returns
-            applicationAttachment()
+            applicationAttachmentMetadata()
 
         val result: ApplicationAttachmentMetadata =
             postAttachment(file = file).andExpect(status().isOk).andReturnBody()
