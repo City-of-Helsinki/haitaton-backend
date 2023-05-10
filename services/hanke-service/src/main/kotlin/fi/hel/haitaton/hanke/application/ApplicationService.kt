@@ -174,6 +174,7 @@ open class ApplicationService(
 
     @Transactional
     open fun sendApplication(id: Long, userId: String): Application {
+        logger.info { "In sending." }
         val application = getById(id)
 
         val hanke = application.hanke
