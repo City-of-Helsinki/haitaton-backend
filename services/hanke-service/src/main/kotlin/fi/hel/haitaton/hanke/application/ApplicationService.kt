@@ -193,6 +193,8 @@ open class ApplicationService(
             throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
 
+        logger.info { "Application not pending, can proceed." }
+
         if (application.alluid != null && !application.applicationData.pendingOnClient) {
             // Re-sending is done with update, this should only be used for initial send to Allu.
             logger.info {
@@ -276,6 +278,7 @@ open class ApplicationService(
         }
 
     private fun isStillPendingInAllu(alluid: Int?): Boolean {
+        logger.info { "Checking if pending in Allu. AlluId: $alluid" }
         // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)
         alluid ?: return true
 
