@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.allu
 
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
+import java.time.Duration.ofSeconds
 import java.time.ZonedDateTime
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -28,6 +29,7 @@ class CableReportServiceAllu(
 ) : CableReportService {
 
     private val baseUrl = properties.baseUrl
+    private val defaultTimeout = ofSeconds(30)
 
     private fun login(): String {
         try {
@@ -40,6 +42,7 @@ class CableReportServiceAllu(
                 .body(Mono.just(LoginInfo(properties.username, properties.password)))
                 .retrieve()
                 .bodyToMono(String::class.java)
+                .timeout(defaultTimeout)
                 .doOnError(WebClientResponseException::class.java) {
                     logError("Error logging in to Allu", it)
                 }
@@ -54,6 +57,7 @@ class CableReportServiceAllu(
     }
 
     override fun getApplicationInformation(applicationId: Int): AlluApplicationResponse {
+        logger.info { "Fetching application information for application: $applicationId" }
         val token = login()
         return webClient
             .get()
@@ -62,6 +66,7 @@ class CableReportServiceAllu(
             .headers { it.setBearerAuth(token) }
             .retrieve()
             .bodyToMono(AlluApplicationResponse::class.java)
+            .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error getting application information from Allu", it)
             }
@@ -79,6 +84,7 @@ class CableReportServiceAllu(
         applicationIds: List<Int>,
         eventsAfter: ZonedDateTime,
     ): List<ApplicationHistory> {
+        logger.info { "Fetching application status histories." }
         val token = login()
         val search = ApplicationHistorySearch(applicationIds, eventsAfter)
         return webClient
@@ -92,6 +98,7 @@ class CableReportServiceAllu(
             // API returns an array of ApplicationHistory objects (one for each requested
             // applicationId)
             .bodyToFlux(ApplicationHistory::class.java)
+            .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error getting application history from Allu", it)
             }
@@ -100,6 +107,7 @@ class CableReportServiceAllu(
     }
 
     override fun create(cableReport: AlluCableReportApplicationData): Int {
+        logger.info { "Creating cable report." }
         val token = login()
         return webClient
             .post()
@@ -110,6 +118,7 @@ class CableReportServiceAllu(
             .bodyValue(cableReport)
             .retrieve()
             .bodyToMono(Int::class.java)
+            .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error creating cable report to Allu", it)
             }
@@ -118,6 +127,7 @@ class CableReportServiceAllu(
     }
 
     override fun update(applicationId: Int, cableReport: AlluCableReportApplicationData) {
+        logger.info { "Updating application $applicationId." }
         val token = login()
         webClient
             .put()
@@ -128,6 +138,7 @@ class CableReportServiceAllu(
             .body(Mono.just(cableReport))
             .retrieve()
             .bodyToMono(Int::class.java)
+            .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error updating cable report in Allu", it)
             }
@@ -136,6 +147,7 @@ class CableReportServiceAllu(
     }
 
     override fun cancel(applicationId: Int) {
+        logger.info { "Cancelling application $applicationId." }
         val token = login()
         webClient
             .put()
@@ -145,6 +157,7 @@ class CableReportServiceAllu(
             .headers { it.setBearerAuth(token) }
             .retrieve()
             .bodyToMono(Void::class.java)
+            .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error canceling application in Allu", it)
             }
@@ -166,6 +179,7 @@ class CableReportServiceAllu(
     }
 
     override fun getInformationRequests(applicationId: Int): List<InformationRequest> {
+        logger.info { "Fetching information request for application $applicationId." }
         val token = login()
         return webClient
             .get()
@@ -174,6 +188,7 @@ class CableReportServiceAllu(
             .headers { it.setBearerAuth(token) }
             .retrieve()
             .bodyToFlux(InformationRequest::class.java)
+            .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error getting application information from Allu", it)
             }
@@ -188,6 +203,7 @@ class CableReportServiceAllu(
         cableReport: AlluCableReportApplicationData,
         updatedFields: List<InformationRequestFieldKey>,
     ) {
+        logger.info { "Responding to information request." }
         val token = login()
         webClient
             .post()
@@ -198,10 +214,12 @@ class CableReportServiceAllu(
             .body(Mono.just(CableReportInformationRequestResponse(cableReport, updatedFields)))
             .retrieve()
             .toBodilessEntity()
+            .timeout(defaultTimeout)
             .block()
     }
 
     override fun getDecisionPdf(applicationId: Int): ByteArray {
+        logger.info { "Fetching decision pdf for application $applicationId." }
         val token = login()
         val requestUri = "$baseUrl/v2/cablereports/$applicationId/decision"
         val response =
@@ -222,6 +240,7 @@ class CableReportServiceAllu(
                     }
                 )
                 .toEntity(ByteArrayResource::class.java)
+                .timeout(defaultTimeout)
                 .doOnError(WebClientResponseException::class.java) {
                     logError("Error getting decision PDF from Allu", it)
                 }
@@ -240,6 +259,7 @@ class CableReportServiceAllu(
     }
 
     override fun getDecisionAttachments(applicationId: Int): List<AttachmentMetadata> {
+        logger.info { "Fetching decision attachments for application $applicationId." }
         val token = login()
         return webClient
             .get()
@@ -248,6 +268,7 @@ class CableReportServiceAllu(
             .headers { it.setBearerAuth(token) }
             .retrieve()
             .bodyToFlux(AttachmentMetadata::class.java)
+            .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error getting decision attachments from Allu", it)
             }
@@ -257,6 +278,7 @@ class CableReportServiceAllu(
     }
 
     override fun getDecisionAttachmentData(applicationId: Int, attachmentId: Int): ByteArray {
+        logger.info { "Fetching decision attachment for application: $applicationId." }
         val token = login()
         return webClient
             .get()
@@ -265,6 +287,7 @@ class CableReportServiceAllu(
             .headers { it.setBearerAuth(token) }
             .retrieve()
             .bodyToMono(ByteArrayResource::class.java)
+            .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error getting decision attachment data from Allu", it)
             }
@@ -298,6 +321,7 @@ class CableReportServiceAllu(
             .body(BodyInserters.fromMultipartData(multipartData))
             .retrieve()
             .bodyToMono<Void>()
+            .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error uploading attachment to Allu", it)
             }
