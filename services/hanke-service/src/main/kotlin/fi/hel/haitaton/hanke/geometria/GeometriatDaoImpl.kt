@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.toJsonString
 import java.sql.Timestamp
 import java.sql.Types
+import mu.KotlinLogging
 import org.geojson.Crs
 import org.geojson.Feature
 import org.geojson.FeatureCollection
@@ -15,6 +16,8 @@ import org.geojson.GeoJsonObject
 import org.geojson.MultiPolygon
 import org.geojson.Polygon
 import org.springframework.jdbc.core.JdbcOperations
+
+private val logger = KotlinLogging.logger {}
 
 class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : GeometriatDao {
 
@@ -234,6 +237,7 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
     }
 
     override fun calculateCombinedArea(geometriat: List<Polygon>): Float? {
+        logger.info { "Calculating combined area." }
         val geometryCollection = MultiPolygon()
         geometriat.forEach { geometryCollection.add(it) }
 

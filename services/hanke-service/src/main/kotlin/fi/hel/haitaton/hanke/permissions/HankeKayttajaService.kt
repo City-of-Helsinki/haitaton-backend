@@ -3,8 +3,11 @@ package fi.hel.haitaton.hanke.permissions
 import fi.hel.haitaton.hanke.HankeArgumentException
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.domain.Hanke
+import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+
+private val logger = KotlinLogging.logger {}
 
 @Service
 class HankeKayttajaService(
@@ -14,6 +17,7 @@ class HankeKayttajaService(
 
     @Transactional
     fun saveNewTokensFromApplication(applicationData: ApplicationData, hankeId: Int) {
+        logger.info { "Saving new tokens from application." }
         val contacts =
             applicationData
                 .customersWithContacts()
@@ -21,10 +25,12 @@ class HankeKayttajaService(
                 .mapNotNull { userContactOrNull(it.fullName(), it.email) }
 
         filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
+        logger.info { "All application contact tokens saved." }
     }
 
     @Transactional
     fun saveNewTokensFromHanke(hanke: Hanke) {
+        logger.info { "Saving new tokens from hanke." }
         val hankeId = hanke.id ?: throw HankeArgumentException("Hanke without id")
         val contacts =
             hanke
@@ -33,9 +39,11 @@ class HankeKayttajaService(
                 .mapNotNull { userContactOrNull(it.fullName(), it.email) }
 
         filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
+        logger.info { "All hanke contact tokens saved." }
     }
 
     private fun createToken(hankeId: Int, contact: UserContact) {
+        logger.info { "Saving token for contact." }
         val kayttajaTunnisteEntity = kayttajaTunnisteRepository.save(KayttajaTunnisteEntity())
 
         hankeKayttajaRepository.save(
@@ -47,6 +55,7 @@ class HankeKayttajaService(
                 kayttajaTunniste = kayttajaTunnisteEntity
             )
         )
+        logger.info { "Saved token for contact." }
     }
 
     private fun userContactOrNull(name: String?, email: String?): UserContact? {

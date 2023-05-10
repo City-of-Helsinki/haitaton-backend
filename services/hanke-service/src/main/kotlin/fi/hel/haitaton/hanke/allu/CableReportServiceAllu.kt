@@ -32,6 +32,7 @@ class CableReportServiceAllu(
     private val defaultTimeout = ofSeconds(30)
 
     private fun login(): String {
+        logger.info { "Fetching login token." }
         try {
             val uri = "$baseUrl/v2/login"
             return webClient

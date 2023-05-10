@@ -441,6 +441,7 @@ open class ApplicationService(
 
     /** Creates new application in Allu. All attachments are sent after creation. */
     private fun createApplicationInAllu(application: ApplicationEntity): Int {
+        logger.info { "Creating new application in Allu." }
         val alluId =
             when (val applicationData = application.applicationData) {
                 is CableReportApplicationData -> createCableReportToAllu(applicationData)
@@ -448,10 +449,13 @@ open class ApplicationService(
 
         sendAllAttachments(alluId, application.attachments)
 
+        logger.info { "Application with alluId $alluId created." }
+
         return alluId
     }
 
     private fun sendAllAttachments(alluId: Int, attachments: List<ApplicationAttachmentEntity>) {
+        logger.info { "Sending all attachments for alluId: $alluId" }
         if (attachments.isEmpty()) {
             logger.info { "No attachments to send for alluId $alluId" }
             return
@@ -463,6 +467,7 @@ open class ApplicationService(
     private fun createCableReportToAllu(
         cableReportApplicationData: CableReportApplicationData
     ): Int {
+        logger.info { "Creating cable report." }
         val alluData = cableReportApplicationData.toAlluData()
         val attachment = getApplicationDataAsPdf(cableReportApplicationData)
 
@@ -476,6 +481,7 @@ open class ApplicationService(
     }
 
     private fun getApplicationDataAsPdf(data: CableReportApplicationData): Attachment {
+        logger.info { "Generating application data as pdf." }
         val totalArea =
             geometriatDao.calculateCombinedArea(data.areas?.map { it.geometry } ?: listOf())
         val areas = data.areas?.map { geometriatDao.calculateArea(it.geometry) } ?: listOf()
@@ -487,6 +493,7 @@ open class ApplicationService(
                 description = "Original form data from Haitaton, dated ${LocalDateTime.now()}.",
             )
         val pdfData = ApplicationPdfService.createPdf(data, totalArea, areas)
+        logger.info { "Application data generated to pdf." }
         return Attachment(attachmentMetadata, pdfData)
     }
 
