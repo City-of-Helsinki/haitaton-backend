@@ -15,7 +15,6 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
-import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.HANKE_TUNNUS
 import fi.hel.haitaton.hanke.attachment.USERNAME
@@ -66,7 +65,6 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @WithMockUser(USERNAME)
 @TestPropertySource(locations = ["classpath:application-test.properties"])
 class ApplicationAttachmentServiceITest : DatabaseTest() {
-    @MockkBean private lateinit var applicationService: ApplicationService
     @MockkBean private lateinit var cableReportService: CableReportService
     @Autowired private lateinit var applicationAttachmentService: ApplicationAttachmentService
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
@@ -85,7 +83,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     @AfterEach
     fun tearDown() {
         checkUnnecessaryStub()
-        confirmVerified(applicationService, cableReportService)
+        confirmVerified(cableReportService)
         mockWebServer.shutdown()
     }
 
@@ -189,7 +187,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(result.applicationId).isEqualTo(application.id)
         assertThat(result.attachmentType).isEqualTo(typeInput)
         assertThat(result.scanStatus).isEqualTo(OK)
-        verify { applicationService wasNot Called }
+        verify { cableReportService wasNot Called }
     }
 
     @Test
@@ -204,7 +202,8 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                     it.alluStatus = PENDING
                 }
                 .toApplication()
-        every { applicationService.isStillPending(application) } returns true
+        every { cableReportService.getApplicationInformation(alluId) } returns
+            AlluDataFactory.createAlluApplicationResponse(alluId, PENDING)
 
         applicationAttachmentService.addAttachment(
             applicationId = application.id!!,
@@ -213,7 +212,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         )
 
         verifyOrder {
-            applicationService.isStillPending(application)
+            cableReportService.getApplicationInformation(alluId)
             cableReportService.addAttachment(alluId, any())
         }
     }

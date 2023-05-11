@@ -13,10 +13,6 @@ import fi.hel.haitaton.hanke.allu.CableReportServiceAllu
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
-import fi.hel.haitaton.hanke.attachment.common.FileScanClient
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
-import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
@@ -87,6 +83,7 @@ class Configuration {
         applicationLoggingService: ApplicationLoggingService,
         hankeKayttajaService: HankeKayttajaService,
         emailSenderService: EmailSenderService,
+        applicationAttachmentService: ApplicationAttachmentService,
         geometriatDao: GeometriatDao,
         permissionService: PermissionService,
         hankeRepository: HankeRepository,
@@ -99,6 +96,7 @@ class Configuration {
             applicationLoggingService,
             hankeKayttajaService,
             emailSenderService,
+            applicationAttachmentService,
             geometriatDao,
             permissionService,
             hankeRepository,
@@ -166,30 +164,6 @@ class Configuration {
             luokitteluRajaArvotService,
             perusIndeksiPainotService,
             tormaystarkasteluDao
-        )
-
-    @Bean
-    fun hankeAttachmentsService(
-        hankeRepository: HankeRepository,
-        hankeAttachmentRepository: HankeAttachmentRepository,
-        scanClient: FileScanClient,
-    ): HankeAttachmentService =
-        HankeAttachmentService(hankeRepository, hankeAttachmentRepository, scanClient)
-
-    @Bean
-    fun applicationAttachmentsService(
-        applicationService: ApplicationService,
-        cableReportService: CableReportService,
-        applicationRepository: ApplicationRepository,
-        applicationAttachmentRepository: ApplicationAttachmentRepository,
-        scanClient: FileScanClient,
-    ): ApplicationAttachmentService =
-        ApplicationAttachmentService(
-            applicationService,
-            cableReportService,
-            applicationRepository,
-            applicationAttachmentRepository,
-            scanClient,
         )
 
     companion object {

@@ -1,11 +1,13 @@
 package fi.hel.haitaton.hanke.attachment.application
 
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
@@ -30,7 +32,6 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 class ApplicationAttachmentService(
-    private val applicationService: ApplicationService,
     private val cableReportService: CableReportService,
     private val applicationRepository: ApplicationRepository,
     private val attachmentRepository: ApplicationAttachmentRepository,
@@ -93,6 +94,15 @@ class ApplicationAttachmentService(
         logger.info { "Deleted hanke attachment ${attachment.id}" }
     }
 
+    fun sendAllAttachments(alluId: Int, attachments: List<ApplicationAttachmentEntity>) {
+        if (attachments.isEmpty()) {
+            logger.info { "No attachments to send for alluId $alluId" }
+            return
+        }
+        val alluAttachments = attachments.map { it.toAlluAttachment() }
+        cableReportService.addAttachments(alluId, alluAttachments)
+    }
+
     private fun findApplication(applicationId: Long): ApplicationEntity =
         applicationRepository.findById(applicationId).orElseThrow {
             ApplicationNotFoundException(applicationId)
@@ -118,8 +128,21 @@ class ApplicationAttachmentService(
     private fun sendIfPending(application: Application, attachment: ApplicationAttachmentEntity) =
         with(application) {
             logger.info { "Check application if should send attachment, alluId: '$alluid'" }
-            if (alluid != null && applicationService.isStillPending(application)) {
+            if (alluid != null && sendable(alluid, alluStatus)) {
                 cableReportService.addAttachment(alluid, attachment.toAlluAttachment())
             }
+        }
+
+    private fun sendable(alluid: Int, alluStatus: ApplicationStatus?): Boolean =
+        when (alluStatus) {
+            null,
+            PENDING,
+            PENDING_CLIENT -> pendsInAllu(alluid)
+            else -> false
+        }
+
+    private fun pendsInAllu(alluid: Int): Boolean =
+        cableReportService.getApplicationInformation(alluid).let {
+            listOf(PENDING, PENDING_CLIENT).contains(it.status)
         }
 }
