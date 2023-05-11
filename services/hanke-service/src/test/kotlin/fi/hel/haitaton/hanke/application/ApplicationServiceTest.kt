@@ -18,6 +18,7 @@ import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
@@ -73,6 +74,7 @@ class ApplicationServiceTest {
     private val permissionService: PermissionService = mockk()
     private val emailSenderService: EmailSenderService = mockk()
     private val hankeKayttajaService: HankeKayttajaService = mockk(relaxUnitFun = true)
+    private val attachmentService: ApplicationAttachmentService = mockk()
 
     private val applicationService: ApplicationService =
         ApplicationService(
@@ -83,6 +85,7 @@ class ApplicationServiceTest {
             applicationLoggingService,
             hankeKayttajaService,
             emailSenderService,
+            attachmentService,
             geometriatDao,
             permissionService,
             hankeRepository,
@@ -265,6 +268,7 @@ class ApplicationServiceTest {
         every { geometriatDao.calculateCombinedArea(any()) } returns 100f
         every { geometriatDao.calculateArea(any()) } returns 100f
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+        justRun { attachmentService.sendAllAttachments(42, any()) }
 
         applicationService.sendApplication(3, username)
 
@@ -278,6 +282,7 @@ class ApplicationServiceTest {
             cableReportService.create(any())
             disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
             cableReportService.addAttachment(42, any())
+            attachmentService.sendAllAttachments(42, any())
             cableReportService.getApplicationInformation(42)
             applicationRepo.save(any())
         }
@@ -370,6 +375,7 @@ class ApplicationServiceTest {
         justRun { cableReportService.addAttachment(852, any()) }
         every { cableReportService.getApplicationInformation(852) } returns
             AlluDataFactory.createAlluApplicationResponse(852)
+        justRun { attachmentService.sendAllAttachments(852, any()) }
 
         applicationService.sendApplication(3, username)
 

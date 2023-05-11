@@ -7,9 +7,12 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
+import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
@@ -31,6 +34,14 @@ import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
+import io.mockk.Called
+import io.mockk.checkUnnecessaryStub
+import io.mockk.clearAllMocks
+import io.mockk.confirmVerified
+import io.mockk.every
+import io.mockk.justRun
+import io.mockk.verify
+import io.mockk.verifyOrder
 import java.util.Optional
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
@@ -54,6 +65,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @WithMockUser(USERNAME)
 @TestPropertySource(locations = ["classpath:application-test.properties"])
 class ApplicationAttachmentServiceITest : DatabaseTest() {
+    @MockkBean private lateinit var cableReportService: CableReportService
     @Autowired private lateinit var applicationAttachmentService: ApplicationAttachmentService
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
@@ -63,12 +75,15 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
     @BeforeEach
     fun setup() {
+        clearAllMocks()
         mockWebServer = MockWebServer()
         mockWebServer.start(6789)
     }
 
     @AfterEach
     fun tearDown() {
+        checkUnnecessaryStub()
+        confirmVerified(cableReportService)
         mockWebServer.shutdown()
     }
 
@@ -172,6 +187,34 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(result.applicationId).isEqualTo(application.id)
         assertThat(result.attachmentType).isEqualTo(typeInput)
         assertThat(result.scanStatus).isEqualTo(OK)
+        verify { cableReportService wasNot Called }
+    }
+
+    @Test
+    fun `addAttachment when application pending should send also`() {
+        val alluId = 123
+        justRun { cableReportService.addAttachment(alluId, any()) }
+        mockWebServer.enqueue(response(body(results = successResult())))
+        val application =
+            alluDataFactory
+                .saveApplicationEntity(username = USERNAME, hanke = hankeEntity()) {
+                    it.alluid = alluId
+                    it.alluStatus = PENDING
+                }
+                .toApplication()
+        every { cableReportService.getApplicationInformation(alluId) } returns
+            AlluDataFactory.createAlluApplicationResponse(alluId, PENDING)
+
+        applicationAttachmentService.addAttachment(
+            applicationId = application.id!!,
+            attachmentType = LIIKENNEJARJESTELY,
+            attachment = testFile(),
+        )
+
+        verifyOrder {
+            cableReportService.getApplicationInformation(alluId)
+            cableReportService.addAttachment(alluId, any())
+        }
     }
 
     @Test
@@ -272,7 +315,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     @Test
     fun `deleteAttachment when valid input should succeed`() {
         mockWebServer.enqueue(response(body(results = successResult())))
-        val application = initApplication()
+        val application = initApplication().toApplication()
         val attachment =
             applicationAttachmentService.addAttachment(
                 applicationId = application.id!!,

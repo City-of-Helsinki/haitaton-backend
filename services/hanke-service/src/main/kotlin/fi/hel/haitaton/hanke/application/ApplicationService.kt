@@ -14,7 +14,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
@@ -43,6 +43,7 @@ open class ApplicationService(
     private val applicationLoggingService: ApplicationLoggingService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val emailSenderService: EmailSenderService,
+    private val attachmentService: ApplicationAttachmentService,
     private val geometriatDao: GeometriatDao,
     private val permissionService: PermissionService,
     private val hankeRepository: HankeRepository,
@@ -446,18 +447,9 @@ open class ApplicationService(
                 is CableReportApplicationData -> createCableReportToAllu(applicationData)
             }
 
-        sendAllAttachments(alluId, application.attachments)
+        attachmentService.sendAllAttachments(alluId, application.attachments)
 
         return alluId
-    }
-
-    private fun sendAllAttachments(alluId: Int, attachments: List<ApplicationAttachmentEntity>) {
-        if (attachments.isEmpty()) {
-            logger.info { "No attachments to send for alluId $alluId" }
-            return
-        }
-        val alluAttachments = attachments.map { it.toAlluAttachment() }
-        cableReportService.addAttachments(alluId, alluAttachments)
     }
 
     private fun createCableReportToAllu(

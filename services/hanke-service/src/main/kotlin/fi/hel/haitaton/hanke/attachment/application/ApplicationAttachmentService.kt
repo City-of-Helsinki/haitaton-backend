@@ -1,5 +1,10 @@
 package fi.hel.haitaton.hanke.attachment.application
 
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
+import fi.hel.haitaton.hanke.allu.CableReportService
+import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
@@ -27,6 +32,7 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 class ApplicationAttachmentService(
+    private val cableReportService: CableReportService,
     private val applicationRepository: ApplicationRepository,
     private val attachmentRepository: ApplicationAttachmentRepository,
     private val scanClient: FileScanClient,
@@ -72,7 +78,11 @@ class ApplicationAttachmentService(
                 application = application,
             )
 
-        return attachmentRepository.save(applicationAttachment).toMetadata().also {
+        val savedAttachment = attachmentRepository.save(applicationAttachment)
+
+        sendIfPending(application.toApplication(), savedAttachment)
+
+        return savedAttachment.toMetadata().also {
             logger.info { "Added attachment ${it.id} to application $applicationId" }
         }
     }
@@ -82,6 +92,15 @@ class ApplicationAttachmentService(
         val attachment = findApplication(applicationId).attachments.findBy(attachmentId)
         attachmentRepository.deleteAttachment(attachment.id!!)
         logger.info { "Deleted hanke attachment ${attachment.id}" }
+    }
+
+    fun sendAllAttachments(alluId: Int, attachments: List<ApplicationAttachmentEntity>) {
+        if (attachments.isEmpty()) {
+            logger.info { "No attachments to send for alluId $alluId" }
+            return
+        }
+        val alluAttachments = attachments.map { it.toAlluAttachment() }
+        cableReportService.addAttachments(alluId, alluAttachments)
     }
 
     private fun findApplication(applicationId: Long): ApplicationEntity =
@@ -102,4 +121,28 @@ class ApplicationAttachmentService(
             throw AttachmentUploadException("Infected file detected, see previous logs.")
         }
     }
+
+    /**
+     * Attachment should be sent if application is in Allu (alluId present) but not yet in handling.
+     */
+    private fun sendIfPending(application: Application, attachment: ApplicationAttachmentEntity) =
+        with(application) {
+            logger.info { "Check application if should send attachment, alluId: '$alluid'" }
+            if (alluid != null && sendable(alluid, alluStatus)) {
+                cableReportService.addAttachment(alluid, attachment.toAlluAttachment())
+            }
+        }
+
+    private fun sendable(alluid: Int, alluStatus: ApplicationStatus?): Boolean =
+        when (alluStatus) {
+            null,
+            PENDING,
+            PENDING_CLIENT -> pendsInAllu(alluid)
+            else -> false
+        }
+
+    private fun pendsInAllu(alluid: Int): Boolean =
+        cableReportService.getApplicationInformation(alluid).let {
+            listOf(PENDING, PENDING_CLIENT).contains(it.status)
+        }
 }
