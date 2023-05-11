@@ -179,12 +179,14 @@ class Configuration {
     @Bean
     fun applicationAttachmentsService(
         applicationService: ApplicationService,
+        cableReportService: CableReportService,
         applicationRepository: ApplicationRepository,
         applicationAttachmentRepository: ApplicationAttachmentRepository,
         scanClient: FileScanClient,
     ): ApplicationAttachmentService =
         ApplicationAttachmentService(
             applicationService,
+            cableReportService,
             applicationRepository,
             applicationAttachmentRepository,
             scanClient,

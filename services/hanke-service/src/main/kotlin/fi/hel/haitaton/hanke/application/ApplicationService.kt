@@ -216,10 +216,6 @@ open class ApplicationService(
         return applicationRepository.save(application).toApplication()
     }
 
-    open fun sendAttachment(alluId: Int, attachment: Attachment) {
-        cableReportService.addAttachment(alluId, attachment)
-    }
-
     @Transactional
     open fun handleApplicationUpdates(
         applicationHistories: List<ApplicationHistory>,

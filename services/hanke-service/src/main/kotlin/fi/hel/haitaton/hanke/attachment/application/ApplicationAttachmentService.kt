@@ -1,8 +1,7 @@
 package fi.hel.haitaton.hanke.attachment.application
 
-import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
+import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.Application
-import fi.hel.haitaton.hanke.application.ApplicationArgumentException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
@@ -32,6 +31,7 @@ private val logger = KotlinLogging.logger {}
 @Service
 class ApplicationAttachmentService(
     private val applicationService: ApplicationService,
+    private val cableReportService: CableReportService,
     private val applicationRepository: ApplicationRepository,
     private val attachmentRepository: ApplicationAttachmentRepository,
     private val scanClient: FileScanClient,
@@ -113,17 +113,13 @@ class ApplicationAttachmentService(
     }
 
     /**
-     * Attachment should be sent if application is in Allu but has not yet proceeded to handling
-     * (status PENDING). If PENDING, application is in Allu and alluId should exist.
+     * Attachment should be sent if application is in Allu (alluId present) but not yet in handling.
      */
     private fun sendIfPending(application: Application, attachment: ApplicationAttachmentEntity) =
         with(application) {
-            logger.info {
-                "Check application if should send attachment, alluId: '$alluid', alluStatus: '$alluStatus'"
-            }
-            if (alluStatus == PENDING) {
-                val id = alluid ?: throw ApplicationArgumentException("AlluId null")
-                applicationService.sendAttachment(id, attachment.toAlluAttachment())
+            logger.info { "Check application if should send attachment, alluId: '$alluid'" }
+            if (alluid != null && applicationService.isStillPending(application)) {
+                cableReportService.addAttachment(alluid, attachment.toAlluAttachment())
             }
         }
 }
