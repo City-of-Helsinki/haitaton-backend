@@ -107,7 +107,7 @@ class ApplicationAttachmentController(
     @PostMapping
     @Operation(
         summary = "Upload attachment for application",
-        description = "File is available for downloading after successful virus scan."
+        description = "Upload. Attachment is sent to Allu if application has been sent there."
     )
     @ApiResponses(
         value =
