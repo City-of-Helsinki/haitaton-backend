@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.attachment.application
 
-import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
@@ -15,7 +14,6 @@ import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -23,16 +21,13 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import java.util.UUID
 import mu.KotlinLogging
-import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
-import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 
@@ -205,16 +200,4 @@ class ApplicationAttachmentController(
             throw ApplicationNotFoundException(applicationId)
         }
     }
-
-    @ExceptionHandler(ApplicationNotFoundException::class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    @Hidden
-    fun applicationNotFound(ex: ApplicationNotFoundException): HankeError =
-        HankeError.HAI2001.also { logger.warn(ex) { ex.message } }
-
-    @ExceptionHandler(ApplicationAlreadyProcessingException::class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    @Hidden
-    fun applicationAlreadyProcessing(ex: ApplicationAlreadyProcessingException): HankeError =
-        HankeError.HAI2003.also { logger.warn(ex) { ex.message } }
 }

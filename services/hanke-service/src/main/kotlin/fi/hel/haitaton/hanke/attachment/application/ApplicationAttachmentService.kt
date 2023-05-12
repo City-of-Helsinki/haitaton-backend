@@ -66,7 +66,7 @@ class ApplicationAttachmentService(
     ): ApplicationAttachmentMetadata {
         val application = findApplication(applicationId)
 
-        if (gonePastHandling(application)) {
+        if (!isPending(application)) {
             logger.warn { "Application is processing, cannot add attachment." }
             throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
@@ -99,7 +99,7 @@ class ApplicationAttachmentService(
     fun deleteAttachment(applicationId: Long, attachmentId: UUID) {
         val application = findApplication(applicationId)
 
-        if (gonePastHandling(application)) {
+        if (!isPending(application)) {
             logger.warn { "Application is processing, cannot delete attachment." }
             throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
@@ -136,8 +136,6 @@ class ApplicationAttachmentService(
             throw AttachmentUploadException("Infected file detected, see previous logs.")
         }
     }
-
-    private fun gonePastHandling(application: ApplicationEntity): Boolean = !isPending(application)
 
     /** Application considered pending if no alluId or status null, pending, or pending_client. */
     private fun isPending(application: ApplicationEntity): Boolean {
