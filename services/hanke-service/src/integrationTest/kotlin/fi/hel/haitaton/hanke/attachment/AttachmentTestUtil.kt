@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.attachment.common.FileResult
 import fi.hel.haitaton.hanke.attachment.common.FileScanData
 import fi.hel.haitaton.hanke.attachment.common.FileScanResponse
+import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.toJsonString
 import okhttp3.mockwebserver.MockResponse
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
@@ -28,7 +29,7 @@ fun testFile(
     fileParam: String = FILE_PARAM,
     fileName: String = FILE_NAME_PDF,
     contentType: String = APPLICATION_PDF_VALUE,
-    data: ByteArray = dummyData,
+    data: ByteArray = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes(),
 ) = MockMultipartFile(fileParam, fileName, contentType, data)
 
 fun ResultActions.andExpectError(error: HankeError): ResultActions =

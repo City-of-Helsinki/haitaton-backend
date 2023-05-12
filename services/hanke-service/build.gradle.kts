@@ -89,6 +89,7 @@ dependencies {
 	implementation("com.github.librepdf:openpdf:1.3.30")
 	implementation("net.pwall.mustache:kotlin-mustache:0.10")
 	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+	implementation("org.apache.tika:tika-core:2.7.0")
 
 	implementation("org.postgresql:postgresql")
 	implementation("org.springdoc:springdoc-openapi-kotlin:$springDocVersion")
