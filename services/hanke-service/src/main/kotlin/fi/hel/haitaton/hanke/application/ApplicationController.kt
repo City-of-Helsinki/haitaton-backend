@@ -294,28 +294,12 @@ class ApplicationController(
             throw HankeNotFoundException(hankeTunnus)
     }
 
-    @ExceptionHandler(ApplicationNotFoundException::class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    @Hidden
-    fun missingApplication(ex: ApplicationNotFoundException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2001
-    }
-
     @ExceptionHandler(IncompatibleApplicationException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
     fun incompatibleApplicationData(ex: IncompatibleApplicationException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2002
-    }
-
-    @ExceptionHandler(ApplicationAlreadyProcessingException::class)
-    @ResponseStatus(HttpStatus.CONFLICT)
-    @Hidden
-    fun applicationAlreadyProcessing(ex: ApplicationAlreadyProcessingException): HankeError {
-        logger.warn(ex) { ex.message }
-        return HankeError.HAI2003
     }
 
     @ExceptionHandler(AlluDataException::class)
