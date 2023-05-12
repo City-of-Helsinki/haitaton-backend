@@ -1,9 +1,7 @@
 package fi.hel.haitaton.hanke.gdpr
 
+import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
-import fi.hel.haitaton.hanke.application.ApplicationService
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import io.mockk.Called
@@ -12,17 +10,20 @@ import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.verify
+import io.mockk.verifyAll
+import io.mockk.verifySequence
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
-import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 
@@ -31,10 +32,10 @@ private const val USERID = "test-user"
 @WebMvcTest(controllers = [GdprController::class], properties = ["haitaton.gdpr.disabled=false"])
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
-@WithMockUser(USERID, roles = ["haitaton-user"])
-class GdprControllerITests(@Autowired val mockMvc: MockMvc) {
+@WithMockUser(USERID)
+class GdprControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
-    @Autowired lateinit var applicationService: ApplicationService
+    @Autowired lateinit var gdprService: GdprService
 
     @Autowired lateinit var disclosureLogService: DisclosureLogService
 
@@ -46,73 +47,71 @@ class GdprControllerITests(@Autowired val mockMvc: MockMvc) {
     @AfterEach
     fun checkMocks() {
         checkUnnecessaryStub()
-        confirmVerified(applicationService, disclosureLogService)
+        confirmVerified(gdprService, disclosureLogService)
     }
 
-    @Test
-    fun `When user has not created any applications, return 404`() {
-        every { applicationService.getAllApplicationsCreatedByUser(USERID) }.returns(listOf())
+    @Nested
+    inner class GetByUserId {
+        @Test
+        fun `When user has no info, return 204`() {
+            every { gdprService.findGdprInfo(USERID) }.returns(null)
 
-        mockMvc
-            .perform(
-                MockMvcRequestBuilders.get("/gdpr-api/$USERID").accept(MediaType.APPLICATION_JSON),
-            )
-            .andExpect(MockMvcResultMatchers.status().isNotFound)
-            .andExpect(content().string(""))
+            get("/gdpr-api/$USERID")
+                .andExpect(MockMvcResultMatchers.status().isNoContent)
+                .andExpect(content().string(""))
 
-        verify { applicationService.getAllApplicationsCreatedByUser(USERID) }
-        verify { disclosureLogService wasNot Called }
-    }
+            verify { gdprService.findGdprInfo(USERID) }
+            verify { disclosureLogService wasNot Called }
+        }
 
-    @Test
-    fun `When there's an internal error, return gdpr error response`() {
-        every { applicationService.getAllApplicationsCreatedByUser(USERID) }
-            .throws(RuntimeException())
-        val expectedError =
-            """{"errors": [{"code": "HAI0002", "message": {"fi": "Tuntematon virhe", "en": "Unknown error"}}]}"""
+        @Test
+        fun `When there's an internal error, return gdpr error response`() {
+            every { gdprService.findGdprInfo(USERID) }.throws(RuntimeException())
+            val expectedError =
+                """
+              {
+                "errors": [
+                  {
+                    "code": "HAI0002",
+                    "message": {
+                      "fi": "Tapahtui virhe",
+                      "sv": "Det inträffade ett fel",
+                      "en": "An error occurred"
+                    }
+                  }
+                ]
+              }""".trimIndent()
 
-        mockMvc
-            .perform(
-                MockMvcRequestBuilders.get("/gdpr-api/$USERID").accept(MediaType.APPLICATION_JSON),
-            )
-            .andExpect(MockMvcResultMatchers.status().`is`(500))
-            .andExpect(content().json(expectedError))
+            get("/gdpr-api/$USERID")
+                .andExpect(MockMvcResultMatchers.status().`is`(500))
+                .andExpect(content().json(expectedError))
 
-        verify { applicationService.getAllApplicationsCreatedByUser(USERID) }
-        verify { disclosureLogService wasNot Called }
-    }
+            verify { gdprService.findGdprInfo(USERID) }
+            verify { disclosureLogService wasNot Called }
+        }
 
-    @Test
-    fun `When there's no matching names, return 404`() {
-        every { applicationService.getAllApplicationsCreatedByUser(USERID) }.returns(listOf())
-
-        mockMvc
-            .perform(
-                MockMvcRequestBuilders.get("/gdpr-api/$USERID").accept(MediaType.APPLICATION_JSON),
-            )
-            .andExpect(MockMvcResultMatchers.status().`is`(404))
-            .andExpect(content().string(""))
-
-        verify { applicationService.getAllApplicationsCreatedByUser(USERID) }
-    }
-
-    @Test
-    fun `When there are applications, return json response`() {
-        CollectionNode(
-            "user",
-            listOf(
-                StringNode("id", USERID),
-                StringNode("nimi", "Teppo"),
-                StringNode("puhelinnumero", "1234"),
-            ),
-        )
-        val applicationData: CableReportApplicationData =
-            "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
-        val application = AlluDataFactory.createApplication(applicationData = applicationData)
-        every { applicationService.getAllApplicationsCreatedByUser(USERID) }
-            .returns(listOf(application))
-        val expectedResponse =
-            """{
+        @Test
+        fun `When there are applications, return json response`() {
+            val info =
+                CollectionNode(
+                    "user",
+                    listOf(
+                        StringNode("id", USERID),
+                        StringNode("nimi", "Teppo Testihenkilö"),
+                        CollectionNode(
+                            "organisaatio",
+                            listOf(
+                                IntNode("id", 4412),
+                                StringNode("nimi", "Dna"),
+                                StringNode("tunnus", "3766028-0"),
+                            ),
+                        ),
+                    ),
+                )
+            every { gdprService.findGdprInfo(USERID) }.returns(info)
+            val expectedResponse =
+                """
+              {
                 "key":"user",
                 "children": [
                   {
@@ -124,25 +123,12 @@ class GdprControllerITests(@Autowired val mockMvc: MockMvc) {
                     "value":"Teppo Testihenkilö"
                   },
                   {
-                    "key":"puhelinnumero",
-                    "value":"04012345678"
-                  },
-                  {
-                    "key":"sahkopostit",
-                    "children": [
-                      {
-                        "key":"sahkoposti",
-                        "value":"teppo@example.test"
-                      },
-                      {
-                        "key":"sahkoposti",
-                        "value":"teppo@dna.test"
-                      }
-                    ]
-                  },
-                  {
                     "key":"organisaatio",
                     "children":[
+                      {
+                        "key":"id",
+                        "value":4412
+                      },
                       {
                         "key":"nimi",
                         "value":"Dna"
@@ -157,14 +143,102 @@ class GdprControllerITests(@Autowired val mockMvc: MockMvc) {
               }
             """.trimIndent()
 
-        mockMvc
-            .perform(
-                MockMvcRequestBuilders.get("/gdpr-api/$USERID").accept(MediaType.APPLICATION_JSON),
-            )
-            .andExpect(MockMvcResultMatchers.status().`is`(200))
-            .andExpect(content().json(expectedResponse))
+            get("/gdpr-api/$USERID")
+                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(content().json(expectedResponse))
 
-        verify { applicationService.getAllApplicationsCreatedByUser(USERID) }
-        verify { disclosureLogService.saveDisclosureLogsForProfiili(USERID, any<CollectionNode>()) }
+            verifySequence {
+                gdprService.findGdprInfo(USERID)
+                disclosureLogService.saveDisclosureLogsForProfiili(USERID, any<CollectionNode>())
+            }
+        }
+    }
+
+    @Nested
+    inner class DeleteUserInformation {
+        @Test
+        fun `Returns 204 when no information was found`() {
+            every { gdprService.findApplicationsToDelete(USERID) } returns listOf()
+
+            delete("/gdpr-api/$USERID")
+                .andExpect(MockMvcResultMatchers.status().isNoContent)
+                .andExpect(content().string(""))
+
+            verifySequence {
+                gdprService.findApplicationsToDelete(USERID)
+                gdprService.deleteApplications(listOf(), USERID)
+            }
+            verify { disclosureLogService wasNot Called }
+        }
+
+        @Test
+        fun `Returns 204 when information was found and deleted`() {
+            val applications = AlluDataFactory.createApplications(3)
+            every { gdprService.findApplicationsToDelete(USERID) } returns applications
+
+            delete("/gdpr-api/$USERID")
+                .andExpect(MockMvcResultMatchers.status().isNoContent)
+                .andExpect(content().string(""))
+
+            verifySequence {
+                gdprService.findApplicationsToDelete(USERID)
+                gdprService.deleteApplications(applications, USERID)
+            }
+            verify { disclosureLogService wasNot Called }
+        }
+
+        @Test
+        fun `Doesn't remove anything if doing a dry run`() {
+            val applications = AlluDataFactory.createApplications(3)
+            every { gdprService.findApplicationsToDelete(USERID) } returns applications
+
+            delete("/gdpr-api/$USERID?dry_run=true")
+                .andExpect(MockMvcResultMatchers.status().isNoContent)
+                .andExpect(content().string(""))
+
+            verifyAll { gdprService.findApplicationsToDelete(USERID) }
+            verify { disclosureLogService wasNot Called }
+        }
+
+        @ParameterizedTest(name = "{displayName} dryRun={0}")
+        @ValueSource(booleans = [true, false])
+        fun `Returns 403 and reasons if applications in handling`(dryRun: Boolean) {
+            val applications =
+                AlluDataFactory.createApplications(2) { i, application ->
+                    application.copy(applicationIdentifier = "JS$i")
+                }
+            every { gdprService.findApplicationsToDelete(USERID) } throws
+                DeleteForbiddenException(applications)
+            val expectedResponse =
+                """
+                {
+                  "errors": [
+                    {
+                      "code": "HAI2003",
+                      "message": {
+                        "fi": "Keskeneräinen hakemus tunnuksella JS1. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
+                        "en": "en: Keskeneräinen hakemus tunnuksella JS1. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
+                        "sv": "sv: Keskeneräinen hakemus tunnuksella JS1. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi."
+                      }
+                    },
+                    {
+                      "code": "HAI2003",
+                      "message": {
+                        "fi": "Keskeneräinen hakemus tunnuksella JS2. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
+                        "en": "en: Keskeneräinen hakemus tunnuksella JS2. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
+                        "sv": "sv: Keskeneräinen hakemus tunnuksella JS2. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi."
+                      }
+                    }
+                  ]
+                }
+            """.trimIndent()
+
+            delete("/gdpr-api/$USERID?dry_run=$dryRun")
+                .andExpect(MockMvcResultMatchers.status().isForbidden)
+                .andExpect(content().json(expectedResponse))
+
+            verifyAll { gdprService.findApplicationsToDelete(USERID) }
+            verify { disclosureLogService wasNot Called }
+        }
     }
 }

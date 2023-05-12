@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.application
 
 import assertk.assertThat
+import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
 import assertk.assertions.extracting
@@ -1374,6 +1375,31 @@ class ApplicationServiceITest : DatabaseTest() {
             assertThat(email.allRecipients).hasSize(1)
             assertThat(email.allRecipients[0].toString()).isEqualTo(teppoEmail)
             assertThat(email.subject).isEqualTo("Hakemanne johtoselvitys $identifier on käsitelty")
+        }
+    }
+
+    @Nested
+    inner class GetAllApplicationsCreatedByUser {
+        @Test
+        fun `Returns empty list without applications`() {
+            val result = applicationService.getAllApplicationsCreatedByUser(USERNAME)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `Returns applications created by the user`() {
+            val hanke = createHankeEntity()
+            alluDataFactory.saveApplicationEntities(6, USERNAME, hanke) { i, application ->
+                if (i % 2 == 0) application.userId = "Other User"
+            }
+
+            val result = applicationService.getAllApplicationsCreatedByUser(USERNAME)
+
+            assertThat(result).hasSize(3)
+            val userids =
+                result.map { applicationRepository.getReferenceById(it.id!!) }.map { it.userId }
+            assertThat(userids).containsExactly(USERNAME, USERNAME, USERNAME)
         }
     }
 
