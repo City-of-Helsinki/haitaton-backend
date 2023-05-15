@@ -2,9 +2,13 @@ package fi.hel.haitaton.hanke.attachment.common
 
 import java.util.Locale
 import java.util.regex.Pattern
+import mu.KotlinLogging
 import org.apache.commons.io.FilenameUtils.getExtension
 import org.apache.commons.io.FilenameUtils.removeExtension
+import org.apache.tika.Tika
 import org.springframework.web.multipart.MultipartFile
+
+private val logger = KotlinLogging.logger {}
 
 private val supportedFiletypes =
     mapOf(
@@ -16,25 +20,28 @@ private val supportedFiletypes =
     )
 
 object AttachmentValidator {
-    fun validate(attachment: MultipartFile) {
-        val fileName =
-            FileNameValidator.validate(attachment.originalFilename).let {
-                attachment.originalFilename!!
+    fun validate(attachment: MultipartFile) =
+        with(attachment) {
+            FileNameValidator.validate(originalFilename)
+            if (!validContentType(this)) {
+                throw AttachmentUploadException(
+                    "File '$originalFilename' does not match type '$contentType'"
+                )
             }
-
-        if (!contentTypeMatchesExtension(attachment.contentType, getExtension(fileName))) {
-            throw AttachmentUploadException(
-                "File '$fileName' extension does not match content type '${attachment.contentType}'"
-            )
         }
-    }
 
-    private fun contentTypeMatchesExtension(contentType: String?, extension: String): Boolean {
-        if (contentType.isNullOrBlank()) {
-            return false
+    private fun validContentType(attachment: MultipartFile): Boolean =
+        with(attachment) {
+            val deduced = deducedType(bytes)
+            if (contentType.isNullOrBlank() || deduced != contentType) {
+                logger.info { "Validation fail, claimed: $contentType, deduced: $deduced" }
+                return false
+            }
+            val extension = getExtension(originalFilename)
+            return supportedFiletypes[contentType]?.contains(extension) ?: false
         }
-        return supportedFiletypes[contentType]?.contains(extension) ?: false
-    }
+
+    private fun deducedType(data: ByteArray): String = Tika().detect(data)
 }
 
 // Microsoft: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file

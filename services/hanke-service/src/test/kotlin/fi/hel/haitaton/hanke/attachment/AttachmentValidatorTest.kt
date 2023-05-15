@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.attachment
 
 import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
+import fi.hel.haitaton.hanke.getResourceAsBytes
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
@@ -39,7 +40,7 @@ class AttachmentValidatorTest {
     }
 
     private fun testFile(fileName: String, contentType: String?): MultipartFile {
-        val content = "Attachment content".toByteArray()
+        val content = "/fi/hel/haitaton/hanke/attachment/dummy-attachment.pdf".getResourceAsBytes()
         return MockMultipartFile(fileName, fileName, contentType, content)
     }
 }
