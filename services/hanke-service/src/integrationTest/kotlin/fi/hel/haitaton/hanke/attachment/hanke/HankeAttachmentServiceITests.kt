@@ -18,7 +18,6 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
 import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
-import fi.hel.haitaton.hanke.attachment.dummyData
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
@@ -92,14 +91,15 @@ class HankeAttachmentServiceITests : DatabaseTest() {
     @Test
     fun `getContent when status is OK should succeed`() {
         mockWebServer.enqueue(response(body(results = successResult())))
+        val file = testFile()
         val hanke = hankeService.createHanke(HankeFactory.create())
-        val attachment = hankeAttachmentService.addAttachment(hanke.hankeTunnus!!, testFile())
+        val attachment = hankeAttachmentService.addAttachment(hanke.hankeTunnus!!, file)
 
         val result = hankeAttachmentService.getContent(hanke.hankeTunnus!!, attachment.id!!)
 
         assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
         assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
-        assertThat(result.bytes).isEqualTo(dummyData)
+        assertThat(result.bytes).isEqualTo(file.bytes)
     }
 
     @Test
@@ -165,7 +165,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
 
         assertThat(ex.message)
             .isEqualTo(
-                "Attachment upload exception: File '$invalidFilename' extension does not match content type 'application/pdf'"
+                "Attachment upload exception: File '$invalidFilename' does not match type 'application/pdf'"
             )
         assertThat(hankeAttachmentRepository.findAll()).isEmpty()
     }
