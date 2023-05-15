@@ -17,6 +17,7 @@ import javax.mail.internet.MimeMultipart
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
@@ -26,13 +27,17 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @ActiveProfiles("default", "emailtest")
 class EmailSenderServiceITest : DatabaseTest() {
 
-    @JvmField
-    @RegisterExtension
-    final val greenMail: GreenMailExtension =
-        GreenMailExtension(ServerSetupTest.SMTP)
-            .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication())
+    @Qualifier("emailSenderServiceImpl")
+    @Autowired
+    private lateinit var emailSenderService: EmailSenderService
 
-    @Autowired lateinit var emailSenderService: EmailSenderService
+    companion object {
+        @JvmField
+        @RegisterExtension
+        val greenMail: GreenMailExtension =
+            GreenMailExtension(ServerSetupTest.SMTP)
+                .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication())
+    }
 
     @Test
     fun `sendJohtoselvitysCompleteEmail sends email with correct recipient`() {

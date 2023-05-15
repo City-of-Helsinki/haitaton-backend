@@ -26,15 +26,11 @@ import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
-import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createAttachmentMetadata
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
@@ -1443,14 +1439,6 @@ class ApplicationServiceITest : DatabaseTest() {
     private val havisAmanda: ApplicationArea =
         AlluDataFactory.createApplicationArea(
             geometry = "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
-        )
-
-    private fun attachments(): List<Attachment> =
-        listOf(
-            Attachment(
-                metadata = createAttachmentMetadata(description = MUU.toString()),
-                file = testFile().bytes
-            )
         )
 
     private fun mockApplicationWithArea(
