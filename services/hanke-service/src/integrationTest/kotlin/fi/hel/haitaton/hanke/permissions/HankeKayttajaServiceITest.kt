@@ -13,7 +13,7 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.matches
 import fi.hel.haitaton.hanke.DatabaseTest
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -48,13 +48,19 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Test
     fun `saveNewTokensFromApplication does nothing if application has no contacts`() {
+        val hanke = hankeFactory.saveEntity()
         val applicationData =
             AlluDataFactory.createCableReportApplicationData(
                 customerWithContacts = AlluDataFactory.createCompanyCustomer().withContacts(),
                 contractorWithContacts = AlluDataFactory.createCompanyCustomer().withContacts()
             )
+        val application =
+            AlluDataFactory.createApplicationEntity(
+                applicationData = applicationData,
+                hanke = hanke
+            )
 
-        hankeKayttajaService.saveNewTokensFromApplication(applicationData, 1)
+        hankeKayttajaService.saveNewTokensFromApplication(application, 1)
 
         assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
         assertThat(hankeKayttajaRepository.findAll()).isEmpty()
@@ -62,7 +68,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Test
     fun `saveNewTokensFromApplication with different contact emails creates tokens for them all`() {
-        val hanke = hankeFactory.save()
+        val hanke = hankeFactory.saveEntity()
         val applicationData =
             AlluDataFactory.createCableReportApplicationData(
                 customerWithContacts =
@@ -78,8 +84,13 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                             AlluDataFactory.createContact(email = "email4")
                         )
             )
+        val application =
+            AlluDataFactory.createApplicationEntity(
+                applicationData = applicationData,
+                hanke = hanke
+            )
 
-        hankeKayttajaService.saveNewTokensFromApplication(applicationData, hanke.id!!)
+        hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!)
 
         val tunnisteet = kayttajaTunnisteRepository.findAll()
         assertThat(tunnisteet).hasSize(4)
@@ -103,7 +114,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Test
     fun `saveNewTokensFromApplication with non-unique contact emails creates only the unique ones`() {
-        val hanke = hankeFactory.save()
+        val hanke = hankeFactory.saveEntity()
         val applicationData =
             AlluDataFactory.createCableReportApplicationData(
                 customerWithContacts =
@@ -123,8 +134,13 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                             AlluDataFactory.createContact(email = "email1"),
                         )
             )
+        val application =
+            AlluDataFactory.createApplicationEntity(
+                applicationData = applicationData,
+                hanke = hanke
+            )
 
-        hankeKayttajaService.saveNewTokensFromApplication(applicationData, hanke.id!!)
+        hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!)
 
         assertThat(kayttajaTunnisteRepository.findAll()).hasSize(2)
         val kayttajat = hankeKayttajaRepository.findAll()
@@ -138,7 +154,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Test
     fun `saveNewTokensFromApplication with pre-existing tokens creates only new ones`() {
-        val hanke = hankeFactory.save()
+        val hanke = hankeFactory.saveEntity()
         saveUserAndToken(hanke, "Existing User", "email1")
         saveUserAndToken(hanke, "Other User", "email4")
         val applicationData =
@@ -156,9 +172,14 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                             AlluDataFactory.createContact(email = "email4")
                         )
             )
+        val application =
+            AlluDataFactory.createApplicationEntity(
+                applicationData = applicationData,
+                hanke = hanke
+            )
         assertThat(kayttajaTunnisteRepository.findAll()).hasSize(2)
 
-        hankeKayttajaService.saveNewTokensFromApplication(applicationData, hanke.id!!)
+        hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!)
 
         assertThat(kayttajaTunnisteRepository.findAll()).hasSize(4)
         val kayttajat = hankeKayttajaRepository.findAll()
@@ -174,9 +195,9 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Test
     fun `saveNewTokensFromApplication with pre-existing permissions creates only new ones`() {
-        val hanke = hankeFactory.save()
-        saveUserAndPermission(hanke, "Existing User", "email1")
-        saveUserAndPermission(hanke, "Other User", "email4")
+        val hanke = hankeFactory.saveEntity()
+        saveUserAndPermission(hanke.id!!, "Existing User", "email1")
+        saveUserAndPermission(hanke.id!!, "Other User", "email4")
         val applicationData =
             AlluDataFactory.createCableReportApplicationData(
                 customerWithContacts =
@@ -192,9 +213,14 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                             AlluDataFactory.createContact(email = "email4")
                         )
             )
+        val application =
+            AlluDataFactory.createApplicationEntity(
+                applicationData = applicationData,
+                hanke = hanke
+            )
         assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
 
-        hankeKayttajaService.saveNewTokensFromApplication(applicationData, hanke.id!!)
+        hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!)
 
         val tunnisteet = kayttajaTunnisteRepository.findAll()
         assertThat(tunnisteet).hasSize(2)
@@ -248,7 +274,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     @Test
     fun `saveNewTokensFromHanke with pre-existing permissions does not create duplicate`() {
         val hanke = hankeFactory.save()
-        saveUserAndPermission(hanke, "Existing User One", "ali.kontakti@meili.com")
+        saveUserAndPermission(hanke.id!!, "Existing User One", "ali.kontakti@meili.com")
 
         hankeKayttajaService.saveNewTokensFromHanke(
             hanke.apply { this.omistajat.add(HankeYhteystietoFactory.create()) }
@@ -300,7 +326,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         )
 
     private fun saveUserAndToken(
-        hanke: Hanke,
+        hanke: HankeEntity,
         nimi: String,
         sahkoposti: String
     ): HankeKayttajaEntity {
@@ -326,7 +352,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     }
 
     private fun saveUserAndPermission(
-        hanke: Hanke,
+        hankeId: Int,
         nimi: String,
         sahkoposti: String
     ): HankeKayttajaEntity {
@@ -334,14 +360,14 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             permissionRepository.save(
                 PermissionEntity(
                     userId = "fake id",
-                    hankeId = hanke.id!!,
+                    hankeId = hankeId,
                     role = roleRepository.findOneByRole(Role.KATSELUOIKEUS),
                 )
             )
 
         return hankeKayttajaRepository.save(
             HankeKayttajaEntity(
-                hankeId = hanke.id!!,
+                hankeId = hankeId,
                 nimi = nimi,
                 sahkoposti = sahkoposti,
                 permission = permissionEntity,
