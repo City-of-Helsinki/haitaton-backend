@@ -43,7 +43,7 @@ class HankeKayttajaService(
 
     private fun createToken(hankeId: Int, contact: UserContact) {
         logger.info { "Creating a new user token, hankeId=$hankeId" }
-        val token = KayttajaTunnisteEntity()
+        val token = KayttajaTunnisteEntity.create()
         logger.info { "Saving the new user token, hankeId=$hankeId" }
         val kayttajaTunnisteEntity = kayttajaTunnisteRepository.save(token)
         logger.info { "Saved the new user token, id=${kayttajaTunnisteEntity.id}" }

@@ -28,21 +28,22 @@ class KayttajaTunnisteEntity(
     @Enumerated(EnumType.STRING) val role: Role,
     @OneToOne(mappedBy = "kayttajaTunniste") val hankeKayttaja: HankeKayttajaEntity?
 ) {
-    constructor() :
-        this(
-            tunniste = randomToken(),
-            createdAt = getCurrentTimeUTC().toOffsetDateTime(),
-            sentAt = null,
-            role = Role.KATSELUOIKEUS,
-            hankeKayttaja = null
-        )
 
     companion object {
         private const val tokenLength: Int = 24
         private val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
-        private val secureRandom: SecureRandom = SecureRandom.getInstanceStrong()
+        private val secureRandom: SecureRandom = SecureRandom()
 
-        fun randomToken(): String {
+        fun create() =
+            KayttajaTunnisteEntity(
+                tunniste = randomToken(),
+                createdAt = getCurrentTimeUTC().toOffsetDateTime(),
+                sentAt = null,
+                role = Role.KATSELUOIKEUS,
+                hankeKayttaja = null
+            )
+
+        private fun randomToken(): String {
             logger.info { "Generating random token" }
             val token =
                 secureRandom
