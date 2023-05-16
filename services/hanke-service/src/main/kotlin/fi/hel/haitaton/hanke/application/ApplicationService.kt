@@ -203,15 +203,22 @@ open class ApplicationService(
             return application.toApplication()
         }
 
-        hankeKayttajaService.saveNewTokensFromApplication(application.applicationData, hanke.id!!)
+        hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!)
 
         // The application should no longer be a draft
         application.applicationData = application.applicationData.copy(pendingOnClient = false)
+
+        logger.info { "Sending the application to Allu. id=$id" }
         application.alluid = sendApplicationToAllu(application)
+
+        logger.info {
+            "Application sent, fetching application identifier and status. id=$id, alluid=${application.alluid}."
+        }
         getApplicationInformationFromAllu(application.alluid!!)?.let {
             application.applicationIdentifier = it.applicationId
             application.alluStatus = it.status
         }
+
         logger.info("Sent application id=$id, alluid=${application.alluid}")
         // Save only if sendApplicationToAllu didn't throw an exception
         return applicationRepository.save(application).toApplication()
@@ -468,6 +475,7 @@ open class ApplicationService(
     }
 
     private fun getApplicationDataAsPdf(data: CableReportApplicationData): Attachment {
+        logger.info { "Creating a PDF from the application data for data attachment." }
         val totalArea =
             geometriatDao.calculateCombinedArea(data.areas?.map { it.geometry } ?: listOf())
         val areas = data.areas?.map { geometriatDao.calculateArea(it.geometry) } ?: listOf()
@@ -479,6 +487,7 @@ open class ApplicationService(
                 description = "Original form data from Haitaton, dated ${LocalDateTime.now()}.",
             )
         val pdfData = ApplicationPdfService.createPdf(data, totalArea, areas)
+        logger.info { "Created the PDF for data attachment." }
         return Attachment(attachmentMetadata, pdfData)
     }
 

@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
@@ -14,8 +16,10 @@ import java.time.ZonedDateTime
 import org.springframework.stereotype.Component
 
 @Component
-class HankeFactory(private val hankeService: HankeService) {
-
+class HankeFactory(
+    private val hankeService: HankeService,
+    private val hankeRepository: HankeRepository
+) {
     /**
      * Create a new hanke and save it to database.
      *
@@ -33,6 +37,21 @@ class HankeFactory(private val hankeService: HankeService) {
                 suunnitteluVaihe = suunnitteluVaihe,
             )
         )
+
+    /**
+     * Save a new hanke using HankeService. Then get it as an entity.
+     *
+     * The service method creates a hankeTunnus and does other initialization, so we want to run it,
+     * even though we want to return the entity, not the domain object.
+     */
+    fun saveEntity(
+        nimi: String? = defaultNimi,
+        vaihe: Vaihe? = Vaihe.OHJELMOINTI,
+        suunnitteluVaihe: SuunnitteluVaihe? = null,
+    ): HankeEntity {
+        val hanke = save(nimi, vaihe, suunnitteluVaihe)
+        return hankeRepository.getReferenceById(hanke.id!!)
+    }
 
     fun save(hanke: Hanke) = hankeService.createHanke(hanke)
 
