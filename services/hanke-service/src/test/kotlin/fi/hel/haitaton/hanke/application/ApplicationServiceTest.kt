@@ -276,7 +276,7 @@ class ApplicationServiceTest {
         verifySequence {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
-            hankeKayttajaService.saveNewTokensFromApplication(applicationData, 1)
+            hankeKayttajaService.saveNewTokensFromApplication(applicationEntity, 1)
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(any())
@@ -310,7 +310,7 @@ class ApplicationServiceTest {
         verifySequence {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
-            hankeKayttajaService.saveNewTokensFromApplication(applicationData, 1)
+            hankeKayttajaService.saveNewTokensFromApplication(applicationEntity, 1)
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(any())
@@ -345,7 +345,7 @@ class ApplicationServiceTest {
             disclosureLogService wasNot called
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(any(), any())
-            hankeKayttajaService.saveNewTokensFromApplication(applicationData, 1)
+            hankeKayttajaService.saveNewTokensFromApplication(applicationEntity, 1)
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(any())
@@ -426,7 +426,7 @@ class ApplicationServiceTest {
         verifySequence {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
-            hankeKayttajaService.saveNewTokensFromApplication(applicationData, 1)
+            hankeKayttajaService.saveNewTokensFromApplication(applicationEntity, 1)
             cableReportService wasNot Called
             disclosureLogService wasNot Called
             applicationLoggingService wasNot Called
