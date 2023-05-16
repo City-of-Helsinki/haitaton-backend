@@ -194,6 +194,7 @@ open class ApplicationService(
             throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
 
+        logger.info { "Checking that the application hasn't been sent already." }
         if (application.alluid != null && !application.applicationData.pendingOnClient) {
             // Re-sending is done with update, this should only be used for initial send to Allu.
             logger.info {
@@ -203,11 +204,15 @@ open class ApplicationService(
             return application.toApplication()
         }
 
+        logger.info { "Creating user tokens from application contacts." }
         hankeKayttajaService.saveNewTokensFromApplication(application.applicationData, hanke.id!!)
 
         // The application should no longer be a draft
+        logger.info { "Setting pendingOnClient to false." }
         application.applicationData = application.applicationData.copy(pendingOnClient = false)
+        logger.info { "Sending the application to Allu." }
         application.alluid = sendApplicationToAllu(application)
+        logger.info { "Application sent, fetching application identifier and status." }
         getApplicationInformationFromAllu(application.alluid!!)?.let {
             application.applicationIdentifier = it.applicationId
             application.alluStatus = it.status
@@ -422,8 +427,10 @@ open class ApplicationService(
 
     private fun sendApplicationToAllu(application: ApplicationEntity): Int {
         return if (application.alluid == null) {
+            logger.info { "Alluid is null, so creating a new application." }
             createApplicationInAllu(application)
         } else {
+            logger.info { "Alluid defined, so updating an existing application." }
             updateApplicationInAllu(application)
         }
     }
@@ -455,7 +462,9 @@ open class ApplicationService(
     private fun createCableReportToAllu(
         cableReportApplicationData: CableReportApplicationData
     ): Int {
+        logger.info { "Transforming application data to Allu data." }
         val alluData = cableReportApplicationData.toAlluData()
+        logger.info { "Creating a PDF from the application data." }
         val attachment = getApplicationDataAsPdf(cableReportApplicationData)
 
         val alluid =
@@ -468,9 +477,12 @@ open class ApplicationService(
     }
 
     private fun getApplicationDataAsPdf(data: CableReportApplicationData): Attachment {
+        logger.info { "Calculating total of application areas for data attachment." }
         val totalArea =
             geometriatDao.calculateCombinedArea(data.areas?.map { it.geometry } ?: listOf())
+        logger.info { "Calculating areas of individual areas for data attachment." }
         val areas = data.areas?.map { geometriatDao.calculateArea(it.geometry) } ?: listOf()
+        logger.info { "Creating metadata for data attachment." }
         val attachmentMetadata =
             AttachmentMetadata(
                 id = null,
@@ -478,7 +490,9 @@ open class ApplicationService(
                 name = "haitaton-form-data.pdf",
                 description = "Original form data from Haitaton, dated ${LocalDateTime.now()}.",
             )
+        logger.info { "Creating a PDF for data attachment." }
         val pdfData = ApplicationPdfService.createPdf(data, totalArea, areas)
+        logger.info { "Created the PDF for data attachment." }
         return Attachment(attachmentMetadata, pdfData)
     }
 
@@ -505,6 +519,7 @@ open class ApplicationService(
         cableReportApplicationData: CableReportApplicationData,
         f: (CableReportApplicationData) -> T,
     ): T {
+        logger.info { "Starting to write disclosure log from application data." }
         try {
             val result = f(cableReportApplicationData)
             disclosureLogService.saveDisclosureLogsForAllu(
