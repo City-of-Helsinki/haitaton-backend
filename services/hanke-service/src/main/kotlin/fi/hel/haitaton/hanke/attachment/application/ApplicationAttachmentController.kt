@@ -6,8 +6,8 @@ import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
+import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -124,7 +124,7 @@ class ApplicationAttachmentController(
                     content =
                         [
                             Content(
-                                schema = Schema(implementation = AttachmentUploadException::class)
+                                schema = Schema(implementation = AttachmentInvalidException::class)
                             )
                         ]
                 ),

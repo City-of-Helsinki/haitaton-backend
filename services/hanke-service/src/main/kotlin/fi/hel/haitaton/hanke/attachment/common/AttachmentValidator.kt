@@ -5,48 +5,25 @@ import java.util.regex.Pattern
 import mu.KotlinLogging
 import org.apache.commons.io.FilenameUtils.getExtension
 import org.apache.commons.io.FilenameUtils.removeExtension
-import org.apache.tika.Tika
 import org.springframework.web.multipart.MultipartFile
 
 private val logger = KotlinLogging.logger {}
 
 private val supportedFiletypes =
-    mapOf(
-        "application/pdf" to setOf("pdf"),
-        "application/msword" to setOf("docx", "doc"),
-        "image/jpeg" to setOf("jpg", "jpeg"),
-        "image/png" to setOf("png"),
-        "image/vnd.dwg" to setOf("dwg", "dws")
+    setOf(
+        "pdf",
+        "jpeg",
+        "png",
+        "dgn",
+        "dwg",
+        "docx",
+        "txt",
+        "gt",
     )
-
-object AttachmentValidator {
-    fun validate(attachment: MultipartFile) =
-        with(attachment) {
-            FileNameValidator.validate(originalFilename)
-            if (!validContentType(this)) {
-                throw AttachmentUploadException(
-                    "File '$originalFilename' does not match type '$contentType'"
-                )
-            }
-        }
-
-    private fun validContentType(attachment: MultipartFile): Boolean =
-        with(attachment) {
-            val deduced = deducedType(bytes)
-            if (contentType.isNullOrBlank() || deduced != contentType) {
-                logger.info { "Validation fail, claimed: $contentType, deduced: $deduced" }
-                return false
-            }
-            val extension = getExtension(originalFilename)
-            return supportedFiletypes[contentType]?.contains(extension) ?: false
-        }
-
-    private fun deducedType(data: ByteArray): String = Tika().detect(data)
-}
 
 // Microsoft: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
 // Linux: https://www.tldp.org/LDP/intro-linux/html/sect_03_01.html
-object FileNameValidator {
+object AttachmentValidator {
 
     private val INVALID_CHARS_PATTERN = Pattern.compile("[\\\\/:*?\"<>|]")
 
@@ -73,28 +50,53 @@ object FileNameValidator {
             "LPT6",
             "LPT7",
             "LPT8",
-            "LPT9"
+            "LPT9",
         )
 
-    fun validate(fileName: String?) {
+    fun validate(attachment: MultipartFile) =
+        with(attachment) {
+            logger.info { "Validating file $originalFilename of type: $contentType" }
+            if (contentType.isNullOrBlank() || !validFileName(originalFilename)) {
+                throw AttachmentInvalidException("File '$originalFilename' not supported")
+            }
+        }
+
+    private fun validFileName(fileName: String?): Boolean {
         if (fileName.isNullOrBlank()) {
-            throw AttachmentUploadException("Attachment file name null or blank")
+            logger.warn { "Attachment file name null or blank" }
+            return false
         }
 
         if (fileName.length > 128) {
-            throw AttachmentUploadException("File name is too long")
+            logger.warn { "File name is too long" }
+            return false
+        }
+
+        if (!supportedType(fileName)) {
+            logger.warn { "File '$fileName' not supported" }
+            return false
         }
 
         if (fileName.contains("..")) {
-            throw AttachmentUploadException("File name contains path traversal characters")
+            logger.warn { "File name contains path traversal characters" }
+            return false
         }
 
         if (INVALID_CHARS_PATTERN.matcher(fileName).find()) {
-            throw AttachmentUploadException("File name contains invalid characters")
+            logger.warn { "File name contains invalid characters" }
+            return false
         }
 
         if (RESERVED_NAMES.contains(removeExtension(fileName).uppercase(Locale.getDefault()))) {
-            throw AttachmentUploadException("File name is reserved")
+            logger.warn { "File name is reserved" }
+            return false
         }
+
+        return true
+    }
+
+    private fun supportedType(fileName: String): Boolean {
+        val extension = getExtension(fileName)
+        return supportedFiletypes.contains(extension)
     }
 }

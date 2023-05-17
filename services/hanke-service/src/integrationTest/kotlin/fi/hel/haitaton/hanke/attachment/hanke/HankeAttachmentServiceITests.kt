@@ -13,10 +13,10 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.body
+import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
-import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
@@ -34,7 +34,6 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
-import org.springframework.http.MediaType.TEXT_HTML_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
@@ -151,12 +150,12 @@ class HankeAttachmentServiceITests : DatabaseTest() {
     }
 
     @Test
-    fun `addAttachment when content type does not match file extension should fail`() {
+    fun `addAttachment when content type not supported should throw`() {
         val hanke = hankeService.createHanke(HankeFactory.create())
         val invalidFilename = "hello.html"
 
         val ex =
-            assertThrows<AttachmentUploadException> {
+            assertThrows<AttachmentInvalidException> {
                 hankeAttachmentService.addAttachment(
                     hanke.hankeTunnus!!,
                     testFile(fileName = invalidFilename),
@@ -164,22 +163,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
             }
 
         assertThat(ex.message)
-            .isEqualTo(
-                "Attachment upload exception: File '$invalidFilename' does not match type 'application/pdf'"
-            )
-        assertThat(hankeAttachmentRepository.findAll()).isEmpty()
-    }
-
-    @Test
-    fun `addAttachment when not supported content type should fail`() {
-        val hanke = hankeService.createHanke(HankeFactory.create())
-
-        assertThrows<AttachmentUploadException> {
-            hankeAttachmentService.addAttachment(
-                hanke.hankeTunnus!!,
-                testFile(contentType = TEXT_HTML_VALUE)
-            )
-        }
+            .isEqualTo("Attachment upload exception: File 'hello.html' not supported")
         assertThat(hankeAttachmentRepository.findAll()).isEmpty()
     }
 
@@ -189,7 +173,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
         val hanke = hankeService.createHanke(HankeFactory.create())
 
         val exception =
-            assertThrows<AttachmentUploadException> {
+            assertThrows<AttachmentInvalidException> {
                 hankeAttachmentService.addAttachment(hanke.hankeTunnus!!, testFile())
             }
 
