@@ -19,7 +19,10 @@ import org.testcontainers.junit.jupiter.Testcontainers
 @SpringBootTest(
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties =
-        ["haitaton.email.filter.use=true", "haitaton.email.filter.allow-list=test@test.test"]
+        [
+            "haitaton.email.filter.use=true",
+            "haitaton.email.filter.allow-list=test@test.test;something@mail.com"
+        ]
 )
 @ActiveProfiles("default", "emailtest")
 class EmailSenderServiceFilterITest : DatabaseTest() {

@@ -15,12 +15,11 @@ private val logger = KotlinLogging.logger {}
 class EmailSenderService(
     private val mailSender: JavaMailSender,
     @Value("\${haitaton.email.filter.use}") private val sendOnlyForAllowed: Boolean,
-    @Value("\${haitaton.email.filter.allow-list}") private val allowListRaw: String,
+    @Value("#{'\${haitaton.email.filter.allow-list}'.split(';')}")
+    private val allowList: List<String>,
     @Value("\${haitaton.email.from}") private val from: String,
     @Value("\${haitaton.email.baseUrl}") private val baseUrl: String,
 ) {
-
-    private val allowList = allowListRaw.split(";").map { it.trim() }
 
     fun sendJohtoselvitysCompleteEmail(
         to: String,
