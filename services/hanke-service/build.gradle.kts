@@ -118,6 +118,8 @@ dependencies {
 	// Sentry
 	implementation("io.sentry:sentry-spring-boot-starter:6.18.1")
 	implementation("io.sentry:sentry-logback:6.18.1")
+
+	annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 }
 
 tasks.withType<KotlinCompile> {
