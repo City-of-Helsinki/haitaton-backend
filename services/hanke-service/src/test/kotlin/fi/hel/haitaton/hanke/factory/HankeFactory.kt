@@ -20,6 +20,7 @@ class HankeFactory(
     private val hankeService: HankeService,
     private val hankeRepository: HankeRepository
 ) {
+
     /**
      * Create a new hanke and save it to database.
      *
