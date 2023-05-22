@@ -22,6 +22,15 @@ private val logger = KotlinLogging.logger {}
 @RestControllerAdvice
 class ControllerExceptionHandler {
 
+    @ExceptionHandler(EndpointDisabledException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
+    fun endpointDisabled(ex: EndpointDisabledException): HankeError {
+        logger.warn { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI0004
+    }
+
     /** This is a horrible hack to get the 401 error to all endpoints in OpenAPI docs. */
     @ExceptionHandler(FakeAuthorizationException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
@@ -158,3 +167,5 @@ class ControllerExceptionHandler {
 
     class FakeAuthorizationException : RuntimeException()
 }
+
+class EndpointDisabledException() : RuntimeException("Endpoint disabled in this environment.")
