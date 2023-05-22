@@ -84,7 +84,7 @@ services:
       ALLU_UPDATE_INITIAL_DELAY: ${ALLU_UPDATE_INITIAL_DELAY:-}
       MAIL_SENDER_HOST: smtp4dev
       MAIL_SENDER_PORT: 25
-      HAITATON_EMAIL_ENABLED: true
+      HAITATON_EMAIL_FILTER_USE: false
       CLAMAV_BASE_URL: http://clamav-api:3030
     depends_on:
       - db
