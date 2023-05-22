@@ -14,7 +14,9 @@ private val logger = KotlinLogging.logger {}
 @Service
 class EmailSenderService(
     private val mailSender: JavaMailSender,
-    @Value("\${haitaton.email.enabled}") private val enabled: Boolean,
+    @Value("\${haitaton.email.filter.use}") private val sendOnlyForAllowed: Boolean,
+    @Value("#{'\${haitaton.email.filter.allow-list}'.split(';')}")
+    private val allowList: List<String>,
     @Value("\${haitaton.email.from}") private val from: String,
     @Value("\${haitaton.email.baseUrl}") private val baseUrl: String,
 ) {
@@ -35,8 +37,8 @@ class EmailSenderService(
     }
 
     private fun sendHybridEmail(to: String, template: String, templateData: Map<String, String>) {
-        if (!enabled) {
-            logger.info { "Email sending not enabled, ignoring email" }
+        if (sendOnlyForAllowed && emailNotAllowed(to)) {
+            logger.info { "Email recipient not allowed, ignoring email." }
             return
         }
         val textBody = parseTemplate("/email/template/$template.text.mustache", templateData)
@@ -53,6 +55,8 @@ class EmailSenderService(
         helper.setFrom(from)
         mailSender.send(mimeMessage)
     }
+
+    private fun emailNotAllowed(email: String) = !allowList.contains(email)
 
     private fun parseTemplate(path: String, contextObject: Any): String =
         Template.parse(path.getResource().openStream()).processToString(contextObject)
