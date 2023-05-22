@@ -75,10 +75,6 @@ class GdprController(
         @AuthenticationPrincipal principal: Jwt,
         @PathVariable userId: String,
     ): ResponseEntity<CollectionNode> {
-        if (gdprProperties.disabled) {
-            throw NotImplementedError("GET /gdpr-api/$userId")
-        }
-
         authenticate(userId, principal, gdprProperties.queryScope)
 
         val gdprInfo = gdprService.findGdprInfo(userId)
@@ -150,10 +146,6 @@ class GdprController(
         @PathVariable userId: String,
         @RequestParam("dry_run") dryRun: Boolean = false,
     ) {
-        if (gdprProperties.disabled) {
-            throw NotImplementedError("DELETE /gdpr-api/$userId")
-        }
-
         authenticate(userId, token, gdprProperties.deleteScope)
 
         val applicationsToDelete = gdprService.findApplicationsToDelete(userId)
@@ -179,23 +171,12 @@ class GdprController(
         }
     }
 
-    class NotImplementedError(endpointName: String) :
-        RuntimeException("$endpointName called, but not yet implemented")
-
     class AuthenticationException(message: String) : RuntimeException(message)
 
     @ExceptionHandler(AuthenticationException::class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @Hidden
     fun authenticationException(ex: AuthenticationException) {
-        logger.warn { ex.message }
-        Sentry.captureException(ex)
-    }
-
-    @ExceptionHandler(NotImplementedError::class)
-    @ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
-    @Hidden
-    fun notImplemented(ex: NotImplementedError) {
         logger.warn { ex.message }
         Sentry.captureException(ex)
     }

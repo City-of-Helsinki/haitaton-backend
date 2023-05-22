@@ -49,7 +49,7 @@ class OAuth2ResourceServerSecurityConfiguration(
      * endpoints are authenticated by parsing and validating the JWT in the request.
      */
     @Bean
-    @Order(2)
+    @Order(1)
     @ConditionalOnProperty(name = ["haitaton.gdpr.disabled"], havingValue = "false")
     fun gdprFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
@@ -67,7 +67,7 @@ class OAuth2ResourceServerSecurityConfiguration(
      * validation, which we don't want if it's a JWT of some sort.
      */
     @Bean
-    @Order(2)
+    @Order(1)
     @ConditionalOnProperty(name = ["haitaton.gdpr.disabled"], matchIfMissing = true)
     fun gdprDisabledFilterChain(http: HttpSecurity): SecurityFilterChain {
         http.antMatcher("/gdpr-api/**").authorizeHttpRequests { authorize ->
