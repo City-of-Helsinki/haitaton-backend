@@ -11,9 +11,10 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import mu.KotlinLogging
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -32,9 +33,8 @@ private val logger = KotlinLogging.logger {}
 class GdprController(
     private val gdprService: GdprService,
     private val disclosureLogService: DisclosureLogService,
+    private val gdprProperties: GdprProperties,
 ) {
-
-    @Value("\${haitaton.gdpr.disabled}") var gdprDisabled: Boolean = true
 
     @GetMapping("/{userId}")
     @Operation(
@@ -71,10 +71,11 @@ class GdprController(
                 ),
             ],
     )
-    fun getByUserId(@PathVariable userId: String): ResponseEntity<CollectionNode> {
-        if (gdprDisabled) {
-            throw NotImplementedError("GET /gdpr-api/$userId")
-        }
+    fun getByUserId(
+        @AuthenticationPrincipal principal: Jwt,
+        @PathVariable userId: String,
+    ): ResponseEntity<CollectionNode> {
+        authenticate(userId, principal, gdprProperties.queryScope)
 
         val gdprInfo = gdprService.findGdprInfo(userId)
 
@@ -141,12 +142,11 @@ class GdprController(
             ],
     )
     fun deleteUserInformation(
+        @AuthenticationPrincipal token: Jwt,
         @PathVariable userId: String,
-        @RequestParam("dry_run") dryRun: Boolean = false
+        @RequestParam("dry_run") dryRun: Boolean = false,
     ) {
-        if (gdprDisabled) {
-            throw NotImplementedError("DELETE /gdpr-api/$userId")
-        }
+        authenticate(userId, token, gdprProperties.deleteScope)
 
         val applicationsToDelete = gdprService.findApplicationsToDelete(userId)
 
@@ -157,13 +157,26 @@ class GdprController(
         }
     }
 
-    class NotImplementedError(endpointName: String) :
-        RuntimeException("$endpointName called, but not yet implemented")
+    private fun authenticate(userId: String, token: Jwt, requiredScope: String) {
+        val sub = token.subject
+        val scopes: List<String>? = token.getClaimAsStringList(gdprProperties.authorizationField)
 
-    @ExceptionHandler(NotImplementedError::class)
-    @ResponseStatus(HttpStatus.NOT_IMPLEMENTED)
+        if (sub != userId) {
+            throw AuthenticationException("JWT sub was $sub, but user id in URL was $userId")
+        }
+        if (scopes == null || !scopes.contains(requiredScope)) {
+            throw AuthenticationException(
+                "JWT scopes were $scopes, which didn't include $requiredScope"
+            )
+        }
+    }
+
+    class AuthenticationException(message: String) : RuntimeException(message)
+
+    @ExceptionHandler(AuthenticationException::class)
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
     @Hidden
-    fun notImplemented(ex: NotImplementedError) {
+    fun authenticationException(ex: AuthenticationException) {
         logger.warn { ex.message }
         Sentry.captureException(ex)
     }

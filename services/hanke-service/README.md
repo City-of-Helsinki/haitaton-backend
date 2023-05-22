@@ -173,55 +173,55 @@ When running locally, the system emails are sent to smtp4dev, which is started a
 Compose setup. You can access the sent emails by opening http://localhost:3003.
 
 ## Authentication
-JWT/OIDC-based authentication using Keycloak and Spring Security. 
 
-### Testing with curl 
+Authentication is done by calling Helsinki Profiili's userinfo-url with the Bearer-token.
 
-**In order to this to work you need to enable Direct Access Grants for the client (`hanke-service` in these examples)**
+## GDPR API
 
-Retrieve access_token (auth-service needs to be on, replace `USERNAME` and `PASSWORD` with real values - create new user in Keycloak if necessary):
+GDPR API is disabled by default when running the service locally. The issuer defined by
+`haitaton.gdpr.issuer` needs to be reachable for the application to start. By default, this is set
+to point to a profile-gdpr-api-tester running on the same Docker network as Haitaton, but it's not
+started by the Docker Compose setup.
+
+The GDPR API can be tested by running [profile-gdpr-api-tester](https://github.com/City-of-Helsinki/profile-gdpr-api-tester).
+That application calls Haitaton with an authentication token that matches the real Profile.
+
+Clone and set up the application as specified in their documentation. 
+
+Set the API Tester configuration as follows (in profile-gdpr-api-tester/.env):
+```
+  ISSUER = http://gdpr-api-tester:8888/
+  GDPR_API_AUDIENCE = http://localhost:8080/haitaton
+  GDPR_API_AUTHORIZATION_FIELD = http://localhost:8080
+  GDPR_API_QUERY_SCOPE = haitaton.gdprquery
+  GDPR_API_DELETE_SCOPE = haitaton.gdprdelete
+  GDPR_API_URL = http://haitaton-hanke:8080/gdpr-api/$user_uuid
+  PROFILE_ID = 65d4015d-1736-4848-9466-25d43a1fe8c7
+  USER_UUID = <Your user id>
+  LOA = substantial
+  SID = 00000000-0000-4000-9000-000000000001
+```
+You can find your user id from the database:
+```postgresql
+select createdbyuserid from hanke;
+-- Or
+select userid from applications;
+```
+
+To make the API tester work with Haitaton running in Docker Compose, start it like this: 
 ```shell
-curl -XPOST 'http://localhost:3030/auth/realms/haitaton/protocol/openid-connect/token' \
--H 'Content-Type: application/x-www-form-urlencoded' \
---data-urlencode 'grant_type=password' \
---data-urlencode 'username=USERNAME' \
---data-urlencode 'password=PASSWORD' \
---data-urlencode 'scope=hanke-service' \
---data-urlencode 'client_id=hanke-service'
-```
-Answer:
-```json
-{"access_token":"eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJvZzhvWXZUSVBVTWVycnpaeGlpa0JTU2tBTlQwc01PYVJTc05YWlFpT09vIn0.eyJleHAiOjE2MTI1NTA2MDcsImlhdCI6MTYxMjUyMTgwNywianRpIjoiMDJjOWM4NTktZGUyZS00NDU4LWFjMDAtZjhhNjI5ZjExNTI2IiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAxL2F1dGgvcmVhbG1zL2hhaXRhdG9uIiwiYXVkIjoiaGFua2Utc2VydmljZSIsInN1YiI6ImMwOTI3MmIxLTIyMzItNGU0Mi1hZjI3LWEwZWE0ODJmNTVmMCIsInR5cCI6IkJlYXJlciIsImF6cCI6ImhhbmtlLXNlcnZpY2UiLCJzZXNzaW9uX3N0YXRlIjoiZWQ5MzI3MWUtNzBlNS00ZmNmLWJiODktNWRhN2NiMjNjMTMyIiwiYWNyIjoiMSIsInNjb3BlIjoiaGFua2Utc2VydmljZSIsInVzZXJfbmFtZSI6ImMwOTI3MmIxLTIyMzItNGU0Mi1hZjI3LWEwZWE0ODJmNTVmMCIsImF1dGhvcml0aWVzIjpbIlJPTEVfaGFpdGF0b24tdXNlciJdfQ.fJSk_kqjxoteOiiB3nqQc-sGqZgKQQpBU45erzWZLS7-eKqErRS2ijNXyH5w5snkyyo4VaTBarraYBnuqpMTY8j7VutUlov7ULrSRZMV2uhhGy2IHe_l1hGq1eIA3tkG8iAxvLxgzkZqUlaSwYEYSNVXvT6doOqATqE69oItBcuJnUX7dBkX6Cv9sE0e3n9l1b5YOBX0JZ10DwPFSgGNbDDI1zhpz5t2s1dL2Bh9RsCKUn_u9kEtMUrQ9EjBXygkuUlSU7EaNXNDOjBIWRUUE4lJ-_fqeM9VflO_fxun8wpYGhJ5KrPVPc9e9sT_58Myz-8x4hYVpTH5PgF5AZY8tB","expires_in":28799,"refresh_expires_in":1799,"refresh_token":"eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJiMDRkMzY4MS1kZDY5LTRhYzktYTJlNC05MGM0MjhjYzQyMjIifQ.eyJleHAiOjE2MTI1MjM2MDcsImlhdCI6MTYxMjUyMTgwNywianRpIjoiZmZhNmRkZGYtMzNhNy00YjhkLWEzZDQtZTMxNzIyZDMzMjNjIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDozMDAxL2F1dGgvcmVhbG1zL2hhaXRhdG9uIiwiYXVkIjoiaHR0cDovL2xvY2FsaG9zdDozMDAxL2F1dGgvcmVhbG1zL2hhaXRhdG9uIiwic3ViIjoiYzA5MjcyYjEtMjIzMi00ZTQyLWFmMjctYTBlYTQ4MmY1NWYwIiwidHlwIjoiUmVmcmVzaCIsImF6cCI6ImhhbmtlLXNlcnZpY2UiLCJzZXNzaW9uX3N0YXRlIjoiZWQ5MzI3MWUtNzBlNS00ZmNmLWJiODktNWRhN2NiMjNjMTMyIiwic2NvcGUiOiJoYW5rZS1zZXJ2aWNlIn0.0ZtMSAqr8xXES8o1rnt4lWKw8LtU4CbcUz01EWcg83M","token_type":"Bearer","not-before-policy":0,"session_state":"ed93271e-70e5-4fcf-bb89-5da7cb23c132","scope":"hanke-service"}
+docker run --rm -i -p 8888:8888 --network haitaton-backend_backbone --name gdpr-api-tester --env-file .env gdpr-api-tester
 ```
 
-Inside access_token there is expected to be following (use e.g. https://jwt.io/ to decode the token):
-```json
-{
-  "exp": 1612550607,
-  "iat": 1612521807,
-  "jti": "02c9c859-de2e-4458-ac00-f8a629f11523",
-  "iss": "http://localhost:3001/auth/realms/haitaton",
-  "aud": "hanke-service",
-  "sub": "c09272b1-2232-4e42-af27-a0ea482f55f0",
-  "typ": "Bearer",
-  "azp": "hanke-service",
-  "session_state": "ed93271e-70e5-4fcf-bb89-5da7cb23c132",
-  "acr": "1",
-  "scope": "hanke-service",
-  "user_name": "c09272b1-2232-4e42-af27-a0ea482f55f0",
-  "authorities": [
-    "ROLE_haitaton-user"
-  ]
-}
+After the API tester has started, GDPR API can be enabled in Haitaton. Add
 ```
-* `user_name` is used by Spring Security automatically (in order to this to work there has to be a Mapper inside Keycloak 'hanke-service' Client Scope - it is pre-configured in local auth-service)
-* `authorities` are mapped as roles by Spring Security (in order to this to work there has to be a Mapper inside Keycloak 'hanke-service' Client Scope - it is pre-configured in local auth-service)
-* `aud` is used by Spring Security as resource id (in order to this to work there has to be a Mapper inside Keycloak 'hanke-service' Client Scope - it is pre-configured in local auth-service)
+HAITATON_GDPR_DISABLED=false
+```
+to Haitaton environment (haitaton-backend/.env). Restart haitaton-hanke service inside the Docker
+Compose setup. Rebuilding is not necessary.
 
-Call a service (replace `ACCESS_TOKEN` with access_token from previous auth request):
-```shell
-curl -H 'Authorization: Bearer ACCESS_TOKEN' http://localhost:8080/hankkeet/HAI21-6
-```
+You should now be able to call GDPR API with the API tester's `query`, `delete` and `delete dryrun`
+commands.
 
 ## Info
 There is a Spring Boot Actuator endpoint for general info:
