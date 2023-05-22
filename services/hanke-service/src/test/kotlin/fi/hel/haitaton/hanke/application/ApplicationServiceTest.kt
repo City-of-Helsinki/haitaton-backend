@@ -118,7 +118,6 @@ class ApplicationServiceTest {
 
     @Test
     fun create() {
-        val hankeTunnus = "HAI-1234"
         val dto =
             AlluDataFactory.createApplication(
                 id = null,
@@ -176,7 +175,6 @@ class ApplicationServiceTest {
 
     @Test
     fun `updateApplicationData saves disclosure logs when updating Allu data`() {
-        val hankeTunnus = "HAI-1234"
         val hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus)
         val applicationEntity =
             AlluDataFactory.createApplicationEntity(

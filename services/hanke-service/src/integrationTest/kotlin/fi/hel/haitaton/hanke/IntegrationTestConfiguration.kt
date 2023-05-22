@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
-import fi.hel.haitaton.hanke.gdpr.GdprJsonConverter
+import fi.hel.haitaton.hanke.gdpr.GdprService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -44,7 +44,7 @@ class IntegrationTestConfiguration {
 
     @Bean fun applicationService(): ApplicationService = mockk()
 
-    @Bean fun gdprJsonConverter(): GdprJsonConverter = mockk()
+    @Bean fun gdprService(): GdprService = mockk(relaxUnitFun = true)
 
     @Bean fun permissionService(): PermissionService = mockk()
 

@@ -159,6 +159,17 @@ object ApplicationPdfService {
             }
         }
 
+        document.newPage()
+
+        document.section("Liitteet") { table ->
+            if (data.propertyDeveloperWithContacts != null) {
+                table.row("Rakennuttajat", data.propertyDeveloperWithContacts.format())
+            }
+            if (data.representativeWithContacts != null) {
+                table.row("Asianhoitajat", data.representativeWithContacts.format())
+            }
+        }
+
         document.close()
     }
 
