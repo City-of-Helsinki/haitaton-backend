@@ -21,6 +21,9 @@ object AccessRules {
                 "/actuator/health/readiness",
                 "/status",
                 "/public-hankkeet",
+                "/swagger-ui.html",
+                "/swagger-ui/**",
+                "/v3/api-docs/**",
             )
             .permitAll()
             .and()

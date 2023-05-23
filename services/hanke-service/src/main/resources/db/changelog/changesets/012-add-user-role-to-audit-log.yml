@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-add-user-role-to-audit-log
+      comment: Change audit log user id to string
+      author: Topias Heinonen
+      changes:
+        - addColumn:
+            tableName: audit_log
+            columns:
+              - column:
+                  name: user_role
+                  type: varchar(250) # enum
+                  remarks: "The role of the actor (USER / SERVICE)"
+        - addNotNullConstraint:
+            tableName: audit_log
+            columnName: user_role
+            defaultNullValue: "USER"
+        - modifyDataType:
+            tableName: audit_log
+            columnName: object_id
+            newDataType: varchar

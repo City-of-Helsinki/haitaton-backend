@@ -1,0 +1,24 @@
+databaseChangeLog:
+  - changeSet:
+      id: 021-add-status-and-remove-savetype-in-hanke
+      comment: Redoing hanke status handling, add status column and remove savetype column
+      author: Topias Heinonen
+      changes:
+        - addColumn:
+            tableName: hanke
+            columns:
+              - column:
+                  name: status
+                  type: varchar
+                  remarks: Status of the hanke. Enum of DRAFT, PUBLIC, ENDED, DELETED
+                  defaultValue: "DRAFT"
+                  constraints:
+                    nullable: false
+        - dropColumn:
+            tableName: hanke
+            columns:
+              - column:
+                  name: savetype
+        - dropDefaultValue:
+            tableName: hanke
+            columnName: status

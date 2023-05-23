@@ -1,0 +1,103 @@
+{
+  "applicationType": "CABLE_REPORT",
+  "area": null,
+  "name": "Testihakemus",
+  "startTime": "2022-10-23T21:00:00.000Z",
+  "endTime": "2022-10-27T21:00:00.000Z",
+  "areas": [
+    {
+      "name": "Ensimmäinen alue",
+      "geometry": {
+        "type": "Polygon",
+        "crs": {
+          "type": "name",
+          "properties": {
+            "name": "urn:ogc:def:crs:EPSG::3879"
+          }
+        },
+        "coordinates": [
+          [
+            [
+              25493208.85,
+              6680062.25
+            ],
+            [
+              25493191.1,
+              6679984.29
+            ],
+            [
+              25493209.74,
+              6679986.1
+            ],
+            [
+              25493229.71,
+              6680072.45
+            ],
+            [
+              25493208.85,
+              6680062.25
+            ]
+          ]
+        ]
+      }
+    }
+  ],
+  "emergencyWork": false,
+  "postalAddress": null,
+  "maintenanceWork": true,
+  "pendingOnClient": true,
+  "workDescription": "Testihakemuksen kuvaus.",
+  "rockExcavation": false,
+  "constructionWork": true,
+  "customerReference": null,
+  "invoicingCustomer": null,
+  "customerWithContacts": {
+    "contacts": [
+      {
+        "firstName": "Teppo",
+        "lastName": "Testihenkilö",
+        "email": "teppo@example.test",
+        "phone": "04012345678",
+        "orderer": true
+      }
+    ],
+    "customer": {
+      "ovt": null,
+      "name": "Teppo Testihenkilö",
+      "type": "PERSON",
+      "email": "teppo@example.test",
+      "phone": "04012345678",
+      "country": "FI",
+      "registryKey": "281192-937W",
+      "invoicingOperator": null,
+      "sapCustomerNumber": null
+    }
+  },
+  "identificationNumber": "HAI-123",
+  "propertyConnectivity": false,
+  "clientApplicationKind": "HAITATON",
+  "contractorWithContacts": {
+    "contacts": [
+      {
+        "firstName": "Teppo",
+        "lastName": "Testihenkilö",
+        "email": "teppo@dna.test",
+        "phone": "04012345678",
+        "orderer": true
+      }
+    ],
+    "customer": {
+      "ovt": null,
+      "name": "Dna",
+      "type": "COMPANY",
+      "email": "info@dna.test",
+      "phone": "+3581012345678",
+      "country": "FI",
+      "registryKey": "3766028-0",
+      "invoicingOperator": null,
+      "sapCustomerNumber": null
+    }
+  },
+  "representativeWithContacts": null,
+  "propertyDeveloperWithContacts": null
+}

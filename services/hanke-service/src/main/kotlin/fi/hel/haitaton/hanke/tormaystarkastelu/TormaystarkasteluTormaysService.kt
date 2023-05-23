@@ -1,50 +1,49 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.geometria.HankeGeometriat
+import fi.hel.haitaton.hanke.geometria.Geometriat
 
 interface TormaystarkasteluTormaysService {
 
     // yleinen katuosa, ylre_parts
-    fun anyIntersectsYleinenKatuosa(hankegeometriat: HankeGeometriat): Boolean
+    fun anyIntersectsYleinenKatuosa(geometriat: List<Geometriat>): Boolean
 
     // yleinen katualue, ylre_classes
-    fun maxIntersectingYleinenkatualueKatuluokka(hankegeometriat: HankeGeometriat): Int?
+    fun maxIntersectingYleinenkatualueKatuluokka(geometriat: List<Geometriat>): Int?
 
     // liikenteellinen katuluokka, street_classes
-    fun maxIntersectingLiikenteellinenKatuluokka(hankegeometriat: HankeGeometriat): Int?
+    fun maxIntersectingLiikenteellinenKatuluokka(geometriat: List<Geometriat>): Int?
 
     // kantakaupunki, central_business_area
-    fun anyIntersectsWithKantakaupunki(hankegeometriat: HankeGeometriat): Boolean
+    fun anyIntersectsWithKantakaupunki(geometriat: List<Geometriat>): Boolean
 
-    fun maxLiikennemaara(hankegeometriat: HankeGeometriat, etaisyys: TormaystarkasteluLiikennemaaranEtaisyys): Int?
+    fun maxLiikennemaara(
+        geometriat: List<Geometriat>,
+        etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
+    ): Int?
 
-    fun anyIntersectsCriticalBusRoutes(hankegeometriat: HankeGeometriat): Boolean
+    fun anyIntersectsCriticalBusRoutes(geometriat: List<Geometriat>): Boolean
 
-    fun getIntersectingBusRoutes(hankegeometriat: HankeGeometriat): Set<TormaystarkasteluBussireitti>
+    fun getIntersectingBusRoutes(geometriat: List<Geometriat>): Set<TormaystarkasteluBussireitti>
 
-    fun maxIntersectingTramByLaneType(hankegeometriat: HankeGeometriat): Int?
+    fun maxIntersectingTramByLaneType(geometriat: List<Geometriat>): Int?
 
-    fun anyIntersectsWithCyclewaysPriority(hankegeometriat: HankeGeometriat): Boolean
-    fun anyIntersectsWithCyclewaysMain(hankegeometriat: HankeGeometriat): Boolean
+    fun anyIntersectsWithCyclewaysPriority(geometriat: List<Geometriat>): Boolean
 
+    fun anyIntersectsWithCyclewaysMain(geometriat: List<Geometriat>): Boolean
 }
 
-/**
- * There are two(2) separate traffic counts - one for radius of 15m and other for 30m
- */
+/** There are two(2) separate traffic counts - one for radius of 15m and other for 30m */
 enum class TormaystarkasteluLiikennemaaranEtaisyys(internal val radius: Int) {
     RADIUS_15(15),
-    RADIUS_30(30);
+    RADIUS_30(30)
 }
 
-/**
- * Bus route
- */
+/** Bus route */
 class TormaystarkasteluBussireitti(
-        val reittiId: String,
-        val suunta: Int,
-        val vuoromaaraRuuhkatunnissa: Int,
-        val runkolinja: TormaystarkasteluBussiRunkolinja
+    val reittiId: String,
+    val suunta: Int,
+    val vuoromaaraRuuhkatunnissa: Int,
+    val runkolinja: TormaystarkasteluBussiRunkolinja
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

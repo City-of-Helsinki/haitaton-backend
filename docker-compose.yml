@@ -21,6 +21,45 @@ services:
         aliases:
           - haitaton-db
 
+  # Adapted from https://github.com/benzino77/clamav-rest-api/blob/6ab5d6b283faab9726763e5fee70aabb82fec51e/examples/docker-compose.yml
+  clamd:
+    image: clamav/clamav:stable
+    container_name: clamav
+    restart: unless-stopped
+    networks:
+      - backbone
+  clamav-api:
+    image: benzino77/clamav-rest-api
+    container_name: clamav-rest
+    restart: unless-stopped
+    command: [ '/usr/bin/wait-for-it', '-h', 'clamd', '-p', '3310', '-s', '-t', '120', '--', 'npm', 'start' ]
+    depends_on:
+      - clamd
+    environment:
+      - NODE_ENV=production
+      - CLAMD_IP=clamd
+      - APP_FORM_KEY=FILES
+      - APP_PORT=3030
+      - APP_MAX_FILE_SIZE=105906176
+    ports:
+      - '3030:3030'
+    networks:
+      - backbone
+
+  smtp4dev:
+    image: rnwood/smtp4dev:v3
+    container_name: smtp4dev
+    restart: always
+    ports:
+      - '3003:80' # Web UI
+      - '2525:25' # Port for receiving SMTP
+    networks:
+      backbone:
+        aliases:
+          - smtp4dev
+    environment:
+      - ServerOptions__HostName=smtp4dev
+
   haitaton-hanke:
     build:
       context: ${BUILD_ROOT}/haitaton-backend
@@ -37,18 +76,27 @@ services:
       HAITATON_PASSWORD: haitaton
       HAITATON_OAUTH2_CLIENT_ID: https://api.hel.fi/auth/haitatonapidev
       HAITATON_OAUTH2_USER_INFO_URI: https://tunnistamo.test.hel.ninja/openid/userinfo
-#      HAITATON_CORS_ALLOWED_ORIGINS: http://localhost:8000
+      #      HAITATON_CORS_ALLOWED_ORIGINS: http://localhost:8000
+      HAITATON_GDPR_DISABLED: ${HAITATON_GDPR_DISABLED:-true}
       ALLU_BASEURL: ${ALLU_BASEURL}
       ALLU_USERNAME: ${ALLU_USERNAME}
       ALLU_PASSWORD: ${ALLU_PASSWORD}
       ALLU_INSECURE: ${ALLU_INSECURE}
+      ALLU_UPDATE_INITIAL_DELAY: ${ALLU_UPDATE_INITIAL_DELAY:-}
+      MAIL_SENDER_HOST: smtp4dev
+      MAIL_SENDER_PORT: 25
+      HAITATON_EMAIL_FILTER_USE: false
+      CLAMAV_BASE_URL: http://clamav-api:3030
     depends_on:
       - db
+      - clamav-api
     command: [ "./wait-for-it.sh", "-t", "30", "--strict", "db:5432", "--", "java", "-jar", "haitaton.jar" ]
     networks:
       backbone:
         aliases:
           - haitaton-hanke
+    links:
+      - smtp4dev
 
   haitaton-ui:
     build:

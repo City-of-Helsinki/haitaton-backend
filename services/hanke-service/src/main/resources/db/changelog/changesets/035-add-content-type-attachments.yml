@@ -1,0 +1,23 @@
+databaseChangeLog:
+  - changeSet:
+      id: 035-add-content-type-attachments
+      author: Niko Pitkonen
+      changes:
+        - addColumn:
+            tableName: application_attachment
+            columns:
+              - column:
+                  name: content_type
+                  type: text
+                  defaultValue: "application/octet-stream"
+                  constraints:
+                    nullable: false
+        - addColumn:
+            tableName: hanke_attachment
+            columns:
+              - column:
+                  name: content_type
+                  type: text
+                  defaultValue: "application/octet-stream"
+                  constraints:
+                    nullable: false

@@ -1,3 +1,5 @@
 process/venv
 haitaton-downloads
+haitaton-gis-output
+haitaton-local-gis-output
 *.pyc

@@ -1,5 +1,4 @@
 {
-  "hankeId": 1,
   "featureCollection": {
     "type": "FeatureCollection",
     "crs": {
@@ -28,9 +27,7 @@
             6562789.70
           ]
         },
-        "properties": {
-          "geometryType": "KUOPPA"
-        }
+        "properties": {}
       }
     ]
   },

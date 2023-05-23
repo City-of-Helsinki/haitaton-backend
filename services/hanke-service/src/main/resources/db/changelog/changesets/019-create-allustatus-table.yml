@@ -1,0 +1,34 @@
+databaseChangeLog:
+  - changeSet:
+      id: 019-create-allustatus-table
+      comment: Create table for storing the last time application statuses were updated.
+      author: Topias Heinonen
+      changes:
+        - createTable:
+            tableName: allu_status
+            remarks: "Table for storing status information related Allu integration. Should only have one row."
+            columns:
+              - column:
+                  name: id
+                  type: bigint
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+                  remarks: "Id column for the table. Checked to be always 1, so that there is only one row in the table."
+              - column:
+                  name: history_last_updated
+                  type: timestamp with timezone
+                  constraints:
+                    nullable: false
+                  remarks: "The last time we successfully updated applications from Allu history endpoint."
+        - sql:
+            sql: "ALTER TABLE allu_status ADD CONSTRAINT allu_status_id_check CHECK (id = 1);"
+        - insert:
+            tableName: allu_status
+            columns:
+              - column:
+                  name: id
+                  value: 1
+              - column:
+                  name: history_last_updated
+                  value: "2017-01-01T00:00:00Z"

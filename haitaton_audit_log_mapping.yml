@@ -1,0 +1,41 @@
+# The mapping used to create the Elasticsearch index for audit logging.
+# Saved here as a reference and as a base for later modifications.
+components:
+  - name: haitaton-hanke
+    description: Haitaton hanke-service audit logging
+    mapping_properties:
+      '@timestamp':
+        type: date # Time of the event.
+      audit_event:
+        type: object
+        properties:
+          date_time: # Time of the event.
+            type: date # time event in format “yyyy-MM-ddThh:mm.ss.SSSZ”
+          operation: # What operation was made (CREATE / UPDATE / READ / DELETE / LOCK / UNLOCK).
+            type: keyword
+          status: # Whether the operation was successful or not (SUCCESS / FAILURE).
+            type: keyword
+          failure_description: # Description of the failure, if one is available. No stack dumps.
+            type: text
+          app_version:
+            type: text # Version of the audit log schema used.
+          actor:
+            type: object
+            properties:
+              ip_address: # A useful IP nearest to the server.
+                type: keyword
+              user_id: # ID of the user who performed the operation.
+                type: keyword
+              role: # Role of the user, currently either USER or SERVICE, affects the interpretation of user_id.
+                type: keyword
+          target:
+            type: object
+            properties:
+              id: # ID of the target object.
+                type: keyword
+              type: # What type of object the target is, e.g. YHTEYSTIETO.
+                type: keyword
+              object_before: # JSON representation of the object before it was changed, null for new objects.
+                type: text
+              object_after: # JSON representation of the object after it was changed, null for reads and deletes. If the operation fails, this shows how the object would have been if it had succeeded.
+                type: text

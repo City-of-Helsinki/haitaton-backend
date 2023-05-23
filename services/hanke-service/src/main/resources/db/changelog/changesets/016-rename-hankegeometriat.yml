@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 016-rename-hankegeometriat
+      author: Niko Junkala
+      changes:
+        - renameTable:
+           oldTableName: hankegeometriat
+           newTableName: geometriat

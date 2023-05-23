@@ -1,5 +1,4 @@
 {
-  "hankeId": 1,
   "featureCollection": {
     "type": "FeatureCollection",
     "crs": {
@@ -28,13 +27,14 @@
             6562789.70
           ]
         },
-        "properties": {
-          "geometryType": "KUOPPA"
-        }
+        "properties": {}
       }
     ]
   },
+  "id": 999,
   "version": 1,
+  "createdByUserId": "geometry-user",
   "createdAt": "2020-11-09T15:53:23.123+02:00[Europe/Helsinki]",
+  "modifiedByUserId": "geometry-user",
   "modifiedAt": "2020-11-09T16:53:23.123+02:00[Europe/Helsinki]"
 }
