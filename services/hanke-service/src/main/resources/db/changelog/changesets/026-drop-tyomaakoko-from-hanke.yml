@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 026-drop-tyomaakoko-from-hanke
+      author: Niko Pitkonen
+      changes:
+        - dropColumn:
+            tableName: hanke
+            columns:
+              - column:
+                  name: tyomaakoko

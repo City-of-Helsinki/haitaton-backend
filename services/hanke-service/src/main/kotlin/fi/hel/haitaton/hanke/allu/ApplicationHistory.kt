@@ -5,19 +5,26 @@ import java.time.ZonedDateTime
 data class ApplicationHistorySearch(val applicationIds: List<Int>, val eventsAfter: ZonedDateTime?)
 
 data class ApplicationHistory(
-        val applicationId: Int,
-        val events: List<ApplicationStatusEvent>,
-        val supervisionEvents: List<SupervisionEvent>
+    val applicationId: Int,
+    val events: List<ApplicationStatusEvent>,
+    val supervisionEvents: List<SupervisionEvent>,
 )
 
 data class ApplicationStatusEvent(
-        val eventTime: ZonedDateTime,
-        val newStatus: ApplicationStatus,
-        val applicationIdentifier: String,
-        val targetStatus: ApplicationStatus? // Tells next status (DECISION, OPERATIONAL_CONDITION or FINISHED) if current status is DECISIONMAKING
+    val eventTime: ZonedDateTime,
+    val newStatus: ApplicationStatus,
+    val applicationIdentifier: String,
+    /**
+     * Tells next status (DECISION, OPERATIONAL_CONDITION or FINISHED) if current status is
+     * DECISIONMAKING.
+     */
+    val targetStatus: ApplicationStatus?,
 )
 
 enum class ApplicationStatus {
+    PRE_RESERVED, // ?
+    NOTE, // ?
+    PENDING_CLIENT, // Application pending on client? Missing from API docs
     PENDING, // Application received
     WAITING_INFORMATION, // Application waiting response to information request
     INFORMATION_RECEIVED, // Response to information request received
@@ -32,14 +39,15 @@ enum class ApplicationStatus {
     TERMINATED, // Application terminated
     FINISHED, // Application finished
     CANCELLED, // // Application cancelled
-    ARCHIVED; // Application archived
+    ARCHIVED, // Application archived
+    REPLACED, // Application decision has been replaced with a new one
 }
 
 data class SupervisionEvent(
-        val eventTime: ZonedDateTime,
-        val type: SupervisionTaskType,
-        val status: SupervisionTaskStatusType,
-        val comment: String? // This might be non-nullable
+    val eventTime: ZonedDateTime,
+    val type: SupervisionTaskType,
+    val status: SupervisionTaskStatusType,
+    val comment: String?, // This might be non-nullable
 )
 
 enum class SupervisionTaskType {
@@ -49,12 +57,12 @@ enum class SupervisionTaskType {
     WORK_TIME_SUPERVISION,
     FINAL_SUPERVISION,
     WARRANTY,
-    TERMINATION
+    TERMINATION,
 }
 
 enum class SupervisionTaskStatusType {
     APPROVED,
     REJECTED,
     OPEN,
-    CANCELLED
+    CANCELLED,
 }

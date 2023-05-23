@@ -1,0 +1,121 @@
+{
+  "id": {{hankeId}},
+  "status": "DRAFT",
+  "hankeTunnus": "{{hankeTunnus}}",
+  "onYKTHanke": true,
+  "nimi": "Hämeentien perusparannus ja katuvalot",
+  "kuvaus": "lorem ipsum dolor sit amet...",
+{{#alkuPvm}}
+  "alkuPvm": "{{alkuPvm}}",
+{{/alkuPvm}}
+{{^alkuPvm}}
+  "alkuPvm": null,
+{{/alkuPvm}}
+{{#loppuPvm}}
+  "loppuPvm": "{{loppuPvm}}",
+{{/loppuPvm}}
+{{^loppuPvm}}
+  "loppuPvm": null,
+{{/loppuPvm}}
+  "vaihe": "OHJELMOINTI",
+  "suunnitteluVaihe": null,
+  "version": {{hankeVersion}},
+  "generated": false,
+  "tyomaaKatuosoite": "Testikatu 1",
+  {{#hankkeenPerustaja}}
+  "perustaja": {
+    "nimi": "Pertti Perustaja",
+    "sahkoposti": "foo@bar.com"
+  },
+  {{/hankkeenPerustaja}}
+  {{^hankkeenPerustaja}}
+  "perustaja": null,
+  {{/hankkeenPerustaja}}
+  "tyomaaTyyppi": [
+    "MUU",
+    "VESI"
+  ],
+  "alueet": [
+{{#alueId}}
+    {
+      "id": {{alueId}},
+      "hankeId": {{hankeId}},
+      "haittaAlkuPvm": "{{nextYear}}-02-20T00:00:00Z",
+      "haittaLoppuPvm": "{{nextYear}}-02-21T00:00:00Z",
+      "geometriat": {
+        "id": {{geometriaId}},
+        "featureCollection": {
+          "type": "FeatureCollection",
+          "crs": {
+            "type": "name",
+            "properties": {
+              "name": "urn:ogc:def:crs:EPSG::3879"
+            }
+          },
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "hankeTunnus": "{{hankeTunnus}}"
+              },
+              "geometry": {
+                "type": "Point",
+                "crs": {
+                  "type": "name",
+                  "properties": {
+                    "name": "EPSG:3879"
+                  }
+                },
+                "coordinates": [
+                  2.474785643E7,
+                  6562789.70
+                ]
+              }
+            },
+            {
+              "type": "Feature",
+              "geometry": {
+                "type": "Point",
+                "crs": {
+                  "type": "name",
+                  "properties": {
+                    "name": "EPSG:3879"
+                  }
+                },
+                "coordinates": [
+                  2.474785643E7,
+                  6562789.70
+                ]
+              },
+              "properties": {
+                "hankeTunnus": "{{hankeTunnus}}"
+              }
+            }
+          ]
+        },
+        "version": {{geometriaVersion}}
+      },
+      "kaistaHaitta": "KAKSI",
+      "kaistaPituusHaitta": "NELJA",
+      "meluHaitta": "YKSI",
+      "polyHaitta": "KAKSI",
+      "tarinaHaitta": "KOLME",
+      "nimi": {{#alueNimi}}"{{alueNimi}}"{{/alueNimi}}{{^alueNimi}}null{{/alueNimi}}
+    }
+{{/alueId}}
+  ],
+{{#tormaystarkasteluTulos}}
+  "tormaystarkasteluTulos": {
+    "perusIndeksi": 1.4,
+    "pyorailyIndeksi": 1.0,
+    "joukkoliikenneIndeksi": 1.0,
+    "liikennehaittaIndeksi": {
+      "indeksi": 1.4,
+      "tyyppi": "PERUSINDEKSI"
+    }
+  }
+{{/tormaystarkasteluTulos}}
+{{^tormaystarkasteluTulos}}
+  "tormaystarkasteluTulos": null
+{{/tormaystarkasteluTulos}}
+}

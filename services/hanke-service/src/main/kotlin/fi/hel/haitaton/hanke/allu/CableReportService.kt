@@ -4,24 +4,35 @@ import java.time.ZonedDateTime
 
 interface CableReportService {
 
-    fun getCurrentStatus(applicationId: Int): ApplicationStatus?
-    fun getApplicationStatusEvents(applicationId: Int, eventsAfter: ZonedDateTime?): List<ApplicationStatusEvent>
+    fun getApplicationStatusHistories(
+        applicationIds: List<Int>,
+        eventsAfter: ZonedDateTime
+    ): List<ApplicationHistory>
 
-    fun create(cableReport: CableReportApplication): Int
-    fun update(applicationId: Int, cableReport: CableReportApplication)
+    fun create(cableReport: AlluCableReportApplicationData): Int
 
-    fun addAttachment(applicationId: Int, metadata: AttachmentInfo, file: ByteArray)
+    fun update(applicationId: Int, cableReport: AlluCableReportApplicationData)
+
+    fun addAttachment(applicationId: Int, attachment: Attachment)
+
+    fun addAttachments(alluId: Int, attachments: List<Attachment>)
 
     fun getInformationRequests(applicationId: Int): List<InformationRequest>
+
     fun respondToInformationRequest(
-            applicationId: Int,
-            requestId: Int,
-            cableReport: CableReportApplication,
-            updatedFields: List<InformationRequestFieldKey>
+        applicationId: Int,
+        requestId: Int,
+        cableReport: AlluCableReportApplicationData,
+        updatedFields: List<InformationRequestFieldKey>
     )
 
-    fun getDecisionPDF(applicationId: Int): ByteArray
-    fun getDecisionAttachments(applicationId: Int): List<AttachmentInfo>
+    fun getDecisionPdf(applicationId: Int): ByteArray
+
+    fun getDecisionAttachments(applicationId: Int): List<AttachmentMetadata>
+
     fun getDecisionAttachmentData(applicationId: Int, attachmentId: Int): ByteArray
 
+    fun getApplicationInformation(applicationId: Int): AlluApplicationResponse
+
+    fun cancel(applicationId: Int)
 }

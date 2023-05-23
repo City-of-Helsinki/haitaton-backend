@@ -1,130 +1,252 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.ContactType.MUU
+import fi.hel.haitaton.hanke.ContactType.OMISTAJA
+import fi.hel.haitaton.hanke.ContactType.RAKENNUTTAJA
+import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
+import fi.hel.haitaton.hanke.application.Application
+import fi.hel.haitaton.hanke.application.ApplicationService
+import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
+import fi.hel.haitaton.hanke.application.toNewApplication
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.logging.Action
-import fi.hel.haitaton.hanke.logging.AuditLogRepository
+import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.HasId
+import fi.hel.haitaton.hanke.domain.toEntity
+import fi.hel.haitaton.hanke.geometria.GeometriatService
+import fi.hel.haitaton.hanke.logging.AuditLogService
+import fi.hel.haitaton.hanke.logging.HankeLoggingService
+import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
+import fi.hel.haitaton.hanke.validation.HankePublicValidator
 import java.time.ZonedDateTime
 import mu.KotlinLogging
-import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
+
+/*
+ * Helper for mapping and sorting data to existing collections.
+ *
+ * Example usage:
+ * mergeDataInto(hanke.alueet, entity.listOfHankeAlueet) { source, target ->
+ *    copyNonNullHankealueFieldsToEntity(hanke, source, target)
+ * }
+ * - Transforms data from hanke.alueet into entity.listOfHankeAlueet
+ * - Does the transformation with the last lambda
+ *
+ * Source list is not modified. Target container is sorted by order of source container.
+ *
+ * converter takes additional parameter for existing Target object in case it exists in target collection.
+ *
+ */
+fun <Source : HasId<Int>, Target : HasId<Int>> mergeDataInto(
+    source: List<Source>,
+    target: MutableList<Target>,
+    converterFn: (Source, Target?) -> Target
+) {
+    // Existing data is collected for mapping
+    val (targetIdentified, targetRest) = target.partition { it.id != null }
+    val targetMap = targetIdentified.associateBy { it.id!! }
+
+    // Target is overwritten with merged and new data from source
+    target.clear()
+    target.addAll(source.map { converterFn(it, targetMap[it.id]) })
+    target.addAll(targetRest)
+}
 
 open class HankeServiceImpl(
     private val hankeRepository: HankeRepository,
     private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
     private val hanketunnusService: HanketunnusService,
-    private val auditLogRepository: AuditLogRepository,
+    private val geometriatService: GeometriatService,
+    private val auditLogService: AuditLogService,
+    private val hankeLoggingService: HankeLoggingService,
+    private val applicationService: ApplicationService,
+    private val permissionService: PermissionService,
+    private val hankeKayttajaService: HankeKayttajaService,
 ) : HankeService {
 
+    override fun getHankeId(hankeTunnus: String): Int? =
+        hankeRepository.findByHankeTunnus(hankeTunnus)?.id
+
+    /**
+     * Hanke does not contain hakemukset. This function wraps Hanke and its hakemukset to a pair.
+     */
+    @Transactional(readOnly = true)
+    override fun getHankeWithApplications(hankeTunnus: String): HankeWithApplications =
+        hankeRepository.findByHankeTunnus(hankeTunnus).let { entity ->
+            if (entity == null) {
+                throw HankeNotFoundException(hankeTunnus)
+            }
+            return HankeWithApplications(
+                createHankeDomainObjectFromEntity(entity),
+                entity.hakemukset.map { hakemus -> hakemus.toApplication() }
+            )
+        }
+
+    @Transactional(readOnly = true)
     override fun loadHanke(hankeTunnus: String) =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let {
             createHankeDomainObjectFromEntity(it)
         }
 
+    @Transactional(readOnly = true)
     override fun loadAllHanke() =
         hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
 
+    @Transactional(readOnly = true)
+    override fun loadPublicHanke() =
+        hankeRepository.findAllByStatus(HankeStatus.PUBLIC).map {
+            createHankeDomainObjectFromEntity(it)
+        }
+
+    @Transactional(readOnly = true)
     override fun loadHankkeetByIds(ids: List<Int>) =
         hankeRepository.findAllById(ids).map { createHankeDomainObjectFromEntity(it) }
 
+    @Transactional(readOnly = true)
+    override fun loadHankkeetByUserId(userId: String) =
+        hankeRepository.findAllByCreatedByUserIdOrModifiedByUserId(userId, userId).map {
+            createHankeDomainObjectFromEntity(it)
+        }
+
     /** @return a new Hanke instance with the added and possibly modified values. */
+    @Transactional
     override fun createHanke(hanke: Hanke): Hanke {
         // TODO: Only create that hanke-tunnus if a specific set of fields are non-empty/set.
 
-        val userid = SecurityContextHolder.getContext().authentication.name
+        val userId = currentUserId()
 
         val entity = HankeEntity()
         val loggingEntryHolder = prepareLogging(entity)
 
+        // Create a new hanketunnus for it and save it:
+        val hanketunnus = hanketunnusService.newHanketunnus()
+        entity.hankeTunnus = hanketunnus
+        hanke.hankeTunnus = hanketunnus
+
         // Copy values from the incoming domain object, and set some internal fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
+
         val existingYTs = prepareMapOfExistingYhteystietos(entity)
-        copyYhteystietosToEntity(hanke, entity, userid, loggingEntryHolder, existingYTs)
+        copyYhteystietosToEntity(hanke, entity, userId, loggingEntryHolder, existingYTs)
 
         // NOTE: liikennehaittaindeksi and tormaystarkastelutulos are NOT
         //  copied from incoming data. Use setTormaystarkasteluTulos() for that.
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
         // Special fields; handled "manually"..
         entity.version = 0
-        entity.createdByUserId = userid
+        entity.createdByUserId = userId
         entity.createdAt = getCurrentTimeUTCAsLocalTime()
         entity.modifiedByUserId = null
         entity.modifiedAt = null
 
-        // Create a new hanketunnus for it and save it:
-        val hanketunnus = hanketunnusService.newHanketunnus()
-        entity.hankeTunnus = hanketunnus
+        calculateTormaystarkastelu(hanke, entity)
+        entity.status = decideNewHankeStatus(entity)
+
         logger.debug { "Creating Hanke ${hanke.hankeTunnus}: ${hanke.toLogString()}" }
         val savedHankeEntity = hankeRepository.save(entity)
         logger.debug { "Created Hanke ${hanke.hankeTunnus}." }
 
-        postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userid)
+        postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
-        // Creating a new domain object for the return value; it will have the updated values from
-        // the database, e.g. the main date values truncated to midnight, and the added id and
-        // hanketunnus.
-        return createHankeDomainObjectFromEntity(entity)
+        return createHankeDomainObjectFromEntity(entity).also {
+            hankeKayttajaService.saveNewTokensFromHanke(it)
+            hankeLoggingService.logCreate(it, userId)
+        }
     }
 
-    // WITH THIS ONE CAN AUTHORIZE ONLY THE OWNER TO UPDATE A HANKE:
-    // @PreAuthorize("#hanke.createdBy == authentication.name")
+    /**
+     * Create application when no existing hanke. Autogenerates hanke and applies application to it.
+     */
+    @Transactional
+    override fun generateHankeWithApplication(
+        cableReport: CableReportWithoutHanke,
+        userId: String
+    ): HankeWithApplications {
+        val hanke = generateHankeFrom(cableReport)
+        val tunnus = hanke.hankeTunnus ?: throw HankeArgumentException("Hanke must have tunnus")
+        val createdApplication =
+            applicationService.create(cableReport.toNewApplication(tunnus), userId)
+        permissionService.setPermission(hanke.id!!, userId, Role.KAIKKI_OIKEUDET)
+        return HankeWithApplications(hanke, listOf(createdApplication))
+    }
+
+    @Transactional
     override fun updateHanke(hanke: Hanke): Hanke {
         if (hanke.hankeTunnus == null) error("Somehow got here with hanke without hanke-tunnus")
 
-        val userid = SecurityContextHolder.getContext().authentication.name
+        val userId = currentUserId()
 
         // Both checks that the hanke already exists, and get its old fields to transfer data into
         val entity =
             hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
                 ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
 
+        val hankeBeforeUpdate = createHankeDomainObjectFromEntity(entity)
+
         val existingYTs = prepareMapOfExistingYhteystietos(entity)
-        checkAndHandleDataProcessingRestrictions(hanke, entity, existingYTs, userid)
+        checkAndHandleDataProcessingRestrictions(hanke, entity, existingYTs, userId)
 
         val loggingEntryHolder = prepareLogging(entity)
         // Transfer field values from domain object to entity object, and set relevant audit fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
-        copyYhteystietosToEntity(hanke, entity, userid, loggingEntryHolder, existingYTs)
+        copyYhteystietosToEntity(hanke, entity, userId, loggingEntryHolder, existingYTs)
 
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
         // Special fields; handled "manually"..
         entity.version = entity.version?.inc() ?: 1
         // (Not changing createdBy/At fields.)
-        entity.modifiedByUserId = userid
+        entity.modifiedByUserId = userId
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
+        entity.generated = false
 
-        tormaystarkasteluService.calculateTormaystarkastelu(hanke)?.let {
-            entity.tormaystarkasteluTulokset.clear()
-            val tte =
-                TormaystarkasteluTulosEntity(
-                    it.perusIndeksi,
-                    it.pyorailyIndeksi,
-                    it.joukkoliikenneIndeksi,
-                    entity
-                )
-            entity.tormaystarkasteluTulokset.add(tte)
-        }
+        calculateTormaystarkastelu(hanke, entity)
+        entity.status = decideNewHankeStatus(entity)
 
         // Save changes:
         logger.debug { "Saving Hanke ${hanke.hankeTunnus}: ${hanke.toLogString()}" }
         val savedHankeEntity = hankeRepository.save(entity)
         logger.debug { "Saved Hanke ${hanke.hankeTunnus}." }
 
-        postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userid)
+        postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
-        // Creating a new domain object for the return value; it will have the updated values from
-        // the database, e.g. the main date values truncated to midnight.
-        return createHankeDomainObjectFromEntity(entity)
+        return createHankeDomainObjectFromEntity(entity).also {
+            hankeKayttajaService.saveNewTokensFromHanke(it)
+            hankeLoggingService.logUpdate(hankeBeforeUpdate, it, userId)
+        }
     }
 
-    override fun deleteHanke(id: Int) {
-        hankeRepository.deleteById(id)
+    @Transactional
+    override fun deleteHanke(hanke: Hanke, hakemukset: List<Application>, userId: String) {
+        val hankeId = hanke.id ?: throw HankeArgumentException("Hanke must have an id")
+        if (anyHakemusProcessingInAllu(hakemukset)) {
+            throw HankeAlluConflictException(
+                "Hanke ${hanke.hankeTunnus} has hakemus in Allu processing. Cannot delete."
+            )
+        }
+
+        hakemukset.forEach { hakemus ->
+            hakemus.id?.let { id -> applicationService.delete(id, userId) }
+        }
+
+        hankeRepository.deleteById(hankeId)
+        hankeLoggingService.logDelete(hanke, userId)
     }
+
+    private fun anyHakemusProcessingInAllu(hakemukset: List<Application>): Boolean =
+        hakemukset.any {
+            logger.info { "Hakemus ${it.id} has alluStatus ${it.alluStatus}" }
+            !applicationService.isStillPending(it)
+        }
 
     // TODO: functions to remove and invalidate Hanke's tormaystarkastelu-data
     //   At least invalidation can be done purely working on the particular
@@ -133,105 +255,166 @@ open class HankeServiceImpl(
 
     // ======================================================================
 
-    // --------------- Helpers for data transfer from database ------------
-
-    companion object Converters {
-        internal fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke {
-            val h =
-                Hanke(
-                    hankeEntity.id,
-                    hankeEntity.hankeTunnus,
-                    hankeEntity.onYKTHanke,
-                    hankeEntity.nimi,
-                    hankeEntity.kuvaus,
-                    hankeEntity.alkuPvm?.atStartOfDay(TZ_UTC),
-                    hankeEntity.loppuPvm?.atStartOfDay(TZ_UTC),
-                    hankeEntity.vaihe,
-                    hankeEntity.suunnitteluVaihe,
-                    hankeEntity.version,
-                    // TODO: will need in future to actually fetch the username from another
-                    //   service.. (or whatever we choose to pass out here)
-                    //   Do it below, outside this construction call.
-                    hankeEntity.createdByUserId ?: "",
-                    // From UTC without timezone info to UTC with timezone info
-                    if (hankeEntity.createdAt != null)
-                        ZonedDateTime.of(hankeEntity.createdAt, TZ_UTC)
-                    else null,
-                    hankeEntity.modifiedByUserId,
-                    if (hankeEntity.modifiedAt != null)
-                        ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC)
-                    else null,
-                    hankeEntity.saveType
+    private fun calculateTormaystarkastelu(source: Hanke, target: HankeEntity) {
+        tormaystarkasteluService.calculateTormaystarkastelu(source)?.let {
+            target.tormaystarkasteluTulokset.clear()
+            target.tormaystarkasteluTulokset.add(
+                TormaystarkasteluTulosEntity(
+                    perus = it.perusIndeksi,
+                    pyoraily = it.pyorailyIndeksi,
+                    joukkoliikenne = it.joukkoliikenneIndeksi,
+                    hanke = target
                 )
-            createSeparateYhteystietoListsFromEntityData(h, hankeEntity)
+            )
+        }
+    }
 
-            h.tyomaaKatuosoite = hankeEntity.tyomaaKatuosoite
-            h.tyomaaTyyppi = hankeEntity.tyomaaTyyppi
-            h.tyomaaKoko = hankeEntity.tyomaaKoko
+    private fun decideNewHankeStatus(entity: HankeEntity): HankeStatus {
+        val validationResult =
+            HankePublicValidator.validateHankeHasMandatoryFields(
+                createHankeDomainObjectFromEntity(entity)
+            )
 
-            h.haittaAlkuPvm = hankeEntity.haittaAlkuPvm?.atStartOfDay(TZ_UTC)
-            h.haittaLoppuPvm = hankeEntity.haittaLoppuPvm?.atStartOfDay(TZ_UTC)
-            h.kaistaHaitta = hankeEntity.kaistaHaitta
-            h.kaistaPituusHaitta = hankeEntity.kaistaPituusHaitta
-            h.meluHaitta = hankeEntity.meluHaitta
-            h.polyHaitta = hankeEntity.polyHaitta
-            h.tarinaHaitta = hankeEntity.tarinaHaitta
+        return when (val status = entity.status) {
+            HankeStatus.DRAFT ->
+                if (validationResult.isOk()) {
+                    HankeStatus.PUBLIC
+                } else {
+                    logger.debug {
+                        "A hanke draft wasn't ready to go public. hankeTunnus=${entity.hankeTunnus} failedFields=${validationResult.errorPaths().joinToString()}"
+                    }
+                    HankeStatus.DRAFT
+                }
+            HankeStatus.PUBLIC ->
+                if (validationResult.isOk()) {
+                    HankeStatus.PUBLIC
+                } else {
+                    logger.warn {
+                        "A public hanke wasn't updated with missing or invalid fields. hankeTunnus=${entity.hankeTunnus} failedFields=${validationResult.errorPaths().joinToString()}"
+                    }
+                    throw HankeArgumentException(
+                        "A public hanke didn't have all mandatory fields filled."
+                    )
+                }
+            else ->
+                throw HankeArgumentException(
+                    "A hanke cannot be updated when in status $status. hankeTunnus=${entity.hankeTunnus}"
+                )
+        }
+    }
 
-            hankeEntity.tormaystarkasteluTulokset.firstOrNull()?.let {
-                h.tormaystarkasteluTulos =
-                    TormaystarkasteluTulos(it.perus, it.pyoraily, it.joukkoliikenne)
-            }
+    // --------------- Helpers for data transfer from database ------------
+    private fun createHankealueDomainObjectFromEntity(hankealueEntity: HankealueEntity): Hankealue {
+        return Hankealue(
+            id = hankealueEntity.id,
+            hankeId = hankealueEntity.hanke?.id,
+            haittaAlkuPvm = hankealueEntity.haittaAlkuPvm?.atStartOfDay(TZ_UTC),
+            haittaLoppuPvm = hankealueEntity.haittaLoppuPvm?.atStartOfDay(TZ_UTC),
+            geometriat = hankealueEntity.geometriat?.let { geometriatService.getGeometriat(it) },
+            kaistaHaitta = hankealueEntity.kaistaHaitta,
+            kaistaPituusHaitta = hankealueEntity.kaistaPituusHaitta,
+            meluHaitta = hankealueEntity.meluHaitta,
+            polyHaitta = hankealueEntity.polyHaitta,
+            tarinaHaitta = hankealueEntity.tarinaHaitta,
+            nimi = hankealueEntity.nimi,
+        )
+    }
 
-            return h
+    private fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke {
+        val h =
+            Hanke(
+                hankeEntity.id,
+                hankeEntity.hankeTunnus,
+                hankeEntity.onYKTHanke,
+                hankeEntity.nimi,
+                hankeEntity.kuvaus,
+                hankeEntity.vaihe,
+                hankeEntity.suunnitteluVaihe,
+                hankeEntity.version,
+                // TODO: will need in future to actually fetch the username from another
+                //   service.. (or whatever we choose to pass out here)
+                //   Do it below, outside this construction call.
+                hankeEntity.createdByUserId ?: "",
+                // From UTC without timezone info to UTC with timezone info
+                if (hankeEntity.createdAt != null) ZonedDateTime.of(hankeEntity.createdAt, TZ_UTC)
+                else null,
+                hankeEntity.modifiedByUserId,
+                if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC)
+                else null,
+                hankeEntity.status,
+                hankeEntity.perustaja?.toDomainObject(),
+                hankeEntity.generated,
+            )
+
+        h.tyomaaKatuosoite = hankeEntity.tyomaaKatuosoite
+        h.tyomaaTyyppi = hankeEntity.tyomaaTyyppi
+
+        createSeparateYhteystietoListsFromEntityData(h, hankeEntity)
+
+        hankeEntity.listOfHankeAlueet.forEach {
+            val alue = createHankealueDomainObjectFromEntity(it)
+            alue.geometriat?.resetFeatureProperties(h)
+            h.alueet.add(alue)
         }
 
-        /**
-         * createSeparateYhteystietoListsFromEntityData splits entity's one list to three different
-         * contact information lists and adds them for Hanke domain object
-         */
-        private fun createSeparateYhteystietoListsFromEntityData(
-            hanke: Hanke,
-            hankeEntity: HankeEntity
-        ) {
-
-            hankeEntity.listOfHankeYhteystieto.forEach { hankeYhteysEntity ->
-                val hankeYhteystieto =
-                    createHankeYhteystietoDomainObjectFromEntity(hankeYhteysEntity)
-
-                if (hankeYhteysEntity.contactType == ContactType.OMISTAJA)
-                    hanke.omistajat.add(hankeYhteystieto)
-                if (hankeYhteysEntity.contactType == ContactType.TOTEUTTAJA)
-                    hanke.toteuttajat.add(hankeYhteystieto)
-                if (hankeYhteysEntity.contactType == ContactType.ARVIOIJA)
-                    hanke.arvioijat.add(hankeYhteystieto)
-            }
+        hankeEntity.tormaystarkasteluTulokset.firstOrNull()?.let {
+            h.tormaystarkasteluTulos =
+                TormaystarkasteluTulos(it.perus, it.pyoraily, it.joukkoliikenne)
         }
 
-        private fun createHankeYhteystietoDomainObjectFromEntity(
-            hankeYhteystietoEntity: HankeYhteystietoEntity
-        ): HankeYhteystieto {
-            var createdAt: ZonedDateTime? = null
+        return h
+    }
 
-            if (hankeYhteystietoEntity.createdAt != null)
-                createdAt = ZonedDateTime.of(hankeYhteystietoEntity.createdAt, TZ_UTC)
+    /**
+     * createSeparateYhteystietoListsFromEntityData splits entity's one list to three different
+     * contact information lists and adds them for Hanke domain object
+     */
+    private fun createSeparateYhteystietoListsFromEntityData(
+        hanke: Hanke,
+        hankeEntity: HankeEntity
+    ) {
 
-            var modifiedAt: ZonedDateTime? = null
-            if (hankeYhteystietoEntity.modifiedAt != null)
-                modifiedAt = ZonedDateTime.of(hankeYhteystietoEntity.modifiedAt, TZ_UTC)
+        hankeEntity.listOfHankeYhteystieto.forEach { hankeYhteystietoEntity ->
+            val hankeYhteystieto =
+                createHankeYhteystietoDomainObjectFromEntity(hankeYhteystietoEntity)
 
-            return HankeYhteystieto(
-                id = hankeYhteystietoEntity.id,
-                etunimi = hankeYhteystietoEntity.etunimi,
-                sukunimi = hankeYhteystietoEntity.sukunimi,
-                email = hankeYhteystietoEntity.email,
-                puhelinnumero = hankeYhteystietoEntity.puhelinnumero,
-                organisaatioId = hankeYhteystietoEntity.organisaatioId,
-                organisaatioNimi = hankeYhteystietoEntity.organisaatioNimi,
-                osasto = hankeYhteystietoEntity.osasto,
-                createdBy = hankeYhteystietoEntity.createdByUserId,
-                modifiedBy = hankeYhteystietoEntity.modifiedByUserId,
+            when (hankeYhteystietoEntity.contactType) {
+                OMISTAJA -> hanke.omistajat.add(hankeYhteystieto)
+                TOTEUTTAJA -> hanke.toteuttajat.add(hankeYhteystieto)
+                RAKENNUTTAJA -> hanke.rakennuttajat.add(hankeYhteystieto)
+                MUU -> hanke.muut.add(hankeYhteystieto)
+            }
+        }
+    }
+
+    private fun createHankeYhteystietoDomainObjectFromEntity(
+        hankeYhteystietoEntity: HankeYhteystietoEntity
+    ): HankeYhteystieto {
+        var createdAt: ZonedDateTime? = null
+
+        if (hankeYhteystietoEntity.createdAt != null)
+            createdAt = ZonedDateTime.of(hankeYhteystietoEntity.createdAt, TZ_UTC)
+
+        var modifiedAt: ZonedDateTime? = null
+        if (hankeYhteystietoEntity.modifiedAt != null)
+            modifiedAt = ZonedDateTime.of(hankeYhteystietoEntity.modifiedAt, TZ_UTC)
+
+        return with(hankeYhteystietoEntity) {
+            HankeYhteystieto(
+                id = id,
+                nimi = nimi,
+                email = email,
+                puhelinnumero = puhelinnumero,
+                organisaatioId = organisaatioId,
+                organisaatioNimi = organisaatioNimi,
+                osasto = osasto,
+                createdBy = createdByUserId,
+                modifiedBy = modifiedByUserId,
                 createdAt = createdAt,
-                modifiedAt = modifiedAt
+                modifiedAt = modifiedAt,
+                alikontaktit = yhteyshenkilot,
+                rooli = rooli,
+                tyyppi = tyyppi,
             )
         }
     }
@@ -283,24 +466,20 @@ open class HankeServiceImpl(
         // A temporary copy, so that we can remove handled entries from it, leaving
         // certain deleted entries as remainder:
         val tempLockedExistingYts = lockedExistingYTs.toMutableMap()
-        findAndLogAffectedBlockedYhteystietos(
-            incomingHanke.omistajat,
-            tempLockedExistingYts,
-            loggingEntryHolderForRestrictedActions,
-            userid
-        )
-        findAndLogAffectedBlockedYhteystietos(
-            incomingHanke.arvioijat,
-            tempLockedExistingYts,
-            loggingEntryHolderForRestrictedActions,
-            userid
-        )
-        findAndLogAffectedBlockedYhteystietos(
-            incomingHanke.toteuttajat,
-            tempLockedExistingYts,
-            loggingEntryHolderForRestrictedActions,
-            userid
-        )
+        listOf(
+                incomingHanke.omistajat,
+                incomingHanke.rakennuttajat,
+                incomingHanke.toteuttajat,
+                incomingHanke.muut
+            )
+            .forEach { yhteystiedot ->
+                findAndLogAffectedBlockedYhteystietos(
+                    yhteystiedot,
+                    tempLockedExistingYts,
+                    loggingEntryHolderForRestrictedActions,
+                    userid
+                )
+            }
 
         // If no entries were blocked, and there is nothing left in the tempLockedExistingYts, all
         // clear to proceed:
@@ -318,7 +497,7 @@ open class HankeServiceImpl(
         // create audit log entries for them:
         tempLockedExistingYts.values.forEach {
             loggingEntryHolderForRestrictedActions.addLogEntriesForEvent(
-                action = Action.DELETE,
+                operation = Operation.DELETE,
                 failed = true,
                 failureDescription =
                     "delete hanke yhteystieto BLOCKED by data processing restriction",
@@ -348,7 +527,7 @@ open class HankeServiceImpl(
                 // otherwise check if any of the fields have changes compared to existing values.
                 if (!yhteystieto.isAnyFieldSet()) {
                     loggingEntryHolderForRestrictedActions.addLogEntriesForEvent(
-                        action = Action.DELETE,
+                        operation = Operation.DELETE,
                         failed = true,
                         failureDescription =
                             "delete hanke yhteystieto BLOCKED by data processing restriction",
@@ -359,15 +538,14 @@ open class HankeServiceImpl(
                 } else if (!areEqualIncomingVsExistingYhteystietos(yhteystieto, lockedExistingYt)) {
                     // copy the values to temporary non-persisted entity for logging:
                     val unsavedNewData = lockedExistingYt.cloneWithMainFields()
-                    unsavedNewData.sukunimi = yhteystieto.sukunimi
-                    unsavedNewData.etunimi = yhteystieto.etunimi
+                    unsavedNewData.nimi = yhteystieto.nimi
                     unsavedNewData.email = yhteystieto.email
                     unsavedNewData.puhelinnumero = yhteystieto.puhelinnumero
                     unsavedNewData.organisaatioId = yhteystieto.organisaatioId
                     yhteystieto.organisaatioNimi?.let { unsavedNewData.organisaatioNimi = it }
                     yhteystieto.osasto?.let { unsavedNewData.osasto = it }
                     loggingEntryHolderForRestrictedActions.addLogEntriesForEvent(
-                        action = Action.UPDATE,
+                        operation = Operation.UPDATE,
                         failed = true,
                         failureDescription =
                             "update hanke yhteystieto BLOCKED by data processing restriction",
@@ -392,29 +570,49 @@ open class HankeServiceImpl(
         hanke.onYKTHanke?.let { entity.onYKTHanke = hanke.onYKTHanke }
         hanke.nimi?.let { entity.nimi = hanke.nimi }
         hanke.kuvaus?.let { entity.kuvaus = hanke.kuvaus }
-        // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
-        // be simply dropped here.
-        // Note, .toLocalDate() does not do any time zone conversion.
-        hanke.alkuPvm?.let { entity.alkuPvm = hanke.alkuPvm?.toLocalDate() }
-        hanke.loppuPvm?.let { entity.loppuPvm = hanke.loppuPvm?.toLocalDate() }
+
+        hanke.perustaja?.let { entity.perustaja = it.toEntity() }
+        entity.generated = hanke.generated
         hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
         hanke.suunnitteluVaihe?.let { entity.suunnitteluVaihe = hanke.suunnitteluVaihe }
-
-        hanke.saveType?.let { entity.saveType = hanke.saveType }
         hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
         entity.tyomaaTyyppi = hanke.tyomaaTyyppi
-        hanke.tyomaaKoko?.let { entity.tyomaaKoko = hanke.tyomaaKoko }
+
+        // Merge hankealueet
+        mergeDataInto(hanke.alueet, entity.listOfHankeAlueet) { source, target ->
+            copyNonNullHankealueFieldsToEntity(hanke, source, target)
+        }
+
+        entity.listOfHankeAlueet.forEach { it.hanke = entity }
+    }
+
+    private fun copyNonNullHankealueFieldsToEntity(
+        hanke: Hanke,
+        source: Hankealue,
+        target: HankealueEntity?
+    ): HankealueEntity {
+        val result = target ?: HankealueEntity()
 
         // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
         // be simply dropped here.
         // Note, .toLocalDate() does not do any time zone conversion.
-        hanke.haittaAlkuPvm?.let { entity.haittaAlkuPvm = hanke.haittaAlkuPvm?.toLocalDate() }
-        hanke.haittaLoppuPvm?.let { entity.haittaLoppuPvm = hanke.haittaLoppuPvm?.toLocalDate() }
-        hanke.kaistaHaitta?.let { entity.kaistaHaitta = hanke.kaistaHaitta }
-        hanke.kaistaPituusHaitta?.let { entity.kaistaPituusHaitta = hanke.kaistaPituusHaitta }
-        hanke.meluHaitta?.let { entity.meluHaitta = hanke.meluHaitta }
-        hanke.polyHaitta?.let { entity.polyHaitta = hanke.polyHaitta }
-        hanke.tarinaHaitta?.let { entity.tarinaHaitta = hanke.tarinaHaitta }
+        source.haittaLoppuPvm?.let { result.haittaLoppuPvm = source.haittaLoppuPvm?.toLocalDate() }
+        source.haittaAlkuPvm?.let { result.haittaAlkuPvm = source.haittaAlkuPvm?.toLocalDate() }
+
+        source.kaistaHaitta?.let { result.kaistaHaitta = source.kaistaHaitta }
+        source.kaistaPituusHaitta?.let { result.kaistaPituusHaitta = source.kaistaPituusHaitta }
+        source.meluHaitta?.let { result.meluHaitta = source.meluHaitta }
+        source.polyHaitta?.let { result.polyHaitta = source.polyHaitta }
+        source.tarinaHaitta?.let { result.tarinaHaitta = source.tarinaHaitta }
+        source.geometriat?.let {
+            it.id = result.geometriat ?: it.id
+            it.resetFeatureProperties(hanke)
+            val saved = geometriatService.saveGeometriat(it)
+            result.geometriat = saved?.id
+        }
+        source.nimi?.let { result.nimi = source.nimi }
+
+        return result
     }
 
     /**
@@ -463,38 +661,30 @@ open class HankeServiceImpl(
 
         // Check each incoming yhteystieto (from three lists) for being new or an update to existing
         // one, and add to the main entity's single list if necessary:
-        processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-            hanke.omistajat,
-            entity,
-            ContactType.OMISTAJA,
-            userid,
-            existingYTs,
-            loggingEntryHolder
-        )
-        processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-            hanke.arvioijat,
-            entity,
-            ContactType.ARVIOIJA,
-            userid,
-            existingYTs,
-            loggingEntryHolder
-        )
-        processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-            hanke.toteuttajat,
-            entity,
-            ContactType.TOTEUTTAJA,
-            userid,
-            existingYTs,
-            loggingEntryHolder
-        )
+        listOf(
+                OMISTAJA to hanke.omistajat,
+                RAKENNUTTAJA to hanke.rakennuttajat,
+                TOTEUTTAJA to hanke.toteuttajat,
+                MUU to hanke.muut
+            )
+            .forEach { (type, yhteystiedot) ->
+                processIncomingHankeYhteystietosOfSpecificTypeToEntity(
+                    yhteystiedot,
+                    entity,
+                    type,
+                    userid,
+                    existingYTs,
+                    loggingEntryHolder
+                )
+            }
 
         // TODO: this method of removing entries if they are missing in the incoming data is
         //  different to behavior of the other simpler fields, where missing or null field is
         //  considered "keep the existing value, and return it back in response". However, those
         //  simpler fields can not be removed as a whole, so they _can_ behave so. For clarity,
-        //  yhteystieto-entries should have separate action for removal (but then they should also
-        //  have separate action for addition, i.e. own API endpoint in controller). So, consider
-        //  the code below as "for now".
+        //  yhteystieto-entries should have separate operation for removal (but then they should
+        //  also have separate operation for addition, i.e. own API endpoint in controller). So,
+        //  consider the code below as "for now".
         //
         // TODO: Yhteystietos should not be in a list, but a "bag", or ensure it is e.g. linked list
         //  instead of arraylist (or similar). The order of Yhteystietos does not matter(?), and
@@ -507,7 +697,7 @@ open class HankeServiceImpl(
         for (hankeYht in existingYTs.values) {
             entity.removeYhteystieto(hankeYht)
             loggingEntryHolder.addLogEntriesForEvent(
-                action = Action.DELETE,
+                operation = Operation.DELETE,
                 oldEntity = hankeYht,
                 newEntity = null,
                 userId = userid,
@@ -582,13 +772,14 @@ open class HankeServiceImpl(
             val hankeYhtEntity =
                 HankeYhteystietoEntity(
                     contactType = contactType,
-                    sukunimi = hankeYht.sukunimi,
-                    etunimi = hankeYht.etunimi,
+                    nimi = hankeYht.nimi,
                     email = hankeYht.email,
                     puhelinnumero = hankeYht.puhelinnumero,
                     organisaatioId = hankeYht.organisaatioId,
                     organisaatioNimi = hankeYht.organisaatioNimi,
                     osasto = hankeYht.osasto,
+                    rooli = hankeYht.rooli,
+                    tyyppi = hankeYht.tyyppi,
                     dataLocked = false,
                     dataLockInfo = null,
                     createdByUserId = userid,
@@ -596,6 +787,7 @@ open class HankeServiceImpl(
                     modifiedByUserId = null,
                     modifiedAt = null,
                     id = null, // will be set by the database
+                    yhteyshenkilot = hankeYht.alikontaktit,
                     hanke = hankeEntity // reference back to parent hanke
                 )
             hankeEntity.addYhteystieto(hankeYhtEntity)
@@ -638,11 +830,11 @@ open class HankeServiceImpl(
                 previousEntityData.id = existingYT.id
 
                 // Update values in the persisted entity:
-                existingYT.sukunimi = hankeYht.sukunimi
-                existingYT.etunimi = hankeYht.etunimi
+                existingYT.nimi = hankeYht.nimi
                 existingYT.email = hankeYht.email
                 existingYT.puhelinnumero = hankeYht.puhelinnumero
                 existingYT.organisaatioId = hankeYht.organisaatioId
+                existingYT.yhteyshenkilot = hankeYht.alikontaktit
                 hankeYht.organisaatioNimi?.let {
                     existingYT.organisaatioNimi = hankeYht.organisaatioNimi
                 }
@@ -654,7 +846,7 @@ open class HankeServiceImpl(
                 // (Not touching the id or hanke fields)
 
                 loggingEntryHolder.addLogEntriesForEvent(
-                    action = Action.UPDATE,
+                    operation = Operation.UPDATE,
                     oldEntity = previousEntityData,
                     newEntity = existingYT,
                     userId = userid,
@@ -688,13 +880,13 @@ open class HankeServiceImpl(
         incoming: HankeYhteystieto,
         existing: HankeYhteystietoEntity
     ): Boolean {
-        if (incoming.etunimi != existing.etunimi) return false
-        if (incoming.sukunimi != existing.sukunimi) return false
+        if (incoming.nimi != existing.nimi) return false
         if (incoming.email != existing.email) return false
         if (incoming.puhelinnumero != existing.puhelinnumero) return false
         if (incoming.organisaatioId != existing.organisaatioId) return false
         if (incoming.organisaatioNimi != existing.organisaatioNimi) return false
         if (incoming.osasto != existing.osasto) return false
+        if (incoming.alikontaktit != existing.yhteyshenkilot) return false
         return true
     }
 
@@ -716,9 +908,8 @@ open class HankeServiceImpl(
     private fun postProcessAndSaveLoggingForRestrictions(
         loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder
     ) {
-        loggingEntryHolderForRestrictedActions.applyIpAddresses()
-        loggingEntryHolderForRestrictedActions.saveLogEntries(auditLogRepository)
-        val idList = loggingEntryHolderForRestrictedActions.idList()
+        loggingEntryHolderForRestrictedActions.saveLogEntries(auditLogService)
+        val idList = loggingEntryHolderForRestrictedActions.objectIds()
         throw HankeYhteystietoProcessingRestrictedException(
             "Can not modify/delete yhteystieto which has data processing restricted (id: $idList)"
         )
@@ -736,7 +927,7 @@ open class HankeServiceImpl(
         savedHankeEntity: HankeEntity,
         userid: String
     ) {
-        // It would be possible to process all action types the same way afterwards like for
+        // It would be possible to process all operation types the same way afterwards like for
         // creating new yhteystietos, but that would cause some (relatively) minor extra work, and,
         // the proper solution would be to handle personal data access in its own separate service
         // and do the logging there independently... So, the current way of doing things should be
@@ -745,7 +936,28 @@ open class HankeServiceImpl(
             savedHankeEntity.listOfHankeYhteystieto,
             userid
         )
-        loggingEntryHolder.applyIpAddresses()
-        loggingEntryHolder.saveLogEntries(auditLogRepository)
+        loggingEntryHolder.saveLogEntries(auditLogService)
     }
+
+    /** Autogenerated hanke based on application data. Generated flag true. */
+    private fun generateHankeFrom(cableReport: CableReportWithoutHanke): Hanke =
+        createHanke(
+            Hanke(
+                id = null,
+                hankeTunnus = null,
+                onYKTHanke = null,
+                nimi = cableReport.applicationData.name,
+                kuvaus = null,
+                vaihe = null,
+                suunnitteluVaihe = null,
+                version = null,
+                createdBy = null,
+                createdAt = null,
+                modifiedBy = null,
+                modifiedAt = null,
+                HankeStatus.DRAFT,
+                perustaja = null,
+                generated = true,
+            )
+        )
 }

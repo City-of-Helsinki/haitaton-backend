@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 018-add-status-and-indentifier-for-applications
+      comment: Add alluStatus and applicationIdentifier for applications
+      author: Topias Heinonen
+      changes:
+        - addColumn:
+            tableName: applications
+            columns:
+              - column:
+                  name: allustatus
+                  type: varchar
+                  remarks: "Status of this application in Allu. Can be null, if application not sent to Allu or Allu has no history available yet."
+              - column:
+                  name: applicationidentifier
+                  type: varchar
+                  remarks: "The official identifier of this application. Null until we get the correct value from Allu."

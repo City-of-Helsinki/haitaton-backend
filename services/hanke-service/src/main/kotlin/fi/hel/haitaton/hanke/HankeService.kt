@@ -1,23 +1,37 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.application.Application
+import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeWithApplications
+import org.springframework.transaction.annotation.Transactional
 
 interface HankeService {
 
-    /**
-     * Fetch hanke with hankeTunnus.
-     * Returns null if there is no hanke with the given tunnus.
-     */
+    /** Fetch hanke with hankeTunnus. Returns null if there is no hanke with the given tunnus. */
     fun loadHanke(hankeTunnus: String): Hanke?
 
-    fun createHanke(hanke: Hanke): Hanke
+    fun getHankeId(hankeTunnus: String): Int?
 
-    fun updateHanke(hanke: Hanke): Hanke
+    fun getHankeWithApplications(hankeTunnus: String): HankeWithApplications
 
-    fun deleteHanke(id: Int)
+    @Transactional fun createHanke(hanke: Hanke): Hanke
+
+    @Transactional
+    fun generateHankeWithApplication(
+        cableReport: CableReportWithoutHanke,
+        userId: String
+    ): HankeWithApplications
+
+    @Transactional fun updateHanke(hanke: Hanke): Hanke
+
+    @Transactional fun deleteHanke(hanke: Hanke, hakemukset: List<Application>, userId: String)
 
     fun loadAllHanke(): List<Hanke>
 
+    fun loadPublicHanke(): List<Hanke>
+
     fun loadHankkeetByIds(ids: List<Int>): List<Hanke>
 
+    fun loadHankkeetByUserId(userId: String): List<Hanke>
 }

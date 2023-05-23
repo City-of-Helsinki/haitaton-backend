@@ -4,9 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat
 import javax.validation.ConstraintViolation
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
-enum class HankeError(
-    val errorMessage: String
-) {
+enum class HankeError(val errorMessage: String) {
     HAI0001("Access denied"),
     HAI0002("Internal error"),
     HAI0003("Invalid data"),
@@ -26,7 +24,19 @@ enum class HankeError(
     HAI1020("HankeYhteystieto not found"),
     HAI1029("HankeYhteystieto personal data processing restricted"),
     HAI1030("Problem with classification of geometries"),
-    HAI1031("Invalid state: Missing needed data");
+    HAI1031("Invalid state: Missing needed data"),
+    HAI1032("Invalid Hankealue data"),
+    HAI2001("Application not found"),
+    HAI2002("Incompatible application data type"),
+    HAI2003("Application is already processing in Allu and can no longer be updated."),
+    HAI2004("Application data missing information needed by Allu."),
+    HAI2005("Invalid application geometry"),
+    HAI2006("Application decision not found"),
+    HAI2007("Application geometry not inside any hankealue"),
+    HAI2008("Application contains invalid data"),
+    HAI3001("Attachment upload failed"),
+    HAI3002("Loading attachment failed"),
+    ;
 
     val errorCode: String
         get() = name
@@ -44,10 +54,15 @@ enum class HankeError(
     }
 }
 
-class HankeNotFoundException(val hankeTunnus: String) : RuntimeException("Hanke $hankeTunnus not found")
+class HankeNotFoundException(val hankeTunnus: String?) :
+    RuntimeException("Hanke $hankeTunnus not found")
+
+class HankeArgumentException(message: String) : RuntimeException(message)
 
 class HankeYhteystietoNotFoundException(val hankeId: Int, ytId: Int) :
     RuntimeException("HankeYhteystiedot $ytId not found for Hanke $hankeId")
+
+class HankeAlluConflictException(message: String) : RuntimeException(message)
 
 class DatabaseStateException(message: String) : RuntimeException(message)
 
