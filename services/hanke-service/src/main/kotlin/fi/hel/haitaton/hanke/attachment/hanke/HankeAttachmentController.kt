@@ -38,7 +38,7 @@ class HankeAttachmentController(
     private val hankeAttachmentService: HankeAttachmentService,
     private val hankeService: HankeService,
     private val permissionService: PermissionService,
-    @Value("\${haitaton.endpoint.disabled}") val endpointDisabled: Boolean = false,
+    @Value("\${haitaton.feature.hanke-editing}") val enableEditFeature: Boolean = true,
 ) {
 
     @GetMapping
@@ -123,7 +123,7 @@ class HankeAttachmentController(
         @PathVariable hankeTunnus: String,
         @RequestParam("liite") attachment: MultipartFile
     ): HankeAttachmentMetadata {
-        if (endpointDisabled) {
+        if (!enableEditFeature) {
             throw EndpointDisabledException()
         }
 
@@ -149,7 +149,7 @@ class HankeAttachmentController(
             ]
     )
     fun deleteAttachment(@PathVariable hankeTunnus: String, @PathVariable attachmentId: UUID) {
-        if (endpointDisabled) {
+        if (!enableEditFeature) {
             throw EndpointDisabledException()
         }
         permissionOrThrow(hankeTunnus, EDIT)

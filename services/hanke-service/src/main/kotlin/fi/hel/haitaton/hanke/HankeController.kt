@@ -36,7 +36,7 @@ class HankeController(
     @Autowired private val hankeService: HankeService,
     @Autowired private val permissionService: PermissionService,
     @Autowired private val disclosureLogService: DisclosureLogService,
-    @Value("\${haitaton.endpoint.disabled}") val endpointDisabled: Boolean = false,
+    @Value("\${haitaton.feature.hanke-editing}") val enableEditFeature: Boolean = true,
 ) {
 
     @GetMapping("/{hankeTunnus}")
@@ -94,7 +94,7 @@ class HankeController(
     /** Add one hanke. This method will be called when we do not have id for hanke yet */
     @PostMapping
     fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): Hanke {
-        if (endpointDisabled) {
+        if (!enableEditFeature) {
             throw EndpointDisabledException()
         }
 
@@ -123,7 +123,7 @@ class HankeController(
         @ValidHanke @RequestBody hanke: Hanke,
         @PathVariable hankeTunnus: String
     ): Hanke {
-        if (endpointDisabled) {
+        if (!enableEditFeature) {
             throw EndpointDisabledException()
         }
 
@@ -146,7 +146,7 @@ class HankeController(
     @DeleteMapping("/{hankeTunnus}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteHanke(@PathVariable hankeTunnus: String) {
-        if (endpointDisabled) {
+        if (!enableEditFeature) {
             throw EndpointDisabledException()
         }
 
