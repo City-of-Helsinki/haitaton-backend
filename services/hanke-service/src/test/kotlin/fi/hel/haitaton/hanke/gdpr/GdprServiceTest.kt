@@ -38,5 +38,19 @@ class GdprServiceTest {
                 applicationService.delete(4, USERID)
             }
         }
+
+        @Test
+        fun `Duplicated deletes all given applications`() {
+            val applications = AlluDataFactory.createApplications(4)
+
+            gdprService.deleteApplications(applications, USERID)
+
+            verifyAll {
+                applicationService.delete(1, USERID)
+                applicationService.delete(2, USERID)
+                applicationService.delete(3, USERID)
+                applicationService.delete(4, USERID)
+            }
+        }
     }
 }
