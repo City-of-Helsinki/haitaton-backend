@@ -164,7 +164,7 @@ open class ApplicationService(
 
         // Update the application in Allu, if it's been already uploaded
         if (application.alluid != null) {
-            updateApplicationInAllu(application)
+            updateApplicationInAllu(application.toApplication())
         }
 
         val updatedApplication = applicationRepository.save(application).toApplication()
@@ -209,7 +209,7 @@ open class ApplicationService(
         application.applicationData = application.applicationData.copy(pendingOnClient = false)
 
         logger.info { "Sending the application to Allu. id=$id" }
-        application.alluid = sendApplicationToAllu(application)
+        application.alluid = sendToAllu(application)
 
         logger.info {
             "Application sent, fetching application identifier and status. id=$id, alluid=${application.alluid}."
@@ -427,51 +427,69 @@ open class ApplicationService(
         }
     }
 
-    private fun sendApplicationToAllu(application: ApplicationEntity): Int {
+    private fun sendToAllu(entity: ApplicationEntity): Int {
+        val application = entity.toApplication()
+        val attachments = entity.attachments.map { it.toAlluAttachment() }
         return if (application.alluid == null) {
-            createApplicationInAllu(application)
+            createApplicationInAllu(application, attachments)
         } else {
             updateApplicationInAllu(application)
         }
     }
 
-    private fun updateApplicationInAllu(application: ApplicationEntity): Int {
-        val alluId =
-            application.alluid ?: throw ApplicationArgumentException("AlluId null in update.")
-        logger.info { "Uploading updated application with alluId $alluId" }
+    private fun updateApplicationInAllu(application: Application): Int =
+        with(application) {
+            val alluId = alluid ?: throw ApplicationArgumentException("AlluId null in update.")
 
-        when (val applicationData = application.applicationData) {
-            is CableReportApplicationData -> updateCableReportInAllu(alluId, applicationData)
+            logger.info { "Uploading updated application with alluId $alluId" }
+
+            when (val data = applicationData) {
+                is CableReportApplicationData -> updateCableReportInAllu(alluId, hankeTunnus, data)
+            }
+
+            return alluId
         }
 
-        return alluId
-    }
-
     /** Creates new application in Allu. All attachments are sent after creation. */
-    private fun createApplicationInAllu(application: ApplicationEntity): Int {
-        val alluId =
-            when (val applicationData = application.applicationData) {
-                is CableReportApplicationData -> createCableReportToAllu(applicationData)
-            }
+    private fun createApplicationInAllu(
+        application: Application,
+        attachments: List<Attachment>
+    ): Int =
+        with(application) {
+            val alluId =
+                when (val data = applicationData) {
+                    is CableReportApplicationData -> createCableReportToAllu(hankeTunnus, data)
+                }
 
-        attachmentService.sendAllAttachments(alluId, application.attachments)
+            attachmentService.sendAllAttachments(alluId, attachments)
 
-        return alluId
-    }
+            return alluId
+        }
 
     private fun createCableReportToAllu(
-        cableReportApplicationData: CableReportApplicationData
+        hankeTunnus: String,
+        cableReport: CableReportApplicationData
     ): Int {
-        val alluData = cableReportApplicationData.toAlluData()
-        val attachment = getApplicationDataAsPdf(cableReportApplicationData)
+        val alluData = cableReport.toAlluData(hankeTunnus)
+        val attachment = getApplicationDataAsPdf(cableReport)
 
-        val alluid =
-            withDisclosureLogging(cableReportApplicationData) {
-                cableReportService.create(alluData)
-            }
+        val alluId = withDisclosureLogging(cableReport) { cableReportService.create(alluData) }
 
-        cableReportService.addAttachment(alluid, attachment)
-        return alluid
+        cableReportService.addAttachment(alluId, attachment)
+        return alluId
+    }
+
+    private fun updateCableReportInAllu(
+        alluId: Int,
+        hankeTunnus: String,
+        cableReport: CableReportApplicationData
+    ) {
+        val alluData = cableReport.toAlluData(hankeTunnus)
+        val attachment = getApplicationDataAsPdf(cableReport)
+
+        withDisclosureLogging(cableReport) { cableReportService.update(alluId, alluData) }
+
+        cableReportService.addAttachment(alluId, attachment)
     }
 
     private fun getApplicationDataAsPdf(data: CableReportApplicationData): Attachment {
@@ -489,20 +507,6 @@ open class ApplicationService(
         val pdfData = ApplicationPdfService.createPdf(data, totalArea, areas)
         logger.info { "Created the PDF for data attachment." }
         return Attachment(attachmentMetadata, pdfData)
-    }
-
-    private fun updateCableReportInAllu(
-        alluId: Int,
-        cableReportApplicationData: CableReportApplicationData
-    ) {
-        val alluData = cableReportApplicationData.toAlluData()
-        val attachment = getApplicationDataAsPdf(cableReportApplicationData)
-
-        withDisclosureLogging(cableReportApplicationData) {
-            cableReportService.update(alluId, alluData)
-        }
-
-        cableReportService.addAttachment(alluId, attachment)
     }
 
     /**

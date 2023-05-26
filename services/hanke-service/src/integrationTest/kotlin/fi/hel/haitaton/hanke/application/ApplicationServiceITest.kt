@@ -27,15 +27,11 @@ import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
-import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createAttachmentMetadata
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
@@ -90,6 +86,7 @@ import org.springframework.test.context.jdbc.Sql
 import org.testcontainers.junit.jupiter.Testcontainers
 
 private const val USERNAME = "test7358"
+private const val HANKE_TUNNUS = "HAI23-5"
 
 private val dataWithoutAreas = AlluDataFactory.createCableReportApplicationData(areas = listOf())
 
@@ -563,7 +560,9 @@ class ApplicationServiceITest : DatabaseTest() {
             )
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
-        justRun { cableReportServiceAllu.update(21, newApplicationData.toAlluData()) }
+        val expectedAlluRequest = newApplicationData.toAlluData(HANKE_TUNNUS)
+        assertEquals(application.hanke.hankeTunnus, expectedAlluRequest.identificationNumber)
+        justRun { cableReportServiceAllu.update(21, expectedAlluRequest) }
         justRun { cableReportServiceAllu.addAttachment(21, any()) }
 
         val response =
@@ -578,7 +577,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         verifyOrder {
             cableReportServiceAllu.getApplicationInformation(21)
-            cableReportServiceAllu.update(21, newApplicationData.toAlluData())
+            cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS))
             cableReportServiceAllu.addAttachment(21, any())
         }
     }
@@ -599,8 +598,9 @@ class ApplicationServiceITest : DatabaseTest() {
             )
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
-        every { cableReportServiceAllu.update(21, newApplicationData.toAlluData()) } throws
-            RuntimeException("Allu call failed")
+        every {
+            cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS))
+        } throws RuntimeException("Allu call failed")
 
         val exception =
             assertThrows<RuntimeException> {
@@ -616,7 +616,7 @@ class ApplicationServiceITest : DatabaseTest() {
         assertEquals(AlluDataFactory.defaultApplicationName, savedApplication.applicationData.name)
         verifyOrder {
             cableReportServiceAllu.getApplicationInformation(21)
-            cableReportServiceAllu.update(21, newApplicationData.toAlluData())
+            cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS))
         }
     }
 
@@ -640,7 +640,7 @@ class ApplicationServiceITest : DatabaseTest() {
             )
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
-        justRun { cableReportServiceAllu.update(21, newApplicationData.toAlluData()) }
+        justRun { cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS)) }
         justRun { cableReportServiceAllu.addAttachment(21, any()) }
 
         val response =
@@ -657,7 +657,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         verifyOrder {
             cableReportServiceAllu.getApplicationInformation(21)
-            cableReportServiceAllu.update(21, newApplicationData.toAlluData())
+            cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS))
             cableReportServiceAllu.addAttachment(21, any())
         }
     }
@@ -726,7 +726,8 @@ class ApplicationServiceITest : DatabaseTest() {
                 pendingOnClient = true,
                 areas = application.applicationData.areas
             )
-        val expectedApplicationData = newApplicationData.copy(pendingOnClient = false).toAlluData()
+        val expectedApplicationData =
+            newApplicationData.copy(pendingOnClient = false).toAlluData(HANKE_TUNNUS)
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
         justRun { cableReportServiceAllu.update(21, expectedApplicationData) }
@@ -882,7 +883,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 it.applicationData = it.applicationData.copy(pendingOnClient = true)
             }
         val applicationData =
-            application.applicationData.toAlluData() as AlluCableReportApplicationData
+            application.applicationData.toAlluData(HANKE_TUNNUS) as AlluCableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
@@ -923,7 +924,9 @@ class ApplicationServiceITest : DatabaseTest() {
                 }
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
-        every { cableReportServiceAllu.create(pendingApplicationData.toAlluData()) } returns 26
+        val expectedAlluRequest = pendingApplicationData.toAlluData(HANKE_TUNNUS)
+        assertEquals(application.hanke.hankeTunnus, expectedAlluRequest.identificationNumber)
+        every { cableReportServiceAllu.create(expectedAlluRequest) } returns 26
         justRun { cableReportServiceAllu.addAttachment(26, any()) }
         justRun { cableReportServiceAllu.addAttachments(26, any()) }
         every { cableReportServiceAllu.getApplicationInformation(26) } returns
@@ -944,7 +947,7 @@ class ApplicationServiceITest : DatabaseTest() {
         )
         assertEquals(ApplicationStatus.PENDING, savedApplication.alluStatus)
         verifyOrder {
-            cableReportServiceAllu.create(pendingApplicationData.toAlluData())
+            cableReportServiceAllu.create(pendingApplicationData.toAlluData(HANKE_TUNNUS))
             cableReportServiceAllu.addAttachment(26, any())
             cableReportServiceAllu.addAttachments(26, any())
             cableReportServiceAllu.getApplicationInformation(26)
@@ -962,7 +965,9 @@ class ApplicationServiceITest : DatabaseTest() {
             ) { it.alluid = null }
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
-        every { cableReportServiceAllu.create(pendingApplicationData.toAlluData()) } returns 26
+        every {
+            cableReportServiceAllu.create(pendingApplicationData.toAlluData(HANKE_TUNNUS))
+        } returns 26
         justRun { cableReportServiceAllu.addAttachment(26, any()) }
         every { cableReportServiceAllu.getApplicationInformation(26) } returns
             AlluDataFactory.createAlluApplicationResponse(26)
@@ -983,7 +988,7 @@ class ApplicationServiceITest : DatabaseTest() {
         assertThat(kayttaja.permission).isNull()
         assertThat(kayttaja.kayttajaTunniste).isNotNull()
         verifyOrder {
-            cableReportServiceAllu.create(pendingApplicationData.toAlluData())
+            cableReportServiceAllu.create(pendingApplicationData.toAlluData(HANKE_TUNNUS))
             cableReportServiceAllu.addAttachment(26, any())
             cableReportServiceAllu.getApplicationInformation(26)
         }
@@ -1043,7 +1048,9 @@ class ApplicationServiceITest : DatabaseTest() {
             ) { it.alluid = null }
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
-        every { cableReportServiceAllu.create(pendingApplicationData.toAlluData()) } returns 26
+        every {
+            cableReportServiceAllu.create(pendingApplicationData.toAlluData(HANKE_TUNNUS))
+        } returns 26
         justRun { cableReportServiceAllu.addAttachment(26, any()) }
         every { cableReportServiceAllu.getApplicationInformation(26) } throws
             AlluException(listOf())
@@ -1061,7 +1068,7 @@ class ApplicationServiceITest : DatabaseTest() {
         assertNull(savedApplication.alluStatus)
 
         verifyOrder {
-            cableReportServiceAllu.create(pendingApplicationData.toAlluData())
+            cableReportServiceAllu.create(pendingApplicationData.toAlluData(HANKE_TUNNUS))
             cableReportServiceAllu.addAttachment(26, any())
             cableReportServiceAllu.getApplicationInformation(26)
         }
@@ -1471,14 +1478,6 @@ class ApplicationServiceITest : DatabaseTest() {
             geometry = "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
         )
 
-    private fun attachments(): List<Attachment> =
-        listOf(
-            Attachment(
-                metadata = createAttachmentMetadata(description = MUU.toString()),
-                file = testFile().bytes
-            )
-        )
-
     private fun mockApplicationWithArea(
         applicationData: ApplicationData =
             AlluDataFactory.createCableReportApplicationData(areas = listOf(aleksanterinpatsas))
@@ -1531,8 +1530,6 @@ class ApplicationServiceITest : DatabaseTest() {
                 "startTime": "${nextYear()}-02-20T23:45:56Z",
                 "endTime": "${nextYear()}-02-21T00:12:34Z",
                 "pendingOnClient": true,
-                "identificationNumber": "identification",
-                "clientApplicationKind": "applicationKind",
                 "workDescription": "Work description.",
                 "rockExcavation": false,
                 "contractorWithContacts": {

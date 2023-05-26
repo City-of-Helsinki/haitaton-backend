@@ -27,7 +27,7 @@ sealed interface ApplicationData {
     val areas: List<ApplicationArea>?
 
     fun copy(pendingOnClient: Boolean): ApplicationData
-    fun toAlluData(): AlluApplicationData?
+    fun toAlluData(hankeTunnus: String): AlluApplicationData
     fun customersWithContacts(): List<CustomerWithContacts>
 }
 
@@ -42,10 +42,8 @@ data class CableReportApplicationData(
     val startTime: ZonedDateTime?,
     val endTime: ZonedDateTime?,
     override val pendingOnClient: Boolean,
-    val identificationNumber: String,
 
     // CableReport specific, required
-    val clientApplicationKind: String,
     val workDescription: String,
     val contractorWithContacts: CustomerWithContacts, // työn suorittaja
     val rockExcavation: Boolean?,
@@ -67,8 +65,8 @@ data class CableReportApplicationData(
     override fun copy(pendingOnClient: Boolean): CableReportApplicationData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
 
-    override fun toAlluData(): AlluCableReportApplicationData =
-        ApplicationDataMapper.toAlluData(this)
+    override fun toAlluData(hankeTunnus: String): AlluCableReportApplicationData =
+        ApplicationDataMapper.toAlluData(hankeTunnus, this)
 
     override fun customersWithContacts(): List<CustomerWithContacts> =
         listOfNotNull(

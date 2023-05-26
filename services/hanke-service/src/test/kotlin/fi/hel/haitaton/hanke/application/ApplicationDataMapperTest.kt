@@ -21,6 +21,8 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 
+private const val HANKE_TUNNUS = "HAI23-45"
+
 internal class ApplicationDataMapperTest {
 
     @Nested
@@ -34,7 +36,7 @@ internal class ApplicationDataMapperTest {
             val applicationData =
                 AlluDataFactory.createCableReportApplicationData(rockExcavation = rockExcavation)
 
-            val alluData = ApplicationDataMapper.toAlluData(applicationData)
+            val alluData = ApplicationDataMapper.toAlluData(HANKE_TUNNUS, applicationData)
 
             assertThat(alluData.workDescription).endsWith(expectedSuffix)
         }
