@@ -27,10 +27,10 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.LIIKENNEJARJESTELY
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.VALTAKIRJA
+import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
-import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
@@ -57,7 +57,6 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
-import org.springframework.http.MediaType.TEXT_HTML_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
@@ -263,12 +262,12 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `addAttachment when content type does not match file extension should fail`() {
+    fun `addAttachment when type not supported should fail`() {
         val application = initApplication().toApplication()
         val invalidFilename = "hello.html"
 
         val exception =
-            assertThrows<AttachmentUploadException> {
+            assertThrows<AttachmentInvalidException> {
                 applicationAttachmentService.addAttachment(
                     applicationId = application.id!!,
                     attachmentType = VALTAKIRJA,
@@ -277,24 +276,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             }
 
         assertThat(exception.message)
-            .isEqualTo(
-                "Attachment upload exception: File 'hello.html' does not match type 'application/pdf'"
-            )
-        assertThat(applicationAttachmentRepository.findAll()).isEmpty()
-    }
-
-    @Test
-    fun `addAttachment when not supported content type should fail`() {
-        val application = initApplication().toApplication()
-
-        assertThrows<AttachmentUploadException> {
-            applicationAttachmentService.addAttachment(
-                applicationId = application.id!!,
-                attachmentType = VALTAKIRJA,
-                attachment = testFile(contentType = TEXT_HTML_VALUE)
-            )
-        }
-
+            .isEqualTo("Attachment upload exception: File 'hello.html' not supported")
         assertThat(applicationAttachmentRepository.findAll()).isEmpty()
     }
 
@@ -304,7 +286,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         val application = initApplication().toApplication()
 
         val exception =
-            assertThrows<AttachmentUploadException> {
+            assertThrows<AttachmentInvalidException> {
                 applicationAttachmentService.addAttachment(
                     applicationId = application.id!!,
                     attachmentType = VALTAKIRJA,
