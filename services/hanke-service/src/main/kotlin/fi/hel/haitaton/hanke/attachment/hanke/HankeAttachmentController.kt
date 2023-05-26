@@ -2,8 +2,8 @@ package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
 import fi.hel.haitaton.hanke.currentUserId
@@ -110,7 +110,7 @@ class HankeAttachmentController(
                     content =
                         [
                             Content(
-                                schema = Schema(implementation = AttachmentUploadException::class)
+                                schema = Schema(implementation = AttachmentInvalidException::class)
                             )
                         ]
                 ),

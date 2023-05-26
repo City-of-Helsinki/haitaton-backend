@@ -2,8 +2,8 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
 import fi.hel.haitaton.hanke.geometria.GeometriaValidationException
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
 import io.sentry.Sentry
@@ -134,10 +134,10 @@ class ControllerExceptionHandler {
         return HankeError.HAI3002
     }
 
-    @ExceptionHandler(AttachmentUploadException::class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ExceptionHandler(AttachmentInvalidException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
-    fun attachmentUploadException(ex: AttachmentUploadException): HankeError {
+    fun attachmentUploadException(ex: AttachmentInvalidException): HankeError {
         logger.warn { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI3001
