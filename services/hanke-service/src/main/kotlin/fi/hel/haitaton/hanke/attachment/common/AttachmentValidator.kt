@@ -12,6 +12,7 @@ private val logger = KotlinLogging.logger {}
 private val supportedFiletypes =
     setOf(
         "pdf",
+        "jpg",
         "jpeg",
         "png",
         "dgn",
