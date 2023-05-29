@@ -164,7 +164,7 @@ open class ApplicationService(
 
         // Update the application in Allu, if it's been already uploaded
         if (application.alluid != null) {
-            updateApplicationInAllu(application.toApplication())
+            updateApplicationInAllu(application)
         }
 
         val updatedApplication = applicationRepository.save(application).toApplication()
@@ -209,7 +209,7 @@ open class ApplicationService(
         application.applicationData = application.applicationData.copy(pendingOnClient = false)
 
         logger.info { "Sending the application to Allu. id=$id" }
-        application.alluid = sendToAllu(application)
+        application.alluid = sendApplicationToAllu(application)
 
         logger.info {
             "Application sent, fetching application identifier and status. id=$id, alluid=${application.alluid}."
@@ -427,44 +427,43 @@ open class ApplicationService(
         }
     }
 
-    private fun sendToAllu(entity: ApplicationEntity): Int {
-        val application = entity.toApplication()
-        val attachments = entity.attachments.map { it.toAlluAttachment() }
-        return if (application.alluid == null) {
-            createApplicationInAllu(application, attachments)
+    private fun sendApplicationToAllu(entity: ApplicationEntity): Int {
+        return if (entity.alluid == null) {
+            createApplicationInAllu(entity)
         } else {
-            updateApplicationInAllu(application)
+            updateApplicationInAllu(entity)
         }
     }
 
-    private fun updateApplicationInAllu(application: Application): Int =
-        with(application) {
-            val alluId = alluid ?: throw ApplicationArgumentException("AlluId null in update.")
+    private fun updateApplicationInAllu(entity: ApplicationEntity): Int {
+        val application = entity.toApplication()
+        val alluId =
+            application.alluid ?: throw ApplicationArgumentException("AlluId null in update.")
 
-            logger.info { "Uploading updated application with alluId $alluId" }
+        logger.info { "Uploading updated application with alluId $alluId" }
 
-            when (val data = applicationData) {
-                is CableReportApplicationData -> updateCableReportInAllu(alluId, hankeTunnus, data)
-            }
-
-            return alluId
+        when (val data = application.applicationData) {
+            is CableReportApplicationData ->
+                updateCableReportInAllu(alluId, application.hankeTunnus, data)
         }
+
+        return alluId
+    }
 
     /** Creates new application in Allu. All attachments are sent after creation. */
-    private fun createApplicationInAllu(
-        application: Application,
-        attachments: List<Attachment>
-    ): Int =
-        with(application) {
-            val alluId =
-                when (val data = applicationData) {
-                    is CableReportApplicationData -> createCableReportToAllu(hankeTunnus, data)
-                }
+    private fun createApplicationInAllu(entity: ApplicationEntity): Int {
+        val application = entity.toApplication()
+        val attachments = entity.attachments.map { it.toAlluAttachment() }
+        val alluId =
+            when (val data = application.applicationData) {
+                is CableReportApplicationData ->
+                    createCableReportToAllu(application.hankeTunnus, data)
+            }
 
-            attachmentService.sendAllAttachments(alluId, attachments)
+        attachmentService.sendAllAttachments(alluId, attachments)
 
-            return alluId
-        }
+        return alluId
+    }
 
     private fun createCableReportToAllu(
         hankeTunnus: String,
