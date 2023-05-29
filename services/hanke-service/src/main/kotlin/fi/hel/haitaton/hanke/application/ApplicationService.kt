@@ -436,15 +436,13 @@ open class ApplicationService(
     }
 
     private fun updateApplicationInAllu(entity: ApplicationEntity): Int {
-        val application = entity.toApplication()
-        val alluId =
-            application.alluid ?: throw ApplicationArgumentException("AlluId null in update.")
+        val alluId = entity.alluid ?: throw ApplicationArgumentException("AlluId null in update.")
 
         logger.info { "Uploading updated application with alluId $alluId" }
 
-        when (val data = application.applicationData) {
+        when (val data = entity.applicationData) {
             is CableReportApplicationData ->
-                updateCableReportInAllu(alluId, application.hankeTunnus, data)
+                updateCableReportInAllu(alluId, entity.hankeTunnus(), data)
         }
 
         return alluId
@@ -452,13 +450,12 @@ open class ApplicationService(
 
     /** Creates new application in Allu. All attachments are sent after creation. */
     private fun createApplicationInAllu(entity: ApplicationEntity): Int {
-        val application = entity.toApplication()
-        val attachments = entity.attachments.map { it.toAlluAttachment() }
         val alluId =
-            when (val data = application.applicationData) {
-                is CableReportApplicationData ->
-                    createCableReportToAllu(application.hankeTunnus, data)
+            when (val data = entity.applicationData) {
+                is CableReportApplicationData -> createCableReportToAllu(entity.hankeTunnus(), data)
             }
+
+        val attachments = entity.attachments.map { it.toAlluAttachment() }
 
         attachmentService.sendAllAttachments(alluId, attachments)
 
