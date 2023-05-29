@@ -561,7 +561,6 @@ class ApplicationServiceITest : DatabaseTest() {
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21)
         val expectedAlluRequest = newApplicationData.toAlluData(HANKE_TUNNUS)
-        assertEquals(application.hanke.hankeTunnus, expectedAlluRequest.identificationNumber)
         justRun { cableReportServiceAllu.update(21, expectedAlluRequest) }
         justRun { cableReportServiceAllu.addAttachment(21, any()) }
 
@@ -577,7 +576,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         verifyOrder {
             cableReportServiceAllu.getApplicationInformation(21)
-            cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS))
+            cableReportServiceAllu.update(21, expectedAlluRequest)
             cableReportServiceAllu.addAttachment(21, any())
         }
     }
@@ -925,7 +924,6 @@ class ApplicationServiceITest : DatabaseTest() {
         val applicationData = application.applicationData as CableReportApplicationData
         val pendingApplicationData = applicationData.copy(pendingOnClient = false)
         val expectedAlluRequest = pendingApplicationData.toAlluData(HANKE_TUNNUS)
-        assertEquals(application.hanke.hankeTunnus, expectedAlluRequest.identificationNumber)
         every { cableReportServiceAllu.create(expectedAlluRequest) } returns 26
         justRun { cableReportServiceAllu.addAttachment(26, any()) }
         justRun { cableReportServiceAllu.addAttachments(26, any()) }
@@ -947,7 +945,7 @@ class ApplicationServiceITest : DatabaseTest() {
         )
         assertEquals(ApplicationStatus.PENDING, savedApplication.alluStatus)
         verifyOrder {
-            cableReportServiceAllu.create(pendingApplicationData.toAlluData(HANKE_TUNNUS))
+            cableReportServiceAllu.create(expectedAlluRequest)
             cableReportServiceAllu.addAttachment(26, any())
             cableReportServiceAllu.addAttachments(26, any())
             cableReportServiceAllu.getApplicationInformation(26)
