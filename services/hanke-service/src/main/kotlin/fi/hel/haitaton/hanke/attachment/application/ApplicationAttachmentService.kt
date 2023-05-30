@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.attachment.application
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
+import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
@@ -109,13 +110,13 @@ class ApplicationAttachmentService(
         logger.info { "Deleted application attachment ${attachment.id}" }
     }
 
-    fun sendAllAttachments(alluId: Int, attachments: List<ApplicationAttachmentEntity>) {
+    fun sendAllAttachments(alluId: Int, attachments: List<Attachment>) {
         if (attachments.isEmpty()) {
             logger.info { "No attachments to send for alluId $alluId" }
             return
         }
-        val alluAttachments = attachments.map { it.toAlluAttachment() }
-        cableReportService.addAttachments(alluId, alluAttachments)
+
+        cableReportService.addAttachments(alluId, attachments)
     }
 
     private fun findApplication(applicationId: Long): ApplicationEntity =
