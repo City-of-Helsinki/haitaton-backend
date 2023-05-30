@@ -8,6 +8,7 @@ enum class HankeError(val errorMessage: String) {
     HAI0001("Access denied"),
     HAI0002("Internal error"),
     HAI0003("Invalid data"),
+    HAI0004("Resource does not exist"),
     HAI1001("Hanke not found"),
     HAI1002("Invalid Hanke data"),
     HAI1003("Internal error while saving Hanke"),

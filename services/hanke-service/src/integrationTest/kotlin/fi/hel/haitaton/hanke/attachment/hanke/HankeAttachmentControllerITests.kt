@@ -1,6 +1,9 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
+import assertk.assertThat
+import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.ControllerTest
+import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeError.HAI0001
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
@@ -39,6 +42,7 @@ import org.springframework.security.test.context.support.WithAnonymousUser
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
@@ -187,4 +191,40 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
         hankeTunnus: String = HANKE_TUNNUS,
         attachmentId: UUID = randomUUID(),
     ): ResultActions = delete("/hankkeet/$hankeTunnus/liitteet/$attachmentId")
+}
+
+@WebMvcTest(HankeAttachmentController::class)
+@Import(IntegrationTestConfiguration::class)
+@ActiveProfiles("itest")
+@WithMockUser(USERNAME)
+@TestPropertySource(locations = ["classpath:application-test.properties"])
+class HankeAttachmentControllerEndpointDisabledITests(@Autowired override val mockMvc: MockMvc) :
+    ControllerTest {
+
+    @Test
+    fun `post attachment when endpoint is disabled should return 404`() {
+        val response =
+            mockMvc
+                .perform(
+                    multipart("/hankkeet/$HANKE_TUNNUS/liitteet").file(testFile()).with(csrf())
+                )
+                .andExpect(status().isNotFound)
+                .andReturn()
+                .response
+
+        assertThat(response.contentAsString).isEqualTo(expectedResponse())
+    }
+
+    @Test
+    fun `delete attachment when endpoint is disabled should return 404`() {
+        val response =
+            delete("/hankkeet/$HANKE_TUNNUS/liitteet/${randomUUID()}").andReturn().response
+
+        assertThat(response.contentAsString).isEqualTo(expectedResponse())
+    }
+
+    private fun expectedResponse(): String =
+        with(HankeError.HAI0004) {
+            return """{"errorMessage":"$errorMessage","errorCode":"$errorCode"}"""
+        }
 }
