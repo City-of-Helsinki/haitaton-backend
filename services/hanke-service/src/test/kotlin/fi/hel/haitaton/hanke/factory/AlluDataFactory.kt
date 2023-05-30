@@ -123,8 +123,6 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             pendingOnClient: Boolean = false,
-            identificationNumber: String = "identification",
-            clientApplicationKind: String = "applicationKind",
             workDescription: String = "Work description.",
             customerWithContacts: CustomerWithContacts =
                 createCompanyCustomer().withContacts(createContact()),
@@ -142,8 +140,6 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 startTime = startTime,
                 endTime = endTime,
                 pendingOnClient = pendingOnClient,
-                identificationNumber = identificationNumber,
-                clientApplicationKind = clientApplicationKind,
                 workDescription = workDescription,
                 customerWithContacts = customerWithContacts,
                 contractorWithContacts = contractorWithContacts,

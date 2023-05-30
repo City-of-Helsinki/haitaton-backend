@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke
 
+import assertk.assertThat
+import assertk.assertions.isEqualTo
 import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
@@ -35,6 +37,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -572,4 +575,48 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             AlluDataFactory.createApplication(it.toLong(), hankeTunnus = HANKE_TUNNUS)
         }
     }
+}
+
+@WebMvcTest(HankeController::class)
+@Import(IntegrationTestConfiguration::class)
+@ActiveProfiles("itest")
+@WithMockUser(USERNAME, roles = ["haitaton-user"])
+@TestPropertySource(locations = ["classpath:application-test.properties"])
+class HankeControllerEndpointDisabledITests(@Autowired override val mockMvc: MockMvc) :
+    ControllerTest {
+
+    @Test
+    fun `post hanke when endpoint is disabled should return 404`() {
+        val response =
+            post(BASE_URL, HankeFactory.create())
+                .andExpect(status().isNotFound)
+                .andReturn()
+                .response
+
+        assertThat(response.contentAsString).isEqualTo(expectedResponse())
+    }
+
+    @Test
+    fun `put hanke when endpoint is disabled should return 404`() {
+        val response =
+            put("$BASE_URL/$HANKE_TUNNUS", HankeFactory.create())
+                .andExpect(status().isNotFound)
+                .andReturn()
+                .response
+
+        assertThat(response.contentAsString).isEqualTo(expectedResponse())
+    }
+
+    @Test
+    fun `delete hanke when endpoint is disabled should return 404`() {
+        val response =
+            delete("$BASE_URL/$HANKE_TUNNUS").andExpect(status().isNotFound).andReturn().response
+
+        assertThat(response.contentAsString).isEqualTo(expectedResponse())
+    }
+
+    private fun expectedResponse(): String =
+        with(HankeError.HAI0004) {
+            return """{"errorMessage":"$errorMessage","errorCode":"$errorCode"}"""
+        }
 }
