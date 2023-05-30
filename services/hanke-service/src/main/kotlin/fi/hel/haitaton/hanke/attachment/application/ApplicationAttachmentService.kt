@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.attachment.application
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
+import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
@@ -12,9 +13,9 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
+import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
-import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
@@ -109,13 +110,13 @@ class ApplicationAttachmentService(
         logger.info { "Deleted application attachment ${attachment.id}" }
     }
 
-    fun sendAllAttachments(alluId: Int, attachments: List<ApplicationAttachmentEntity>) {
+    fun sendAllAttachments(alluId: Int, attachments: List<Attachment>) {
         if (attachments.isEmpty()) {
             logger.info { "No attachments to send for alluId $alluId" }
             return
         }
-        val alluAttachments = attachments.map { it.toAlluAttachment() }
-        cableReportService.addAttachments(alluId, alluAttachments)
+
+        cableReportService.addAttachments(alluId, attachments)
     }
 
     private fun findApplication(applicationId: Long): ApplicationEntity =
@@ -128,14 +129,14 @@ class ApplicationAttachmentService(
     ): ApplicationAttachmentEntity =
         find { it.id == attachmentId } ?: throw AttachmentNotFoundException(attachmentId)
 
-    private fun validateAttachment(attachment: MultipartFile) {
-        AttachmentValidator.validate(attachment)
-        val scanResult =
-            scanClient.scan(listOf(FileScanInput(attachment.originalFilename!!, attachment.bytes)))
-        if (scanResult.hasInfected()) {
-            throw AttachmentUploadException("Infected file detected, see previous logs.")
+    private fun validateAttachment(attachment: MultipartFile) =
+        with(attachment) {
+            AttachmentValidator.validate(this)
+            val scanResult = scanClient.scan(listOf(FileScanInput(originalFilename!!, bytes)))
+            if (scanResult.hasInfected()) {
+                throw AttachmentInvalidException("Infected file detected, see previous logs.")
+            }
         }
-    }
 
     /** Application considered pending if no alluId or status null, pending, or pending_client. */
     private fun isPending(application: ApplicationEntity): Boolean {
