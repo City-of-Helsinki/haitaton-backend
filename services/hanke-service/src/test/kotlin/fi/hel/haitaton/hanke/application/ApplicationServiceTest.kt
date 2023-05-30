@@ -58,8 +58,8 @@ import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
-private const val username = "test"
-private const val hankeTunnus = "HAI-1234"
+private const val USERNAME = "test"
+private const val HANKE_TUNNUS = "HAI-1234"
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ExtendWith(SpringExtension::class)
@@ -122,28 +122,28 @@ class ApplicationServiceTest {
             AlluDataFactory.createApplication(
                 id = null,
                 applicationData = applicationData,
-                hankeTunnus = hankeTunnus,
+                hankeTunnus = HANKE_TUNNUS,
             )
         every { applicationRepo.save(any()) } answers
             {
                 val application: ApplicationEntity = firstArg()
                 application.copy(id = 1)
             }
-        val hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus)
-        every { hankeRepository.findByHankeTunnus(hankeTunnus) } returns hanke
+        val hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS)
+        every { hankeRepository.findByHankeTunnus(HANKE_TUNNUS) } returns hanke
         every { geometriatDao.validateGeometriat(any()) } returns null
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
-        val created = applicationService.create(dto, username)
+        val created = applicationService.create(dto, USERNAME)
 
         assertThat(created.id).isEqualTo(1)
         assertThat(created.alluid).isEqualTo(null)
         verifySequence {
             geometriatDao.validateGeometriat(any())
-            hankeRepository.findByHankeTunnus(hankeTunnus)
+            hankeRepository.findByHankeTunnus(HANKE_TUNNUS)
             geometriatDao.isInsideHankeAlueet(1, any())
             applicationRepo.save(any())
-            applicationLoggingService.logCreate(any(), username)
+            applicationLoggingService.logCreate(any(), USERNAME)
             disclosureLogService wasNot Called
             cableReportService wasNot Called
         }
@@ -155,7 +155,7 @@ class ApplicationServiceTest {
             AlluDataFactory.createApplication(
                 id = null,
                 applicationData = applicationData,
-                hankeTunnus = hankeTunnus
+                hankeTunnus = HANKE_TUNNUS
             )
         every { geometriatDao.validateGeometriat(any()) } returns
             GeometriatDao.InvalidDetail(
@@ -164,23 +164,23 @@ class ApplicationServiceTest {
             )
 
         val exception =
-            assertThrows<ApplicationGeometryException> { applicationService.create(dto, username) }
+            assertThrows<ApplicationGeometryException> { applicationService.create(dto, USERNAME) }
 
         assertThat(exception)
             .hasMessage(
-                """Invalid geometry received when creating a new application for user $username, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
+                """Invalid geometry received when creating a new application for user $USERNAME, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
             )
         verifySequence { geometriatDao.validateGeometriat(any()) }
     }
 
     @Test
     fun `updateApplicationData saves disclosure logs when updating Allu data`() {
-        val hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus)
+        val hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS)
         val applicationEntity =
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = 42,
-                userId = username,
+                userId = USERNAME,
                 applicationData = applicationData,
                 hanke = hanke,
             )
@@ -196,7 +196,7 @@ class ApplicationServiceTest {
         every { geometriatDao.calculateArea(any()) } returns 100f
         val updatedData = applicationData.copy(rockExcavation = !applicationData.rockExcavation!!)
 
-        applicationService.updateApplicationData(3, updatedData, username)
+        applicationService.updateApplicationData(3, updatedData, USERNAME)
 
         verifySequence {
             applicationRepo.findOneById(3)
@@ -210,7 +210,7 @@ class ApplicationServiceTest {
             disclosureLogService.saveDisclosureLogsForAllu(updatedData, Status.SUCCESS)
             cableReportService.addAttachment(42, any())
             applicationRepo.save(applicationEntity)
-            applicationLoggingService.logUpdate(any(), any(), username)
+            applicationLoggingService.logUpdate(any(), any(), USERNAME)
         }
     }
 
@@ -220,9 +220,9 @@ class ApplicationServiceTest {
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = 42,
-                userId = username,
+                userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeEntity(hankeTunnus = hankeTunnus),
+                hanke = HankeEntity(hankeTunnus = HANKE_TUNNUS),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.validateGeometriat(any()) } returns
@@ -234,12 +234,12 @@ class ApplicationServiceTest {
 
         val exception =
             assertThrows<ApplicationGeometryException> {
-                applicationService.updateApplicationData(3, updatedData, username)
+                applicationService.updateApplicationData(3, updatedData, USERNAME)
             }
 
         assertThat(exception)
             .hasMessage(
-                """Invalid geometry received when updating application for user $username, id=3, alluid=42, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
+                """Invalid geometry received when updating application for user $USERNAME, id=3, alluid=42, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
             )
         verifySequence {
             applicationRepo.findOneById(3)
@@ -253,9 +253,9 @@ class ApplicationServiceTest {
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = null,
-                userId = username,
+                userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus),
+                hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
@@ -268,7 +268,7 @@ class ApplicationServiceTest {
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
         justRun { attachmentService.sendAllAttachments(42, any()) }
 
-        applicationService.sendApplication(3, username)
+        applicationService.sendApplication(3, USERNAME)
 
         val expectedApplication = applicationData.copy(pendingOnClient = false)
         verifySequence {
@@ -292,9 +292,9 @@ class ApplicationServiceTest {
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = null,
-                userId = username,
+                userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus),
+                hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.calculateCombinedArea(any()) } returns 100f
@@ -302,7 +302,7 @@ class ApplicationServiceTest {
         every { cableReportService.create(any()) } throws AlluException(listOf())
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
-        assertThrows<AlluException> { applicationService.sendApplication(3, username) }
+        assertThrows<AlluException> { applicationService.sendApplication(3, USERNAME) }
 
         val expectedApplication = applicationData.copy(pendingOnClient = false)
         verifySequence {
@@ -326,9 +326,9 @@ class ApplicationServiceTest {
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = null,
-                userId = username,
+                userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeEntity(hankeTunnus = hankeTunnus, id = 1),
+                hanke = HankeEntity(hankeTunnus = HANKE_TUNNUS, id = 1),
             )
         assertThat(applicationEntity.applicationData.areas).isNotNull().isNotEmpty()
         every { applicationRepo.findOneById(3) } returns applicationEntity
@@ -337,7 +337,7 @@ class ApplicationServiceTest {
         every { geometriatDao.isInsideHankeAlueet(any(), any()) } returns true
         every { cableReportService.create(any()) } throws AlluLoginException(RuntimeException())
 
-        assertThrows<AlluLoginException> { applicationService.sendApplication(3, username) }
+        assertThrows<AlluLoginException> { applicationService.sendApplication(3, USERNAME) }
 
         verifySequence {
             disclosureLogService wasNot called
@@ -360,9 +360,9 @@ class ApplicationServiceTest {
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = null,
-                userId = username,
+                userId = USERNAME,
                 applicationData = applicationData.copy(rockExcavation = rockExcavation),
-                hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus),
+                hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
@@ -375,13 +375,13 @@ class ApplicationServiceTest {
             AlluDataFactory.createAlluApplicationResponse(852)
         justRun { attachmentService.sendAllAttachments(852, any()) }
 
-        applicationService.sendApplication(3, username)
+        applicationService.sendApplication(3, USERNAME)
 
         val expectedApplicationData =
             applicationData.copy(pendingOnClient = false, rockExcavation = rockExcavation)
         val expectedAlluData =
             expectedApplicationData
-                .toAlluData()
+                .toAlluData(HANKE_TUNNUS)
                 .copy(workDescription = applicationData.workDescription + "\n" + expectedSuffix)
         verifySequence {
             applicationRepo.findOneById(3)
@@ -407,14 +407,14 @@ class ApplicationServiceTest {
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = null,
-                userId = username,
+                userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus),
+                hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
-        assertThat { applicationService.sendApplication(3, username) }
+        assertThat { applicationService.sendApplication(3, USERNAME) }
             .isFailure()
             .all {
                 this.hasClass(AlluDataException::class)

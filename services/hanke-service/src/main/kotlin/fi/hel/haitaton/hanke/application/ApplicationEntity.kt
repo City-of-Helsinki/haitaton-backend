@@ -50,4 +50,7 @@ data class ApplicationEntity(
             applicationData,
             hanke.hankeTunnus!!,
         )
+
+    /** An application must belong to a Hanke. Thus, hankeTunnus must be present. */
+    fun hankeTunnus(): String = hanke.hankeTunnus!!
 }
