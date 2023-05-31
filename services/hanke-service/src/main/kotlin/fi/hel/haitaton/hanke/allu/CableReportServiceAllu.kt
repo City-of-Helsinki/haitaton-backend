@@ -22,6 +22,8 @@ import reactor.core.publisher.Mono
 
 private val logger = KotlinLogging.logger {}
 
+const val HAITATON_SYSTEM = "Haitaton järjestelmä"
+
 class CableReportServiceAllu(
     private val webClient: WebClient,
     private val properties: AlluProperties,
@@ -292,6 +294,30 @@ class CableReportServiceAllu(
                 logError("Error getting decision attachment data from Allu", it)
             }
             .map { it.byteArray }
+            .blockOptional()
+            .orElseThrow()
+    }
+
+    /** Send a comment to the application with Haitaton system as the sender. */
+    override fun sendSystemComment(applicationId: Int, msg: String): Int =
+        sendComment(applicationId, Comment(HAITATON_SYSTEM, msg))
+
+    private fun sendComment(applicationId: Int, comment: Comment): Int {
+        logger.info { "Sending comment to application: $applicationId." }
+        val token = login()
+        return webClient
+            .post()
+            .uri("$baseUrl/v2/applications/$applicationId/comments")
+            .contentType(MediaType.APPLICATION_JSON)
+            .accept(MediaType.APPLICATION_JSON)
+            .headers { it.setBearerAuth(token) }
+            .body(Mono.just(comment))
+            .retrieve()
+            .bodyToMono(Int::class.java)
+            .timeout(defaultTimeout)
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error adding system comment to Allu", it)
+            }
             .blockOptional()
             .orElseThrow()
     }

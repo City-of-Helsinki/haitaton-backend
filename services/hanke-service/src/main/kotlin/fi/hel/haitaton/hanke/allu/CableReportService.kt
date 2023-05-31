@@ -35,4 +35,6 @@ interface CableReportService {
     fun getApplicationInformation(applicationId: Int): AlluApplicationResponse
 
     fun cancel(applicationId: Int)
+
+    fun sendSystemComment(applicationId: Int, msg: String): Int
 }
