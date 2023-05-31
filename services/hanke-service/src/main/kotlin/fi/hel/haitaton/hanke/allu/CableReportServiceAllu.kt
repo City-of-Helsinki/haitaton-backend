@@ -298,9 +298,13 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
-    /** Send a comment to the application with Haitaton system as the sender. */
     override fun sendSystemComment(applicationId: Int, msg: String): Int =
         sendComment(applicationId, Comment(HAITATON_SYSTEM, msg))
+    /**
+     * Send a comment to the application with Haitaton system as the sender.
+     *
+     * @return The id of the added comment in Allu
+     */
 
     private fun sendComment(applicationId: Int, comment: Comment): Int {
         logger.info { "Sending comment to application: $applicationId." }
