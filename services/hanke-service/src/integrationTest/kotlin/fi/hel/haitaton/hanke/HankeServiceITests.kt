@@ -8,6 +8,7 @@ import assertk.assertions.isNull
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
+import fi.hel.haitaton.hanke.application.ALLU_USER_CANCELLATION_MSG
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationEntity
@@ -1194,6 +1195,7 @@ class HankeServiceITests : DatabaseTest() {
         every { cableReportService.getApplicationInformation(hakemusAlluId) } returns
             AlluDataFactory.createAlluApplicationResponse(status = ApplicationStatus.PENDING)
         justRun { cableReportService.cancel(hakemusAlluId) }
+        every { cableReportService.sendSystemComment(hakemusAlluId, any()) } returns 1324
 
         hankeService.deleteHanke(hanke.toDomainObject(), hakemukset, USER_NAME)
 
@@ -1202,6 +1204,7 @@ class HankeServiceITests : DatabaseTest() {
             cableReportService.getApplicationInformation(hakemusAlluId)
             cableReportService.getApplicationInformation(hakemusAlluId)
             cableReportService.cancel(hakemusAlluId)
+            cableReportService.sendSystemComment(hakemusAlluId, ALLU_USER_CANCELLATION_MSG)
         }
     }
 
