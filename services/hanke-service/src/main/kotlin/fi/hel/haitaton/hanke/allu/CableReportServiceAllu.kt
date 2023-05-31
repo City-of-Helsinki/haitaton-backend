@@ -58,12 +58,12 @@ class CableReportServiceAllu(
         }
     }
 
-    override fun getApplicationInformation(applicationId: Int): AlluApplicationResponse {
-        logger.info { "Fetching application information for application: $applicationId" }
+    override fun getApplicationInformation(alluApplicationId: Int): AlluApplicationResponse {
+        logger.info { "Fetching application information for application: $alluApplicationId" }
         val token = login()
         return webClient
             .get()
-            .uri("$baseUrl/v2/applications/$applicationId")
+            .uri("$baseUrl/v2/applications/$alluApplicationId")
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
             .retrieve()
@@ -83,12 +83,12 @@ class CableReportServiceAllu(
      * test instance is shared for all local, dev and test environments.
      */
     override fun getApplicationStatusHistories(
-        applicationIds: List<Int>,
+        alluApplicationIds: List<Int>,
         eventsAfter: ZonedDateTime,
     ): List<ApplicationHistory> {
         logger.info { "Fetching application status histories." }
         val token = login()
-        val search = ApplicationHistorySearch(applicationIds, eventsAfter)
+        val search = ApplicationHistorySearch(alluApplicationIds, eventsAfter)
         return webClient
             .post()
             .uri("$baseUrl/v2/applicationhistory")
@@ -128,12 +128,12 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
-    override fun update(applicationId: Int, cableReport: AlluCableReportApplicationData) {
-        logger.info { "Updating application $applicationId." }
+    override fun update(alluApplicationId: Int, cableReport: AlluCableReportApplicationData) {
+        logger.info { "Updating application $alluApplicationId." }
         val token = login()
         webClient
             .put()
-            .uri("$baseUrl/v2/cablereports/$applicationId")
+            .uri("$baseUrl/v2/cablereports/$alluApplicationId")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
@@ -148,12 +148,12 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
-    override fun cancel(applicationId: Int) {
-        logger.info { "Cancelling application $applicationId." }
+    override fun cancel(alluApplicationId: Int) {
+        logger.info { "Cancelling application $alluApplicationId." }
         val token = login()
         webClient
             .put()
-            .uri("$baseUrl/v2/applications/$applicationId/cancelled")
+            .uri("$baseUrl/v2/applications/$alluApplicationId/cancelled")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
@@ -167,25 +167,26 @@ class CableReportServiceAllu(
     }
 
     /** Send an individual attachment. */
-    override fun addAttachment(applicationId: Int, attachment: Attachment) {
+    override fun addAttachment(alluApplicationId: Int, attachment: Attachment) {
         val token = login()
-        postAttachment(applicationId, token, attachment)
+        postAttachment(alluApplicationId, token, attachment)
     }
 
     /** Send many attachments in parallel. */
-    override fun addAttachments(alluId: Int, attachments: List<Attachment>) = runBlocking {
-        withContext(ioDispatcher) {
-            val token = login()
-            attachments.forEach { launch { postAttachment(alluId, token, it) } }
+    override fun addAttachments(alluApplicationId: Int, attachments: List<Attachment>) =
+        runBlocking {
+            withContext(ioDispatcher) {
+                val token = login()
+                attachments.forEach { launch { postAttachment(alluApplicationId, token, it) } }
+            }
         }
-    }
 
-    override fun getInformationRequests(applicationId: Int): List<InformationRequest> {
-        logger.info { "Fetching information request for application $applicationId." }
+    override fun getInformationRequests(alluApplicationId: Int): List<InformationRequest> {
+        logger.info { "Fetching information request for application $alluApplicationId." }
         val token = login()
         return webClient
             .get()
-            .uri("$baseUrl/v2/applications/$applicationId/informationrequests")
+            .uri("$baseUrl/v2/applications/$alluApplicationId/informationrequests")
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
             .retrieve()
@@ -200,7 +201,7 @@ class CableReportServiceAllu(
     }
 
     override fun respondToInformationRequest(
-        applicationId: Int,
+        alluApplicationId: Int,
         requestId: Int,
         cableReport: AlluCableReportApplicationData,
         updatedFields: List<InformationRequestFieldKey>,
@@ -209,7 +210,9 @@ class CableReportServiceAllu(
         val token = login()
         webClient
             .post()
-            .uri("$baseUrl/v2/cablereports/$applicationId/informationrequests/$requestId/response")
+            .uri(
+                "$baseUrl/v2/cablereports/$alluApplicationId/informationrequests/$requestId/response"
+            )
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
@@ -220,10 +223,10 @@ class CableReportServiceAllu(
             .block()
     }
 
-    override fun getDecisionPdf(applicationId: Int): ByteArray {
-        logger.info { "Fetching decision pdf for application $applicationId." }
+    override fun getDecisionPdf(alluApplicationId: Int): ByteArray {
+        logger.info { "Fetching decision pdf for application $alluApplicationId." }
         val token = login()
-        val requestUri = "$baseUrl/v2/cablereports/$applicationId/decision"
+        val requestUri = "$baseUrl/v2/cablereports/$alluApplicationId/decision"
         val response =
             webClient
                 .get()
@@ -236,7 +239,7 @@ class CableReportServiceAllu(
                     {
                         Mono.error(
                             ApplicationDecisionNotFoundException(
-                                "Decision not found in Allu. alluid=$applicationId"
+                                "Decision not found in Allu. alluApplicationId=$alluApplicationId"
                             )
                         )
                     }
@@ -260,12 +263,12 @@ class CableReportServiceAllu(
         return body.byteArray
     }
 
-    override fun getDecisionAttachments(applicationId: Int): List<AttachmentMetadata> {
-        logger.info { "Fetching decision attachments for application $applicationId." }
+    override fun getDecisionAttachments(alluApplicationId: Int): List<AttachmentMetadata> {
+        logger.info { "Fetching decision attachments for application $alluApplicationId." }
         val token = login()
         return webClient
             .get()
-            .uri("$baseUrl/v2/applications/$applicationId/attachments", applicationId)
+            .uri("$baseUrl/v2/applications/$alluApplicationId/attachments", alluApplicationId)
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
             .retrieve()
@@ -279,12 +282,12 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
-    override fun getDecisionAttachmentData(applicationId: Int, attachmentId: Int): ByteArray {
-        logger.info { "Fetching decision attachment for application: $applicationId." }
+    override fun getDecisionAttachmentData(alluApplicationId: Int, attachmentId: Int): ByteArray {
+        logger.info { "Fetching decision attachment for application: $alluApplicationId." }
         val token = login()
         return webClient
             .get()
-            .uri("$baseUrl/v2/applications/$applicationId/attachments/$attachmentId")
+            .uri("$baseUrl/v2/applications/$alluApplicationId/attachments/$attachmentId")
             .accept(MediaType.APPLICATION_PDF)
             .headers { it.setBearerAuth(token) }
             .retrieve()
@@ -298,20 +301,20 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
-    override fun sendSystemComment(applicationId: Int, msg: String): Int =
-        sendComment(applicationId, Comment(HAITATON_SYSTEM, msg))
     /**
      * Send a comment to the application with Haitaton system as the sender.
      *
      * @return The id of the added comment in Allu
      */
+    override fun sendSystemComment(alluApplicationId: Int, msg: String): Int =
+        sendComment(alluApplicationId, Comment(HAITATON_SYSTEM, msg))
 
-    private fun sendComment(applicationId: Int, comment: Comment): Int {
-        logger.info { "Sending comment to application: $applicationId." }
+    private fun sendComment(alluApplicationId: Int, comment: Comment): Int {
+        logger.info { "Sending comment to application: $alluApplicationId." }
         val token = login()
         return webClient
             .post()
-            .uri("$baseUrl/v2/applications/$applicationId/comments")
+            .uri("$baseUrl/v2/applications/$alluApplicationId/comments")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
@@ -326,8 +329,8 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
-    private fun postAttachment(alluId: Int, token: String, attachment: Attachment) {
-        logger.info { "Sending attachment for application $alluId." }
+    private fun postAttachment(alluApplicationId: Int, token: String, attachment: Attachment) {
+        logger.info { "Sending attachment for application $alluApplicationId." }
 
         val builder = MultipartBodyBuilder()
         builder
@@ -344,7 +347,7 @@ class CableReportServiceAllu(
 
         webClient
             .post()
-            .uri("$baseUrl/v2/applications/$alluId/attachments")
+            .uri("$baseUrl/v2/applications/$alluApplicationId/attachments")
             .contentType(MediaType.MULTIPART_FORM_DATA)
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }

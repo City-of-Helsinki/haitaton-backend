@@ -204,7 +204,7 @@ class CableReportServiceAlluITests {
             val exception =
                 assertThrows<ApplicationDecisionNotFoundException> { service.getDecisionPdf(12) }
 
-            assertThat(exception).hasMessage("Decision not found in Allu. alluid=12")
+            assertThat(exception).hasMessage("Decision not found in Allu. alluApplicationId=12")
         }
 
         @Test
