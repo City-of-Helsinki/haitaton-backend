@@ -28,16 +28,11 @@ class ApplicationValidator : ConstraintValidator<ValidApplication, Application> 
     }
 
     private fun isValidCableReport(cableReportData: CableReportApplicationData): Boolean =
-        with(cableReportData) {
-            listOf(
-                    validStartAndEnd(startTime, endTime),
-                    validCustomerWithContactsNotNull(customerWithContacts),
-                    validCustomerWithContactsNullable(representativeWithContacts),
-                    validCustomerWithContactsNullable(contractorWithContacts),
-                    validCustomerWithContactsNullable(propertyDeveloperWithContacts)
-                )
-                .all { it }
-        }
+        listOf(
+                validStartAndEnd(cableReportData.startTime, cableReportData.endTime),
+                validCustomersWithContacts(cableReportData.customersWithContacts())
+            )
+            .all { it }
 
     /**
      * Checks if the start is before or equal to the end.
@@ -50,40 +45,24 @@ class ApplicationValidator : ConstraintValidator<ValidApplication, Application> 
     private fun validStartAndEnd(start: ZonedDateTime?, end: ZonedDateTime?): Boolean {
         logger.info { "Application startDate: '$start', endDate: '$end'." }
 
-        if (start == null && end == null) {
-            return true
-        }
-
         if (start == null || end == null) {
-            return false
+            return true
         }
 
         return !start.isAfter(end)
     }
 
     /** Currently checks registryKey only. */
-    private fun validCustomer(customer: Customer?): Boolean {
-        if (customer == null) {
-            return true
-        }
-
+    private fun validCustomer(customer: Customer): Boolean {
         return validRegistryKey(customer.registryKey)
     }
 
     private fun validRegistryKey(key: String?) = key?.isValidBusinessId() ?: true
 
     /** Currently verifies customer only. */
-    private fun validCustomerWithContactsNotNull(contacts: CustomerWithContacts): Boolean =
-        validCustomer(contacts.customer)
-
-    /** Currently verifies customer only. */
-    private fun validCustomerWithContactsNullable(contacts: CustomerWithContacts?): Boolean {
-        if (contacts == null) {
-            return true
-        }
-
-        return validCustomer(contacts.customer)
-    }
+    private fun validCustomersWithContacts(
+        customerWithContacts: List<CustomerWithContacts>
+    ): Boolean = customerWithContacts.all { validCustomer(it.customer) }
 }
 
 class InvalidApplicationDataException(message: String) : RuntimeException(message)
