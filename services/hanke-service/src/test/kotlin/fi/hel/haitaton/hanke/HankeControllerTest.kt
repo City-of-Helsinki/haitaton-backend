@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.configuration.Feature
-import fi.hel.haitaton.hanke.configuration.Features
+import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
@@ -48,7 +48,7 @@ class HankeControllerTest {
 
         @Bean fun yhteystietoLoggingService(): DisclosureLogService = mockk(relaxUnitFun = true)
 
-        val features = Features(mapOf(Pair(Feature.HANKE_EDITING, true)))
+        val featureFlags = FeatureFlags(mapOf(Pair(Feature.HANKE_EDITING, true)))
 
         @Bean
         fun hankeController(
@@ -56,7 +56,7 @@ class HankeControllerTest {
             permissionService: PermissionService,
             disclosureLogService: DisclosureLogService,
         ): HankeController =
-            HankeController(hankeService, permissionService, disclosureLogService, features)
+            HankeController(hankeService, permissionService, disclosureLogService, featureFlags)
     }
 
     private val mockedHankeTunnus = "AFC1234"

@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
 import fi.hel.haitaton.hanke.configuration.Feature
-import fi.hel.haitaton.hanke.configuration.Features
+import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -37,7 +37,7 @@ class HankeController(
     @Autowired private val hankeService: HankeService,
     @Autowired private val permissionService: PermissionService,
     @Autowired private val disclosureLogService: DisclosureLogService,
-    @Autowired private val features: Features,
+    @Autowired private val featureFlags: FeatureFlags,
 ) {
 
     @GetMapping("/{hankeTunnus}")
@@ -95,7 +95,7 @@ class HankeController(
     /** Add one hanke. This method will be called when we do not have id for hanke yet */
     @PostMapping
     fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): Hanke {
-        features.check(Feature.HANKE_EDITING)
+        featureFlags.ensureEnabled(Feature.HANKE_EDITING)
 
         if (hanke == null) {
             throw HankeArgumentException("No hanke given when creating hanke")
@@ -122,7 +122,7 @@ class HankeController(
         @ValidHanke @RequestBody hanke: Hanke,
         @PathVariable hankeTunnus: String
     ): Hanke {
-        features.check(Feature.HANKE_EDITING)
+        featureFlags.ensureEnabled(Feature.HANKE_EDITING)
 
         logger.info { "Updating Hanke: ${hanke.toLogString()}" }
 

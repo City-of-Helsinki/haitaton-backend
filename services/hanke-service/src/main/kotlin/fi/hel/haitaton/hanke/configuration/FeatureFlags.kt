@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConstructorBinding
 
 @ConfigurationProperties(prefix = "haitaton")
 @ConstructorBinding
-data class Features(val features: Map<Feature, Boolean>) {
+data class FeatureFlags(val features: Map<Feature, Boolean>) {
 
     /** Disabled by default, if not in application.properties. */
     private fun isEnabled(feature: Feature): Boolean = features.getOrDefault(feature, false)
@@ -16,7 +16,7 @@ data class Features(val features: Map<Feature, Boolean>) {
      *
      * Disabled by default, if not in application.properties.
      */
-    fun check(feature: Feature) {
+    fun ensureEnabled(feature: Feature) {
         if (!isEnabled(feature)) {
             throw EndpointDisabledException()
         }

@@ -7,7 +7,7 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
 import fi.hel.haitaton.hanke.configuration.Feature
-import fi.hel.haitaton.hanke.configuration.Features
+import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
@@ -39,7 +39,7 @@ class HankeAttachmentController(
     private val hankeAttachmentService: HankeAttachmentService,
     private val hankeService: HankeService,
     private val permissionService: PermissionService,
-    @Autowired private val features: Features,
+    @Autowired private val featureFlags: FeatureFlags,
 ) {
 
     @GetMapping
@@ -124,7 +124,7 @@ class HankeAttachmentController(
         @PathVariable hankeTunnus: String,
         @RequestParam("liite") attachment: MultipartFile
     ): HankeAttachmentMetadata {
-        features.check(Feature.HANKE_EDITING)
+        featureFlags.ensureEnabled(Feature.HANKE_EDITING)
 
         permissionOrThrow(hankeTunnus, EDIT)
         return hankeAttachmentService.addAttachment(hankeTunnus, attachment)
@@ -148,7 +148,7 @@ class HankeAttachmentController(
             ]
     )
     fun deleteAttachment(@PathVariable hankeTunnus: String, @PathVariable attachmentId: UUID) {
-        features.check(Feature.HANKE_EDITING)
+        featureFlags.ensureEnabled(Feature.HANKE_EDITING)
 
         permissionOrThrow(hankeTunnus, EDIT)
         return hankeAttachmentService.deleteAttachment(hankeTunnus, attachmentId)
