@@ -762,7 +762,7 @@ class ApplicationServiceITest : DatabaseTest() {
         every { cableReportServiceAllu.getApplicationInformation(21) } returns
             AlluDataFactory.createAlluApplicationResponse(21, ApplicationStatus.HANDLING)
 
-        assertThrows<ApplicationAlreadyProcessingException> {
+        assertThrows<ApplicationConflictException> {
             applicationService.updateApplicationData(application.id!!, newApplicationData, USERNAME)
         }
 
@@ -1035,7 +1035,7 @@ class ApplicationServiceITest : DatabaseTest() {
             every { cableReportServiceAllu.getApplicationInformation(21) } returns
                 AlluDataFactory.createAlluApplicationResponse(21, ApplicationStatus.DECISIONMAKING)
 
-            assertThrows<ApplicationAlreadyProcessingException> {
+            assertThrows<ApplicationConflictException> {
                 applicationService.sendApplication(application.id!!, USERNAME)
             }
 
@@ -1268,7 +1268,7 @@ class ApplicationServiceITest : DatabaseTest() {
         every { cableReportServiceAllu.getApplicationInformation(73) } returns
             AlluDataFactory.createAlluApplicationResponse(73, ApplicationStatus.APPROVED)
 
-        assertThrows<ApplicationAlreadyProcessingException> {
+        assertThrows<ApplicationConflictException> {
             applicationService.delete(application.id!!, USERNAME)
         }
 

@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.attachment.application
 
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
+import fi.hel.haitaton.hanke.application.ApplicationConflictException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
@@ -135,10 +135,7 @@ class ApplicationAttachmentController(
                         [
                             Content(
                                 schema =
-                                    Schema(
-                                        implementation =
-                                            ApplicationAlreadyProcessingException::class
-                                    )
+                                    Schema(implementation = ApplicationConflictException::class)
                             )
                         ]
                 ),
@@ -154,6 +151,11 @@ class ApplicationAttachmentController(
     }
 
     @DeleteMapping("/{attachmentId}")
+    @Operation(
+        summary = "Delete attachment from application.",
+        description =
+            "Can be deleted if application has not been sent to Allu. Don't delete if application has alluId."
+    )
     @ApiResponses(
         value =
             [
@@ -169,16 +171,13 @@ class ApplicationAttachmentController(
                         ]
                 ),
                 ApiResponse(
-                    description = "Application already processing.",
+                    description = "Application already in Allu.",
                     responseCode = "409",
                     content =
                         [
                             Content(
                                 schema =
-                                    Schema(
-                                        implementation =
-                                            ApplicationAlreadyProcessingException::class
-                                    )
+                                    Schema(implementation = ApplicationConflictException::class)
                             )
                         ]
                 ),

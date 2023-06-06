@@ -3,10 +3,12 @@ package fi.hel.haitaton.hanke.attachment.application
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
+import fi.hel.haitaton.hanke.application.ApplicationConflictException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.application.CONFLICT_HANDLING
+import fi.hel.haitaton.hanke.application.CONFLICT_SENT
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
@@ -68,7 +70,11 @@ class ApplicationAttachmentService(
 
         if (!isPending(application)) {
             logger.warn { "Application is processing, cannot add attachment." }
-            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
+            throw ApplicationConflictException(
+                CONFLICT_HANDLING,
+                application.id,
+                application.alluid
+            )
         }
 
         validateAttachment(attachment)
@@ -95,13 +101,14 @@ class ApplicationAttachmentService(
         }
     }
 
+    /** Attachment can be deleted if the application has not been sent to Allu (alluId null). */
     @Transactional
     fun deleteAttachment(applicationId: Long, attachmentId: UUID) {
         val application = findApplication(applicationId)
 
-        if (!isPending(application)) {
-            logger.warn { "Application is processing, cannot delete attachment." }
-            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
+        if (isInAllu(application)) {
+            logger.warn { "Application $applicationId is in Allu, attachments cannot be deleted." }
+            throw ApplicationConflictException(CONFLICT_SENT, application.id, application.alluid)
         }
 
         val attachment = application.attachments.findOrThrow(attachmentId)
@@ -152,10 +159,12 @@ class ApplicationAttachmentService(
     }
 
     /** Check current status from Allu. */
-    private fun alluPending(alluid: Int): Boolean {
-        val status = cableReportService.getApplicationInformation(alluid).status
+    private fun alluPending(alluId: Int): Boolean {
+        val status = cableReportService.getApplicationInformation(alluId).status
         return listOf(PENDING, PENDING_CLIENT).contains(status)
     }
+
+    private fun isInAllu(application: ApplicationEntity): Boolean = application.alluid != null
 
     /** Attachment should be sent if application is in Allu. Must check status before sending. */
     private fun sendAttachment(alluId: Int, attachment: ApplicationAttachmentEntity) {

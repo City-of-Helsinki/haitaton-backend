@@ -10,9 +10,11 @@ import fi.hel.haitaton.hanke.HankeError.HAI0001
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
-import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
+import fi.hel.haitaton.hanke.application.ApplicationConflictException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationService
+import fi.hel.haitaton.hanke.application.CONFLICT_HANDLING
+import fi.hel.haitaton.hanke.application.CONFLICT_SENT
 import fi.hel.haitaton.hanke.attachment.APPLICATION_ID
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.HANKE_ID
@@ -176,7 +178,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
         every { permissionService.hasPermission(HANKE_ID, USERNAME, EDIT) } returns true
         every { applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file) } throws
-            ApplicationAlreadyProcessingException(APPLICATION_ID, 123)
+            ApplicationConflictException(CONFLICT_HANDLING, APPLICATION_ID, 123)
 
         postAttachment(file = file).andExpect(status().isConflict)
 
@@ -232,13 +234,15 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     }
 
     @Test
-    fun `deleteAttachment when application processing should return conflict`() {
+    fun `deleteAttachment when application is sent to Allu should return conflict`() {
         val attachmentId = randomUUID()
-        every { applicationService.getApplicationById(APPLICATION_ID) } returns createApplication()
+        val alluId = 123
+        every { applicationService.getApplicationById(APPLICATION_ID) } returns
+            createApplication(alluid = alluId)
         every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
         every { permissionService.hasPermission(HANKE_ID, USERNAME, EDIT) } returns true
         every { applicationAttachmentService.deleteAttachment(APPLICATION_ID, attachmentId) } throws
-            ApplicationAlreadyProcessingException(APPLICATION_ID, 123)
+            ApplicationConflictException(CONFLICT_SENT, APPLICATION_ID, alluId)
 
         deleteAttachment(attachmentId = attachmentId).andExpect(status().isConflict)
 

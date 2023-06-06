@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
+import fi.hel.haitaton.hanke.application.ApplicationConflictException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
@@ -45,7 +45,6 @@ class ControllerExceptionHandler {
     @Hidden
     fun hankeNotFound(ex: HankeNotFoundException): HankeError {
         logger.warn { ex.message }
-        // notify Sentry
         Sentry.captureException(ex)
         return HankeError.HAI1001
     }
@@ -55,7 +54,6 @@ class ControllerExceptionHandler {
     @Hidden
     fun hankeYhteystietoNotFound(ex: HankeYhteystietoNotFoundException): HankeError {
         logger.warn { ex.message }
-        // notify Sentry
         Sentry.captureException(ex)
         return HankeError.HAI1020
     }
@@ -87,7 +85,6 @@ class ControllerExceptionHandler {
     @Hidden
     fun illegalArgumentException(ex: IllegalArgumentException): HankeError {
         logger.error(ex) { ex.message }
-        // notify Sentry
         Sentry.captureException(ex)
         return HankeError.HAI0003
     }
@@ -97,7 +94,6 @@ class ControllerExceptionHandler {
     @Hidden
     fun httpMessageNotReadableException(ex: HttpMessageNotReadableException): HankeError {
         logger.error(ex) { ex.message }
-        // notify Sentry
         Sentry.captureException(ex)
         return HankeError.HAI0003
     }
@@ -107,7 +103,6 @@ class ControllerExceptionHandler {
     @Hidden
     fun invalidGeometria(ex: GeometriaValidationException): HankeError {
         logger.warn { ex.message }
-        // notify Sentry
         Sentry.captureException(ex)
         return HankeError.HAI1011
     }
@@ -117,7 +112,6 @@ class ControllerExceptionHandler {
     @Hidden
     fun unsupportedCoordinateSystem(ex: UnsupportedCoordinateSystemException): HankeError {
         logger.warn { ex.message }
-        // notify Sentry
         Sentry.captureException(ex)
         return HankeError.HAI1013
     }
@@ -125,14 +119,20 @@ class ControllerExceptionHandler {
     @ExceptionHandler(ApplicationNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
     @Hidden
-    fun applicationNotFound(ex: ApplicationNotFoundException): HankeError =
-        HankeError.HAI2001.also { logger.warn(ex) { ex.message } }
+    fun applicationNotFound(ex: ApplicationNotFoundException): HankeError {
+        logger.warn { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI2001
+    }
 
-    @ExceptionHandler(ApplicationAlreadyProcessingException::class)
+    @ExceptionHandler(ApplicationConflictException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden
-    fun applicationAlreadyProcessing(ex: ApplicationAlreadyProcessingException): HankeError =
-        HankeError.HAI2003.also { logger.warn(ex) { ex.message } }
+    fun applicationConflict(ex: ApplicationConflictException): HankeError {
+        logger.warn { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI2003
+    }
 
     @ExceptionHandler(AttachmentNotFoundException::class)
     @ResponseStatus(HttpStatus.NOT_FOUND)
@@ -159,8 +159,7 @@ class ControllerExceptionHandler {
         responseCode = "500"
     )
     fun throwable(ex: Throwable): HankeError {
-        logger.error(ex) { ex.message }
-        // notify Sentry
+        logger.error { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI0002
     }

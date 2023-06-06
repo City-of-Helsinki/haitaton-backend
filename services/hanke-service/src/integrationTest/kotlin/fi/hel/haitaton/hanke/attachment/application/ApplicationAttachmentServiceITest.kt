@@ -15,7 +15,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.HANDLING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
+import fi.hel.haitaton.hanke.application.ApplicationConflictException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
@@ -36,7 +36,8 @@ import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createAlluApplicationResponse
+import fi.hel.haitaton.hanke.factory.AttachmentFactory.applicationAttachmentEntity
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -203,10 +204,10 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 }
                 .toApplication()
         every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-            AlluDataFactory.createAlluApplicationResponse(status = HANDLING)
+            createAlluApplicationResponse(status = HANDLING)
 
         val exception =
-            assertThrows<ApplicationAlreadyProcessingException> {
+            assertThrows<ApplicationConflictException> {
                 applicationAttachmentService.addAttachment(
                     applicationId = application.id!!,
                     attachmentType = MUU,
@@ -216,7 +217,8 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
         assertThat(exception.message)
             .isEqualTo(
-                "Application is no longer pending in Allu, id=${application.id!!}, alluid=${application.alluid!!}"
+                "Application has proceeded to handling in Allu, " +
+                    "applicationId=${application.id!!}, alluId=${application.alluid!!}"
             )
         verify { cableReportService.getApplicationInformation(ALLU_ID) }
     }
@@ -234,7 +236,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 }
                 .toApplication()
         every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-            AlluDataFactory.createAlluApplicationResponse(status = status)
+            createAlluApplicationResponse(status = status)
 
         applicationAttachmentService.addAttachment(
             applicationId = application.id!!,
@@ -346,18 +348,16 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `deleteAttachment when allu handling has started should throw`() {
+    fun `deleteAttachment when application has been sent to Allu should throw`() {
         mockWebServer.enqueue(response(body(results = successResult())))
         val application = initApplication { it.alluid = ALLU_ID }
-        every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-            AlluDataFactory.createAlluApplicationResponse(status = HANDLING)
         val attachment =
             applicationAttachmentRepository.save(
-                AttachmentFactory.applicationAttachmentEntity(application = application)
+                applicationAttachmentEntity(application = application)
             )
 
         val exception =
-            assertThrows<ApplicationAlreadyProcessingException> {
+            assertThrows<ApplicationConflictException> {
                 applicationAttachmentService.deleteAttachment(
                     applicationId = application.id!!,
                     attachmentId = attachment.id!!
@@ -366,11 +366,11 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
         assertThat(exception.message)
             .isEqualTo(
-                "Application is no longer pending in Allu, id=${application.id!!}, alluid=${application.alluid!!}"
+                "Application is already sent to Allu, " +
+                    "applicationId=${application.id}, alluId=${application.alluid}"
             )
         assertThat(applicationAttachmentRepository.findById(attachment.id!!).orElseThrow())
             .isNotNull()
-        verify { cableReportService.getApplicationInformation(ALLU_ID) }
     }
 
     private fun initApplication(mutator: (ApplicationEntity) -> Unit = {}): ApplicationEntity =

@@ -29,7 +29,7 @@ enum class HankeError(val errorMessage: String) {
     HAI1032("Invalid Hankealue data"),
     HAI2001("Application not found"),
     HAI2002("Incompatible application data type"),
-    HAI2003("Application is already processing in Allu and can no longer be updated."),
+    HAI2003("Application situation in Allu prevents operation."),
     HAI2004("Application data missing information needed by Allu."),
     HAI2005("Invalid application geometry"),
     HAI2006("Application decision not found"),

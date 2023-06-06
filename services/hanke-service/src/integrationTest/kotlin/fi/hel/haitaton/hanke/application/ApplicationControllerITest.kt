@@ -375,7 +375,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         every { applicationService.getApplicationById(id) } returns application
         every {
             applicationService.updateApplicationData(id, application.applicationData, USERNAME)
-        } throws ApplicationAlreadyProcessingException(id, 21)
+        } throws ApplicationConflictException(CONFLICT_HANDLING, id, 21)
         every { hankeService.getHankeId(HANKE_TUNNUS) } returns 42
         every { permissionService.hasPermission(42, USERNAME, EDIT_APPLICATIONS) } returns true
 
@@ -478,7 +478,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         every { applicationService.getApplicationById(id) } returns
             AlluDataFactory.createApplication(id = id, hankeTunnus = HANKE_TUNNUS)
         every { applicationService.sendApplication(id, USERNAME) } throws
-            ApplicationAlreadyProcessingException(id, 21)
+            ApplicationConflictException(CONFLICT_HANDLING, id, 21)
 
         post("$BASE_URL/$id/send-application").andExpect(status().isConflict)
 
@@ -564,7 +564,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         every { applicationService.getApplicationById(id) } returns
             AlluDataFactory.createApplication(id = id, hankeTunnus = HANKE_TUNNUS)
         every { applicationService.delete(id, USERNAME) } throws
-            ApplicationAlreadyProcessingException(id, 41)
+            ApplicationConflictException(CONFLICT_HANDLING, id, 41)
 
         delete("$BASE_URL/$id").andExpect(status().isConflict)
 
