@@ -29,10 +29,10 @@ class ApplicationValidator : ConstraintValidator<ValidApplication, Application> 
 
     private fun isValidCableReport(cableReportData: CableReportApplicationData): Boolean =
         listOf(
-                validStartAndEnd(cableReportData.startTime, cableReportData.endTime),
-                validCustomersWithContacts(cableReportData.customersWithContacts())
+                { validStartAndEnd(cableReportData.startTime, cableReportData.endTime) },
+                { validCustomersWithContacts(cableReportData.customersWithContacts()) }
             )
-            .all { it }
+            .all { it() }
 
     /**
      * Checks if the start is before or equal to the end.
