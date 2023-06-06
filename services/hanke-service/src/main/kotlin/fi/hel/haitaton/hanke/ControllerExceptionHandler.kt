@@ -168,4 +168,4 @@ class ControllerExceptionHandler {
     class FakeAuthorizationException : RuntimeException()
 }
 
-class EndpointDisabledException() : RuntimeException("Endpoint disabled in this environment.")
+class EndpointDisabledException : RuntimeException("Endpoint disabled in this environment.")
