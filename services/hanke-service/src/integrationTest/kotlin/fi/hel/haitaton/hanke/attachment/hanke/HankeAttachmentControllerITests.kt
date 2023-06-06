@@ -42,7 +42,6 @@ import org.springframework.security.test.context.support.WithAnonymousUser
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
@@ -193,16 +192,19 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
     ): ResultActions = delete("/hankkeet/$hankeTunnus/liitteet/$attachmentId")
 }
 
-@WebMvcTest(HankeAttachmentController::class)
+@WebMvcTest(
+    HankeAttachmentController::class,
+    properties = ["haitaton.features.hanke-editing=false"]
+)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @WithMockUser(USERNAME)
-@TestPropertySource(locations = ["classpath:application-test.properties"])
-class HankeAttachmentControllerEndpointDisabledITests(@Autowired override val mockMvc: MockMvc) :
-    ControllerTest {
+class HankeAttachmentControllerHankeEditingDisabledITests(
+    @Autowired override val mockMvc: MockMvc
+) : ControllerTest {
 
     @Test
-    fun `post attachment when endpoint is disabled should return 404`() {
+    fun `post attachment when hanke editing is disabled should return 404`() {
         val response =
             mockMvc
                 .perform(
@@ -216,7 +218,7 @@ class HankeAttachmentControllerEndpointDisabledITests(@Autowired override val mo
     }
 
     @Test
-    fun `delete attachment when endpoint is disabled should return 404`() {
+    fun `delete attachment when hanke editing is disabled should return 404`() {
         val response =
             delete("/hankkeet/$HANKE_TUNNUS/liitteet/${randomUUID()}").andReturn().response
 
