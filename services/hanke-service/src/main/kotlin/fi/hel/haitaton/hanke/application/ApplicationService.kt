@@ -34,6 +34,9 @@ import org.springframework.transaction.annotation.Transactional
 private val logger = KotlinLogging.logger {}
 
 const val ALLU_APPLICATION_ERROR_MSG = "Error sending application to Allu"
+const val ALLU_USER_CANCELLATION_MSG = "Käyttäjä perui hakemuksen Haitattomassa."
+const val ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG =
+    "Haitaton ei saanut lisättyä hakemuksen liitteitä. Hakemus peruttu."
 
 open class ApplicationService(
     private val applicationRepository: ApplicationRepository,
@@ -299,6 +302,7 @@ open class ApplicationService(
                 "Application is still pending, trying to cancel it. id=$id alluid=${alluid}"
             }
             cableReportService.cancel(alluid)
+            cableReportService.sendSystemComment(alluid, ALLU_USER_CANCELLATION_MSG)
             logger.info { "Application canceled, proceeding to delete it. id=$id alluid=${alluid}" }
         } else {
             throw ApplicationAlreadyProcessingException(id, alluid)
@@ -455,9 +459,17 @@ open class ApplicationService(
                 is CableReportApplicationData -> createCableReportToAllu(entity.hankeTunnus(), data)
             }
 
-        val attachments = entity.attachments.map { it.toAlluAttachment() }
-
-        attachmentService.sendAllAttachments(alluId, attachments)
+        try {
+            attachmentService.sendInitialAttachments(alluId, entity)
+        } catch (e: Exception) {
+            logger.error(e) {
+                "Error while sending the initial attachments. Canceling the application. " +
+                    "id=${entity.id}, alluid=$alluId"
+            }
+            cableReportService.cancel(alluId)
+            cableReportService.sendSystemComment(alluId, ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG)
+            throw e
+        }
 
         return alluId
     }
@@ -467,12 +479,10 @@ open class ApplicationService(
         cableReport: CableReportApplicationData
     ): Int {
         val alluData = cableReport.toAlluData(hankeTunnus)
-        val attachment = getApplicationDataAsPdf(cableReport)
 
-        val alluId = withDisclosureLogging(cableReport) { cableReportService.create(alluData) }
-
-        cableReportService.addAttachment(alluId, attachment)
-        return alluId
+        return withFormDataPdfUploading(cableReport) {
+            withDisclosureLogging(cableReport) { cableReportService.create(alluData) }
+        }
     }
 
     private fun updateCableReportInAllu(
@@ -481,11 +491,43 @@ open class ApplicationService(
         cableReport: CableReportApplicationData
     ) {
         val alluData = cableReport.toAlluData(hankeTunnus)
-        val attachment = getApplicationDataAsPdf(cableReport)
 
-        withDisclosureLogging(cableReport) { cableReportService.update(alluId, alluData) }
+        withFormDataPdfUploading(cableReport) {
+            withDisclosureLogging(cableReport) { cableReportService.update(alluId, alluData) }
+            alluId
+        }
+    }
 
-        cableReportService.addAttachment(alluId, attachment)
+    /**
+     * Transform the data in the Haitaton application form to a PDF and send it to Allu as an
+     * attachment.
+     *
+     * Form the PDF file before running the action in allu (create or update). This way, if there's
+     * a problem with creating the PDF, the application is not added or updated.
+     *
+     * Keep going even if the PDF upload fails for some reason. The application has already been
+     * created/updated in Allu, so it's too late to stop on an exception. Failing to upload the PDF
+     * is also not reason enough to cancel the application in Allu.
+     *
+     * @param alluAction The action to perform in Allu. Must return the application's Allu ID.
+     */
+    private fun withFormDataPdfUploading(
+        cableReport: CableReportApplicationData,
+        alluAction: () -> Int
+    ): Int {
+        val formAttachment = getApplicationDataAsPdf(cableReport)
+
+        val alluId = alluAction()
+
+        try {
+            cableReportService.addAttachment(alluId, formAttachment)
+        } catch (e: Exception) {
+            logger.error(e) {
+                "Error while uploading form data PDF attachment. Continuing anyway. alluid=$alluId"
+            }
+        }
+
+        return alluId
     }
 
     private fun getApplicationDataAsPdf(data: CableReportApplicationData): Attachment {
@@ -512,10 +554,10 @@ open class ApplicationService(
      */
     private fun <T> withDisclosureLogging(
         cableReportApplicationData: CableReportApplicationData,
-        f: (CableReportApplicationData) -> T,
+        f: () -> T,
     ): T {
         try {
-            val result = f(cableReportApplicationData)
+            val result = f()
             disclosureLogService.saveDisclosureLogsForAllu(
                 cableReportApplicationData,
                 Status.SUCCESS

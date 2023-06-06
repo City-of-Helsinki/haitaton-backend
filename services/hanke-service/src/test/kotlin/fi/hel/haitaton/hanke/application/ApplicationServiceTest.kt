@@ -266,7 +266,7 @@ class ApplicationServiceTest {
         every { geometriatDao.calculateCombinedArea(any()) } returns 100f
         every { geometriatDao.calculateArea(any()) } returns 100f
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
-        justRun { attachmentService.sendAllAttachments(42, any()) }
+        justRun { attachmentService.sendInitialAttachments(42, any()) }
 
         applicationService.sendApplication(3, USERNAME)
 
@@ -280,7 +280,7 @@ class ApplicationServiceTest {
             cableReportService.create(any())
             disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
             cableReportService.addAttachment(42, any())
-            attachmentService.sendAllAttachments(42, any())
+            attachmentService.sendInitialAttachments(42, any())
             cableReportService.getApplicationInformation(42)
             applicationRepo.save(any())
         }
@@ -373,7 +373,7 @@ class ApplicationServiceTest {
         justRun { cableReportService.addAttachment(852, any()) }
         every { cableReportService.getApplicationInformation(852) } returns
             AlluDataFactory.createAlluApplicationResponse(852)
-        justRun { attachmentService.sendAllAttachments(852, any()) }
+        justRun { attachmentService.sendInitialAttachments(852, any()) }
 
         applicationService.sendApplication(3, USERNAME)
 

@@ -37,7 +37,6 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -577,16 +576,18 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
     }
 }
 
-@WebMvcTest(HankeController::class)
+@WebMvcTest(HankeController::class, properties = ["haitaton.features.hanke-editing=false"])
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @WithMockUser(USERNAME, roles = ["haitaton-user"])
-@TestPropertySource(locations = ["classpath:application-test.properties"])
-class HankeControllerEndpointDisabledITests(@Autowired override val mockMvc: MockMvc) :
+class HankeControllerHankeEditingDisabledITests(@Autowired override val mockMvc: MockMvc) :
     ControllerTest {
 
+    @Autowired lateinit var hankeService: HankeService
+    @Autowired lateinit var permissionService: PermissionService
+
     @Test
-    fun `post hanke when endpoint is disabled should return 404`() {
+    fun `post hanke when hanke editing is disabled should return 404`() {
         val response =
             post(BASE_URL, HankeFactory.create())
                 .andExpect(status().isNotFound)
@@ -597,7 +598,7 @@ class HankeControllerEndpointDisabledITests(@Autowired override val mockMvc: Moc
     }
 
     @Test
-    fun `put hanke when endpoint is disabled should return 404`() {
+    fun `put hanke when hanke editing is disabled should return 404`() {
         val response =
             put("$BASE_URL/$HANKE_TUNNUS", HankeFactory.create())
                 .andExpect(status().isNotFound)
@@ -608,11 +609,22 @@ class HankeControllerEndpointDisabledITests(@Autowired override val mockMvc: Moc
     }
 
     @Test
-    fun `delete hanke when endpoint is disabled should return 404`() {
-        val response =
-            delete("$BASE_URL/$HANKE_TUNNUS").andExpect(status().isNotFound).andReturn().response
+    fun `delete hanke works even if hanke editing is disabled`() {
+        val mockHankeId = 56
+        val hankeWithApplications =
+            HankeWithApplications(HankeFactory.create(id = mockHankeId), listOf())
+        every { hankeService.getHankeWithApplications(HANKE_TUNNUS) }.returns(hankeWithApplications)
+        every { permissionService.hasPermission(mockHankeId, USERNAME, PermissionCode.DELETE) }
+            .returns(true)
+        justRun {
+            hankeService.deleteHanke(
+                hankeWithApplications.hanke,
+                hankeWithApplications.applications,
+                USERNAME
+            )
+        }
 
-        assertThat(response.contentAsString).isEqualTo(expectedResponse())
+        delete("$BASE_URL/$HANKE_TUNNUS").andExpect(status().isNoContent)
     }
 
     private fun expectedResponse(): String =
