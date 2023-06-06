@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
+import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
 import fi.hel.haitaton.hanke.gdpr.GdprService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -32,7 +33,7 @@ import org.springframework.security.web.SecurityFilterChain
 
 @TestConfiguration
 @Profile("itest")
-@EnableConfigurationProperties(GdprProperties::class)
+@EnableConfigurationProperties(GdprProperties::class, FeatureFlags::class)
 class IntegrationTestConfiguration {
 
     @Bean fun jdbcOperations(): JdbcOperations = mockk()

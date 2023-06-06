@@ -1,6 +1,8 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
+import fi.hel.haitaton.hanke.configuration.Feature
+import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -12,7 +14,6 @@ import io.swagger.v3.oas.annotations.Operation
 import javax.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -36,7 +37,7 @@ class HankeController(
     @Autowired private val hankeService: HankeService,
     @Autowired private val permissionService: PermissionService,
     @Autowired private val disclosureLogService: DisclosureLogService,
-    @Value("\${haitaton.feature.hanke-editing}") val enableEditFeature: Boolean = true,
+    @Autowired private val featureFlags: FeatureFlags,
 ) {
 
     @GetMapping("/{hankeTunnus}")
@@ -94,9 +95,7 @@ class HankeController(
     /** Add one hanke. This method will be called when we do not have id for hanke yet */
     @PostMapping
     fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): Hanke {
-        if (!enableEditFeature) {
-            throw EndpointDisabledException()
-        }
+        featureFlags.ensureEnabled(Feature.HANKE_EDITING)
 
         if (hanke == null) {
             throw HankeArgumentException("No hanke given when creating hanke")
@@ -123,9 +122,7 @@ class HankeController(
         @ValidHanke @RequestBody hanke: Hanke,
         @PathVariable hankeTunnus: String
     ): Hanke {
-        if (!enableEditFeature) {
-            throw EndpointDisabledException()
-        }
+        featureFlags.ensureEnabled(Feature.HANKE_EDITING)
 
         logger.info { "Updating Hanke: ${hanke.toLogString()}" }
 
@@ -146,10 +143,6 @@ class HankeController(
     @DeleteMapping("/{hankeTunnus}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteHanke(@PathVariable hankeTunnus: String) {
-        if (!enableEditFeature) {
-            throw EndpointDisabledException()
-        }
-
         logger.info { "Deleting hanke: $hankeTunnus" }
 
         hankeService.getHankeWithApplications(hankeTunnus).let { (hanke, hakemukset) ->

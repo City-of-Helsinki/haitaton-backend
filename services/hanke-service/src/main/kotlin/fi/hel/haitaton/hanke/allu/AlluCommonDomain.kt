@@ -56,3 +56,8 @@ data class AttachmentMetadata(
     val name: String,
     val description: String?,
 )
+
+data class Comment(
+    val commentator: String?,
+    val commentContent: String,
+)
