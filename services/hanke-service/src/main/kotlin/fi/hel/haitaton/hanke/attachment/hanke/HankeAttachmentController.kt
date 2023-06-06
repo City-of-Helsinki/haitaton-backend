@@ -1,12 +1,13 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
-import fi.hel.haitaton.hanke.EndpointDisabledException
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
+import fi.hel.haitaton.hanke.configuration.Feature
+import fi.hel.haitaton.hanke.configuration.Features
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
@@ -19,7 +20,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import java.util.UUID
 import mu.KotlinLogging
-import org.springframework.beans.factory.annotation.Value
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -38,7 +39,7 @@ class HankeAttachmentController(
     private val hankeAttachmentService: HankeAttachmentService,
     private val hankeService: HankeService,
     private val permissionService: PermissionService,
-    @Value("\${haitaton.feature.hanke-editing}") val enableEditFeature: Boolean = true,
+    @Autowired private val features: Features,
 ) {
 
     @GetMapping
@@ -123,9 +124,7 @@ class HankeAttachmentController(
         @PathVariable hankeTunnus: String,
         @RequestParam("liite") attachment: MultipartFile
     ): HankeAttachmentMetadata {
-        if (!enableEditFeature) {
-            throw EndpointDisabledException()
-        }
+        features.check(Feature.HANKE_EDITING)
 
         permissionOrThrow(hankeTunnus, EDIT)
         return hankeAttachmentService.addAttachment(hankeTunnus, attachment)
@@ -149,9 +148,8 @@ class HankeAttachmentController(
             ]
     )
     fun deleteAttachment(@PathVariable hankeTunnus: String, @PathVariable attachmentId: UUID) {
-        if (!enableEditFeature) {
-            throw EndpointDisabledException()
-        }
+        features.check(Feature.HANKE_EDITING)
+
         permissionOrThrow(hankeTunnus, EDIT)
         return hankeAttachmentService.deleteAttachment(hankeTunnus, attachmentId)
     }

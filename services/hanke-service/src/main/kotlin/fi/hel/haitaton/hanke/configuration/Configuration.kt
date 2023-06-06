@@ -48,7 +48,7 @@ import reactor.netty.http.client.HttpClient
 
 @Configuration
 @Profile("default")
-@EnableConfigurationProperties(GdprProperties::class)
+@EnableConfigurationProperties(GdprProperties::class, Features::class)
 class Configuration {
 
     @Value("\${haitaton.allu.baseUrl}") lateinit var alluBaseUrl: String
