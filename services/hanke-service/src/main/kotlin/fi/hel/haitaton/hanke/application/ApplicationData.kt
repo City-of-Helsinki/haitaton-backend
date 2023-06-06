@@ -68,6 +68,7 @@ data class CableReportApplicationData(
     override fun toAlluData(hankeTunnus: String): AlluCableReportApplicationData =
         ApplicationDataMapper.toAlluData(hankeTunnus, this)
 
+    /** Returns CustomerWithContacts fields that are not null. */
     override fun customersWithContacts(): List<CustomerWithContacts> =
         listOfNotNull(
             customerWithContacts,

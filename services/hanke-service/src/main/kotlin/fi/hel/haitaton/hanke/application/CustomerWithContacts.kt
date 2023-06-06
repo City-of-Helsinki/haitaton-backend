@@ -31,7 +31,7 @@ data class Contact(
     val orderer: Boolean = false,
 ) {
     /** Check if this contact is blank, i.e. it doesn't contain any actual contact information. */
-    @JsonIgnore fun isBlank() = listOf(firstName, lastName, email, phone).any { it.isNullOrBlank() }
+    @JsonIgnore fun isBlank() = listOf(firstName, lastName, email, phone).all { it.isNullOrBlank() }
 
     fun hasInformation() = !isBlank()
 

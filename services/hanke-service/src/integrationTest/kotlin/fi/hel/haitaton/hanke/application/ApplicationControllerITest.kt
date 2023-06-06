@@ -23,6 +23,7 @@ import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
+import java.time.ZonedDateTime
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -182,6 +183,24 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
     @Test
     @WithMockUser(USERNAME)
+    fun `create with endTime before start type returns 400`() {
+        val application =
+            AlluDataFactory.createApplication(
+                id = null,
+                applicationData =
+                    AlluDataFactory.createCableReportApplicationData(
+                        startTime = ZonedDateTime.now(),
+                        endTime = ZonedDateTime.now().minusDays(1)
+                    )
+            )
+
+        post(BASE_URL, application).andExpect(status().isBadRequest)
+
+        verify { applicationService wasNot Called }
+    }
+
+    @Test
+    @WithMockUser(USERNAME)
     fun `create with missing application type returns 400`() {
         val application = AlluDataFactory.createApplication(id = null)
         val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
@@ -239,6 +258,24 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     @WithMockUser(USERNAME)
     fun `update without body returns 400`() {
         put("$BASE_URL/1234").andExpect(status().isBadRequest)
+
+        verify { applicationService wasNot Called }
+    }
+
+    @Test
+    @WithMockUser(USERNAME)
+    fun `update with endTime before start type returns 400`() {
+        val application =
+            AlluDataFactory.createApplication(
+                id = null,
+                applicationData =
+                    AlluDataFactory.createCableReportApplicationData(
+                        startTime = ZonedDateTime.now(),
+                        endTime = ZonedDateTime.now().minusDays(1)
+                    )
+            )
+
+        put("$BASE_URL/1234", application).andExpect(status().isBadRequest)
 
         verify { applicationService wasNot Called }
     }
