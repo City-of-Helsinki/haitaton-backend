@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.attachment.application
 
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.application.ApplicationConflictException
+import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
@@ -135,7 +135,10 @@ class ApplicationAttachmentController(
                         [
                             Content(
                                 schema =
-                                    Schema(implementation = ApplicationConflictException::class)
+                                    Schema(
+                                        implementation =
+                                            ApplicationAlreadyProcessingException::class
+                                    )
                             )
                         ]
                 ),
@@ -176,8 +179,7 @@ class ApplicationAttachmentController(
                     content =
                         [
                             Content(
-                                schema =
-                                    Schema(implementation = ApplicationConflictException::class)
+                                schema = Schema(implementation = ApplicationInAlluException::class)
                             )
                         ]
                 ),

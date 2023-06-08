@@ -15,7 +15,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.HANDLING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationConflictException
+import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
@@ -207,7 +207,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             createAlluApplicationResponse(status = HANDLING)
 
         val exception =
-            assertThrows<ApplicationConflictException> {
+            assertThrows<ApplicationAlreadyProcessingException> {
                 applicationAttachmentService.addAttachment(
                     applicationId = application.id!!,
                     attachmentType = MUU,
@@ -217,8 +217,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
         assertThat(exception.message)
             .isEqualTo(
-                "Application has proceeded to handling in Allu, " +
-                    "applicationId=${application.id!!}, alluId=${application.alluid!!}"
+                "Application is no longer pending in Allu, id=${application.id!!}, alluid=${application.alluid!!}"
             )
         verify { cableReportService.getApplicationInformation(ALLU_ID) }
     }
@@ -357,7 +356,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             )
 
         val exception =
-            assertThrows<ApplicationConflictException> {
+            assertThrows<ApplicationInAlluException> {
                 applicationAttachmentService.deleteAttachment(
                     applicationId = application.id!!,
                     attachmentId = attachment.id!!
@@ -371,6 +370,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             )
         assertThat(applicationAttachmentRepository.findById(attachment.id!!).orElseThrow())
             .isNotNull()
+        verify { cableReportService wasNot Called }
     }
 
     private fun initApplication(mutator: (ApplicationEntity) -> Unit = {}): ApplicationEntity =

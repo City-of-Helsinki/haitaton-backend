@@ -3,12 +3,10 @@ package fi.hel.haitaton.hanke.attachment.application
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationConflictException
+import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.CONFLICT_HANDLING
-import fi.hel.haitaton.hanke.application.CONFLICT_SENT
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
@@ -70,11 +68,7 @@ class ApplicationAttachmentService(
 
         if (!isPending(application)) {
             logger.warn { "Application is processing, cannot add attachment." }
-            throw ApplicationConflictException(
-                CONFLICT_HANDLING,
-                application.id,
-                application.alluid
-            )
+            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
 
         validateAttachment(attachment)
@@ -108,7 +102,7 @@ class ApplicationAttachmentService(
 
         if (isInAllu(application)) {
             logger.warn { "Application $applicationId is in Allu, attachments cannot be deleted." }
-            throw ApplicationConflictException(CONFLICT_SENT, application.id, application.alluid)
+            throw ApplicationInAlluException(application.id, application.alluid)
         }
 
         val attachment = application.attachments.findOrThrow(attachmentId)
@@ -171,3 +165,6 @@ class ApplicationAttachmentService(
         cableReportService.addAttachment(alluId, attachment.toAlluAttachment())
     }
 }
+
+class ApplicationInAlluException(id: Long?, alluId: Int?) :
+    RuntimeException("Application is already sent to Allu, applicationId=$id, alluId=$alluId")

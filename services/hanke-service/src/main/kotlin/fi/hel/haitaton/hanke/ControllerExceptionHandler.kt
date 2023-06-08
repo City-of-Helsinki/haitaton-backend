@@ -1,7 +1,8 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.application.ApplicationConflictException
+import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
+import fi.hel.haitaton.hanke.attachment.application.ApplicationInAlluException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.geometria.GeometriaValidationException
@@ -125,10 +126,19 @@ class ControllerExceptionHandler {
         return HankeError.HAI2001
     }
 
-    @ExceptionHandler(ApplicationConflictException::class)
+    @ExceptionHandler(ApplicationInAlluException::class)
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden
-    fun applicationConflict(ex: ApplicationConflictException): HankeError {
+    fun applicationInAllu(ex: ApplicationInAlluException): HankeError {
+        logger.warn { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI2009
+    }
+
+    @ExceptionHandler(ApplicationAlreadyProcessingException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun applicationAlreadyProcessing(ex: ApplicationAlreadyProcessingException): HankeError {
         logger.warn { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI2003

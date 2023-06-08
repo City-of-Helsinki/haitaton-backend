@@ -38,9 +38,6 @@ const val ALLU_USER_CANCELLATION_MSG = "Käyttäjä perui hakemuksen Haitattomas
 const val ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG =
     "Haitaton ei saanut lisättyä hakemuksen liitteitä. Hakemus peruttu."
 
-const val CONFLICT_HANDLING = "Application has proceeded to handling in Allu"
-const val CONFLICT_SENT = "Application is already sent to Allu"
-
 open class ApplicationService(
     private val applicationRepository: ApplicationRepository,
     private val alluStatusRepository: AlluStatusRepository,
@@ -161,11 +158,7 @@ open class ApplicationService(
         }
 
         if (!isStillPendingInAllu(application.alluid)) {
-            throw ApplicationConflictException(
-                CONFLICT_HANDLING,
-                application.id,
-                application.alluid
-            )
+            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
 
         // Don't change a draft to a non-draft or vice-versa with the update method.
@@ -201,11 +194,7 @@ open class ApplicationService(
 
         logger.info("Sending application id=$id, alluid=${application.alluid}")
         if (!isStillPendingInAllu(application.alluid)) {
-            throw ApplicationConflictException(
-                CONFLICT_HANDLING,
-                application.id,
-                application.alluid
-            )
+            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
 
         if (application.alluid != null && !application.applicationData.pendingOnClient) {
@@ -316,7 +305,7 @@ open class ApplicationService(
             cableReportService.sendSystemComment(alluid, ALLU_USER_CANCELLATION_MSG)
             logger.info { "Application canceled, proceeding to delete it. id=$id alluid=${alluid}" }
         } else {
-            throw ApplicationConflictException(CONFLICT_HANDLING, id, alluid)
+            throw ApplicationAlreadyProcessingException(id, alluid)
         }
     }
 
@@ -603,8 +592,8 @@ class IncompatibleApplicationException(
 class ApplicationNotFoundException(id: Long) :
     RuntimeException("Application not found with id $id")
 
-class ApplicationConflictException(reason: String, id: Long?, alluId: Int?) :
-    RuntimeException("$reason, applicationId=$id, alluId=$alluId")
+class ApplicationAlreadyProcessingException(id: Long?, alluid: Int?) :
+    RuntimeException("Application is no longer pending in Allu, id=$id, alluid=$alluid")
 
 class ApplicationGeometryException(message: String) : RuntimeException(message)
 
