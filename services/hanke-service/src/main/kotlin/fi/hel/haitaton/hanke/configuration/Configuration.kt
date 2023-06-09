@@ -36,6 +36,8 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -55,6 +57,8 @@ class Configuration {
     @Value("\${haitaton.allu.username}") lateinit var alluUsername: String
     @Value("\${haitaton.allu.password}") lateinit var alluPassword: String
     @Value("\${haitaton.allu.insecure}") var alluTrustInsecure: Boolean = false
+
+    @Bean fun ioDispatcher(): CoroutineDispatcher = Dispatchers.IO
 
     @Bean
     fun cableReportService(webClientBuilder: WebClient.Builder): CableReportService {

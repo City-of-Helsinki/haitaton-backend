@@ -19,6 +19,9 @@ import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContent
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentRepository
+import fi.hel.haitaton.hanke.factory.AttachmentFactory.applicationAttachmentContent
 import java.time.ZonedDateTime
 import org.geojson.Polygon
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
@@ -27,7 +30,10 @@ import org.springframework.stereotype.Component
 const val TEPPO_TESTI = "Teppo Testihenkilö"
 
 @Component
-class AlluDataFactory(val applicationRepository: ApplicationRepository) {
+class AlluDataFactory(
+    val applicationRepository: ApplicationRepository,
+    val applicationAttachmentContentRepository: ApplicationAttachmentContentRepository
+) {
     companion object {
         const val defaultApplicationId: Long = 1
         const val defaultApplicationName: String = "Johtoselvityksen oletusnimi"
@@ -332,5 +338,10 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
             }
         entities.withIndex().forEach { (i, application) -> mutator(i, application) }
         return applicationRepository.saveAll(entities)
+    }
+
+    fun saveAttachment(applicationId: Long): ApplicationAttachmentContent {
+        val attachment = applicationAttachmentContent(applicationId = applicationId)
+        return applicationAttachmentContentRepository.save(attachment)
     }
 }

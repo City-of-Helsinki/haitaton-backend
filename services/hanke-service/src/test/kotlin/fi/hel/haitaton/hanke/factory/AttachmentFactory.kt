@@ -1,8 +1,8 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentSummary
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus
@@ -19,7 +19,28 @@ private const val FILE_NAME = "file.pdf"
 private val dummyData = "ABC".toByteArray()
 
 object AttachmentFactory {
-    fun applicationAttachmentEntity(
+    fun applicationAttachmentSummary(
+        id: UUID = randomUUID(),
+        fileName: String = FILE_NAME,
+        contentType: String = APPLICATION_PDF_VALUE,
+        createdByUserId: String = currentUserId(),
+        createdAt: OffsetDateTime = OffsetDateTime.now(),
+        scanStatus: AttachmentScanStatus = OK,
+        attachmentType: ApplicationAttachmentType = MUU,
+        applicationId: Long,
+    ): ApplicationAttachmentSummary =
+        ApplicationAttachmentSummary(
+            id = id,
+            fileName = fileName,
+            contentType = contentType,
+            createdByUserId = createdByUserId,
+            createdAt = createdAt,
+            scanStatus = scanStatus,
+            attachmentType = attachmentType,
+            applicationId = applicationId,
+        )
+
+    fun applicationAttachmentContent(
         id: UUID = randomUUID(),
         fileName: String = FILE_NAME,
         content: ByteArray = dummyData,
@@ -28,9 +49,9 @@ object AttachmentFactory {
         createdAt: OffsetDateTime = OffsetDateTime.now(),
         scanStatus: AttachmentScanStatus = OK,
         attachmentType: ApplicationAttachmentType = MUU,
-        application: ApplicationEntity,
-    ): ApplicationAttachmentEntity =
-        ApplicationAttachmentEntity(
+        applicationId: Long,
+    ): ApplicationAttachmentContent =
+        ApplicationAttachmentContent(
             id = id,
             fileName = fileName,
             content = content,
@@ -39,7 +60,7 @@ object AttachmentFactory {
             createdAt = createdAt,
             scanStatus = scanStatus,
             attachmentType = attachmentType,
-            application = application,
+            applicationId = applicationId,
         )
 
     fun hankeAttachmentMetadata(

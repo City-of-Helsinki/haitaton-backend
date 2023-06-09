@@ -122,7 +122,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
                 hankeAttachmentService.getContent(firstHanke.hankeTunnus!!, secondAttachment.id!!)
             }
 
-        assertThat(exception.message).isEqualTo("Attachment ${secondAttachment.id} not found")
+        assertThat(exception.message).isEqualTo("Attachment '${secondAttachment.id}' not found")
     }
 
     @Test

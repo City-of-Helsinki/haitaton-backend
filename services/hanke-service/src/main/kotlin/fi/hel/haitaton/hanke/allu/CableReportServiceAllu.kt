@@ -3,11 +3,6 @@ package fi.hel.haitaton.hanke.allu
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import java.time.Duration.ofSeconds
 import java.time.ZonedDateTime
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType
@@ -27,13 +22,12 @@ const val HAITATON_SYSTEM = "Haitaton järjestelmä"
 class CableReportServiceAllu(
     private val webClient: WebClient,
     private val properties: AlluProperties,
-    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : CableReportService {
 
     private val baseUrl = properties.baseUrl
     private val defaultTimeout = ofSeconds(30)
 
-    private fun login(): String {
+    override fun login(): String {
         try {
             val uri = "$baseUrl/v2/login"
             return webClient
@@ -167,19 +161,41 @@ class CableReportServiceAllu(
     }
 
     /** Send an individual attachment. */
-    override fun addAttachment(alluApplicationId: Int, attachment: Attachment) {
-        val token = login()
-        postAttachment(alluApplicationId, token, attachment)
-    }
+    override fun addAttachment(
+        alluApplicationId: Int,
+        attachment: Attachment,
+        loginToken: String?
+    ) {
+        logger.info { "Sending attachment for application $alluApplicationId." }
+        val token = loginToken ?: login()
+        val builder = MultipartBodyBuilder()
+        builder
+            .part("metadata", attachment.metadata, MediaType.APPLICATION_JSON)
+            .filename("metadata")
+        builder
+            .part(
+                "file",
+                ByteArrayResource(attachment.file),
+                parseMediaType(attachment.metadata.mimeType)
+            )
+            .filename("file")
+        val multipartData = builder.build()
 
-    /** Send many attachments in parallel. */
-    override fun addAttachments(alluApplicationId: Int, attachments: List<Attachment>) =
-        runBlocking {
-            withContext(ioDispatcher) {
-                val token = login()
-                attachments.forEach { launch { postAttachment(alluApplicationId, token, it) } }
+        webClient
+            .post()
+            .uri("$baseUrl/v2/applications/$alluApplicationId/attachments")
+            .contentType(MediaType.MULTIPART_FORM_DATA)
+            .accept(MediaType.APPLICATION_JSON)
+            .headers { it.setBearerAuth(token) }
+            .body(BodyInserters.fromMultipartData(multipartData))
+            .retrieve()
+            .bodyToMono<Void>()
+            .timeout(defaultTimeout)
+            .doOnError(WebClientResponseException::class.java) {
+                logError("Error uploading attachment to Allu", it)
             }
-        }
+            .block()
+    }
 
     override fun getInformationRequests(alluApplicationId: Int): List<InformationRequest> {
         logger.info { "Fetching information request for application $alluApplicationId." }
@@ -327,38 +343,6 @@ class CableReportServiceAllu(
             }
             .blockOptional()
             .orElseThrow()
-    }
-
-    private fun postAttachment(alluApplicationId: Int, token: String, attachment: Attachment) {
-        logger.info { "Sending attachment for application $alluApplicationId." }
-
-        val builder = MultipartBodyBuilder()
-        builder
-            .part("metadata", attachment.metadata, MediaType.APPLICATION_JSON)
-            .filename("metadata")
-        builder
-            .part(
-                "file",
-                ByteArrayResource(attachment.file),
-                parseMediaType(attachment.metadata.mimeType)
-            )
-            .filename("file")
-        val multipartData = builder.build()
-
-        webClient
-            .post()
-            .uri("$baseUrl/v2/applications/$alluApplicationId/attachments")
-            .contentType(MediaType.MULTIPART_FORM_DATA)
-            .accept(MediaType.APPLICATION_JSON)
-            .headers { it.setBearerAuth(token) }
-            .body(BodyInserters.fromMultipartData(multipartData))
-            .retrieve()
-            .bodyToMono<Void>()
-            .timeout(defaultTimeout)
-            .doOnError(WebClientResponseException::class.java) {
-                logError("Error uploading attachment to Allu", it)
-            }
-            .block()
     }
 
     private fun logError(msg: String, ex: WebClientResponseException) {

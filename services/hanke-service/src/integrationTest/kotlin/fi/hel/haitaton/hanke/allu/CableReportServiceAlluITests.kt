@@ -102,27 +102,6 @@ class CableReportServiceAlluITests {
     }
 
     @Test
-    fun `addAttachments should upload attachments successfully`() {
-        addStubbedLoginResponse()
-        val alluId = 123
-        val metadata = AlluDataFactory.createAttachmentMetadata()
-        val file = "test file content".toByteArray()
-        val attachment = Attachment(metadata, file)
-        val mockResponse = MockResponse().setResponseCode(200)
-        (1..3).forEach { _ -> mockWebServer.enqueue(mockResponse) }
-        val attachments = listOf(attachment, attachment, attachment)
-
-        service.addAttachments(alluId, attachments)
-
-        assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
-        attachments.forEach { _ ->
-            val request = mockWebServer.takeRequest()
-            assertThat(request.method).isEqualTo("POST")
-            assertThat(request.path).isEqualTo("/v2/applications/$alluId/attachments")
-        }
-    }
-
-    @Test
     fun testCreateErrorHandling() {
         val stubbedBearer = addStubbedLoginResponse()
         val applicationIdResponse =

@@ -35,7 +35,6 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
-import fi.hel.haitaton.hanke.factory.AttachmentFactory.applicationAttachmentEntity
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.findByType
@@ -914,23 +913,21 @@ class ApplicationServiceITest : DatabaseTest() {
         @Test
         @Sql("/sql/senaatintorin-hanke.sql")
         fun `Creates new application to Allu and saves ID and status to database`() {
+            val mockToken = "1234"
             val application =
-                alluDataFactory
-                    .saveApplicationEntity(
-                        USERNAME,
-                        hanke = initializedHanke(),
-                        application = mockApplicationWithArea()
-                    )
-                    .apply {
-                        attachments = mutableListOf(applicationAttachmentEntity(application = this))
-                        applicationRepository.save(this)
-                    }
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = initializedHanke(),
+                    application = mockApplicationWithArea()
+                )
+            alluDataFactory.saveAttachment(application.id!!)
             val applicationData = application.applicationData as CableReportApplicationData
             val pendingApplicationData = applicationData.copy(pendingOnClient = false)
             val expectedAlluRequest = pendingApplicationData.toAlluData(HANKE_TUNNUS)
             every { cableReportServiceAllu.create(expectedAlluRequest) } returns 26
             justRun { cableReportServiceAllu.addAttachment(26, any()) }
-            justRun { cableReportServiceAllu.addAttachments(26, any()) }
+            every { cableReportServiceAllu.login() } returns mockToken
+            justRun { cableReportServiceAllu.addAttachment(26, any(), mockToken) }
             every { cableReportServiceAllu.getApplicationInformation(26) } returns
                 AlluDataFactory.createAlluApplicationResponse(26)
 
@@ -954,7 +951,8 @@ class ApplicationServiceITest : DatabaseTest() {
             verifyOrder {
                 cableReportServiceAllu.create(expectedAlluRequest)
                 cableReportServiceAllu.addAttachment(26, any())
-                cableReportServiceAllu.addAttachments(26, any())
+                cableReportServiceAllu.login()
+                cableReportServiceAllu.addAttachment(26, any(), mockToken)
                 cableReportServiceAllu.getApplicationInformation(26)
             }
         }
@@ -1099,24 +1097,22 @@ class ApplicationServiceITest : DatabaseTest() {
         @Test
         @Sql("/sql/senaatintorin-hanke.sql")
         fun `Cancels the sent application before throwing if uploading initial attachments fails`() {
+            val mockToken = "1234"
             val application =
-                alluDataFactory
-                    .saveApplicationEntity(
-                        USERNAME,
-                        hanke = initializedHanke(),
-                        application = mockApplicationWithArea()
-                    )
-                    .apply {
-                        attachments = mutableListOf(applicationAttachmentEntity(application = this))
-                        applicationRepository.save(this)
-                    }
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = initializedHanke(),
+                    application = mockApplicationWithArea()
+                )
+            alluDataFactory.saveAttachment(application.id!!)
             val applicationData = application.applicationData as CableReportApplicationData
             val pendingApplicationData = applicationData.copy(pendingOnClient = false)
             val expectedAlluRequest = pendingApplicationData.toAlluData(HANKE_TUNNUS)
             val alluId = 236
             every { cableReportServiceAllu.create(expectedAlluRequest) } returns alluId
             justRun { cableReportServiceAllu.addAttachment(alluId, any()) }
-            every { cableReportServiceAllu.addAttachments(alluId, any()) } throws
+            every { cableReportServiceAllu.login() } returns mockToken
+            every { cableReportServiceAllu.addAttachment(alluId, any(), mockToken) } throws
                 AlluException(listOf())
             justRun { cableReportServiceAllu.cancel(alluId) }
             every { cableReportServiceAllu.sendSystemComment(alluId, any()) } returns 4141
@@ -1128,7 +1124,8 @@ class ApplicationServiceITest : DatabaseTest() {
             verifyOrder {
                 cableReportServiceAllu.create(expectedAlluRequest)
                 cableReportServiceAllu.addAttachment(alluId, any())
-                cableReportServiceAllu.addAttachments(alluId, any())
+                cableReportServiceAllu.login()
+                cableReportServiceAllu.addAttachment(alluId, any(), mockToken)
                 cableReportServiceAllu.cancel(alluId)
                 cableReportServiceAllu.sendSystemComment(
                     alluId,

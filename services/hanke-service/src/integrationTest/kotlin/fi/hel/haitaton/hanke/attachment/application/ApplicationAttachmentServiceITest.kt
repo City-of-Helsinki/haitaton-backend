@@ -22,7 +22,8 @@ import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.HANKE_TUNNUS
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.body
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentRepository
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentSummaryRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.LIIKENNEJARJESTELY
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
@@ -37,7 +38,7 @@ import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createAlluApplicationResponse
-import fi.hel.haitaton.hanke.factory.AttachmentFactory.applicationAttachmentEntity
+import fi.hel.haitaton.hanke.factory.AttachmentFactory.applicationAttachmentContent
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -73,7 +74,8 @@ private const val ALLU_ID = 42
 class ApplicationAttachmentServiceITest : DatabaseTest() {
     @MockkBean private lateinit var cableReportService: CableReportService
     @Autowired private lateinit var applicationAttachmentService: ApplicationAttachmentService
-    @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
+    @Autowired private lateinit var summaryRepository: ApplicationAttachmentSummaryRepository
+    @Autowired private lateinit var contentRepository: ApplicationAttachmentContentRepository
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
     @Autowired private lateinit var hankeRepository: HankeRepository
 
@@ -169,7 +171,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 )
             }
 
-        assertThat(exception.message).isEqualTo("Attachment ${secondAttachment.id} not found")
+        assertThat(exception.message).isEqualTo("Attachment '${secondAttachment.id}' not found")
     }
 
     @EnumSource(ApplicationAttachmentType::class)
@@ -259,7 +261,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             )
         }
 
-        assertThat(applicationAttachmentRepository.findAll()).isEmpty()
+        assertThat(summaryRepository.findAll()).isEmpty()
     }
 
     @Test
@@ -278,7 +280,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
         assertThat(exception.message)
             .isEqualTo("Attachment upload exception: File 'hello.html' not supported")
-        assertThat(applicationAttachmentRepository.findAll()).isEmpty()
+        assertThat(summaryRepository.findAll()).isEmpty()
     }
 
     @Test
@@ -297,7 +299,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
         assertThat(exception.message)
             .isEqualTo("Attachment upload exception: Infected file detected, see previous logs.")
-        assertThat(applicationAttachmentRepository.findAll()).isEmpty()
+        assertThat(summaryRepository.findAll()).isEmpty()
     }
 
     @EnumSource(value = AttachmentScanStatus::class, names = ["PENDING", "FAILED"])
@@ -312,9 +314,9 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 attachmentType = MUU,
                 attachment = testFile()
             )
-        val attachment = applicationAttachmentRepository.findById(result.id!!).orElseThrow()
+        val attachment = summaryRepository.findById(result.id!!).orElseThrow()
         attachment.scanStatus = scanStatus
-        applicationAttachmentRepository.save(attachment)
+        summaryRepository.save(attachment)
 
         assertThrows<AttachmentNotFoundException> {
             applicationAttachmentService.getContent(
@@ -334,16 +336,14 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 attachmentType = VALTAKIRJA,
                 attachment = testFile()
             )
-        assertThat(applicationAttachmentRepository.findById(attachment.id!!).orElseThrow())
-            .isNotNull()
+        assertThat(summaryRepository.findById(attachment.id!!).orElseThrow()).isNotNull()
 
         applicationAttachmentService.deleteAttachment(
             applicationId = application.id!!,
             attachmentId = attachment.id!!
         )
 
-        assertThat(applicationAttachmentRepository.findById(attachment.id!!))
-            .isEqualTo(Optional.empty())
+        assertThat(summaryRepository.findById(attachment.id!!)).isEqualTo(Optional.empty())
     }
 
     @Test
@@ -351,9 +351,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         mockWebServer.enqueue(response(body(results = successResult())))
         val application = initApplication { it.alluid = ALLU_ID }
         val attachment =
-            applicationAttachmentRepository.save(
-                applicationAttachmentEntity(application = application)
-            )
+            contentRepository.save(applicationAttachmentContent(applicationId = application.id!!))
 
         val exception =
             assertThrows<ApplicationInAlluException> {
@@ -368,8 +366,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 "Application is already sent to Allu, " +
                     "applicationId=${application.id}, alluId=${application.alluid}"
             )
-        assertThat(applicationAttachmentRepository.findById(attachment.id!!).orElseThrow())
-            .isNotNull()
+        assertThat(summaryRepository.findById(attachment.id!!).orElseThrow()).isNotNull()
         verify { cableReportService wasNot Called }
     }
 

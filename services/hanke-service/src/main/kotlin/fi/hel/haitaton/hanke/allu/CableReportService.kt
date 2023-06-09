@@ -4,6 +4,8 @@ import java.time.ZonedDateTime
 
 interface CableReportService {
 
+    fun login(): String
+
     fun getApplicationStatusHistories(
         alluApplicationIds: List<Int>,
         eventsAfter: ZonedDateTime
@@ -13,9 +15,7 @@ interface CableReportService {
 
     fun update(alluApplicationId: Int, cableReport: AlluCableReportApplicationData)
 
-    fun addAttachment(alluApplicationId: Int, attachment: Attachment)
-
-    fun addAttachments(alluApplicationId: Int, attachments: List<Attachment>)
+    fun addAttachment(alluApplicationId: Int, attachment: Attachment, loginToken: String? = null)
 
     fun getInformationRequests(alluApplicationId: Int): List<InformationRequest>
 
