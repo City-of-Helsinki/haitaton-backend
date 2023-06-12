@@ -24,6 +24,7 @@ import org.hibernate.annotations.Type
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 
 @MappedSuperclass
@@ -184,6 +185,9 @@ interface HankeAttachmentRepository : JpaRepository<HankeAttachmentEntity, UUID>
     @Modifying
     @Query("DELETE FROM HankeAttachmentEntity WHERE id = :id")
     fun deleteAttachment(id: UUID)
+
+    @Query("SELECT count(h.id) FROM HankeAttachmentEntity h WHERE h.hanke.id = :hankeId")
+    fun countByHanke(@Param("hankeId") hankeId: Int): Int
 }
 
 @Repository
@@ -191,6 +195,11 @@ interface ApplicationAttachmentRepository : JpaRepository<ApplicationAttachmentE
     @Modifying
     @Query("DELETE FROM ApplicationAttachmentEntity WHERE id = :id")
     fun deleteAttachment(id: UUID)
+
+    @Query(
+        "SELECT count(a.id) FROM ApplicationAttachmentEntity a WHERE a.application.id = :applicationId"
+    )
+    fun countByApplication(@Param("applicationId") applicationId: Long): Int
 }
 
 enum class ApplicationAttachmentType {

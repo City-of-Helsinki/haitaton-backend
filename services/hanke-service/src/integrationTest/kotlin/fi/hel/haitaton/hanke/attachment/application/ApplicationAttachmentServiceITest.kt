@@ -8,6 +8,7 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import com.ninjasquad.springmockk.MockkBean
+import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
@@ -189,6 +190,28 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(result.applicationId).isEqualTo(application.id)
         assertThat(result.attachmentType).isEqualTo(typeInput)
         verify { cableReportService wasNot Called }
+    }
+
+    @Test
+    fun `addAttachment when allowed attachment amount is exceeded should throw`() {
+        val application = initApplication()
+        val attachments =
+            (1..ALLOWED_ATTACHMENT_COUNT).map {
+                applicationAttachmentEntity(application = application)
+            }
+        applicationAttachmentRepository.saveAll(attachments)
+
+        val exception =
+            assertThrows<AttachmentInvalidException> {
+                applicationAttachmentService.addAttachment(
+                    applicationId = application.id!!,
+                    attachmentType = VALTAKIRJA,
+                    attachment = testFile()
+                )
+            }
+
+        assertThat(exception.message)
+            .isEqualTo("Attachment upload exception: Attachment amount limit exceeded")
     }
 
     @Test

@@ -20,6 +20,9 @@ fun getCurrentTimeUTCAsLocalTime(): LocalDateTime {
 
 fun currentUserId(): String = SecurityContextHolder.getContext().authentication.name
 
+/** Function to validate a given condition. Argument should throw if condition is not met. */
+fun checkCondition(condition: () -> Unit) = condition()
+
 /**
  * Valid businessId (y-tunnus) requirements:
  * 1. format NNNNNNN-T, where N = sequence number and T = check number.
@@ -33,8 +36,15 @@ fun currentUserId(): String = SecurityContextHolder.getContext().authentication.
 fun BusinessId.isValidBusinessId(): Boolean {
     logger.info { "Verifying businessId: $this" }
 
-    if (length != 9 || this[7] != '-') {
-        return false.also { logger.warn { "Invalid format." } }
+    if (length != 9 || substring(0, 7).any { !it.isDigit() } || this[7] != '-') {
+        logger.warn { "Invalid format." }
+        return false
+    }
+
+    val checkDigit = last().toString().toIntOrNull()
+    if (checkDigit == null) {
+        logger.warn { "Invalid check digit." }
+        return false
     }
 
     substringBefore("-")
@@ -43,13 +53,18 @@ fun BusinessId.isValidBusinessId(): Boolean {
         .sumOf { (num, multiplier) -> num * multiplier }
         .mod(11)
         .let { remainder ->
-            val check = substringAfter("-").toInt()
-            val result = 11 - remainder
+            val calculatedCheck = if (remainder == 0) 0 else 11 - remainder
 
-            return when {
-                remainder == 1 -> false.also { logger.warn { "Remainder not valid." } }
-                (remainder == 0 && 0 == check) || result == check -> true
-                else -> false.also { logger.warn { "Invalid businessId." } }
+            if (remainder == 1) {
+                logger.warn { "Remainder not valid." }
+                return false
             }
+
+            if (calculatedCheck == checkDigit) {
+                return true
+            }
+
+            logger.warn { "Invalid businessId" }
+            return false
         }
 }

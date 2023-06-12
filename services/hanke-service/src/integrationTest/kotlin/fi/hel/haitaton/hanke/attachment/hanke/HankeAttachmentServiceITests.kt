@@ -7,6 +7,7 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
@@ -20,6 +21,7 @@ import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
+import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import java.util.Optional
 import okhttp3.mockwebserver.MockWebServer
@@ -44,6 +46,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
     @Autowired private lateinit var hankeAttachmentService: HankeAttachmentService
     @Autowired private lateinit var hankeAttachmentRepository: HankeAttachmentRepository
     @Autowired private lateinit var hankeService: HankeService
+    @Autowired private lateinit var hankeFactory: HankeFactory
 
     private lateinit var mockWebServer: MockWebServer
 
@@ -132,6 +135,27 @@ class HankeAttachmentServiceITests : DatabaseTest() {
         assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
         assertThat(result.createdAt).isNotNull()
         assertThat(result.hankeTunnus).isEqualTo(hanke.hankeTunnus)
+    }
+
+    @Test
+    fun `addAttachment when allowed attachment amount is exceeded should throw`() {
+        val hanke = hankeFactory.saveEntity()
+        val attachments =
+            (1..ALLOWED_ATTACHMENT_COUNT).map {
+                AttachmentFactory.hankeAttachmentEntity(hanke = hanke)
+            }
+        hankeAttachmentRepository.saveAll(attachments)
+
+        val exception =
+            assertThrows<AttachmentInvalidException> {
+                hankeAttachmentService.addAttachment(
+                    hankeTunnus = hanke.hankeTunnus!!,
+                    attachment = testFile()
+                )
+            }
+
+        assertThat(exception.message)
+            .isEqualTo("Attachment upload exception: Attachment amount limit exceeded")
     }
 
     @Test
