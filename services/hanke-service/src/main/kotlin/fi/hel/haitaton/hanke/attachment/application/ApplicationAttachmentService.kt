@@ -174,7 +174,7 @@ class ApplicationAttachmentService(
     }
 
     private fun attachmentAmountReached(applicationId: Long): Boolean {
-        val attachmentCount = attachmentRepository.countByApplication(applicationId)
+        val attachmentCount = attachmentRepository.countByApplicationId(applicationId)
         logger.info {
             "Application $applicationId contains $attachmentCount attachments beforehand."
         }

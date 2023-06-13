@@ -90,7 +90,7 @@ class HankeAttachmentService(
     }
 
     private fun attachmentAmountReached(hankeId: Int): Boolean {
-        val attachmentCount = attachmentRepository.countByHanke(hankeId)
+        val attachmentCount = attachmentRepository.countByHankeId(hankeId)
         logger.info { "Application $hankeId contains $attachmentCount attachments beforehand." }
         return attachmentCount >= ALLOWED_ATTACHMENT_COUNT
     }
