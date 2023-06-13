@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
+import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
@@ -44,8 +45,11 @@ class HankeAttachmentService(
 
     @Transactional
     fun addAttachment(hankeTunnus: String, attachment: MultipartFile): HankeAttachmentMetadata {
-        val hanke = findHanke(hankeTunnus)
-        validateAttachment(attachment)
+        val hanke =
+            findHanke(hankeTunnus).also { hanke ->
+                ensureRoomForAttachment(hanke.id!!)
+                ensureValidFile(attachment)
+            }
 
         val entity =
             HankeAttachmentEntity(
@@ -78,7 +82,20 @@ class HankeAttachmentService(
     private fun List<HankeAttachmentEntity>.findBy(attachmentId: UUID): HankeAttachmentEntity =
         find { it.id == attachmentId } ?: throw AttachmentNotFoundException(attachmentId)
 
-    private fun validateAttachment(attachment: MultipartFile) =
+    private fun ensureRoomForAttachment(hankeId: Int) {
+        if (attachmentAmountReached(hankeId)) {
+            logger.warn { "Application $hankeId has reached the allowed amount of attachments." }
+            throw AttachmentInvalidException("Attachment amount limit reached")
+        }
+    }
+
+    private fun attachmentAmountReached(hankeId: Int): Boolean {
+        val attachmentCount = attachmentRepository.countByHankeId(hankeId)
+        logger.info { "Application $hankeId contains $attachmentCount attachments beforehand." }
+        return attachmentCount >= ALLOWED_ATTACHMENT_COUNT
+    }
+
+    private fun ensureValidFile(attachment: MultipartFile) =
         with(attachment) {
             AttachmentValidator.validate(this)
             val scanResult = scanClient.scan(listOf(FileScanInput(originalFilename!!, bytes)))

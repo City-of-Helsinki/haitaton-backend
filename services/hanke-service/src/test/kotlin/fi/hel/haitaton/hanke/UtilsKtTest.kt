@@ -30,7 +30,17 @@ class UtilsKtTest {
 
     @ParameterizedTest
     @ValueSource(
-        strings = ["21828053-0", "71260-7", "1164243-", "3227510", "3362438-4", "0100007-1"]
+        strings =
+            [
+                "21828053-0",
+                "71260-7",
+                "1164243-",
+                "3227510",
+                "3362438-4",
+                "0100007-1",
+                "823A445-7",
+                "8238445-A"
+            ]
     )
     fun `isValid when not valid businessId returns false`(businessId: BusinessId) {
         assertFalse(businessId.isValidBusinessId())

@@ -184,6 +184,8 @@ interface HankeAttachmentRepository : JpaRepository<HankeAttachmentEntity, UUID>
     @Modifying
     @Query("DELETE FROM HankeAttachmentEntity WHERE id = :id")
     fun deleteAttachment(id: UUID)
+
+    fun countByHankeId(hankeId: Int): Int
 }
 
 @Repository
@@ -191,6 +193,8 @@ interface ApplicationAttachmentRepository : JpaRepository<ApplicationAttachmentE
     @Modifying
     @Query("DELETE FROM ApplicationAttachmentEntity WHERE id = :id")
     fun deleteAttachment(id: UUID)
+
+    fun countByApplicationId(applicationId: Long): Int
 }
 
 enum class ApplicationAttachmentType {
