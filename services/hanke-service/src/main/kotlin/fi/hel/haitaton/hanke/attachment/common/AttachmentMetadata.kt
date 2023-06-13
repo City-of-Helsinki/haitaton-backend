@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.attachment.common
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.time.OffsetDateTime
 import java.util.UUID
 
