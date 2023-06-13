@@ -23,7 +23,6 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus
 import fi.hel.haitaton.hanke.attachment.dummyData
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createApplication
@@ -104,7 +103,6 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
             d.transform { it.fileName }.endsWith(FILE_NAME_PDF)
             d.transform { it.createdByUserId }.isEqualTo(USERNAME)
             d.transform { it.createdAt }.isNotNull()
-            d.transform { it.scanStatus }.isEqualTo(AttachmentScanStatus.OK)
             d.transform { it.applicationId }.isEqualTo(APPLICATION_ID)
             d.transform { it.attachmentType }.isEqualTo(MUU)
         }
@@ -157,7 +155,6 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
             assertThat(fileName).isEqualTo(FILE_NAME_PDF)
             assertThat(createdByUserId).isEqualTo(USERNAME)
             assertThat(createdAt).isNotNull()
-            assertThat(scanStatus).isEqualTo(AttachmentScanStatus.OK)
             assertThat(applicationId).isEqualTo(APPLICATION_ID)
             assertThat(attachmentType).isEqualTo(MUU)
         }

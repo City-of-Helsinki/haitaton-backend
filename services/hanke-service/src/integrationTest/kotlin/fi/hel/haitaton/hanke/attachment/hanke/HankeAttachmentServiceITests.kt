@@ -15,8 +15,6 @@ import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus
-import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
@@ -29,8 +27,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
@@ -82,7 +78,6 @@ class HankeAttachmentServiceITests : DatabaseTest() {
             d.transform { it.fileName }.endsWith(FILE_NAME_PDF)
             d.transform { it.createdByUserId }.isEqualTo(USERNAME)
             d.transform { it.createdAt }.isNotNull()
-            d.transform { it.scanStatus }.isEqualTo(OK)
             d.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
         }
     }
@@ -137,7 +132,6 @@ class HankeAttachmentServiceITests : DatabaseTest() {
         assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
         assertThat(result.createdAt).isNotNull()
         assertThat(result.hankeTunnus).isEqualTo(hanke.hankeTunnus)
-        assertThat(result.scanStatus).isEqualTo(OK)
     }
 
     @Test
@@ -180,21 +174,6 @@ class HankeAttachmentServiceITests : DatabaseTest() {
         assertThat(exception.message)
             .isEqualTo("Attachment upload exception: Infected file detected, see previous logs.")
         assertThat(hankeAttachmentRepository.findAll()).isEmpty()
-    }
-
-    @EnumSource(value = AttachmentScanStatus::class, names = ["PENDING", "FAILED"])
-    @ParameterizedTest
-    fun `getContent when status is not OK should throw`(status: AttachmentScanStatus) {
-        mockWebServer.enqueue(response(body(results = successResult())))
-        val hanke = hankeService.createHanke(HankeFactory.create())
-        val result = hankeAttachmentService.addAttachment(hanke.hankeTunnus!!, testFile())
-        val attachment = hankeAttachmentRepository.findById(result.id!!).orElseThrow()
-        attachment.scanStatus = status
-        hankeAttachmentRepository.save(attachment)
-
-        assertThrows<AttachmentNotFoundException> {
-            hankeAttachmentService.getContent(hanke.hankeTunnus!!, result.id!!)
-        }
     }
 
     @Test
