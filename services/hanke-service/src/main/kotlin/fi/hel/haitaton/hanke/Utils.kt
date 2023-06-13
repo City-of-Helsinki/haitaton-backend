@@ -20,9 +20,6 @@ fun getCurrentTimeUTCAsLocalTime(): LocalDateTime {
 
 fun currentUserId(): String = SecurityContextHolder.getContext().authentication.name
 
-/** Function to validate a given condition. Argument should throw if condition is not met. */
-fun checkCondition(condition: () -> Unit) = condition()
-
 /**
  * Valid businessId (y-tunnus) requirements:
  * 1. format NNNNNNN-T, where N = sequence number and T = check number.

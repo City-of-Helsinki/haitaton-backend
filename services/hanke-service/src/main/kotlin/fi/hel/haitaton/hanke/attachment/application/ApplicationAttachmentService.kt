@@ -20,7 +20,6 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.hasInfected
-import fi.hel.haitaton.hanke.checkCondition
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime.now
 import java.util.UUID
@@ -63,9 +62,9 @@ class ApplicationAttachmentService(
     ): ApplicationAttachmentMetadata {
         val application =
             findApplication(applicationId).also { application ->
-                checkCondition { pending(application) }
-                checkCondition { roomForAttachment(applicationId) }
-                checkCondition { validFile(attachment) }
+                ensureApplicationIsPending(application)
+                ensureRoomForAttachment(applicationId)
+                ensureValidFile(attachment)
             }
 
         val entity =
@@ -125,7 +124,7 @@ class ApplicationAttachmentService(
     ): ApplicationAttachmentEntity =
         find { it.id == attachmentId } ?: throw AttachmentNotFoundException(attachmentId)
 
-    private fun validFile(attachment: MultipartFile) =
+    private fun ensureValidFile(attachment: MultipartFile) =
         with(attachment) {
             AttachmentValidator.validate(this)
             val scanResult = scanClient.scan(listOf(FileScanInput(originalFilename!!, bytes)))
@@ -134,19 +133,19 @@ class ApplicationAttachmentService(
             }
         }
 
-    private fun pending(application: ApplicationEntity) {
+    private fun ensureApplicationIsPending(application: ApplicationEntity) {
         if (!isPending(application.alluid, application.alluStatus)) {
             logger.warn { "Application is processing, cannot add attachment." }
             throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
     }
 
-    private fun roomForAttachment(applicationId: Long) {
-        if (attachmentAmountExceeded(applicationId)) {
+    private fun ensureRoomForAttachment(applicationId: Long) {
+        if (attachmentAmountReached(applicationId)) {
             logger.warn {
-                "Application $applicationId has exceeded the allowed amount of attachments."
+                "Application $applicationId has reached the allowed amount of attachments."
             }
-            throw AttachmentInvalidException("Attachment amount limit exceeded")
+            throw AttachmentInvalidException("Attachment amount limit reached")
         }
     }
 
@@ -174,7 +173,7 @@ class ApplicationAttachmentService(
         cableReportService.addAttachment(alluId, attachment.toAlluAttachment())
     }
 
-    private fun attachmentAmountExceeded(applicationId: Long): Boolean {
+    private fun attachmentAmountReached(applicationId: Long): Boolean {
         val attachmentCount = attachmentRepository.countByApplication(applicationId)
         logger.info {
             "Application $applicationId contains $attachmentCount attachments beforehand."

@@ -13,7 +13,6 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.hasInfected
-import fi.hel.haitaton.hanke.checkCondition
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime.now
 import java.util.UUID
@@ -48,8 +47,8 @@ class HankeAttachmentService(
     fun addAttachment(hankeTunnus: String, attachment: MultipartFile): HankeAttachmentMetadata {
         val hanke =
             findHanke(hankeTunnus).also { hanke ->
-                checkCondition { roomForAttachment(hanke.id!!) }
-                checkCondition { validFile(attachment) }
+                ensureRoomForAttachment(hanke.id!!)
+                ensureValidFile(attachment)
             }
 
         val entity =
@@ -83,20 +82,20 @@ class HankeAttachmentService(
     private fun List<HankeAttachmentEntity>.findBy(attachmentId: UUID): HankeAttachmentEntity =
         find { it.id == attachmentId } ?: throw AttachmentNotFoundException(attachmentId)
 
-    private fun roomForAttachment(hankeId: Int) {
-        if (attachmentAmountExceeded(hankeId)) {
-            logger.warn { "Application $hankeId has exceeded the allowed amount of attachments." }
-            throw AttachmentInvalidException("Attachment amount limit exceeded")
+    private fun ensureRoomForAttachment(hankeId: Int) {
+        if (attachmentAmountReached(hankeId)) {
+            logger.warn { "Application $hankeId has reached the allowed amount of attachments." }
+            throw AttachmentInvalidException("Attachment amount limit reached")
         }
     }
 
-    private fun attachmentAmountExceeded(hankeId: Int): Boolean {
+    private fun attachmentAmountReached(hankeId: Int): Boolean {
         val attachmentCount = attachmentRepository.countByHanke(hankeId)
         logger.info { "Application $hankeId contains $attachmentCount attachments beforehand." }
         return attachmentCount >= ALLOWED_ATTACHMENT_COUNT
     }
 
-    private fun validFile(attachment: MultipartFile) =
+    private fun ensureValidFile(attachment: MultipartFile) =
         with(attachment) {
             AttachmentValidator.validate(this)
             val scanResult = scanClient.scan(listOf(FileScanInput(originalFilename!!, bytes)))

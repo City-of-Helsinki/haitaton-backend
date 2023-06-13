@@ -211,7 +211,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             }
 
         assertThat(exception.message)
-            .isEqualTo("Attachment upload exception: Attachment amount limit exceeded")
+            .isEqualTo("Attachment upload exception: Attachment amount limit reached")
     }
 
     @Test
