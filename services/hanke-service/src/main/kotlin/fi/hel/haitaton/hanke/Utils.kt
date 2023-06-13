@@ -8,6 +8,9 @@ import org.springframework.security.core.context.SecurityContextHolder
 
 private val logger = KotlinLogging.logger {}
 
+private val businessIdRegex = "^(\\d{7})-(\\d)\$".toRegex()
+private val businessIdMultipliers = listOf(7, 9, 10, 5, 8, 4, 2)
+
 /** Returns the current time in UTC, with time zone info. */
 fun getCurrentTimeUTC(): ZonedDateTime {
     return ZonedDateTime.now(TZ_UTC)
@@ -33,35 +36,35 @@ fun currentUserId(): String = SecurityContextHolder.getContext().authentication.
 fun BusinessId.isValidBusinessId(): Boolean {
     logger.info { "Verifying businessId: $this" }
 
-    if (length != 9 || substring(0, 7).any { !it.isDigit() } || this[7] != '-') {
+    val matchResult = businessIdRegex.find(this)
+    if (matchResult == null) {
         logger.warn { "Invalid format." }
         return false
     }
 
-    val checkDigit = last().toString().toIntOrNull()
-    if (checkDigit == null) {
-        logger.warn { "Invalid check digit." }
-        return false
+    val (sequenceNumber, checkDigit) = matchResult.destructured
+
+    val calculatedCheck =
+        sequenceNumber
+            .map { it.digitToInt() }
+            .zip(businessIdMultipliers)
+            .sumOf { (num, multiplier) -> num * multiplier }
+            .mod(11)
+            .let { remainder ->
+                when (remainder) {
+                    1 -> {
+                        logger.warn { "Remainder not valid." }
+                        return false
+                    }
+                    0 -> 0
+                    else -> 11 - remainder
+                }
+            }
+
+    return if (calculatedCheck == checkDigit.toInt()) {
+        true
+    } else {
+        logger.warn { "Check digit doesn't match." }
+        false
     }
-
-    substringBefore("-")
-        .map { it.digitToInt() }
-        .zip(listOf(7, 9, 10, 5, 8, 4, 2))
-        .sumOf { (num, multiplier) -> num * multiplier }
-        .mod(11)
-        .let { remainder ->
-            val calculatedCheck = if (remainder == 0) 0 else 11 - remainder
-
-            if (remainder == 1) {
-                logger.warn { "Remainder not valid." }
-                return false
-            }
-
-            if (calculatedCheck == checkDigit) {
-                return true
-            }
-
-            logger.warn { "Invalid businessId" }
-            return false
-        }
 }
