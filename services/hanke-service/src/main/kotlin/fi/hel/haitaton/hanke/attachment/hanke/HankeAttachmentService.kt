@@ -53,7 +53,7 @@ class HankeAttachmentService(
         val hanke = findHanke(hankeTunnus)
         validateAttachment(attachment)
 
-        val result =
+        val entity =
             HankeAttachmentEntity(
                 id = null,
                 fileName = attachment.originalFilename!!,
@@ -65,8 +65,10 @@ class HankeAttachmentService(
                 hanke = hanke,
             )
 
-        return attachmentRepository.save(result).toMetadata().also {
-            logger.info { "Added attachment ${it.id} to hanke $hankeTunnus" }
+        return attachmentRepository.save(entity).toMetadata().also {
+            logger.info {
+                "Added attachment ${it.id} to hanke $hankeTunnus with size ${entity.content.size}"
+            }
         }
     }
 
