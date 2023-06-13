@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 036-drop-scanstatus-from-attachments
+      author: Topias Heinonen
+      changes:
+        - dropColumn:
+            tableName: application_attachment
+            columnName: scan_status
+        - dropColumn:
+            tableName: hanke_attachment
+            columnName: scan_status

@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.common
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -8,7 +9,6 @@ data class HankeAttachmentMetadata(
     val fileName: String,
     val createdByUserId: String,
     val createdAt: OffsetDateTime,
-    val scanStatus: AttachmentScanStatus,
     val hankeTunnus: String,
 )
 
@@ -17,7 +17,6 @@ data class ApplicationAttachmentMetadata(
     val fileName: String,
     val createdByUserId: String,
     val createdAt: OffsetDateTime,
-    val scanStatus: AttachmentScanStatus,
     val applicationId: Long,
     val attachmentType: ApplicationAttachmentType,
 )

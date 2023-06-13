@@ -29,8 +29,6 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.VALTAKIRJA
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus
-import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
@@ -114,7 +112,6 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             d.transform { it.fileName }.endsWith("file.pdf")
             d.transform { it.createdByUserId }.isEqualTo(USERNAME)
             d.transform { it.createdAt }.isRecent()
-            d.transform { it.scanStatus }.isEqualTo(OK)
             d.transform { it.applicationId }.isEqualTo(application.id)
             d.transform { it.attachmentType }.isEqualTo(MUU)
         }
@@ -191,7 +188,6 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(result.createdAt).isRecent()
         assertThat(result.applicationId).isEqualTo(application.id)
         assertThat(result.attachmentType).isEqualTo(typeInput)
-        assertThat(result.scanStatus).isEqualTo(OK)
         verify { cableReportService wasNot Called }
     }
 
@@ -298,30 +294,6 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(exception.message)
             .isEqualTo("Attachment upload exception: Infected file detected, see previous logs.")
         assertThat(applicationAttachmentRepository.findAll()).isEmpty()
-    }
-
-    @EnumSource(value = AttachmentScanStatus::class, names = ["PENDING", "FAILED"])
-    @ParameterizedTest
-    fun `getContent when status is not OK should throw`(scanStatus: AttachmentScanStatus) {
-        mockWebServer.enqueue(response(body(results = successResult())))
-        val application = initApplication().toApplication()
-
-        val result =
-            applicationAttachmentService.addAttachment(
-                applicationId = application.id!!,
-                attachmentType = MUU,
-                attachment = testFile()
-            )
-        val attachment = applicationAttachmentRepository.findById(result.id!!).orElseThrow()
-        attachment.scanStatus = scanStatus
-        applicationAttachmentRepository.save(attachment)
-
-        assertThrows<AttachmentNotFoundException> {
-            applicationAttachmentService.getContent(
-                applicationId = application.id!!,
-                attachmentId = result.id!!
-            )
-        }
     }
 
     @Test

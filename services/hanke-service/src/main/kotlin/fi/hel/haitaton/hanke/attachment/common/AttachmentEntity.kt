@@ -49,11 +49,6 @@ abstract class AttachmentEntity(
 
     /** Creation timestamp. */
     @Column(name = "created_at", updatable = false, nullable = false) var createdAt: OffsetDateTime,
-
-    /** Virus scan status. Possible values: PENDING, FAILED, OK. */
-    @Column(name = "scan_status")
-    @Enumerated(EnumType.STRING)
-    var scanStatus: AttachmentScanStatus = AttachmentScanStatus.PENDING
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -65,7 +60,6 @@ abstract class AttachmentEntity(
             fileName != other.fileName -> false
             createdByUserId != other.createdByUserId -> false
             createdAt != other.createdAt -> false
-            scanStatus != other.scanStatus -> false
             else -> true
         }
     }
@@ -74,7 +68,6 @@ abstract class AttachmentEntity(
         var result = fileName.hashCode()
         result = 31 * result + createdByUserId.hashCode()
         result = 31 * result + createdAt.hashCode()
-        result = 31 * result + scanStatus.hashCode()
         return result
     }
 }
@@ -88,17 +81,15 @@ class HankeAttachmentEntity(
     contentType: String,
     createdByUserId: String,
     createdAt: OffsetDateTime,
-    scanStatus: AttachmentScanStatus,
 
     /** Hanke in which this attachment belongs to. */
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "hanke_id") var hanke: HankeEntity,
-) : AttachmentEntity(id, fileName, content, contentType, createdByUserId, createdAt, scanStatus) {
+) : AttachmentEntity(id, fileName, content, contentType, createdByUserId, createdAt) {
     fun toMetadata(): HankeAttachmentMetadata {
         return HankeAttachmentMetadata(
             id = id,
             fileName = fileName,
             createdAt = createdAt,
-            scanStatus = scanStatus,
             hankeTunnus = hanke.hankeTunnus!!,
             createdByUserId = createdByUserId,
         )
@@ -132,7 +123,6 @@ class ApplicationAttachmentEntity(
     contentType: String,
     createdByUserId: String,
     createdAt: OffsetDateTime,
-    scanStatus: AttachmentScanStatus,
 
     /** Attachment type: MUU, LIIKENNEJARJESTELY, VALTAKIRJA. */
     @Enumerated(EnumType.STRING)
@@ -143,13 +133,12 @@ class ApplicationAttachmentEntity(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id")
     var application: ApplicationEntity,
-) : AttachmentEntity(id, fileName, content, contentType, createdByUserId, createdAt, scanStatus) {
+) : AttachmentEntity(id, fileName, content, contentType, createdByUserId, createdAt) {
     fun toMetadata(): ApplicationAttachmentMetadata {
         return ApplicationAttachmentMetadata(
             id = id,
             fileName = fileName,
             createdAt = createdAt,
-            scanStatus = scanStatus,
             createdByUserId = createdByUserId,
             applicationId = application.id!!,
             attachmentType = attachmentType,
@@ -208,10 +197,4 @@ enum class ApplicationAttachmentType {
     MUU,
     LIIKENNEJARJESTELY,
     VALTAKIRJA,
-}
-
-enum class AttachmentScanStatus {
-    PENDING,
-    FAILED,
-    OK
 }

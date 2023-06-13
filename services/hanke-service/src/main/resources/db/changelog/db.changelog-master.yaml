@@ -99,3 +99,5 @@ databaseChangeLog:
       file: db/changelog/changesets/034-add-delete-cascade-to-hankekayttajat.yml
   - include:
       file: db/changelog/changesets/035-add-content-type-attachments.yml
+  - include:
+      file: db/changelog/changesets/036-drop-scanstatus-from-attachments.yml
