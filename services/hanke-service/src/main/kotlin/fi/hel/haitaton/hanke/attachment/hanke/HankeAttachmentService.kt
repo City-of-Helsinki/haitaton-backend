@@ -5,7 +5,6 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
@@ -39,11 +38,6 @@ class HankeAttachmentService(
         val attachment = findHanke(hankeTunnus).liitteet.findBy(attachmentId)
 
         with(attachment) {
-            if (scanStatus != OK) {
-                logger.warn { "Attachment $id with scan status: $scanStatus cannot be viewed." }
-                throw AttachmentNotFoundException(attachmentId)
-            }
-
             return AttachmentContent(fileName, contentType, content)
         }
     }
@@ -61,7 +55,6 @@ class HankeAttachmentService(
                 contentType = attachment.contentType!!,
                 createdAt = now(),
                 createdByUserId = currentUserId(),
-                scanStatus = OK,
                 hanke = hanke,
             )
 
