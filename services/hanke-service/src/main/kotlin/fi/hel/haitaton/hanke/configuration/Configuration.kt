@@ -173,7 +173,7 @@ class Configuration {
         /** Create a web client that can download large files in memory. Up to 20 megabytes. */
         fun webClientWithLargeBuffer(webClientBuilder: WebClient.Builder): WebClient =
             webClientBuilder
-                .codecs { codecs -> codecs.defaultCodecs().maxInMemorySize(100 * 1024 * 1024) }
+                .codecs { codecs -> codecs.defaultCodecs().maxInMemorySize(20 * 1024 * 1024) }
                 .build()
     }
 }

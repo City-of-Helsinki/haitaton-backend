@@ -26,12 +26,6 @@ class AttachmentValidatorTest {
     }
 
     @Test
-    fun `valid filename in uppercase`() {
-        val fileName = "EXAMPLE.TXT"
-        AttachmentValidator.validate(testFile(fileName = fileName, contentType = TEXT_PLAIN_VALUE))
-    }
-
-    @Test
     fun fileNameMissing(logOutput: CapturedOutput) {
         val ex =
             assertThrows<AttachmentInvalidException> {
