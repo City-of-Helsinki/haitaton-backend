@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
+import fi.hel.haitaton.hanke.attachment.common.AttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
@@ -27,6 +28,7 @@ private val logger = KotlinLogging.logger {}
 class HankeAttachmentService(
     val hankeRepository: HankeRepository,
     val attachmentRepository: HankeAttachmentRepository,
+    val attachmentContentService: AttachmentContentService,
     val scanClient: FileScanClient,
 ) {
 
@@ -37,7 +39,7 @@ class HankeAttachmentService(
     @Transactional(readOnly = true)
     fun getContent(hankeTunnus: String, attachmentId: UUID): AttachmentContent {
         val attachment = findHanke(hankeTunnus).liitteet.findBy(attachmentId)
-
+        val content = attachmentContentService.findHankeContent(attachmentId)
         with(attachment) {
             return AttachmentContent(fileName, contentType, content)
         }
@@ -55,24 +57,26 @@ class HankeAttachmentService(
             HankeAttachmentEntity(
                 id = null,
                 fileName = attachment.originalFilename!!,
-                content = attachment.bytes,
                 contentType = attachment.contentType!!,
                 createdAt = now(),
                 createdByUserId = currentUserId(),
                 hanke = hanke,
             )
+        val savedAttachment = attachmentRepository.save(entity)
+        attachmentContentService.saveHankeContent(savedAttachment.id!!, attachment.bytes)
 
-        return attachmentRepository.save(entity).toMetadata().also {
+        return savedAttachment.toMetadata().also {
             logger.info {
-                "Added attachment ${it.id} to hanke $hankeTunnus with size ${entity.content.size}"
+                "Added attachment ${it.id} to hanke $hankeTunnus with size ${attachment.bytes.size}"
             }
         }
     }
 
     @Transactional
     fun deleteAttachment(hankeTunnus: String, attachmentId: UUID) {
-        val attachmentToDelete = findHanke(hankeTunnus).liitteet.findBy(attachmentId)
-        attachmentRepository.deleteAttachment(attachmentToDelete.id!!)
+        val hanke = findHanke(hankeTunnus)
+        val attachmentToDelete = hanke.liitteet.findBy(attachmentId)
+        hanke.liitteet.remove(attachmentToDelete)
         logger.info { "Deleted hanke attachment ${attachmentToDelete.id}" }
     }
 

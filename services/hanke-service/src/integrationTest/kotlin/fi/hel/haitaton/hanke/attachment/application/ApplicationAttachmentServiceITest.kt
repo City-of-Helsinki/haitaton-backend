@@ -7,6 +7,7 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import assertk.assertions.isPresent
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
@@ -36,7 +37,7 @@ import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createAlluApplicationResponse
-import fi.hel.haitaton.hanke.factory.AttachmentFactory.applicationAttachmentEntity
+import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -46,7 +47,6 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
 import io.mockk.verifyOrder
-import java.util.Optional
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -74,6 +74,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     @Autowired private lateinit var applicationAttachmentService: ApplicationAttachmentService
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
+    @Autowired private lateinit var attachmentFactory: AttachmentFactory
     @Autowired private lateinit var hankeRepository: HankeRepository
 
     private lateinit var mockWebServer: MockWebServer
@@ -167,7 +168,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 )
             }
 
-        assertThat(exception.message).isEqualTo("Attachment ${secondAttachment.id} not found")
+        assertThat(exception.message).isEqualTo("Attachment '${secondAttachment.id}' not found")
     }
 
     @EnumSource(ApplicationAttachmentType::class)
@@ -193,11 +194,11 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `addAttachment when allowed attachment amount is exceeded should throw`() {
+    fun `addAttachment when allowed attachment amount is reached should throw`() {
         val application = initApplication()
         val attachments =
             (1..ALLOWED_ATTACHMENT_COUNT).map {
-                applicationAttachmentEntity(application = application)
+                AttachmentFactory.applicationAttachmentEntity(applicationId = application.id!!)
             }
         applicationAttachmentRepository.saveAll(attachments)
 
@@ -329,26 +330,21 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 attachmentType = VALTAKIRJA,
                 attachment = testFile()
             )
-        assertThat(applicationAttachmentRepository.findById(attachment.id!!).orElseThrow())
-            .isNotNull()
+        assertThat(applicationAttachmentRepository.findById(attachment.id!!)).isPresent()
 
         applicationAttachmentService.deleteAttachment(
             applicationId = application.id!!,
             attachmentId = attachment.id!!
         )
 
-        assertThat(applicationAttachmentRepository.findById(attachment.id!!))
-            .isEqualTo(Optional.empty())
+        assertThat(applicationAttachmentRepository.findById(attachment.id!!)).isEmpty()
     }
 
     @Test
     fun `deleteAttachment when application has been sent to Allu should throw`() {
         mockWebServer.enqueue(response(body(results = successResult())))
         val application = initApplication { it.alluid = ALLU_ID }
-        val attachment =
-            applicationAttachmentRepository.save(
-                applicationAttachmentEntity(application = application)
-            )
+        val attachment = attachmentFactory.saveAttachment(application.id!!)
 
         val exception =
             assertThrows<ApplicationInAlluException> {
@@ -363,8 +359,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 "Application is already sent to Allu, " +
                     "applicationId=${application.id}, alluId=${application.alluid}"
             )
-        assertThat(applicationAttachmentRepository.findById(attachment.id!!).orElseThrow())
-            .isNotNull()
+        assertThat(applicationAttachmentRepository.findById(attachment.id!!)).isPresent()
         verify { cableReportService wasNot Called }
     }
 

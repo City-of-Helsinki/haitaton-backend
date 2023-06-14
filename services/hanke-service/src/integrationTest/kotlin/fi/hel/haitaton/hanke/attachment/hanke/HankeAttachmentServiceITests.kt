@@ -7,6 +7,7 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import assertk.assertions.isPresent
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeNotFoundException
@@ -23,7 +24,6 @@ import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import java.util.Optional
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -120,7 +120,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
                 hankeAttachmentService.getContent(firstHanke.hankeTunnus!!, secondAttachment.id!!)
             }
 
-        assertThat(exception.message).isEqualTo("Attachment ${secondAttachment.id} not found")
+        assertThat(exception.message).isEqualTo("Attachment '${secondAttachment.id}' not found")
     }
 
     @Test
@@ -204,12 +204,13 @@ class HankeAttachmentServiceITests : DatabaseTest() {
     fun `deleteAttachment when valid input should succeed`() {
         mockWebServer.enqueue(response(body(results = successResult())))
         val hanke = hankeService.createHanke(HankeFactory.create())
-        val result = hankeAttachmentService.addAttachment(hanke.hankeTunnus!!, testFile())
-        val attachmentId = result.id!!
-        assertThat(hankeAttachmentRepository.findById(attachmentId).orElseThrow()).isNotNull()
+        val attachment = hankeAttachmentService.addAttachment(hanke.hankeTunnus!!, testFile())
+        val attachmentId = attachment.id!!
+        assertThat(hankeAttachmentRepository.findById(attachmentId)).isPresent()
 
         hankeAttachmentService.deleteAttachment(hanke.hankeTunnus!!, attachmentId)
 
-        assertThat(hankeAttachmentRepository.findById(attachmentId)).isEqualTo(Optional.empty())
+        val remainingAttachment = hankeAttachmentRepository.findById(attachmentId)
+        assertThat(remainingAttachment).isEmpty()
     }
 }

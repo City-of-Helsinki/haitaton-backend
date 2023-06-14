@@ -101,3 +101,7 @@ databaseChangeLog:
       file: db/changelog/changesets/035-add-content-type-attachments.yml
   - include:
       file: db/changelog/changesets/036-drop-scanstatus-from-attachments.yml
+  - include:
+      file: db/changelog/changesets/037-add-delete-cascade-for-attachments.yml
+  - include:
+      file: db/changelog/changesets/038-add-attachment-content-tables.sql
