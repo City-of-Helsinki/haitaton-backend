@@ -103,7 +103,7 @@ without the need to install postgres locally.
 
 To run the postgres in localhost
 ```
- cd scripts/postgres-docker
+ cd scripts/docker-postgres
 ./build-postgres-docker.sh 
 ```
 You can change the port and data folder to your liking in configure-database

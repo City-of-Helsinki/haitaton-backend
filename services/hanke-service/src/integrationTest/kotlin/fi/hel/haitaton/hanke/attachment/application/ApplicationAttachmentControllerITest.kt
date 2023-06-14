@@ -26,7 +26,7 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.dummyData
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createApplication
-import fi.hel.haitaton.hanke.factory.AttachmentFactory.applicationAttachmentMetadata
+import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -89,7 +89,10 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
 
     @Test
     fun `getMetadataList when valid request should return metadata list`() {
-        val data = (1..3).map { applicationAttachmentMetadata(fileName = "${it}file.pdf") }
+        val data =
+            (1..3).map {
+                AttachmentFactory.applicationAttachmentMetadata(fileName = "${it}file.pdf")
+            }
         every { applicationService.getApplicationById(APPLICATION_ID) } returns createApplication()
         every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
         every { permissionService.hasPermission(HANKE_ID, USERNAME, VIEW) } returns true
@@ -145,7 +148,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
         every { permissionService.hasPermission(HANKE_ID, USERNAME, EDIT) } returns true
         every { applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file) } returns
-            applicationAttachmentMetadata()
+            AttachmentFactory.applicationAttachmentMetadata()
 
         val result: ApplicationAttachmentMetadata =
             postAttachment(file = file).andExpect(status().isOk).andReturnBody()

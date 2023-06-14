@@ -14,6 +14,7 @@ import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.configuration.Configuration.Companion.webClientWithLargeBuffer
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
+import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import java.time.ZonedDateTime
 import okhttp3.MultipartReader
@@ -49,7 +50,7 @@ class CableReportServiceAlluITests {
         mockWebServer = MockWebServer()
 
         val baseUrl = mockWebServer.url("/").toUrl().toString()
-        val properties = AlluProperties(baseUrl, "fake_username", "any_password")
+        val properties = AlluProperties(baseUrl, "fake_username", "any_password", 2)
         val webClient = webClientWithLargeBuffer(WebClient.builder())
         service = CableReportServiceAllu(webClient, properties)
     }
@@ -105,14 +106,13 @@ class CableReportServiceAlluITests {
     fun `addAttachments should upload attachments successfully`() {
         addStubbedLoginResponse()
         val alluId = 123
-        val metadata = AlluDataFactory.createAttachmentMetadata()
         val file = "test file content".toByteArray()
-        val attachment = Attachment(metadata, file)
+        val attachment = AttachmentFactory.applicationAttachmentEntity(applicationId = 123456)
         val mockResponse = MockResponse().setResponseCode(200)
         (1..3).forEach { _ -> mockWebServer.enqueue(mockResponse) }
         val attachments = listOf(attachment, attachment, attachment)
 
-        service.addAttachments(alluId, attachments)
+        service.addAttachments(alluId, attachments) { _ -> file }
 
         assertThat(mockWebServer.takeRequest()).isValidLoginRequest()
         attachments.forEach { _ ->

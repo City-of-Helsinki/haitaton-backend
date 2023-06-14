@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 037-add-delete-cascade-for-attachments
+      author: Niko Pitkonen
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: application_attachment
+            constraintName: fk_attachment_applications
+        - addForeignKeyConstraint:
+            baseTableName: application_attachment
+            baseColumnNames: application_id
+            constraintName: fk_attachment_applications
+            referencedTableName: applications
+            referencedColumnNames: id
+            onDelete: CASCADE
+        - dropForeignKeyConstraint:
+            baseTableName: hanke_attachment
+            constraintName: fk_attachment_hanke
+        - addForeignKeyConstraint:
+            baseTableName: hanke_attachment
+            baseColumnNames: hanke_id
+            constraintName: fk_attachment_hanke
+            referencedTableName: hanke
+            referencedColumnNames: id
+            onDelete: CASCADE
