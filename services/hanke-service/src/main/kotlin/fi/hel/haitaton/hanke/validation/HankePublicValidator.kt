@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.validation.Validators.firstOf
+import fi.hel.haitaton.hanke.validation.Validators.given
 import fi.hel.haitaton.hanke.validation.Validators.notBlank
 import fi.hel.haitaton.hanke.validation.Validators.notEmpty
 import fi.hel.haitaton.hanke.validation.Validators.notNull
@@ -24,8 +25,10 @@ object HankePublicValidator {
             .and { notNullOrBlank(hanke.kuvaus, "kuvaus") }
             .and { notNullOrBlank(hanke.tyomaaKatuosoite, "tyomaaKatuosoite") }
             .and { notNull(hanke.vaihe, "vaihe") }
-            .andWhen(hanke.vaihe == Vaihe.SUUNNITTELU) {
-                notNull(hanke.suunnitteluVaihe, "suunnitteluVaihe")
+            .and {
+                given(hanke.vaihe == Vaihe.SUUNNITTELU) {
+                    notNull(hanke.suunnitteluVaihe, "suunnitteluVaihe")
+                }
             }
             .and { notEmpty(hanke.alueet, "alueet") }
             .andAllIn(hanke.alueet, "alueet", ::validateAlue)
