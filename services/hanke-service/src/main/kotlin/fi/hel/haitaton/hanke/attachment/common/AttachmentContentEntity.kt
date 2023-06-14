@@ -21,7 +21,6 @@ abstract class AttachmentContentEntity(
     /** Attachment data, i.e. the file itself. */
     @Lob
     @Type(type = "org.hibernate.type.BinaryType")
-    @Basic(fetch = FetchType.LAZY)
     @NotNull
     var content: ByteArray,
 )
