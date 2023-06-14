@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke.attachment.application
 
+import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
 import fi.hel.haitaton.hanke.allu.CableReportService
@@ -14,7 +16,6 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
@@ -45,11 +46,6 @@ class ApplicationAttachmentService(
         val attachment = findApplication(applicationId).attachments.findOrThrow(attachmentId)
 
         with(attachment) {
-            if (scanStatus != OK) {
-                logger.warn { "Attachment $id with scan status: $scanStatus cannot be viewed." }
-                throw AttachmentNotFoundException(attachmentId)
-            }
-
             return AttachmentContent(fileName, contentType, content)
         }
     }
@@ -64,14 +60,12 @@ class ApplicationAttachmentService(
         attachmentType: ApplicationAttachmentType,
         attachment: MultipartFile
     ): ApplicationAttachmentMetadata {
-        val application = findApplication(applicationId)
-
-        if (!isPending(application)) {
-            logger.warn { "Application is processing, cannot add attachment." }
-            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
-        }
-
-        validateAttachment(attachment)
+        val application =
+            findApplication(applicationId).also { application ->
+                ensureApplicationIsPending(application)
+                ensureRoomForAttachment(applicationId)
+                ensureValidFile(attachment)
+            }
 
         val entity =
             ApplicationAttachmentEntity(
@@ -81,7 +75,6 @@ class ApplicationAttachmentService(
                 contentType = attachment.contentType!!,
                 createdByUserId = currentUserId(),
                 createdAt = now(),
-                scanStatus = OK,
                 attachmentType = attachmentType,
                 application = application,
             )
@@ -95,13 +88,14 @@ class ApplicationAttachmentService(
         }
     }
 
+    /** Attachment can be deleted if the application has not been sent to Allu (alluId null). */
     @Transactional
     fun deleteAttachment(applicationId: Long, attachmentId: UUID) {
         val application = findApplication(applicationId)
 
-        if (!isPending(application)) {
-            logger.warn { "Application is processing, cannot delete attachment." }
-            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
+        if (isInAllu(application)) {
+            logger.warn { "Application $applicationId is in Allu, attachments cannot be deleted." }
+            throw ApplicationInAlluException(application.id, application.alluid)
         }
 
         val attachment = application.attachments.findOrThrow(attachmentId)
@@ -130,7 +124,7 @@ class ApplicationAttachmentService(
     ): ApplicationAttachmentEntity =
         find { it.id == attachmentId } ?: throw AttachmentNotFoundException(attachmentId)
 
-    private fun validateAttachment(attachment: MultipartFile) =
+    private fun ensureValidFile(attachment: MultipartFile) =
         with(attachment) {
             AttachmentValidator.validate(this)
             val scanResult = scanClient.scan(listOf(FileScanInput(originalFilename!!, bytes)))
@@ -139,11 +133,26 @@ class ApplicationAttachmentService(
             }
         }
 
+    private fun ensureApplicationIsPending(application: ApplicationEntity) {
+        if (!isPending(application.alluid, application.alluStatus)) {
+            logger.warn { "Application is processing, cannot add attachment." }
+            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
+        }
+    }
+
+    private fun ensureRoomForAttachment(applicationId: Long) {
+        if (attachmentAmountReached(applicationId)) {
+            logger.warn {
+                "Application $applicationId has reached the allowed amount of attachments."
+            }
+            throw AttachmentInvalidException("Attachment amount limit reached")
+        }
+    }
+
     /** Application considered pending if no alluId or status null, pending, or pending_client. */
-    private fun isPending(application: ApplicationEntity): Boolean {
-        val alluId = application.alluid
+    private fun isPending(alluId: Int?, alluStatus: ApplicationStatus?): Boolean {
         alluId ?: return true
-        return when (application.alluStatus) {
+        return when (alluStatus) {
             null,
             PENDING,
             PENDING_CLIENT -> alluPending(alluId)
@@ -152,13 +161,26 @@ class ApplicationAttachmentService(
     }
 
     /** Check current status from Allu. */
-    private fun alluPending(alluid: Int): Boolean {
-        val status = cableReportService.getApplicationInformation(alluid).status
+    private fun alluPending(alluId: Int): Boolean {
+        val status = cableReportService.getApplicationInformation(alluId).status
         return listOf(PENDING, PENDING_CLIENT).contains(status)
     }
+
+    private fun isInAllu(application: ApplicationEntity): Boolean = application.alluid != null
 
     /** Attachment should be sent if application is in Allu. Must check status before sending. */
     private fun sendAttachment(alluId: Int, attachment: ApplicationAttachmentEntity) {
         cableReportService.addAttachment(alluId, attachment.toAlluAttachment())
     }
+
+    private fun attachmentAmountReached(applicationId: Long): Boolean {
+        val attachmentCount = attachmentRepository.countByApplicationId(applicationId)
+        logger.info {
+            "Application $applicationId contains $attachmentCount attachments beforehand."
+        }
+        return attachmentCount >= ALLOWED_ATTACHMENT_COUNT
+    }
 }
+
+class ApplicationInAlluException(id: Long?, alluId: Int?) :
+    RuntimeException("Application is already sent to Allu, applicationId=$id, alluId=$alluId")

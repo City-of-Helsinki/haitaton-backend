@@ -1,12 +1,12 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
-import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus
-import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime
@@ -26,7 +26,6 @@ object AttachmentFactory {
         contentType: String = APPLICATION_PDF_VALUE,
         createdByUserId: String = currentUserId(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
-        scanStatus: AttachmentScanStatus = OK,
         attachmentType: ApplicationAttachmentType = MUU,
         application: ApplicationEntity,
     ): ApplicationAttachmentEntity =
@@ -37,9 +36,27 @@ object AttachmentFactory {
             contentType = contentType,
             createdByUserId = createdByUserId,
             createdAt = createdAt,
-            scanStatus = scanStatus,
             attachmentType = attachmentType,
             application = application,
+        )
+
+    fun hankeAttachmentEntity(
+        id: UUID = randomUUID(),
+        fileName: String = FILE_NAME,
+        content: ByteArray = dummyData,
+        contentType: String = APPLICATION_PDF_VALUE,
+        createdByUser: String = currentUserId(),
+        createdAt: OffsetDateTime = OffsetDateTime.now(),
+        hanke: HankeEntity,
+    ): HankeAttachmentEntity =
+        HankeAttachmentEntity(
+            id = id,
+            fileName = fileName,
+            content = content,
+            contentType = contentType,
+            createdByUserId = createdByUser,
+            createdAt = createdAt,
+            hanke = hanke,
         )
 
     fun hankeAttachmentMetadata(
@@ -47,7 +64,6 @@ object AttachmentFactory {
         fileName: String = FILE_NAME,
         createdByUser: String = currentUserId(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
-        scanStatus: AttachmentScanStatus = OK,
         hankeTunnus: String = "HAI-1234",
     ): HankeAttachmentMetadata =
         HankeAttachmentMetadata(
@@ -55,7 +71,6 @@ object AttachmentFactory {
             fileName = fileName,
             createdByUserId = createdByUser,
             createdAt = createdAt,
-            scanStatus = scanStatus,
             hankeTunnus = hankeTunnus,
         )
 
@@ -64,7 +79,6 @@ object AttachmentFactory {
         fileName: String = FILE_NAME,
         createdBy: String = currentUserId(),
         createdAt: OffsetDateTime = OffsetDateTime.now(),
-        scanStatus: AttachmentScanStatus = OK,
         applicationId: Long = 1L,
         attachmentType: ApplicationAttachmentType = MUU,
     ): ApplicationAttachmentMetadata =
@@ -73,7 +87,6 @@ object AttachmentFactory {
             fileName = fileName,
             createdByUserId = createdBy,
             createdAt = createdAt,
-            scanStatus = scanStatus,
             applicationId = applicationId,
             attachmentType = attachmentType
         )
