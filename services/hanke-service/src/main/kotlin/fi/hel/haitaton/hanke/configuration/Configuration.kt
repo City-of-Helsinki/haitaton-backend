@@ -36,6 +36,9 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
@@ -48,13 +51,16 @@ import reactor.netty.http.client.HttpClient
 
 @Configuration
 @Profile("default")
-@EnableConfigurationProperties(GdprProperties::class, FeatureFlags::class)
+@EnableConfigurationProperties(
+    GdprProperties::class,
+    FeatureFlags::class,
+    AlluProperties::class,
+)
 class Configuration {
-
-    @Value("\${haitaton.allu.baseUrl}") lateinit var alluBaseUrl: String
-    @Value("\${haitaton.allu.username}") lateinit var alluUsername: String
-    @Value("\${haitaton.allu.password}") lateinit var alluPassword: String
     @Value("\${haitaton.allu.insecure}") var alluTrustInsecure: Boolean = false
+    @Autowired lateinit var alluProperties: AlluProperties
+
+    @Bean fun ioDispatcher(): CoroutineDispatcher = Dispatchers.IO
 
     @Bean
     fun cableReportService(webClientBuilder: WebClient.Builder): CableReportService {
@@ -63,9 +69,7 @@ class Configuration {
                 if (alluTrustInsecure) createInsecureTrustingWebClient(webClientBuilder)
                 else webClientBuilder
             )
-        val alluProps =
-            AlluProperties(baseUrl = alluBaseUrl, username = alluUsername, password = alluPassword)
-        return CableReportServiceAllu(webClient, alluProps)
+        return CableReportServiceAllu(webClient, alluProperties)
     }
 
     private fun createInsecureTrustingWebClient(
@@ -173,7 +177,7 @@ class Configuration {
         /** Create a web client that can download large files in memory. Up to 20 megabytes. */
         fun webClientWithLargeBuffer(webClientBuilder: WebClient.Builder): WebClient =
             webClientBuilder
-                .codecs { codecs -> codecs.defaultCodecs().maxInMemorySize(20 * 1024 * 1024) }
+                .codecs { codecs -> codecs.defaultCodecs().maxInMemorySize(100 * 1024 * 1024) }
                 .build()
     }
 }
