@@ -1,6 +1,8 @@
 package fi.hel.haitaton.hanke.allu
 
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import java.time.ZonedDateTime
+import java.util.UUID
 
 interface CableReportService {
 
@@ -15,7 +17,11 @@ interface CableReportService {
 
     fun addAttachment(alluApplicationId: Int, attachment: Attachment)
 
-    fun addAttachments(alluApplicationId: Int, attachments: List<Attachment>)
+    fun addAttachments(
+        alluApplicationId: Int,
+        attachments: List<ApplicationAttachmentEntity>,
+        getContent: (UUID) -> ByteArray,
+    )
 
     fun getInformationRequests(alluApplicationId: Int): List<InformationRequest>
 

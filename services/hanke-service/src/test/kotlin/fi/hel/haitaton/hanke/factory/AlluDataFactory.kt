@@ -27,7 +27,9 @@ import org.springframework.stereotype.Component
 const val TEPPO_TESTI = "Teppo Testihenkilö"
 
 @Component
-class AlluDataFactory(val applicationRepository: ApplicationRepository) {
+class AlluDataFactory(
+    private val applicationRepository: ApplicationRepository,
+) {
     companion object {
         const val defaultApplicationId: Long = 1
         const val defaultApplicationName: String = "Johtoselvityksen oletusnimi"
