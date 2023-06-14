@@ -252,7 +252,7 @@ open class ApplicationService(
             logger.info { "Application not sent to Allu yet, simply deleting it. id=$id" }
         } else {
             logger.info {
-                "Application sent to Allu yet, trying to cancel it before deleting. id=$id alluid=$alluid"
+                "Application is sent to Allu, trying to cancel it before deleting. id=$id alluid=$alluid"
             }
             cancelApplication(alluid, application.id)
         }
@@ -460,7 +460,7 @@ open class ApplicationService(
             }
 
         try {
-            attachmentService.sendInitialAttachments(alluId, entity)
+            attachmentService.sendInitialAttachments(alluId, entity.id!!)
         } catch (e: Exception) {
             logger.error(e) {
                 "Error while sending the initial attachments. Canceling the application. " +

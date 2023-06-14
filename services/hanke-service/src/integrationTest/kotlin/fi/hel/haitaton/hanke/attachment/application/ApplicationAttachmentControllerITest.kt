@@ -23,11 +23,10 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus
 import fi.hel.haitaton.hanke.attachment.dummyData
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createApplication
-import fi.hel.haitaton.hanke.factory.AttachmentFactory.applicationAttachmentMetadata
+import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -90,7 +89,10 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
 
     @Test
     fun `getMetadataList when valid request should return metadata list`() {
-        val data = (1..3).map { applicationAttachmentMetadata(fileName = "${it}file.pdf") }
+        val data =
+            (1..3).map {
+                AttachmentFactory.applicationAttachmentMetadata(fileName = "${it}file.pdf")
+            }
         every { applicationService.getApplicationById(APPLICATION_ID) } returns createApplication()
         every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
         every { permissionService.hasPermission(HANKE_ID, USERNAME, VIEW) } returns true
@@ -104,7 +106,6 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
             d.transform { it.fileName }.endsWith(FILE_NAME_PDF)
             d.transform { it.createdByUserId }.isEqualTo(USERNAME)
             d.transform { it.createdAt }.isNotNull()
-            d.transform { it.scanStatus }.isEqualTo(AttachmentScanStatus.OK)
             d.transform { it.applicationId }.isEqualTo(APPLICATION_ID)
             d.transform { it.attachmentType }.isEqualTo(MUU)
         }
@@ -147,7 +148,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
         every { permissionService.hasPermission(HANKE_ID, USERNAME, EDIT) } returns true
         every { applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file) } returns
-            applicationAttachmentMetadata()
+            AttachmentFactory.applicationAttachmentMetadata()
 
         val result: ApplicationAttachmentMetadata =
             postAttachment(file = file).andExpect(status().isOk).andReturnBody()
@@ -157,7 +158,6 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
             assertThat(fileName).isEqualTo(FILE_NAME_PDF)
             assertThat(createdByUserId).isEqualTo(USERNAME)
             assertThat(createdAt).isNotNull()
-            assertThat(scanStatus).isEqualTo(AttachmentScanStatus.OK)
             assertThat(applicationId).isEqualTo(APPLICATION_ID)
             assertThat(attachmentType).isEqualTo(MUU)
         }
@@ -232,13 +232,15 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     }
 
     @Test
-    fun `deleteAttachment when application processing should return conflict`() {
+    fun `deleteAttachment when application is sent to Allu should return conflict`() {
         val attachmentId = randomUUID()
-        every { applicationService.getApplicationById(APPLICATION_ID) } returns createApplication()
+        val alluId = 123
+        every { applicationService.getApplicationById(APPLICATION_ID) } returns
+            createApplication(alluid = alluId)
         every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
         every { permissionService.hasPermission(HANKE_ID, USERNAME, EDIT) } returns true
         every { applicationAttachmentService.deleteAttachment(APPLICATION_ID, attachmentId) } throws
-            ApplicationAlreadyProcessingException(APPLICATION_ID, 123)
+            ApplicationInAlluException(APPLICATION_ID, alluId)
 
         deleteAttachment(attachmentId = attachmentId).andExpect(status().isConflict)
 

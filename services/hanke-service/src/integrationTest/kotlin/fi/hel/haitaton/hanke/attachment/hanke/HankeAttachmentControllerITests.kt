@@ -15,7 +15,7 @@ import fi.hel.haitaton.hanke.attachment.andExpectError
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.dummyData
 import fi.hel.haitaton.hanke.attachment.testFile
-import fi.hel.haitaton.hanke.factory.AttachmentFactory.hankeAttachmentMetadata
+import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -72,7 +72,8 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
 
     @Test
     fun `getMetadataList when valid request should return metadata list`() {
-        val data = (1..3).map { hankeAttachmentMetadata(fileName = "${it}file.pdf") }
+        val data =
+            (1..3).map { AttachmentFactory.hankeAttachmentMetadata(fileName = "${it}file.pdf") }
         every { hankeService.getHankeId(HANKE_TUNNUS) }.returns(HANKE_ID)
         every { permissionService.hasPermission(HANKE_ID, USERNAME, VIEW) } returns true
         every { hankeAttachmentService.getMetadataList(HANKE_TUNNUS) } returns data
@@ -113,7 +114,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
         every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
         every { permissionService.hasPermission(HANKE_ID, USERNAME, EDIT) } returns true
         every { hankeAttachmentService.addAttachment(HANKE_TUNNUS, file) } returns
-            hankeAttachmentMetadata(fileName = "text.txt")
+            AttachmentFactory.hankeAttachmentMetadata(fileName = "text.txt")
 
         postAttachment(file = file).andExpect(status().isOk)
 

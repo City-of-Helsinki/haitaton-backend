@@ -27,7 +27,9 @@ import org.springframework.stereotype.Component
 const val TEPPO_TESTI = "Teppo Testihenkilö"
 
 @Component
-class AlluDataFactory(val applicationRepository: ApplicationRepository) {
+class AlluDataFactory(
+    private val applicationRepository: ApplicationRepository,
+) {
     companion object {
         const val defaultApplicationId: Long = 1
         const val defaultApplicationName: String = "Johtoselvityksen oletusnimi"
@@ -117,6 +119,40 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 "/fi/hel/haitaton/hanke/geometria/toinen_polygoni.json".asJsonResource(),
         ): ApplicationArea = ApplicationArea(name, geometry)
 
+        fun Application.withApplicationData(
+            name: String = defaultApplicationName,
+            areas: List<ApplicationArea>? = listOf(createApplicationArea()),
+            startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
+            endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
+            pendingOnClient: Boolean = false,
+            workDescription: String = "Work description.",
+            customerWithContacts: CustomerWithContacts =
+                createCompanyCustomer().withContacts(createContact()),
+            contractorWithContacts: CustomerWithContacts =
+                createCompanyCustomer().withContacts(createContact()),
+            representativeWithContacts: CustomerWithContacts? = null,
+            propertyDeveloperWithContacts: CustomerWithContacts? = null,
+            rockExcavation: Boolean = false,
+            postalAddress: PostalAddress? = null,
+        ): Application =
+            this.copy(
+                applicationData =
+                    createCableReportApplicationData(
+                        name,
+                        areas,
+                        startTime,
+                        endTime,
+                        pendingOnClient,
+                        workDescription,
+                        customerWithContacts,
+                        contractorWithContacts,
+                        representativeWithContacts,
+                        propertyDeveloperWithContacts,
+                        rockExcavation,
+                        postalAddress
+                    )
+            )
+
         fun createCableReportApplicationData(
             name: String = defaultApplicationName,
             areas: List<ApplicationArea>? = listOf(createApplicationArea()),
@@ -175,12 +211,18 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                         customerWithContacts = customer
                     )
             )
-        fun Application.withCustomerContacts(contacts: List<Contact>): Application =
+        fun Application.withCustomerContacts(vararg contacts: Contact): Application =
             this.withCustomer(
                 (applicationData as CableReportApplicationData)
                     .customerWithContacts
-                    .copy(contacts = contacts)
+                    .copy(contacts = contacts.asList())
             )
+
+        fun CableReportApplicationData.withPostalAddress(
+            streetAddress: String = "Katu 1",
+            postalCode: String = "00100",
+            city: String = "Helsinki",
+        ) = this.copy(postalAddress = PostalAddress(StreetAddress(streetAddress), postalCode, city))
 
         fun cableReportWithoutHanke(): CableReportWithoutHanke =
             with(createApplication()) {

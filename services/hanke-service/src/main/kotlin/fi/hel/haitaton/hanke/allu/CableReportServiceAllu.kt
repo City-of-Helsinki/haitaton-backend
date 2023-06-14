@@ -1,14 +1,20 @@
 package fi.hel.haitaton.hanke.allu
 
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import java.time.Duration.ofSeconds
 import java.time.ZonedDateTime
+import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import mu.KotlinLogging
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.ConstructorBinding
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType
 import org.springframework.http.MediaType.parseMediaType
@@ -173,13 +179,24 @@ class CableReportServiceAllu(
     }
 
     /** Send many attachments in parallel. */
-    override fun addAttachments(alluApplicationId: Int, attachments: List<Attachment>) =
-        runBlocking {
-            withContext(ioDispatcher) {
-                val token = login()
-                attachments.forEach { launch { postAttachment(alluApplicationId, token, it) } }
+    override fun addAttachments(
+        alluApplicationId: Int,
+        attachments: List<ApplicationAttachmentEntity>,
+        getContent: (UUID) -> ByteArray,
+    ) = runBlocking {
+        val semaphore = Semaphore(properties.concurrentUploads)
+        withContext(ioDispatcher) {
+            val token = login()
+            attachments.forEach {
+                launch {
+                    semaphore.withPermit {
+                        val content = getContent(it.id!!)
+                        postAttachment(alluApplicationId, token, it.toAlluAttachment(content))
+                    }
+                }
             }
         }
+    }
 
     override fun getInformationRequests(alluApplicationId: Int): List<InformationRequest> {
         logger.info { "Fetching information request for application $alluApplicationId." }
@@ -368,7 +385,14 @@ class CableReportServiceAllu(
     }
 }
 
-data class AlluProperties(val baseUrl: String, val username: String, val password: String)
+@ConfigurationProperties(prefix = "haitaton.allu")
+@ConstructorBinding
+data class AlluProperties(
+    val baseUrl: String,
+    val username: String,
+    val password: String,
+    val concurrentUploads: Int,
+)
 
 data class LoginInfo(val username: String, val password: String)
 
