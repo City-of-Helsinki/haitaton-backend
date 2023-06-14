@@ -1,11 +1,11 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
+import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
@@ -39,21 +39,19 @@ class HankeAttachmentService(
         val attachment = findHanke(hankeTunnus).liitteet.findBy(attachmentId)
 
         with(attachment) {
-            if (scanStatus != OK) {
-                logger.warn { "Attachment $id with scan status: $scanStatus cannot be viewed." }
-                throw AttachmentNotFoundException(attachmentId)
-            }
-
             return AttachmentContent(fileName, contentType, content)
         }
     }
 
     @Transactional
     fun addAttachment(hankeTunnus: String, attachment: MultipartFile): HankeAttachmentMetadata {
-        val hanke = findHanke(hankeTunnus)
-        validateAttachment(attachment)
+        val hanke =
+            findHanke(hankeTunnus).also { hanke ->
+                ensureRoomForAttachment(hanke.id!!)
+                ensureValidFile(attachment)
+            }
 
-        val result =
+        val entity =
             HankeAttachmentEntity(
                 id = null,
                 fileName = attachment.originalFilename!!,
@@ -61,12 +59,13 @@ class HankeAttachmentService(
                 contentType = attachment.contentType!!,
                 createdAt = now(),
                 createdByUserId = currentUserId(),
-                scanStatus = OK,
                 hanke = hanke,
             )
 
-        return attachmentRepository.save(result).toMetadata().also {
-            logger.info { "Added attachment ${it.id} to hanke $hankeTunnus" }
+        return attachmentRepository.save(entity).toMetadata().also {
+            logger.info {
+                "Added attachment ${it.id} to hanke $hankeTunnus with size ${entity.content.size}"
+            }
         }
     }
 
@@ -83,7 +82,20 @@ class HankeAttachmentService(
     private fun List<HankeAttachmentEntity>.findBy(attachmentId: UUID): HankeAttachmentEntity =
         find { it.id == attachmentId } ?: throw AttachmentNotFoundException(attachmentId)
 
-    private fun validateAttachment(attachment: MultipartFile) =
+    private fun ensureRoomForAttachment(hankeId: Int) {
+        if (attachmentAmountReached(hankeId)) {
+            logger.warn { "Application $hankeId has reached the allowed amount of attachments." }
+            throw AttachmentInvalidException("Attachment amount limit reached")
+        }
+    }
+
+    private fun attachmentAmountReached(hankeId: Int): Boolean {
+        val attachmentCount = attachmentRepository.countByHankeId(hankeId)
+        logger.info { "Application $hankeId contains $attachmentCount attachments beforehand." }
+        return attachmentCount >= ALLOWED_ATTACHMENT_COUNT
+    }
+
+    private fun ensureValidFile(attachment: MultipartFile) =
         with(attachment) {
             AttachmentValidator.validate(this)
             val scanResult = scanClient.scan(listOf(FileScanInput(originalFilename!!, bytes)))

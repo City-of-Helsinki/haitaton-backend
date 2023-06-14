@@ -8,6 +8,9 @@ import org.springframework.security.core.context.SecurityContextHolder
 
 private val logger = KotlinLogging.logger {}
 
+private val businessIdRegex = "^(\\d{7})-(\\d)\$".toRegex()
+private val businessIdMultipliers = listOf(7, 9, 10, 5, 8, 4, 2)
+
 /** Returns the current time in UTC, with time zone info. */
 fun getCurrentTimeUTC(): ZonedDateTime {
     return ZonedDateTime.now(TZ_UTC)
@@ -33,23 +36,35 @@ fun currentUserId(): String = SecurityContextHolder.getContext().authentication.
 fun BusinessId.isValidBusinessId(): Boolean {
     logger.info { "Verifying businessId: $this" }
 
-    if (length != 9 || this[7] != '-') {
-        return false.also { logger.warn { "Invalid format." } }
+    val matchResult = businessIdRegex.find(this)
+    if (matchResult == null) {
+        logger.warn { "Invalid format." }
+        return false
     }
 
-    substringBefore("-")
-        .map { it.digitToInt() }
-        .zip(listOf(7, 9, 10, 5, 8, 4, 2))
-        .sumOf { (num, multiplier) -> num * multiplier }
-        .mod(11)
-        .let { remainder ->
-            val check = substringAfter("-").toInt()
-            val result = 11 - remainder
+    val (sequenceNumber, checkDigit) = matchResult.destructured
 
-            return when {
-                remainder == 1 -> false.also { logger.warn { "Remainder not valid." } }
-                (remainder == 0 && 0 == check) || result == check -> true
-                else -> false.also { logger.warn { "Invalid businessId." } }
+    val calculatedCheck =
+        sequenceNumber
+            .map { it.digitToInt() }
+            .zip(businessIdMultipliers)
+            .sumOf { (num, multiplier) -> num * multiplier }
+            .mod(11)
+            .let { remainder ->
+                when (remainder) {
+                    1 -> {
+                        logger.warn { "Remainder not valid." }
+                        return false
+                    }
+                    0 -> 0
+                    else -> 11 - remainder
+                }
             }
-        }
+
+    return if (calculatedCheck == checkDigit.toInt()) {
+        true
+    } else {
+        logger.warn { "Check digit doesn't match." }
+        false
+    }
 }
