@@ -117,40 +117,6 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                 "/fi/hel/haitaton/hanke/geometria/toinen_polygoni.json".asJsonResource(),
         ): ApplicationArea = ApplicationArea(name, geometry)
 
-        fun Application.withApplicationData(
-            name: String = defaultApplicationName,
-            areas: List<ApplicationArea>? = listOf(createApplicationArea()),
-            startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
-            endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-            pendingOnClient: Boolean = false,
-            workDescription: String = "Work description.",
-            customerWithContacts: CustomerWithContacts =
-                createCompanyCustomer().withContacts(createContact()),
-            contractorWithContacts: CustomerWithContacts =
-                createCompanyCustomer().withContacts(createContact()),
-            representativeWithContacts: CustomerWithContacts? = null,
-            propertyDeveloperWithContacts: CustomerWithContacts? = null,
-            rockExcavation: Boolean = false,
-            postalAddress: PostalAddress? = null,
-        ): Application =
-            this.copy(
-                applicationData =
-                    createCableReportApplicationData(
-                        name,
-                        areas,
-                        startTime,
-                        endTime,
-                        pendingOnClient,
-                        workDescription,
-                        customerWithContacts,
-                        contractorWithContacts,
-                        representativeWithContacts,
-                        propertyDeveloperWithContacts,
-                        rockExcavation,
-                        postalAddress
-                    )
-            )
-
         fun createCableReportApplicationData(
             name: String = defaultApplicationName,
             areas: List<ApplicationArea>? = listOf(createApplicationArea()),
@@ -209,18 +175,12 @@ class AlluDataFactory(val applicationRepository: ApplicationRepository) {
                         customerWithContacts = customer
                     )
             )
-        fun Application.withCustomerContacts(vararg contacts: Contact): Application =
+        fun Application.withCustomerContacts(contacts: List<Contact>): Application =
             this.withCustomer(
                 (applicationData as CableReportApplicationData)
                     .customerWithContacts
-                    .copy(contacts = contacts.asList())
+                    .copy(contacts = contacts)
             )
-
-        fun CableReportApplicationData.withPostalAddress(
-            streetAddress: String = "Katu 1",
-            postalCode: String = "00100",
-            city: String = "Helsinki",
-        ) = this.copy(postalAddress = PostalAddress(StreetAddress(streetAddress), postalCode, city))
 
         fun cableReportWithoutHanke(): CableReportWithoutHanke =
             with(createApplication()) {

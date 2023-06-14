@@ -98,6 +98,6 @@ object AttachmentValidator {
 
     private fun supportedType(fileName: String): Boolean {
         val extension = getExtension(fileName)
-        return supportedFiletypes.contains(extension.lowercase())
+        return supportedFiletypes.contains(extension)
     }
 }

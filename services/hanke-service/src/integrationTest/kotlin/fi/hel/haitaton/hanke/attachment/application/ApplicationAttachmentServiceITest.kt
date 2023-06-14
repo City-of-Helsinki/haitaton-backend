@@ -8,7 +8,6 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import com.ninjasquad.springmockk.MockkBean
-import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
@@ -30,13 +29,14 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.VALTAKIRJA
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus
+import fi.hel.haitaton.hanke.attachment.common.AttachmentScanStatus.OK
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createAlluApplicationResponse
-import fi.hel.haitaton.hanke.factory.AttachmentFactory.applicationAttachmentEntity
+import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -113,6 +113,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             d.transform { it.fileName }.endsWith("file.pdf")
             d.transform { it.createdByUserId }.isEqualTo(USERNAME)
             d.transform { it.createdAt }.isRecent()
+            d.transform { it.scanStatus }.isEqualTo(OK)
             d.transform { it.applicationId }.isEqualTo(application.id)
             d.transform { it.attachmentType }.isEqualTo(MUU)
         }
@@ -189,29 +190,8 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(result.createdAt).isRecent()
         assertThat(result.applicationId).isEqualTo(application.id)
         assertThat(result.attachmentType).isEqualTo(typeInput)
+        assertThat(result.scanStatus).isEqualTo(OK)
         verify { cableReportService wasNot Called }
-    }
-
-    @Test
-    fun `addAttachment when allowed attachment amount is exceeded should throw`() {
-        val application = initApplication()
-        val attachments =
-            (1..ALLOWED_ATTACHMENT_COUNT).map {
-                applicationAttachmentEntity(application = application)
-            }
-        applicationAttachmentRepository.saveAll(attachments)
-
-        val exception =
-            assertThrows<AttachmentInvalidException> {
-                applicationAttachmentService.addAttachment(
-                    applicationId = application.id!!,
-                    attachmentType = VALTAKIRJA,
-                    attachment = testFile()
-                )
-            }
-
-        assertThat(exception.message)
-            .isEqualTo("Attachment upload exception: Attachment amount limit reached")
     }
 
     @Test
@@ -223,7 +203,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 }
                 .toApplication()
         every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-            createAlluApplicationResponse(status = HANDLING)
+            AlluDataFactory.createAlluApplicationResponse(status = HANDLING)
 
         val exception =
             assertThrows<ApplicationAlreadyProcessingException> {
@@ -254,7 +234,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 }
                 .toApplication()
         every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-            createAlluApplicationResponse(status = status)
+            AlluDataFactory.createAlluApplicationResponse(status = status)
 
         applicationAttachmentService.addAttachment(
             applicationId = application.id!!,
@@ -319,6 +299,30 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(applicationAttachmentRepository.findAll()).isEmpty()
     }
 
+    @EnumSource(value = AttachmentScanStatus::class, names = ["PENDING", "FAILED"])
+    @ParameterizedTest
+    fun `getContent when status is not OK should throw`(scanStatus: AttachmentScanStatus) {
+        mockWebServer.enqueue(response(body(results = successResult())))
+        val application = initApplication().toApplication()
+
+        val result =
+            applicationAttachmentService.addAttachment(
+                applicationId = application.id!!,
+                attachmentType = MUU,
+                attachment = testFile()
+            )
+        val attachment = applicationAttachmentRepository.findById(result.id!!).orElseThrow()
+        attachment.scanStatus = scanStatus
+        applicationAttachmentRepository.save(attachment)
+
+        assertThrows<AttachmentNotFoundException> {
+            applicationAttachmentService.getContent(
+                applicationId = application.id!!,
+                attachmentId = result.id!!
+            )
+        }
+    }
+
     @Test
     fun `deleteAttachment when valid input should succeed`() {
         mockWebServer.enqueue(response(body(results = successResult())))
@@ -342,16 +346,18 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `deleteAttachment when application has been sent to Allu should throw`() {
+    fun `deleteAttachment when allu handling has started should throw`() {
         mockWebServer.enqueue(response(body(results = successResult())))
         val application = initApplication { it.alluid = ALLU_ID }
+        every { cableReportService.getApplicationInformation(ALLU_ID) } returns
+            AlluDataFactory.createAlluApplicationResponse(status = HANDLING)
         val attachment =
             applicationAttachmentRepository.save(
-                applicationAttachmentEntity(application = application)
+                AttachmentFactory.applicationAttachmentEntity(application = application)
             )
 
         val exception =
-            assertThrows<ApplicationInAlluException> {
+            assertThrows<ApplicationAlreadyProcessingException> {
                 applicationAttachmentService.deleteAttachment(
                     applicationId = application.id!!,
                     attachmentId = attachment.id!!
@@ -360,12 +366,11 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
         assertThat(exception.message)
             .isEqualTo(
-                "Application is already sent to Allu, " +
-                    "applicationId=${application.id}, alluId=${application.alluid}"
+                "Application is no longer pending in Allu, id=${application.id!!}, alluid=${application.alluid!!}"
             )
         assertThat(applicationAttachmentRepository.findById(attachment.id!!).orElseThrow())
             .isNotNull()
-        verify { cableReportService wasNot Called }
+        verify { cableReportService.getApplicationInformation(ALLU_ID) }
     }
 
     private fun initApplication(mutator: (ApplicationEntity) -> Unit = {}): ApplicationEntity =

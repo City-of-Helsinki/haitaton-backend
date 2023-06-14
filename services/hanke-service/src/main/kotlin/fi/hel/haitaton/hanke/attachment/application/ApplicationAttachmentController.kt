@@ -154,11 +154,6 @@ class ApplicationAttachmentController(
     }
 
     @DeleteMapping("/{attachmentId}")
-    @Operation(
-        summary = "Delete attachment from application.",
-        description =
-            "Can be deleted if application has not been sent to Allu. Don't delete if application has alluId."
-    )
     @ApiResponses(
         value =
             [
@@ -174,12 +169,16 @@ class ApplicationAttachmentController(
                         ]
                 ),
                 ApiResponse(
-                    description = "Application already in Allu.",
+                    description = "Application already processing.",
                     responseCode = "409",
                     content =
                         [
                             Content(
-                                schema = Schema(implementation = ApplicationInAlluException::class)
+                                schema =
+                                    Schema(
+                                        implementation =
+                                            ApplicationAlreadyProcessingException::class
+                                    )
                             )
                         ]
                 ),
