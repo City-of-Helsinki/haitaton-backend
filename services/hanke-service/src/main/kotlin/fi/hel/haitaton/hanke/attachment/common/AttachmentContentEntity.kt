@@ -1,10 +1,8 @@
 package fi.hel.haitaton.hanke.attachment.common
 
 import java.util.UUID
-import javax.persistence.Basic
 import javax.persistence.Column
 import javax.persistence.Entity
-import javax.persistence.FetchType
 import javax.persistence.Id
 import javax.persistence.Lob
 import javax.persistence.MappedSuperclass
@@ -19,10 +17,7 @@ abstract class AttachmentContentEntity(
     @Id @Column(name = "attachment_id") var attachmentId: UUID,
 
     /** Attachment data, i.e. the file itself. */
-    @Lob
-    @Type(type = "org.hibernate.type.BinaryType")
-    @NotNull
-    var content: ByteArray,
+    @Lob @Type(type = "org.hibernate.type.BinaryType") @NotNull var content: ByteArray,
 )
 
 @Entity
