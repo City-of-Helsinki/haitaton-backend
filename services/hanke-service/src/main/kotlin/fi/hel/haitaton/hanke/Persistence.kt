@@ -271,7 +271,7 @@ interface IdCounterRepository : JpaRepository<IdCounter, CounterType> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
         """
-            WITH currentyear AS (SELECT EXTRACT(YEAR FROM now() AT TIME ZONE 'UTC'))
+            WITH currentyear AS (SELECT EXTRACT(YEAR FROM now() AT TIME ZONE 'UTC') AS date_part)
             UPDATE 
                 idcounter
             SET
