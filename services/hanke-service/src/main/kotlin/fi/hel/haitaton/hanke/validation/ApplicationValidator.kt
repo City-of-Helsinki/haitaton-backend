@@ -1,10 +1,10 @@
 package fi.hel.haitaton.hanke.validation
 
-import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
+import fi.hel.haitaton.hanke.application.HaitatonApplication
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.isValidBusinessId
 import fi.hel.haitaton.hanke.validation.Validators.isBeforeOrEqual
@@ -16,12 +16,15 @@ import java.util.Locale
 import javax.validation.ConstraintValidator
 import javax.validation.ConstraintValidatorContext
 
-class ApplicationValidator : ConstraintValidator<ValidApplication, Application> {
-    override fun isValid(application: Application, context: ConstraintValidatorContext?): Boolean {
+class ApplicationValidator : ConstraintValidator<ValidApplication, HaitatonApplication> {
+    override fun isValid(
+        application: HaitatonApplication,
+        context: ConstraintValidatorContext?
+    ): Boolean {
 
         val result =
-            when (application.applicationData) {
-                is CableReportApplicationData -> application.applicationData.validate()
+            when (val applicationData = application.applicationData) {
+                is CableReportApplicationData -> applicationData.validate()
             }
 
         if (result.isOk()) {
