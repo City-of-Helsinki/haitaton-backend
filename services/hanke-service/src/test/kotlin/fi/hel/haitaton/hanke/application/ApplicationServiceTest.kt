@@ -31,6 +31,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
 import io.mockk.Called
 import io.mockk.called
 import io.mockk.checkUnnecessaryStub
@@ -417,8 +418,8 @@ class ApplicationServiceTest {
         assertThat { applicationService.sendApplication(3, USERNAME) }
             .isFailure()
             .all {
-                this.hasClass(AlluDataException::class)
-                this.hasMessage("Application data failed validation at $path: Can't be null")
+                hasClass(InvalidApplicationDataException::class)
+                hasMessage("Application contains invalid data. Errors at paths: $path")
             }
 
         verifySequence {

@@ -24,6 +24,7 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.validation.ApplicationDataValidator.ensureValidForSend
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import kotlin.reflect.KClass
@@ -432,6 +433,8 @@ open class ApplicationService(
     }
 
     private fun sendApplicationToAllu(entity: ApplicationEntity): Int {
+        ensureValidForSend(entity.applicationData)
+
         return if (entity.alluid == null) {
             createApplicationInAllu(entity)
         } else {

@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
@@ -341,8 +342,8 @@ class ApplicationController(
     @ExceptionHandler(InvalidApplicationDataException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
-    fun invalidApplicationDataException(ex: InvalidApplicationDataException): HankeError {
+    fun invalidApplicationDataException(ex: InvalidApplicationDataException): HankeErrorDetail {
         logger.warn(ex) { ex.message }
-        return HankeError.HAI2008
+        return HankeErrorDetail(hankeError = HankeError.HAI2008, errorPaths = ex.errorPaths)
     }
 }

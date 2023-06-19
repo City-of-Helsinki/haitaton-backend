@@ -1562,7 +1562,7 @@ class ApplicationServiceITest : DatabaseTest() {
             AlluDataFactory.createCableReportApplicationData(areas = listOf(aleksanterinpatsas))
     ): Application = AlluDataFactory.createApplication(applicationData = applicationData)
 
-    val customerWithContactsJson =
+    private fun customerWithContactsJson(orderer: Boolean) =
         """
            "customer": {
              "type": "COMPANY",
@@ -1581,7 +1581,7 @@ class ApplicationServiceITest : DatabaseTest() {
                "lastName": "Testihenkilö",
                "email": "teppo@example.test",
                "phone": "04012345678",
-               "orderer": false
+               "orderer": $orderer
              }
            ]
         """
@@ -1603,7 +1603,7 @@ class ApplicationServiceITest : DatabaseTest() {
               "applicationData": {
                 "name": "$name",
                 "customerWithContacts": {
-                  $customerWithContactsJson
+                  ${customerWithContactsJson(orderer = true)}
                 },
                 "areas": [],
                 "startTime": "${nextYear()}-02-20T23:45:56Z",
@@ -1612,7 +1612,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 "workDescription": "Work description.",
                 "rockExcavation": false,
                 "contractorWithContacts": {
-                  $customerWithContactsJson
+                  ${customerWithContactsJson(orderer = false)}
                 },
                 "postalAddress": null,
                 "representativeWithContacts": null,

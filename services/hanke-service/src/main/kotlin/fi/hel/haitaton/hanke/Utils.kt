@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.domain.BusinessId
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
@@ -68,3 +69,5 @@ fun BusinessId.isValidBusinessId(): Boolean {
         false
     }
 }
+
+fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }
