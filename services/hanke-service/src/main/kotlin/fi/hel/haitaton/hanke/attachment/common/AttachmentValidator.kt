@@ -1,11 +1,8 @@
 package fi.hel.haitaton.hanke.attachment.common
 
-import java.util.Locale
-import java.util.regex.Pattern
 import mu.KotlinLogging
 import org.apache.commons.io.FilenameUtils.getExtension
 import org.apache.commons.io.FilenameUtils.removeExtension
-import org.springframework.web.multipart.MultipartFile
 
 private val logger = KotlinLogging.logger {}
 
@@ -26,7 +23,8 @@ private val supportedFiletypes =
 // Linux: https://www.tldp.org/LDP/intro-linux/html/sect_03_01.html
 object AttachmentValidator {
 
-    private val INVALID_CHARS_PATTERN = Pattern.compile("[\\\\/:*?\"<>|]")
+    /** %22 is what `"` gets encoded to for transport. Treating it like it's `"`. */
+    private val INVALID_CHARS_PATTERN = "%22|[\\\\/:*?\"<>|]".toRegex()
 
     private val RESERVED_NAMES =
         arrayOf(
@@ -54,50 +52,41 @@ object AttachmentValidator {
             "LPT9",
         )
 
-    fun validate(attachment: MultipartFile) =
-        with(attachment) {
-            logger.info { "Validating file $originalFilename of type: $contentType" }
-            if (contentType.isNullOrBlank() || !validFileName(originalFilename)) {
-                throw AttachmentInvalidException("File '$originalFilename' not supported")
-            }
-        }
+    fun validFilename(originalFilename: String?): String {
+        logger.info { "Validating file name $originalFilename" }
 
-    private fun validFileName(fileName: String?): Boolean {
-        if (fileName.isNullOrBlank()) {
-            logger.warn { "Attachment file name null or blank" }
-            return false
-        }
+        val sanitizedFilename = sanitizeFilename(originalFilename)
+        logger.info { "Sanitized file name to $sanitizedFilename" }
 
-        if (fileName.length > 128) {
-            logger.warn { "File name is too long" }
-            return false
+        if (!isValidFilename(sanitizedFilename)) {
+            throw AttachmentInvalidException("File '$sanitizedFilename' not supported")
         }
-
-        if (!supportedType(fileName)) {
-            logger.warn { "File '$fileName' not supported" }
-            return false
-        }
-
-        if (fileName.contains("..")) {
-            logger.warn { "File name contains path traversal characters" }
-            return false
-        }
-
-        if (INVALID_CHARS_PATTERN.matcher(fileName).find()) {
-            logger.warn { "File name contains invalid characters" }
-            return false
-        }
-
-        if (RESERVED_NAMES.contains(removeExtension(fileName).uppercase(Locale.getDefault()))) {
-            logger.warn { "File name is reserved" }
-            return false
-        }
-
-        return true
+        return sanitizedFilename!!
     }
 
-    private fun supportedType(fileName: String): Boolean {
-        val extension = getExtension(fileName)
+    private fun sanitizeFilename(filename: String?): String? =
+        filename?.replace(INVALID_CHARS_PATTERN, "_")
+
+    private fun isValidFilename(filename: String?): Boolean =
+        when {
+            filename.isNullOrBlank() -> fail("Attachment file name null or blank")
+            filename.length > 128 -> fail("File name is too long")
+            !supportedType(filename) -> fail("File '$filename' not supported")
+            filename.contains("..") -> fail("File name contains path traversal characters")
+            INVALID_CHARS_PATTERN.containsMatchIn(filename) ->
+                fail("File name contains invalid characters")
+            RESERVED_NAMES.contains(removeExtension(filename).uppercase()) ->
+                fail("File name is reserved")
+            else -> true
+        }
+
+    private fun fail(reason: String): Boolean {
+        logger.warn { reason }
+        return false
+    }
+
+    private fun supportedType(filename: String): Boolean {
+        val extension = getExtension(filename)
         return supportedFiletypes.contains(extension.lowercase())
     }
 }

@@ -64,7 +64,7 @@ class HankeAttachmentEntity(
 ) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt) {
     fun toMetadata(): HankeAttachmentMetadata {
         return HankeAttachmentMetadata(
-            id = id,
+            id = id!!,
             fileName = fileName,
             createdAt = createdAt,
             hankeTunnus = hanke.hankeTunnus!!,
@@ -104,7 +104,7 @@ class ApplicationAttachmentEntity(
 ) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt) {
     fun toDto(): ApplicationAttachmentMetadata {
         return ApplicationAttachmentMetadata(
-            id = id,
+            id = id!!,
             fileName = fileName,
             createdAt = createdAt,
             createdByUserId = createdByUserId,
