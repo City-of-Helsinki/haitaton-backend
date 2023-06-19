@@ -8,7 +8,7 @@ enum class ApplicationType {
 }
 
 /** Interface to enable Application and CableReportWithoutHanke handling equivalently. */
-interface HaitatonApplication {
+interface BaseApplication {
     val applicationType: ApplicationType
     val applicationData: ApplicationData
 }
@@ -21,13 +21,13 @@ data class Application(
     override val applicationType: ApplicationType,
     override val applicationData: ApplicationData,
     val hankeTunnus: String,
-) : HasId<Long>, HaitatonApplication
+) : HasId<Long>, BaseApplication
 
 /** Creation of an application without hanke is enabled for cable reports. */
 data class CableReportWithoutHanke(
     override val applicationType: ApplicationType,
     override val applicationData: CableReportApplicationData,
-) : HaitatonApplication {
+) : BaseApplication {
     fun toNewApplication(hankeTunnus: String) =
         Application(
             id = null,

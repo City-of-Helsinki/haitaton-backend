@@ -10,7 +10,7 @@ import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomerContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
@@ -252,13 +252,9 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     fun `create with hanke generation calls validation fails with invalid data and returns 400`() {
         val applicationInput =
             AlluDataFactory.createApplication()
-                .withCustomer(
-                    customer =
-                        AlluDataFactory.createCompanyCustomer()
-                            .withContacts(
-                                AlluDataFactory.createContact(orderer = true),
-                                AlluDataFactory.createContact(orderer = true)
-                            )
+                .withCustomerContacts(
+                    AlluDataFactory.createContact(orderer = true),
+                    AlluDataFactory.createContact(orderer = true)
                 )
                 .toCableReportWithoutHanke()
 
