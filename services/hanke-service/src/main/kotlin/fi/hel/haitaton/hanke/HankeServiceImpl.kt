@@ -7,7 +7,6 @@ import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
-import fi.hel.haitaton.hanke.application.toNewApplication
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto

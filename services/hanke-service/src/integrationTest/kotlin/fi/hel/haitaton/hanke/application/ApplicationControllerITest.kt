@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomerContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
@@ -244,6 +245,22 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         assertEquals(response, mockCreatedApplication)
         verify { hankeService.generateHankeWithApplication(applicationInput, USERNAME) }
+    }
+
+    @Test
+    @WithMockUser(USERNAME)
+    fun `create with hanke generation calls validation fails with invalid data and returns 400`() {
+        val applicationInput =
+            AlluDataFactory.createApplication()
+                .withCustomerContacts(
+                    AlluDataFactory.createContact(orderer = true),
+                    AlluDataFactory.createContact(orderer = true)
+                )
+                .toCableReportWithoutHanke()
+
+        post("/hakemukset/johtoselvitys", applicationInput).andExpect(status().isBadRequest)
+
+        verify { hankeService wasNot Called }
     }
 
     @Test
@@ -710,4 +727,10 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         verify { permissionService.hasPermission(42, USERNAME, EDIT_APPLICATIONS) }
     }
+
+    private fun Application.toCableReportWithoutHanke(): CableReportWithoutHanke =
+        CableReportWithoutHanke(
+            applicationType = applicationType,
+            applicationData = applicationData as CableReportApplicationData
+        )
 }
