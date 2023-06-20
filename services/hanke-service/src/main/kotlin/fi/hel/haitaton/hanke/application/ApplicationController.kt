@@ -132,7 +132,9 @@ class ApplicationController(
                 ),
             ]
     )
-    fun createWithGeneratedHanke(@RequestBody cableReport: CableReportWithoutHanke): Application {
+    fun createWithGeneratedHanke(
+        @ValidApplication @RequestBody cableReport: CableReportWithoutHanke
+    ): Application {
         val userId = currentUserId()
         return hankeService
             .generateHankeWithApplication(cableReport, userId)
