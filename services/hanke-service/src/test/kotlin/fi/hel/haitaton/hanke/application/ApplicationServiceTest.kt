@@ -462,6 +462,7 @@ class ApplicationServiceTest {
     @ExtendWith(OutputCaptureExtension::class)
     inner class HandleApplicationUpdates {
         private val alluid = 42
+        private val applicationId = 13L
         private val hankeTunnus = "HAI23-1"
         private val receiver = AlluDataFactory.teppoEmail
         private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
@@ -471,7 +472,11 @@ class ApplicationServiceTest {
         fun `sends email to the orderer when application gets a decision`() {
             every { applicationRepo.getOneByAlluid(42) } returns applicationEntity()
             justRun {
-                emailSenderService.sendJohtoselvitysCompleteEmail(receiver, hankeTunnus, identifier)
+                emailSenderService.sendJohtoselvitysCompleteEmail(
+                    receiver,
+                    applicationId,
+                    identifier
+                )
             }
             every { applicationRepo.save(any()) } answers { firstArg() }
             every { statusRepo.getReferenceById(1) } returns AlluStatus(1, updateTime)
@@ -481,7 +486,11 @@ class ApplicationServiceTest {
 
             verifySequence {
                 applicationRepo.getOneByAlluid(42)
-                emailSenderService.sendJohtoselvitysCompleteEmail(receiver, hankeTunnus, identifier)
+                emailSenderService.sendJohtoselvitysCompleteEmail(
+                    receiver,
+                    applicationId,
+                    identifier
+                )
                 applicationRepo.save(any())
                 statusRepo.getReferenceById(1)
                 statusRepo.save(any())
@@ -517,7 +526,7 @@ class ApplicationServiceTest {
         }
 
         @Test
-        fun `logs error when there no receivers`(output: CapturedOutput) {
+        fun `logs error when there are no receivers`(output: CapturedOutput) {
             every { applicationRepo.getOneByAlluid(42) } returns
                 applicationEntity()
                     .withCustomer(
@@ -591,6 +600,7 @@ class ApplicationServiceTest {
 
         private fun applicationEntity() =
             AlluDataFactory.createApplicationEntity(
+                    id = applicationId,
                     alluid = alluid,
                     applicationIdentifier = identifier,
                     userId = "user",

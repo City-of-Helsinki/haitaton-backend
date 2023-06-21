@@ -306,16 +306,16 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
                       "code": "HAI2003",
                       "message": {
                         "fi": "Keskeneräinen hakemus tunnuksella JS1. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
-                        "en": "en: Keskeneräinen hakemus tunnuksella JS1. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
-                        "sv": "sv: Keskeneräinen hakemus tunnuksella JS1. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi."
+                        "en": "An unfinished application with the ID JS1. Please contact alueidenkaytto@hel.fi to remove the application.",
+                        "sv": "Pågående ansökan med koden JS1. Kontakta alueidenkaytto@hel.fi för att ta bort ansökan."
                       }
                     },
                     {
                       "code": "HAI2003",
                       "message": {
                         "fi": "Keskeneräinen hakemus tunnuksella JS2. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
-                        "en": "en: Keskeneräinen hakemus tunnuksella JS2. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
-                        "sv": "sv: Keskeneräinen hakemus tunnuksella JS2. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi."
+                        "en": "An unfinished application with the ID JS2. Please contact alueidenkaytto@hel.fi to remove the application.",
+                        "sv": "Pågående ansökan med koden JS2. Kontakta alueidenkaytto@hel.fi för att ta bort ansökan."
                       }
                     }
                   ]
