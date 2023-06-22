@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import assertk.assertThat
+import assertk.assertions.containsExactly
 import assertk.assertions.each
 import assertk.assertions.endsWith
 import assertk.assertions.hasSize
@@ -15,9 +16,11 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.body
+import fi.hel.haitaton.hanke.attachment.common.AttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.defaultData
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
@@ -45,6 +48,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 class HankeAttachmentServiceITests : DatabaseTest() {
     @Autowired private lateinit var hankeAttachmentService: HankeAttachmentService
     @Autowired private lateinit var hankeAttachmentRepository: HankeAttachmentRepository
+    @Autowired private lateinit var attachmentContentService: AttachmentContentService
     @Autowired private lateinit var hankeService: HankeService
     @Autowired private lateinit var hankeFactory: HankeFactory
 
@@ -92,7 +96,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
         val hanke = hankeService.createHanke(HankeFactory.create())
         val attachment = hankeAttachmentService.addAttachment(hanke.hankeTunnus!!, file)
 
-        val result = hankeAttachmentService.getContent(hanke.hankeTunnus!!, attachment.id!!)
+        val result = hankeAttachmentService.getContent(hanke.hankeTunnus!!, attachment.id)
 
         assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
         assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
@@ -117,7 +121,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
 
         val exception =
             assertThrows<AttachmentNotFoundException> {
-                hankeAttachmentService.getContent(firstHanke.hankeTunnus!!, secondAttachment.id!!)
+                hankeAttachmentService.getContent(firstHanke.hankeTunnus!!, secondAttachment.id)
             }
 
         assertThat(exception.message).isEqualTo("Attachment not found, id=${secondAttachment.id}")
@@ -135,6 +139,32 @@ class HankeAttachmentServiceITests : DatabaseTest() {
         assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
         assertThat(result.createdAt).isNotNull()
         assertThat(result.hankeTunnus).isEqualTo(hanke.hankeTunnus)
+
+        val attachments = hankeAttachmentRepository.findAll()
+        assertThat(attachments).hasSize(1)
+        val attachmentInDb = attachments.first()
+        assertThat(attachmentInDb.createdByUserId).isEqualTo(USERNAME)
+        assertThat(attachmentInDb.fileName).isEqualTo(FILE_NAME_PDF)
+        assertThat(attachmentInDb.createdAt).isNotNull()
+
+        val savedContent = attachmentContentService.findHankeContent(attachmentInDb.id!!)
+        assertThat(savedContent).containsExactly(*defaultData)
+    }
+
+    @Test
+    fun `addAttachment with special characters in filename sanitizes filename`() {
+        mockWebServer.enqueue(response(body(results = successResult())))
+        val hanke = hankeService.createHanke(HankeFactory.create())
+
+        val result =
+            hankeAttachmentService.addAttachment(
+                hanke.hankeTunnus!!,
+                testFile(fileName = "exa*mple.txt")
+            )
+
+        assertThat(result.fileName).isEqualTo("exa_mple.txt")
+        val attachmentInDb = hankeAttachmentRepository.getReferenceById(result.id)
+        assertThat(attachmentInDb.fileName).isEqualTo("exa_mple.txt")
     }
 
     @Test
@@ -205,7 +235,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
         mockWebServer.enqueue(response(body(results = successResult())))
         val hanke = hankeService.createHanke(HankeFactory.create())
         val attachment = hankeAttachmentService.addAttachment(hanke.hankeTunnus!!, testFile())
-        val attachmentId = attachment.id!!
+        val attachmentId = attachment.id
         assertThat(hankeAttachmentRepository.findById(attachmentId)).isPresent()
 
         hankeAttachmentService.deleteAttachment(hanke.hankeTunnus!!, attachmentId)

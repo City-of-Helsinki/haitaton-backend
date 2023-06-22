@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.application.ApplicationInAlluException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.geometria.GeometriaValidationException
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
@@ -160,6 +161,15 @@ class ControllerExceptionHandler {
         logger.warn { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI3001
+    }
+
+    @ExceptionHandler(AttachmentLimitReachedException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun attachmentLimitReached(ex: AttachmentLimitReachedException): HankeError {
+        logger.warn { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI3003
     }
 
     @ExceptionHandler(Throwable::class)
