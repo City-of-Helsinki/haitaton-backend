@@ -38,6 +38,7 @@ class CableReportServiceAllu(
 
     private val baseUrl = properties.baseUrl
     private val defaultTimeout = ofSeconds(30)
+    private val attachmentUploadTimeout = ofSeconds(55)
 
     private fun login(): String {
         try {
@@ -371,7 +372,7 @@ class CableReportServiceAllu(
             .body(BodyInserters.fromMultipartData(multipartData))
             .retrieve()
             .bodyToMono<Void>()
-            .timeout(defaultTimeout)
+            .timeout(attachmentUploadTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error uploading attachment to Allu", it)
             }
