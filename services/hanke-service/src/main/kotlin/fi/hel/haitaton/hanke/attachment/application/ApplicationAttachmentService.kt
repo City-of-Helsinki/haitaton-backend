@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
@@ -62,17 +63,19 @@ class ApplicationAttachmentService(
         attachmentType: ApplicationAttachmentType,
         attachment: MultipartFile
     ): ApplicationAttachmentMetadata {
+        val filename = AttachmentValidator.validFilename(attachment.originalFilename)
         val application =
             findApplication(applicationId).also { application ->
                 ensureApplicationIsPending(application)
                 ensureRoomForAttachment(applicationId)
-                ensureValidFile(attachment)
+                ensureContentTypeIsSet(attachment.contentType)
+                scanAttachment(filename, attachment.bytes)
             }
 
         val entity =
             ApplicationAttachmentEntity(
                 id = null,
-                fileName = attachment.originalFilename!!,
+                fileName = filename,
                 contentType = attachment.contentType!!,
                 createdByUserId = currentUserId(),
                 createdAt = now(),
@@ -135,14 +138,12 @@ class ApplicationAttachmentService(
             ApplicationNotFoundException(applicationId)
         }
 
-    private fun ensureValidFile(attachment: MultipartFile) =
-        with(attachment) {
-            AttachmentValidator.validate(this)
-            val scanResult = scanClient.scan(listOf(FileScanInput(originalFilename!!, bytes)))
-            if (scanResult.hasInfected()) {
-                throw AttachmentInvalidException("Infected file detected, see previous logs.")
-            }
+    private fun scanAttachment(filename: String, content: ByteArray) {
+        val scanResult = scanClient.scan(listOf(FileScanInput(filename, content)))
+        if (scanResult.hasInfected()) {
+            throw AttachmentInvalidException("Infected file detected, see previous logs.")
         }
+    }
 
     private fun ensureApplicationIsPending(application: ApplicationEntity) {
         if (!isPending(application.alluid, application.alluStatus)) {
@@ -156,8 +157,12 @@ class ApplicationAttachmentService(
             logger.warn {
                 "Application $applicationId has reached the allowed amount of attachments."
             }
-            throw AttachmentInvalidException("Attachment amount limit reached")
+            throw AttachmentLimitReachedException(applicationId, ALLOWED_ATTACHMENT_COUNT)
         }
+    }
+
+    private fun ensureContentTypeIsSet(contentType: String?) {
+        contentType ?: throw AttachmentInvalidException("Content-type was not set")
     }
 
     /** Application considered pending if no alluId or status null, pending, or pending_client. */

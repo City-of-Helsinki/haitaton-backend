@@ -38,6 +38,7 @@ enum class HankeError(val errorMessage: String) {
     HAI2009("Application is already sent to Allu, operation prohibited."),
     HAI3001("Attachment upload failed"),
     HAI3002("Loading attachment failed"),
+    HAI3003("Attachment limit reached"),
     ;
 
     val errorCode: String

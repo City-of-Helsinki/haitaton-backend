@@ -24,12 +24,13 @@ const val APPLICATION_ID = 1L
 const val CONTENT_TYPE = "Content-Type"
 
 val dummyData = "ABC".toByteArray()
+val defaultData = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
 
 fun testFile(
     fileParam: String = FILE_PARAM,
     fileName: String = FILE_NAME_PDF,
-    contentType: String = APPLICATION_PDF_VALUE,
-    data: ByteArray = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes(),
+    contentType: String? = APPLICATION_PDF_VALUE,
+    data: ByteArray = defaultData,
 ) = MockMultipartFile(fileParam, fileName, contentType, data)
 
 fun ResultActions.andExpectError(error: HankeError): ResultActions =
