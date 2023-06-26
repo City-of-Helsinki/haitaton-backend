@@ -1,5 +1,4 @@
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
-import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.run.BootRun
 
@@ -31,8 +30,8 @@ configurations["integrationTestRuntimeOnly"].extendsFrom(configurations.testRunt
 
 idea {
 	module {
-		testSourceDirs = testSourceDirs + sourceSets["integrationTest"].withConvention(KotlinSourceSet::class) { kotlin.srcDirs }
-		testResourceDirs = testResourceDirs + sourceSets["integrationTest"].resources.srcDirs
+		testSources.from(kotlin.sourceSets["integrationTest"].kotlin.srcDirs)
+		testResources.from(kotlin.sourceSets["integrationTest"].resources.srcDirs)
 	}
 }
 
