@@ -433,8 +433,6 @@ open class ApplicationService(
     }
 
     private fun sendApplicationToAllu(entity: ApplicationEntity): Int {
-        ensureValidForSend(entity.applicationData)
-
         return if (entity.alluid == null) {
             createApplicationInAllu(entity)
         } else {
@@ -443,6 +441,7 @@ open class ApplicationService(
     }
 
     private fun updateApplicationInAllu(entity: ApplicationEntity): Int {
+        ensureValidForSend(entity.applicationData)
         val alluId = entity.alluid ?: throw ApplicationArgumentException("AlluId null in update.")
 
         logger.info { "Uploading updated application with alluId $alluId" }
@@ -457,6 +456,7 @@ open class ApplicationService(
 
     /** Creates new application in Allu. All attachments are sent after creation. */
     private fun createApplicationInAllu(entity: ApplicationEntity): Int {
+        ensureValidForSend(entity.applicationData)
         val alluId =
             when (val data = entity.applicationData) {
                 is CableReportApplicationData -> createCableReportToAllu(entity.hankeTunnus(), data)

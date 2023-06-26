@@ -53,6 +53,7 @@ import fi.hel.haitaton.hanke.permissions.kayttajaTunnistePattern
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
+import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -686,7 +687,7 @@ class ApplicationServiceITest : DatabaseTest() {
             AlluDataFactory.createAlluApplicationResponse(21)
 
         val exception =
-            assertThrows<AlluDataException> {
+            assertThrows<InvalidApplicationDataException> {
                 applicationService.updateApplicationData(
                     application.id!!,
                     newApplicationData,
@@ -695,7 +696,7 @@ class ApplicationServiceITest : DatabaseTest() {
             }
 
         assertEquals(
-            "Application data failed validation at applicationData.startTime: Can't be null",
+            "Application contains invalid data. Errors at paths: applicationData.startTime",
             exception.message
         )
         val savedApplications = applicationRepository.findAll()
