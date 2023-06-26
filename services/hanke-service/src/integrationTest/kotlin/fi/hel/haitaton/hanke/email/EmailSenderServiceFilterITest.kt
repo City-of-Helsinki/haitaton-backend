@@ -38,12 +38,8 @@ class EmailSenderServiceFilterITest : DatabaseTest() {
     @Autowired lateinit var emailSenderService: EmailSenderService
 
     @Test
-    fun `sendJohtoselvitysCompleteEmail sends email with correct recipient`() {
-        emailSenderService.sendJohtoselvitysCompleteEmail(
-            "test@test.test",
-            "HAI23-001",
-            "JS2300001"
-        )
+    fun `sendJohtoselvitysCompleteEmail sends email with allowed recipient`() {
+        emailSenderService.sendJohtoselvitysCompleteEmail("test@test.test", 15L, "JS2300001")
 
         val email = greenMail.firstReceivedMessage()
         assertThat(email.allRecipients).hasSize(1)
@@ -52,7 +48,7 @@ class EmailSenderServiceFilterITest : DatabaseTest() {
 
     @Test
     fun `sendJohtoselvitysCompleteEmail when recipient not in allow list does not send`() {
-        emailSenderService.sendJohtoselvitysCompleteEmail("foo@bar.test", "HAI23-001", "JS2300001")
+        emailSenderService.sendJohtoselvitysCompleteEmail("foo@bar.test", 13L, "JS2300001")
 
         assertThat(greenMail.receivedMessages.size).isEqualTo(0)
     }

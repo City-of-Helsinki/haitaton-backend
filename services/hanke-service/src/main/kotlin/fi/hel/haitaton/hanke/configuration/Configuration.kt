@@ -13,6 +13,7 @@ import fi.hel.haitaton.hanke.allu.CableReportServiceAllu
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.email.EmailProperties
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -55,6 +56,7 @@ import reactor.netty.http.client.HttpClient
     GdprProperties::class,
     FeatureFlags::class,
     AlluProperties::class,
+    EmailProperties::class,
 )
 class Configuration {
     @Value("\${haitaton.allu.insecure}") var alluTrustInsecure: Boolean = false

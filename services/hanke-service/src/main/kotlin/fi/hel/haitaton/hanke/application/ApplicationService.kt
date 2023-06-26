@@ -397,13 +397,12 @@ open class ApplicationService(
         }
 
         receivers.forEach {
-            sendDecisionReadyEmail(it.email, hankeTunnus, applicationIdentifier, application.id)
+            sendDecisionReadyEmail(it.email, applicationIdentifier, application.id)
         }
     }
 
     private fun sendDecisionReadyEmail(
         email: String?,
-        hankeTunnus: String,
         applicationIdentifier: String,
         applicationId: Long?,
     ) {
@@ -415,7 +414,11 @@ open class ApplicationService(
             return
         }
 
-        emailSenderService.sendJohtoselvitysCompleteEmail(email, hankeTunnus, applicationIdentifier)
+        emailSenderService.sendJohtoselvitysCompleteEmail(
+            email,
+            applicationId,
+            applicationIdentifier
+        )
     }
 
     private fun getById(id: Long): ApplicationEntity {

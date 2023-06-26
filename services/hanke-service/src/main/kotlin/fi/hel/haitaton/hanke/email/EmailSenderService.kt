@@ -4,40 +4,51 @@ import fi.hel.haitaton.hanke.getResource
 import javax.mail.internet.MimeMessage
 import mu.KotlinLogging
 import net.pwall.mustache.Template
-import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.context.properties.ConfigurationProperties
+import org.springframework.boot.context.properties.ConstructorBinding
+import org.springframework.boot.convert.Delimiter
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
 import org.springframework.stereotype.Service
 
 private val logger = KotlinLogging.logger {}
 
+@ConfigurationProperties(prefix = "haitaton.email")
+@ConstructorBinding
+data class EmailProperties(
+    val from: String,
+    val baseUrl: String,
+    val filter: EmailFilterProperties
+)
+
+data class EmailFilterProperties(
+    val use: Boolean,
+    @Delimiter(";") val allowList: List<String>,
+)
+
 @Service
 class EmailSenderService(
     private val mailSender: JavaMailSender,
-    @Value("\${haitaton.email.filter.use}") private val sendOnlyForAllowed: Boolean,
-    @Value("#{'\${haitaton.email.filter.allow-list}'.split(';')}")
-    private val allowList: List<String>,
-    @Value("\${haitaton.email.from}") private val from: String,
-    @Value("\${haitaton.email.baseUrl}") private val baseUrl: String,
+    private val emailConfig: EmailProperties,
 ) {
 
     fun sendJohtoselvitysCompleteEmail(
         to: String,
-        hankeTunnus: String,
+        applicationId: Long?,
         applicationIdentifier: String,
     ) {
         logger.info { "Sending email for completed johtoselvitys $applicationIdentifier" }
         val templateData =
             mapOf(
-                "baseUrl" to baseUrl,
-                "hankeTunnus" to hankeTunnus,
+                "baseUrl" to emailConfig.baseUrl,
+                "applicationId" to applicationId.toString(),
                 "applicationIdentifier" to applicationIdentifier,
             )
         sendHybridEmail(to, "johtoselvitys-valmis", templateData)
     }
 
     private fun sendHybridEmail(to: String, template: String, templateData: Map<String, String>) {
-        if (sendOnlyForAllowed && emailNotAllowed(to)) {
+        if (emailConfig.filter.use && emailNotAllowed(to)) {
             logger.info { "Email recipient not allowed, ignoring email." }
             return
         }
@@ -52,11 +63,11 @@ class EmailSenderService(
 
         helper.setTo(to)
         helper.setSubject(subject)
-        helper.setFrom(from)
+        helper.setFrom(emailConfig.from)
         mailSender.send(mimeMessage)
     }
 
-    private fun emailNotAllowed(email: String) = !allowList.contains(email)
+    private fun emailNotAllowed(email: String) = !emailConfig.filter.allowList.contains(email)
 
     private fun parseTemplate(path: String, contextObject: Any): String =
         Template.parse(path.getResource().openStream()).processToString(contextObject)
