@@ -231,6 +231,35 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
+    fun `updateApplicationData sends to Allu if application is in allu and is still pending`() {
+        val alluId = 21
+        val application =
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea(alluId = alluId)
+            )
+        val newApplicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                name = "Uudistettu johtoselvitys",
+                areas = application.applicationData.areas
+            )
+        every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
+            AlluDataFactory.createAlluApplicationResponse(alluId)
+        justRun { cableReportServiceAllu.update(alluId, any()) }
+        justRun { cableReportServiceAllu.addAttachment(alluId, any()) }
+
+        applicationService.updateApplicationData(application.id!!, newApplicationData, USERNAME)
+
+        verifyOrder {
+            cableReportServiceAllu.getApplicationInformation(alluId)
+            cableReportServiceAllu.update(alluId, any())
+            cableReportServiceAllu.addAttachment(alluId, any())
+        }
+    }
+
+    @Test
     fun `updateApplicationData doesn't create an audit log entry if the application hasn't changed`() {
         TestUtils.addMockedRequestIp()
         val hanke = createHankeEntity()
@@ -1594,8 +1623,10 @@ class ApplicationServiceITest : DatabaseTest() {
 
     private fun mockApplicationWithArea(
         applicationData: ApplicationData =
-            AlluDataFactory.createCableReportApplicationData(areas = listOf(aleksanterinpatsas))
-    ): Application = AlluDataFactory.createApplication(applicationData = applicationData)
+            AlluDataFactory.createCableReportApplicationData(areas = listOf(aleksanterinpatsas)),
+        alluId: Int? = null
+    ): Application =
+        AlluDataFactory.createApplication(alluid = alluId, applicationData = applicationData)
 
     private fun customerWithContactsJson(orderer: Boolean) =
         """
