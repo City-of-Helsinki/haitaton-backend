@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.domain.BusinessId
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContextHolder
 
@@ -11,15 +12,19 @@ private val logger = KotlinLogging.logger {}
 private val businessIdRegex = "^(\\d{7})-(\\d)\$".toRegex()
 private val businessIdMultipliers = listOf(7, 9, 10, 5, 8, 4, 2)
 
-/** Returns the current time in UTC, with time zone info. */
-fun getCurrentTimeUTC(): ZonedDateTime {
-    return ZonedDateTime.now(TZ_UTC)
-}
+/**
+ * Returns the current time in UTC, with time zone info.
+ *
+ * Truncated to microseconds, since that's the database precision.
+ */
+fun getCurrentTimeUTC(): ZonedDateTime = ZonedDateTime.now(TZ_UTC).truncatedTo(ChronoUnit.MICROS)
 
-/** Returns the current time in UTC, without time zone info (i.e. LocalTime instance). */
-fun getCurrentTimeUTCAsLocalTime(): LocalDateTime {
-    return ZonedDateTime.now(TZ_UTC).toLocalDateTime()
-}
+/**
+ * Returns the current time in UTC, without time zone info (i.e. LocalTime instance).
+ *
+ * Truncated to microseconds, since that's the database precision.
+ */
+fun getCurrentTimeUTCAsLocalTime(): LocalDateTime = getCurrentTimeUTC().toLocalDateTime()
 
 fun currentUserId(): String = SecurityContextHolder.getContext().authentication.name
 

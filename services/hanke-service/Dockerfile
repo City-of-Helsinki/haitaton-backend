@@ -1,4 +1,4 @@
-FROM registry.redhat.io/openjdk/openjdk-11-rhel7
+FROM registry.redhat.io/ubi8/openjdk-17:latest
 WORKDIR /app
 EXPOSE 8080 8081
 VOLUME /tmp

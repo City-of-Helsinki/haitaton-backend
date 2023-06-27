@@ -6,12 +6,11 @@ Haitaton 2.0 project API for "hanke" data.
 Using IDEA:
 * IntelliJ IDEA
    * it contains its own JDK, gradle, etc.
-* OpenJDK (version 11+) - for running things after they have been built
+* OpenJDK (version 17+) - for running things after they have been built
 * Docker
 
 Manual build
-* OpenJDK (version 11+)
-* Gradle
+* OpenJDK (version 17+)
 * Docker
 
 ## How to compile, build and run
@@ -222,24 +221,6 @@ Compose setup. Rebuilding is not necessary.
 
 You should now be able to call GDPR API with the API tester's `query`, `delete` and `delete dryrun`
 commands.
-
-## Info
-There is a Spring Boot Actuator endpoint for general info:
-> http://localhost:8081/actuator/info
-```
-{
-    "java-name": "Java Platform API Specification",
-    "java-version": "11",
-    "java-vendor": "Oracle Corporation",
-    "build": {
-        "artifact": "hanke-service",
-        "name": "hanke-service",
-        "time": "2020-11-02T07:00:31.071Z",
-        "version": "0.0.1-SNAPSHOT",
-        "group": "fi.hel.haitaton"
-    }
-}
-```
 
 ## Probes
 There are following Spring Boot Actuator probes (https://docs.spring.io/spring-boot/docs/2.3.4.RELEASE/reference/html/production-ready-features.html#production-ready-kubernetes-probes) for Kubernetes (these must be configured in Kuberneters/OpenShift):
