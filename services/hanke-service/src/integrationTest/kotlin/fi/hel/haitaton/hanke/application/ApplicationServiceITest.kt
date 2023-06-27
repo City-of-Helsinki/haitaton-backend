@@ -250,6 +250,40 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    fun `updateApplicationData when missing data throws error when trying to send`() {
+        TestUtils.addMockedRequestIp()
+        val alluId = 21
+        val hanke = createHankeEntity()
+        val applicationData: CableReportApplicationData = dataWithoutAreas
+        val application =
+            AlluDataFactory.createApplication(alluid = alluId, applicationData = applicationData)
+        val savedApplication =
+            alluDataFactory.saveApplicationEntity(
+                username = USERNAME,
+                hanke = hanke,
+                application = application
+            )
+        every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
+            AlluDataFactory.createAlluApplicationResponse(alluId)
+
+        val exception =
+            assertThrows<InvalidApplicationDataException> {
+                applicationService.updateApplicationData(
+                    savedApplication.id!!,
+                    applicationData.copy(startTime = null),
+                    USERNAME
+                )
+            }
+
+        assertThat(exception.message)
+            .isEqualTo(
+                "Application contains invalid data. Errors at paths: applicationData.startTime"
+            )
+        verify { cableReportServiceAllu.getApplicationInformation(alluId) }
+        verify(exactly = 0) { cableReportServiceAllu.update(any(), any()) }
+    }
+
+    @Test
     fun `updateApplicationData doesn't send application to Allu if it hasn't changed`() {
         TestUtils.addMockedRequestIp()
         val hanke = createHankeEntity()

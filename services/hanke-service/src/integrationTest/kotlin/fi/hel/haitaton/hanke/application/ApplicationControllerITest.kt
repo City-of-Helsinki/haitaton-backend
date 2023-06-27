@@ -383,6 +383,43 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
     @Test
     @WithMockUser(USERNAME)
+    fun `update with missing data returns 400`() {
+        val hankeId = 42
+        val applicationId = 1234L
+        val mockErrorPaths = listOf("startTime", "customerWithContacts.customer.type")
+        val application = AlluDataFactory.createApplication()
+        every { hankeService.getHankeId(HANKE_TUNNUS) } returns hankeId
+        every { permissionService.hasPermission(hankeId, USERNAME, EDIT_APPLICATIONS) } returns true
+        every { applicationService.getApplicationById(applicationId) } returns
+            AlluDataFactory.createApplication(id = applicationId, hankeTunnus = HANKE_TUNNUS)
+        every {
+            applicationService.updateApplicationData(
+                applicationId,
+                application.applicationData,
+                USERNAME
+            )
+        } throws InvalidApplicationDataException(mockErrorPaths)
+
+        val response =
+            put("$BASE_URL/$applicationId", application)
+                .andExpect(status().isBadRequest)
+                .andReturn()
+
+        assertThat(response.response.contentAsString)
+            .isEqualTo(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString())
+        verify { permissionService.hasPermission(hankeId, USERNAME, EDIT_APPLICATIONS) }
+        verify { applicationService.getApplicationById(applicationId) }
+        verify {
+            applicationService.updateApplicationData(
+                applicationId,
+                application.applicationData,
+                USERNAME
+            )
+        }
+    }
+
+    @Test
+    @WithMockUser(USERNAME)
     fun `update with unknown id returns 404`() {
         val id = 1234L
         val application = AlluDataFactory.createApplication(hankeTunnus = HANKE_TUNNUS)

@@ -161,9 +161,9 @@ class ApplicationController(
             [
                 ApiResponse(description = "The updated application", responseCode = "200"),
                 ApiResponse(
-                    description = "The request body was invalid",
+                    description = "Application contains invalid data",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeErrorDetail::class))]
                 ),
                 ApiResponse(
                     description = "An application was not found with the given id",
@@ -237,6 +237,11 @@ class ApplicationController(
         value =
             [
                 ApiResponse(description = "The sent application", responseCode = "200"),
+                ApiResponse(
+                    description = "Application contains invalid data",
+                    responseCode = "400",
+                    content = [Content(schema = Schema(implementation = HankeErrorDetail::class))]
+                ),
                 ApiResponse(
                     description = "An application was not found with the given id",
                     responseCode = "404",
