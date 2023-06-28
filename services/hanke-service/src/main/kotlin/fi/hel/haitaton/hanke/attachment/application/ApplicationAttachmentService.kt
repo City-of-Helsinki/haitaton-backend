@@ -63,6 +63,10 @@ class ApplicationAttachmentService(
         attachmentType: ApplicationAttachmentType,
         attachment: MultipartFile
     ): ApplicationAttachmentMetadata {
+        logger.info {
+            "Adding attachment to application, applicationId = $applicationId, " +
+                "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}"
+        }
         val filename = AttachmentValidator.validFilename(attachment.originalFilename)
         val application =
             findApplication(applicationId).also { application ->
@@ -91,9 +95,7 @@ class ApplicationAttachmentService(
         }
 
         return newAttachment.toDto().also {
-            logger.info {
-                "Added attachment ${it.id} to application $applicationId with size ${attachment.bytes.size}"
-            }
+            logger.info { "Added attachment ${it.id} to application $applicationId" }
         }
     }
 
