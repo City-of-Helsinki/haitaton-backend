@@ -49,7 +49,8 @@ class HankeAttachmentService(
     fun addAttachment(hankeTunnus: String, attachment: MultipartFile): HankeAttachmentMetadata {
         logger.info {
             "Adding attachment to hanke, hankeTunnus = $hankeTunnus, " +
-                "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}"
+                "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}, " +
+                "content type = ${attachment.contentType}"
         }
         val filename = AttachmentValidator.validFilename(attachment.originalFilename)
         val hanke =

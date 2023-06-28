@@ -65,7 +65,8 @@ class ApplicationAttachmentService(
     ): ApplicationAttachmentMetadata {
         logger.info {
             "Adding attachment to application, applicationId = $applicationId, " +
-                "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}"
+                "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}, " +
+                "content type = ${attachment.contentType}"
         }
         val filename = AttachmentValidator.validFilename(attachment.originalFilename)
         val application =
