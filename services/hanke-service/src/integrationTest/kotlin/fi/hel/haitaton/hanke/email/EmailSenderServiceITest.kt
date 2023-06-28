@@ -21,39 +21,36 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
 
+private const val TEST_EMAIL = "test@test.test"
+private const val APPLICATION_IDENTIFIER = "JS2300001"
+
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default", "emailtest")
 class EmailSenderServiceITest : DatabaseTest() {
 
-    @JvmField
-    @RegisterExtension
-    final val greenMail: GreenMailExtension =
-        GreenMailExtension(ServerSetupTest.SMTP)
-            .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication())
+    companion object {
+        @JvmField
+        @RegisterExtension
+        val greenMail: GreenMailExtension =
+            GreenMailExtension(ServerSetupTest.SMTP)
+                .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication())
+    }
 
     @Autowired lateinit var emailSenderService: EmailSenderService
 
     @Test
     fun `sendJohtoselvitysCompleteEmail sends email with correct recipient`() {
-        emailSenderService.sendJohtoselvitysCompleteEmail(
-            "test@test.test",
-            "HAI23-001",
-            "JS2300001"
-        )
+        emailSenderService.sendJohtoselvitysCompleteEmail(TEST_EMAIL, 13L, APPLICATION_IDENTIFIER)
 
         val email = greenMail.firstReceivedMessage()
         assertThat(email.allRecipients).hasSize(1)
-        assertThat(email.allRecipients[0].toString()).isEqualTo("test@test.test")
+        assertThat(email.allRecipients[0].toString()).isEqualTo(TEST_EMAIL)
     }
 
     @Test
     fun `sendJohtoselvitysCompleteEmail sends email with sender from properties`() {
-        emailSenderService.sendJohtoselvitysCompleteEmail(
-            "test@test.test",
-            "HAI23-001",
-            "JS2300001"
-        )
+        emailSenderService.sendJohtoselvitysCompleteEmail(TEST_EMAIL, 13L, APPLICATION_IDENTIFIER)
 
         val email = greenMail.firstReceivedMessage()
         assertThat(email.from).hasSize(1)
@@ -62,33 +59,34 @@ class EmailSenderServiceITest : DatabaseTest() {
 
     @Test
     fun `sendJohtoselvitysCompleteEmail sends email with correct subject`() {
-        emailSenderService.sendJohtoselvitysCompleteEmail(
-            "test@test.test",
-            "HAI23-001",
-            "JS2300001"
-        )
+        emailSenderService.sendJohtoselvitysCompleteEmail(TEST_EMAIL, 13L, APPLICATION_IDENTIFIER)
 
         val email = greenMail.firstReceivedMessage()
-        assertThat(email.subject).isEqualTo("Hakemanne johtoselvitys JS2300001 on käsitelty")
+        assertThat(email.subject)
+            .isEqualTo(
+                "Johtoselvitys JS2300001 / Ledningsutredning JS2300001 / Cable report JS2300001"
+            )
     }
 
     @Test
     fun `sendJohtoselvitysCompleteEmail sends email with parametrized hybrid body`() {
-        emailSenderService.sendJohtoselvitysCompleteEmail(
-            "test@test.test",
-            "HAI23-001",
-            "JS2300001"
-        )
+        emailSenderService.sendJohtoselvitysCompleteEmail(TEST_EMAIL, 13L, APPLICATION_IDENTIFIER)
 
         val email = greenMail.firstReceivedMessage()
         val (textBody, htmlBody) = getBodiesFromHybridEmail(email)
         assertThat(textBody).all {
-            contains("JS2300001")
-            contains("http://localhost:3001/fi/hankesalkku/HAI23-001")
+            contains(APPLICATION_IDENTIFIER)
+            contains("http://localhost:3001/fi/hakemus/13")
+            contains("http://localhost:3001/sv/ansokan/13")
+            contains("http://localhost:3001/en/application/13")
         }
-        assertThat(htmlBody).all {
-            contains("JS2300001")
-            contains("""<a href="http://localhost:3001/fi/hankesalkku/HAI23-001">""")
+        // Compress all whitespace into single spaces so that they don't interfere with matching.
+        val squashedHtmlBody = htmlBody.replace("\\s+".toRegex(), " ")
+        assertThat(squashedHtmlBody).all {
+            contains(APPLICATION_IDENTIFIER)
+            contains("""<a href="http://localhost:3001/fi/hakemus/13">""")
+            contains("""<a href="http://localhost:3001/sv/ansokan/13">""")
+            contains("""<a href="http://localhost:3001/en/application/13">""")
         }
     }
 

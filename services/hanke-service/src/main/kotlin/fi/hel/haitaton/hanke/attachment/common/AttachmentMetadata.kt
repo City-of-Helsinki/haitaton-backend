@@ -4,7 +4,7 @@ import java.time.OffsetDateTime
 import java.util.UUID
 
 data class HankeAttachmentMetadata(
-    val id: UUID?,
+    val id: UUID,
     val fileName: String,
     val createdByUserId: String,
     val createdAt: OffsetDateTime,
@@ -12,7 +12,7 @@ data class HankeAttachmentMetadata(
 )
 
 data class ApplicationAttachmentMetadata(
-    val id: UUID?,
+    val id: UUID,
     val fileName: String,
     val createdByUserId: String,
     val createdAt: OffsetDateTime,

@@ -47,16 +47,22 @@ class HankeAttachmentService(
 
     @Transactional
     fun addAttachment(hankeTunnus: String, attachment: MultipartFile): HankeAttachmentMetadata {
+        logger.info {
+            "Adding attachment to hanke, hankeTunnus = $hankeTunnus, " +
+                "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}, " +
+                "content type = ${attachment.contentType}"
+        }
+        val filename = AttachmentValidator.validFilename(attachment.originalFilename)
         val hanke =
             findHanke(hankeTunnus).also { hanke ->
                 ensureRoomForAttachment(hanke.id!!)
-                ensureValidFile(attachment)
+                scanAttachment(filename, attachment.bytes)
             }
 
         val entity =
             HankeAttachmentEntity(
                 id = null,
-                fileName = attachment.originalFilename!!,
+                fileName = filename,
                 contentType = attachment.contentType!!,
                 createdAt = now(),
                 createdByUserId = currentUserId(),
@@ -66,9 +72,7 @@ class HankeAttachmentService(
         attachmentContentService.saveHankeContent(savedAttachment.id!!, attachment.bytes)
 
         return savedAttachment.toMetadata().also {
-            logger.info {
-                "Added attachment ${it.id} to hanke $hankeTunnus with size ${attachment.bytes.size}"
-            }
+            logger.info { "Added attachment ${it.id} to hanke $hankeTunnus" }
         }
     }
 
@@ -99,12 +103,10 @@ class HankeAttachmentService(
         return attachmentCount >= ALLOWED_ATTACHMENT_COUNT
     }
 
-    private fun ensureValidFile(attachment: MultipartFile) =
-        with(attachment) {
-            AttachmentValidator.validate(this)
-            val scanResult = scanClient.scan(listOf(FileScanInput(originalFilename!!, bytes)))
-            if (scanResult.hasInfected()) {
-                throw AttachmentInvalidException("Infected file detected, see previous logs.")
-            }
+    fun scanAttachment(filename: String, content: ByteArray) {
+        val scanResult = scanClient.scan(listOf(FileScanInput(filename, content)))
+        if (scanResult.hasInfected()) {
+            throw AttachmentInvalidException("Infected file detected, see previous logs.")
         }
+    }
 }
