@@ -3,22 +3,15 @@ Haitaton 2.0 backend project.
 
 ## Requirements
 
-TODO: IntelliJ Idea, with the initialized project dependencies, has things built-in or fetches almost
-everything automatically, except separate OpenJDK (for manual running). But would be nice to test
-and document what is needed for a fully manual command line build from these sources. (And needed for
-CI, too).
-
 TODO: document versions (once we settle with them).
 
 Using Idea:
 * IntelliJ Idea
    * it contains its own JDK, kotlinc, gradle, etc.
-* OpenJDK (version 11+) - for running things after they have been built
+* OpenJDK (version 17+) - for running things after they have been built
 
 Manual build
-* OpenJDK (version 11+)
-* Kotlin compiler
-* Gradle
+* OpenJDK (version 17+)
 
 ## Modules
 
