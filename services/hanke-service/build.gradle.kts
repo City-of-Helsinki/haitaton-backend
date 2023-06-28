@@ -4,7 +4,6 @@ import org.springframework.boot.gradle.tasks.run.BootRun
 
 group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
-java.sourceCompatibility = JavaVersion.VERSION_11
 val springDocVersion = "1.7.0"
 val geoJsonJacksonVersion = "1.14"
 val mockkVersion = "1.13.5"
@@ -57,11 +56,11 @@ plugins {
 	id("org.springframework.boot") version "2.7.11"
 	id("io.spring.dependency-management") version "1.1.0"
 	id("com.diffplug.spotless") version "6.18.0"
-	kotlin("jvm") version "1.6.21"
+	kotlin("jvm") version "1.8.22"
 	// Gives kotlin-allopen, which auto-opens classes with certain annotations
-	kotlin("plugin.spring") version "1.6.21"
+	kotlin("plugin.spring") version "1.8.22"
 	// Gives kotlin-noarg for @Entity, @Embeddable
-	kotlin("plugin.jpa") version "1.6.21"
+	kotlin("plugin.jpa") version "1.8.22"
 	idea
 	id("com.github.ben-manes.versions") version "0.42.0"
 }
@@ -123,7 +122,12 @@ dependencies {
 tasks.withType<KotlinCompile> {
 	kotlinOptions {
 		freeCompilerArgs = listOf("-Xjsr305=strict")
-		jvmTarget = "11"
+	}
+}
+
+kotlin {
+	jvmToolchain {
+		languageVersion.set(JavaLanguageVersion.of(17))
 	}
 }
 
