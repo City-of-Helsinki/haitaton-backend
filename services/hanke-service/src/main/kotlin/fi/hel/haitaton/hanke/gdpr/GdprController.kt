@@ -222,8 +222,8 @@ data class DeleteForbiddenException(val applications: List<Application>) : Runti
                 HankeError.HAI2003.errorCode,
                 LocalizedMessage(
                     "Keskeneräinen hakemus tunnuksella ${application.applicationIdentifier}. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
-                    "sv: Keskeneräinen hakemus tunnuksella ${application.applicationIdentifier}. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
-                    "en: Keskeneräinen hakemus tunnuksella ${application.applicationIdentifier}. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi."
+                    "Pågående ansökan med koden ${application.applicationIdentifier}. Kontakta alueidenkaytto@hel.fi för att ta bort ansökan.",
+                    "An unfinished application with the ID ${application.applicationIdentifier}. Please contact alueidenkaytto@hel.fi to remove the application."
                 )
             )
     }

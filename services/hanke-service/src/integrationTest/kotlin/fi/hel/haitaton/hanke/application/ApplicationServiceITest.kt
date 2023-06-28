@@ -1460,7 +1460,10 @@ class ApplicationServiceITest : DatabaseTest() {
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
             assertThat(email.allRecipients[0].toString()).isEqualTo(teppoEmail)
-            assertThat(email.subject).isEqualTo("Hakemanne johtoselvitys $identifier on käsitelty")
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier"
+                )
         }
     }
 
