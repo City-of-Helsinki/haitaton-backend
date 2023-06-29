@@ -158,13 +158,13 @@ tasks {
 	}
 
 	jacocoTestReport {
+		mustRunAfter("test", "integrationTest")
 		reports {
 			xml.required.set(true)
 		}
 		executionData.setFrom(
             fileTree(buildDir).include("/jacoco/test.exec", "/jacoco/integrationTest.exec")
         )
-		dependsOn("test", "integrationTest")
 	}
 }
 
