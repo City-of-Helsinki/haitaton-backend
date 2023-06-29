@@ -5,10 +5,9 @@ import org.springframework.boot.gradle.tasks.run.BootRun
 group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
 val springDocVersion = "1.7.0"
-val geoJsonJacksonVersion = "1.14"
-val mockkVersion = "1.13.5"
-val springmockkVersion = "3.1.2"
-val assertkVersion = "0.25"
+val sentryVersion = "6.18.1"
+
+ext["spring-security.version"]="5.8.4"
 
 repositories {
 	mavenCentral()
@@ -53,7 +52,7 @@ spotless {
 }
 
 plugins {
-	id("org.springframework.boot") version "2.7.11"
+	id("org.springframework.boot") version "2.7.13"
 	id("io.spring.dependency-management") version "1.1.0"
 	id("com.diffplug.spotless") version "6.18.0"
 	kotlin("jvm") version "1.8.22"
@@ -76,17 +75,17 @@ dependencies {
 	implementation("com.fasterxml.jackson.module:jackson-module-jaxb-annotations")
 	implementation("io.github.microutils:kotlin-logging:3.0.5")
 	implementation("ch.qos.logback:logback-access")
-	implementation("net.logstash.logback:logstash-logback-encoder:7.3")
+	implementation("net.logstash.logback:logstash-logback-encoder:7.3") // Can be updated to 7.4 after Spring Boot 3.0
 	implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8")
-	implementation("de.grundid.opendatalab:geojson-jackson:$geoJsonJacksonVersion")
+    implementation("de.grundid.opendatalab:geojson-jackson:1.14")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.liquibase:liquibase-core")
 	implementation("com.github.blagerweij:liquibase-sessionlock:1.6.2")
-	implementation("com.vladmihalcea:hibernate-types-52:2.21.1")
-	implementation("commons-io:commons-io:2.11.0")
+	implementation("com.vladmihalcea:hibernate-types-52:2.21.1") // use io.hypersistence:hypersistence-utils-hibernate-60:3.5.0 after Spring Boot 3.0
+	implementation("commons-io:commons-io:2.13.0")
 	implementation("com.github.librepdf:openpdf:1.3.30")
 	implementation("net.pwall.mustache:kotlin-mustache:0.10")
-	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
+	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
 
 	implementation("org.postgresql:postgresql")
 	implementation("org.springdoc:springdoc-openapi-kotlin:$springDocVersion")
@@ -95,14 +94,14 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test") {
 		exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
 	}
-	testImplementation("io.mockk:mockk:$mockkVersion")
-	testImplementation("com.ninja-squad:springmockk:$springmockkVersion")
-	testImplementation("com.willowtreeapps.assertk:assertk-jvm:$assertkVersion")
+	testImplementation("io.mockk:mockk:1.13.5")
+	testImplementation("com.ninja-squad:springmockk:3.1.2") // Needs upgrade to 4.0.2 for Spring 3.0
+    testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.26.1")
 	testImplementation("com.squareup.okhttp3:mockwebserver")
-	testImplementation("com.icegreen:greenmail-junit5:1.6.14")
+	testImplementation("com.icegreen:greenmail-junit5:1.6.14") // Can be updated to 2.0.0 after Spring 3.0
 
 	// Testcontainers
-	implementation(platform("org.testcontainers:testcontainers-bom:1.18.0"))
+	implementation(platform("org.testcontainers:testcontainers-bom:1.18.3"))
 	testImplementation("org.testcontainers:junit-jupiter")
 	testImplementation("org.testcontainers:postgresql")
 
@@ -113,8 +112,8 @@ dependencies {
 	testImplementation("org.springframework.security:spring-security-test")
 
 	// Sentry
-	implementation("io.sentry:sentry-spring-boot-starter:6.18.1")
-	implementation("io.sentry:sentry-logback:6.18.1")
+	implementation("io.sentry:sentry-spring-boot-starter:$sentryVersion") // For Spring 3.0, replace with io.sentry:sentry-spring-boot-starter-jakarta:6.23.0
+	implementation("io.sentry:sentry-logback:$sentryVersion") // Upgrade this to 6.23.0 at the same time
 
 	annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 }

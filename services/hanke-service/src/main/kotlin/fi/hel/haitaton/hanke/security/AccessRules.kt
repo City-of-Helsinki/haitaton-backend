@@ -13,8 +13,8 @@ private val logger = KotlinLogging.logger {}
 object AccessRules {
     fun configureHttpAccessRules(http: HttpSecurity) {
         http
-            .authorizeRequests()
-            .mvcMatchers(
+            .authorizeHttpRequests()
+            .requestMatchers(
                 HttpMethod.GET,
                 "/actuator/health",
                 "/actuator/health/liveness",
@@ -27,7 +27,7 @@ object AccessRules {
             )
             .permitAll()
             .and()
-            .authorizeRequests()
+            .authorizeHttpRequests()
             .anyRequest()
             .authenticated()
             .and()
