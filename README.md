@@ -87,6 +87,19 @@ This adds a hook that will build the project and run all tests and other checks
 before any push you make. The checks need to be run successfully for the push to
 happen. If necessary, the checks can be skipped with `git push --no-verify`.
 
+### Code coverage report
+
+Gradle Jacoco plugin is used to create a code coverage report.
+
+```
+$ ./gradlew :services:hanke-service:test :services:hanke-service:integrationTest :services:hanke-service:jacocoTestReport
+```
+
+Created report can be found at paths:
+
+- Html: build/reports/jacoco/test/html/index.html
+- Xml: build/reports/jacoco/test/jacocoTestReport.xml
+
 ### Spotless formatter
 
 The Spotless Gradle plugin checks during the build stage that all code is formatted with ktfmt. If
