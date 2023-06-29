@@ -41,10 +41,10 @@ $ ./gradlew :services:hanke-service:test :services:hanke-service:integrationTest
 ```
 Created report can be found at paths:
 
-| 	Format | Path	                                           |
-|---------|-------------------------------------------------|
-| 	 Html  | 	build/reports/jacoco/test/html/index.html      |
-| 	 Xml   | 	build/reports/jacoco/test/jacocoTestReport.xml |
+| Format | Path                                           |
+|--------|------------------------------------------------|
+| Html   | build/reports/jacoco/test/html/index.html      |
+| Xml    | build/reports/jacoco/test/jacocoTestReport.xml |
 
 ### Git hooks
 
