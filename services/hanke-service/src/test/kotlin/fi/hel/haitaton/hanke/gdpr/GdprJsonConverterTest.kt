@@ -69,11 +69,7 @@ class GdprJsonConverterTest {
         val sahkopostit = getCollectionNodeFromChildren(result, "sahkopostit").children
         assertThat(sahkopostit.map { it.key }).each { it.isEqualTo("sahkoposti") }
         assertThat(sahkopostit.map { (it as StringNode).value })
-            .containsExactlyInAnyOrder(
-                "teppo@yhteystieto.test",
-                "teppo@example.test",
-                "teppo@dna.test"
-            )
+            .containsExactlyInAnyOrder("teppo@yhteystieto.test", "teppo@dna.test")
         val organisaatiot = getCollectionNodeFromChildren(result, "organisaatiot").children
         assertThat(organisaatiot.map { it.key }).each { it.isEqualTo("organisaatio") }
         assertThat(organisaatiot.map { (it as CollectionNode).children })
@@ -182,7 +178,7 @@ class GdprJsonConverterTest {
 
         val result = GdprJsonConverter.getCreatorInfoFromApplication(applicationData)
 
-        assertThat(result).hasSize(2)
+        assertThat(result).hasSize(1)
         val expectedInfos =
             arrayOf(
                 GdprInfo(
@@ -190,12 +186,6 @@ class GdprJsonConverterTest {
                     phone = "04012345678",
                     email = "teppo@dna.test",
                     organisation = GdprOrganisation(name = "Dna", registryKey = "3766028-0"),
-                ),
-                GdprInfo(
-                    name = TEPPO_TESTI,
-                    phone = "04012345678",
-                    email = "teppo@example.test",
-                    organisation = null,
                 ),
             )
         assertThat(result).containsExactlyInAnyOrder(*expectedInfos)
