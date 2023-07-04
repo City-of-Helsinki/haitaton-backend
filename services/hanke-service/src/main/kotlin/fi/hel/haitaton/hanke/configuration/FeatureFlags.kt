@@ -2,10 +2,8 @@ package fi.hel.haitaton.hanke.configuration
 
 import fi.hel.haitaton.hanke.EndpointDisabledException
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.ConstructorBinding
 
 @ConfigurationProperties(prefix = "haitaton")
-@ConstructorBinding
 data class FeatureFlags(val features: Map<Feature, Boolean>) {
 
     /** Disabled by default, if not in application.properties. */

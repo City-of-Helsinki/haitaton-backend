@@ -12,8 +12,8 @@ import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.firstReceivedMessage
-import javax.mail.internet.MimeMessage
-import javax.mail.internet.MimeMultipart
+import jakarta.mail.internet.MimeMessage
+import jakarta.mail.internet.MimeMultipart
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired

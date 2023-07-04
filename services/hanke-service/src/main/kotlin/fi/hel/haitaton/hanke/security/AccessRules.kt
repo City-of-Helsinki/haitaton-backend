@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.security
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import io.sentry.Sentry
-import javax.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletResponse
 import mu.KotlinLogging
 import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity

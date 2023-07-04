@@ -10,20 +10,19 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize
 import com.fasterxml.jackson.databind.annotation.JsonSerialize
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
 import com.fasterxml.jackson.databind.ser.std.StdSerializer
-import com.vladmihalcea.hibernate.type.json.JsonBinaryType
+import io.hypersistence.utils.hibernate.type.json.JsonBinaryType
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.Table
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.GeneratedValue
-import javax.persistence.GenerationType
-import javax.persistence.Id
-import javax.persistence.Table
 import org.hibernate.annotations.Generated
 import org.hibernate.annotations.GenerationTime
 import org.hibernate.annotations.Type
-import org.hibernate.annotations.TypeDef
 import org.springframework.data.jpa.repository.JpaRepository
 
 /**
@@ -39,7 +38,6 @@ const val AUDIT_LOG_SCHEMA_VERSION = "1"
  */
 @Entity
 @Table(name = "audit_logs")
-@TypeDef(name = "json", typeClass = JsonBinaryType::class)
 data class AuditLogEntryEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Long? = null,
 
@@ -50,7 +48,7 @@ data class AuditLogEntryEntity(
     @Column(name = "is_sent") val isSent: Boolean = false,
 
     /** The message in JSON as a jsonb column. */
-    @Column(columnDefinition = "json") @Type(type = "json") val message: AuditLogMessage,
+    @Column(columnDefinition = "json") @Type(JsonBinaryType::class) val message: AuditLogMessage,
 
     /** This will be set by the database. */
     @Column(name = "created_at")

@@ -14,7 +14,6 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import mu.KotlinLogging
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.ConstructorBinding
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.http.MediaType
 import org.springframework.http.MediaType.parseMediaType
@@ -387,7 +386,6 @@ class CableReportServiceAllu(
 }
 
 @ConfigurationProperties(prefix = "haitaton.allu")
-@ConstructorBinding
 data class AlluProperties(
     val baseUrl: String,
     val username: String,

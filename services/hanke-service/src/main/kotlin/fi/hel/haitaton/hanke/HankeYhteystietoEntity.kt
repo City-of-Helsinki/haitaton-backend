@@ -1,22 +1,21 @@
 package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.annotation.JsonView
-import com.vladmihalcea.hibernate.type.json.JsonType
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
+import io.hypersistence.utils.hibernate.type.json.JsonType
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EnumType.STRING
+import jakarta.persistence.Enumerated
+import jakarta.persistence.FetchType.EAGER
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType.IDENTITY
+import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.ManyToOne
+import jakarta.persistence.Table
 import java.time.LocalDateTime
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.EnumType.STRING
-import javax.persistence.Enumerated
-import javax.persistence.FetchType.EAGER
-import javax.persistence.GeneratedValue
-import javax.persistence.GenerationType.IDENTITY
-import javax.persistence.Id
-import javax.persistence.JoinColumn
-import javax.persistence.ManyToOne
-import javax.persistence.Table
 import org.hibernate.annotations.Type
-import org.hibernate.annotations.TypeDef
 
 enum class ContactType {
     OMISTAJA,
@@ -40,7 +39,7 @@ class HankeYhteystietoEntity(
     @JsonView(ChangeLogView::class) var organisaatioNimi: String? = null,
     @JsonView(ChangeLogView::class) var osasto: String? = null,
     @JsonView(ChangeLogView::class) var rooli: String? = null,
-    @Type(type = "json")
+    @Type(JsonType::class)
     @Column(columnDefinition = "jsonb")
     var yhteyshenkilot: List<Yhteyshenkilo> = listOf(),
 
@@ -111,7 +110,6 @@ class HankeYhteystietoEntity(
         )
 }
 
-@TypeDef(name = "json", typeClass = JsonType::class)
 data class Yhteyshenkilo(
     val etunimi: String,
     val sukunimi: String,

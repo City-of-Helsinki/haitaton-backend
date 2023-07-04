@@ -3,8 +3,8 @@ package fi.hel.haitaton.hanke.geometria
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.ZonedDateTime
-import javax.transaction.Transactional
 import mu.KotlinLogging
+import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
 
