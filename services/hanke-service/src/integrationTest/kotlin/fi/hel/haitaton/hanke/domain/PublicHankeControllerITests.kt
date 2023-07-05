@@ -96,7 +96,6 @@ class PublicHankeControllerITests(@Autowired override val mockMvc: MockMvc) : Co
             .andExpect(MockMvcResultMatchers.status().isOk)
             .andExpect(jsonPath("[0]").exists())
             .andExpect(jsonPath("[0].omistajat[0]").exists())
-            .andExpect(jsonPath("[0].omistajat[0].organisaatioId").value(1))
             .andExpect(jsonPath("[0].omistajat[0].sukunimi").doesNotExist())
             .andExpect(jsonPath("[0].omistajat[0].etunimi").doesNotExist())
             .andExpect(jsonPath("[0].omistajat[0].email").doesNotExist())

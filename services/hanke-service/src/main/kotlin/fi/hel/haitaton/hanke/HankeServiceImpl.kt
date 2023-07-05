@@ -404,7 +404,6 @@ open class HankeServiceImpl(
                 nimi = nimi,
                 email = email,
                 puhelinnumero = puhelinnumero,
-                organisaatioId = organisaatioId,
                 organisaatioNimi = organisaatioNimi,
                 osasto = osasto,
                 createdBy = createdByUserId,
@@ -540,7 +539,6 @@ open class HankeServiceImpl(
                     unsavedNewData.nimi = yhteystieto.nimi
                     unsavedNewData.email = yhteystieto.email
                     unsavedNewData.puhelinnumero = yhteystieto.puhelinnumero
-                    unsavedNewData.organisaatioId = yhteystieto.organisaatioId
                     yhteystieto.organisaatioNimi?.let { unsavedNewData.organisaatioNimi = it }
                     yhteystieto.osasto?.let { unsavedNewData.osasto = it }
                     loggingEntryHolderForRestrictedActions.addLogEntriesForEvent(
@@ -774,7 +772,6 @@ open class HankeServiceImpl(
                     nimi = hankeYht.nimi,
                     email = hankeYht.email,
                     puhelinnumero = hankeYht.puhelinnumero,
-                    organisaatioId = hankeYht.organisaatioId,
                     organisaatioNimi = hankeYht.organisaatioNimi,
                     osasto = hankeYht.osasto,
                     rooli = hankeYht.rooli,
@@ -832,7 +829,6 @@ open class HankeServiceImpl(
                 existingYT.nimi = hankeYht.nimi
                 existingYT.email = hankeYht.email
                 existingYT.puhelinnumero = hankeYht.puhelinnumero
-                existingYT.organisaatioId = hankeYht.organisaatioId
                 existingYT.yhteyshenkilot = hankeYht.alikontaktit
                 hankeYht.organisaatioNimi?.let {
                     existingYT.organisaatioNimi = hankeYht.organisaatioNimi
@@ -882,7 +878,6 @@ open class HankeServiceImpl(
         if (incoming.nimi != existing.nimi) return false
         if (incoming.email != existing.email) return false
         if (incoming.puhelinnumero != existing.puhelinnumero) return false
-        if (incoming.organisaatioId != existing.organisaatioId) return false
         if (incoming.organisaatioNimi != existing.organisaatioNimi) return false
         if (incoming.osasto != existing.osasto) return false
         if (incoming.alikontaktit != existing.yhteyshenkilot) return false
