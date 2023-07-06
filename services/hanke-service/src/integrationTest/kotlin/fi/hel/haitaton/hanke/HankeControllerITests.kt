@@ -184,7 +184,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
     }
 
     @Test
-    fun `getHankeWithApplications user is does not have permission returns 404`() {
+    fun `getHankeWithApplications user does not have permission returns 404`() {
         val hanke = HankeFactory.create()
         val applications = mockApplications()
         every { hankeService.getHankeWithApplications(HANKE_TUNNUS) } returns

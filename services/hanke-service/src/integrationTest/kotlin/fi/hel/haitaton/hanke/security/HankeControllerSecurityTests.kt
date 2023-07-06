@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.security
 
+import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeController
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
@@ -9,30 +10,29 @@ import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.permissions.Role
-import fi.hel.haitaton.hanke.toJsonString
+import io.mockk.checkUnnecessaryStub
+import io.mockk.clearAllMocks
+import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
+import io.mockk.verifySequence
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
-import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
 import org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.ResultActions
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -53,145 +53,160 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
+class HankeControllerSecurityTests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired private lateinit var hankeService: HankeService
-
-    @Autowired lateinit var permissionService: PermissionService
-
-    @Autowired private lateinit var geometriatService: GeometriatService
-
+    @Autowired private lateinit var permissionService: PermissionService
     @Autowired private lateinit var disclosureLogService: DisclosureLogService
 
     private val testHankeTunnus = "HAI21-TEST-1"
 
+    @BeforeEach
+    fun cleanup() {
+        clearAllMocks()
+    }
+
+    @AfterEach
+    fun checkMocks() {
+        checkUnnecessaryStub()
+        confirmVerified(permissionService, disclosureLogService, hankeService)
+    }
+
     @Test
     @WithMockUser(username = "test7358", roles = [])
-    fun `status ok with authenticated user with or without any role`() {
-        performGetHankkeet().andExpect(status().isOk)
-        performGetHankeHakemukset().andExpect(status().isOk)
-        performPostHankkeet().andExpect(status().isOk)
-        performPutHankkeetTunnus().andExpect(status().isOk)
-        performGetHankeByTunnus().andExpect(status().isOk)
+    fun `GET hankkeet with authenticated user with or without any role returns ok (200)`() {
+        val hankeIds = listOf(123, 444)
+        every { hankeService.loadHankkeetByIds(hankeIds) } returns
+            listOf(
+                HankeFactory.create(id = 123, hankeTunnus = testHankeTunnus),
+                HankeFactory.create(id = 444, hankeTunnus = "HAI-TEST-2")
+            )
+        every { permissionService.getAllowedHankeIds("test7358", PermissionCode.VIEW) } returns
+            (listOf(123, 444))
+
+        get("/hankkeet").andExpect(status().isOk)
+
+        verifySequence {
+            permissionService.getAllowedHankeIds("test7358", PermissionCode.VIEW)
+            hankeService.loadHankkeetByIds(hankeIds)
+            disclosureLogService.saveDisclosureLogsForHankkeet(any(), "test7358")
+        }
     }
 
     @Test
-    fun `status unauthorized (401) without authenticated user`() {
-        performGetHankkeet()
-            .andExpect(unauthenticated())
-            .andExpect(status().isUnauthorized)
-            .andExpectHankeError(HankeError.HAI0001)
-        performGetHankeHakemukset()
-            .andExpect(unauthenticated())
-            .andExpect(status().isUnauthorized)
-            .andExpectHankeError(HankeError.HAI0001)
-        performPostHankkeet()
-            .andExpect(unauthenticated())
-            .andExpect(status().isUnauthorized)
-            .andExpectHankeError(HankeError.HAI0001)
-        performPutHankkeetTunnus()
-            .andExpect(unauthenticated())
-            .andExpect(status().isUnauthorized)
-            .andExpectHankeError(HankeError.HAI0001)
-        performGetHankeByTunnus()
-            .andExpect(unauthenticated())
-            .andExpect(status().isUnauthorized)
-            .andExpectHankeError(HankeError.HAI0001)
+    @WithMockUser(username = "test7358", roles = [])
+    fun `GET hanke by tunnus with authenticated user with or without any role returns ok (200)`() {
+        every { hankeService.loadHanke(testHankeTunnus) } returns
+            HankeFactory.create(id = 123, hankeTunnus = testHankeTunnus)
+        every { permissionService.hasPermission(123, "test7358", PermissionCode.VIEW) } returns true
+
+        get("/hankkeet/$testHankeTunnus").andExpect(status().isOk)
+
+        verifySequence {
+            hankeService.loadHanke(testHankeTunnus)
+            permissionService.hasPermission(123, "test7358", PermissionCode.VIEW)
+            disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358")
+        }
     }
 
-    // --------- GET /hankkeet/ --------------
-
-    private fun performGetHankkeet(): ResultActions {
-        val hankeIds = listOf(123, 444)
-        every { hankeService.loadHankkeetByIds(hankeIds) }
-            .returns(
-                listOf(
-                    HankeFactory.create(id = 123, hankeTunnus = testHankeTunnus),
-                    HankeFactory.create(id = 444, hankeTunnus = "HAI-TEST-2")
-                )
-            )
-        every { permissionService.getAllowedHankeIds("test7358", PermissionCode.VIEW) }
-            .returns(listOf(123, 444))
-        justRun { disclosureLogService.saveDisclosureLogsForHankkeet(any(), "test7358") }
-
-        return mockMvc.perform(get("/hankkeet").accept(MediaType.APPLICATION_JSON))
-    }
-
-    // --------- POST /hankkeet/ --------------
-
-    private fun performPostHankkeet(): ResultActions {
-        val hanke = getTestHanke(12, null)
-        val content = hanke.toJsonString()
-
-        every { hankeService.createHanke(any()) }.returns(hanke)
-        justRun { permissionService.setPermission(12, "test7358", Role.KAIKKI_OIKEUDET) }
-        every { geometriatService.loadGeometriat(any()) }.returns(null)
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358") }
-
-        return mockMvc.perform(
-            post("/hankkeet")
-                .contentType(MediaType.APPLICATION_JSON)
-                .characterEncoding("UTF-8")
-                .content(content)
-                .with(SecurityMockMvcRequestPostProcessors.csrf())
-                .accept(MediaType.APPLICATION_JSON)
-        )
-    }
-
-    // --------- PUT /hankkeet/{hankeTunnus} --------------
-
-    private fun performPutHankkeetTunnus(): ResultActions {
-        val hanke = getTestHanke(123, testHankeTunnus)
-        val content = hanke.toJsonString()
-
-        every { hankeService.loadHanke(any()) }.returns(hanke)
-        every { permissionService.hasPermission(hanke.id!!, "test7358", PermissionCode.EDIT) }
-            .returns(true)
-        every { hankeService.updateHanke(any()) }.returns(hanke.copy(modifiedBy = "test7358"))
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358") }
-
-        return mockMvc.perform(
-            put("/hankkeet/$testHankeTunnus")
-                .contentType(MediaType.APPLICATION_JSON)
-                .characterEncoding("UTF-8")
-                .content(content)
-                .with(SecurityMockMvcRequestPostProcessors.csrf())
-                .accept(MediaType.APPLICATION_JSON)
-        )
-    }
-
-    // --------- GET /hankkeet/{hankeTunnus} --------------
-
-    private fun performGetHankeByTunnus(): ResultActions {
-        every { hankeService.loadHanke(any()) }
-            .returns(HankeFactory.create(id = 123, hankeTunnus = "HAI-TEST-1"))
-        every { permissionService.hasPermission(123, "test7358", PermissionCode.VIEW) }
-            .returns(true)
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358") }
-
-        return mockMvc.perform(get("/hankkeet/$testHankeTunnus").accept(MediaType.APPLICATION_JSON))
-    }
-
-    // --------- GET /hankkeet/{hankeTunnus}/hakemukset --------------
-
-    private fun performGetHankeHakemukset(): ResultActions {
+    @Test
+    @WithMockUser(username = "test7358", roles = [])
+    fun `GET hanke hakemukset with authenticated user with or without any role returns ok (200)`() {
         every { hankeService.getHankeWithApplications(any()) } returns
             HankeWithApplications(
-                HankeFactory.create(id = 123, hankeTunnus = "HAI-TEST-1"),
+                HankeFactory.create(id = 123, hankeTunnus = testHankeTunnus),
                 listOf()
             )
         every { permissionService.hasPermission(123, "test7358", PermissionCode.VIEW) } returns true
-        justRun { disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358") }
 
-        return mockMvc.perform(
-            get("/hankkeet/$testHankeTunnus/hakemukset").accept(MediaType.APPLICATION_JSON)
-        )
+        get("/hankkeet/$testHankeTunnus/hakemukset").andExpect(status().isOk)
+
+        verifySequence {
+            hankeService.getHankeWithApplications(any())
+            permissionService.hasPermission(123, "test7358", PermissionCode.VIEW)
+            disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358")
+        }
     }
 
-    // ===================== HELPERS ========================
+    @Test
+    @WithMockUser(username = "test7358", roles = [])
+    fun `POST hankkeet with authenticated user with or without any role returns ok (200)`() {
+        val hanke = getTestHanke(null, null)
+        every { hankeService.createHanke(any()) } returns
+            hanke.copy(id = 12, hankeTunnus = testHankeTunnus)
+        justRun { permissionService.setPermission(12, "test7358", Role.KAIKKI_OIKEUDET) }
 
-    private fun getTestHanke(id: Int?, tunnus: String?): Hanke {
-        return Hanke(
+        post("/hankkeet", hanke).andExpect(status().isOk)
+
+        verifySequence {
+            hankeService.createHanke(any())
+            permissionService.setPermission(12, "test7358", Role.KAIKKI_OIKEUDET)
+            disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358")
+        }
+    }
+
+    @Test
+    @WithMockUser(username = "test7358", roles = [])
+    fun `PUT hankkeet with authenticated user with or without any role returns ok (200)`() {
+        val hanke = getTestHanke(123, testHankeTunnus)
+        every { hankeService.loadHanke(any()) } returns hanke
+        every {
+            permissionService.hasPermission(hanke.id!!, "test7358", PermissionCode.EDIT)
+        } returns true
+        every { hankeService.updateHanke(any()) } returns hanke.copy(modifiedBy = "test7358")
+
+        put("/hankkeet/$testHankeTunnus", hanke).andExpect(status().isOk)
+
+        verifySequence {
+            hankeService.loadHanke(testHankeTunnus)
+            permissionService.hasPermission(hanke.id!!, "test7358", PermissionCode.EDIT)
+            hankeService.updateHanke(any())
+            disclosureLogService.saveDisclosureLogsForHanke(any(), "test7358")
+        }
+    }
+
+    @Test
+    fun `GET hankkeet without authenticated user returns unauthorized (401) `() {
+        get("/hankkeet")
+            .andExpect(unauthenticated())
+            .andExpect(status().isUnauthorized)
+            .andExpectHankeError(HankeError.HAI0001)
+    }
+
+    @Test
+    fun `GET hanke by tunnus without authenticated user returns unauthorized (401) `() {
+        get("/hankkeet/$testHankeTunnus")
+            .andExpect(unauthenticated())
+            .andExpect(status().isUnauthorized)
+            .andExpectHankeError(HankeError.HAI0001)
+    }
+
+    @Test
+    fun `GET hanke hakemukset without authenticated user returns unauthorized (401) `() {
+        get("/hankkeet/$testHankeTunnus/hakemukset")
+            .andExpect(unauthenticated())
+            .andExpect(status().isUnauthorized)
+            .andExpectHankeError(HankeError.HAI0001)
+    }
+
+    @Test
+    fun `POST hankkeet without authenticated user returns unauthorized (401) `() {
+        post("/hankkeet", getTestHanke(null, null))
+            .andExpect(unauthenticated())
+            .andExpect(status().isUnauthorized)
+            .andExpectHankeError(HankeError.HAI0001)
+    }
+
+    @Test
+    fun `PUT hankkeet without authenticated user returns unauthorized (401) `() {
+        put("/hankkeet/$testHankeTunnus", getTestHanke(12, testHankeTunnus))
+            .andExpect(unauthenticated())
+            .andExpect(status().isUnauthorized)
+            .andExpectHankeError(HankeError.HAI0001)
+    }
+
+    private fun getTestHanke(id: Int?, tunnus: String?): Hanke =
+        Hanke(
             id,
             tunnus,
             true,
@@ -206,7 +221,6 @@ class HankeControllerSecurityTests(@Autowired val mockMvc: MockMvc) {
             null,
             HankeStatus.DRAFT
         )
-    }
 
     private fun ResultActions.andExpectHankeError(hankeError: HankeError): ResultActions {
         return andExpect(MockMvcResultMatchers.jsonPath("$.errorCode").value(hankeError.errorCode))
