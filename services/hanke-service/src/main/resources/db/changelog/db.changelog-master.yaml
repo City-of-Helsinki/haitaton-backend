@@ -105,3 +105,5 @@ databaseChangeLog:
       file: db/changelog/changesets/037-add-delete-cascade-for-attachments.yml
   - include:
       file: db/changelog/changesets/038-add-attachment-content-tables.sql
+  - include:
+      file: db/changelog/changesets/039-add-indexes.yml
