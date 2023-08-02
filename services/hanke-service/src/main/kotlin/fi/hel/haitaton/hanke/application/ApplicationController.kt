@@ -211,7 +211,7 @@ class ApplicationController(
                 ),
                 ApiResponse(
                     description =
-                        "The application is already processing in Allu and can't be deleted.",
+                        "The application is already processing in Allu and can't be deleted",
                     responseCode = "409",
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),

@@ -1,5 +1,8 @@
 package fi.hel.haitaton.hanke
 
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
@@ -20,6 +23,17 @@ class StatusController(@Autowired private val jdbcOperations: JdbcOperations) {
     }
 
     @GetMapping
+    @Operation(
+        summary = "Check application status",
+        description = "Health check to verify application status."
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "Success", responseCode = "200"),
+                ApiResponse(description = "Internal server error", responseCode = "500")
+            ]
+    )
     fun getStatus(): ResponseEntity<Void> {
         return if (canConnectToDatabase()) {
             ResponseEntity.ok().build()

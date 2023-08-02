@@ -11,10 +11,17 @@ import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.validation.ValidHanke
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.ArraySchema
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
 import jakarta.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -40,7 +47,23 @@ class HankeController(
     @Autowired private val featureFlags: FeatureFlags,
 ) {
 
-    @GetMapping("/{hankeTunnus}")
+    @GetMapping("/{hankeTunnus}", produces = [APPLICATION_JSON_VALUE])
+    @Operation(summary = "Get hanke", description = "Get specific hanke by hankeTunnus.")
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Success",
+                    responseCode = "200",
+                    content = [Content(schema = Schema(implementation = Hanke::class))]
+                ),
+                ApiResponse(
+                    description = "Hanke by requested hankeTunnus not found",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                )
+            ]
+    )
     fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String): Hanke {
         val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
 
@@ -53,8 +76,38 @@ class HankeController(
         return hanke
     }
 
-    @GetMapping
-    fun getHankeList(@RequestParam geometry: Boolean = false): List<Hanke> {
+    @GetMapping(produces = [APPLICATION_JSON_VALUE])
+    @Operation(
+        summary = "Get hanke list",
+        description = "Get list of hanke to which the user has permission to."
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Success",
+                    responseCode = "200",
+                    content =
+                        [
+                            Content(
+                                array = ArraySchema(schema = Schema(implementation = Hanke::class))
+                            )
+                        ]
+                )
+            ]
+    )
+    fun getHankeList(
+        @Parameter(
+            description =
+                """Boolean flag indicating whether endpoint should return geometry data for alueet. 
+                    Geometriat fields will be null if false.""",
+            schema = Schema(type = "boolean"),
+            required = false,
+            example = "false",
+        )
+        @RequestParam
+        geometry: Boolean = false
+    ): List<Hanke> {
         val userid = currentUserId()
 
         val hankeIds = permissionService.getAllowedHankeIds(userid, PermissionCode.VIEW)
@@ -68,9 +121,9 @@ class HankeController(
         return hankeList
     }
 
-    @GetMapping("/{hankeTunnus}/hakemukset")
+    @GetMapping("/{hankeTunnus}/hakemukset", produces = [APPLICATION_JSON_VALUE])
     @Operation(
-        summary = "Get hanke applications.",
+        summary = "Get hanke applications",
         description = "Returns list of applications belonging to a given hanke."
     )
     fun getHankeHakemukset(@PathVariable hankeTunnus: String): ApplicationsResponse {
@@ -93,7 +146,27 @@ class HankeController(
     }
 
     /** Add one hanke. This method will be called when we do not have id for hanke yet */
-    @PostMapping
+    @PostMapping(consumes = [APPLICATION_JSON_VALUE], produces = [APPLICATION_JSON_VALUE])
+    @Operation(
+        summary = "Create new hanke",
+        description =
+            "Create a new hanke. A valid new hanke must comply with the restrictions defined in HankeValidator."
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Success",
+                    responseCode = "200",
+                    content = [Content(schema = Schema(implementation = Hanke::class))]
+                ),
+                ApiResponse(
+                    description = "The request body was invalid",
+                    responseCode = "400",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                )
+            ]
+    )
     fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): Hanke {
         featureFlags.ensureEnabled(Feature.HANKE_EDITING)
 
@@ -117,7 +190,36 @@ class HankeController(
     }
 
     /** Update one hanke. */
-    @PutMapping("/{hankeTunnus}")
+    @PutMapping(
+        "/{hankeTunnus}",
+        consumes = [APPLICATION_JSON_VALUE],
+        produces = [APPLICATION_JSON_VALUE]
+    )
+    @Operation(
+        summary = "Update hanke",
+        description =
+            "Update an existing hanke. An updated hanke must comply with the restrictions defined in HankeValidator."
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Success",
+                    responseCode = "200",
+                    content = [Content(schema = Schema(implementation = Hanke::class))]
+                ),
+                ApiResponse(
+                    description = "The request body was invalid",
+                    responseCode = "400",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+                ApiResponse(
+                    description = "Hanke by requested tunnus not found",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                )
+            ]
+    )
     fun updateHanke(
         @ValidHanke @RequestBody hanke: Hanke,
         @PathVariable hankeTunnus: String
@@ -142,6 +244,18 @@ class HankeController(
 
     @DeleteMapping("/{hankeTunnus}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Delete hanke", description = "Delete an existing hanke.")
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "Success, no content", responseCode = "204"),
+                ApiResponse(
+                    description = "Hanke by requested hankeTunnus not found",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                )
+            ]
+    )
     fun deleteHanke(@PathVariable hankeTunnus: String) {
         logger.info { "Deleting hanke: $hankeTunnus" }
 

@@ -1,9 +1,8 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
+import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
 import fi.hel.haitaton.hanke.configuration.Feature
@@ -43,16 +42,15 @@ class HankeAttachmentController(
 ) {
 
     @GetMapping
-    @Operation(summary = "Get metadata from hanke attachments.")
+    @Operation(summary = "Get metadata from hanke attachments")
     @ApiResponses(
         value =
             [
-                ApiResponse(description = "Metadata of hanke attachments.", responseCode = "200"),
+                ApiResponse(description = "Metadata of hanke attachments", responseCode = "200"),
                 ApiResponse(
                     description = "Hanke not found",
                     responseCode = "404",
-                    content =
-                        [Content(schema = Schema(implementation = HankeNotFoundException::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
             ]
     )
@@ -70,12 +68,7 @@ class HankeAttachmentController(
                 ApiResponse(
                     description = "Attachment not found.",
                     responseCode = "404",
-                    content =
-                        [
-                            Content(
-                                schema = Schema(implementation = AttachmentNotFoundException::class)
-                            )
-                        ]
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
             ]
     )
@@ -97,26 +90,19 @@ class HankeAttachmentController(
         value =
             [
                 ApiResponse(
-                    description = "Success.",
+                    description = "Success",
                     responseCode = "200",
-                    content =
-                        [Content(schema = Schema(implementation = HankeAttachmentMetadata::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
                 ApiResponse(
-                    description = "Hanke not found.",
+                    description = "Hanke not found",
                     responseCode = "404",
-                    content =
-                        [Content(schema = Schema(implementation = HankeNotFoundException::class))]
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
                 ApiResponse(
-                    description = "Invalid attachment.",
+                    description = "Invalid attachment",
                     responseCode = "400",
-                    content =
-                        [
-                            Content(
-                                schema = Schema(implementation = AttachmentInvalidException::class)
-                            )
-                        ]
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
             ]
     )
@@ -131,20 +117,16 @@ class HankeAttachmentController(
     }
 
     @DeleteMapping("/{attachmentId}")
+    @Operation(summary = "Delete attachment from hanke")
     @ApiResponses(
         value =
             [
-                ApiResponse(description = "Removes the attachment.", responseCode = "200"),
+                ApiResponse(description = "Success", responseCode = "200"),
                 ApiResponse(
-                    description = "Attachment was not found by id",
+                    description = "Attachment not found",
                     responseCode = "404",
-                    content =
-                        [
-                            Content(
-                                schema = Schema(implementation = AttachmentNotFoundException::class)
-                            )
-                        ]
-                ),
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                )
             ]
     )
     fun deleteAttachment(@PathVariable hankeTunnus: String, @PathVariable attachmentId: UUID) {
