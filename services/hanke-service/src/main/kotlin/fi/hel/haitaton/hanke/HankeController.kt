@@ -150,7 +150,7 @@ class HankeController(
     @Operation(
         summary = "Create new hanke",
         description =
-            "Create a new hanke. A valid new hanke must comply with the restrictions defined in HankeValidator."
+            "Create a new hanke. A valid new hanke must comply with the restrictions in Hanke schema definition."
     )
     @ApiResponses(
         value =
