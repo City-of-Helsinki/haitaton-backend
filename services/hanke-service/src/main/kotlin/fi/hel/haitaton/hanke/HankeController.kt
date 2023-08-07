@@ -145,7 +145,6 @@ class HankeController(
         }
     }
 
-    /** Add one hanke. This method will be called when we do not have id for hanke yet */
     @PostMapping(consumes = [APPLICATION_JSON_VALUE], produces = [APPLICATION_JSON_VALUE])
     @Operation(
         summary = "Create new hanke",
@@ -189,7 +188,6 @@ class HankeController(
         return createdHanke
     }
 
-    /** Update one hanke. */
     @PutMapping(
         "/{hankeTunnus}",
         consumes = [APPLICATION_JSON_VALUE],
