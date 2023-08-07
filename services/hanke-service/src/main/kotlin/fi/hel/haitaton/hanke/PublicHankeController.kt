@@ -18,7 +18,11 @@ import org.springframework.web.bind.annotation.RestController
 class PublicHankeController(private val hankeService: HankeService) {
 
     @GetMapping(produces = [APPLICATION_JSON_VALUE])
-    @Operation(summary = "Get list of public hanke")
+    @Operation(
+        summary = "Get list of public hanke",
+        description =
+            "A public hanke contains data that is visible to everyone. It does not contain private information."
+    )
     @ApiResponses(
         value =
             [
