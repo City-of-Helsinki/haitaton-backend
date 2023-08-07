@@ -25,7 +25,8 @@ class StatusController(@Autowired private val jdbcOperations: JdbcOperations) {
     @GetMapping
     @Operation(
         summary = "Check application status",
-        description = "Health check to verify application status."
+        description =
+            "Health check to verify application status. Checks that the database connection is working."
     )
     @ApiResponses(
         value =
