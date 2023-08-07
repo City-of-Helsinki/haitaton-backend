@@ -149,7 +149,14 @@ class HankeController(
     @Operation(
         summary = "Create new hanke",
         description =
-            "Create a new hanke. A valid new hanke must comply with the restrictions in Hanke schema definition."
+            """
+              A valid new hanke must comply with the restrictions in Hanke schema definition.
+              When Hanke is created:
+              1. A unique Hanke tunnus is created.
+              2. The status of the created hanke is set automatically:
+                  - PUBLIC (i.e. visible to everyone) if all mandatory fields are filled. 
+                  - DRAFT if all mandatory fields are not filled.
+        """
     )
     @ApiResponses(
         value =
