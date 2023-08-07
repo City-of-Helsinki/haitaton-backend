@@ -101,7 +101,7 @@ class HankeController(
             description =
                 """Boolean flag indicating whether endpoint should return geometry data for alueet. 
                     Geometriat fields will be null if false.""",
-            schema = Schema(type = "boolean"),
+            schema = Schema(type = "boolean", defaultValue = "false"),
             required = false,
             example = "false",
         )
