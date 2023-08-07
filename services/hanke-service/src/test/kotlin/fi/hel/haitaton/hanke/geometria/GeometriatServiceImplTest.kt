@@ -7,9 +7,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
-import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.factory.HankeFactory
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
@@ -22,8 +20,6 @@ import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
 
 internal class GeometriatServiceImplTest {
-
-    private val hankeService: HankeService = mockk()
 
     private val geometriatDao: GeometriatDao = mockk()
 
@@ -152,26 +148,6 @@ internal class GeometriatServiceImplTest {
             assertThat(savedHankeGeometria.modifiedAt).isNotNull()
             assertThat(savedHankeGeometria.featureCollection).isNotNull()
             assertThat(savedHankeGeometria.featureCollection!!.features).isNotEmpty()
-        }
-    }
-
-    @Test
-    fun `load Geometriat OK`() {
-        val hankeTunnus = "1234567"
-        val hankeId = 1
-        val geometriat = loadGeometriat()
-        val hanke = HankeFactory.create(id = hankeId, hankeTunnus = hankeTunnus)
-        every { geometriatDao.retrieveGeometriat(hankeId) } returns geometriat
-
-        val loadedGeometriat = service.loadGeometriat(hanke)
-
-        verify { geometriatDao.retrieveGeometriat(hankeId) }
-        assertAll {
-            assertThat(loadedGeometriat).isNotNull()
-            assertThat(loadedGeometriat!!.version).isEqualTo(1)
-            assertThat(loadedGeometriat.createdAt).isNotNull()
-            assertThat(loadedGeometriat.modifiedAt).isNotNull()
-            assertThat(loadedGeometriat.featureCollection).isNotNull()
         }
     }
 }
