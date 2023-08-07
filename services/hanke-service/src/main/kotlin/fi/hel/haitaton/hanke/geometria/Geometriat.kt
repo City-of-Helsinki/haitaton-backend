@@ -5,17 +5,39 @@ import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HasId
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
 
+@Schema(description = "Geometry data")
 data class Geometriat(
-    @JsonView(ChangeLogView::class) override var id: Int? = null,
-    @JsonView(ChangeLogView::class) var featureCollection: FeatureCollection? = null,
-    @JsonView(ChangeLogView::class) var version: Int? = null,
-    @JsonView(NotInChangeLogView::class) var createdByUserId: String? = null,
-    @JsonView(NotInChangeLogView::class) var createdAt: ZonedDateTime? = null,
-    @JsonView(NotInChangeLogView::class) var modifiedByUserId: String? = null,
-    @JsonView(NotInChangeLogView::class) var modifiedAt: ZonedDateTime? = null
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Id, set by the service")
+    override var id: Int? = null,
+    //
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "The geometry data")
+    var featureCollection: FeatureCollection? = null,
+    //
+    @field:Schema(description = "Version, set by the service")
+    @JsonView(ChangeLogView::class)
+    var version: Int? = null,
+    //
+    @field:Schema(description = "User id of the geometry data creator, set by the service")
+    @JsonView(NotInChangeLogView::class)
+    var createdByUserId: String? = null,
+    //
+    @field:Schema(description = "Timestamp of last modification, set by the service")
+    @JsonView(NotInChangeLogView::class)
+    var createdAt: ZonedDateTime? = null,
+    //
+    @field:Schema(description = "User id of the last modifier, set by the service")
+    @JsonView(NotInChangeLogView::class)
+    var modifiedByUserId: String? = null,
+    //
+    @field:Schema(description = "Timestamp of last modification, set by the service")
+    @JsonView(NotInChangeLogView::class)
+    var modifiedAt: ZonedDateTime? = null
 ) : HasId<Int> {
     fun withFeatureCollection(featureCollection: FeatureCollection): Geometriat {
         this.featureCollection = featureCollection

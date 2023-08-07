@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
 import io.hypersistence.utils.hibernate.type.json.JsonType
+import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType.STRING
@@ -110,11 +111,12 @@ class HankeYhteystietoEntity(
         )
 }
 
+@Schema(description = "Contact person")
 data class Yhteyshenkilo(
-    val etunimi: String,
-    val sukunimi: String,
-    val email: String,
-    val puhelinnumero: String,
+    @field:Schema(description = "First name") val etunimi: String,
+    @field:Schema(description = "Last name") val sukunimi: String,
+    @field:Schema(description = "Email address") val email: String,
+    @field:Schema(description = "Phone number") val puhelinnumero: String,
 ) {
     fun fullName(): String = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
 }

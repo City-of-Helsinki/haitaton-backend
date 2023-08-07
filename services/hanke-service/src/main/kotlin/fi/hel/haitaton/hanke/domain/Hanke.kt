@@ -15,36 +15,103 @@ import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 
+@Schema(description = "The project within which applications are processed")
 data class Hanke(
-    @JsonView(ChangeLogView::class) override var id: Int?,
-    @JsonView(ChangeLogView::class) var hankeTunnus: String?,
-    @JsonView(ChangeLogView::class) var onYKTHanke: Boolean?,
-    @JsonView(ChangeLogView::class) var nimi: String?,
-    @JsonView(ChangeLogView::class) var kuvaus: String?,
-    @JsonView(ChangeLogView::class) var vaihe: Vaihe?,
-    @JsonView(ChangeLogView::class) var suunnitteluVaihe: SuunnitteluVaihe?,
-    @JsonView(ChangeLogView::class) var version: Int?,
-    @JsonView(NotInChangeLogView::class) val createdBy: String?,
-    @JsonView(NotInChangeLogView::class) val createdAt: ZonedDateTime?,
-    @JsonView(NotInChangeLogView::class) var modifiedBy: String?,
-    @JsonView(NotInChangeLogView::class) var modifiedAt: ZonedDateTime?,
-    @JsonView(ChangeLogView::class) var status: HankeStatus? = HankeStatus.DRAFT,
-    @JsonView(ChangeLogView::class) var perustaja: Perustaja? = null,
-    @JsonView(ChangeLogView::class) var generated: Boolean = false,
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Id, set by the service")
+    override var id: Int?,
+    //
+    @JsonView(ChangeLogView::class)
+    @field:Schema(
+        description = "Hanke identity for external purposes, set by the service",
+        example = "HAI24-123"
+    )
+    var hankeTunnus: String?,
+    //
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Yhteinen kunnallistekninen työmaa")
+    var onYKTHanke: Boolean?,
+    //
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Name of the Hanke, must not be blank")
+    var nimi: String?,
+    //
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Description of the Hanke contents ")
+    var kuvaus: String?,
+    //
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Hanke current stage", required = true)
+    var vaihe: Vaihe?,
+    //
+    @JsonView(ChangeLogView::class)
+    @field:Schema(
+        description = "Hanke current planning stage, must be defined if vaihe = SUUNNITTELU"
+    )
+    var suunnitteluVaihe: SuunnitteluVaihe?,
+    //
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Version, set by the service")
+    var version: Int?,
+    //
+    @JsonView(NotInChangeLogView::class)
+    @field:Schema(description = "User id of the Hanke creator, set by the service")
+    val createdBy: String?,
+    //
+    @JsonView(NotInChangeLogView::class)
+    @field:Schema(description = "Timestamp of creation, set by the service")
+    val createdAt: ZonedDateTime?,
+    //
+    @JsonView(NotInChangeLogView::class)
+    @field:Schema(description = "User id of the last modifier, set by the service")
+    var modifiedBy: String?,
+    //
+    @JsonView(NotInChangeLogView::class)
+    @field:Schema(description = "Timestamp of last modification, set by the service")
+    var modifiedAt: ZonedDateTime?,
+    //
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Hanke current status, set by the service")
+    var status: HankeStatus? = HankeStatus.DRAFT,
+    //
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Hanke founder contact information")
+    var perustaja: Perustaja? = null,
+    //
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Indicates whether the Hanke data is generated, set by the service")
+    var generated: Boolean = false,
 ) : HasId<Int> {
 
     // --------------- Yhteystiedot -----------------
-    @JsonView(NotInChangeLogView::class) var omistajat = mutableListOf<HankeYhteystieto>()
-    @JsonView(NotInChangeLogView::class) var rakennuttajat = mutableListOf<HankeYhteystieto>()
-    @JsonView(NotInChangeLogView::class) var toteuttajat = mutableListOf<HankeYhteystieto>()
-    @JsonView(NotInChangeLogView::class) var muut = mutableListOf<HankeYhteystieto>()
+    @JsonView(NotInChangeLogView::class)
+    @field:Schema(description = "Project owners, contact information")
+    var omistajat = mutableListOf<HankeYhteystieto>()
+    //
+    @JsonView(NotInChangeLogView::class)
+    @field:Schema(description = "Property developers, contact information")
+    var rakennuttajat = mutableListOf<HankeYhteystieto>()
+    //
+    @JsonView(NotInChangeLogView::class)
+    @field:Schema(description = "Executor of the work")
+    var toteuttajat = mutableListOf<HankeYhteystieto>()
+    //
+    @JsonView(NotInChangeLogView::class)
+    @field:Schema(description = "Other contacts")
+    var muut = mutableListOf<HankeYhteystieto>()
 
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
-    @JsonView(ChangeLogView::class) var tyomaaKatuosoite: String? = null
-    @JsonView(ChangeLogView::class) var tyomaaTyyppi = mutableSetOf<TyomaaTyyppi>()
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Work site street address", maxLength = 2000)
+    var tyomaaKatuosoite: String? = null
+    //
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Work site types")
+    var tyomaaTyyppi = mutableSetOf<TyomaaTyyppi>()
 
     // --------------- Hankkeen haitat -------------------
     fun kaistaHaitat(): Set<TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin> {
@@ -75,9 +142,13 @@ data class Hanke(
         @JsonView(ChangeLogView::class)
         get(): ZonedDateTime? = alueet.mapNotNull { it.haittaLoppuPvm }.maxOfOrNull { it }
 
-    @JsonView(ChangeLogView::class) var alueet = mutableListOf<Hankealue>()
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Hanke areas data")
+    var alueet = mutableListOf<Hankealue>()
 
-    @JsonView(NotInChangeLogView::class) var permissions: List<PermissionCode>? = null
+    @JsonView(NotInChangeLogView::class)
+    @field:Schema(description = "Permission codes to this Hanke project")
+    var permissions: List<PermissionCode>? = null
 
     /** Number of days between haittaAlkuPvm and haittaLoppuPvm (incl. both days) */
     val haittaAjanKestoDays: Int?
@@ -93,7 +164,9 @@ data class Hanke(
     fun getLiikennehaittaindeksi(): LiikennehaittaIndeksiType? =
         tormaystarkasteluTulos?.liikennehaittaIndeksi
 
-    @JsonView(ChangeLogView::class) var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "")
+    var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
 
     fun toLogString(): String {
         return toString()
