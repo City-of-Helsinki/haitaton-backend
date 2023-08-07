@@ -79,7 +79,9 @@ class HankeController(
     @GetMapping(produces = [APPLICATION_JSON_VALUE])
     @Operation(
         summary = "Get hanke list",
-        description = "Get list of hanke to which the user has permission to."
+        description =
+            """Get Hanke list to which the user has permission to. 
+            Contains e.g. personal contact information, which is not available in a public Hanke."""
     )
     @ApiResponses(
         value =
