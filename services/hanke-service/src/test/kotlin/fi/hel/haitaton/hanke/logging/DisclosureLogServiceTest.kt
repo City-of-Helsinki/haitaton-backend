@@ -15,6 +15,8 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.gdpr.StringNode
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
+import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -22,6 +24,7 @@ import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.mockk
 import io.mockk.verify
+import java.util.*
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -168,6 +171,16 @@ internal class DisclosureLogServiceTest {
         val expectedLogs = AuditLogEntryFactory.createReadEntriesForHanke(hankkeet[0])
 
         disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, userId)
+
+        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
+    }
+
+    @Test
+    fun `saveDisclosureLogsForHankeKayttajat saves audit logs`() {
+        val hankeKayttajat = createMockHankeKayttajat(amount = 2)
+        val expectedLogs = AuditLogEntryFactory.createReadEntryForHankeKayttajat(hankeKayttajat)
+
+        disclosureLogService.saveDisclosureLogsForHankeKayttajat(hankeKayttajat, userId)
 
         verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }
@@ -355,6 +368,17 @@ internal class DisclosureLogServiceTest {
 
         verify { auditLogService wasNot Called }
     }
+
+    private fun createMockHankeKayttajat(amount: Int): List<HankeKayttajaDto> =
+        (1..amount).map {
+            HankeKayttajaDto(
+                id = UUID.randomUUID(),
+                sahkoposti = "test.$it@email.com",
+                nimi = "test person $it",
+                rooli = Role.KATSELUOIKEUS,
+                tunnistautunut = false
+            )
+        }
 
     private fun containsAll(
         expectedLogs: List<AuditLogEntry>,

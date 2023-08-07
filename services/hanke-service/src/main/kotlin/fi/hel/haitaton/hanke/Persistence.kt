@@ -238,11 +238,6 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
     override fun findAll(): List<HankeEntity>
 
     fun findAllByStatus(status: HankeStatus): List<HankeEntity>
-
-    fun findAllByCreatedByUserIdOrModifiedByUserId(
-        createdByUserId: String,
-        modifiedByUserId: String
-    ): List<HankeEntity>
 }
 
 enum class CounterType {

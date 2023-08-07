@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.toJsonString
 import org.springframework.stereotype.Service
 
@@ -89,6 +90,18 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             UserRole.USER,
             auditLogEntriesForYhteystiedot(hankkeet.flatMap { it.extractYhteystiedot() })
         )
+    }
+
+    fun saveDisclosureLogsForHankeKayttajat(
+        hankeKayttajat: List<HankeKayttajaDto>,
+        userId: String
+    ) {
+        val entries: List<AuditLogEntry> =
+            hankeKayttajat.map {
+                disclosureLogEntry(ObjectType.HANKE_KAYTTAJA, it.id, it, Status.SUCCESS)
+            }
+
+        saveDisclosureLogs(userId, UserRole.USER, entries)
     }
 
     private fun auditLogEntriesForCustomers(

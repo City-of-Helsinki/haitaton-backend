@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.security.AccessRules
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
@@ -68,6 +69,8 @@ class IntegrationTestConfiguration {
     @Bean fun hankeAttachmentService(): HankeAttachmentService = mockk()
 
     @Bean fun applicationAttachmentService(): ApplicationAttachmentService = mockk()
+
+    @Bean fun hankeKayttajaService(): HankeKayttajaService = mockk()
 
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {
