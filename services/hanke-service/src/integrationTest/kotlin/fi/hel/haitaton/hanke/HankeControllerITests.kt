@@ -26,7 +26,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -373,15 +372,14 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         }
 
         @Test
-        @Disabled("Seems like this is not implemented yet.")
         fun `With perustaja without sahkoposti returns 400`() {
             val hakemus = HankeFactory.create().withPerustaja()
             val content: ObjectNode = OBJECT_MAPPER.valueToTree(hakemus)
-            (content.get("perustaja") as ObjectNode).remove("sahkoposti")
+            (content.get("perustaja") as ObjectNode).remove("email")
 
             postRaw(url, content.toJsonString())
                 .andExpect(status().isBadRequest)
-                .andExpect(hankeError(HankeError.HAI1002))
+                .andExpect(hankeError(HankeError.HAI0003))
         }
 
         @Test
