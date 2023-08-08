@@ -107,3 +107,7 @@ databaseChangeLog:
       file: db/changelog/changesets/038-add-attachment-content-tables.sql
   - include:
       file: db/changelog/changesets/039-add-indexes.yml
+  - include:
+      file: db/changelog/changesets/040-drop-table-organisaatio.sql
+  - include:
+      file: db/changelog/changesets/041-drop-column-organisaatioid-from-yhteystiedot.yml

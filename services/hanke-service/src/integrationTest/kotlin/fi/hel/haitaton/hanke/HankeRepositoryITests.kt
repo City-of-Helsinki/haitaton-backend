@@ -91,7 +91,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHankeYhteystietoEntity1.nimi).isEqualTo("Etu1 Suku1")
         assertThat(loadedHankeYhteystietoEntity1.email).isEqualTo("email1")
         assertThat(loadedHankeYhteystietoEntity1.puhelinnumero).isEqualTo("0101111111")
-        assertThat(loadedHankeYhteystietoEntity1.organisaatioId).isEqualTo(1)
         assertThat(loadedHankeYhteystietoEntity1.organisaatioNimi).isEqualTo("org1")
         assertThat(loadedHankeYhteystietoEntity1.osasto).isEqualTo("osasto1")
         assertThat(loadedHankeYhteystietoEntity1.createdByUserId).isEqualTo("1")
@@ -106,7 +105,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHankeYhteystietoEntity2.nimi).isEqualTo("Etu2 Suku2")
         assertThat(loadedHankeYhteystietoEntity2.email).isEqualTo("email2")
         assertThat(loadedHankeYhteystietoEntity2.puhelinnumero).isEqualTo("0102222222")
-        assertThat(loadedHankeYhteystietoEntity2.organisaatioId).isEqualTo(2)
         assertThat(loadedHankeYhteystietoEntity2.organisaatioNimi).isEqualTo("org2")
         assertThat(loadedHankeYhteystietoEntity2.osasto).isEqualTo("osasto2")
         assertThat(loadedHankeYhteystietoEntity2.createdByUserId).isEqualTo("2")
@@ -119,7 +117,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHankeYhteystietoEntity3.nimi).isEqualTo("Etu3 Suku3")
         assertThat(loadedHankeYhteystietoEntity3.email).isEqualTo("email3")
         assertThat(loadedHankeYhteystietoEntity3.puhelinnumero).isEqualTo("0103333333")
-        assertThat(loadedHankeYhteystietoEntity3.organisaatioId).isEqualTo(3)
         assertThat(loadedHankeYhteystietoEntity3.organisaatioNimi).isEqualTo("org3")
         assertThat(loadedHankeYhteystietoEntity3.osasto).isEqualTo("osasto3")
         assertThat(loadedHankeYhteystietoEntity3.createdByUserId).isEqualTo("3")
@@ -147,7 +144,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHanke.listOfHankeYhteystieto).hasSize(2)
         val loadedHankeYhteystietoEntity1 = loadedHanke.listOfHankeYhteystieto[0]
         val loadedHankeYhteystietoEntity2 = loadedHanke.listOfHankeYhteystieto[1]
-        val loadedHankeYhteystietoOrgId2 = loadedHankeYhteystietoEntity2.organisaatioId
 
         loadedHanke.removeYhteystieto(loadedHankeYhteystietoEntity1)
 
@@ -157,8 +153,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHanke2).isNotNull
         assertThat(loadedHanke2!!.listOfHankeYhteystieto).isNotNull
         assertThat(loadedHanke2.listOfHankeYhteystieto).hasSize(1)
-        assertThat(loadedHanke2.listOfHankeYhteystieto[0].organisaatioId)
-            .isEqualTo(loadedHankeYhteystietoOrgId2)
     }
 
     private fun createBaseHankeEntity(hankeTunnus: String) =
@@ -186,7 +180,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
             nimi = "Etu1 Suku1",
             email = "email1",
             puhelinnumero = "0101111111",
-            organisaatioId = 1,
             organisaatioNimi = "org1",
             osasto = "osasto1",
             dataLocked = false,
@@ -207,7 +200,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
             nimi = "Etu2 Suku2",
             email = "email2",
             puhelinnumero = "0102222222",
-            organisaatioId = 2,
             organisaatioNimi = "org2",
             osasto = "osasto2",
             dataLocked = false,
@@ -228,7 +220,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
             nimi = "Etu3 Suku3",
             email = "email3",
             puhelinnumero = "0103333333",
-            organisaatioId = 3,
             organisaatioNimi = "org3",
             osasto = "osasto3",
             dataLocked = false,

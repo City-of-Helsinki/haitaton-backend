@@ -25,7 +25,6 @@ data class HankeYhteystieto(
 
     // Optional
     @JsonView(ChangeLogView::class) var puhelinnumero: String?,
-    @JsonView(ChangeLogView::class) var organisaatioId: Int?,
     @JsonView(ChangeLogView::class) var organisaatioNimi: String?,
     @JsonView(ChangeLogView::class) var osasto: String?,
     @JsonView(ChangeLogView::class) var rooli: String?,

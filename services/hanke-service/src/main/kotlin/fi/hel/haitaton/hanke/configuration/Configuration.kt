@@ -24,8 +24,6 @@ import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
-import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
-import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotService
@@ -138,10 +136,6 @@ class Configuration {
             permissionService,
             hankeKayttajaService,
         )
-
-    @Bean
-    fun organisaatioService(organisaatioRepository: OrganisaatioRepository): OrganisaatioService =
-        OrganisaatioService(organisaatioRepository)
 
     @Bean
     fun geometriatDao(jdbcOperations: JdbcOperations): GeometriatDao =
