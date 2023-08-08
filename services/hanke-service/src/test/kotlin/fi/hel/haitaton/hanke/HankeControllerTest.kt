@@ -246,7 +246,6 @@ class HankeControllerTest {
                     nimi = "Pekka Pekkanen",
                     email = "pekka@pekka.fi",
                     puhelinnumero = "3212312",
-                    organisaatioId = null,
                     organisaatioNimi = "Kaivuri ja mies",
                     osasto = null,
                     rooli = null,

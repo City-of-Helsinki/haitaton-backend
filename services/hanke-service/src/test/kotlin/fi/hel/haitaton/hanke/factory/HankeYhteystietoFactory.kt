@@ -9,13 +9,12 @@ import fi.hel.haitaton.hanke.getCurrentTimeUTC
 object HankeYhteystietoFactory {
 
     /** Create a test yhteystieto with values in all fields. */
-    fun create(id: Int? = 1, organisaatioId: Int? = 1): HankeYhteystieto {
+    fun create(id: Int? = 1): HankeYhteystieto {
         return HankeYhteystieto(
             id = id,
             nimi = "Teppo Testihenkilö",
             email = AlluDataFactory.teppoEmail,
             puhelinnumero = "04012345678",
-            organisaatioId = organisaatioId,
             organisaatioNimi = "Organisaatio",
             osasto = "Osasto",
             createdBy = "test7358",
@@ -39,7 +38,6 @@ object HankeYhteystietoFactory {
             nimi = "etu$i suku$i",
             email = "email$i",
             puhelinnumero = "010$i$i$i$i$i$i$i",
-            organisaatioId = i,
             organisaatioNimi = "org$i",
             osasto = "osasto$i",
             rooli = "Isännöitsijä$i",

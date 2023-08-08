@@ -12,18 +12,10 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
 
-data class PublicHankeYhteystieto(
-    val organisaatioId: Int?,
-    val organisaatioNimi: String?,
-    val osasto: String?
-)
+data class PublicHankeYhteystieto(val organisaatioNimi: String?, val osasto: String?)
 
 fun hankeYhteystietoToPublic(yhteystieto: HankeYhteystieto) =
-    PublicHankeYhteystieto(
-        yhteystieto.organisaatioId,
-        yhteystieto.organisaatioNimi,
-        yhteystieto.osasto
-    )
+    PublicHankeYhteystieto(yhteystieto.organisaatioNimi, yhteystieto.osasto)
 
 data class PublicGeometriat(
     val id: Int,
@@ -90,9 +82,7 @@ fun hankealueToPublic(alue: Hankealue): PublicHankealue {
 
 fun hankeToPublic(hanke: Hanke): PublicHanke {
     val omistajat =
-        hanke.omistajat
-            .filter { it.organisaatioNimi != null || it.organisaatioId != null }
-            .map { hankeYhteystietoToPublic(it) }
+        hanke.omistajat.filter { it.organisaatioNimi != null }.map { hankeYhteystietoToPublic(it) }
 
     val alueet = hanke.alueet.map { hankealueToPublic(it) }
 
