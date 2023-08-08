@@ -36,11 +36,14 @@ Required directory structure:
 
 #### Usage examples
 
-- `docker-compose up -d`: Run the entire stack, -d can be omitted
-- `docker-compose up db haitaton-hanke`: Run individual services |
-- `docker-compose stop haitaton-ui && docker-compose up -d --build --no-deps haitaton-ui`: Rebuild and run an individual
-  service
-- `docker-compose down`: Stop containers and removes containers networks volumes and images created by up
+- `docker-compose up -d`
+    - Run the entire stack, -d can be omitted
+- `docker-compose up db haitaton-hanke`
+    - Run individual services
+- `docker-compose stop haitaton-ui && docker-compose up -d --build --no-deps haitaton-ui`
+    - Rebuild and run an individual service
+- `docker-compose down`
+    - Stop containers and removes containers networks volumes and images created by up
 
 See docker-compose.yml for details.
 
