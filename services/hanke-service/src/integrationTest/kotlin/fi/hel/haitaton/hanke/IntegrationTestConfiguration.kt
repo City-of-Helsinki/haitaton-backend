@@ -10,7 +10,6 @@ import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.security.AccessRules
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
@@ -51,8 +50,6 @@ class IntegrationTestConfiguration {
     @Bean fun gdprService(): GdprService = mockk(relaxUnitFun = true)
 
     @Bean fun permissionService(): PermissionService = mockk()
-
-    @Bean fun organisaatioService(): OrganisaatioService = mockk()
 
     @Bean fun geometriatDao(jdbcOperations: JdbcOperations): GeometriatDao = mockk()
 

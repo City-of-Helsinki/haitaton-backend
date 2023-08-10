@@ -1,8 +1,12 @@
 package fi.hel.haitaton.hanke.application
 
+import assertk.assertThat
+import assertk.assertions.isEqualTo
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.ControllerTest
+import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
@@ -17,6 +21,7 @@ import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -258,8 +263,19 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                 )
                 .toCableReportWithoutHanke()
 
-        post("/hakemukset/johtoselvitys", applicationInput).andExpect(status().isBadRequest)
+        val result =
+            post("/hakemukset/johtoselvitys", applicationInput)
+                .andExpect(status().isBadRequest)
+                .andReturn()
 
+        assertThat(result.response.contentAsString)
+            .isEqualTo(
+                HankeErrorDetail(
+                        HankeError.HAI2008,
+                        listOf("customersWithContacts[].contacts[].orderer")
+                    )
+                    .toJsonString()
+            )
         verify { hankeService wasNot Called }
     }
 
@@ -292,8 +308,10 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                     )
             )
 
-        put("$BASE_URL/1234", application).andExpect(status().isBadRequest)
+        val result = put("$BASE_URL/1234", application).andExpect(status().isBadRequest).andReturn()
 
+        assertThat(result.response.contentAsString)
+            .isEqualTo(HankeErrorDetail(HankeError.HAI2008, listOf("endTime")).toJsonString())
         verify { applicationService wasNot Called }
     }
 
@@ -361,6 +379,43 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             .andExpect(status().isBadRequest)
 
         verify { applicationService wasNot Called }
+    }
+
+    @Test
+    @WithMockUser(USERNAME)
+    fun `update with missing data returns 400`() {
+        val hankeId = 42
+        val applicationId = 1234L
+        val mockErrorPaths = listOf("startTime", "customerWithContacts.customer.type")
+        val application = AlluDataFactory.createApplication()
+        every { hankeService.getHankeId(HANKE_TUNNUS) } returns hankeId
+        every { permissionService.hasPermission(hankeId, USERNAME, EDIT_APPLICATIONS) } returns true
+        every { applicationService.getApplicationById(applicationId) } returns
+            AlluDataFactory.createApplication(id = applicationId, hankeTunnus = HANKE_TUNNUS)
+        every {
+            applicationService.updateApplicationData(
+                applicationId,
+                application.applicationData,
+                USERNAME
+            )
+        } throws InvalidApplicationDataException(mockErrorPaths)
+
+        val response =
+            put("$BASE_URL/$applicationId", application)
+                .andExpect(status().isBadRequest)
+                .andReturn()
+
+        assertThat(response.response.contentAsString)
+            .isEqualTo(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString())
+        verify { permissionService.hasPermission(hankeId, USERNAME, EDIT_APPLICATIONS) }
+        verify { applicationService.getApplicationById(applicationId) }
+        verify {
+            applicationService.updateApplicationData(
+                applicationId,
+                application.applicationData,
+                USERNAME
+            )
+        }
     }
 
     @Test
@@ -517,6 +572,28 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         post("$BASE_URL/$id/send-application").andExpect(status().isConflict)
 
+        verify { permissionService.hasPermission(42, USERNAME, EDIT_APPLICATIONS) }
+        verify { applicationService.getApplicationById(id) }
+        verify { applicationService.sendApplication(id, USERNAME) }
+    }
+
+    @Test
+    @WithMockUser(USERNAME)
+    fun `sendApplication with missing data in application returns 400 with details`() {
+        val id = 1234L
+        val mockErrorPaths = listOf("startTime", "customerWithContacts.customer.type")
+        every { hankeService.getHankeId(HANKE_TUNNUS) } returns 42
+        every { permissionService.hasPermission(42, USERNAME, EDIT_APPLICATIONS) } returns true
+        every { applicationService.getApplicationById(id) } returns
+            AlluDataFactory.createApplication(id = id, hankeTunnus = HANKE_TUNNUS)
+        every { applicationService.sendApplication(id, USERNAME) } throws
+            InvalidApplicationDataException(mockErrorPaths)
+
+        val response =
+            post("$BASE_URL/$id/send-application").andExpect(status().isBadRequest).andReturn()
+
+        assertThat(response.response.contentAsString)
+            .isEqualTo(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString())
         verify { permissionService.hasPermission(42, USERNAME, EDIT_APPLICATIONS) }
         verify { applicationService.getApplicationById(id) }
         verify { applicationService.sendApplication(id, USERNAME) }

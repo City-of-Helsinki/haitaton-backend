@@ -24,6 +24,7 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.validation.ApplicationDataValidator.ensureValidForSend
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import kotlin.reflect.KClass
@@ -443,6 +444,7 @@ open class ApplicationService(
     }
 
     private fun updateApplicationInAllu(entity: ApplicationEntity): Int {
+        ensureValidForSend(entity.applicationData)
         val alluId = entity.alluid ?: throw ApplicationArgumentException("AlluId null in update.")
 
         logger.info { "Uploading updated application with alluId $alluId" }
@@ -457,6 +459,7 @@ open class ApplicationService(
 
     /** Creates new application in Allu. All attachments are sent after creation. */
     private fun createApplicationInAllu(entity: ApplicationEntity): Int {
+        ensureValidForSend(entity.applicationData)
         val alluId =
             when (val data = entity.applicationData) {
                 is CableReportApplicationData -> createCableReportToAllu(entity.hankeTunnus(), data)

@@ -272,8 +272,12 @@ internal class DisclosureLogServiceTest {
     @Test
     fun `saveDisclosureLogsForApplication with contacts logs contacts`() {
         val cableReportApplication = AlluDataFactory.createCableReportApplicationData()
-        val contact = cableReportApplication.customerWithContacts.contacts[0]
-        val expectedLogs = listOf(AuditLogEntryFactory.createReadEntryForContact(contact))
+        val firstContact = cableReportApplication.customerWithContacts.contacts[0]
+        val secondContact = cableReportApplication.contractorWithContacts.contacts[0]
+        val expectedLogs =
+            listOf(firstContact, secondContact).map {
+                AuditLogEntryFactory.createReadEntryForContact(it)
+            }
         val application =
             AlluDataFactory.createApplication(
                 applicationData = cableReportApplication,
@@ -289,16 +293,17 @@ internal class DisclosureLogServiceTest {
     @EnumSource(Status::class)
     fun `saveDisclosureLogsForAllu saves logs with the given status`(expectedStatus: Status) {
         val cableReportApplication = AlluDataFactory.createCableReportApplicationData()
-        val contact = cableReportApplication.customerWithContacts.contacts[0]
+        val firstContact = cableReportApplication.customerWithContacts.contacts[0]
+        val secondContact = cableReportApplication.contractorWithContacts.contacts[0]
         val expectedLogs =
-            listOf(
-                AuditLogEntryFactory.createReadEntryForContact(contact)
+            listOf(firstContact, secondContact).map {
+                AuditLogEntryFactory.createReadEntryForContact(it)
                     .copy(
                         status = expectedStatus,
                         userId = ALLU_AUDIT_LOG_USERID,
                         userRole = UserRole.SERVICE,
                     )
-            )
+            }
 
         disclosureLogService.saveDisclosureLogsForAllu(cableReportApplication, expectedStatus)
 
