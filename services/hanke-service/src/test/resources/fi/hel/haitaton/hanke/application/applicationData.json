@@ -56,31 +56,6 @@
       {
         "firstName": "Teppo",
         "lastName": "Testihenkilö",
-        "email": "teppo@example.test",
-        "phone": "04012345678",
-        "orderer": true
-      }
-    ],
-    "customer": {
-      "ovt": null,
-      "name": "Teppo Testihenkilö",
-      "type": "PERSON",
-      "email": "teppo@example.test",
-      "phone": "04012345678",
-      "country": "FI",
-      "registryKey": "281192-937W",
-      "invoicingOperator": null,
-      "sapCustomerNumber": null
-    }
-  },
-  "identificationNumber": "HAI-123",
-  "propertyConnectivity": false,
-  "clientApplicationKind": "HAITATON",
-  "contractorWithContacts": {
-    "contacts": [
-      {
-        "firstName": "Teppo",
-        "lastName": "Testihenkilö",
         "email": "teppo@dna.test",
         "phone": "04012345678",
         "orderer": true
@@ -94,6 +69,29 @@
       "phone": "+3581012345678",
       "country": "FI",
       "registryKey": "3766028-0",
+      "invoicingOperator": null,
+      "sapCustomerNumber": null
+    }
+  },
+  "identificationNumber": "HAI-123",
+  "propertyConnectivity": false,
+  "clientApplicationKind": "HAITATON",
+  "contractorWithContacts": {
+    "contacts": [
+      {
+        "firstName": "Teppo",
+        "lastName": "Testihenkilö",
+        "email": "teppo@example.test",
+        "phone": "04012345678"
+      }
+    ],
+    "customer": {
+      "ovt": null,
+      "name": "Teppo Testihenkilö",
+      "type": "PERSON",
+      "email": "teppo@example.test",
+      "phone": "04012345678",
+      "country": "FI",
       "invoicingOperator": null,
       "sapCustomerNumber": null
     }

@@ -1,11 +1,10 @@
 package fi.hel.haitaton.hanke.geometria
 
 import fi.hel.haitaton.hanke.TZ_UTC
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.currentUserId
 import java.time.ZonedDateTime
 import javax.transaction.Transactional
 import mu.KotlinLogging
-import org.springframework.security.core.context.SecurityContextHolder
 
 private val logger = KotlinLogging.logger {}
 
@@ -20,7 +19,7 @@ open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) :
             if (geometriat.id != null) hankeGeometriaDao.retrieveGeometriat(geometriat.id!!)
             else null
         val hasFeatures = geometriat.hasFeatures()
-        val username = SecurityContextHolder.getContext().authentication.name
+        val username = currentUserId()
 
         return when {
             oldGeometriat == null && !hasFeatures ->
@@ -63,19 +62,6 @@ open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) :
                 oldGeometriat
             }
         }
-    }
-
-    /**
-     * Load geometries with object id.
-     *
-     * NOTE This method is deprecated. Create a new endpoint for querying geometry data.
-     *
-     * contain multiple return values
-     */
-    override fun loadGeometriat(hanke: Hanke): Geometriat? {
-        val geometriat = hankeGeometriaDao.retrieveGeometriat(hanke.id!!)
-        geometriat?.resetFeatureProperties(hanke)
-        return geometriat
     }
 
     /** Get geometries by geometry object id. */

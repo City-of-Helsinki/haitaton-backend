@@ -37,7 +37,6 @@ class HankeYhteystietoEntity(
 
     // optional
     @JsonView(ChangeLogView::class) var puhelinnumero: String? = null,
-    @JsonView(ChangeLogView::class) var organisaatioId: Int? = 0,
     @JsonView(ChangeLogView::class) var organisaatioNimi: String? = null,
     @JsonView(ChangeLogView::class) var osasto: String? = null,
     @JsonView(ChangeLogView::class) var rooli: String? = null,
@@ -76,7 +75,6 @@ class HankeYhteystietoEntity(
         if (nimi != other.nimi) return false
         if (email != other.email) return false
         if (puhelinnumero != other.puhelinnumero) return false
-        if (organisaatioId != other.organisaatioId) return false
         if (organisaatioNimi != other.organisaatioNimi) return false
         if (osasto != other.osasto) return false
         if (yhteyshenkilot != other.yhteyshenkilot) return false
@@ -90,7 +88,6 @@ class HankeYhteystietoEntity(
         result = 31 * result + nimi.hashCode()
         result = 31 * result + email.hashCode()
         result = 31 * result + puhelinnumero.hashCode()
-        result = 31 * result + (organisaatioId ?: 0)
         result = 31 * result + (organisaatioNimi?.hashCode() ?: 0)
         result = 31 * result + (osasto?.hashCode() ?: 0)
         result = 31 * result + yhteyshenkilot.hashCode()
@@ -107,7 +104,6 @@ class HankeYhteystietoEntity(
             nimi = nimi,
             email = email,
             puhelinnumero = puhelinnumero,
-            organisaatioId = organisaatioId,
             organisaatioNimi = organisaatioNimi,
             osasto = osasto,
             rooli = rooli,

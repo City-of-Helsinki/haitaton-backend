@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
@@ -160,9 +161,9 @@ class ApplicationController(
             [
                 ApiResponse(description = "The updated application", responseCode = "200"),
                 ApiResponse(
-                    description = "The request body was invalid",
+                    description = "Application contains invalid data",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                    content = [Content(schema = Schema(implementation = HankeErrorDetail::class))]
                 ),
                 ApiResponse(
                     description = "An application was not found with the given id",
@@ -236,6 +237,11 @@ class ApplicationController(
         value =
             [
                 ApiResponse(description = "The sent application", responseCode = "200"),
+                ApiResponse(
+                    description = "Application contains invalid data",
+                    responseCode = "400",
+                    content = [Content(schema = Schema(implementation = HankeErrorDetail::class))]
+                ),
                 ApiResponse(
                     description = "An application was not found with the given id",
                     responseCode = "404",
@@ -341,8 +347,8 @@ class ApplicationController(
     @ExceptionHandler(InvalidApplicationDataException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
-    fun invalidApplicationDataException(ex: InvalidApplicationDataException): HankeError {
+    fun invalidApplicationDataException(ex: InvalidApplicationDataException): HankeErrorDetail {
         logger.warn(ex) { ex.message }
-        return HankeError.HAI2008
+        return HankeErrorDetail(hankeError = HankeError.HAI2008, errorPaths = ex.errorPaths)
     }
 }

@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 039-add-unique-indexes-for-allu-keys
+      author: Topias Heinonen
+      comment: The only way to get duplicates is an Allu malfunction, so we should safeguard against those.
+      changes:
+        - createIndex:
+            tableName: applications
+            indexName: uk_applications_alluid
+            unique: true
+            columns:
+              - column:
+                  name: alluid
+        - createIndex:
+            tableName: applications
+            indexName: uk_applications_applicationidentifier
+            unique: true
+            columns:
+              - column:
+                  name: applicationidentifier
+  - changeSet:
+      id: 039-add-index-for-hanketunnus
+      author: Topias Heinonen
+      comment: This is on of the most common ways to find a hanke, so it should be indexed.
+      changes:
+        - createIndex:
+            tableName: hanke
+            indexName: uk_hanke_hanketunnus
+            unique: true
+            columns:
+              - column:
+                  name: hanketunnus

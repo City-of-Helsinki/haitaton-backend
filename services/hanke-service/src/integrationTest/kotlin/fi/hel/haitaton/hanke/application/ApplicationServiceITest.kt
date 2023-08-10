@@ -53,6 +53,7 @@ import fi.hel.haitaton.hanke.permissions.kayttajaTunnistePattern
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
+import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -230,6 +231,35 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
+    @Sql("/sql/senaatintorin-hanke.sql")
+    fun `updateApplicationData sends to Allu if application is in allu and is still pending`() {
+        val alluId = 21
+        val application =
+            alluDataFactory.saveApplicationEntity(
+                USERNAME,
+                hanke = initializedHanke(),
+                application = mockApplicationWithArea(alluId = alluId)
+            )
+        val newApplicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                name = "Uudistettu johtoselvitys",
+                areas = application.applicationData.areas
+            )
+        every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
+            AlluDataFactory.createAlluApplicationResponse(alluId)
+        justRun { cableReportServiceAllu.update(alluId, any()) }
+        justRun { cableReportServiceAllu.addAttachment(alluId, any()) }
+
+        applicationService.updateApplicationData(application.id!!, newApplicationData, USERNAME)
+
+        verifyOrder {
+            cableReportServiceAllu.getApplicationInformation(alluId)
+            cableReportServiceAllu.update(alluId, any())
+            cableReportServiceAllu.addAttachment(alluId, any())
+        }
+    }
+
+    @Test
     fun `updateApplicationData doesn't create an audit log entry if the application hasn't changed`() {
         TestUtils.addMockedRequestIp()
         val hanke = createHankeEntity()
@@ -246,6 +276,40 @@ class ApplicationServiceITest : DatabaseTest() {
         val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
         assertThat(applicationLogs).isEmpty()
         verify { cableReportServiceAllu wasNot Called }
+    }
+
+    @Test
+    fun `updateApplicationData when missing data throws error when trying to send`() {
+        TestUtils.addMockedRequestIp()
+        val alluId = 21
+        val hanke = createHankeEntity()
+        val applicationData: CableReportApplicationData = dataWithoutAreas
+        val application =
+            AlluDataFactory.createApplication(alluid = alluId, applicationData = applicationData)
+        val savedApplication =
+            alluDataFactory.saveApplicationEntity(
+                username = USERNAME,
+                hanke = hanke,
+                application = application
+            )
+        every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
+            AlluDataFactory.createAlluApplicationResponse(alluId)
+
+        val exception =
+            assertThrows<InvalidApplicationDataException> {
+                applicationService.updateApplicationData(
+                    savedApplication.id!!,
+                    applicationData.copy(startTime = null),
+                    USERNAME
+                )
+            }
+
+        assertThat(exception.message)
+            .isEqualTo(
+                "Application contains invalid data. Errors at paths: applicationData.startTime"
+            )
+        verify { cableReportServiceAllu.getApplicationInformation(alluId) }
+        verify(exactly = 0) { cableReportServiceAllu.update(any(), any()) }
     }
 
     @Test
@@ -686,7 +750,7 @@ class ApplicationServiceITest : DatabaseTest() {
             AlluDataFactory.createAlluApplicationResponse(21)
 
         val exception =
-            assertThrows<AlluDataException> {
+            assertThrows<InvalidApplicationDataException> {
                 applicationService.updateApplicationData(
                     application.id!!,
                     newApplicationData,
@@ -695,7 +759,7 @@ class ApplicationServiceITest : DatabaseTest() {
             }
 
         assertEquals(
-            "Application data failed validation at applicationData.startTime: Can't be null",
+            "Application contains invalid data. Errors at paths: applicationData.startTime",
             exception.message
         )
         val savedApplications = applicationRepository.findAll()
@@ -1562,10 +1626,12 @@ class ApplicationServiceITest : DatabaseTest() {
 
     private fun mockApplicationWithArea(
         applicationData: ApplicationData =
-            AlluDataFactory.createCableReportApplicationData(areas = listOf(aleksanterinpatsas))
-    ): Application = AlluDataFactory.createApplication(applicationData = applicationData)
+            AlluDataFactory.createCableReportApplicationData(areas = listOf(aleksanterinpatsas)),
+        alluId: Int? = null
+    ): Application =
+        AlluDataFactory.createApplication(alluid = alluId, applicationData = applicationData)
 
-    val customerWithContactsJson =
+    private fun customerWithContactsJson(orderer: Boolean) =
         """
            "customer": {
              "type": "COMPANY",
@@ -1584,7 +1650,7 @@ class ApplicationServiceITest : DatabaseTest() {
                "lastName": "Testihenkilö",
                "email": "teppo@example.test",
                "phone": "04012345678",
-               "orderer": false
+               "orderer": $orderer
              }
            ]
         """
@@ -1606,7 +1672,7 @@ class ApplicationServiceITest : DatabaseTest() {
               "applicationData": {
                 "name": "$name",
                 "customerWithContacts": {
-                  $customerWithContactsJson
+                  ${customerWithContactsJson(orderer = true)}
                 },
                 "areas": [],
                 "startTime": "${nextYear()}-02-20T23:45:56Z",
@@ -1615,7 +1681,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 "workDescription": "Work description.",
                 "rockExcavation": false,
                 "contractorWithContacts": {
-                  $customerWithContactsJson
+                  ${customerWithContactsJson(orderer = false)}
                 },
                 "postalAddress": null,
                 "representativeWithContacts": null,

@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 041-drop-column-organisaatioid-from-yhteystiedot
+      author: Topias Heinonen
+      changes:
+        - dropColumn:
+            tableName: hankeyhteystieto
+            columnName: organisaatioid

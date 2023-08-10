@@ -24,8 +24,6 @@ import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
-import fi.hel.haitaton.hanke.organisaatio.OrganisaatioRepository
-import fi.hel.haitaton.hanke.organisaatio.OrganisaatioService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotService
@@ -140,10 +138,6 @@ class Configuration {
         )
 
     @Bean
-    fun organisaatioService(organisaatioRepository: OrganisaatioRepository): OrganisaatioService =
-        OrganisaatioService(organisaatioRepository)
-
-    @Bean
     fun geometriatDao(jdbcOperations: JdbcOperations): GeometriatDao =
         GeometriatDaoImpl(jdbcOperations)
 
@@ -176,7 +170,7 @@ class Configuration {
         )
 
     companion object {
-        /** Create a web client that can download large files in memory. Up to 20 megabytes. */
+        /** Create a web client that can download large files in memory. */
         fun webClientWithLargeBuffer(webClientBuilder: WebClient.Builder): WebClient =
             webClientBuilder
                 .codecs { codecs -> codecs.defaultCodecs().maxInMemorySize(100 * 1024 * 1024) }

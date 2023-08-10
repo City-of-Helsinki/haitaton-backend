@@ -1,4 +1,4 @@
-FROM openjdk:11 as builder
+FROM eclipse-temurin:17 as builder
 USER root
 
 # Copy gradle to avoid redownloading it
@@ -13,7 +13,7 @@ WORKDIR /builder
 # Add GRADLE_OPTS to prevent JVM forking while building
 RUN GRADLE_OPTS="-XX:MaxMetaspaceSize=256m -XX:+HeapDumpOnOutOfMemoryError -Xms256m -Xmx512m" ./gradlew assemble --no-daemon
 
-FROM openjdk:11
+FROM eclipse-temurin:17
 WORKDIR /app
 EXPOSE 8080 8081
 COPY --from=builder /builder/services/hanke-service/build/libs/hanke-service-*.jar /app/haitaton.jar

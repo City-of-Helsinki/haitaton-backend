@@ -13,7 +13,6 @@ import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
-import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.HANDLING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
@@ -22,7 +21,6 @@ import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
-import fi.hel.haitaton.hanke.attachment.HANKE_TUNNUS
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
@@ -42,6 +40,7 @@ import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createAlluApplicationResponse
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -80,7 +79,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
     @Autowired private lateinit var attachmentFactory: AttachmentFactory
-    @Autowired private lateinit var hankeRepository: HankeRepository
+    @Autowired private lateinit var hankeFactory: HankeFactory
 
     private lateinit var mockWebServer: MockWebServer
 
@@ -425,6 +424,5 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             mutator = mutator
         )
 
-    private fun hankeEntity(): HankeEntity =
-        hankeRepository.save(HankeEntity(hankeTunnus = HANKE_TUNNUS))
+    private fun hankeEntity(): HankeEntity = hankeFactory.saveEntity()
 }
