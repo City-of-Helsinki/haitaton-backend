@@ -25,4 +25,9 @@ data class FeatureFlags(val features: Map<Feature, Boolean>) {
 
 enum class Feature {
     HANKE_EDITING,
+    /**
+     * For dev and test environments where Allu data is unstable, i.e. it can be deleted at any
+     * point.
+     */
+    UNSTABLE_ALLU,
 }

@@ -4,6 +4,8 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.configuration.Feature
+import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -47,6 +49,7 @@ class ApplicationController(
     private val hankeService: HankeService,
     private val disclosureLogService: DisclosureLogService,
     private val permissionService: PermissionService,
+    private val featureFlags: FeatureFlags,
 ) {
     @GetMapping
     @Operation(
@@ -284,6 +287,13 @@ class ApplicationController(
         val headers = HttpHeaders()
         headers.add("Content-Disposition", "inline; filename=$filename.pdf")
         return ResponseEntity.ok().headers(headers).contentType(APPLICATION_PDF).body(pdfBytes)
+    }
+
+    @PostMapping("/clear-allu-links")
+    fun clearAlluLinks() {
+        featureFlags.ensureEnabled(Feature.UNSTABLE_ALLU)
+
+        service.clearAlluLinks()
     }
 
     fun checkHakemusPermission(hakemusId: Long, permissionCode: PermissionCode) {

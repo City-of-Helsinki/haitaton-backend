@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -29,13 +30,15 @@ class ApplicationControllerTest {
     private val hankeService: HankeService = mockk()
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
     private val permissionService: PermissionService = mockk()
+    private val featureFlags: FeatureFlags = mockk()
 
     private val applicationController =
         ApplicationController(
             applicationService,
             hankeService,
             disclosureLogService,
-            permissionService
+            permissionService,
+            featureFlags,
         )
 
     @BeforeEach

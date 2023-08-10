@@ -287,6 +287,16 @@ open class ApplicationService(
             else -> false
         }
 
+    @Transactional
+    open fun clearAlluLinks() {
+        applicationRepository.findAll().forEach {
+            it.alluid = null
+            it.alluStatus = null
+            it.applicationIdentifier = null
+            it.applicationData = it.applicationData.copy(pendingOnClient = true)
+        }
+    }
+
     private fun isStillPendingInAllu(alluid: Int?): Boolean {
         // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)
         alluid ?: return true
