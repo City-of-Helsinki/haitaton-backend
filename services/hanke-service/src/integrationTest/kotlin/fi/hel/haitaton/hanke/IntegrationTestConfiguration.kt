@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.security.AccessRules
+import fi.hel.haitaton.hanke.testdata.TestDataService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
@@ -48,6 +49,8 @@ class IntegrationTestConfiguration {
     @Bean fun applicationService(): ApplicationService = mockk()
 
     @Bean fun gdprService(): GdprService = mockk(relaxUnitFun = true)
+
+    @Bean fun testDataService(): TestDataService = mockk(relaxUnitFun = true)
 
     @Bean fun permissionService(): PermissionService = mockk()
 
