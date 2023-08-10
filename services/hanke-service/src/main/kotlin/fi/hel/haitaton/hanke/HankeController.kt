@@ -205,7 +205,13 @@ class HankeController(
     @Operation(
         summary = "Update hanke",
         description =
-            "Update an existing hanke. An updated hanke must comply with the restrictions defined in HankeValidator."
+            """
+               Update an existing hanke. Data must comply with the restrictions defined in Hanke schema definition. 
+               
+               On update following will happen automatically:
+               1. Status is updated. PUBLIC if required fields are filled. Else DRAFT.
+               2. Tormaystarkastelu (project nuisance) is re-calculated.
+            """
     )
     @ApiResponses(
         value =
@@ -251,7 +257,11 @@ class HankeController(
 
     @DeleteMapping("/{hankeTunnus}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Delete hanke", description = "Delete an existing hanke.")
+    @Operation(
+        summary = "Delete hanke",
+        description =
+            "Delete an existing hanke. Deletion is not possible if Hanke contains active applications."
+    )
     @ApiResponses(
         value =
             [
@@ -259,6 +269,11 @@ class HankeController(
                 ApiResponse(
                     description = "Hanke by requested hankeTunnus not found",
                     responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+                ApiResponse(
+                    description = "Hanke has active application(s) in Allu, will not delete.",
+                    responseCode = "409",
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 )
             ]
