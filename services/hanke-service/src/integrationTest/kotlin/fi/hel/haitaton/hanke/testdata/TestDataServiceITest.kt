@@ -37,7 +37,7 @@ class TestDataServiceITest : DatabaseTest() {
     @Nested
     inner class UnlinkApplicationsFromAllu {
         @Test
-        fun `Without applications does nothing`() {
+        fun `Doesn't throw an exception without applications`() {
             testDataService.unlinkApplicationsFromAllu()
         }
 
