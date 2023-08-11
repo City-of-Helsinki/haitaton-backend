@@ -6,8 +6,8 @@ import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.validation.validateForErrors
 import fi.hel.haitaton.hanke.application.validation.validateForMissing
 import fi.hel.haitaton.hanke.validation.Validators.validate
-import javax.validation.ConstraintValidator
-import javax.validation.ConstraintValidatorContext
+import jakarta.validation.ConstraintValidator
+import jakarta.validation.ConstraintValidatorContext
 
 class ApplicationValidator : ConstraintValidator<ValidApplication, BaseApplication> {
     override fun isValid(

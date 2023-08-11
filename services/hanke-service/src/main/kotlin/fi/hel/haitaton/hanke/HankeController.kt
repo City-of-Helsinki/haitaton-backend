@@ -11,7 +11,7 @@ import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.validation.ValidHanke
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
-import javax.validation.ConstraintViolationException
+import jakarta.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus

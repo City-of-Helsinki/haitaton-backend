@@ -6,10 +6,10 @@ import com.fasterxml.jackson.module.kotlin.readValue
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
+import jakarta.mail.internet.MimeMessage
 import java.nio.charset.StandardCharsets
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
-import javax.mail.internet.MimeMessage
 import org.junit.jupiter.api.Assertions
 import org.springframework.test.web.servlet.ResultActions
 
