@@ -12,11 +12,10 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaj
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedToteuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.gdpr.StringNode
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
-import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -24,7 +23,6 @@ import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.mockk
 import io.mockk.verify
-import java.util.UUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -177,7 +175,7 @@ internal class DisclosureLogServiceTest {
 
     @Test
     fun `saveDisclosureLogsForHankeKayttajat saves audit logs`() {
-        val hankeKayttajat = createMockHankeKayttajat(amount = 2)
+        val hankeKayttajat = HankeKayttajaFactory.generateHankeKayttajat(amount = 2)
         val expectedLogs = AuditLogEntryFactory.createReadEntryForHankeKayttajat(hankeKayttajat)
 
         disclosureLogService.saveDisclosureLogsForHankeKayttajat(hankeKayttajat, userId)
@@ -368,17 +366,6 @@ internal class DisclosureLogServiceTest {
 
         verify { auditLogService wasNot Called }
     }
-
-    private fun createMockHankeKayttajat(amount: Int): List<HankeKayttajaDto> =
-        (1..amount).map {
-            HankeKayttajaDto(
-                id = UUID.randomUUID(),
-                sahkoposti = "test.$it@email.com",
-                nimi = "test person $it",
-                rooli = Role.KATSELUOIKEUS,
-                tunnistautunut = false
-            )
-        }
 
     private fun containsAll(
         expectedLogs: List<AuditLogEntry>,

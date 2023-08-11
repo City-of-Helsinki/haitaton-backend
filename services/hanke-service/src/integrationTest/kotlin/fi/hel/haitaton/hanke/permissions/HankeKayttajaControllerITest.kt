@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
@@ -21,7 +22,6 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
 import io.mockk.verifyOrder
-import java.util.UUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -63,7 +63,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     @Test
     fun `getHankeKayttajat when valid request returns users of given hanke and logs audit`() {
         val hanke = HankeFactory.create()
-        val testData = generateContacts()
+        val testData = HankeKayttajaFactory.generateHankeKayttajat()
         every { hankeService.findHankeOrThrow(HANKE_TUNNUS) } returns hanke
         justRun { permissionService.verifyHankeUserAuthorization(USERNAME, hanke, VIEW) }
         every { hankeKayttajaService.getKayttajatByHankeId(hanke.id!!) } returns testData
@@ -108,17 +108,6 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     fun `getHankeKayttajat when unauthorized token returns 401 `() {
         getHankeKayttajat().andExpect(status().isUnauthorized)
     }
-
-    private fun generateContacts(amount: Int = 3): List<HankeKayttajaDto> =
-        (1..amount).map {
-            HankeKayttajaDto(
-                id = UUID.randomUUID(),
-                sahkoposti = "email.$it.address.com",
-                nimi = "test name$it",
-                rooli = Role.KATSELUOIKEUS,
-                tunnistautunut = it % 2 == 0
-            )
-        }
 
     private fun getHankeKayttajat(): ResultActions = get("/hankkeet/$HANKE_TUNNUS/kayttajat")
 }
