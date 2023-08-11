@@ -14,7 +14,7 @@ import io.mockk.Called
 import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.verify
-import javax.validation.ConstraintViolationException
+import jakarta.validation.ConstraintViolationException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.AfterEach

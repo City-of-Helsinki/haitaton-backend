@@ -1,8 +1,8 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.Perustaja
-import javax.persistence.Column
-import javax.persistence.Embeddable
+import jakarta.persistence.Column
+import jakarta.persistence.Embeddable
 
 @Embeddable
 data class PerustajaEntity(

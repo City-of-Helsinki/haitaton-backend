@@ -1,14 +1,15 @@
 package fi.hel.haitaton.hanke.attachment.common
 
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.Id
+import jakarta.persistence.Lob
+import jakarta.persistence.MappedSuperclass
+import jakarta.persistence.Table
+import jakarta.validation.constraints.NotNull
+import java.sql.Types
 import java.util.UUID
-import javax.persistence.Column
-import javax.persistence.Entity
-import javax.persistence.Id
-import javax.persistence.Lob
-import javax.persistence.MappedSuperclass
-import javax.persistence.Table
-import javax.validation.constraints.NotNull
-import org.hibernate.annotations.Type
+import org.hibernate.annotations.JdbcTypeCode
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
@@ -17,7 +18,7 @@ abstract class AttachmentContentEntity(
     @Id @Column(name = "attachment_id") var attachmentId: UUID,
 
     /** Attachment data, i.e. the file itself. */
-    @Lob @Type(type = "org.hibernate.type.BinaryType") @NotNull var content: ByteArray,
+    @Lob @JdbcTypeCode(Types.BINARY) @NotNull var content: ByteArray,
 )
 
 @Entity
