@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
+import org.springframework.security.config.web.servlet.invoke
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal
 import org.springframework.security.oauth2.core.OAuth2TokenValidator
@@ -21,6 +22,7 @@ import org.springframework.security.oauth2.jwt.JwtValidators
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler
 import org.springframework.web.reactive.function.client.WebClient
 
 @Configuration
@@ -35,6 +37,22 @@ class OAuth2ResourceServerSecurityConfiguration(
 
     @Bean
     fun filterChain(http: HttpSecurity): SecurityFilterChain {
+        // TODO: Temporary config while preparing for Spring Boot 3.0
+        // Can be removed after the upgrade is done.
+        // These will be the new defaults in Spring Security 6.
+        // From Spring Security 5.8 migration guide:
+        // https://docs.spring.io/spring-security/reference/5.8/migration/index.html
+
+        val requestHandler = CsrfTokenRequestAttributeHandler()
+        // set the name of the attribute the CsrfToken will be populated on
+        requestHandler.setCsrfRequestAttributeName("_csrf")
+        http {
+            csrf { csrfTokenRequestHandler = requestHandler }
+            securityContext { requireExplicitSave = true }
+        }
+
+        // End of temporary
+
         AccessRules.configureHttpAccessRules(http)
         http.oauth2ResourceServer { resourceServer ->
             resourceServer.opaqueToken { opaqueToken -> opaqueToken.introspector(introspector()) }
@@ -53,7 +71,7 @@ class OAuth2ResourceServerSecurityConfiguration(
     @ConditionalOnProperty(name = ["haitaton.gdpr.disabled"], havingValue = "false")
     fun gdprFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .antMatcher("/gdpr-api/**")
+            .securityMatcher("/gdpr-api/**")
             .authorizeHttpRequests { authorize -> authorize.anyRequest().authenticated() }
             .oauth2ResourceServer { resourceServer -> resourceServer.jwt() }
         return http.build()
@@ -70,7 +88,7 @@ class OAuth2ResourceServerSecurityConfiguration(
     @Order(1)
     @ConditionalOnProperty(name = ["haitaton.gdpr.disabled"], matchIfMissing = true)
     fun gdprDisabledFilterChain(http: HttpSecurity): SecurityFilterChain {
-        http.antMatcher("/gdpr-api/**").authorizeHttpRequests { authorize ->
+        http.securityMatcher("/gdpr-api/**").authorizeHttpRequests { authorize ->
             authorize.anyRequest().denyAll()
         }
         return http.build()
