@@ -1,11 +1,10 @@
 package fi.hel.haitaton.hanke.validation
 
+import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.hasClass
 import assertk.assertions.isEmpty
-import assertk.assertions.isFailure
 import assertk.assertions.isFalse
-import assertk.assertions.isSuccess
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
@@ -36,7 +35,7 @@ class ApplicationValidatorTest {
     fun `Correct application passes validation`() {
         val application = AlluDataFactory.createApplication()
 
-        assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+        assertThat(applicationValidator.isValid(application, null)).isTrue()
     }
 
     @Nested
@@ -72,7 +71,7 @@ class ApplicationValidatorTest {
                         customerWithContacts = customerWithOneOrderer,
                     )
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
 
         @Test
@@ -84,7 +83,7 @@ class ApplicationValidatorTest {
                         contractorWithContacts = customerWithNoOrderers,
                     )
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
 
         @Test
@@ -95,8 +94,7 @@ class ApplicationValidatorTest {
                         customerWithContacts = customerWithTwoOrderers,
                     )
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
 
@@ -109,8 +107,7 @@ class ApplicationValidatorTest {
                         contractorWithContacts = customerWithOneOrderer,
                     )
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
 
@@ -126,7 +123,7 @@ class ApplicationValidatorTest {
                 application.applicationData.customersWithContacts().flatMap { it.contacts }
             assertThat(contacts).isEmpty()
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
     }
 
@@ -167,8 +164,7 @@ class ApplicationValidatorTest {
             case.touch()
             val application = AlluDataFactory.createApplication(applicationData = applicationData)
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
 
@@ -178,7 +174,7 @@ class ApplicationValidatorTest {
             case.touch()
             val application = AlluDataFactory.createApplication(applicationData = applicationData)
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
 
         @ParameterizedTest(name = "{0} can have text with whitespaces")
@@ -190,7 +186,7 @@ class ApplicationValidatorTest {
             case.touch()
             val application = AlluDataFactory.createApplication(applicationData = applicationData)
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
 
         @Test
@@ -202,8 +198,7 @@ class ApplicationValidatorTest {
                             AlluDataFactory.createCompanyCustomer(name = " ").withContacts()
                     )
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
         @Test
@@ -215,8 +210,7 @@ class ApplicationValidatorTest {
                             AlluDataFactory.createCompanyCustomer(name = " ").withContacts()
                     )
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
 
@@ -229,8 +223,7 @@ class ApplicationValidatorTest {
                             AlluDataFactory.createCompanyCustomer(name = " ").withContacts()
                     )
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
 
@@ -240,7 +233,7 @@ class ApplicationValidatorTest {
                 AlluDataFactory.createApplication()
                     .withApplicationData(representativeWithContacts = null)
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
 
         @Test
@@ -252,8 +245,7 @@ class ApplicationValidatorTest {
                             AlluDataFactory.createCompanyCustomer(name = " ").withContacts()
                     )
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
 
@@ -263,7 +255,7 @@ class ApplicationValidatorTest {
                 AlluDataFactory.createApplication()
                     .withApplicationData(propertyDeveloperWithContacts = null)
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
 
         @Test
@@ -278,8 +270,7 @@ class ApplicationValidatorTest {
                             )
                 )
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
 
@@ -292,7 +283,7 @@ class ApplicationValidatorTest {
                             .copy(invoicingCustomer = null)
                 )
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
     }
 
@@ -313,7 +304,7 @@ class ApplicationValidatorTest {
                         endTime = endTime,
                     )
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
 
         @Test
@@ -325,7 +316,7 @@ class ApplicationValidatorTest {
                         endTime = date.plusDays(1),
                     )
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
 
         @Test
@@ -337,8 +328,7 @@ class ApplicationValidatorTest {
                         endTime = date,
                     )
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
     }
@@ -371,8 +361,7 @@ class ApplicationValidatorTest {
             val application =
                 AlluDataFactory.createApplication().withCustomer(customer.withContacts())
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
 
@@ -383,7 +372,7 @@ class ApplicationValidatorTest {
             val application =
                 AlluDataFactory.createApplication().withCustomer(customer.withContacts())
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
 
         @ParameterizedTest(name = "{0} can have text with whitespaces")
@@ -393,7 +382,7 @@ class ApplicationValidatorTest {
             val application =
                 AlluDataFactory.createApplication().withCustomer(customer.withContacts())
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
 
         @Test
@@ -402,8 +391,7 @@ class ApplicationValidatorTest {
                 AlluDataFactory.createApplication()
                     .withCustomer(baseCustomer.copy(country = "Some country").withContacts())
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
 
@@ -413,7 +401,7 @@ class ApplicationValidatorTest {
                 AlluDataFactory.createApplication()
                     .withCustomer(baseCustomer.copy(country = "FI").withContacts())
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
 
         @Test
@@ -422,8 +410,7 @@ class ApplicationValidatorTest {
                 AlluDataFactory.createApplication()
                     .withCustomer(baseCustomer.copy(country = "fi").withContacts())
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
 
@@ -433,8 +420,7 @@ class ApplicationValidatorTest {
                 AlluDataFactory.createApplication()
                     .withCustomer(baseCustomer.copy(country = "FIN").withContacts())
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
 
@@ -449,7 +435,7 @@ class ApplicationValidatorTest {
                             .withContacts()
                     )
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
 
         @Test
@@ -463,8 +449,7 @@ class ApplicationValidatorTest {
                             .withContacts()
                     )
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
     }
@@ -494,8 +479,7 @@ class ApplicationValidatorTest {
             case.touch()
             val application = AlluDataFactory.createApplication().withCustomerContacts(contact)
 
-            assertThat { applicationValidator.isValid(application, null) }
-                .isFailure()
+            assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
 
@@ -505,7 +489,7 @@ class ApplicationValidatorTest {
             case.touch()
             val application = AlluDataFactory.createApplication().withCustomerContacts(contact)
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
 
         @ParameterizedTest(name = "{0} can have text with whitespaces")
@@ -514,7 +498,7 @@ class ApplicationValidatorTest {
             case.touch()
             val application = AlluDataFactory.createApplication().withCustomerContacts(contact)
 
-            assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+            assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
     }
 }
