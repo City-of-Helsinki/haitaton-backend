@@ -53,22 +53,22 @@ class HankeKayttajaController(
 
         val userId = currentUserId()
 
-        val hanke =
-            hankeService.findHankeOrThrow(hankeTunnus).also {
-                permissionService.verifyHankeUserAuthorization(
-                    userId = userId,
-                    hanke = it,
-                    permissionCode = PermissionCode.VIEW
-                )
-            }
+        val hanke = hankeService.findHankeOrThrow(hankeTunnus)
+
+        permissionService.verifyHankeUserAuthorization(
+            userId = userId,
+            hanke = hanke,
+            permissionCode = PermissionCode.VIEW
+        )
 
         val users = hankeKayttajaService.getKayttajatByHankeId(hanke.id!!)
 
-        return HankeKayttajaResponse(users).also {
-            disclosureLogService.saveDisclosureLogsForHankeKayttajat(users, userId)
-            logger.info {
-                "Found ${it.kayttajat.size} kayttajat for hanke(id=${hanke.id}, hankeTunnus=$hankeTunnus)"
-            }
+        disclosureLogService.saveDisclosureLogsForHankeKayttajat(users, userId)
+
+        logger.info {
+            "Found ${users.size} kayttajat for hanke(id=${hanke.id}, hankeTunnus=$hankeTunnus)"
         }
+
+        return HankeKayttajaResponse(users)
     }
 }
