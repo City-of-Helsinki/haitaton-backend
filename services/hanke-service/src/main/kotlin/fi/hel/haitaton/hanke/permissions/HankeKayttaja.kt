@@ -21,7 +21,7 @@ data class HankeKayttajaDto(
     @field:Schema(description = "Id, set by the service") val id: UUID,
     @field:Schema(description = "Email address") val sahkoposti: String,
     @field:Schema(description = "Full name") val nimi: String,
-    @field:Schema(description = "Role in Hanke, null for Hanke creator") val rooli: Role?,
+    @field:Schema(description = "Role in Hanke") val rooli: Role?,
     @field:Schema(description = "Has user logged in to view Hanke") val tunnistautunut: Boolean,
 )
 
