@@ -87,6 +87,7 @@ services:
       MAIL_SENDER_PORT: 25
       HAITATON_EMAIL_FILTER_USE: false
       CLAMAV_BASE_URL: http://clamav-api:3030
+      HAITATON_TESTDATA_ENABLED: true
     depends_on:
       - db
       - clamav-api
