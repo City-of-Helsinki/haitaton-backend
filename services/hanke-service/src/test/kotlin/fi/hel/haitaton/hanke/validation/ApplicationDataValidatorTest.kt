@@ -17,7 +17,6 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.touch
 import fi.hel.haitaton.hanke.validation.ApplicationDataValidator.ensureValidForSend
 import java.util.stream.Stream
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments

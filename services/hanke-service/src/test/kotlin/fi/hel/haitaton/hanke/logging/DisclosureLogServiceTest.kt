@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaj
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedToteuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.gdpr.StringNode
@@ -168,6 +169,16 @@ internal class DisclosureLogServiceTest {
         val expectedLogs = AuditLogEntryFactory.createReadEntriesForHanke(hankkeet[0])
 
         disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, userId)
+
+        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
+    }
+
+    @Test
+    fun `saveDisclosureLogsForHankeKayttajat saves audit logs`() {
+        val hankeKayttajat = HankeKayttajaFactory.generateHankeKayttajat(amount = 2)
+        val expectedLogs = AuditLogEntryFactory.createReadEntryForHankeKayttajat(hankeKayttajat)
+
+        disclosureLogService.saveDisclosureLogsForHankeKayttajat(hankeKayttajat, userId)
 
         verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
     }

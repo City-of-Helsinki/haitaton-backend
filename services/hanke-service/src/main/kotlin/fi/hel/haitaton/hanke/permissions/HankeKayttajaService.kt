@@ -15,6 +15,10 @@ class HankeKayttajaService(
     private val kayttajaTunnisteRepository: KayttajaTunnisteRepository,
 ) {
 
+    @Transactional(readOnly = true)
+    fun getKayttajatByHankeId(hankeId: Int): List<HankeKayttajaDto> =
+        hankeKayttajaRepository.findByHankeId(hankeId).map { it.toDto() }
+
     @Transactional
     fun saveNewTokensFromApplication(application: ApplicationEntity, hankeId: Int) {
         logger.info {
