@@ -1,0 +1,24 @@
+# Uses different base images for build and run. RedHat Ubi stronger security policies prevent gradle builds.
+
+# Stage 1: Build application
+FROM eclipse-temurin:17 as build
+
+# Set the working directory, copy gradle and source code
+WORKDIR /app
+COPY gradlew settings.gradle.kts ./
+COPY gradle/ ./gradle/
+COPY services/hanke-service/build.gradle.kts ./services/hanke-service/
+COPY services/hanke-service/src ./services/hanke-service/src
+COPY scripts/wait-for-it.sh .
+
+# Build
+RUN ./gradlew clean :services:hanke-service:assemble --stacktrace
+
+# Stage 2: Create runtime image
+FROM registry.redhat.io/ubi8/openjdk-17:latest
+VOLUME /tmp
+WORKDIR /app
+COPY --from=build /app/services/hanke-service/build/libs/hanke-service*SNAPSHOT.jar hanke-service.jar
+COPY --from=build /app/wait-for-it.sh .
+EXPOSE 8080 8081
+CMD [ "sh", "-c", "java $JAVA_OPTS -Djava.security.egd=file:/dev/urandom -jar hanke-service.jar" ]
