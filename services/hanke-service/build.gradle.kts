@@ -4,7 +4,6 @@ import org.springframework.boot.gradle.tasks.run.BootRun
 
 group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
-val springDocVersion = "1.7.0"
 val sentryVersion = "6.23.0"
 
 ext["spring-security.version"]="6.0.4"
