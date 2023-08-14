@@ -98,8 +98,8 @@ open class HankeServiceImpl(
         }
 
     @Transactional(readOnly = true)
-    override fun loadAllHanke() =
-        hankeRepository.findAll().map { createHankeDomainObjectFromEntity(it) }
+    override fun findHankeOrThrow(hankeTunnus: String) =
+        loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
 
     @Transactional(readOnly = true)
     override fun loadPublicHanke() =
@@ -110,12 +110,6 @@ open class HankeServiceImpl(
     @Transactional(readOnly = true)
     override fun loadHankkeetByIds(ids: List<Int>) =
         hankeRepository.findAllById(ids).map { createHankeDomainObjectFromEntity(it) }
-
-    @Transactional(readOnly = true)
-    override fun loadHankkeetByUserId(userId: String) =
-        hankeRepository.findAllByCreatedByUserIdOrModifiedByUserId(userId, userId).map {
-            createHankeDomainObjectFromEntity(it)
-        }
 
     /** @return a new Hanke instance with the added and possibly modified values. */
     @Transactional

@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 041-add-indices-to-hanke-kayttaja
+      author: Niko Pitkonen
+      comment: Indices for columns to improve search performance
+      changes:
+        - createIndex:
+            tableName: hanke_kayttaja
+            indexName: hanke_kayttaja_hanke_id_sahkoposti_idx
+            unique: true
+            columns:
+              - column:
+                  name: hanke_id
+              - column:
+                  name: sahkoposti
