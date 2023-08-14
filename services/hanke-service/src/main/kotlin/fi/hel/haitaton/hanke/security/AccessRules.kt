@@ -26,6 +26,11 @@ object AccessRules {
                 "/v3/api-docs/**",
             )
             .permitAll()
+            .requestMatchers(HttpMethod.POST, "/testdata/unlink-applications")
+            .permitAll()
+            .and()
+            .csrf()
+            .ignoringRequestMatchers("/testdata/unlink-applications")
             .and()
             .authorizeHttpRequests()
             .anyRequest()
