@@ -4,7 +4,6 @@ import org.springframework.boot.gradle.tasks.run.BootRun
 
 group = "fi.hel.haitaton"
 version = "0.0.1-SNAPSHOT"
-val springDocVersion = "1.7.0"
 val sentryVersion = "6.23.0"
 
 ext["spring-security.version"]="6.0.4"
@@ -88,8 +87,7 @@ dependencies {
 	implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
 
 	implementation("org.postgresql:postgresql")
-	implementation("org.springdoc:springdoc-openapi-kotlin:$springDocVersion")
-	implementation("org.springdoc:springdoc-openapi-ui:$springDocVersion")
+	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
 
 	testImplementation("org.springframework.boot:spring-boot-starter-test") {
 		exclude(group = "org.junit.vintage", module = "junit-vintage-engine")

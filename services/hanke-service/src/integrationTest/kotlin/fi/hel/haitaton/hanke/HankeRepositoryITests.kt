@@ -143,7 +143,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHanke!!.listOfHankeYhteystieto).isNotNull
         assertThat(loadedHanke.listOfHankeYhteystieto).hasSize(2)
         val loadedHankeYhteystietoEntity1 = loadedHanke.listOfHankeYhteystieto[0]
-        val loadedHankeYhteystietoEntity2 = loadedHanke.listOfHankeYhteystieto[1]
 
         loadedHanke.removeYhteystieto(loadedHankeYhteystietoEntity1)
 
