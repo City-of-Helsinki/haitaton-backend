@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import jakarta.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
@@ -39,6 +40,7 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/hankkeet")
 @Validated
+@SecurityRequirement(name = "bearerAuth")
 class HankeController(
     @Autowired private val hankeService: HankeService,
     @Autowired private val permissionService: PermissionService,
@@ -151,13 +153,14 @@ class HankeController(
         summary = "Create new hanke",
         description =
             """
-              A valid new hanke must comply with the restrictions in Hanke schema definition.
-              When Hanke is created:
-              1. A unique Hanke tunnus is created.
-              2. The status of the created hanke is set automatically:
-                  - PUBLIC (i.e. visible to everyone) if all mandatory fields are filled. 
-                  - DRAFT if all mandatory fields are not filled.
-        """
+A valid new hanke must comply with the restrictions in Hanke schema definition.
+
+When Hanke is created:
+1. A unique Hanke tunnus is created.
+2. The status of the created hanke is set automatically:
+    - PUBLIC (i.e. visible to everyone) if all mandatory fields are filled.
+    - DRAFT if all mandatory fields are not filled.
+"""
     )
     @ApiResponses(
         value =
@@ -200,12 +203,12 @@ class HankeController(
         summary = "Update hanke",
         description =
             """
-               Update an existing hanke. Data must comply with the restrictions defined in Hanke schema definition. 
-               
-               On update following will happen automatically:
-               1. Status is updated. PUBLIC if required fields are filled. Else DRAFT.
-               2. Tormaystarkastelu (project nuisance) is re-calculated.
-            """
+Update an existing hanke. Data must comply with the restrictions defined in Hanke schema definition.
+
+On update following will happen automatically:
+1. Status is updated. PUBLIC if required fields are filled. Else DRAFT.
+2. Tormaystarkastelu (project nuisance) is re-calculated.
+"""
     )
     @ApiResponses(
         value =

@@ -9,6 +9,8 @@ data class FeatureFlags(val features: Map<Feature, Boolean>) {
     /** Disabled by default, if not in application.properties. */
     private fun isEnabled(feature: Feature): Boolean = features.getOrDefault(feature, false)
 
+    fun isDisabled(feature: Feature) = !isEnabled(feature)
+
     /**
      * Throws an exception if the feature is not enabled.
      *
@@ -23,4 +25,5 @@ data class FeatureFlags(val features: Map<Feature, Boolean>) {
 
 enum class Feature {
     HANKE_EDITING,
+    USER_MANAGEMENT,
 }

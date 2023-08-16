@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
-private val logger = KotlinLogging.logger {} // ASDF
+private val logger = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/testdata")
