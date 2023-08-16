@@ -19,14 +19,14 @@ class PermissionService(
         return hasPermission(role, permission)
     }
 
-    fun setPermission(hankeId: Int, userId: String, role: Role) {
+    fun setPermission(hankeId: Int, userId: String, role: Role): PermissionEntity {
         val roleEntity = roleRepository.findOneByRole(role)
         val entity =
             permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.apply {
                 this.role = roleEntity
             }
                 ?: PermissionEntity(userId = userId, hankeId = hankeId, role = roleEntity)
-        permissionRepository.save(entity)
+        return permissionRepository.save(entity)
     }
 
     fun verifyHankeUserAuthorization(userId: String, hanke: Hanke, permissionCode: PermissionCode) {

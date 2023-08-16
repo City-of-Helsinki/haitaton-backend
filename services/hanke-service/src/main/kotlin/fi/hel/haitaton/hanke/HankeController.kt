@@ -7,7 +7,6 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.validation.ValidHanke
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
@@ -188,11 +187,6 @@ class HankeController(
 
         val createdHanke = hankeService.createHanke(sanitizedHanke)
 
-        permissionService.setPermission(
-            createdHanke.id!!,
-            currentUserId(),
-            Role.KAIKKI_OIKEUDET,
-        )
         disclosureLogService.saveDisclosureLogsForHanke(createdHanke, userId)
         return createdHanke
     }
@@ -319,7 +313,7 @@ class HankeController(
         if (hankeTunnusFromPath != updatedHanke.hankeTunnus) {
             throw HankeArgumentException("Hanketunnus not given or doesn't match the hanke data")
         }
-        if (perustaja != null && perustaja != updatedHanke.perustaja) {
+        if (perustaja != updatedHanke.perustaja) {
             throw HankeArgumentException("Updating perustaja not allowed.")
         }
     }

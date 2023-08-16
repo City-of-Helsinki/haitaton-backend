@@ -21,30 +21,22 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
 
         var ok = true
         if (hanke.nimi.isNullOrBlank()) {
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("nimi")
-                .addConstraintViolation()
+            context.addViolation("nimi")
             ok = false
         }
 
         if (hanke.vaihe == null) {
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("vaihe")
-                .addConstraintViolation()
+            context.addViolation("vaihe")
             ok = false
         } else if (hanke.vaihe!! == Vaihe.SUUNNITTELU && hanke.suunnitteluVaihe == null) {
             // if vaihe = SUUNNITTELU then suunnitteluVaihe must have value
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("suunnitteluVaihe")
-                .addConstraintViolation()
+            context.addViolation("suunnitteluVaihe")
             ok = false
         }
 
         ok = ok && checkHankealueet(hanke, context)
         ok = ok && checkTyomaaTiedot(hanke, context)
+        ok = ok && checkPerustaja(hanke, context)
 
         return ok
     }
@@ -57,10 +49,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             if (
                 hankealue.haittaAlkuPvm == null || hankealue.haittaAlkuPvm!!.isAfter(MAXIMUM_DATE)
             ) {
-                context
-                    .buildConstraintViolationWithTemplate(HankeError.HAI1032.toString())
-                    .addPropertyNode("haittaAlkuPvm")
-                    .addConstraintViolation()
+                context.addViolation("haittaAlkuPvm")
                 return false
             }
             // Must be from the and earlier than some relevant maximum date,
@@ -70,10 +59,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             if (
                 hankealue.haittaLoppuPvm == null || hankealue.haittaLoppuPvm!!.isAfter(MAXIMUM_DATE)
             ) {
-                context
-                    .buildConstraintViolationWithTemplate(HankeError.HAI1032.toString())
-                    .addPropertyNode("haittaLoppuPvm")
-                    .addConstraintViolation()
+                context.addViolation("haittaLoppuPvm")
                 return false
             }
             if (
@@ -81,10 +67,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
                     hankealue.haittaLoppuPvm != null &&
                     hankealue.haittaLoppuPvm!!.isBefore(hankealue.haittaAlkuPvm)
             ) {
-                context
-                    .buildConstraintViolationWithTemplate(HankeError.HAI1032.toString())
-                    .addPropertyNode("haittaLoppuPvm")
-                    .addConstraintViolation()
+                context.addViolation("haittaLoppuPvm")
                 return false
             }
         }
@@ -98,13 +81,34 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             hanke.tyomaaKatuosoite != null &&
                 hanke.tyomaaKatuosoite!!.length > MAXIMUM_TYOMAAKATUOSOITE_LENGTH
         ) {
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("tyomaaKatuosoite")
-                .addConstraintViolation()
+            context.addViolation("tyomaaKatuosoite")
             ok = false
         }
 
         return ok
+    }
+
+    private fun checkPerustaja(hanke: Hanke, context: ConstraintValidatorContext): Boolean {
+        var ok = true
+
+        with(hanke.perustaja) {
+            if (nimi.isBlank()) {
+                context.addViolation("perustaja.nimi")
+                ok = false
+            }
+
+            if (email.isBlank()) {
+                context.addViolation("perustaja.email")
+                ok = false
+            }
+        }
+
+        return ok
+    }
+
+    private fun ConstraintValidatorContext.addViolation(propertyNode: String) {
+        buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
+            .addPropertyNode(propertyNode)
+            .addConstraintViolation()
     }
 }

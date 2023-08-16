@@ -121,13 +121,10 @@ class ApplicationServiceITest : DatabaseTest() {
         confirmVerified(cableReportServiceAllu)
     }
 
-    fun createHanke(): Hanke {
-        return hankeService.createHanke(HankeFactory.create())
-    }
+    fun createHanke(hanke: Hanke = HankeFactory.create()): Hanke = hankeService.createHanke(hanke)
 
-    fun createHankeEntity(): HankeEntity {
-        return hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
-    }
+    fun createHankeEntity(id: Int? = null, hankeTunnus: String? = "HAI-1234"): HankeEntity =
+        hankeRepository.save(HankeFactory.createNewEntity(id = null, hankeTunnus = hankeTunnus))
 
     @Test
     fun `create creates an audit log entry for created application`() {
@@ -343,8 +340,8 @@ class ApplicationServiceITest : DatabaseTest() {
     fun `getAllApplicationsForUser returns applications for the correct user`() {
         assertThat(applicationRepository.findAll()).isEmpty()
         val otherUser = "otherUser"
-        val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
-        val hanke2 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1235"))
+        val hanke = createHankeEntity(hankeTunnus = "HAI-1234")
+        val hanke2 = createHankeEntity(hankeTunnus = "HAI-1235")
         permissionService.setPermission(hanke.id!!, USERNAME, Role.HAKEMUSASIOINTI)
         permissionService.setPermission(hanke2.id!!, "otherUser", Role.HAKEMUSASIOINTI)
 
@@ -373,9 +370,9 @@ class ApplicationServiceITest : DatabaseTest() {
     @Test
     fun `getAllApplicationsForUser returns applications for user hankkeet`() {
         assertThat(applicationRepository.findAll()).isEmpty()
-        val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
-        val hanke2 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1235"))
-        val hanke3 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1236"))
+        val hanke = createHankeEntity(hankeTunnus = "HAI-1234")
+        val hanke2 = createHankeEntity(hankeTunnus = "HAI-1235")
+        val hanke3 = createHankeEntity(hankeTunnus = "HAI-1236")
         permissionService.setPermission(hanke.id!!, USERNAME, Role.HAKEMUSASIOINTI)
         permissionService.setPermission(hanke2.id!!, USERNAME, Role.HAKEMUSASIOINTI)
         val application1 = alluDataFactory.saveApplicationEntity(username = USERNAME, hanke = hanke)
@@ -400,7 +397,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @Test
     fun `getApplicationById returns correct application`() {
-        val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
+        val hanke = createHankeEntity(hankeTunnus = "HAI-1234")
         val applications = alluDataFactory.saveApplicationEntities(3, USERNAME, hanke = hanke)
         val selectedId = applications[1].id!!
         assertThat(applicationRepository.findAll()).hasSize(3)
@@ -510,7 +507,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @Test
     fun `create throws exception when application area is outside hankealue`() {
-        val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
+        val hanke = createHanke(HankeFactory.create().withHankealue())
         val cableReportApplicationData =
             AlluDataFactory.createCableReportApplicationData(areas = listOf(havisAmanda))
         val newApplication =
@@ -881,7 +878,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @Test
     fun `updateApplicationData throws exception when application area is outside hankealue`() {
-        val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
+        val hanke = createHanke(HankeFactory.create().withHankealue())
         val hankeEntity = hankeRepository.getReferenceById(hanke.id!!)
         val application =
             alluDataFactory.saveApplicationEntity(USERNAME, hanke = hankeEntity) { it.alluid = 21 }
@@ -1142,7 +1139,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws an exception when application area is outside hankealue`() {
-            val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
+            val hanke = createHanke(HankeFactory.create().withHankealue())
             val hankeEntity = hankeRepository.getReferenceById(hanke.id!!)
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hankeEntity) {

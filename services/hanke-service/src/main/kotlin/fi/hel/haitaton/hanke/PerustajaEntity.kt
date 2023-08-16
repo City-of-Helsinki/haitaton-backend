@@ -6,7 +6,7 @@ import jakarta.persistence.Embeddable
 
 @Embeddable
 data class PerustajaEntity(
-    @Column(name = "perustajanimi") var nimi: String?,
+    @Column(name = "perustajanimi") var nimi: String,
     @Column(name = "perustajaemail") var email: String
 )
 

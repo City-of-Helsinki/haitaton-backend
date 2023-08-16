@@ -80,7 +80,7 @@ data class Hanke(
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Hanke founder contact information")
-    var perustaja: Perustaja? = null,
+    var perustaja: Perustaja,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Indicates whether the Hanke data is generated, set by the service")

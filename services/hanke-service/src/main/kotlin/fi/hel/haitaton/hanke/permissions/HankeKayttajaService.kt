@@ -48,11 +48,16 @@ class HankeKayttajaService(
         filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
     }
 
-    private fun createToken(hankeId: Int, contact: UserContact) {
+    @Transactional
+    fun createToken(
+        hankeId: Int,
+        contact: UserContact,
+        permission: PermissionEntity? = null,
+    ) {
         logger.info { "Creating a new user token, hankeId=$hankeId" }
-        val token = KayttajaTunnisteEntity.create()
-        val kayttajaTunnisteEntity = kayttajaTunnisteRepository.save(token)
-        logger.info { "Saved the new user token, id=${kayttajaTunnisteEntity.id}" }
+        val token: KayttajaTunnisteEntity = tunnisteFrom(permission)
+        val savedTunniste: KayttajaTunnisteEntity = kayttajaTunnisteRepository.save(token)
+        logger.info { "Saved the new user token, id=${savedTunniste.id}" }
 
         val user =
             hankeKayttajaRepository.save(
@@ -60,11 +65,24 @@ class HankeKayttajaService(
                     hankeId = hankeId,
                     nimi = contact.name,
                     sahkoposti = contact.email,
-                    permission = null,
-                    kayttajaTunniste = kayttajaTunnisteEntity
+                    permission = permission,
+                    kayttajaTunniste = savedTunniste
                 )
             )
         logger.info { "Saved the user information, id=${user.id}" }
+    }
+
+    /**
+     * Creates [KayttajaTunnisteEntity] based on permission. Use cases:
+     * - Perustaja has an existing permission, and it is used, role is KAIKKI_OIKEUDET
+     * - Regular kayttaja does not yet have a permission, role is defaulted to KATSELUOIKEUS
+     */
+    private fun tunnisteFrom(permission: PermissionEntity?): KayttajaTunnisteEntity {
+        return if (permission != null) {
+            KayttajaTunnisteEntity.create(role = permission.role.role)
+        } else {
+            KayttajaTunnisteEntity.create()
+        }
     }
 
     private fun userContactOrNull(name: String?, email: String?): UserContact? {

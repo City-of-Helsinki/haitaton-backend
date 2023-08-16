@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.HankeStatus
+import fi.hel.haitaton.hanke.PerustajaEntity
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
@@ -39,6 +40,8 @@ class HankeFactory(
             )
         )
 
+    fun save(hanke: Hanke) = hankeService.createHanke(hanke)
+
     /**
      * Save a new hanke using HankeService. Then get it as an entity.
      *
@@ -54,7 +57,7 @@ class HankeFactory(
         return hankeRepository.getReferenceById(hanke.id!!)
     }
 
-    fun save(hanke: Hanke) = hankeService.createHanke(hanke)
+    fun saveEntity(entity: HankeEntity) = hankeRepository.save(entity)
 
     companion object {
 
@@ -62,6 +65,7 @@ class HankeFactory(
         const val defaultNimi = "Hämeentien perusparannus ja katuvalot"
         const val defaultId = 123
         const val defaultUser = "Risto"
+        val defaultPerustaja = Perustaja("Pertti Perustaja", "foo@bar.com")
 
         /**
          * Create a simple Hanke with test values. The default values can be overridden with named
@@ -82,22 +86,31 @@ class HankeFactory(
             createdBy: String? = defaultUser,
             createdAt: ZonedDateTime? = DateFactory.getStartDatetime(),
             hankeStatus: HankeStatus = HankeStatus.DRAFT,
+            perustaja: Perustaja = defaultPerustaja,
         ): Hanke =
             Hanke(
-                id,
-                hankeTunnus,
-                true,
-                nimi,
-                "lorem ipsum dolor sit amet...",
-                vaihe,
-                suunnitteluVaihe,
-                version,
-                createdBy,
-                createdAt,
-                null,
-                null,
-                hankeStatus,
+                id = id,
+                hankeTunnus = hankeTunnus,
+                onYKTHanke = true,
+                nimi = nimi,
+                kuvaus = "lorem ipsum dolor sit amet...",
+                vaihe = vaihe,
+                suunnitteluVaihe = suunnitteluVaihe,
+                version = version,
+                createdBy = createdBy,
+                createdAt = createdAt,
+                modifiedBy = null,
+                modifiedAt = null,
+                status = hankeStatus,
+                perustaja = perustaja,
             )
+
+        /** Create minimal Entity with identifier fields and mandatory fields. */
+        fun createNewEntity(
+            id: Int? = defaultId,
+            hankeTunnus: String? = defaultHankeTunnus,
+            perustaja: PerustajaEntity = defaultPerustaja.toEntity()
+        ) = HankeEntity(id = id, hankeTunnus = hankeTunnus, perustaja = perustaja)
 
         /**
          * Add a hankealue with haitat to a test Hanke.
@@ -105,6 +118,7 @@ class HankeFactory(
          * Example:
          * ```
          * HankeFactory.create().withHankealue()
+         *
          * ```
          */
         fun Hanke.withHankealue(
@@ -176,9 +190,9 @@ class HankeFactory(
             return this
         }
 
-        fun Hanke.withPerustaja(
-            newPerustaja: Perustaja? = Perustaja("Pertti Perustaja", "foo@bar.com")
-        ): Hanke = apply { perustaja = newPerustaja }
+        fun Hanke.withPerustaja(newPerustaja: Perustaja = defaultPerustaja): Hanke = apply {
+            perustaja = newPerustaja
+        }
 
         /**
          * Add a number of omistaja to a hanke. Generates the yhteystiedot with

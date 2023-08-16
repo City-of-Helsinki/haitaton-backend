@@ -9,7 +9,6 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.permissions.Role
 import io.mockk.Called
 import io.mockk.clearAllMocks
 import io.mockk.mockk
@@ -29,11 +28,11 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
 
-private const val username = "testuser"
+private const val USERNAME = "testuser"
 
 @ExtendWith(SpringExtension::class)
 @Import(HankeControllerTest.TestConfiguration::class)
-@WithMockUser(username)
+@WithMockUser(USERNAME)
 class HankeControllerTest {
 
     @Configuration
@@ -78,24 +77,25 @@ class HankeControllerTest {
     fun `test that the getHankeByTunnus returns ok`() {
         val hankeId = 1234
 
-        Mockito.`when`(permissionService.hasPermission(hankeId, username, PermissionCode.VIEW))
+        Mockito.`when`(permissionService.hasPermission(hankeId, USERNAME, PermissionCode.VIEW))
             .thenReturn(true)
         Mockito.`when`(hankeService.loadHanke(mockedHankeTunnus))
             .thenReturn(
                 Hanke(
-                    hankeId,
-                    mockedHankeTunnus,
-                    true,
-                    "Mannerheimintien remontti remonttinen",
-                    "Lorem ipsum dolor sit amet...",
-                    Vaihe.OHJELMOINTI,
-                    null,
-                    1,
-                    "Risto",
-                    getCurrentTimeUTC(),
-                    null,
-                    null,
-                    HankeStatus.DRAFT
+                    id = hankeId,
+                    hankeTunnus = mockedHankeTunnus,
+                    onYKTHanke = true,
+                    nimi = "Mannerheimintien remontti remonttinen",
+                    kuvaus = "Lorem ipsum dolor sit amet...",
+                    vaihe = Vaihe.OHJELMOINTI,
+                    suunnitteluVaihe = null,
+                    version = 1,
+                    createdBy = "Risto",
+                    createdAt = getCurrentTimeUTC(),
+                    modifiedBy = null,
+                    modifiedAt = null,
+                    status = HankeStatus.DRAFT,
+                    perustaja = HankeFactory.defaultPerustaja,
                 )
             )
 
@@ -103,7 +103,7 @@ class HankeControllerTest {
 
         assertThat(response).isNotNull
         assertThat(response.nimi).isNotEmpty
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(USERNAME)) }
     }
 
     @Test
@@ -111,37 +111,39 @@ class HankeControllerTest {
         val listOfHanke =
             listOf(
                 Hanke(
-                    1234,
-                    mockedHankeTunnus,
-                    true,
-                    "Mannerheimintien remontti remonttinen",
-                    "Lorem ipsum dolor sit amet...",
-                    Vaihe.OHJELMOINTI,
-                    null,
-                    1,
-                    "Risto",
-                    getCurrentTimeUTC(),
-                    null,
-                    null,
-                    HankeStatus.DRAFT
+                    id = 1234,
+                    hankeTunnus = mockedHankeTunnus,
+                    onYKTHanke = true,
+                    nimi = "Mannerheimintien remontti remonttinen",
+                    kuvaus = "Lorem ipsum dolor sit amet...",
+                    vaihe = Vaihe.OHJELMOINTI,
+                    suunnitteluVaihe = null,
+                    version = 1,
+                    createdBy = "Risto",
+                    createdAt = getCurrentTimeUTC(),
+                    modifiedBy = null,
+                    modifiedAt = null,
+                    status = HankeStatus.DRAFT,
+                    perustaja = HankeFactory.defaultPerustaja,
                 ),
                 Hanke(
-                    50,
-                    "HAME50",
-                    true,
-                    "Hämeenlinnanväylän uudistus",
-                    "Lorem ipsum dolor sit amet...",
-                    Vaihe.SUUNNITTELU,
-                    SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
-                    1,
-                    "Paavo",
-                    getCurrentTimeUTC(),
-                    null,
-                    null,
-                    HankeStatus.DRAFT
+                    id = 50,
+                    hankeTunnus = "HAME50",
+                    onYKTHanke = true,
+                    nimi = "Hämeenlinnanväylän uudistus",
+                    kuvaus = "Lorem ipsum dolor sit amet...",
+                    vaihe = Vaihe.SUUNNITTELU,
+                    suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
+                    version = 1,
+                    createdBy = "Paavo",
+                    createdAt = getCurrentTimeUTC(),
+                    modifiedBy = null,
+                    modifiedAt = null,
+                    status = HankeStatus.DRAFT,
+                    perustaja = HankeFactory.defaultPerustaja,
                 )
             )
-        Mockito.`when`(permissionService.getAllowedHankeIds(username, PermissionCode.VIEW))
+        Mockito.`when`(permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW))
             .thenReturn(listOf(1234, 50))
         Mockito.`when`(hankeService.loadHankkeetByIds(listOf(1234, 50))).thenReturn(listOfHanke)
 
@@ -151,7 +153,7 @@ class HankeControllerTest {
         assertThat(hankeList[1].nimi).isEqualTo("Hämeenlinnanväylän uudistus")
         assertThat(hankeList[0].alueidenGeometriat()).isEmpty()
         assertThat(hankeList[1].alueidenGeometriat()).isEmpty()
-        verify { disclosureLogService.saveDisclosureLogsForHankkeet(any(), eq(username)) }
+        verify { disclosureLogService.saveDisclosureLogsForHankkeet(any(), eq(USERNAME)) }
     }
 
     @Test
@@ -170,15 +172,16 @@ class HankeControllerTest {
                 createdAt = getCurrentTimeUTC(),
                 modifiedBy = null,
                 modifiedAt = null,
-                status = HankeStatus.DRAFT
+                status = HankeStatus.DRAFT,
+                perustaja = HankeFactory.defaultPerustaja,
             )
 
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke))
-            .thenReturn(partialHanke.copy(modifiedBy = username, modifiedAt = getCurrentTimeUTC()))
+            .thenReturn(partialHanke.copy(modifiedBy = USERNAME, modifiedAt = getCurrentTimeUTC()))
         Mockito.`when`(hankeService.loadHanke("id123"))
             .thenReturn(HankeFactory.create(hankeTunnus = "id123"))
-        Mockito.`when`(permissionService.hasPermission(123, username, PermissionCode.EDIT))
+        Mockito.`when`(permissionService.hasPermission(123, USERNAME, PermissionCode.EDIT))
             .thenReturn(true)
 
         // Actual call
@@ -186,7 +189,7 @@ class HankeControllerTest {
 
         assertThat(response).isNotNull
         assertThat(response.nimi).isEqualTo("hankkeen nimi")
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(USERNAME)) }
     }
 
     @Test
@@ -205,7 +208,8 @@ class HankeControllerTest {
                 createdAt = null,
                 modifiedBy = null,
                 modifiedAt = null,
-                status = HankeStatus.DRAFT
+                status = HankeStatus.DRAFT,
+                perustaja = HankeFactory.defaultPerustaja,
             )
 
         Mockito.`when`(hankeService.loadHanke("id123")).thenReturn(HankeFactory.create())
@@ -219,7 +223,7 @@ class HankeControllerTest {
         verify { disclosureLogService wasNot Called }
     }
 
-    // sending of sub types
+    // sending of subtypes
     @Test
     fun `test that create with listOfOmistaja can be sent to controller and is responded with 200`() {
         val hanke =
@@ -237,6 +241,7 @@ class HankeControllerTest {
                 modifiedBy = null,
                 modifiedAt = null,
                 status = HankeStatus.DRAFT,
+                perustaja = HankeFactory.defaultPerustaja,
             )
 
         hanke.omistajat =
@@ -253,10 +258,10 @@ class HankeControllerTest {
                     alikontaktit =
                         listOf(
                             Yhteyshenkilo(
-                                "Ali",
-                                "Kontakti",
-                                "ali.kontakti@meili.com",
-                                "050-3789354"
+                                etunimi = "Ali",
+                                sukunimi = "Kontakti",
+                                email = "ali.kontakti@meili.com",
+                                puhelinnumero = "050-3789354"
                             )
                         ),
                 )
@@ -282,7 +287,7 @@ class HankeControllerTest {
         assertThat(response.omistajat).hasSize(1)
         assertThat(response.omistajat[0].id).isEqualTo(1)
         assertThat(response.omistajat[0].nimi).isEqualTo("Pekka Pekkanen")
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(USERNAME)) }
     }
 
     @Test
@@ -302,6 +307,7 @@ class HankeControllerTest {
                 modifiedBy = null,
                 modifiedAt = null,
                 status = null,
+                perustaja = HankeFactory.defaultPerustaja
             )
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
@@ -330,19 +336,18 @@ class HankeControllerTest {
                 createdAt = getCurrentTimeUTC(),
                 modifiedBy = null,
                 modifiedAt = null,
-                status = HankeStatus.DRAFT
+                status = HankeStatus.DRAFT,
+                perustaja = HankeFactory.defaultPerustaja,
             )
 
         val mockedHanke = hanke.copy()
         mockedHanke.id = 12
         mockedHanke.hankeTunnus = "JOKU12"
-
         Mockito.`when`(hankeService.createHanke(hanke)).thenReturn(mockedHanke)
 
         val response: Hanke = hankeController.createHanke(hanke)
 
         assertThat(response).isNotNull
-        Mockito.verify(permissionService).setPermission(12, username, Role.KAIKKI_OIKEUDET)
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(USERNAME)) }
     }
 }

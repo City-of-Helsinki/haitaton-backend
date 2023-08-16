@@ -136,7 +136,7 @@ class HankeEntity(
     var createdAt: LocalDateTime? = null,
     var modifiedByUserId: String? = null,
     var modifiedAt: LocalDateTime? = null,
-    @Embedded var perustaja: PerustajaEntity? = null,
+    @Embedded var perustaja: PerustajaEntity,
     var generated: Boolean = false,
     // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
     // can be a performance problem if there is a need to do bulk inserts.

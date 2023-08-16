@@ -41,6 +41,8 @@ import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaRepository
 import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
+import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
@@ -100,6 +102,7 @@ class HankeServiceITests : DatabaseTest() {
     @Autowired private lateinit var hankeKayttajaRepository: HankeKayttajaRepository
     @Autowired private lateinit var kayttajaTunnisteRepository: KayttajaTunnisteRepository
     @Autowired private lateinit var jdbcTemplate: JdbcTemplate
+    @Autowired private lateinit var permissionService: PermissionService
 
     @BeforeEach
     fun clearMocks() {
@@ -125,6 +128,10 @@ class HankeServiceITests : DatabaseTest() {
         // Call create and get the return object:
         val returnedHanke = hankeService.createHanke(hanke)
 
+        // Verify privileges
+        PermissionCode.values().forEach {
+            assertThat(permissionService.hasPermission(returnedHanke.id!!, USER_NAME, it)).isTrue()
+        }
         // Check the return object in general:
         assertThat(returnedHanke).isNotNull
         assertThat(returnedHanke).isNotSameAs(hanke)
@@ -203,8 +210,8 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(rakennuttaja.id).isNotEqualTo(firstId)
         assertThat(toteuttaja.id).isNotEqualTo(firstId)
         assertThat(toteuttaja.id).isNotEqualTo(rakennuttaja.id)
-        assertThat(hankeKayttajaRepository.findAll()).hasSize(4)
-        assertThat(kayttajaTunnisteRepository.findAll()).hasSize(4)
+        assertThat(hankeKayttajaRepository.findAll()).hasSize(5)
+        assertThat(kayttajaTunnisteRepository.findAll()).hasSize(5)
     }
 
     @Test
@@ -1376,11 +1383,10 @@ class HankeServiceITests : DatabaseTest() {
         )
         val templateData =
             TemplateData(
-                updatedHanke.id!!,
-                updatedHanke.hankeTunnus!!,
-                updatedHanke.perustaja != null,
-                updatedHanke.alueet[0].id,
-                updatedHanke.alueet[0].geometriat?.id,
+                hankeId = updatedHanke.id!!,
+                hankeTunnus = updatedHanke.hankeTunnus!!,
+                alueId = updatedHanke.alueet[0].id,
+                geometriaId = updatedHanke.alueet[0].geometriat?.id,
                 hankeVersion = 1,
                 geometriaVersion = 1,
                 tormaystarkasteluTulos = true,
@@ -1445,7 +1451,8 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     private fun initHankeWithHakemus(alluId: Int): HankeEntity {
-        val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI23-1"))
+        val hanke =
+            hankeRepository.save(HankeFactory.createNewEntity(id = null, hankeTunnus = "HAI23-1"))
         val application =
             applicationRepository.save(
                 AlluDataFactory.createApplicationEntity(
@@ -1459,36 +1466,33 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     private fun HankeEntity.toDomainObject(): Hanke =
-        with(this) {
-            Hanke(
-                id,
-                hankeTunnus,
-                onYKTHanke,
-                nimi,
-                kuvaus,
-                vaihe,
-                suunnitteluVaihe,
-                version,
-                createdByUserId ?: "",
-                createdAt?.atZone(TZ_UTC),
-                modifiedByUserId,
-                modifiedAt?.atZone(TZ_UTC),
-                this.status
-            )
-        }
+        Hanke(
+            id = id,
+            hankeTunnus = hankeTunnus,
+            onYKTHanke = onYKTHanke,
+            nimi = nimi,
+            kuvaus = kuvaus,
+            vaihe = vaihe,
+            suunnitteluVaihe = suunnitteluVaihe,
+            version = version,
+            createdBy = createdByUserId ?: "",
+            createdAt = createdAt?.atZone(TZ_UTC),
+            modifiedBy = modifiedByUserId,
+            modifiedAt = modifiedAt?.atZone(TZ_UTC),
+            status = status,
+            perustaja = HankeFactory.defaultPerustaja
+        )
 
     private fun ApplicationEntity.toDomainObject(): Application =
-        with(this) {
-            Application(
-                id,
-                alluid,
-                alluStatus,
-                applicationIdentifier,
-                applicationType,
-                applicationData,
-                hanke.hankeTunnus ?: ""
-            )
-        }
+        Application(
+            id = id,
+            alluid = alluid,
+            alluStatus = alluStatus,
+            applicationIdentifier = applicationIdentifier,
+            applicationType = applicationType,
+            applicationData = applicationData,
+            hankeTunnus = hanke.hankeTunnus ?: ""
+        )
 
     private fun assertFeaturePropertiesIsReset(hanke: Hanke, propertiesWanted: Map<String, Any?>) {
         assertThat(hanke.alueet).isNotEmpty
@@ -1504,7 +1508,6 @@ class HankeServiceITests : DatabaseTest() {
     data class TemplateData(
         val hankeId: Int,
         val hankeTunnus: String,
-        val hankePerustaja: Boolean = false,
         val alueId: Int? = null,
         val geometriaId: Int? = null,
         val geometriaVersion: Int = 0,
@@ -1532,18 +1535,17 @@ class HankeServiceITests : DatabaseTest() {
     ): String {
         val templateData =
             TemplateData(
-                hanke.id!!,
-                hanke.hankeTunnus!!,
-                hanke.perustaja != null,
-                alue?.id,
-                alue?.geometriat?.id,
-                geometriaVersion,
-                hankeVersion,
-                nextYear(),
-                tormaystarkasteluTulos,
-                alue?.nimi,
-                alkuPvm,
-                loppuPvm,
+                hankeId = hanke.id!!,
+                hankeTunnus = hanke.hankeTunnus!!,
+                alueId = alue?.id,
+                geometriaId = alue?.geometriat?.id,
+                geometriaVersion = geometriaVersion,
+                hankeVersion = hankeVersion,
+                nextYear = nextYear(),
+                tormaystarkasteluTulos = tormaystarkasteluTulos,
+                alueNimi = alue?.nimi,
+                alkuPvm = alkuPvm,
+                loppuPvm = loppuPvm,
             )
         return Template.parse(
                 "/fi/hel/haitaton/hanke/logging/expectedHankeWithPoints.json.mustache".getResourceAsText()

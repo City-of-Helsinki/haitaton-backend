@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import java.time.LocalDateTime
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -168,6 +169,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
             createdAt = null,
             modifiedByUserId = null,
             modifiedAt = null,
+            perustaja = HankeFactory.defaultPerustaja.toEntity(),
         )
 
     /* Keeping just seconds so that database truncation does not affect testing. */

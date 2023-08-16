@@ -1,8 +1,12 @@
 package fi.hel.haitaton.hanke.application
 
 import assertk.assertThat
+import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
+import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createContact
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
@@ -47,5 +51,45 @@ class ContactTest {
         val contact =
             Contact(firstName = null, lastName = null, email = DUMMY_EMAIL, phone = DUMMY_PHONE)
         assertThat(contact.fullName()).isNull()
+    }
+
+    @Test
+    fun `findOrderer when orderer contact exists should return it`() {
+        val applicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                representativeWithContacts =
+                    AlluDataFactory.createCompanyCustomer().withContacts(createContact()),
+                propertyDeveloperWithContacts =
+                    AlluDataFactory.createCompanyCustomer().withContacts(createContact()),
+            )
+
+        val result = applicationData.findOrderer()
+
+        val allContacts = applicationData.customersWithContacts().flatMap { it.contacts }
+        assertThat(allContacts).hasSize(4)
+        val expectedResult =
+            Contact(
+                firstName = "Teppo",
+                lastName = "Testihenkilö",
+                email = "teppo@example.test",
+                phone = "04012345678",
+                orderer = true,
+            )
+        assertThat(result).isEqualTo(expectedResult)
+    }
+
+    @Test
+    fun `findOrderer when no orderer contact exists should return null`() {
+        val applicationData =
+            AlluDataFactory.createCableReportApplicationData(
+                customerWithContacts =
+                    AlluDataFactory.createCompanyCustomer().withContacts(createContact())
+            )
+
+        val result = applicationData.findOrderer()
+
+        val allContacts = applicationData.customersWithContacts().flatMap { it.contacts }
+        assertThat(allContacts).hasSize(2)
+        assertThat(result).isNull()
     }
 }
