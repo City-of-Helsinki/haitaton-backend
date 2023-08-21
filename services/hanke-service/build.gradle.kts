@@ -6,14 +6,9 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-<<<<<<< HEAD
-val sentryVersion = "6.23.0"
-=======
-val springDocVersion = "1.7.0"
 val sentryVersion = "6.23.0"
 
 ext["spring-security.version"] = "6.0.4"
->>>>>>> c1dde3bf (rebase dev)
 
 repositories { mavenCentral() }
 
@@ -87,14 +82,11 @@ dependencies {
     implementation("commons-io:commons-io:2.13.0")
     implementation("com.github.librepdf:openpdf:1.3.30")
     implementation("net.pwall.mustache:kotlin-mustache:0.10")
-<<<<<<< HEAD
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.1")
-=======
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
 
->>>>>>> c1dde3bf (rebase dev)
     implementation("org.postgresql:postgresql")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
+
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
