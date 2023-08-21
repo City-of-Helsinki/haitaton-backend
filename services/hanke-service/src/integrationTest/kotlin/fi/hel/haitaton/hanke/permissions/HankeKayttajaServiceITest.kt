@@ -74,36 +74,27 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             assertThat(id).isEqualTo(entity.id)
             assertThat(nimi).isEqualTo(entity.nimi)
             assertThat(sahkoposti).isEqualTo(entity.sahkoposti)
-            assertThat(rooli).isEqualTo(entity.kayttajaTunniste!!.role)
+            assertThat(rooli).isEqualTo(entity.permission!!.role.role)
             assertThat(tunnistautunut).isEqualTo(true) // hanke perustaja
         }
     }
 
     @Test
-    fun `createToken saves kayttaja and tunniste with correct permission and other data`() {
+    fun `addHankeFounder saves kayttaja with correct permission and other data`() {
         val hankeEntity = hankeFactory.saveEntity(HankeFactory.createNewEntity(id = null))
         val savedHankeId = hankeEntity.id!!
         val savedPermission = savePermission(savedHankeId, USERNAME, KAIKKI_OIKEUDET)
 
-        hankeKayttajaService.createToken(savedHankeId, perustaja.toUserContact(), savedPermission)
+        hankeKayttajaService.addHankeFounder(savedHankeId, perustaja, savedPermission)
 
         val kayttajaEntity =
             hankeKayttajaRepository.findAll().also { assertThat(it).hasSize(1) }.first()
-        val tunnisteEntity =
-            kayttajaTunnisteRepository.findAll().also { assertThat(it).hasSize(1) }.first()
         with(kayttajaEntity) {
             assertThat(id).isNotNull()
             assertThat(hankeId).isEqualTo(savedHankeId)
             assertThat(permission!!).isOfEqualDataTo(savedPermission)
             assertThat(sahkoposti).isEqualTo(perustaja.email)
             assertThat(nimi).isEqualTo(perustaja.nimi)
-        }
-        with(tunnisteEntity) {
-            assertThat(id).isNotNull()
-            assertThat(role).isEqualTo(KAIKKI_OIKEUDET)
-            assertThat(tunniste).matches(Regex(kayttajaTunnistePattern))
-            assertThat(sentAt).isNull()
-            assertThat(createdAt).isRecent()
         }
     }
 
@@ -120,12 +111,14 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 applicationData = applicationData,
                 hanke = hanke
             )
-        val initialKayttajatSize = 1 // hanke perustaja
+        val initialUserSize = 1 // hanke perustaja
 
         hankeKayttajaService.saveNewTokensFromApplication(application, 1)
 
-        assertThat(kayttajaTunnisteRepository.findAll()).hasSize(initialKayttajatSize)
-        assertThat(hankeKayttajaRepository.findAll()).hasSize(initialKayttajatSize)
+        val invitationTokens = kayttajaTunnisteRepository.findAll()
+        val hankeUsers = hankeKayttajaRepository.findAll()
+        assertThat(invitationTokens).isEmpty() // Hanke perustaja not included
+        assertThat(hankeUsers).hasSize(initialUserSize)
     }
 
     @Test

@@ -161,8 +161,7 @@ open class HankeServiceImpl(
     private fun initAccessForCreatedHanke(hanke: Hanke, userId: String) {
         val hankeId = hanke.id!!
         val permissionAll = permissionService.setPermission(hankeId, userId, Role.KAIKKI_OIKEUDET)
-        logger.info { "Saving token for Hanke perustaja." }
-        hankeKayttajaService.createToken(hankeId, hanke.perustaja.toUserContact(), permissionAll)
+        hankeKayttajaService.addHankeFounder(hankeId, hanke.perustaja, permissionAll)
         hankeKayttajaService.saveNewTokensFromHanke(hanke)
     }
 

@@ -211,7 +211,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(toteuttaja.id).isNotEqualTo(firstId)
         assertThat(toteuttaja.id).isNotEqualTo(rakennuttaja.id)
         assertThat(hankeKayttajaRepository.findAll()).hasSize(5)
-        assertThat(kayttajaTunnisteRepository.findAll()).hasSize(5)
+        assertThat(kayttajaTunnisteRepository.findAll()).hasSize(4) // Hanke perustaja not included
     }
 
     @Test
