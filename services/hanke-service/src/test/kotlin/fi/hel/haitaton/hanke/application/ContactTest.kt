@@ -4,12 +4,16 @@ import assertk.assertThat
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
+import fi.hel.haitaton.hanke.HankeArgumentException
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
+import java.util.stream.Stream
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
+import org.junit.jupiter.params.provider.MethodSource
 
 private const val DUMMY_EMAIL = "dummymail@mail.com"
 private const val DUMMY_PHONE = "04012345678"
@@ -91,5 +95,31 @@ class ContactTest {
         val allContacts = applicationData.customersWithContacts().flatMap { it.contacts }
         assertThat(allContacts).hasSize(2)
         assertThat(result).isNull()
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidContacts")
+    fun `toHankePerustaja when invalid contact input should throw`(contact: Contact) {
+        assertThrows<HankeArgumentException> { contact.toHankePerustaja() }
+    }
+
+    companion object {
+        @JvmStatic
+        fun invalidContacts(): Stream<Contact> {
+            val contact =
+                Contact(
+                    firstName = "Firstname",
+                    lastName = "Lastname",
+                    email = "test@email.com",
+                    phone = "04012345678",
+                    orderer = true
+                )
+            return Stream.of(
+                contact.copy(firstName = null, lastName = null),
+                contact.copy(firstName = "", lastName = ""),
+                contact.copy(email = null),
+                contact.copy(email = "")
+            )
+        }
     }
 }

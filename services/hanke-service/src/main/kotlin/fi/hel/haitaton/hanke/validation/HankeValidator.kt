@@ -92,7 +92,13 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
         var ok = true
 
         with(hanke.perustaja) {
-            if (nimi.isBlank()) {
+            if (this == null) {
+                context.addViolation("perustaja")
+                ok = false
+                return false
+            }
+
+            if (nimi.isNullOrBlank()) {
                 context.addViolation("perustaja.nimi")
                 ok = false
             }

@@ -119,7 +119,7 @@ open class HankeServiceImpl(
 
         val userId = currentUserId()
 
-        val entity = HankeEntity(perustaja = hanke.perustaja.toEntity())
+        val entity = HankeEntity()
         val loggingEntryHolder = prepareLogging(entity)
 
         // Create a new hanketunnus for it and save it:
@@ -156,13 +156,6 @@ open class HankeServiceImpl(
             initAccessForCreatedHanke(it, userId)
             hankeLoggingService.logCreate(it, userId)
         }
-    }
-
-    private fun initAccessForCreatedHanke(hanke: Hanke, userId: String) {
-        val hankeId = hanke.id!!
-        val permissionAll = permissionService.setPermission(hankeId, userId, Role.KAIKKI_OIKEUDET)
-        hankeKayttajaService.addHankeFounder(hankeId, hanke.perustaja, permissionAll)
-        hankeKayttajaService.saveNewTokensFromHanke(hanke)
     }
 
     /**
@@ -240,6 +233,15 @@ open class HankeServiceImpl(
 
         hankeRepository.deleteById(hankeId)
         hankeLoggingService.logDelete(hanke, userId)
+    }
+
+    private fun initAccessForCreatedHanke(hanke: Hanke, userId: String) {
+        val hankeId = hanke.id!!
+        val permissionAll = permissionService.setPermission(hankeId, userId, Role.KAIKKI_OIKEUDET)
+        val perustaja =
+            hanke.perustaja ?: throw HankeArgumentException("Missing perustaja information")
+        hankeKayttajaService.addHankeFounder(hankeId, perustaja, permissionAll)
+        hankeKayttajaService.saveNewTokensFromHanke(hanke)
     }
 
     private fun anyHakemusProcessingInAllu(hakemukset: List<Application>): Boolean =
@@ -342,7 +344,7 @@ open class HankeServiceImpl(
                 if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC)
                 else null,
                 hankeEntity.status,
-                hankeEntity.perustaja.toDomainObject(),
+                hankeEntity.perustaja?.toDomainObject(),
                 hankeEntity.generated,
             )
 
@@ -569,6 +571,7 @@ open class HankeServiceImpl(
         hanke.nimi?.let { entity.nimi = hanke.nimi }
         hanke.kuvaus?.let { entity.kuvaus = hanke.kuvaus }
 
+        hanke.perustaja?.let { entity.perustaja = it.toEntity() }
         entity.generated = hanke.generated
         hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
         hanke.suunnitteluVaihe?.let { entity.suunnitteluVaihe = hanke.suunnitteluVaihe }
@@ -960,11 +963,11 @@ open class HankeServiceImpl(
             )
         )
 
-    private fun generatePerustajaFrom(cableReport: CableReportApplicationData): Perustaja =
-        with(cableReport.findOrderer()) {
-            if (this == null || fullName().isNullOrBlank() || email.isNullOrBlank()) {
-                throw HankeArgumentException("Invalid orderer $this for Hanke perustaja")
-            }
-            Perustaja(fullName()!!, email)
-        }
+    private fun generatePerustajaFrom(cableReport: CableReportApplicationData): Perustaja {
+        val orderer =
+            cableReport.findOrderer()
+                ?: throw HankeArgumentException("Orderer not found for Hanke perustaja")
+
+        return orderer.toHankePerustaja()
+    }
 }

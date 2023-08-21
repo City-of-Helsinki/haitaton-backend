@@ -59,7 +59,7 @@ class HankeKayttajaService(
         saveUser(
             HankeKayttajaEntity(
                 hankeId = hankeId,
-                nimi = founder.nimi,
+                nimi = founder.nimi!!,
                 sahkoposti = founder.email,
                 permission = permissionEntity,
                 kayttajaTunniste = null,
