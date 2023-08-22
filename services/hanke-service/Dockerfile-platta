@@ -9,7 +9,6 @@ COPY gradlew settings.gradle.kts ./
 COPY gradle/ ./gradle/
 COPY services/hanke-service/build.gradle.kts ./services/hanke-service/
 COPY services/hanke-service/src ./services/hanke-service/src
-COPY scripts/wait-for-it.sh .
 
 # Build
 RUN ./gradlew clean :services:hanke-service:assemble --stacktrace
