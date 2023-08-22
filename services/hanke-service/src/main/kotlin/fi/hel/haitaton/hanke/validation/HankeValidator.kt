@@ -21,16 +21,16 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
 
         var ok = true
         if (hanke.nimi.isNullOrBlank()) {
-            context.addViolation("nimi")
+            context.addViolation("nimi", HankeError.HAI1002)
             ok = false
         }
 
         if (hanke.vaihe == null) {
-            context.addViolation("vaihe")
+            context.addViolation("vaihe", HankeError.HAI1002)
             ok = false
         } else if (hanke.vaihe!! == Vaihe.SUUNNITTELU && hanke.suunnitteluVaihe == null) {
             // if vaihe = SUUNNITTELU then suunnitteluVaihe must have value
-            context.addViolation("suunnitteluVaihe")
+            context.addViolation("suunnitteluVaihe", HankeError.HAI1002)
             ok = false
         }
 
@@ -49,7 +49,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             if (
                 hankealue.haittaAlkuPvm == null || hankealue.haittaAlkuPvm!!.isAfter(MAXIMUM_DATE)
             ) {
-                context.addViolation("haittaAlkuPvm")
+                context.addViolation("haittaAlkuPvm", HankeError.HAI1032)
                 return false
             }
             // Must be from the and earlier than some relevant maximum date,
@@ -59,7 +59,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             if (
                 hankealue.haittaLoppuPvm == null || hankealue.haittaLoppuPvm!!.isAfter(MAXIMUM_DATE)
             ) {
-                context.addViolation("haittaLoppuPvm")
+                context.addViolation("haittaLoppuPvm", HankeError.HAI1032)
                 return false
             }
             if (
@@ -67,7 +67,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
                     hankealue.haittaLoppuPvm != null &&
                     hankealue.haittaLoppuPvm!!.isBefore(hankealue.haittaAlkuPvm)
             ) {
-                context.addViolation("haittaLoppuPvm")
+                context.addViolation("haittaLoppuPvm", HankeError.HAI1032)
                 return false
             }
         }
@@ -81,7 +81,7 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             hanke.tyomaaKatuosoite != null &&
                 hanke.tyomaaKatuosoite!!.length > MAXIMUM_TYOMAAKATUOSOITE_LENGTH
         ) {
-            context.addViolation("tyomaaKatuosoite")
+            context.addViolation("tyomaaKatuosoite", HankeError.HAI1002)
             ok = false
         }
 
@@ -93,18 +93,17 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
 
         with(hanke.perustaja) {
             if (this == null) {
-                context.addViolation("perustaja")
-                ok = false
+                context.addViolation("perustaja", HankeError.HAI1002)
                 return false
             }
 
             if (nimi.isNullOrBlank()) {
-                context.addViolation("perustaja.nimi")
+                context.addViolation("perustaja.nimi", HankeError.HAI1002)
                 ok = false
             }
 
             if (email.isBlank()) {
-                context.addViolation("perustaja.email")
+                context.addViolation("perustaja.email", HankeError.HAI1002)
                 ok = false
             }
         }
@@ -112,8 +111,8 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
         return ok
     }
 
-    private fun ConstraintValidatorContext.addViolation(propertyNode: String) {
-        buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
+    private fun ConstraintValidatorContext.addViolation(propertyNode: String, error: HankeError) {
+        buildConstraintViolationWithTemplate(error.toString())
             .addPropertyNode(propertyNode)
             .addConstraintViolation()
     }
