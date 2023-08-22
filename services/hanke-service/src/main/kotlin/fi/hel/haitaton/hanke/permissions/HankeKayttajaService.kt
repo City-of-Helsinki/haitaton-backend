@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.Perustaja
+import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
@@ -20,6 +21,7 @@ class HankeKayttajaService(
     private val roleRepository: RoleRepository,
     private val permissionService: PermissionService,
     private val featureFlags: FeatureFlags,
+    private val logService: HankeKayttajaLoggingService,
 ) {
 
     @Transactional(readOnly = true)
@@ -100,9 +102,14 @@ class HankeKayttajaService(
 
         kayttajat.forEach { kayttaja ->
             if (kayttaja.permission != null) {
+                val roleBefore = kayttaja.permission.role.role
                 kayttaja.permission.role = roleRepository.findOneByRole(updates[kayttaja.id]!!)
+                logService.logUpdate(roleBefore, kayttaja.permission, userId)
             } else {
-                kayttaja.kayttajaTunniste!!.role = updates[kayttaja.id]!!
+                val kayttajaTunnisteBefore = kayttaja.kayttajaTunniste!!.toDomain()
+                kayttaja.kayttajaTunniste.role = updates[kayttaja.id]!!
+                val kayttajaTunnisteAfter = kayttaja.kayttajaTunniste.toDomain()
+                logService.logUpdate(kayttajaTunnisteBefore, kayttajaTunnisteAfter, userId)
             }
         }
 

@@ -7,6 +7,7 @@ import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
+import assertk.assertions.first
 import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
@@ -23,7 +24,12 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
+import fi.hel.haitaton.hanke.logging.AuditLogRepository
+import fi.hel.haitaton.hanke.logging.ObjectType
+import fi.hel.haitaton.hanke.logging.Operation
+import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
+import fi.hel.haitaton.hanke.toChangeLogJsonString
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.junit.jupiter.api.Nested
@@ -51,6 +57,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     @Autowired private lateinit var hankeKayttajaRepository: HankeKayttajaRepository
     @Autowired private lateinit var permissionRepository: PermissionRepository
     @Autowired private lateinit var roleRepository: RoleRepository
+    @Autowired private lateinit var auditLogRepository: AuditLogRepository
 
     @Autowired private lateinit var permissionService: PermissionService
 
@@ -392,6 +399,36 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         }
 
         @Test
+        fun `Writes permission update to audit log`() {
+            val hanke = hankeFactory.save()
+            val kayttaja = saveUserAndPermission(hanke.id!!)
+            val updates = mapOf(kayttaja.id to Role.HANKEMUOKKAUS)
+            auditLogRepository.deleteAll()
+
+            hankeKayttajaService.updatePermissions(hanke, updates, false, USERNAME)
+
+            val logs = auditLogRepository.findAll()
+            assertThat(logs).hasSize(1)
+            assertThat(logs)
+                .first()
+                .transform { it.message.auditEvent }
+                .all {
+                    transform { it.operation }.isEqualTo(Operation.UPDATE)
+                    transform { it.actor.role }.isEqualTo(UserRole.USER)
+                    transform { it.actor.userId }.isEqualTo(USERNAME)
+                    transform { it.target.id }.isEqualTo(kayttaja.permission?.id.toString())
+                    transform { it.target.type }.isEqualTo(ObjectType.PERMISSION)
+                    val permission = kayttaja.permission!!.toDomain()
+                    transform { it.target.objectBefore }
+                        .isEqualTo(permission.toChangeLogJsonString())
+                    transform { it.target.objectAfter }
+                        .isEqualTo(
+                            permission.copy(role = Role.HANKEMUOKKAUS).toChangeLogJsonString()
+                        )
+                }
+        }
+
+        @Test
         fun `Updates role to tunniste if permission doesn't exist`() {
             val hanke = hankeFactory.save()
             val kayttaja = saveUserAndToken(hanke.id!!, "Toinen Tohelo", "urho@kekkonen.test")
@@ -404,6 +441,34 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             assertThat(updatedKayttaja.kayttajaTunniste).isNotNull().transform {
                 it.role == Role.HANKEMUOKKAUS
             }
+        }
+
+        @Test
+        fun `Writes tunniste update to audit log`() {
+            val hanke = hankeFactory.save()
+            val kayttaja = saveUserAndToken(hanke.id!!, "Toinen Tohelo", "urho@kekkonen.test")
+            val updates = mapOf(kayttaja.id to Role.HANKEMUOKKAUS)
+            auditLogRepository.deleteAll()
+
+            hankeKayttajaService.updatePermissions(hanke, updates, false, USERNAME)
+
+            val logs = auditLogRepository.findAll()
+            assertThat(logs).hasSize(1)
+            assertThat(logs)
+                .first()
+                .transform { it.message.auditEvent }
+                .all {
+                    transform { it.operation }.isEqualTo(Operation.UPDATE)
+                    transform { it.actor.role }.isEqualTo(UserRole.USER)
+                    transform { it.actor.userId }.isEqualTo(USERNAME)
+                    transform { it.target.id }.isEqualTo(kayttaja.kayttajaTunniste?.id.toString())
+                    transform { it.target.type }.isEqualTo(ObjectType.KAYTTAJA_TUNNISTE)
+                    val tunniste =
+                        kayttaja.kayttajaTunniste!!.toDomain().copy(hankeKayttajaId = kayttaja.id)
+                    transform { it.target.objectBefore }.isEqualTo(tunniste.toChangeLogJsonString())
+                    transform { it.target.objectAfter }
+                        .isEqualTo(tunniste.copy(role = Role.HANKEMUOKKAUS).toChangeLogJsonString())
+                }
         }
 
         @Test

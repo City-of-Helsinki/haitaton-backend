@@ -1,5 +1,8 @@
 package fi.hel.haitaton.hanke.permissions
 
+import com.fasterxml.jackson.annotation.JsonView
+import fi.hel.haitaton.hanke.ChangeLogView
+import fi.hel.haitaton.hanke.domain.HasId
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
@@ -52,4 +55,14 @@ class PermissionEntity(
     @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "roleid")
     var role: RoleEntity,
-)
+) {
+    fun toDomain() = Permission(id, userId, hankeId, role.role)
+}
+
+@JsonView(ChangeLogView::class)
+data class Permission(
+    override val id: Int,
+    val userId: String,
+    val hankeId: Int,
+    var role: Role,
+) : HasId<Int>

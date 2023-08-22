@@ -1,5 +1,8 @@
 package fi.hel.haitaton.hanke.permissions
 
+import com.fasterxml.jackson.annotation.JsonView
+import fi.hel.haitaton.hanke.ChangeLogView
+import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -15,6 +18,16 @@ import kotlin.streams.asSequence
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
+@JsonView(ChangeLogView::class)
+data class KayttajaTunniste(
+    override val id: UUID,
+    val tunniste: String,
+    val createdAt: OffsetDateTime,
+    val sentAt: OffsetDateTime?,
+    var role: Role,
+    val hankeKayttajaId: UUID?
+) : HasId<UUID>
+
 @Entity
 @Table(name = "kayttaja_tunniste")
 class KayttajaTunnisteEntity(
@@ -25,6 +38,8 @@ class KayttajaTunnisteEntity(
     @Enumerated(EnumType.STRING) var role: Role,
     @OneToOne(mappedBy = "kayttajaTunniste") val hankeKayttaja: HankeKayttajaEntity?
 ) {
+
+    fun toDomain() = KayttajaTunniste(id, tunniste, createdAt, sentAt, role, hankeKayttaja?.id)
 
     companion object {
         private const val tokenLength: Int = 24
