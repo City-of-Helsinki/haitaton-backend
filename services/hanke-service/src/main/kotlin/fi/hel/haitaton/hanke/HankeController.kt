@@ -180,7 +180,7 @@ class HankeController(
         if (hanke == null) {
             throw HankeArgumentException("No hanke given when creating hanke")
         }
-        val sanitizedHanke = hanke.copy(id = null, generated = false)
+        val sanitizedHanke = hanke.copy(id = null, generated = false, perustaja = null)
 
         val userId = currentUserId()
         logger.info { "Creating Hanke for user $userId: ${hanke.toLogString()} " }
@@ -313,7 +313,7 @@ class HankeController(
         if (hankeTunnusFromPath != updatedHanke.hankeTunnus) {
             throw HankeArgumentException("Hanketunnus not given or doesn't match the hanke data")
         }
-        if (perustaja != updatedHanke.perustaja) {
+        if (perustaja != null && perustaja != updatedHanke.perustaja) {
             throw HankeArgumentException("Updating perustaja not allowed.")
         }
     }

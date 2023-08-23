@@ -31,9 +31,7 @@ class HankeKayttajaService(
                 .flatMap { it.contacts }
                 .mapNotNull { userContactOrNull(it.fullName(), it.email) }
 
-        filterNewContacts(hankeId, contacts).forEach { contact ->
-            createInvitationToken(hankeId, contact)
-        }
+        filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
     }
 
     @Transactional
@@ -48,9 +46,7 @@ class HankeKayttajaService(
                 .flatMap { it.alikontaktit }
                 .mapNotNull { userContactOrNull(it.fullName(), it.email) }
 
-        filterNewContacts(hankeId, contacts).forEach { contact ->
-            createInvitationToken(hankeId, contact)
-        }
+        filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
     }
 
     @Transactional
@@ -67,19 +63,21 @@ class HankeKayttajaService(
         )
     }
 
-    private fun createInvitationToken(hankeId: Int, contact: UserContact) {
+    private fun createToken(hankeId: Int, contact: UserContact) {
         logger.info { "Creating a new user token, hankeId=$hankeId" }
         val token = KayttajaTunnisteEntity.create()
         val kayttajaTunnisteEntity = kayttajaTunnisteRepository.save(token)
         logger.info { "Saved the new user token, id=${kayttajaTunnisteEntity.id}" }
 
         saveUser(
-            HankeKayttajaEntity(
-                hankeId = hankeId,
-                nimi = contact.name,
-                sahkoposti = contact.email,
-                permission = null,
-                kayttajaTunniste = kayttajaTunnisteEntity
+            hankeKayttajaRepository.save(
+                HankeKayttajaEntity(
+                    hankeId = hankeId,
+                    nimi = contact.name,
+                    sahkoposti = contact.email,
+                    permission = null,
+                    kayttajaTunniste = kayttajaTunnisteEntity
+                )
             )
         )
     }

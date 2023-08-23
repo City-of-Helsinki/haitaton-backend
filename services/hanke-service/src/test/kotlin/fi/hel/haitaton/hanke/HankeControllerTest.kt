@@ -4,7 +4,6 @@ import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -15,15 +14,11 @@ import io.mockk.clearAllMocks
 import io.mockk.mockk
 import io.mockk.verify
 import jakarta.validation.ConstraintViolationException
-import java.util.stream.Stream
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
 import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
@@ -33,14 +28,11 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
 
-private const val USERNAME = "testuser"
-private const val HANKE_NAME_MANNERHEIMINTIE = "Mannerheimintien remontti remonttinen"
-private const val HANKE_NAME_HAMEENLINNANVAYLA = "Hämeenlinnanväylän uudistus"
-private const val HANKE_MOCK_KUVAUS = "Lorem ipsum dolor sit amet..."
+private const val username = "testuser"
 
 @ExtendWith(SpringExtension::class)
 @Import(HankeControllerTest.TestConfiguration::class)
-@WithMockUser(USERNAME)
+@WithMockUser(username)
 class HankeControllerTest {
 
     @Configuration
@@ -85,25 +77,24 @@ class HankeControllerTest {
     fun `test that the getHankeByTunnus returns ok`() {
         val hankeId = 1234
 
-        Mockito.`when`(permissionService.hasPermission(hankeId, USERNAME, PermissionCode.VIEW))
+        Mockito.`when`(permissionService.hasPermission(hankeId, username, PermissionCode.VIEW))
             .thenReturn(true)
         Mockito.`when`(hankeService.loadHanke(mockedHankeTunnus))
             .thenReturn(
                 Hanke(
-                    id = hankeId,
-                    hankeTunnus = mockedHankeTunnus,
-                    onYKTHanke = true,
-                    nimi = HANKE_NAME_MANNERHEIMINTIE,
-                    kuvaus = HANKE_MOCK_KUVAUS,
-                    vaihe = Vaihe.OHJELMOINTI,
-                    suunnitteluVaihe = null,
-                    version = 1,
-                    createdBy = "Risto",
-                    createdAt = getCurrentTimeUTC(),
-                    modifiedBy = null,
-                    modifiedAt = null,
-                    status = HankeStatus.DRAFT,
-                    perustaja = HankeFactory.defaultPerustaja,
+                    hankeId,
+                    mockedHankeTunnus,
+                    true,
+                    "Mannerheimintien remontti remonttinen",
+                    "Lorem ipsum dolor sit amet...",
+                    Vaihe.OHJELMOINTI,
+                    null,
+                    1,
+                    "Risto",
+                    getCurrentTimeUTC(),
+                    null,
+                    null,
+                    HankeStatus.DRAFT
                 )
             )
 
@@ -111,61 +102,7 @@ class HankeControllerTest {
 
         assertThat(response).isNotNull
         assertThat(response.nimi).isNotEmpty
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(USERNAME)) }
-    }
-
-    @ParameterizedTest
-    @MethodSource("invalidPerustajaArguments")
-    fun `test that the createHanke will give validation errors from invalid hanke data for perustaja`(
-        perustaja: Perustaja?,
-        errorMessage: String,
-    ) {
-        val partialHanke =
-            Hanke(
-                id = 0,
-                hankeTunnus = null,
-                nimi = HANKE_NAME_MANNERHEIMINTIE,
-                kuvaus = HANKE_MOCK_KUVAUS,
-                onYKTHanke = false,
-                vaihe = Vaihe.OHJELMOINTI,
-                suunnitteluVaihe = null,
-                version = 1,
-                createdBy = "",
-                createdAt = null,
-                modifiedBy = null,
-                modifiedAt = null,
-                status = HankeStatus.DRAFT,
-                perustaja = perustaja,
-            )
-
-        assertThatExceptionOfType(ConstraintViolationException::class.java)
-            .isThrownBy { hankeController.createHanke(partialHanke) }
-            .withMessageContaining(errorMessage)
-
-        verify { disclosureLogService wasNot Called }
-    }
-
-    companion object {
-        @JvmStatic
-        private fun invalidPerustajaArguments(): Stream<Arguments> =
-            Stream.of(
-                Arguments.of(
-                    Perustaja(nimi = "Test Person", email = ""),
-                    expectedErrorMessage(field = "perustaja.email")
-                ),
-                Arguments.of(
-                    Perustaja(nimi = "", email = "test.mail@mail.com"),
-                    expectedErrorMessage(field = "perustaja.nimi")
-                ),
-                Arguments.of(
-                    Perustaja(nimi = null, email = "test.mail@mail.com"),
-                    expectedErrorMessage(field = "perustaja.nimi")
-                ),
-                Arguments.of(null, expectedErrorMessage(field = "perustaja"))
-            )
-
-        private fun expectedErrorMessage(field: String) =
-            "createHanke.hanke.$field: ${HankeError.HAI1002}"
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
     }
 
     @Test
@@ -173,49 +110,47 @@ class HankeControllerTest {
         val listOfHanke =
             listOf(
                 Hanke(
-                    id = 1234,
-                    hankeTunnus = mockedHankeTunnus,
-                    onYKTHanke = true,
-                    nimi = HANKE_NAME_MANNERHEIMINTIE,
-                    kuvaus = HANKE_MOCK_KUVAUS,
-                    vaihe = Vaihe.OHJELMOINTI,
-                    suunnitteluVaihe = null,
-                    version = 1,
-                    createdBy = "Risto",
-                    createdAt = getCurrentTimeUTC(),
-                    modifiedBy = null,
-                    modifiedAt = null,
-                    status = HankeStatus.DRAFT,
-                    perustaja = HankeFactory.defaultPerustaja,
+                    1234,
+                    mockedHankeTunnus,
+                    true,
+                    "Mannerheimintien remontti remonttinen",
+                    "Lorem ipsum dolor sit amet...",
+                    Vaihe.OHJELMOINTI,
+                    null,
+                    1,
+                    "Risto",
+                    getCurrentTimeUTC(),
+                    null,
+                    null,
+                    HankeStatus.DRAFT
                 ),
                 Hanke(
-                    id = 50,
-                    hankeTunnus = "HAME50",
-                    onYKTHanke = true,
-                    nimi = HANKE_NAME_HAMEENLINNANVAYLA,
-                    kuvaus = HANKE_MOCK_KUVAUS,
-                    vaihe = Vaihe.SUUNNITTELU,
-                    suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
-                    version = 1,
-                    createdBy = "Paavo",
-                    createdAt = getCurrentTimeUTC(),
-                    modifiedBy = null,
-                    modifiedAt = null,
-                    status = HankeStatus.DRAFT,
-                    perustaja = HankeFactory.defaultPerustaja,
+                    50,
+                    "HAME50",
+                    true,
+                    "Hämeenlinnanväylän uudistus",
+                    "Lorem ipsum dolor sit amet...",
+                    Vaihe.SUUNNITTELU,
+                    SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
+                    1,
+                    "Paavo",
+                    getCurrentTimeUTC(),
+                    null,
+                    null,
+                    HankeStatus.DRAFT
                 )
             )
-        Mockito.`when`(permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW))
+        Mockito.`when`(permissionService.getAllowedHankeIds(username, PermissionCode.VIEW))
             .thenReturn(listOf(1234, 50))
         Mockito.`when`(hankeService.loadHankkeetByIds(listOf(1234, 50))).thenReturn(listOfHanke)
 
         val hankeList = hankeController.getHankeList(false)
 
-        assertThat(hankeList[0].nimi).isEqualTo(HANKE_NAME_MANNERHEIMINTIE)
-        assertThat(hankeList[1].nimi).isEqualTo(HANKE_NAME_HAMEENLINNANVAYLA)
+        assertThat(hankeList[0].nimi).isEqualTo("Mannerheimintien remontti remonttinen")
+        assertThat(hankeList[1].nimi).isEqualTo("Hämeenlinnanväylän uudistus")
         assertThat(hankeList[0].alueidenGeometriat()).isEmpty()
         assertThat(hankeList[1].alueidenGeometriat()).isEmpty()
-        verify { disclosureLogService.saveDisclosureLogsForHankkeet(any(), eq(USERNAME)) }
+        verify { disclosureLogService.saveDisclosureLogsForHankkeet(any(), eq(username)) }
     }
 
     @Test
@@ -224,8 +159,8 @@ class HankeControllerTest {
             Hanke(
                 id = 123,
                 hankeTunnus = "id123",
-                nimi = HANKE_NAME_MANNERHEIMINTIE,
-                kuvaus = HANKE_MOCK_KUVAUS,
+                nimi = "hankkeen nimi",
+                kuvaus = "lorem ipsum dolor sit amet...",
                 onYKTHanke = false,
                 vaihe = Vaihe.SUUNNITTELU,
                 suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
@@ -234,24 +169,23 @@ class HankeControllerTest {
                 createdAt = getCurrentTimeUTC(),
                 modifiedBy = null,
                 modifiedAt = null,
-                status = HankeStatus.DRAFT,
-                perustaja = HankeFactory.defaultPerustaja,
+                status = HankeStatus.DRAFT
             )
 
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke))
-            .thenReturn(partialHanke.copy(modifiedBy = USERNAME, modifiedAt = getCurrentTimeUTC()))
+            .thenReturn(partialHanke.copy(modifiedBy = username, modifiedAt = getCurrentTimeUTC()))
         Mockito.`when`(hankeService.loadHanke("id123"))
             .thenReturn(HankeFactory.create(hankeTunnus = "id123"))
-        Mockito.`when`(permissionService.hasPermission(123, USERNAME, PermissionCode.EDIT))
+        Mockito.`when`(permissionService.hasPermission(123, username, PermissionCode.EDIT))
             .thenReturn(true)
 
         // Actual call
         val response: Hanke = hankeController.updateHanke(partialHanke, "id123")
 
         assertThat(response).isNotNull
-        assertThat(response.nimi).isEqualTo(HANKE_NAME_MANNERHEIMINTIE)
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(USERNAME)) }
+        assertThat(response.nimi).isEqualTo("hankkeen nimi")
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
     }
 
     @Test
@@ -270,8 +204,7 @@ class HankeControllerTest {
                 createdAt = null,
                 modifiedBy = null,
                 modifiedAt = null,
-                status = HankeStatus.DRAFT,
-                perustaja = HankeFactory.defaultPerustaja,
+                status = HankeStatus.DRAFT
             )
 
         Mockito.`when`(hankeService.loadHanke("id123")).thenReturn(HankeFactory.create())
@@ -285,7 +218,7 @@ class HankeControllerTest {
         verify { disclosureLogService wasNot Called }
     }
 
-    // sending of subtypes
+    // sending of sub types
     @Test
     fun `test that create with listOfOmistaja can be sent to controller and is responded with 200`() {
         val hanke =
@@ -293,7 +226,7 @@ class HankeControllerTest {
                 id = null,
                 hankeTunnus = null,
                 nimi = "hankkeen nimi",
-                kuvaus = HANKE_MOCK_KUVAUS,
+                kuvaus = "lorem ipsum dolor sit amet...",
                 onYKTHanke = false,
                 vaihe = Vaihe.OHJELMOINTI,
                 suunnitteluVaihe = null,
@@ -303,7 +236,6 @@ class HankeControllerTest {
                 modifiedBy = null,
                 modifiedAt = null,
                 status = HankeStatus.DRAFT,
-                perustaja = HankeFactory.defaultPerustaja,
             )
 
         hanke.omistajat =
@@ -320,10 +252,10 @@ class HankeControllerTest {
                     alikontaktit =
                         listOf(
                             Yhteyshenkilo(
-                                etunimi = "Ali",
-                                sukunimi = "Kontakti",
-                                email = "ali.kontakti@meili.com",
-                                puhelinnumero = "050-3789354"
+                                "Ali",
+                                "Kontakti",
+                                "ali.kontakti@meili.com",
+                                "050-3789354"
                             )
                         ),
                 )
@@ -349,7 +281,7 @@ class HankeControllerTest {
         assertThat(response.omistajat).hasSize(1)
         assertThat(response.omistajat[0].id).isEqualTo(1)
         assertThat(response.omistajat[0].nimi).isEqualTo("Pekka Pekkanen")
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(USERNAME)) }
+        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
     }
 
     @Test
@@ -369,7 +301,6 @@ class HankeControllerTest {
                 modifiedBy = null,
                 modifiedAt = null,
                 status = null,
-                perustaja = HankeFactory.defaultPerustaja
             )
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)

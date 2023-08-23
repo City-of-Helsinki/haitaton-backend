@@ -22,10 +22,15 @@
   "version": {{hankeVersion}},
   "generated": false,
   "tyomaaKatuosoite": "Testikatu 1",
+  {{#hankkeenPerustaja}}
   "perustaja": {
     "nimi": "Pertti Perustaja",
     "email": "foo@bar.com"
   },
+  {{/hankkeenPerustaja}}
+  {{^hankkeenPerustaja}}
+    "perustaja": null,
+  {{/hankkeenPerustaja}}
   "tyomaaTyyppi": [
     "MUU",
     "VESI"

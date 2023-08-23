@@ -9,6 +9,7 @@ import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
+import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluLoginException
@@ -24,7 +25,6 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withHanke
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -130,7 +130,7 @@ class ApplicationServiceTest {
                 val application: ApplicationEntity = firstArg()
                 application.copy(id = 1)
             }
-        val hanke = HankeFactory.createNewEntity(id = 1, hankeTunnus = HANKE_TUNNUS)
+        val hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS)
         every { hankeRepository.findByHankeTunnus(HANKE_TUNNUS) } returns hanke
         every { geometriatDao.validateGeometriat(any()) } returns null
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
@@ -176,7 +176,7 @@ class ApplicationServiceTest {
 
     @Test
     fun `updateApplicationData saves disclosure logs when updating Allu data`() {
-        val hanke = HankeFactory.createNewEntity(id = 1, hankeTunnus = HANKE_TUNNUS)
+        val hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS)
         val applicationEntity =
             AlluDataFactory.createApplicationEntity(
                 id = 3,
@@ -223,7 +223,7 @@ class ApplicationServiceTest {
                 alluid = 42,
                 userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeFactory.createNewEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
+                hanke = HankeEntity(hankeTunnus = HANKE_TUNNUS),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.validateGeometriat(any()) } returns
@@ -256,7 +256,7 @@ class ApplicationServiceTest {
                 alluid = null,
                 userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeFactory.createNewEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
+                hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
@@ -295,7 +295,7 @@ class ApplicationServiceTest {
                 alluid = null,
                 userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeFactory.createNewEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
+                hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.calculateCombinedArea(any()) } returns 100f
@@ -329,7 +329,7 @@ class ApplicationServiceTest {
                 alluid = null,
                 userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeFactory.createNewEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
+                hanke = HankeEntity(hankeTunnus = HANKE_TUNNUS, id = 1),
             )
         assertThat(applicationEntity.applicationData.areas).isNotNull().isNotEmpty()
         every { applicationRepo.findOneById(3) } returns applicationEntity
@@ -363,7 +363,7 @@ class ApplicationServiceTest {
                 alluid = null,
                 userId = USERNAME,
                 applicationData = applicationData.copy(rockExcavation = rockExcavation),
-                hanke = HankeFactory.createNewEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
+                hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
@@ -410,7 +410,7 @@ class ApplicationServiceTest {
                 alluid = null,
                 userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeFactory.createNewEntity(id = 1, HANKE_TUNNUS),
+                hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
@@ -463,6 +463,7 @@ class ApplicationServiceTest {
     inner class HandleApplicationUpdates {
         private val alluid = 42
         private val applicationId = 13L
+        private val hankeTunnus = "HAI23-1"
         private val receiver = AlluDataFactory.teppoEmail
         private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
         private val identifier = ApplicationHistoryFactory.defaultApplicationIdentifier
@@ -552,8 +553,7 @@ class ApplicationServiceTest {
         @Test
         fun `logs error if hanketunnus is null`(output: CapturedOutput) {
             every { applicationRepo.getOneByAlluid(42) } returns
-                applicationEntity()
-                    .withHanke(HankeFactory.createNewEntity(id = 1, hankeTunnus = null))
+                applicationEntity().withHanke(HankeEntity(id = 1, hankeTunnus = null))
             every { applicationRepo.save(any()) } answers { firstArg() }
             every { statusRepo.getReferenceById(1) } returns AlluStatus(1, updateTime)
             every { statusRepo.save(any()) } answers { firstArg() }
@@ -604,7 +604,7 @@ class ApplicationServiceTest {
                     alluid = alluid,
                     applicationIdentifier = identifier,
                     userId = "user",
-                    hanke = HankeFactory.createNewEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
+                    hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus),
                 )
                 .withCustomer(AlluDataFactory.createCompanyCustomerWithOrderer())
 

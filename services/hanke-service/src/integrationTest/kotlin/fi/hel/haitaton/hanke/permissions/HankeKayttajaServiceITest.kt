@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.permissions
 
 import assertk.Assert
 import assertk.assertThat
+import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
 import assertk.assertions.hasSize
@@ -16,10 +17,9 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
-import fi.hel.haitaton.hanke.permissions.Role.KAIKKI_OIKEUDET
-import fi.hel.haitaton.hanke.permissions.Role.KATSELUOIKEUS
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import java.time.OffsetDateTime
 import org.junit.jupiter.api.Test
@@ -57,13 +57,12 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         val result: List<HankeKayttajaDto> =
             hankeKayttajaService.getKayttajatByHankeId(hankeToFind.id!!)
 
-        val yhteystiedotPlusPerustaja = 4 + 1
-        assertThat(result).hasSize(yhteystiedotPlusPerustaja)
+        assertThat(result).hasSize(4)
     }
 
     @Test
     fun `getKayttajatByHankeId should return data matching to the saved entity`() {
-        val hanke = hankeFactory.save(HankeFactory.create())
+        val hanke = hankeFactory.save(HankeFactory.create().withGeneratedOmistaja(1))
 
         val result: List<HankeKayttajaDto> = hankeKayttajaService.getKayttajatByHankeId(hanke.id!!)
 
@@ -74,16 +73,16 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             assertThat(id).isEqualTo(entity.id)
             assertThat(nimi).isEqualTo(entity.nimi)
             assertThat(sahkoposti).isEqualTo(entity.sahkoposti)
-            assertThat(rooli).isEqualTo(entity.permission!!.role.role)
-            assertThat(tunnistautunut).isEqualTo(true) // hanke perustaja
+            assertThat(rooli).isEqualTo(entity.kayttajaTunniste!!.role)
+            assertThat(tunnistautunut).isEqualTo(false)
         }
     }
 
     @Test
     fun `addHankeFounder saves kayttaja with correct permission and other data`() {
-        val hankeEntity = hankeFactory.saveEntity(HankeFactory.createNewEntity(id = null))
+        val hankeEntity = hankeFactory.saveEntity()
         val savedHankeId = hankeEntity.id!!
-        val savedPermission = savePermission(savedHankeId, USERNAME, KAIKKI_OIKEUDET)
+        val savedPermission = savePermission(savedHankeId, USERNAME, Role.KAIKKI_OIKEUDET)
 
         hankeKayttajaService.addHankeFounder(savedHankeId, perustaja, savedPermission)
 
@@ -111,14 +110,11 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 applicationData = applicationData,
                 hanke = hanke
             )
-        val initialUserSize = 1 // hanke perustaja
 
         hankeKayttajaService.saveNewTokensFromApplication(application, 1)
 
-        val invitationTokens = kayttajaTunnisteRepository.findAll()
-        val hankeUsers = hankeKayttajaRepository.findAll()
-        assertThat(invitationTokens).isEmpty() // Hanke perustaja not included
-        assertThat(hankeUsers).hasSize(initialUserSize)
+        assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
+        assertThat(hankeKayttajaRepository.findAll()).isEmpty()
     }
 
     @Test
@@ -147,10 +143,10 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!)
 
-        val tunnisteet = nonPerustajaTunnisteet()
+        val tunnisteet = kayttajaTunnisteRepository.findAll()
         assertThat(tunnisteet).hasSize(4)
         assertThat(tunnisteet).areValid()
-        val kayttajat = nonPerustajaKayttajat()
+        val kayttajat = hankeKayttajaRepository.findAll()
         assertThat(kayttajat).hasSize(4)
         assertThat(kayttajat).each { kayttaja ->
             kayttaja.transform { it.nimi }.isEqualTo("Teppo Testihenkilö")
@@ -197,8 +193,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!)
 
-        assertThat(nonPerustajaTunnisteet()).hasSize(2)
-        val kayttajat = nonPerustajaKayttajat()
+        assertThat(kayttajaTunnisteRepository.findAll()).hasSize(2)
+        val kayttajat = hankeKayttajaRepository.findAll()
         assertThat(kayttajat).hasSize(2)
         assertThat(kayttajat.map { it.sahkoposti })
             .containsExactlyInAnyOrder(
@@ -232,12 +228,12 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 applicationData = applicationData,
                 hanke = hanke
             )
-        assertThat(nonPerustajaTunnisteet()).hasSize(2)
+        assertThat(kayttajaTunnisteRepository.findAll()).hasSize(2)
 
         hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!)
 
-        assertThat(nonPerustajaTunnisteet()).hasSize(4)
-        val kayttajat = nonPerustajaKayttajat()
+        assertThat(kayttajaTunnisteRepository.findAll()).hasSize(4)
+        val kayttajat = hankeKayttajaRepository.findAll()
         assertThat(kayttajat).hasSize(4)
         assertThat(kayttajat.map { it.sahkoposti })
             .containsExactlyInAnyOrder(
@@ -273,16 +269,16 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 applicationData = applicationData,
                 hanke = hanke
             )
-        assertThat(nonPerustajaTunnisteet()).isEmpty()
+        assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
 
         hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!)
 
-        val tunnisteet = nonPerustajaTunnisteet()
+        val tunnisteet = kayttajaTunnisteRepository.findAll()
         assertThat(tunnisteet).hasSize(2)
         assertThat(tunnisteet).each { tunniste ->
             tunniste.transform { it.hankeKayttaja?.sahkoposti }.isIn("email2", "email3")
         }
-        val kayttajat = nonPerustajaKayttajat()
+        val kayttajat = hankeKayttajaRepository.findAll()
         assertThat(kayttajat).hasSize(4)
         assertThat(kayttajat.map { it.sahkoposti })
             .containsExactlyInAnyOrder(
@@ -295,12 +291,10 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Test
     fun `saveNewTokensFromHanke does nothing if hanke has no contacts`() {
-        val hanke = hankeFactory.save(HankeFactory.create())
+        hankeKayttajaService.saveNewTokensFromHanke(HankeFactory.create())
 
-        hankeKayttajaService.saveNewTokensFromHanke(hanke)
-
-        assertThat(nonPerustajaTunnisteet()).isEmpty()
-        assertThat(nonPerustajaKayttajat()).isEmpty()
+        assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
+        assertThat(hankeKayttajaRepository.findAll()).isEmpty()
     }
 
     @Test
@@ -320,8 +314,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         hankeKayttajaService.saveNewTokensFromHanke(hanke)
 
-        val tunnisteet: List<KayttajaTunnisteEntity> = nonPerustajaTunnisteet()
-        val kayttajat: List<HankeKayttajaEntity> = nonPerustajaKayttajat()
+        val tunnisteet: List<KayttajaTunnisteEntity> = kayttajaTunnisteRepository.findAll()
+        val kayttajat: List<HankeKayttajaEntity> = hankeKayttajaRepository.findAll()
         assertThat(tunnisteet).hasSize(4) // 4 yhteyshenkilo subcontacts.
         assertThat(kayttajat).hasSize(4)
         assertThat(tunnisteet).areValid()
@@ -330,43 +324,27 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Test
     fun `saveNewTokensFromHanke with pre-existing permissions does not create duplicate`() {
-        val hankeEntity = hankeFactory.saveEntity()
-        val hanke =
-            HankeFactory.create(id = hankeEntity.id, hankeTunnus = hankeEntity.hankeTunnus).apply {
-                omistajat.add(HankeYhteystietoFactory.create())
-            }
-        saveUserAndToken(hankeEntity, "Existing User One", "ali.kontakti@meili.com")
+        val hanke = hankeFactory.save()
+        saveUserAndPermission(hanke.id!!, "Existing User One", "ali.kontakti@meili.com")
 
-        hankeKayttajaService.saveNewTokensFromHanke(hanke)
+        hankeKayttajaService.saveNewTokensFromHanke(
+            hanke.apply { this.omistajat.add(HankeYhteystietoFactory.create()) }
+        )
 
-        val tunnisteet = nonPerustajaTunnisteet()
-        val kayttajat = nonPerustajaKayttajat()
-        assertThat(tunnisteet).hasSize(1)
+        val tunnisteet = kayttajaTunnisteRepository.findAll()
+        assertThat(tunnisteet).isEmpty()
+        assertThat(tunnisteet).areValid()
+        val kayttajat = hankeKayttajaRepository.findAll()
         assertThat(kayttajat).hasSize(1)
-        val kayttaja = kayttajat.first()
-        assertThat(kayttaja.nimi).isEqualTo("Existing User One")
-        assertThat(kayttaja.sahkoposti).isEqualTo("ali.kontakti@meili.com")
+        assertThat(kayttajat.map { it.sahkoposti })
+            .containsExactly(
+                "ali.kontakti@meili.com",
+            )
     }
-
-    private val expectedNames =
-        arrayOf(
-            "yhteys-etu1 yhteys-suku1",
-            "yhteys-etu2 yhteys-suku2",
-            "yhteys-etu3 yhteys-suku3",
-            "yhteys-etu4 yhteys-suku4",
-        )
-
-    private val expectedEmails =
-        arrayOf(
-            "yhteys-email1",
-            "yhteys-email2",
-            "yhteys-email3",
-            "yhteys-email4",
-        )
 
     private fun Assert<List<KayttajaTunnisteEntity>>.areValid() = each { t ->
         t.transform { it.id }.isNotNull()
-        t.transform { it.role }.isEqualTo(KATSELUOIKEUS)
+        t.transform { it.role }.isEqualTo(Role.KATSELUOIKEUS)
         t.transform { it.createdAt }.isRecent()
         t.transform { it.sentAt }.isNull()
         t.transform { it.tunniste }.matches(Regex(kayttajaTunnistePattern))
@@ -396,19 +374,21 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         assertThat(actual.permissionCode).isEqualTo(other.permissionCode)
     }
 
-    /**
-     * Creating a Hanke through HankeService adds HankeKayttajaEntity for perustaja. This is a
-     * helper function to filter out perustaja.
-     */
-    private fun nonPerustajaKayttajat() =
-        hankeKayttajaRepository.findAll().filter { it.nimi != perustaja.nimi }
+    private val expectedNames =
+        arrayOf(
+            "yhteys-etu1 yhteys-suku1",
+            "yhteys-etu2 yhteys-suku2",
+            "yhteys-etu3 yhteys-suku3",
+            "yhteys-etu4 yhteys-suku4",
+        )
 
-    /**
-     * Creating a Hanke through HankeService adds KayttajaTunnisteEntity for perustaja. This is a
-     * helper function to filter out perustaja.
-     */
-    private fun nonPerustajaTunnisteet() =
-        kayttajaTunnisteRepository.findAll().filter { it.role != KAIKKI_OIKEUDET }
+    private val expectedEmails =
+        arrayOf(
+            "yhteys-email1",
+            "yhteys-email2",
+            "yhteys-email3",
+            "yhteys-email4",
+        )
 
     private fun saveUserAndToken(
         hanke: HankeEntity,
@@ -421,7 +401,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                     tunniste = "existing",
                     createdAt = OffsetDateTime.parse("2023-03-31T15:41:21Z"),
                     sentAt = null,
-                    role = KATSELUOIKEUS,
+                    role = Role.KATSELUOIKEUS,
                     hankeKayttaja = null,
                 )
             )
@@ -441,7 +421,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         nimi: String,
         sahkoposti: String
     ): HankeKayttajaEntity {
-        val permissionEntity = savePermission(hankeId, "fake id", KATSELUOIKEUS)
+        val permissionEntity = savePermission(hankeId, "fake id", Role.KATSELUOIKEUS)
 
         return hankeKayttajaRepository.save(
             HankeKayttajaEntity(

@@ -33,8 +33,8 @@ class PermissionServiceITest : DatabaseTest() {
     @Autowired lateinit var permissionService: PermissionService
     @Autowired lateinit var permissionRepository: PermissionRepository
     @Autowired lateinit var roleRepository: RoleRepository
-    @Autowired lateinit var hankeService: HankeService
     @Autowired lateinit var hankeRepository: HankeRepository
+    @Autowired lateinit var hankeService: HankeService
 
     companion object {
         @JvmStatic
@@ -148,7 +148,6 @@ class PermissionServiceITest : DatabaseTest() {
     fun `hasPermission with correct permission`() {
         val kaikkiOikeudet = roleRepository.findOneByRole(Role.KAIKKI_OIKEUDET)
         val hankeId = saveSeveralHanke(listOf(HANKE_TUNNUS))[0].id!!
-
         permissionRepository.save(
             PermissionEntity(userId = USERNAME, hankeId = hankeId, role = kaikkiOikeudet)
         )
@@ -196,8 +195,7 @@ class PermissionServiceITest : DatabaseTest() {
     }
 
     private fun saveSeveralHanke(hankeTunnusList: List<String>) =
-        createSeveralHanke(hankeTunnusList).map { hankeRepository.save(it) }
-
-    private fun createSeveralHanke(hankeTunnusList: List<String>) =
-        hankeTunnusList.map { HankeFactory.createNewEntity(id = null, hankeTunnus = it) }
+        hankeTunnusList.map {
+            hankeRepository.save(HankeFactory.createNewEntity(id = null, hankeTunnus = it))
+        }
 }

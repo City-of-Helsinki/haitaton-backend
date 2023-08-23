@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
+import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
@@ -152,7 +153,7 @@ open class HankeServiceImpl(
 
         postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
-        return createHankeDomainObjectFromEntity(savedHankeEntity).also {
+        return createHankeDomainObjectFromEntity(entity).also {
             initAccessForCreatedHanke(it, userId)
             hankeLoggingService.logCreate(it, userId)
         }
@@ -235,20 +236,21 @@ open class HankeServiceImpl(
         hankeLoggingService.logDelete(hanke, userId)
     }
 
-    private fun initAccessForCreatedHanke(hanke: Hanke, userId: String) {
-        val hankeId = hanke.id!!
-        val permissionAll = permissionService.setPermission(hankeId, userId, Role.KAIKKI_OIKEUDET)
-        val perustaja =
-            hanke.perustaja ?: throw HankeArgumentException("Missing perustaja information")
-        hankeKayttajaService.addHankeFounder(hankeId, perustaja, permissionAll)
-        hankeKayttajaService.saveNewTokensFromHanke(hanke)
-    }
-
     private fun anyHakemusProcessingInAllu(hakemukset: List<Application>): Boolean =
         hakemukset.any {
             logger.info { "Hakemus ${it.id} has alluStatus ${it.alluStatus}" }
             !applicationService.isStillPending(it)
         }
+
+    private fun initAccessForCreatedHanke(hanke: Hanke, userId: String) {
+        val hankeId = hanke.id!!
+        val permissionAll = permissionService.setPermission(hankeId, userId, Role.KAIKKI_OIKEUDET)
+        val perustaja = hanke.perustaja
+        if (perustaja != null) {
+            hankeKayttajaService.addHankeFounder(hankeId, perustaja, permissionAll)
+        }
+        hankeKayttajaService.saveNewTokensFromHanke(hanke)
+    }
 
     // TODO: functions to remove and invalidate Hanke's tormaystarkastelu-data
     //   At least invalidation can be done purely working on the particular
@@ -964,7 +966,7 @@ open class HankeServiceImpl(
         )
 
     private fun generatePerustajaFrom(cableReport: CableReportApplicationData): Perustaja {
-        val orderer =
+        val orderer: Contact =
             cableReport.findOrderer()
                 ?: throw HankeArgumentException("Orderer not found for Hanke perustaja")
 

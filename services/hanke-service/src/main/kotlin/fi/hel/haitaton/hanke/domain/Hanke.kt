@@ -79,7 +79,7 @@ data class Hanke(
     var status: HankeStatus? = HankeStatus.DRAFT,
     //
     @JsonView(ChangeLogView::class)
-    @field:Schema(description = "Hanke founder contact information", required = true)
+    @field:Schema(description = "Hanke founder contact information")
     var perustaja: Perustaja? = null,
     //
     @JsonView(ChangeLogView::class)

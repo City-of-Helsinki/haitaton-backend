@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import com.fasterxml.jackson.databind.node.ObjectNode
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
 import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.domain.Hankealue
@@ -8,7 +7,6 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withPerustaja
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -335,22 +333,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         }
 
         @Test
-        fun `When perustaja is provided return provided information`() {
-            val hanke = HankeFactory.create().withPerustaja()
-            every { hankeService.createHanke(any()) } returns hanke
-
-            post(url, hanke)
-                .andExpect(status().isOk)
-                .andExpect(jsonPath("$.perustaja.nimi").value("Pertti Perustaja"))
-                .andExpect(jsonPath("$.perustaja.email").value("foo@bar.com"))
-
-            verifySequence {
-                hankeService.createHanke(any())
-                disclosureLogService.saveDisclosureLogsForHanke(any(), any())
-            }
-        }
-
-        @Test
         fun `Sanitize hanke input and return 200`() {
             val hanke = HankeFactory.create().apply { generated = true }
             every { hankeService.createHanke(hanke.copy(id = null, generated = false)) } returns
@@ -362,17 +344,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 hankeService.createHanke(any())
                 disclosureLogService.saveDisclosureLogsForHanke(any(), any())
             }
-        }
-
-        @Test
-        fun `With perustaja without sahkoposti returns 400`() {
-            val hakemus = HankeFactory.create().withPerustaja()
-            val content: ObjectNode = OBJECT_MAPPER.valueToTree(hakemus)
-            (content.get("perustaja") as ObjectNode).remove("email")
-
-            postRaw(url, content.toJsonString())
-                .andExpect(status().isBadRequest)
-                .andExpect(hankeError(HankeError.HAI0003))
         }
 
         @Test
