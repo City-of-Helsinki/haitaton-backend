@@ -1,12 +1,12 @@
 package fi.hel.haitaton.hanke.application
 
 import assertk.all
+import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
-import assertk.assertions.isFailure
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.HankeEntity
@@ -415,8 +415,7 @@ class ApplicationServiceTest {
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
-        assertThat { applicationService.sendApplication(3, USERNAME) }
-            .isFailure()
+        assertFailure { applicationService.sendApplication(3, USERNAME) }
             .all {
                 hasClass(InvalidApplicationDataException::class)
                 hasMessage("Application contains invalid data. Errors at paths: $path")

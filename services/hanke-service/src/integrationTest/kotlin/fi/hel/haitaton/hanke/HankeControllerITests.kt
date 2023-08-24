@@ -189,7 +189,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .returns(hankeIds)
 
             // we check that we get the two hankeTunnus and geometriat we expect
-            get("$url?geometry=true")
+            get("$url/?geometry=true")
                 .andExpect(status().isOk)
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].hankeTunnus").value(HANKE_TUNNUS))

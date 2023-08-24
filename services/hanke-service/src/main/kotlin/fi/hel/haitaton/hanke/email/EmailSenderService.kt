@@ -1,11 +1,10 @@
 package fi.hel.haitaton.hanke.email
 
 import fi.hel.haitaton.hanke.getResource
-import javax.mail.internet.MimeMessage
+import jakarta.mail.internet.MimeMessage
 import mu.KotlinLogging
 import net.pwall.mustache.Template
 import org.springframework.boot.context.properties.ConfigurationProperties
-import org.springframework.boot.context.properties.ConstructorBinding
 import org.springframework.boot.convert.Delimiter
 import org.springframework.mail.javamail.JavaMailSender
 import org.springframework.mail.javamail.MimeMessageHelper
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Service
 private val logger = KotlinLogging.logger {}
 
 @ConfigurationProperties(prefix = "haitaton.email")
-@ConstructorBinding
 data class EmailProperties(
     val from: String,
     val baseUrl: String,

@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.security
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import io.sentry.Sentry
-import javax.servlet.http.HttpServletResponse
+import jakarta.servlet.http.HttpServletResponse
 import mu.KotlinLogging
 import org.springframework.http.HttpMethod
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
@@ -13,8 +13,8 @@ private val logger = KotlinLogging.logger {}
 object AccessRules {
     fun configureHttpAccessRules(http: HttpSecurity) {
         http
-            .authorizeRequests()
-            .mvcMatchers(
+            .authorizeHttpRequests()
+            .requestMatchers(
                 HttpMethod.GET,
                 "/actuator/health",
                 "/actuator/health/liveness",
@@ -26,8 +26,13 @@ object AccessRules {
                 "/v3/api-docs/**",
             )
             .permitAll()
+            .requestMatchers(HttpMethod.POST, "/testdata/unlink-applications")
+            .permitAll()
             .and()
-            .authorizeRequests()
+            .csrf()
+            .ignoringRequestMatchers("/testdata/unlink-applications")
+            .and()
+            .authorizeHttpRequests()
             .anyRequest()
             .authenticated()
             .and()

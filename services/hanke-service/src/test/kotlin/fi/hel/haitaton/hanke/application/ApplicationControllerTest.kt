@@ -35,7 +35,7 @@ class ApplicationControllerTest {
             applicationService,
             hankeService,
             disclosureLogService,
-            permissionService
+            permissionService,
         )
 
     @BeforeEach

@@ -1,12 +1,12 @@
 package fi.hel.haitaton.hanke.allu
 
 import assertk.Assert
+import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
-import assertk.assertions.isFailure
 import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
@@ -301,8 +301,7 @@ class CableReportServiceAlluITests {
                     .setBody("Error message")
             )
 
-            assertThat { service.getApplicationStatusHistories(alluids, eventsAfter) }
-                .isFailure()
+            assertFailure { service.getApplicationStatusHistories(alluids, eventsAfter) }
                 .hasClass(WebClientResponseException.NotFound::class)
         }
     }

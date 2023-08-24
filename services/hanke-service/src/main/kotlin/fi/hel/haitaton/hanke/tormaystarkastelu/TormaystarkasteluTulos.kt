@@ -3,19 +3,29 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankeEntity
-import javax.persistence.Entity
-import javax.persistence.FetchType
-import javax.persistence.GeneratedValue
-import javax.persistence.GenerationType
-import javax.persistence.Id
-import javax.persistence.JoinColumn
-import javax.persistence.ManyToOne
-import javax.persistence.Table
+import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.persistence.Entity
+import jakarta.persistence.FetchType
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.ManyToOne
+import jakarta.persistence.Table
 
+@Schema(description = "Collision review result")
 data class TormaystarkasteluTulos(
-    @JsonView(ChangeLogView::class) val perusIndeksi: Float,
-    @JsonView(ChangeLogView::class) val pyorailyIndeksi: Float,
-    @JsonView(ChangeLogView::class) val joukkoliikenneIndeksi: Float
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Basic index result")
+    val perusIndeksi: Float,
+    //
+    @field:Schema(description = "Cycling index result")
+    @JsonView(ChangeLogView::class)
+    val pyorailyIndeksi: Float,
+    //
+    @field:Schema(description = "Public transport index result")
+    @JsonView(ChangeLogView::class)
+    val joukkoliikenneIndeksi: Float
 ) {
 
     @get:JsonView(ChangeLogView::class)
@@ -29,6 +39,7 @@ data class TormaystarkasteluTulos(
     }
 }
 
+@Schema(description = "Traffic nuisance index type")
 data class LiikennehaittaIndeksiType(
     @JsonView(ChangeLogView::class) val indeksi: Float,
     @JsonView(ChangeLogView::class) val tyyppi: IndeksiType

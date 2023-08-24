@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.toJsonString
 
 object AuditLogEntryFactory {
@@ -49,4 +50,13 @@ object AuditLogEntryFactory {
             objectType = ObjectType.ALLU_CUSTOMER,
             objectBefore = customer.toJsonString()
         )
+
+    fun createReadEntryForHankeKayttajat(kayttajat: List<HankeKayttajaDto>): List<AuditLogEntry> =
+        kayttajat.map {
+            createReadEntry(
+                objectId = it.id,
+                objectType = ObjectType.HANKE_KAYTTAJA,
+                objectBefore = it.toJsonString()
+            )
+        }
 }

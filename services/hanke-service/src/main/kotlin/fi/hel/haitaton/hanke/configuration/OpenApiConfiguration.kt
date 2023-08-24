@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke
+package fi.hel.haitaton.hanke.configuration
 
 import io.swagger.v3.oas.annotations.OpenAPIDefinition
 import io.swagger.v3.oas.annotations.info.Info
@@ -11,6 +11,6 @@ import io.swagger.v3.oas.annotations.servers.Server
             description = "API for Haitaton internal use. Can change without warning.",
             version = "1"
         ),
-    servers = [Server(url = "/")]
+    servers = [Server(url = "/api/")],
 )
 internal class OpenAPIConfiguration
