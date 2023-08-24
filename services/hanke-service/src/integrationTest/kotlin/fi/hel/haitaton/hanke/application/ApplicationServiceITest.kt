@@ -93,7 +93,7 @@ private val dataWithoutAreas = AlluDataFactory.createCableReportApplicationData(
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("default", "emailtest")
+@ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class ApplicationServiceITest : DatabaseTest() {
 

@@ -52,7 +52,7 @@ private const val BASE_URL = "/hakemukset"
 
 @WebMvcTest(ApplicationController::class)
 @Import(IntegrationTestConfiguration::class)
-@ActiveProfiles("itest")
+@ActiveProfiles("test")
 class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired private lateinit var applicationService: ApplicationService

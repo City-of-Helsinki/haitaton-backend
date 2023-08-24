@@ -24,7 +24,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
             "haitaton.email.filter.allow-list=test@test.test;something@mail.com"
         ]
 )
-@ActiveProfiles("default", "emailtest")
+@ActiveProfiles("test")
 class EmailSenderServiceFilterITest : DatabaseTest() {
 
     companion object {

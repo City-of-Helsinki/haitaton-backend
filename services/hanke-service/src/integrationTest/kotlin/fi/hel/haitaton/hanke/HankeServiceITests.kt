@@ -88,7 +88,7 @@ private const val NAME_SOMETHING = "Som Et Hing"
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("default")
+@ActiveProfiles("test")
 @WithMockUser(USER_NAME)
 class HankeServiceITests : DatabaseTest() {
 

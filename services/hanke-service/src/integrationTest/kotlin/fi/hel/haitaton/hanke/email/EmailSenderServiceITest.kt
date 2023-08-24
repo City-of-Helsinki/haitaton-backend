@@ -26,7 +26,7 @@ private const val APPLICATION_IDENTIFIER = "JS2300001"
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("default", "emailtest")
+@ActiveProfiles("test")
 class EmailSenderServiceITest : DatabaseTest() {
 
     companion object {

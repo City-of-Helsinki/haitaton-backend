@@ -88,6 +88,8 @@ services:
       HAITATON_EMAIL_FILTER_USE: false
       CLAMAV_BASE_URL: http://clamav-api:3030
       HAITATON_TESTDATA_ENABLED: true
+      HAITATON_FEATURE_HANKE_EDITING: true
+      HAITATON_FEATURE_USER_MANAGEMENT: true
     depends_on:
       - db
       - clamav-api

@@ -26,7 +26,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("default")
+@ActiveProfiles("test")
 @TestPropertySource(locations = ["classpath:application-test.properties"])
 class FileScanClientITest : DatabaseTest() {
 
