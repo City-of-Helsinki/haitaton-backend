@@ -8,7 +8,7 @@ import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
-import javax.persistence.EntityManager
+import jakarta.persistence.EntityManager
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest

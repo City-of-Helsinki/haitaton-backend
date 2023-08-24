@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
@@ -45,6 +46,35 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     @Autowired private lateinit var hankeKayttajaRepository: HankeKayttajaRepository
     @Autowired private lateinit var permissionRepository: PermissionRepository
     @Autowired private lateinit var roleRepository: RoleRepository
+
+    @Test
+    fun `getKayttajatByHankeId should return users from correct hanke only`() {
+        val hankeToFind = hankeFactory.save(HankeFactory.create().withYhteystiedot())
+        hankeFactory.save(HankeFactory.create().withYhteystiedot())
+
+        val result: List<HankeKayttajaDto> =
+            hankeKayttajaService.getKayttajatByHankeId(hankeToFind.id!!)
+
+        assertThat(result).hasSize(4)
+    }
+
+    @Test
+    fun `getKayttajatByHankeId should return data matching to the saved entity`() {
+        val hanke = hankeFactory.save(HankeFactory.create().withGeneratedOmistaja(1))
+
+        val result: List<HankeKayttajaDto> = hankeKayttajaService.getKayttajatByHankeId(hanke.id!!)
+
+        val entity: HankeKayttajaEntity =
+            hankeKayttajaRepository.findAll().also { assertThat(it).hasSize(1) }.first()
+        val dto: HankeKayttajaDto = result.first().also { assertThat(result).hasSize(1) }
+        with(dto) {
+            assertThat(id).isEqualTo(entity.id)
+            assertThat(nimi).isEqualTo(entity.nimi)
+            assertThat(sahkoposti).isEqualTo(entity.sahkoposti)
+            assertThat(rooli).isEqualTo(entity.kayttajaTunniste!!.role)
+            assertThat(tunnistautunut).isEqualTo(false)
+        }
+    }
 
     @Test
     fun `saveNewTokensFromApplication does nothing if application has no contacts`() {

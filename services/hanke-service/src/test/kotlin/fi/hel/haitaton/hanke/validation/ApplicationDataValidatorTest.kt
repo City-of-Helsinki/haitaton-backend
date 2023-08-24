@@ -1,10 +1,9 @@
 package fi.hel.haitaton.hanke.validation
 
+import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.hasClass
 import assertk.assertions.isEmpty
-import assertk.assertions.isFailure
-import assertk.assertions.isSuccess
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
@@ -18,7 +17,6 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.touch
 import fi.hel.haitaton.hanke.validation.ApplicationDataValidator.ensureValidForSend
 import java.util.stream.Stream
-import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -41,7 +39,7 @@ class ApplicationDataValidatorTest {
     fun `Correct application passes validation`() {
         val applicationData = createCableReportApplicationData()
 
-        assertThat { ensureValidForSend(applicationData) }.isSuccess().isTrue()
+        assertThat(ensureValidForSend(applicationData)).isTrue()
     }
 
     @ParameterizedTest(name = "{displayName}: missingField: {0}")
@@ -51,10 +49,9 @@ class ApplicationDataValidatorTest {
         cableReportApplicationData: CableReportApplicationData
     ) {
         missingField.touch()
-        assertThat { cableReportApplicationData.validateForErrors().isOk() }.isSuccess().isTrue()
+        assertThat(cableReportApplicationData.validateForErrors().isOk()).isTrue()
 
-        assertThat { ensureValidForSend(cableReportApplicationData) }
-            .isFailure()
+        assertFailure { ensureValidForSend(cableReportApplicationData) }
             .hasClass(InvalidApplicationDataException::class)
     }
 
@@ -67,10 +64,9 @@ class ApplicationDataValidatorTest {
                     contractorWithContacts = customerWithNoOrderers,
                 )
         val applicationData = application.applicationData as CableReportApplicationData
-        assertThat { applicationData.validateForErrors().isOk() }.isSuccess().isTrue()
+        assertThat(applicationData.validateForErrors().isOk()).isTrue()
 
-        assertThat { ensureValidForSend(applicationData) }
-            .isFailure()
+        assertFailure { ensureValidForSend(applicationData) }
             .hasClass(InvalidApplicationDataException::class)
     }
 
@@ -85,10 +81,9 @@ class ApplicationDataValidatorTest {
         val applicationData = application.applicationData as CableReportApplicationData
         val contacts = applicationData.customersWithContacts().flatMap { it.contacts }
         assertThat(contacts).isEmpty()
-        assertThat { applicationData.validateForErrors().isOk() }.isSuccess().isTrue()
+        assertThat(applicationData.validateForErrors().isOk()).isTrue()
 
-        assertThat { ensureValidForSend(applicationData) }
-            .isFailure()
+        assertFailure { ensureValidForSend(applicationData) }
             .hasClass(InvalidApplicationDataException::class)
     }
 
@@ -102,10 +97,9 @@ class ApplicationDataValidatorTest {
         val application =
             createApplication().withApplicationData(customerWithContacts = customerWithContacts)
         val applicationData = application.applicationData as CableReportApplicationData
-        assertThat { applicationData.validateForErrors().isOk() }.isSuccess().isTrue()
+        assertThat(applicationData.validateForErrors().isOk()).isTrue()
 
-        assertThat { ensureValidForSend(applicationData) }
-            .isFailure()
+        assertFailure { ensureValidForSend(applicationData) }
             .hasClass(InvalidApplicationDataException::class)
     }
 
@@ -119,10 +113,9 @@ class ApplicationDataValidatorTest {
         val application =
             createApplication().withApplicationData(contractorWithContacts = customerWithContacts)
         val applicationData = application.applicationData as CableReportApplicationData
-        assertThat { applicationData.validateForErrors().isOk() }.isSuccess().isTrue()
+        assertThat(applicationData.validateForErrors().isOk()).isTrue()
 
-        assertThat { ensureValidForSend(applicationData) }
-            .isFailure()
+        assertFailure { ensureValidForSend(applicationData) }
             .hasClass(InvalidApplicationDataException::class)
     }
 
@@ -137,10 +130,9 @@ class ApplicationDataValidatorTest {
             createApplication()
                 .withApplicationData(representativeWithContacts = customerWithContacts)
         val applicationData = application.applicationData as CableReportApplicationData
-        assertThat { applicationData.validateForErrors().isOk() }.isSuccess().isTrue()
+        assertThat(applicationData.validateForErrors().isOk()).isTrue()
 
-        assertThat { ensureValidForSend(applicationData) }
-            .isFailure()
+        assertFailure { ensureValidForSend(applicationData) }
             .hasClass(InvalidApplicationDataException::class)
     }
 
@@ -151,7 +143,7 @@ class ApplicationDataValidatorTest {
                 .withApplicationData(representativeWithContacts = null)
                 .applicationData
 
-        assertThat { ensureValidForSend(application) }.isSuccess().isTrue()
+        assertThat(ensureValidForSend(application)).isTrue()
     }
 
     @ParameterizedTest(name = "{displayName}: missingField: {0}")
@@ -165,10 +157,9 @@ class ApplicationDataValidatorTest {
             createApplication()
                 .withApplicationData(propertyDeveloperWithContacts = customerWithContacts)
         val applicationData = application.applicationData as CableReportApplicationData
-        assertThat { applicationData.validateForErrors().isOk() }.isSuccess().isTrue()
+        assertThat(applicationData.validateForErrors().isOk()).isTrue()
 
-        assertThat { ensureValidForSend(applicationData) }
-            .isFailure()
+        assertFailure { ensureValidForSend(applicationData) }
             .hasClass(InvalidApplicationDataException::class)
     }
 
@@ -177,7 +168,7 @@ class ApplicationDataValidatorTest {
         val application =
             createApplication().withApplicationData(propertyDeveloperWithContacts = null)
 
-        assertThat { applicationValidator.isValid(application, null) }.isSuccess().isTrue()
+        assertThat(applicationValidator.isValid(application, null)).isTrue()
     }
 
     companion object {

@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonUnwrapped
-import javax.validation.ConstraintViolation
+import jakarta.validation.ConstraintViolation
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
 enum class HankeError(val errorMessage: String) {

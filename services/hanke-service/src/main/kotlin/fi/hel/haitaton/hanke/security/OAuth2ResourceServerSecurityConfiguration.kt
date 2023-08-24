@@ -53,7 +53,7 @@ class OAuth2ResourceServerSecurityConfiguration(
     @ConditionalOnProperty(name = ["haitaton.gdpr.disabled"], havingValue = "false")
     fun gdprFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .antMatcher("/gdpr-api/**")
+            .securityMatcher("/gdpr-api/**")
             .authorizeHttpRequests { authorize -> authorize.anyRequest().authenticated() }
             .oauth2ResourceServer { resourceServer -> resourceServer.jwt() }
         return http.build()
@@ -70,7 +70,7 @@ class OAuth2ResourceServerSecurityConfiguration(
     @Order(1)
     @ConditionalOnProperty(name = ["haitaton.gdpr.disabled"], matchIfMissing = true)
     fun gdprDisabledFilterChain(http: HttpSecurity): SecurityFilterChain {
-        http.antMatcher("/gdpr-api/**").authorizeHttpRequests { authorize ->
+        http.securityMatcher("/gdpr-api/**").authorizeHttpRequests { authorize ->
             authorize.anyRequest().denyAll()
         }
         return http.build()

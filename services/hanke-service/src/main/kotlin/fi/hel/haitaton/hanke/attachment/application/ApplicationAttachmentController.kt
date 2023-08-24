@@ -1,13 +1,11 @@
 package fi.hel.haitaton.hanke.attachment.application
 
+import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
-import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -41,22 +39,16 @@ class ApplicationAttachmentController(
 
     @GetMapping
     @Operation(
-        summary = "Get metadata from application attachments.",
+        summary = "Get metadata from application attachments",
     )
     @ApiResponses(
         value =
             [
-                ApiResponse(description = "Application attachments.", responseCode = "200"),
+                ApiResponse(description = "Application attachments", responseCode = "200"),
                 ApiResponse(
-                    description = "Application not found.",
+                    description = "Application not found",
                     responseCode = "404",
-                    content =
-                        [
-                            Content(
-                                schema =
-                                    Schema(implementation = ApplicationNotFoundException::class)
-                            )
-                        ]
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
             ]
     )
@@ -68,20 +60,15 @@ class ApplicationAttachmentController(
     }
 
     @GetMapping("/{attachmentId}/content")
-    @Operation(summary = "Download attachment file.")
+    @Operation(summary = "Download attachment file")
     @ApiResponses(
         value =
             [
-                ApiResponse(description = "Attachment file.", responseCode = "200"),
+                ApiResponse(description = "Attachment file", responseCode = "200"),
                 ApiResponse(
-                    description = "Attachment not found.",
+                    description = "Attachment not found",
                     responseCode = "404",
-                    content =
-                        [
-                            Content(
-                                schema = Schema(implementation = AttachmentNotFoundException::class)
-                            )
-                        ]
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
             ]
     )
@@ -106,41 +93,21 @@ class ApplicationAttachmentController(
     @ApiResponses(
         value =
             [
-                ApiResponse(description = "Success.", responseCode = "200"),
+                ApiResponse(description = "Success", responseCode = "200"),
                 ApiResponse(
-                    description = "Application not found.",
+                    description = "Application not found",
                     responseCode = "404",
-                    content =
-                        [
-                            Content(
-                                schema =
-                                    Schema(implementation = ApplicationNotFoundException::class)
-                            )
-                        ]
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
                 ApiResponse(
-                    description = "Attachment invalid.",
+                    description = "Attachment invalid",
                     responseCode = "400",
-                    content =
-                        [
-                            Content(
-                                schema = Schema(implementation = AttachmentInvalidException::class)
-                            )
-                        ]
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
                 ApiResponse(
-                    description = "Application already processing.",
+                    description = "Application already processing",
                     responseCode = "409",
-                    content =
-                        [
-                            Content(
-                                schema =
-                                    Schema(
-                                        implementation =
-                                            ApplicationAlreadyProcessingException::class
-                                    )
-                            )
-                        ]
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
             ]
     )
@@ -155,33 +122,23 @@ class ApplicationAttachmentController(
 
     @DeleteMapping("/{attachmentId}")
     @Operation(
-        summary = "Delete attachment from application.",
+        summary = "Delete attachment from application",
         description =
             "Can be deleted if application has not been sent to Allu. Don't delete if application has alluId."
     )
     @ApiResponses(
         value =
             [
-                ApiResponse(description = "Delete attachment.", responseCode = "200"),
+                ApiResponse(description = "Delete attachment", responseCode = "200"),
                 ApiResponse(
-                    description = "Attachment not found.",
+                    description = "Attachment not found",
                     responseCode = "404",
-                    content =
-                        [
-                            Content(
-                                schema = Schema(implementation = AttachmentNotFoundException::class)
-                            )
-                        ]
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
                 ApiResponse(
-                    description = "Application already in Allu.",
+                    description = "Application already in Allu",
                     responseCode = "409",
-                    content =
-                        [
-                            Content(
-                                schema = Schema(implementation = ApplicationInAlluException::class)
-                            )
-                        ]
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
             ]
     )

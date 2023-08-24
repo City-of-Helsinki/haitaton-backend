@@ -1,9 +1,9 @@
 package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.databind.JsonNode
+import jakarta.validation.ConstraintViolationException
 import java.math.BigDecimal
 import java.math.RoundingMode
-import javax.validation.ConstraintViolationException
 
 fun Any?.toJsonString(): String = OBJECT_MAPPER.writeValueAsString(this)
 
