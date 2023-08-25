@@ -95,14 +95,14 @@ permissions are updated to the user tokens, i.e. this call will change
 which permissions the user will get when they activate their permissions.
 
 The reply from the list users endpoint can be modified and used here, but
-only the ID and role fields are read.
+only the ID and kayttooikeustaso fields are read.
 
 Only the IDs that are mentioned are updated, so only updated IDs need to
 be listed. This also means that this endpoint can't be used to remove
 permissions.
 
-If removing or adding KAIKKI_OIKEUDET role, the caller needs to have those
-same permissions.
+If removing or adding KAIKKI_OIKEUDET kayttooikeustaso, the caller needs to
+have those same permissions.
 """
     )
     @ApiResponses(
@@ -158,7 +158,7 @@ same permissions.
 
         hankeKayttajaService.updatePermissions(
             hanke,
-            permissions.kayttajat.associate { it.id to it.rooli },
+            permissions.kayttajat.associate { it.id to it.kayttooikeustaso },
             deleteAdminPermission,
             userId
         )
@@ -180,10 +180,12 @@ same permissions.
         return HankeError.HAI4002
     }
 
-    @ExceptionHandler(UsersWithoutRolesException::class)
+    @ExceptionHandler(UsersWithoutKayttooikeustasoException::class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @Hidden
-    fun usersWithoutRolesException(ex: UsersWithoutRolesException): HankeError {
+    fun usersWithoutKayttooikeustasoException(
+        ex: UsersWithoutKayttooikeustasoException
+    ): HankeError {
         logger.error(ex) { ex.message }
         return HankeError.HAI4003
     }

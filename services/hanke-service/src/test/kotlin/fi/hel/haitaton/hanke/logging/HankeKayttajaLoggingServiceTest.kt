@@ -8,7 +8,7 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.factory.KayttajaTunnisteFactory
 import fi.hel.haitaton.hanke.factory.PermissionFactory
-import fi.hel.haitaton.hanke.permissions.Role
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import io.mockk.called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -41,10 +41,11 @@ class HankeKayttajaLoggingServiceTest {
     inner class LogPermissionUpdate {
         @Test
         fun `Creates audit log entry for updated permission`() {
-            val roleBefore = Role.KATSELUOIKEUS
-            val permissionAfter = PermissionFactory.create(role = Role.HANKEMUOKKAUS)
+            val kayttooikeustasoBefore = Kayttooikeustaso.KATSELUOIKEUS
+            val permissionAfter =
+                PermissionFactory.create(kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS)
 
-            loggingService.logUpdate(roleBefore, permissionAfter, userId)
+            loggingService.logUpdate(kayttooikeustasoBefore, permissionAfter, userId)
 
             verify {
                 auditLogService.create(
@@ -76,10 +77,10 @@ class HankeKayttajaLoggingServiceTest {
 
         @Test
         fun `Doesn't create audit log entry if permission not updated`() {
-            val roleBefore = PermissionFactory.ROLE
+            val kayttooikeustasoBefore = PermissionFactory.KAYTTOOIKEUSTASO
             val permissionAfter = PermissionFactory.create()
 
-            loggingService.logUpdate(roleBefore, permissionAfter, userId)
+            loggingService.logUpdate(kayttooikeustasoBefore, permissionAfter, userId)
 
             verify { auditLogService wasNot called }
         }
@@ -90,7 +91,8 @@ class HankeKayttajaLoggingServiceTest {
         @Test
         fun `Creates audit log entry for updated kayttajatunniste`() {
             val kayttajaTunnisteBefore = KayttajaTunnisteFactory.create(sentAt = null)
-            val kayttajaTunnisteAfter = KayttajaTunnisteFactory.create(role = Role.HANKEMUOKKAUS)
+            val kayttajaTunnisteAfter =
+                KayttajaTunnisteFactory.create(kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS)
 
             loggingService.logUpdate(kayttajaTunnisteBefore, kayttajaTunnisteAfter, userId)
 

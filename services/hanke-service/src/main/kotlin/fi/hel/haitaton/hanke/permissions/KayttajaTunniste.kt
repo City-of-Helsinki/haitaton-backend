@@ -24,7 +24,7 @@ data class KayttajaTunniste(
     val tunniste: String,
     val createdAt: OffsetDateTime,
     val sentAt: OffsetDateTime?,
-    var role: Role,
+    var kayttooikeustaso: Kayttooikeustaso,
     val hankeKayttajaId: UUID?
 ) : HasId<UUID>
 
@@ -35,23 +35,24 @@ class KayttajaTunnisteEntity(
     val tunniste: String,
     @Column(name = "created_at") val createdAt: OffsetDateTime,
     @Column(name = "sent_at") val sentAt: OffsetDateTime?,
-    @Enumerated(EnumType.STRING) var role: Role,
+    @Enumerated(EnumType.STRING) var kayttooikeustaso: Kayttooikeustaso,
     @OneToOne(mappedBy = "kayttajaTunniste") val hankeKayttaja: HankeKayttajaEntity?
 ) {
 
-    fun toDomain() = KayttajaTunniste(id, tunniste, createdAt, sentAt, role, hankeKayttaja?.id)
+    fun toDomain() =
+        KayttajaTunniste(id, tunniste, createdAt, sentAt, kayttooikeustaso, hankeKayttaja?.id)
 
     companion object {
         private const val tokenLength: Int = 24
         private val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
         private val secureRandom: SecureRandom = SecureRandom()
 
-        fun create(role: Role = Role.KATSELUOIKEUS) =
+        fun create() =
             KayttajaTunnisteEntity(
                 tunniste = randomToken(),
                 createdAt = getCurrentTimeUTC().toOffsetDateTime(),
                 sentAt = null,
-                role = role,
+                kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
                 hankeKayttaja = null
             )
 
