@@ -20,16 +20,15 @@ import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
 private val logger = KotlinLogging.logger {}
 
 @RestController
-@RequestMapping("/hankkeet/{hankeTunnus}/kayttajat")
 @SecurityRequirement(name = "bearerAuth")
 class HankeKayttajaController(
     private val hankeService: HankeService,
@@ -39,7 +38,7 @@ class HankeKayttajaController(
     private val featureFlags: FeatureFlags,
 ) {
 
-    @GetMapping(produces = [APPLICATION_JSON_VALUE])
+    @GetMapping("/hankkeet/{hankeTunnus}/kayttajat", produces = [APPLICATION_JSON_VALUE])
     @Operation(
         summary = "Get Hanke users",
         description = "Returns a list of users and their Hanke related information."
@@ -84,7 +83,7 @@ class HankeKayttajaController(
         return HankeKayttajaResponse(users)
     }
 
-    @PutMapping
+    @PutMapping("/hankkeet/{hankeTunnus}/kayttajat")
     @Operation(
         summary = "Update permissions of the listed users.",
         description =
@@ -164,6 +163,49 @@ have those same permissions.
         )
     }
 
+    @PostMapping("/kayttajat")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+        summary = "Identify a user",
+        description =
+            """
+Identifies a user who has been invited to a hanke. Finds a token in database
+that's the same as the token given in the request. Activates the permission to
+the hanke the token was created for.
+
+Removes the token after a successful identification.
+"""
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "User identified, permission to hanke given",
+                    responseCode = "204",
+                ),
+                ApiResponse(
+                    description = "Token not found or outdated",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+                ApiResponse(
+                    description = "Token doesn't have a user associated with it",
+                    responseCode = "500",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+                ApiResponse(
+                    description = "Permission already exists",
+                    responseCode = "409",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+            ]
+    )
+    fun identifyUser(@RequestBody tunnistautuminen: Tunnistautuminen) {
+        hankeKayttajaService.createPermissionFromToken(currentUserId(), tunnistautuminen.tunniste)
+    }
+
+    data class Tunnistautuminen(val tunniste: String)
+
     @ExceptionHandler(MissingAdminPermissionException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     @Hidden
@@ -204,5 +246,37 @@ have those same permissions.
     fun hankeKayttajatNotFoundException(ex: HankeKayttajatNotFoundException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI4001
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
+    fun tunnisteNotFoundException(ex: TunnisteNotFoundException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4004
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @Hidden
+    fun orphanedTunnisteException(ex: OrphanedTunnisteException): HankeError {
+        logger.error(ex) { ex.message }
+        return HankeError.HAI4001
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun userAlreadyHasPermissionException(ex: UserAlreadyHasPermissionException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4003
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun permissionAlreadyExistsException(ex: PermissionAlreadyExistsException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4003
     }
 }

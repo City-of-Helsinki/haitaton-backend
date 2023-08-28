@@ -18,7 +18,6 @@ private val logger = KotlinLogging.logger {}
 class HankeKayttajaService(
     private val hankeKayttajaRepository: HankeKayttajaRepository,
     private val kayttajaTunnisteRepository: KayttajaTunnisteRepository,
-    private val kayttooikeustasoRepository: KayttooikeustasoRepository,
     private val permissionService: PermissionService,
     private val featureFlags: FeatureFlags,
     private val logService: HankeKayttajaLoggingService,
@@ -101,20 +100,52 @@ class HankeKayttajaService(
         validateAdminPermissionIfNeeded(kayttajat, updates, deleteAdminPermission, userId)
 
         kayttajat.forEach { kayttaja ->
-            if (kayttaja.permission != null) {
-                val kayttooikeustasoBefore = kayttaja.permission.kayttooikeustaso.kayttooikeustaso
-                kayttaja.permission.kayttooikeustaso =
-                    kayttooikeustasoRepository.findOneByKayttooikeustaso(updates[kayttaja.id]!!)
-                logService.logUpdate(kayttooikeustasoBefore, kayttaja.permission.toDomain(), userId)
-            } else {
-                val kayttajaTunnisteBefore = kayttaja.kayttajaTunniste!!.toDomain()
-                kayttaja.kayttajaTunniste.kayttooikeustaso = updates[kayttaja.id]!!
-                val kayttajaTunnisteAfter = kayttaja.kayttajaTunniste.toDomain()
-                logService.logUpdate(kayttajaTunnisteBefore, kayttajaTunnisteAfter, userId)
+            kayttaja.permission?.let { permission ->
+                val kayttooikeustasoBefore = permission.kayttooikeustaso.kayttooikeustaso
+                permission.kayttooikeustaso =
+                    permissionService.findKayttooikeustaso(updates[kayttaja.id]!!)
+                logService.logUpdate(kayttooikeustasoBefore, permission.toDomain(), userId)
             }
+                ?: kayttaja.kayttajaTunniste?.let {
+                    val kayttajaTunnisteBefore = it.toDomain()
+                    it.kayttooikeustaso = updates[kayttaja.id]!!
+                    val kayttajaTunnisteAfter = it.toDomain()
+                    logService.logUpdate(kayttajaTunnisteBefore, kayttajaTunnisteAfter, userId)
+                }
         }
 
         validateAdminRemains(hanke)
+    }
+
+    @Transactional
+    fun createPermissionFromToken(userId: String, tunniste: String) {
+        logger.info { "Trying to activate token $tunniste for user $userId" }
+        val tunnisteEntity =
+            kayttajaTunnisteRepository.findByTunniste(tunniste)
+                ?: throw TunnisteNotFoundException(userId, tunniste)
+
+        val kayttaja =
+            tunnisteEntity.hankeKayttaja
+                ?: throw OrphanedTunnisteException(userId, tunnisteEntity.id)
+
+        permissionService.findPermission(kayttaja.hankeId, userId)?.let { permission ->
+            throw UserAlreadyHasPermissionException(userId, tunnisteEntity.id, permission.id)
+        }
+
+        kayttaja.permission?.let { permission ->
+            throw PermissionAlreadyExistsException(
+                userId,
+                permission.userId,
+                kayttaja.id,
+                permission.id
+            )
+        }
+
+        kayttaja.permission =
+            permissionService.create(kayttaja.hankeId, userId, tunnisteEntity.kayttooikeustaso)
+
+        kayttaja.kayttajaTunniste = null
+        kayttajaTunnisteRepository.delete(tunnisteEntity)
     }
 
     /** Check that every user an update was requested for was found as a user of the hanke. */
@@ -262,4 +293,29 @@ class HankeKayttajatNotFoundException(missingIds: Collection<UUID>, hanke: Hanke
     RuntimeException(
         "Some HankeKayttaja were not found. Either the IDs don't exist or they belong to another " +
             "hanke. Missing IDs: ${missingIds.joinToString()}, hankeId=${hanke.id}, hanketunnus=${hanke.hankeTunnus}"
+    )
+
+class TunnisteNotFoundException(userId: String, tunniste: String) :
+    RuntimeException("A matching token was not found, userId=$userId, tunniste=$tunniste")
+
+class OrphanedTunnisteException(userId: String, tunnisteId: UUID) :
+    RuntimeException(
+        "A token didn't have a matching user, userId=$userId, kayttajaTunnisteId=$tunnisteId"
+    )
+
+class UserAlreadyHasPermissionException(userId: String, tunnisteId: UUID, permissionId: Int) :
+    RuntimeException(
+        "A user already had an active permission, userId=$userId, kayttajaTunnisteId=$tunnisteId, permissionsId=$permissionId"
+    )
+
+class PermissionAlreadyExistsException(
+    currentUserId: String,
+    permissionUserId: String,
+    hankeKayttajaId: UUID,
+    permissionId: Int,
+) :
+    RuntimeException(
+        "Another user has an active permission with the same hanke kayttaja, " +
+            "the current user is $currentUserId, the user on the permission is $permissionUserId, " +
+            "hankeKayttajaId=$hankeKayttajaId, permissionId=$permissionId"
     )
