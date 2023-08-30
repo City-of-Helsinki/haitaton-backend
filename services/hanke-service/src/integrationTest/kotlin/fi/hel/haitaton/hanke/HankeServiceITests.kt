@@ -215,6 +215,14 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
+    fun `create Hanke with without perustaja and contacts does not create hanke users`() {
+        hankeService.createHanke(getATestHanke())
+
+        assertThat(hankeKayttajaRepository.findAll()).isEmpty()
+        assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
+    }
+
+    @Test
     fun `create Hanke with partial data set and update with full data set give correct status`() {
         // Setup Hanke (without any yhteystieto):
         val hanke: Hanke = getATestHanke()
