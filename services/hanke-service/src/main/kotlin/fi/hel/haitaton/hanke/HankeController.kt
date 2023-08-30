@@ -180,7 +180,7 @@ class HankeController(
         if (hanke == null) {
             throw HankeArgumentException("No hanke given when creating hanke")
         }
-        val sanitizedHanke = hanke.copy(id = null, generated = false, perustaja = null)
+        val sanitizedHanke = hanke.copy(id = null, generated = false)
 
         val userId = currentUserId()
         logger.info { "Creating Hanke for user $userId: ${hanke.toLogString()} " }
@@ -235,13 +235,9 @@ class HankeController(
 
         logger.info { "Updating Hanke: ${hanke.toLogString()}" }
 
-        val existingHanke =
-            hankeService.loadHanke(hankeTunnus)?.also {
-                it.verifyUserAuthorization(currentUserId(), PermissionCode.EDIT)
-            }
-                ?: throw HankeNotFoundException(hankeTunnus)
-
-        existingHanke.validateUpdatable(hanke, hankeTunnus)
+        val existingHanke = hankeService.findHankeOrThrow(hankeTunnus)
+        validateUpdatable(existing = existingHanke, updated = hanke, hankeTunnus)
+        existingHanke.verifyUserAuthorization(currentUserId(), PermissionCode.EDIT)
 
         val updatedHanke = hankeService.updateHanke(hanke)
         logger.info { "Updated hanke ${updatedHanke.hankeTunnus}." }
@@ -309,12 +305,15 @@ class HankeController(
         }
     }
 
-    private fun Hanke.validateUpdatable(updatedHanke: Hanke, hankeTunnusFromPath: String) {
-        if (hankeTunnusFromPath != updatedHanke.hankeTunnus) {
-            throw HankeArgumentException("Hanketunnus not given or doesn't match the hanke data")
-        }
-        if (perustaja != null && perustaja != updatedHanke.perustaja) {
-            throw HankeArgumentException("Updating perustaja not allowed.")
+    private fun validateUpdatable(existing: Hanke, updated: Hanke, hankeTunnusFromPath: String) {
+        val tunnusMatch =
+            listOf(existing.hankeTunnus, updated.hankeTunnus).all { it == hankeTunnusFromPath }
+
+        if (!tunnusMatch) {
+            throw HankeArgumentException(
+                "Hanketunnus mismatch. (Existing=${existing.hankeTunnus}, Updated=${updated.hankeTunnus}, " +
+                    "Path=$hankeTunnusFromPath)"
+            )
         }
     }
 }

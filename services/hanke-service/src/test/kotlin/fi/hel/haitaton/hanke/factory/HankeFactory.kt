@@ -183,10 +183,6 @@ class HankeFactory(
             return this
         }
 
-        fun Hanke.withPerustaja(
-            newPerustaja: Perustaja? = Perustaja("Pertti Perustaja", "foo@bar.com")
-        ): Hanke = apply { perustaja = newPerustaja }
-
         /**
          * Add a number of omistaja to a hanke. Generates the yhteystiedot with
          * [HankeYhteystietoFactory.createDifferentiated] using the given ints for differentiating

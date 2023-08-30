@@ -113,11 +113,11 @@ open class HankeServiceImpl(
     override fun loadHankkeetByIds(ids: List<Int>) =
         hankeRepository.findAllById(ids).map { createHankeDomainObjectFromEntity(it) }
 
-    /** @return a new Hanke instance with the added and possibly modified values. */
     @Transactional
-    override fun createHanke(hanke: Hanke): Hanke {
-        // TODO: Only create that hanke-tunnus if a specific set of fields are non-empty/set.
+    override fun createHanke(hanke: Hanke): Hanke =
+        createHankeInternal(hanke = hanke, perustaja = null)
 
+    private fun createHankeInternal(hanke: Hanke, perustaja: Perustaja?): Hanke {
         val userId = currentUserId()
 
         val entity = HankeEntity()
@@ -127,6 +127,8 @@ open class HankeServiceImpl(
         val hanketunnus = hanketunnusService.newHanketunnus()
         entity.hankeTunnus = hanketunnus
         hanke.hankeTunnus = hanketunnus
+
+        entity.perustaja = perustaja?.toEntity()
 
         // Copy values from the incoming domain object, and set some internal fields:
         copyNonNullHankeFieldsToEntity(hanke, entity)
@@ -153,8 +155,8 @@ open class HankeServiceImpl(
 
         postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
-        return createHankeDomainObjectFromEntity(entity).also {
-            initAccessForCreatedHanke(it, userId)
+        return createHankeDomainObjectFromEntity(savedHankeEntity).also {
+            initAccessForCreatedHanke(it, savedHankeEntity.perustaja, userId)
             hankeLoggingService.logCreate(it, userId)
         }
     }
@@ -242,12 +244,16 @@ open class HankeServiceImpl(
             !applicationService.isStillPending(it)
         }
 
-    private fun initAccessForCreatedHanke(hanke: Hanke, userId: String) {
+    private fun initAccessForCreatedHanke(
+        hanke: Hanke,
+        perustaja: PerustajaEntity?,
+        userId: String
+    ) {
         val hankeId = hanke.id!!
         val permissionAll = permissionService.setPermission(hankeId, userId, Role.KAIKKI_OIKEUDET)
-
-        hanke.perustaja?.let { hankeKayttajaService.addHankeFounder(hankeId, it, permissionAll) }
-
+        perustaja?.let {
+            hankeKayttajaService.addHankeFounder(hankeId, it.toDomainObject(), permissionAll)
+        }
         hankeKayttajaService.saveNewTokensFromHanke(hanke)
     }
 
@@ -345,7 +351,6 @@ open class HankeServiceImpl(
                 if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC)
                 else null,
                 hankeEntity.status,
-                hankeEntity.perustaja?.toDomainObject(),
                 hankeEntity.generated,
             )
 
@@ -571,8 +576,6 @@ open class HankeServiceImpl(
         hanke.onYKTHanke?.let { entity.onYKTHanke = hanke.onYKTHanke }
         hanke.nimi?.let { entity.nimi = hanke.nimi }
         hanke.kuvaus?.let { entity.kuvaus = hanke.kuvaus }
-
-        hanke.perustaja?.let { entity.perustaja = it.toEntity() }
         entity.generated = hanke.generated
         hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
         hanke.suunnitteluVaihe?.let { entity.suunnitteluVaihe = hanke.suunnitteluVaihe }
@@ -944,7 +947,7 @@ open class HankeServiceImpl(
      * - Perustaja generated from application data orderer.
      */
     private fun generateHankeFrom(cableReport: CableReportWithoutHanke): Hanke =
-        createHanke(
+        createHankeInternal(
             Hanke(
                 id = null,
                 hankeTunnus = null,
@@ -959,9 +962,9 @@ open class HankeServiceImpl(
                 modifiedBy = null,
                 modifiedAt = null,
                 status = HankeStatus.DRAFT,
-                perustaja = generatePerustajaFrom(cableReport.applicationData),
                 generated = true,
-            )
+            ),
+            perustaja = generatePerustajaFrom(cableReport.applicationData),
         )
 
     private fun generatePerustajaFrom(cableReport: CableReportApplicationData): Perustaja {

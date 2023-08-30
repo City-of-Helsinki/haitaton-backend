@@ -455,14 +455,14 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         @Test
         fun `Without permission returns 404`() {
             val hanke = HankeFactory.create(version = null)
-            every { hankeService.loadHanke(HANKE_TUNNUS) } returns hanke
+            every { hankeService.findHankeOrThrow(HANKE_TUNNUS) } returns hanke
             every { permissionService.hasPermission(hankeId, USERNAME, PermissionCode.EDIT) }
                 .returns(false)
 
             put(url, hanke).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
 
             verifySequence {
-                hankeService.loadHanke(HANKE_TUNNUS)
+                hankeService.findHankeOrThrow(HANKE_TUNNUS)
                 permissionService.hasPermission(hankeId, USERNAME, PermissionCode.EDIT)
             }
         }
@@ -476,7 +476,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     modifiedBy = USERNAME
                     status = HankeStatus.PUBLIC
                 }
-            every { hankeService.loadHanke(HANKE_TUNNUS) } returns HankeFactory.create()
+            every { hankeService.findHankeOrThrow(HANKE_TUNNUS) } returns HankeFactory.create()
             every { permissionService.hasPermission(hankeId, USERNAME, PermissionCode.EDIT) }
                 .returns(true)
             every { hankeService.updateHanke(any()) }.returns(updatedHanke)
@@ -488,7 +488,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .andExpect(jsonPath("$.status").value(HankeStatus.PUBLIC.name))
 
             verifySequence {
-                hankeService.loadHanke(HANKE_TUNNUS)
+                hankeService.findHankeOrThrow(HANKE_TUNNUS)
                 permissionService.hasPermission(hankeId, USERNAME, PermissionCode.EDIT)
                 hankeService.updateHanke(any())
                 disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, USERNAME)
@@ -525,7 +525,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             expectedHanke.alueet[0].haittaAlkuPvm = expectedDateAlku
             expectedHanke.alueet[0].haittaLoppuPvm = expectedDateLoppu
             val expectedContent = expectedHanke.toJsonString()
-            every { hankeService.loadHanke(HANKE_TUNNUS) } returns hankeToBeUpdated
+            every { hankeService.findHankeOrThrow(HANKE_TUNNUS) } returns hankeToBeUpdated
             every {
                 permissionService.hasPermission(expectedHanke.id!!, USERNAME, PermissionCode.EDIT)
             } returns true
@@ -543,7 +543,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 ) // Note, here as string, not the enum.
 
             verifySequence {
-                hankeService.loadHanke(HANKE_TUNNUS)
+                hankeService.findHankeOrThrow(HANKE_TUNNUS)
                 permissionService.hasPermission(expectedHanke.id!!, USERNAME, PermissionCode.EDIT)
                 hankeService.updateHanke(any())
                 disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME)

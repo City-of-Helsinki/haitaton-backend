@@ -79,10 +79,6 @@ data class Hanke(
     var status: HankeStatus? = HankeStatus.DRAFT,
     //
     @JsonView(ChangeLogView::class)
-    @field:Schema(description = "Hanke founder contact information")
-    var perustaja: Perustaja? = null,
-    //
-    @JsonView(ChangeLogView::class)
     @field:Schema(description = "Indicates whether the Hanke data is generated, set by the service")
     var generated: Boolean = false,
 ) : HasId<Int> {

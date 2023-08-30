@@ -175,7 +175,7 @@ class HankeControllerTest {
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke))
             .thenReturn(partialHanke.copy(modifiedBy = username, modifiedAt = getCurrentTimeUTC()))
-        Mockito.`when`(hankeService.loadHanke("id123"))
+        Mockito.`when`(hankeService.findHankeOrThrow("id123"))
             .thenReturn(HankeFactory.create(hankeTunnus = "id123"))
         Mockito.`when`(permissionService.hasPermission(123, username, PermissionCode.EDIT))
             .thenReturn(true)
