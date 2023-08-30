@@ -234,10 +234,9 @@ class HankeController(
         featureFlags.ensureEnabled(Feature.HANKE_EDITING)
 
         logger.info { "Updating Hanke: ${hanke.toLogString()}" }
-
         val existingHanke = hankeService.findHankeOrThrow(hankeTunnus)
-        validateUpdatable(existing = existingHanke, updated = hanke, hankeTunnus)
         existingHanke.verifyUserAuthorization(currentUserId(), PermissionCode.EDIT)
+        validateUpdatable(hanke, hankeTunnus)
 
         val updatedHanke = hankeService.updateHanke(hanke)
         logger.info { "Updated hanke ${updatedHanke.hankeTunnus}." }
@@ -305,14 +304,10 @@ class HankeController(
         }
     }
 
-    private fun validateUpdatable(existing: Hanke, updated: Hanke, hankeTunnusFromPath: String) {
-        val tunnusMatch =
-            listOf(existing.hankeTunnus, updated.hankeTunnus).all { it == hankeTunnusFromPath }
-
-        if (!tunnusMatch) {
+    private fun validateUpdatable(hankeUpdate: Hanke, hankeTunnusFromPath: String) {
+        if (hankeUpdate.hankeTunnus != hankeTunnusFromPath) {
             throw HankeArgumentException(
-                "Hanketunnus mismatch. (Existing=${existing.hankeTunnus}, Updated=${updated.hankeTunnus}, " +
-                    "Path=$hankeTunnusFromPath)"
+                "Hanketunnus mismatch. (In payload=${hankeUpdate.hankeTunnus}, In path=$hankeTunnusFromPath)"
             )
         }
     }

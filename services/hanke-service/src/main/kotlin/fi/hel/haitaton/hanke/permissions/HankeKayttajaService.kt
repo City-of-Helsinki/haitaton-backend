@@ -51,7 +51,7 @@ class HankeKayttajaService(
 
     @Transactional
     fun addHankeFounder(hankeId: Int, founder: Perustaja, permissionEntity: PermissionEntity) {
-        logger.info { "Saving token for Hanke perustaja." }
+        logger.info { "Saving user for Hanke perustaja." }
         saveUser(
             HankeKayttajaEntity(
                 hankeId = hankeId,

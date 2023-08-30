@@ -156,7 +156,7 @@ open class HankeServiceImpl(
         postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
         return createHankeDomainObjectFromEntity(savedHankeEntity).also {
-            initAccessForCreatedHanke(it, savedHankeEntity.perustaja, userId)
+            initAccessForCreatedHanke(it, perustaja, userId)
             hankeLoggingService.logCreate(it, userId)
         }
     }
@@ -244,16 +244,10 @@ open class HankeServiceImpl(
             !applicationService.isStillPending(it)
         }
 
-    private fun initAccessForCreatedHanke(
-        hanke: Hanke,
-        perustaja: PerustajaEntity?,
-        userId: String
-    ) {
+    private fun initAccessForCreatedHanke(hanke: Hanke, perustaja: Perustaja?, userId: String) {
         val hankeId = hanke.id!!
         val permissionAll = permissionService.setPermission(hankeId, userId, Role.KAIKKI_OIKEUDET)
-        perustaja?.let {
-            hankeKayttajaService.addHankeFounder(hankeId, it.toDomainObject(), permissionAll)
-        }
+        perustaja?.let { hankeKayttajaService.addHankeFounder(hankeId, it, permissionAll) }
         hankeKayttajaService.saveNewTokensFromHanke(hanke)
     }
 
