@@ -29,6 +29,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaj
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistajat
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withPerustaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.geometria.Geometriat
@@ -116,7 +117,8 @@ class HankeServiceITests : DatabaseTest() {
 
     @Test
     fun `create Hanke with full data set succeeds and returns a new domain object with the correct values`() {
-        val hanke: Hanke = getATestHanke().withYhteystiedot { it.id = null }.withHankealue()
+        val hanke: Hanke =
+            getATestHanke().withYhteystiedot { it.id = null }.withPerustaja().withHankealue()
 
         val datetimeAlku = hanke.alueet[0].haittaAlkuPvm // nextyear.2.20 23:45:56Z
         val datetimeLoppu = hanke.alueet[0].haittaLoppuPvm // nextyear.2.21 0:12:34Z
@@ -147,7 +149,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke.loppuPvm).isEqualTo(expectedDateLoppu)
         assertThat(returnedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
         assertThat(returnedHanke.suunnitteluVaihe).isEqualTo(SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS)
-        assertThat(returnedHanke.perustaja).isNull()
+        assertThat(returnedHanke.perustaja).isEqualTo(Perustaja("Pertti Perustaja", "foo@bar.com"))
         assertThat(returnedHanke.tyomaaKatuosoite).isEqualTo("Testikatu 1")
         assertThat(returnedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         assertThat(returnedHanke.alueet[0].kaistaHaitta)
@@ -208,7 +210,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(rakennuttaja.id).isNotEqualTo(firstId)
         assertThat(toteuttaja.id).isNotEqualTo(firstId)
         assertThat(toteuttaja.id).isNotEqualTo(rakennuttaja.id)
-        assertThat(hankeKayttajaRepository.findAll()).hasSize(4)
+        assertThat(hankeKayttajaRepository.findAll()).hasSize(5) // contacts + Hanke perustaja
         assertThat(kayttajaTunnisteRepository.findAll()).hasSize(4)
     }
 
