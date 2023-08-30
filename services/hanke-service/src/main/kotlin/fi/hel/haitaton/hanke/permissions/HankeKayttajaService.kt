@@ -70,14 +70,12 @@ class HankeKayttajaService(
         logger.info { "Saved the new user token, id=${kayttajaTunnisteEntity.id}" }
 
         saveUser(
-            hankeKayttajaRepository.save(
-                HankeKayttajaEntity(
-                    hankeId = hankeId,
-                    nimi = contact.name,
-                    sahkoposti = contact.email,
-                    permission = null,
-                    kayttajaTunniste = kayttajaTunnisteEntity
-                )
+            HankeKayttajaEntity(
+                hankeId = hankeId,
+                nimi = contact.name,
+                sahkoposti = contact.email,
+                permission = null,
+                kayttajaTunniste = kayttajaTunnisteEntity
             )
         )
     }
