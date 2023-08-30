@@ -101,7 +101,7 @@ class HankeFactory(
             )
 
         /** Create minimal Entity with identifier fields and mandatory fields. */
-        fun createNewEntity(
+        fun createMinimalEntity(
             id: Int? = defaultId,
             hankeTunnus: String? = defaultHankeTunnus,
         ) = HankeEntity(id = id, hankeTunnus = hankeTunnus)

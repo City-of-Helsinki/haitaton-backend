@@ -196,6 +196,6 @@ class PermissionServiceITest : DatabaseTest() {
 
     private fun saveSeveralHanke(hankeTunnusList: List<String>) =
         hankeTunnusList.map {
-            hankeRepository.save(HankeFactory.createNewEntity(id = null, hankeTunnus = it))
+            hankeRepository.save(HankeFactory.createMinimalEntity(id = null, hankeTunnus = it))
         }
 }

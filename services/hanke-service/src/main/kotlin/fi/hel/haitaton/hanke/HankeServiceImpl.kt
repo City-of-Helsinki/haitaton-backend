@@ -245,10 +245,9 @@ open class HankeServiceImpl(
     private fun initAccessForCreatedHanke(hanke: Hanke, userId: String) {
         val hankeId = hanke.id!!
         val permissionAll = permissionService.setPermission(hankeId, userId, Role.KAIKKI_OIKEUDET)
-        val perustaja = hanke.perustaja
-        if (perustaja != null) {
-            hankeKayttajaService.addHankeFounder(hankeId, perustaja, permissionAll)
-        }
+
+        hanke.perustaja?.let { hankeKayttajaService.addHankeFounder(hankeId, it, permissionAll) }
+
         hankeKayttajaService.saveNewTokensFromHanke(hanke)
     }
 
