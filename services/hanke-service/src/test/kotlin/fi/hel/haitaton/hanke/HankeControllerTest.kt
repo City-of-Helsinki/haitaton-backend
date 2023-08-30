@@ -189,6 +189,23 @@ class HankeControllerTest {
     }
 
     @Test
+    fun `test that the updateHanke will throw if mismatch in hanke tunnus payload vs path`() {
+        val hankeUpdate = HankeFactory.create()
+        val existingHanke = HankeFactory.create(hankeTunnus = "wrong")
+        Mockito.`when`(hankeService.findHankeOrThrow("wrong")).thenReturn(existingHanke)
+        Mockito.`when`(
+                permissionService.hasPermission(existingHanke.id!!, username, PermissionCode.EDIT)
+            )
+            .thenReturn(true)
+
+        assertThatExceptionOfType(HankeArgumentException::class.java)
+            .isThrownBy { hankeController.updateHanke(hankeUpdate, "wrong") }
+            .withMessageContaining(
+                "Hanketunnus mismatch. (In payload=${hankeUpdate.hankeTunnus}, In path=wrong)"
+            )
+    }
+
+    @Test
     fun `test that the updateHanke will give validation errors from invalid hanke data for name`() {
         val partialHanke =
             Hanke(
