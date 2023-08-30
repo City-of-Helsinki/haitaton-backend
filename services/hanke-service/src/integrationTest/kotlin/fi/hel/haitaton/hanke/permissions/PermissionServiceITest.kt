@@ -5,7 +5,6 @@ import assertk.assertions.hasSize
 import assertk.assertions.isFalse
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.DatabaseTest
-import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -21,19 +20,17 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
 
-private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
-private const val USERNAME = "user"
-
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("default")
 @WithMockUser(username = "test7358")
 class PermissionServiceITest : DatabaseTest() {
 
+    val username = "user"
+
     @Autowired lateinit var permissionService: PermissionService
     @Autowired lateinit var permissionRepository: PermissionRepository
     @Autowired lateinit var roleRepository: RoleRepository
-    @Autowired lateinit var hankeRepository: HankeRepository
     @Autowired lateinit var hankeService: HankeService
 
     companion object {
@@ -89,7 +86,7 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Test
     fun `getAllowedHankeIds without permissions returns empty list`() {
-        val response = permissionService.getAllowedHankeIds(USERNAME, PermissionCode.EDIT)
+        val response = permissionService.getAllowedHankeIds(username, PermissionCode.EDIT)
 
         assertEquals(listOf<Int>(), response)
     }
@@ -97,20 +94,20 @@ class PermissionServiceITest : DatabaseTest() {
     @Test
     fun `getAllowedHankeIds with permissions returns list of IDs`() {
         val kaikkiOikeudet = roleRepository.findOneByRole(Role.KAIKKI_OIKEUDET)
-        val hankkeet = saveSeveralHanke(listOf(HANKE_TUNNUS, "HAI23-1", "HAI23-2"))
+        val hankkeet = saveSeveralHanke(3)
         hankkeet
             .map { it.id!! }
             .forEach {
                 permissionRepository.save(
                     PermissionEntity(
-                        userId = USERNAME,
+                        userId = username,
                         hankeId = it,
                         role = kaikkiOikeudet,
                     )
                 )
             }
 
-        val response = permissionService.getAllowedHankeIds(USERNAME, PermissionCode.EDIT)
+        val response = permissionService.getAllowedHankeIds(username, PermissionCode.EDIT)
 
         assertEquals(hankkeet.map { it.id }, response)
     }
@@ -121,56 +118,57 @@ class PermissionServiceITest : DatabaseTest() {
         val hankemuokkaus = roleRepository.findOneByRole(Role.HANKEMUOKKAUS)
         val hakemusasiointi = roleRepository.findOneByRole(Role.HAKEMUSASIOINTI)
         val katseluoikeus = roleRepository.findOneByRole(Role.KATSELUOIKEUS)
-        val hankkeet = saveSeveralHanke(listOf(HANKE_TUNNUS, "HAI23-1", "HAI23-2", "HAI23-3"))
+        val hankkeet = saveSeveralHanke(4)
         listOf(kaikkiOikeudet, hankemuokkaus, hakemusasiointi, katseluoikeus).zip(hankkeet) {
             role,
             hanke ->
             permissionRepository.save(
                 PermissionEntity(
-                    userId = USERNAME,
+                    userId = username,
                     hankeId = hanke.id!!,
                     role = role,
                 )
             )
         }
 
-        val response = permissionService.getAllowedHankeIds(USERNAME, PermissionCode.EDIT)
+        val response = permissionService.getAllowedHankeIds(username, PermissionCode.EDIT)
 
         assertEquals(listOf(hankkeet[0].id, hankkeet[1].id), response)
     }
 
     @Test
     fun `hasPermission returns false without permissions`() {
-        assertFalse(permissionService.hasPermission(2, USERNAME, PermissionCode.EDIT))
+        assertFalse(permissionService.hasPermission(2, username, PermissionCode.EDIT))
     }
 
     @Test
     fun `hasPermission with correct permission`() {
         val kaikkiOikeudet = roleRepository.findOneByRole(Role.KAIKKI_OIKEUDET)
-        val hankeId = saveSeveralHanke(listOf(HANKE_TUNNUS))[0].id!!
+        val hankeId = saveSeveralHanke(1)[0].id!!
         permissionRepository.save(
-            PermissionEntity(userId = USERNAME, hankeId = hankeId, role = kaikkiOikeudet)
+            PermissionEntity(userId = username, hankeId = hankeId, role = kaikkiOikeudet)
         )
 
-        assertTrue(permissionService.hasPermission(hankeId, USERNAME, PermissionCode.EDIT))
+        assertTrue(permissionService.hasPermission(hankeId, username, PermissionCode.EDIT))
     }
 
     @Test
     fun `hasPermission with insufficient permissions`() {
         val hakemusasiointi = roleRepository.findOneByRole(Role.HAKEMUSASIOINTI)
-        val hankeId = saveSeveralHanke(listOf(HANKE_TUNNUS))[0].id!!
+        val hankeId = saveSeveralHanke(1)[0].id!!
         permissionRepository.save(
-            PermissionEntity(userId = USERNAME, hankeId = hankeId, role = hakemusasiointi)
+            PermissionEntity(userId = username, hankeId = hankeId, role = hakemusasiointi)
         )
 
-        assertFalse(permissionService.hasPermission(hankeId, USERNAME, PermissionCode.EDIT))
+        assertFalse(permissionService.hasPermission(hankeId, username, PermissionCode.EDIT))
     }
 
     @Test
     fun `setPermission creates a new permission`() {
-        val hankeId = saveSeveralHanke(listOf(HANKE_TUNNUS))[0].id!!
+        val hankeId = saveSeveralHanke(1)[0].id!!
+        permissionRepository.deleteAll() // remove permission created in hanke creation
 
-        permissionService.setPermission(hankeId, USERNAME, Role.KATSELUOIKEUS)
+        permissionService.setPermission(hankeId, username, Role.KATSELUOIKEUS)
 
         val permissions = permissionRepository.findAll()
         assertThat(permissions).hasSize(1)
@@ -180,13 +178,14 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Test
     fun `setPermission updates an existing permission`() {
-        val hankeId = saveSeveralHanke(listOf(HANKE_TUNNUS))[0].id!!
+        val hankeId = saveSeveralHanke(1)[0].id!!
+        permissionRepository.deleteAll() // remove permission created in hanke creation
         val role = roleRepository.findOneByRole(Role.KATSELUOIKEUS)
         permissionRepository.save(
-            PermissionEntity(userId = USERNAME, hankeId = hankeId, role = role)
+            PermissionEntity(userId = username, hankeId = hankeId, role = role)
         )
 
-        permissionService.setPermission(hankeId, USERNAME, Role.HAKEMUSASIOINTI)
+        permissionService.setPermission(hankeId, username, Role.HAKEMUSASIOINTI)
 
         val permissions = permissionRepository.findAll()
         assertThat(permissions).hasSize(1)
@@ -194,8 +193,8 @@ class PermissionServiceITest : DatabaseTest() {
         assertEquals(Role.HAKEMUSASIOINTI, permissions[0].role.role)
     }
 
-    private fun saveSeveralHanke(hankeTunnusList: List<String>) =
-        hankeTunnusList.map {
-            hankeRepository.save(HankeFactory.createMinimalEntity(id = null, hankeTunnus = it))
-        }
+    private fun saveSeveralHanke(n: Int) =
+        createSeveralHanke(n).map { hankeService.createHanke(it) }
+
+    private fun createSeveralHanke(n: Int) = (1..n).map { HankeFactory.create(id = null) }
 }
