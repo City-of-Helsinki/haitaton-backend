@@ -76,6 +76,9 @@ data class CableReportApplicationData(
             propertyDeveloperWithContacts,
             representativeWithContacts
         )
+
+    fun findOrderer(): Contact? =
+        customersWithContacts().flatMap { it.contacts }.find { it.orderer }
 }
 
 class AlluDataException(path: String, error: AlluDataError) :

@@ -9,7 +9,6 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.permissions.Role
 import io.mockk.Called
 import io.mockk.clearAllMocks
 import io.mockk.mockk
@@ -176,7 +175,7 @@ class HankeControllerTest {
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke))
             .thenReturn(partialHanke.copy(modifiedBy = username, modifiedAt = getCurrentTimeUTC()))
-        Mockito.`when`(hankeService.loadHanke("id123"))
+        Mockito.`when`(hankeService.findHankeOrThrow("id123"))
             .thenReturn(HankeFactory.create(hankeTunnus = "id123"))
         Mockito.`when`(permissionService.hasPermission(123, username, PermissionCode.EDIT))
             .thenReturn(true)
@@ -187,6 +186,23 @@ class HankeControllerTest {
         assertThat(response).isNotNull
         assertThat(response.nimi).isEqualTo("hankkeen nimi")
         verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
+    }
+
+    @Test
+    fun `test that the updateHanke will throw if mismatch in hanke tunnus payload vs path`() {
+        val hankeUpdate = HankeFactory.create()
+        val existingHanke = HankeFactory.create(hankeTunnus = "wrong")
+        Mockito.`when`(hankeService.findHankeOrThrow("wrong")).thenReturn(existingHanke)
+        Mockito.`when`(
+                permissionService.hasPermission(existingHanke.id!!, username, PermissionCode.EDIT)
+            )
+            .thenReturn(true)
+
+        assertThatExceptionOfType(HankeArgumentException::class.java)
+            .isThrownBy { hankeController.updateHanke(hankeUpdate, "wrong") }
+            .withMessageContaining(
+                "Hanketunnus mismatch. (In payload=${hankeUpdate.hankeTunnus}, In path=wrong)"
+            )
     }
 
     @Test
@@ -312,37 +328,5 @@ class HankeControllerTest {
             .withMessageContaining("updateHanke.hanke.vaihe: " + HankeError.HAI1002.toString())
 
         verify { disclosureLogService wasNot Called }
-    }
-
-    @Test
-    fun `test that creating a Hanke also adds owner permissions for creating user`() {
-        val hanke =
-            Hanke(
-                id = null,
-                hankeTunnus = null,
-                nimi = "hankkeen nimi",
-                kuvaus = "lorem ipsum dolor sit amet...",
-                onYKTHanke = false,
-                vaihe = Vaihe.OHJELMOINTI,
-                suunnitteluVaihe = null,
-                version = 1,
-                createdBy = "Tiina",
-                createdAt = getCurrentTimeUTC(),
-                modifiedBy = null,
-                modifiedAt = null,
-                status = HankeStatus.DRAFT
-            )
-
-        val mockedHanke = hanke.copy()
-        mockedHanke.id = 12
-        mockedHanke.hankeTunnus = "JOKU12"
-
-        Mockito.`when`(hankeService.createHanke(hanke)).thenReturn(mockedHanke)
-
-        val response: Hanke = hankeController.createHanke(hanke)
-
-        assertThat(response).isNotNull
-        Mockito.verify(permissionService).setPermission(12, username, Role.KAIKKI_OIKEUDET)
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
     }
 }

@@ -31,12 +31,12 @@ class KayttajaTunnisteEntity(
         private val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
         private val secureRandom: SecureRandom = SecureRandom()
 
-        fun create() =
+        fun create(role: Role = Role.KATSELUOIKEUS) =
             KayttajaTunnisteEntity(
                 tunniste = randomToken(),
                 createdAt = getCurrentTimeUTC().toOffsetDateTime(),
                 sentAt = null,
-                role = Role.KATSELUOIKEUS,
+                role = role,
                 hankeKayttaja = null
             )
 
