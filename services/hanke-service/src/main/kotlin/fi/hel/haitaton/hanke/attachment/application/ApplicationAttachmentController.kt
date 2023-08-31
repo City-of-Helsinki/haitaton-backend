@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import java.util.UUID
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -30,6 +31,7 @@ import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/hakemukset/{applicationId}/liitteet")
+@SecurityRequirement(name = "bearerAuth")
 class ApplicationAttachmentController(
     private val applicationAttachmentService: ApplicationAttachmentService,
     private val permissionService: PermissionService,

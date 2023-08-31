@@ -22,7 +22,7 @@ class KayttajaTunnisteEntity(
     val tunniste: String,
     @Column(name = "created_at") val createdAt: OffsetDateTime,
     @Column(name = "sent_at") val sentAt: OffsetDateTime?,
-    @Enumerated(EnumType.STRING) val role: Role,
+    @Enumerated(EnumType.STRING) var role: Role,
     @OneToOne(mappedBy = "kayttajaTunniste") val hankeKayttaja: HankeKayttajaEntity?
 ) {
 

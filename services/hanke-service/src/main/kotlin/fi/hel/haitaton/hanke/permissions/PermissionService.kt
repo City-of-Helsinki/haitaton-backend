@@ -9,6 +9,8 @@ class PermissionService(
     private val permissionRepository: PermissionRepository,
     private val roleRepository: RoleRepository
 ) {
+    fun findByHankeId(hankeId: Int) = permissionRepository.findAllByHankeId(hankeId)
+
     fun getAllowedHankeIds(userId: String, permission: PermissionCode): List<Int> =
         permissionRepository.findAllByUserIdAndPermission(userId, permission.code).map {
             it.hankeId

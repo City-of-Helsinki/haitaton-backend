@@ -113,3 +113,5 @@ databaseChangeLog:
       file: db/changelog/changesets/041-drop-column-organisaatioid-from-yhteystiedot.yml
   - include:
       file: db/changelog/changesets/042-add-indices-to-hanke-kayttaja.yml
+  - include:
+      file: db/changelog/changesets/043-add-another-index-to-hanke-kayttaja.yml

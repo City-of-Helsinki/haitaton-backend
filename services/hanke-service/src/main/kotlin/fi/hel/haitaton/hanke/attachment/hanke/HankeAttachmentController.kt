@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
@@ -34,6 +35,7 @@ private val logger = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/hankkeet/{hankeTunnus}/liitteet")
+@SecurityRequirement(name = "bearerAuth")
 class HankeAttachmentController(
     private val hankeAttachmentService: HankeAttachmentService,
     private val hankeService: HankeService,
