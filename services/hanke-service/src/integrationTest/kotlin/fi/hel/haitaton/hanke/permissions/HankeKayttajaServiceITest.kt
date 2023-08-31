@@ -413,11 +413,11 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 .first()
                 .transform { it.message.auditEvent }
                 .all {
+                    transform { it.target.type }.isEqualTo(ObjectType.PERMISSION)
+                    transform { it.target.id }.isEqualTo(kayttaja.permission?.id.toString())
                     transform { it.operation }.isEqualTo(Operation.UPDATE)
                     transform { it.actor.role }.isEqualTo(UserRole.USER)
                     transform { it.actor.userId }.isEqualTo(USERNAME)
-                    transform { it.target.id }.isEqualTo(kayttaja.permission?.id.toString())
-                    transform { it.target.type }.isEqualTo(ObjectType.PERMISSION)
                     val permission = kayttaja.permission!!.toDomain()
                     transform { it.target.objectBefore }
                         .isEqualTo(permission.toChangeLogJsonString())
@@ -458,11 +458,11 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 .first()
                 .transform { it.message.auditEvent }
                 .all {
+                    transform { it.target.type }.isEqualTo(ObjectType.KAYTTAJA_TUNNISTE)
+                    transform { it.target.id }.isEqualTo(kayttaja.kayttajaTunniste?.id.toString())
                     transform { it.operation }.isEqualTo(Operation.UPDATE)
                     transform { it.actor.role }.isEqualTo(UserRole.USER)
                     transform { it.actor.userId }.isEqualTo(USERNAME)
-                    transform { it.target.id }.isEqualTo(kayttaja.kayttajaTunniste?.id.toString())
-                    transform { it.target.type }.isEqualTo(ObjectType.KAYTTAJA_TUNNISTE)
                     val tunniste =
                         kayttaja.kayttajaTunniste!!.toDomain().copy(hankeKayttajaId = kayttaja.id)
                     transform { it.target.objectBefore }.isEqualTo(tunniste.toChangeLogJsonString())
