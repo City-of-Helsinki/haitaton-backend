@@ -54,12 +54,14 @@ class HankeKayttajaEntity(
      *
      * Thus, role is read primarily from [PermissionEntity] if the relation exists.
      */
-    private fun deriveRole(): Role? = permission?.role?.role ?: kayttajaTunniste?.role
+    fun deriveRole(): Role? = permission?.role?.role ?: kayttajaTunniste?.role
 }
 
 @Repository
 interface HankeKayttajaRepository : JpaRepository<HankeKayttajaEntity, UUID> {
     fun findByHankeId(hankeId: Int): List<HankeKayttajaEntity>
+
+    fun findByHankeIdAndIdIn(hankeId: Int, ids: Collection<UUID>): List<HankeKayttajaEntity>
 
     fun findByHankeIdAndSahkopostiIn(
         hankeId: Int,

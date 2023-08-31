@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import mu.KotlinLogging
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -42,6 +43,7 @@ private val logger = KotlinLogging.logger {}
 @Validated
 @RestController
 @RequestMapping("/hakemukset")
+@SecurityRequirement(name = "bearerAuth")
 class ApplicationController(
     private val service: ApplicationService,
     private val hankeService: HankeService,
@@ -153,7 +155,8 @@ class ApplicationController(
                If the application hasn't changed since the last update, nothing more is done.
                If the application has been sent to Allu, it will be updated there as well.
                If an Allu-update is required, but it fails, the local version will not be updated.
-               The pendingOnClient value can't be changed with this endpoint. Use POST /hakemukset/{id}/send-application for that.
+               The pendingOnClient value can't be changed with this endpoint.
+               Use [POST /hakemukset/{id}/send-application](#/application-controller/sendApplication) for that.
             """
     )
     @ApiResponses(

@@ -49,8 +49,21 @@ See docker-compose.yml for details.
 
 ### Swagger UI
 
-Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON). Note though that the swagger
-setup can not currently support authentication, so can not test the actions with it.
+Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON). You
+can use the Swagger UI to send requests, if you copy your bearer token over from
+the browser. So,
+1. Log in to Haitaton.
+2. Open the Network tab from developer tools.
+3. Open e.g. Omat Hankkeet in Haitaton.
+4. From the backend request, copy the content of the Authorization header, that
+   comes after the Bearer keyword.
+5. In the Swagger UI of the same environment, open the Authorize dialog.
+6. Paste the bearer token.
+7. Send a request as a logged-in user.
+
+Authentication for the GDPR API is different from the other application, and
+it's not configured for the Swagger UI. GDPR API can be tested using the
+specialized tester, as detailed in [GDPR API section](#gdpr-api).
 
 Locally without Docker:
 

@@ -27,6 +27,8 @@ enum class PermissionCode(val code: Long) {
 interface PermissionRepository : JpaRepository<PermissionEntity, Int> {
     fun findOneByHankeIdAndUserId(hankeId: Int, userId: String): PermissionEntity?
 
+    fun findAllByHankeId(hankeId: Int): List<PermissionEntity>
+
     /**
      * Search for permissions with the given user and a single permission code. JPQL doesn't have
      * bitwise and, so we simulate it with a division (shift right) and mod. This only works when
