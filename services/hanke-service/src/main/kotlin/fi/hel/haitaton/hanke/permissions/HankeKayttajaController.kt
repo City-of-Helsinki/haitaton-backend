@@ -16,7 +16,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -38,7 +37,7 @@ class HankeKayttajaController(
     private val featureFlags: FeatureFlags,
 ) {
 
-    @GetMapping("/hankkeet/{hankeTunnus}/kayttajat", produces = [APPLICATION_JSON_VALUE])
+    @GetMapping("/hankkeet/{hankeTunnus}/kayttajat")
     @Operation(
         summary = "Get Hanke users",
         description = "Returns a list of users and their Hanke related information."

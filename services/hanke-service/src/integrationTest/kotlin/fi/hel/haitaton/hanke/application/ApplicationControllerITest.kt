@@ -37,7 +37,6 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
-import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
@@ -695,9 +694,8 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         val id = 11L
         every { applicationService.getApplicationById(id) } throws ApplicationNotFoundException(id)
 
-        get("$BASE_URL/$id/paatos", APPLICATION_PDF, APPLICATION_JSON)
+        get("$BASE_URL/$id/paatos")
             .andExpect(status().isNotFound)
-            .andExpect(content().contentType(APPLICATION_JSON))
             .andExpect(jsonPath("errorCode").value("HAI2001"))
             .andExpect(jsonPath("errorMessage").value("Application not found"))
 
@@ -715,9 +713,8 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         every { applicationService.downloadDecision(id, USERNAME) } throws
             ApplicationDecisionNotFoundException("Decision not found in Allu. alluid=23")
 
-        get("$BASE_URL/11/paatos", APPLICATION_PDF, APPLICATION_JSON)
+        get("$BASE_URL/11/paatos")
             .andExpect(status().isNotFound)
-            .andExpect(content().contentType(APPLICATION_JSON))
             .andExpect(jsonPath("errorCode").value("HAI2006"))
             .andExpect(jsonPath("errorMessage").value("Application decision not found"))
 
@@ -737,10 +734,9 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         every { applicationService.downloadDecision(11, USERNAME) } returns
             Pair("JS230001", pdfBytes)
 
-        get("$BASE_URL/11/paatos", APPLICATION_PDF, APPLICATION_JSON)
+        get("$BASE_URL/11/paatos", resultType = APPLICATION_PDF)
             .andExpect(status().isOk)
             .andExpect(header().string("Content-Disposition", "inline; filename=JS230001.pdf"))
-            .andExpect(content().contentType(APPLICATION_PDF))
             .andExpect(content().bytes(pdfBytes))
 
         verify { applicationService.getApplicationById(11) }
@@ -757,8 +753,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             AlluDataFactory.createApplication(id = id, hankeTunnus = HANKE_TUNNUS)
         every { permissionService.hasPermission(42, USERNAME, VIEW) } returns false
 
-        get("$BASE_URL/$id/paatos", APPLICATION_PDF, APPLICATION_JSON)
-            .andExpect(status().isNotFound)
+        get("$BASE_URL/$id/paatos").andExpect(status().isNotFound)
 
         verify { applicationService.getApplicationById(id) }
         verify { permissionService.hasPermission(42, USERNAME, VIEW) }

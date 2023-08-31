@@ -35,6 +35,8 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpHeaders.CONTENT_DISPOSITION
+import org.springframework.http.MediaType
+import org.springframework.http.MediaType.APPLICATION_JSON
 import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.mock.web.MockMultipartFile
@@ -98,7 +100,6 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
         getAttachmentContent(attachmentId = liiteId)
             .andExpect(status().isOk)
             .andExpect(header().string(CONTENT_DISPOSITION, "attachment; filename=$FILE_NAME_PDF"))
-            .andExpect(content().contentType(APPLICATION_PDF))
             .andExpect(content().bytes(dummyData))
 
         verifyOrder {
@@ -167,7 +168,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
     @WithAnonymousUser
     fun `unauthorized without authenticated user`() {
         getMetadataList().andExpectError(HAI0001)
-        getAttachmentContent().andExpectError(HAI0001)
+        getAttachmentContent(resultType = APPLICATION_JSON).andExpectError(HAI0001)
         postAttachment().andExpectError(HAI0001)
         deleteAttachment().andExpectError(HAI0001)
     }
@@ -178,7 +179,9 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
     private fun getAttachmentContent(
         hankeTunnus: String = HANKE_TUNNUS,
         attachmentId: UUID = randomUUID(),
-    ): ResultActions = get("/hankkeet/$hankeTunnus/liitteet/$attachmentId/content")
+        resultType: MediaType = APPLICATION_PDF,
+    ): ResultActions =
+        get("/hankkeet/$hankeTunnus/liitteet/$attachmentId/content", resultType = resultType)
 
     private fun postAttachment(
         hankeTunnus: String = HANKE_TUNNUS,
