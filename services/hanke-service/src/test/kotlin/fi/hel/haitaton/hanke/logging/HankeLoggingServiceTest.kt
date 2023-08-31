@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 
-internal class HankeLoggingServiceTest {
+class HankeLoggingServiceTest {
     private val userId = "test"
 
     private val auditLogService: AuditLogService = mockk(relaxed = true)
@@ -146,6 +146,7 @@ internal class HankeLoggingServiceTest {
             )
         }
     }
+
     @Test
     fun `logUpdate doesn't create audit log entry if hanke not changed`() {
         val hankeBefore = HankeFactory.create(version = 1)

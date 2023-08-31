@@ -104,7 +104,7 @@ class HankeKayttajaService(
             if (kayttaja.permission != null) {
                 val roleBefore = kayttaja.permission.role.role
                 kayttaja.permission.role = roleRepository.findOneByRole(updates[kayttaja.id]!!)
-                logService.logUpdate(roleBefore, kayttaja.permission, userId)
+                logService.logUpdate(roleBefore, kayttaja.permission.toDomain(), userId)
             } else {
                 val kayttajaTunnisteBefore = kayttaja.kayttajaTunniste!!.toDomain()
                 kayttaja.kayttajaTunniste.role = updates[kayttaja.id]!!
