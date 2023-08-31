@@ -8,6 +8,6 @@ import jakarta.persistence.Embeddable
 data class PerustajaEntity(
     @Column(name = "perustajanimi") var nimi: String?,
     @Column(name = "perustajaemail") var email: String
-)
-
-fun PerustajaEntity.toDomainObject(): Perustaja = Perustaja(nimi, email)
+) {
+    fun toDomainObject(): Perustaja = Perustaja(nimi, email)
+}

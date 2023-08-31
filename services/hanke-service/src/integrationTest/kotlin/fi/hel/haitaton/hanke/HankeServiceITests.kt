@@ -19,7 +19,6 @@ import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
-import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
@@ -29,7 +28,6 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaj
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistajat
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withPerustaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.geometria.Geometriat
@@ -41,6 +39,8 @@ import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaRepository
 import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
+import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
@@ -94,6 +94,7 @@ class HankeServiceITests : DatabaseTest() {
 
     @MockkBean private lateinit var cableReportService: CableReportService
     @Autowired private lateinit var hankeService: HankeService
+    @Autowired private lateinit var permissionService: PermissionService
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
     @Autowired private lateinit var applicationRepository: ApplicationRepository
     @Autowired private lateinit var hankeRepository: HankeRepository
@@ -114,8 +115,7 @@ class HankeServiceITests : DatabaseTest() {
 
     @Test
     fun `create Hanke with full data set succeeds and returns a new domain object with the correct values`() {
-        val hanke: Hanke =
-            getATestHanke().withYhteystiedot { it.id = null }.withPerustaja().withHankealue()
+        val hanke: Hanke = getATestHanke().withYhteystiedot { it.id = null }.withHankealue()
 
         val datetimeAlku = hanke.alueet[0].haittaAlkuPvm // nextyear.2.20 23:45:56Z
         val datetimeLoppu = hanke.alueet[0].haittaLoppuPvm // nextyear.2.21 0:12:34Z
@@ -125,6 +125,10 @@ class HankeServiceITests : DatabaseTest() {
         // Call create and get the return object:
         val returnedHanke = hankeService.createHanke(hanke)
 
+        // Verify privileges
+        PermissionCode.values().forEach {
+            assertThat(permissionService.hasPermission(returnedHanke.id!!, USER_NAME, it)).isTrue()
+        }
         // Check the return object in general:
         assertThat(returnedHanke).isNotNull
         assertThat(returnedHanke).isNotSameAs(hanke)
@@ -142,7 +146,6 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke.loppuPvm).isEqualTo(expectedDateLoppu)
         assertThat(returnedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
         assertThat(returnedHanke.suunnitteluVaihe).isEqualTo(SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS)
-        assertThat(returnedHanke.perustaja).isEqualTo(Perustaja("Pertti Perustaja", "foo@bar.com"))
         assertThat(returnedHanke.tyomaaKatuosoite).isEqualTo("Testikatu 1")
         assertThat(returnedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         assertThat(returnedHanke.alueet[0].kaistaHaitta)
@@ -205,6 +208,16 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(toteuttaja.id).isNotEqualTo(rakennuttaja.id)
         assertThat(hankeKayttajaRepository.findAll()).hasSize(4)
         assertThat(kayttajaTunnisteRepository.findAll()).hasSize(4)
+    }
+
+    @Test
+    fun `create Hanke with without perustaja and contacts does not create hanke users`() {
+        val hanke = hankeService.createHanke(getATestHanke())
+
+        val hankeEntity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)!!
+        assertThat(hankeEntity.perustaja).isNull()
+        assertThat(hankeKayttajaRepository.findAll()).isEmpty()
+        assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
     }
 
     @Test
@@ -935,11 +948,13 @@ class HankeServiceITests : DatabaseTest() {
 
         with(result) {
             val application = applications.first()
-
             assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
             assertThat(hanke.nimi).isEqualTo(application.applicationData.name)
             assertThat(application.applicationData.name)
                 .isEqualTo(inputApplication.applicationData.name)
+            val hankePerustaja = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)?.perustaja
+            assertThat(hankePerustaja?.nimi).isEqualTo("Teppo Testihenkilö")
+            assertThat(hankePerustaja?.email).isEqualTo("teppo@example.test")
         }
     }
 
@@ -1378,7 +1393,6 @@ class HankeServiceITests : DatabaseTest() {
             TemplateData(
                 updatedHanke.id!!,
                 updatedHanke.hankeTunnus!!,
-                updatedHanke.perustaja != null,
                 updatedHanke.alueet[0].id,
                 updatedHanke.alueet[0].geometriat?.id,
                 hankeVersion = 1,
@@ -1504,7 +1518,6 @@ class HankeServiceITests : DatabaseTest() {
     data class TemplateData(
         val hankeId: Int,
         val hankeTunnus: String,
-        val hankePerustaja: Boolean = false,
         val alueId: Int? = null,
         val geometriaId: Int? = null,
         val geometriaVersion: Int = 0,
@@ -1534,7 +1547,6 @@ class HankeServiceITests : DatabaseTest() {
             TemplateData(
                 hanke.id!!,
                 hanke.hankeTunnus!!,
-                hanke.perustaja != null,
                 alue?.id,
                 alue?.geometriat?.id,
                 geometriaVersion,

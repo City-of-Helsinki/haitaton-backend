@@ -7,7 +7,6 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.validation.ValidHanke
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
@@ -188,11 +187,6 @@ class HankeController(
 
         val createdHanke = hankeService.createHanke(sanitizedHanke)
 
-        permissionService.setPermission(
-            createdHanke.id!!,
-            currentUserId(),
-            Role.KAIKKI_OIKEUDET,
-        )
         disclosureLogService.saveDisclosureLogsForHanke(createdHanke, userId)
         return createdHanke
     }
@@ -240,14 +234,9 @@ class HankeController(
         featureFlags.ensureEnabled(Feature.HANKE_EDITING)
 
         logger.info { "Updating Hanke: ${hanke.toLogString()}" }
-
-        val existingHanke =
-            hankeService.loadHanke(hankeTunnus)?.also {
-                it.verifyUserAuthorization(currentUserId(), PermissionCode.EDIT)
-            }
-                ?: throw HankeNotFoundException(hankeTunnus)
-
-        existingHanke.validateUpdatable(hanke, hankeTunnus)
+        val existingHanke = hankeService.findHankeOrThrow(hankeTunnus)
+        existingHanke.verifyUserAuthorization(currentUserId(), PermissionCode.EDIT)
+        validateUpdatable(hanke, hankeTunnus)
 
         val updatedHanke = hankeService.updateHanke(hanke)
         logger.info { "Updated hanke ${updatedHanke.hankeTunnus}." }
@@ -315,12 +304,11 @@ class HankeController(
         }
     }
 
-    private fun Hanke.validateUpdatable(updatedHanke: Hanke, hankeTunnusFromPath: String) {
-        if (hankeTunnusFromPath != updatedHanke.hankeTunnus) {
-            throw HankeArgumentException("Hanketunnus not given or doesn't match the hanke data")
-        }
-        if (perustaja != null && perustaja != updatedHanke.perustaja) {
-            throw HankeArgumentException("Updating perustaja not allowed.")
+    private fun validateUpdatable(hankeUpdate: Hanke, hankeTunnusFromPath: String) {
+        if (hankeUpdate.hankeTunnus != hankeTunnusFromPath) {
+            throw HankeArgumentException(
+                "Hanketunnus mismatch. (In payload=${hankeUpdate.hankeTunnus}, In path=$hankeTunnusFromPath)"
+            )
         }
     }
 }

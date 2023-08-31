@@ -166,6 +166,7 @@ class PermissionServiceITest : DatabaseTest() {
     @Test
     fun `setPermission creates a new permission`() {
         val hankeId = saveSeveralHanke(1)[0].id!!
+        permissionRepository.deleteAll() // remove permission created in hanke creation
 
         permissionService.setPermission(hankeId, username, Role.KATSELUOIKEUS)
 
@@ -178,6 +179,7 @@ class PermissionServiceITest : DatabaseTest() {
     @Test
     fun `setPermission updates an existing permission`() {
         val hankeId = saveSeveralHanke(1)[0].id!!
+        permissionRepository.deleteAll() // remove permission created in hanke creation
         val role = roleRepository.findOneByRole(Role.KATSELUOIKEUS)
         permissionRepository.save(
             PermissionEntity(userId = username, hankeId = hankeId, role = role)

@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.permissions
 import fi.hel.haitaton.hanke.HankeArgumentException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.Perustaja
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -48,22 +49,39 @@ class HankeKayttajaService(
         filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
     }
 
+    @Transactional
+    fun addHankeFounder(hankeId: Int, founder: Perustaja, permissionEntity: PermissionEntity) {
+        logger.info { "Saving user for Hanke perustaja." }
+        saveUser(
+            HankeKayttajaEntity(
+                hankeId = hankeId,
+                nimi = founder.nimi!!,
+                sahkoposti = founder.email,
+                permission = permissionEntity,
+                kayttajaTunniste = null,
+            )
+        )
+    }
+
     private fun createToken(hankeId: Int, contact: UserContact) {
         logger.info { "Creating a new user token, hankeId=$hankeId" }
         val token = KayttajaTunnisteEntity.create()
         val kayttajaTunnisteEntity = kayttajaTunnisteRepository.save(token)
         logger.info { "Saved the new user token, id=${kayttajaTunnisteEntity.id}" }
 
-        val user =
-            hankeKayttajaRepository.save(
-                HankeKayttajaEntity(
-                    hankeId = hankeId,
-                    nimi = contact.name,
-                    sahkoposti = contact.email,
-                    permission = null,
-                    kayttajaTunniste = kayttajaTunnisteEntity
-                )
+        saveUser(
+            HankeKayttajaEntity(
+                hankeId = hankeId,
+                nimi = contact.name,
+                sahkoposti = contact.email,
+                permission = null,
+                kayttajaTunniste = kayttajaTunnisteEntity
             )
+        )
+    }
+
+    private fun saveUser(hankeKayttajaEntity: HankeKayttajaEntity) {
+        val user = hankeKayttajaRepository.save(hankeKayttajaEntity)
         logger.info { "Saved the user information, id=${user.id}" }
     }
 

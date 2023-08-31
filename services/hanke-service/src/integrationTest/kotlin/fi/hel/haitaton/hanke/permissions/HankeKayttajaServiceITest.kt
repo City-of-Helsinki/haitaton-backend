@@ -47,6 +47,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     @Autowired private lateinit var permissionRepository: PermissionRepository
     @Autowired private lateinit var roleRepository: RoleRepository
 
+    private val perustaja = HankeFactory.defaultPerustaja
+
     @Test
     fun `getKayttajatByHankeId should return users from correct hanke only`() {
         val hankeToFind = hankeFactory.save(HankeFactory.create().withYhteystiedot())
@@ -73,6 +75,25 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             assertThat(sahkoposti).isEqualTo(entity.sahkoposti)
             assertThat(rooli).isEqualTo(entity.kayttajaTunniste!!.role)
             assertThat(tunnistautunut).isEqualTo(false)
+        }
+    }
+
+    @Test
+    fun `addHankeFounder saves kayttaja with correct permission and other data`() {
+        val hankeEntity = hankeFactory.saveEntity()
+        val savedHankeId = hankeEntity.id!!
+        val savedPermission = savePermission(savedHankeId, USERNAME, Role.KAIKKI_OIKEUDET)
+
+        hankeKayttajaService.addHankeFounder(savedHankeId, perustaja, savedPermission)
+
+        val kayttajaEntity =
+            hankeKayttajaRepository.findAll().also { assertThat(it).hasSize(1) }.first()
+        with(kayttajaEntity) {
+            assertThat(id).isNotNull()
+            assertThat(hankeId).isEqualTo(savedHankeId)
+            assertThat(permission!!).isOfEqualDataTo(savedPermission)
+            assertThat(sahkoposti).isEqualTo(perustaja.email)
+            assertThat(nimi).isEqualTo(perustaja.nimi)
         }
     }
 
@@ -339,6 +360,20 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         k.transform { it.kayttajaTunniste }.isNotNull()
     }
 
+    private fun Assert<PermissionEntity>.isOfEqualDataTo(other: PermissionEntity) =
+        given { actual ->
+            assertThat(actual.id).isEqualTo(other.id)
+            assertThat(actual.hankeId).isEqualTo(other.hankeId)
+            assertThat(actual.userId).isEqualTo(other.userId)
+            assertThat(actual.role).isOfEqualDataTo(other.role)
+        }
+
+    private fun Assert<RoleEntity>.isOfEqualDataTo(other: RoleEntity) = given { actual ->
+        assertThat(actual.id).isEqualTo(other.id)
+        assertThat(actual.role).isEqualTo(other.role)
+        assertThat(actual.permissionCode).isEqualTo(other.permissionCode)
+    }
+
     private val expectedNames =
         arrayOf(
             "yhteys-etu1 yhteys-suku1",
@@ -386,14 +421,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         nimi: String,
         sahkoposti: String
     ): HankeKayttajaEntity {
-        val permissionEntity =
-            permissionRepository.save(
-                PermissionEntity(
-                    userId = "fake id",
-                    hankeId = hankeId,
-                    role = roleRepository.findOneByRole(Role.KATSELUOIKEUS),
-                )
-            )
+        val permissionEntity = savePermission(hankeId, "fake id", Role.KATSELUOIKEUS)
 
         return hankeKayttajaRepository.save(
             HankeKayttajaEntity(
@@ -405,4 +433,13 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             )
         )
     }
+
+    private fun savePermission(hankeId: Int, userId: String, role: Role) =
+        permissionRepository.save(
+            PermissionEntity(
+                userId = userId,
+                hankeId = hankeId,
+                role = roleRepository.findOneByRole(role)
+            )
+        )
 }

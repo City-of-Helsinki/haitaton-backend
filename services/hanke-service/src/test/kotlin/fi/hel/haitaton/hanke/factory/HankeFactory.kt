@@ -62,6 +62,7 @@ class HankeFactory(
         const val defaultNimi = "Hämeentien perusparannus ja katuvalot"
         const val defaultId = 123
         const val defaultUser = "Risto"
+        val defaultPerustaja = Perustaja("Pertti Perustaja", "foo@bar.com")
 
         /**
          * Create a simple Hanke with test values. The default values can be overridden with named
@@ -98,6 +99,12 @@ class HankeFactory(
                 null,
                 hankeStatus,
             )
+
+        /** Create minimal Entity with identifier fields and mandatory fields. */
+        fun createMinimalEntity(
+            id: Int? = defaultId,
+            hankeTunnus: String? = defaultHankeTunnus,
+        ) = HankeEntity(id = id, hankeTunnus = hankeTunnus)
 
         /**
          * Add a hankealue with haitat to a test Hanke.
@@ -175,10 +182,6 @@ class HankeFactory(
             this.muut.addAll(HankeYhteystietoFactory.createDifferentiated(muut, mutator))
             return this
         }
-
-        fun Hanke.withPerustaja(
-            newPerustaja: Perustaja? = Perustaja("Pertti Perustaja", "foo@bar.com")
-        ): Hanke = apply { perustaja = newPerustaja }
 
         /**
          * Add a number of omistaja to a hanke. Generates the yhteystiedot with
