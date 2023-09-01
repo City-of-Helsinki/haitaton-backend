@@ -1,8 +1,8 @@
 package fi.hel.haitaton.hanke.logging
 
 import fi.hel.haitaton.hanke.permissions.KayttajaTunniste
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.permissions.Permission
-import fi.hel.haitaton.hanke.permissions.Role
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -11,8 +11,12 @@ import org.springframework.transaction.annotation.Transactional
 class HankeKayttajaLoggingService(private val auditLogService: AuditLogService) {
 
     @Transactional(propagation = Propagation.MANDATORY)
-    fun logUpdate(roleBefore: Role, permissionAfter: Permission, userId: String) {
-        val permissionBefore = permissionAfter.copy(role = roleBefore)
+    fun logUpdate(
+        kayttooikeustasoBefore: Kayttooikeustaso,
+        permissionAfter: Permission,
+        userId: String
+    ) {
+        val permissionBefore = permissionAfter.copy(kayttooikeustaso = kayttooikeustasoBefore)
 
         AuditLogService.updateEntry(
                 userId,

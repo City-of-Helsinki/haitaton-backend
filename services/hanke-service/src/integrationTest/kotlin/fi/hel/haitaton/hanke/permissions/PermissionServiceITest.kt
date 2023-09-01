@@ -30,16 +30,16 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Autowired lateinit var permissionService: PermissionService
     @Autowired lateinit var permissionRepository: PermissionRepository
-    @Autowired lateinit var roleRepository: RoleRepository
+    @Autowired lateinit var kayttooikeustasoRepository: KayttooikeustasoRepository
     @Autowired lateinit var hankeService: HankeService
 
     companion object {
         @JvmStatic
-        fun roleArguments() =
+        fun kayttooikeustasot() =
             listOf(
-                Arguments.of(Role.KAIKKI_OIKEUDET, PermissionCode.values()),
+                Arguments.of(Kayttooikeustaso.KAIKKI_OIKEUDET, PermissionCode.values()),
                 Arguments.of(
-                    Role.KAIKKIEN_MUOKKAUS,
+                    Kayttooikeustaso.KAIKKIEN_MUOKKAUS,
                     arrayOf(
                         PermissionCode.VIEW,
                         PermissionCode.MODIFY_VIEW_PERMISSIONS,
@@ -50,36 +50,42 @@ class PermissionServiceITest : DatabaseTest() {
                     )
                 ),
                 Arguments.of(
-                    Role.HANKEMUOKKAUS,
+                    Kayttooikeustaso.HANKEMUOKKAUS,
                     arrayOf(
                         PermissionCode.VIEW,
                         PermissionCode.EDIT,
                     )
                 ),
                 Arguments.of(
-                    Role.HAKEMUSASIOINTI,
+                    Kayttooikeustaso.HAKEMUSASIOINTI,
                     arrayOf(
                         PermissionCode.VIEW,
                         PermissionCode.EDIT_APPLICATIONS,
                     )
                 ),
-                Arguments.of(Role.KATSELUOIKEUS, arrayOf(PermissionCode.VIEW)),
+                Arguments.of(Kayttooikeustaso.KATSELUOIKEUS, arrayOf(PermissionCode.VIEW)),
             )
     }
 
     @ParameterizedTest
-    @MethodSource("roleArguments")
-    fun `roles have correct permissions`(role: Role, allowedPermissions: Array<PermissionCode>) {
-        val roleEntity = roleRepository.findOneByRole(role)
+    @MethodSource("kayttooikeustasot")
+    fun `All kayttooikeustaso have correct permissions`(
+        kayttooikeustaso: Kayttooikeustaso,
+        allowedPermissions: Array<PermissionCode>
+    ) {
+        val kayttooikeustasoEntity =
+            kayttooikeustasoRepository.findOneByKayttooikeustaso(kayttooikeustaso)
 
         allowedPermissions.forEach { code ->
-            assertThat(code).transform { PermissionService.hasPermission(roleEntity, it) }.isTrue()
+            assertThat(code)
+                .transform { PermissionService.hasPermission(kayttooikeustasoEntity, it) }
+                .isTrue()
         }
         PermissionCode.values()
             .filter { !allowedPermissions.contains(it) }
             .forEach { code ->
                 assertThat(code)
-                    .transform { PermissionService.hasPermission(roleEntity, it) }
+                    .transform { PermissionService.hasPermission(kayttooikeustasoEntity, it) }
                     .isFalse()
             }
     }
@@ -93,7 +99,8 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Test
     fun `getAllowedHankeIds with permissions returns list of IDs`() {
-        val kaikkiOikeudet = roleRepository.findOneByRole(Role.KAIKKI_OIKEUDET)
+        val kaikkiOikeudet =
+            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.KAIKKI_OIKEUDET)
         val hankkeet = saveSeveralHanke(3)
         hankkeet
             .map { it.id!! }
@@ -102,7 +109,7 @@ class PermissionServiceITest : DatabaseTest() {
                     PermissionEntity(
                         userId = username,
                         hankeId = it,
-                        role = kaikkiOikeudet,
+                        kayttooikeustaso = kaikkiOikeudet,
                     )
                 )
             }
@@ -114,19 +121,23 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Test
     fun `getAllowedHankeIds return ids with correct permissions`() {
-        val kaikkiOikeudet = roleRepository.findOneByRole(Role.KAIKKI_OIKEUDET)
-        val hankemuokkaus = roleRepository.findOneByRole(Role.HANKEMUOKKAUS)
-        val hakemusasiointi = roleRepository.findOneByRole(Role.HAKEMUSASIOINTI)
-        val katseluoikeus = roleRepository.findOneByRole(Role.KATSELUOIKEUS)
+        val kaikkiOikeudet =
+            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.KAIKKI_OIKEUDET)
+        val hankemuokkaus =
+            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.HANKEMUOKKAUS)
+        val hakemusasiointi =
+            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.HAKEMUSASIOINTI)
+        val katseluoikeus =
+            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.KATSELUOIKEUS)
         val hankkeet = saveSeveralHanke(4)
         listOf(kaikkiOikeudet, hankemuokkaus, hakemusasiointi, katseluoikeus).zip(hankkeet) {
-            role,
+            kayttooikeustaso,
             hanke ->
             permissionRepository.save(
                 PermissionEntity(
                     userId = username,
                     hankeId = hanke.id!!,
-                    role = role,
+                    kayttooikeustaso = kayttooikeustaso,
                 )
             )
         }
@@ -143,10 +154,15 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Test
     fun `hasPermission with correct permission`() {
-        val kaikkiOikeudet = roleRepository.findOneByRole(Role.KAIKKI_OIKEUDET)
+        val kaikkiOikeudet =
+            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.KAIKKI_OIKEUDET)
         val hankeId = saveSeveralHanke(1)[0].id!!
         permissionRepository.save(
-            PermissionEntity(userId = username, hankeId = hankeId, role = kaikkiOikeudet)
+            PermissionEntity(
+                userId = username,
+                hankeId = hankeId,
+                kayttooikeustaso = kaikkiOikeudet
+            )
         )
 
         assertTrue(permissionService.hasPermission(hankeId, username, PermissionCode.EDIT))
@@ -154,10 +170,15 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Test
     fun `hasPermission with insufficient permissions`() {
-        val hakemusasiointi = roleRepository.findOneByRole(Role.HAKEMUSASIOINTI)
+        val hakemusasiointi =
+            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.HAKEMUSASIOINTI)
         val hankeId = saveSeveralHanke(1)[0].id!!
         permissionRepository.save(
-            PermissionEntity(userId = username, hankeId = hankeId, role = hakemusasiointi)
+            PermissionEntity(
+                userId = username,
+                hankeId = hankeId,
+                kayttooikeustaso = hakemusasiointi
+            )
         )
 
         assertFalse(permissionService.hasPermission(hankeId, username, PermissionCode.EDIT))
@@ -168,29 +189,40 @@ class PermissionServiceITest : DatabaseTest() {
         val hankeId = saveSeveralHanke(1)[0].id!!
         permissionRepository.deleteAll() // remove permission created in hanke creation
 
-        permissionService.setPermission(hankeId, username, Role.KATSELUOIKEUS)
+        permissionService.setPermission(hankeId, username, Kayttooikeustaso.KATSELUOIKEUS)
 
         val permissions = permissionRepository.findAll()
         assertThat(permissions).hasSize(1)
         assertEquals(hankeId, permissions[0].hankeId)
-        assertEquals(Role.KATSELUOIKEUS, permissions[0].role.role)
+        assertEquals(
+            Kayttooikeustaso.KATSELUOIKEUS,
+            permissions[0].kayttooikeustaso.kayttooikeustaso
+        )
     }
 
     @Test
     fun `setPermission updates an existing permission`() {
         val hankeId = saveSeveralHanke(1)[0].id!!
         permissionRepository.deleteAll() // remove permission created in hanke creation
-        val role = roleRepository.findOneByRole(Role.KATSELUOIKEUS)
+        val kayttooikeustaso =
+            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.KATSELUOIKEUS)
         permissionRepository.save(
-            PermissionEntity(userId = username, hankeId = hankeId, role = role)
+            PermissionEntity(
+                userId = username,
+                hankeId = hankeId,
+                kayttooikeustaso = kayttooikeustaso
+            )
         )
 
-        permissionService.setPermission(hankeId, username, Role.HAKEMUSASIOINTI)
+        permissionService.setPermission(hankeId, username, Kayttooikeustaso.HAKEMUSASIOINTI)
 
         val permissions = permissionRepository.findAll()
         assertThat(permissions).hasSize(1)
         assertEquals(hankeId, permissions[0].hankeId)
-        assertEquals(Role.HAKEMUSASIOINTI, permissions[0].role.role)
+        assertEquals(
+            Kayttooikeustaso.HAKEMUSASIOINTI,
+            permissions[0].kayttooikeustaso.kayttooikeustaso
+        )
     }
 
     private fun saveSeveralHanke(n: Int) =

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service
 @Service
 class PermissionService(
     private val permissionRepository: PermissionRepository,
-    private val roleRepository: RoleRepository
+    private val kayttooikeustasoRepository: KayttooikeustasoRepository
 ) {
     fun findByHankeId(hankeId: Int) = permissionRepository.findAllByHankeId(hankeId)
 
@@ -17,17 +17,27 @@ class PermissionService(
         }
 
     fun hasPermission(hankeId: Int, userId: String, permission: PermissionCode): Boolean {
-        val role = permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.role
-        return hasPermission(role, permission)
+        val kayttooikeustaso =
+            permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.kayttooikeustaso
+        return hasPermission(kayttooikeustaso, permission)
     }
 
-    fun setPermission(hankeId: Int, userId: String, role: Role): PermissionEntity {
-        val roleEntity = roleRepository.findOneByRole(role)
+    fun setPermission(
+        hankeId: Int,
+        userId: String,
+        kayttooikeustaso: Kayttooikeustaso
+    ): PermissionEntity {
+        val kayttooikeustasoEntity =
+            kayttooikeustasoRepository.findOneByKayttooikeustaso(kayttooikeustaso)
         val entity =
             permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.apply {
-                this.role = roleEntity
+                this.kayttooikeustaso = kayttooikeustasoEntity
             }
-                ?: PermissionEntity(userId = userId, hankeId = hankeId, role = roleEntity)
+                ?: PermissionEntity(
+                    userId = userId,
+                    hankeId = hankeId,
+                    kayttooikeustaso = kayttooikeustasoEntity
+                )
         return permissionRepository.save(entity)
     }
 
@@ -39,7 +49,9 @@ class PermissionService(
     }
 
     companion object {
-        fun hasPermission(role: RoleEntity?, permission: PermissionCode): Boolean =
-            (role?.permissionCode ?: 0) and permission.code > 0
+        fun hasPermission(
+            kayttooikeustaso: KayttooikeustasoEntity?,
+            permission: PermissionCode
+        ): Boolean = (kayttooikeustaso?.permissionCode ?: 0) and permission.code > 0
     }
 }

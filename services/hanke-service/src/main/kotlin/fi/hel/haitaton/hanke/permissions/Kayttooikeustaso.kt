@@ -10,7 +10,7 @@ import jakarta.persistence.Table
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
-enum class Role {
+enum class Kayttooikeustaso {
     KAIKKI_OIKEUDET,
     KAIKKIEN_MUOKKAUS,
     HANKEMUOKKAUS,
@@ -19,14 +19,14 @@ enum class Role {
 }
 
 @Entity
-@Table(name = "role")
-class RoleEntity(
+@Table(name = "kayttooikeustaso")
+class KayttooikeustasoEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Int = 0,
-    @Enumerated(EnumType.STRING) val role: Role,
+    @Enumerated(EnumType.STRING) val kayttooikeustaso: Kayttooikeustaso,
     val permissionCode: Long,
 )
 
 @Repository
-interface RoleRepository : JpaRepository<RoleEntity, Int> {
-    fun findOneByRole(role: Role): RoleEntity
+interface KayttooikeustasoRepository : JpaRepository<KayttooikeustasoEntity, Int> {
+    fun findOneByKayttooikeustaso(kayttooikeustaso: Kayttooikeustaso): KayttooikeustasoEntity
 }

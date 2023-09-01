@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
-import fi.hel.haitaton.hanke.permissions.Role
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import java.util.UUID
 
 object HankeKayttajaFactory {
@@ -12,7 +12,7 @@ object HankeKayttajaFactory {
                 id = UUID.randomUUID(),
                 sahkoposti = "email.$it.address.com",
                 nimi = "test name$it",
-                rooli = Role.KATSELUOIKEUS,
+                kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
                 tunnistautunut = it % 2 == 0
             )
         }

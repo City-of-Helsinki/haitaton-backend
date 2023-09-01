@@ -9,5 +9,5 @@ data class PermissionUpdate(
 
 data class PermissionDto(
     @field:Schema(description = "HankeKayttaja ID") val id: UUID,
-    @field:Schema(description = "New role in Hanke") val rooli: Role,
+    @field:Schema(description = "New access level in Hanke") val kayttooikeustaso: Kayttooikeustaso,
 )

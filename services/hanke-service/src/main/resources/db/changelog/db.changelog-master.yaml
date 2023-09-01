@@ -115,3 +115,5 @@ databaseChangeLog:
       file: db/changelog/changesets/042-add-indices-to-hanke-kayttaja.yml
   - include:
       file: db/changelog/changesets/043-add-another-index-to-hanke-kayttaja.yml
+  - include:
+      file: db/changelog/changesets/044-rename-role-to-kayttooikeustaso.yml
