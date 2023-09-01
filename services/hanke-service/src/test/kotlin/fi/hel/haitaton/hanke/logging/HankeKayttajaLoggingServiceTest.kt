@@ -49,30 +49,25 @@ class HankeKayttajaLoggingServiceTest {
             verify {
                 auditLogService.create(
                     withArg { entry ->
-                        try {
-                            assertThat(entry.operation).isEqualTo(Operation.UPDATE)
-                            assertThat(entry.status).isEqualTo(Status.SUCCESS)
-                            assertThat(entry.failureDescription).isNull()
-                            assertThat(entry.userId).isEqualTo(userId)
-                            assertThat(entry.userRole).isEqualTo(UserRole.USER)
-                            assertThat(entry.objectId)
-                                .isEqualTo(PermissionFactory.PERMISSION_ID.toString())
-                            assertThat(entry.objectType).isEqualTo(ObjectType.PERMISSION)
-                            assertThat(entry.objectBefore).isNotNull().all {
-                                contains(PermissionFactory.PERMISSION_ID.toString())
-                                contains(PermissionFactory.USER_ID)
-                                contains(PermissionFactory.HANKE_ID.toString())
-                                contains("KATSELUOIKEUS")
-                            }
-                            assertThat(entry.objectAfter).isNotNull().all {
-                                contains(PermissionFactory.PERMISSION_ID.toString())
-                                contains(PermissionFactory.USER_ID)
-                                contains(PermissionFactory.HANKE_ID.toString())
-                                contains("HANKEMUOKKAUS")
-                            }
-                        } catch (e: Throwable) {
-                            println("ASDF ${e.message}")
-                            throw e
+                        assertThat(entry.operation).isEqualTo(Operation.UPDATE)
+                        assertThat(entry.status).isEqualTo(Status.SUCCESS)
+                        assertThat(entry.failureDescription).isNull()
+                        assertThat(entry.userId).isEqualTo(userId)
+                        assertThat(entry.userRole).isEqualTo(UserRole.USER)
+                        assertThat(entry.objectId)
+                            .isEqualTo(PermissionFactory.PERMISSION_ID.toString())
+                        assertThat(entry.objectType).isEqualTo(ObjectType.PERMISSION)
+                        assertThat(entry.objectBefore).isNotNull().all {
+                            contains(PermissionFactory.PERMISSION_ID.toString())
+                            contains(PermissionFactory.USER_ID)
+                            contains(PermissionFactory.HANKE_ID.toString())
+                            contains("KATSELUOIKEUS")
+                        }
+                        assertThat(entry.objectAfter).isNotNull().all {
+                            contains(PermissionFactory.PERMISSION_ID.toString())
+                            contains(PermissionFactory.USER_ID)
+                            contains(PermissionFactory.HANKE_ID.toString())
+                            contains("HANKEMUOKKAUS")
                         }
                     }
                 )
