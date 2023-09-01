@@ -43,13 +43,15 @@ enum class Status {
 }
 
 enum class ObjectType {
-    YHTEYSTIETO,
-    ALLU_CUSTOMER,
+    APPLICATION,
     ALLU_CONTACT,
+    ALLU_CUSTOMER,
     GDPR_RESPONSE,
     HANKE,
     HANKE_KAYTTAJA,
-    APPLICATION,
+    KAYTTAJA_TUNNISTE,
+    PERMISSION,
+    YHTEYSTIETO,
 }
 
 enum class UserRole {
