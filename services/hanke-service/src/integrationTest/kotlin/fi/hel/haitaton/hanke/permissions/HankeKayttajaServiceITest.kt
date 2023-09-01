@@ -17,6 +17,7 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.matches
 import assertk.assertions.messageContains
+import com.fasterxml.jackson.databind.util.ClassUtil.hasClass
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
@@ -56,7 +57,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     @Autowired private lateinit var kayttajaTunnisteRepository: KayttajaTunnisteRepository
     @Autowired private lateinit var hankeKayttajaRepository: HankeKayttajaRepository
     @Autowired private lateinit var permissionRepository: PermissionRepository
-    @Autowired private lateinit var kayttooikeustasoRepository: KayttooikeustasoRepository
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
 
     @Autowired private lateinit var permissionService: PermissionService
@@ -727,6 +727,122 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         }
     }
 
+    @Nested
+    inner class CreatePermissionFromToken {
+        private val tunniste = "Itf4UuErPqBHkhJF7CUAsu69"
+        private val newUserId = "newUser"
+
+        @Test
+        fun `throws exception if tunniste doesn't exist`() {
+            assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, "fake") }
+                .all {
+                    hasClass(TunnisteNotFoundException::class)
+                    messageContains(newUserId)
+                    messageContains("fake")
+                }
+        }
+
+        @Test
+        fun `throws exception if there's no kayttaja with the tunniste`() {
+            val tunniste = saveToken()
+
+            assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, "existing") }
+                .all {
+                    hasClass(OrphanedTunnisteException::class)
+                    messageContains(newUserId)
+                    messageContains(tunniste.id.toString())
+                }
+        }
+
+        @Test
+        fun `throws an exception if the user already has a permission for the hanke kayttaja`() {
+            val tunniste = saveToken()
+            val hanke = hankeFactory.save()
+            val kayttaja =
+                saveUserAndPermission(
+                    hanke.id!!,
+                    kayttajaTunniste = tunniste,
+                    userId = newUserId,
+                )
+
+            assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, "existing") }
+                .all {
+                    hasClass(UserAlreadyHasPermissionException::class)
+                    messageContains(newUserId)
+                    messageContains(tunniste.id.toString())
+                    messageContains(kayttaja.permission!!.id.toString())
+                }
+        }
+
+        @Test
+        fun `throws an exception if the user has a permission for the hanke from elsewhere`() {
+            val hanke = hankeFactory.save()
+            val kayttaja = saveUserAndToken(hanke.id!!, tunniste = tunniste)
+            val permission =
+                permissionRepository.save(
+                    PermissionEntity(
+                        userId = newUserId,
+                        hankeId = hanke.id!!,
+                        kayttooikeustaso =
+                            permissionService.findKayttooikeustaso(Kayttooikeustaso.KATSELUOIKEUS)
+                    )
+                )
+
+            assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, tunniste) }
+                .all {
+                    hasClass(UserAlreadyHasPermissionException::class)
+                    messageContains(newUserId)
+                    messageContains(kayttaja.kayttajaTunniste!!.id.toString())
+                    messageContains(permission.id.toString())
+                }
+        }
+
+        @Test
+        fun `throws an exception if another user already has a permission for the hanke kayttaja`() {
+            val tunniste = saveToken()
+            val hanke = hankeFactory.save()
+            val kayttaja =
+                saveUserAndPermission(
+                    hanke.id!!,
+                    kayttajaTunniste = tunniste,
+                    userId = "Other user",
+                )
+
+            assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, "existing") }
+                .all {
+                    hasClass(PermissionAlreadyExistsException::class)
+                    messageContains(newUserId)
+                    messageContains("Other user")
+                    messageContains(kayttaja.id.toString())
+                    messageContains(kayttaja.permission!!.id.toString())
+                }
+        }
+
+        @Test
+        fun `Creates a permission`() {
+            val hanke = hankeFactory.save()
+            saveUserAndToken(hanke.id!!, tunniste = tunniste)
+
+            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
+
+            val permission = permissionRepository.findOneByHankeIdAndUserId(hanke.id!!, newUserId)
+            assertThat(permission)
+                .isNotNull()
+                .transform { it.kayttooikeustaso.kayttooikeustaso }
+                .isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
+        }
+
+        @Test
+        fun `Removes the user token`() {
+            val hanke = hankeFactory.save()
+            saveUserAndToken(hanke.id!!, tunniste = tunniste)
+
+            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
+
+            assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
+        }
+    }
+
     private fun Assert<List<KayttajaTunnisteEntity>>.areValid() = each { t ->
         t.transform { it.id }.isNotNull()
         t.transform { it.kayttooikeustaso }.isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
@@ -783,16 +899,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
         tunniste: String = "existing",
     ): HankeKayttajaEntity {
-        val kayttajaTunnisteEntity =
-            kayttajaTunnisteRepository.save(
-                KayttajaTunnisteEntity(
-                    tunniste = tunniste,
-                    createdAt = OffsetDateTime.parse("2023-03-31T15:41:21Z"),
-                    sentAt = null,
-                    kayttooikeustaso = kayttooikeustaso,
-                    hankeKayttaja = null,
-                )
-            )
+        val kayttajaTunnisteEntity = saveToken(tunniste, kayttooikeustaso)
         return saveUser(hankeId, nimi, sahkoposti, null, kayttajaTunnisteEntity)
     }
 
@@ -827,13 +934,26 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         )
     }
 
+    private fun saveToken(
+        tunniste: String = "existing",
+        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+    ) =
+        kayttajaTunnisteRepository.save(
+            KayttajaTunnisteEntity(
+                tunniste = tunniste,
+                createdAt = OffsetDateTime.parse("2023-03-31T15:41:21Z"),
+                sentAt = null,
+                kayttooikeustaso = kayttooikeustaso,
+                hankeKayttaja = null,
+            )
+        )
+
     private fun savePermission(hankeId: Int, userId: String, kayttooikeustaso: Kayttooikeustaso) =
         permissionRepository.save(
             PermissionEntity(
                 userId = userId,
                 hankeId = hankeId,
-                kayttooikeustaso =
-                    kayttooikeustasoRepository.findOneByKayttooikeustaso(kayttooikeustaso)
+                kayttooikeustaso = permissionService.findKayttooikeustaso(kayttooikeustaso),
             )
         )
 }

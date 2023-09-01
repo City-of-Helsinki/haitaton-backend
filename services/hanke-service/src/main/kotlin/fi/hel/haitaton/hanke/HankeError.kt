@@ -2,9 +2,11 @@ package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonUnwrapped
+import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.ConstraintViolation
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
+@Schema(enumAsRef = true)
 enum class HankeError(val errorMessage: String) {
     HAI0001("Access denied"),
     HAI0002("Internal error"),
@@ -44,6 +46,7 @@ enum class HankeError(val errorMessage: String) {
     HAI4001("HankeKayttaja not found"),
     HAI4002("Trying to change own permission"),
     HAI4003("Permission data conflict"),
+    HAI4004("Kayttajatunniste not found"),
     ;
 
     val errorCode: String

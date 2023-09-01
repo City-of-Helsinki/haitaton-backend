@@ -22,13 +22,27 @@ class PermissionService(
         return hasPermission(kayttooikeustaso, permission)
     }
 
+    fun findPermission(hankeId: Int, userId: String): PermissionEntity? =
+        permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)
+
+    /** When you don't want to accidentally update existing permissions. */
+    fun create(hankeId: Int, userId: String, kayttooikeustaso: Kayttooikeustaso): PermissionEntity {
+        val kayttooikeustasoEntity = findKayttooikeustaso(kayttooikeustaso)
+        return permissionRepository.save(
+            PermissionEntity(
+                userId = userId,
+                hankeId = hankeId,
+                kayttooikeustaso = kayttooikeustasoEntity,
+            )
+        )
+    }
+
     fun setPermission(
         hankeId: Int,
         userId: String,
         kayttooikeustaso: Kayttooikeustaso
     ): PermissionEntity {
-        val kayttooikeustasoEntity =
-            kayttooikeustasoRepository.findOneByKayttooikeustaso(kayttooikeustaso)
+        val kayttooikeustasoEntity = findKayttooikeustaso(kayttooikeustaso)
         val entity =
             permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.apply {
                 this.kayttooikeustaso = kayttooikeustasoEntity
@@ -47,6 +61,9 @@ class PermissionService(
             throw HankeNotFoundException(hanke.hankeTunnus)
         }
     }
+
+    fun findKayttooikeustaso(kayttooikeustaso: Kayttooikeustaso): KayttooikeustasoEntity =
+        kayttooikeustasoRepository.findOneByKayttooikeustaso(kayttooikeustaso)
 
     companion object {
         fun hasPermission(

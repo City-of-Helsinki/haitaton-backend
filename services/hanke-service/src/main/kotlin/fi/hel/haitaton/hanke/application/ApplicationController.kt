@@ -22,7 +22,6 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import mu.KotlinLogging
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.http.ResponseEntity
@@ -263,7 +262,7 @@ class ApplicationController(
         return service.sendApplication(id, currentUserId())
     }
 
-    @GetMapping("/{id}/paatos", produces = [APPLICATION_PDF_VALUE, APPLICATION_JSON_VALUE])
+    @GetMapping("/{id}/paatos")
     @Operation(
         summary = "Download a decision",
         description = "Downloads a decision for this application from Allu."
@@ -271,7 +270,11 @@ class ApplicationController(
     @ApiResponses(
         value =
             [
-                ApiResponse(description = "The decision PDF", responseCode = "200"),
+                ApiResponse(
+                    description = "The decision PDF",
+                    responseCode = "200",
+                    content = [Content(mediaType = APPLICATION_PDF_VALUE)]
+                ),
                 ApiResponse(
                     description =
                         "An application was not found with the given id or the application didn't have a decision",

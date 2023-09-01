@@ -30,7 +30,6 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Autowired lateinit var permissionService: PermissionService
     @Autowired lateinit var permissionRepository: PermissionRepository
-    @Autowired lateinit var kayttooikeustasoRepository: KayttooikeustasoRepository
     @Autowired lateinit var hankeService: HankeService
 
     companion object {
@@ -73,8 +72,7 @@ class PermissionServiceITest : DatabaseTest() {
         kayttooikeustaso: Kayttooikeustaso,
         allowedPermissions: Array<PermissionCode>
     ) {
-        val kayttooikeustasoEntity =
-            kayttooikeustasoRepository.findOneByKayttooikeustaso(kayttooikeustaso)
+        val kayttooikeustasoEntity = permissionService.findKayttooikeustaso(kayttooikeustaso)
 
         allowedPermissions.forEach { code ->
             assertThat(code)
@@ -100,7 +98,7 @@ class PermissionServiceITest : DatabaseTest() {
     @Test
     fun `getAllowedHankeIds with permissions returns list of IDs`() {
         val kaikkiOikeudet =
-            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.KAIKKI_OIKEUDET)
+            permissionService.findKayttooikeustaso(Kayttooikeustaso.KAIKKI_OIKEUDET)
         val hankkeet = saveSeveralHanke(3)
         hankkeet
             .map { it.id!! }
@@ -122,13 +120,11 @@ class PermissionServiceITest : DatabaseTest() {
     @Test
     fun `getAllowedHankeIds return ids with correct permissions`() {
         val kaikkiOikeudet =
-            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.KAIKKI_OIKEUDET)
-        val hankemuokkaus =
-            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.HANKEMUOKKAUS)
+            permissionService.findKayttooikeustaso(Kayttooikeustaso.KAIKKI_OIKEUDET)
+        val hankemuokkaus = permissionService.findKayttooikeustaso(Kayttooikeustaso.HANKEMUOKKAUS)
         val hakemusasiointi =
-            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.HAKEMUSASIOINTI)
-        val katseluoikeus =
-            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.KATSELUOIKEUS)
+            permissionService.findKayttooikeustaso(Kayttooikeustaso.HAKEMUSASIOINTI)
+        val katseluoikeus = permissionService.findKayttooikeustaso(Kayttooikeustaso.KATSELUOIKEUS)
         val hankkeet = saveSeveralHanke(4)
         listOf(kaikkiOikeudet, hankemuokkaus, hakemusasiointi, katseluoikeus).zip(hankkeet) {
             kayttooikeustaso,
@@ -155,7 +151,7 @@ class PermissionServiceITest : DatabaseTest() {
     @Test
     fun `hasPermission with correct permission`() {
         val kaikkiOikeudet =
-            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.KAIKKI_OIKEUDET)
+            permissionService.findKayttooikeustaso(Kayttooikeustaso.KAIKKI_OIKEUDET)
         val hankeId = saveSeveralHanke(1)[0].id!!
         permissionRepository.save(
             PermissionEntity(
@@ -171,7 +167,7 @@ class PermissionServiceITest : DatabaseTest() {
     @Test
     fun `hasPermission with insufficient permissions`() {
         val hakemusasiointi =
-            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.HAKEMUSASIOINTI)
+            permissionService.findKayttooikeustaso(Kayttooikeustaso.HAKEMUSASIOINTI)
         val hankeId = saveSeveralHanke(1)[0].id!!
         permissionRepository.save(
             PermissionEntity(
@@ -205,7 +201,7 @@ class PermissionServiceITest : DatabaseTest() {
         val hankeId = saveSeveralHanke(1)[0].id!!
         permissionRepository.deleteAll() // remove permission created in hanke creation
         val kayttooikeustaso =
-            kayttooikeustasoRepository.findOneByKayttooikeustaso(Kayttooikeustaso.KATSELUOIKEUS)
+            permissionService.findKayttooikeustaso(Kayttooikeustaso.KATSELUOIKEUS)
         permissionRepository.save(
             PermissionEntity(
                 userId = username,

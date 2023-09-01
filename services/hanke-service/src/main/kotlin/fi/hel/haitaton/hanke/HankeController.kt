@@ -21,7 +21,6 @@ import jakarta.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -48,7 +47,7 @@ class HankeController(
     @Autowired private val featureFlags: FeatureFlags,
 ) {
 
-    @GetMapping("/{hankeTunnus}", produces = [APPLICATION_JSON_VALUE])
+    @GetMapping("/{hankeTunnus}")
     @Operation(summary = "Get hanke", description = "Get specific hanke by hankeTunnus.")
     @ApiResponses(
         value =
@@ -77,7 +76,7 @@ class HankeController(
         return hanke
     }
 
-    @GetMapping(produces = [APPLICATION_JSON_VALUE])
+    @GetMapping
     @Operation(
         summary = "Get hanke list",
         description =
@@ -124,7 +123,7 @@ class HankeController(
         return hankeList
     }
 
-    @GetMapping("/{hankeTunnus}/hakemukset", produces = [APPLICATION_JSON_VALUE])
+    @GetMapping("/{hankeTunnus}/hakemukset")
     @Operation(
         summary = "Get hanke applications",
         description = "Returns list of applications belonging to a given hanke."
@@ -148,7 +147,7 @@ class HankeController(
         }
     }
 
-    @PostMapping(consumes = [APPLICATION_JSON_VALUE], produces = [APPLICATION_JSON_VALUE])
+    @PostMapping
     @Operation(
         summary = "Create new hanke",
         description =
@@ -194,11 +193,7 @@ When Hanke is created:
         return createdHanke
     }
 
-    @PutMapping(
-        "/{hankeTunnus}",
-        consumes = [APPLICATION_JSON_VALUE],
-        produces = [APPLICATION_JSON_VALUE]
-    )
+    @PutMapping("/{hankeTunnus}")
     @Operation(
         summary = "Update hanke",
         description =
