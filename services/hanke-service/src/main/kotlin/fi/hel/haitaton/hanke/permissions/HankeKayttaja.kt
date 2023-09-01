@@ -34,10 +34,10 @@ class HankeKayttajaEntity(
     val sahkoposti: String,
     @OneToOne
     @JoinColumn(name = "permission_id", updatable = true, nullable = true)
-    val permission: PermissionEntity?,
+    var permission: PermissionEntity?,
     @OneToOne
     @JoinColumn(name = "tunniste_id", updatable = true, nullable = true)
-    val kayttajaTunniste: KayttajaTunnisteEntity?,
+    var kayttajaTunniste: KayttajaTunnisteEntity?,
 ) {
     fun toDto(): HankeKayttajaDto =
         HankeKayttajaDto(

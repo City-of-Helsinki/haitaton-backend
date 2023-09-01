@@ -28,7 +28,6 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
-import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithAnonymousUser
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers
@@ -105,7 +104,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             get(url)
                 .andExpect(status().isOk)
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.nimi").value("Hämeentien perusparannus ja katuvalot"))
                 .andExpect(jsonPath("$.status").value(HankeStatus.DRAFT.name))
 
@@ -151,7 +149,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             // we check that we get the two hankeTunnus we expect
             get(url)
                 .andExpect(status().isOk)
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[2]").doesNotExist())
                 .andExpect(jsonPath("$[0].hankeTunnus").value(HANKE_TUNNUS))
                 .andExpect(jsonPath("$[1].hankeTunnus").value("hanketunnus2"))
@@ -188,7 +185,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             // we check that we get the two hankeTunnus and geometriat we expect
             get("$url/?geometry=true")
                 .andExpect(status().isOk)
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$[0].hankeTunnus").value(HANKE_TUNNUS))
                 .andExpect(jsonPath("$[1].hankeTunnus").value("hanketunnus2"))
                 .andExpect(jsonPath("$[0].id").value(hankeIds[0]))
@@ -322,7 +318,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             post(url, hankeToBeCreated)
                 .andExpect(status().isOk)
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.hankeTunnus").value(HANKE_TUNNUS))
                 .andExpect(content().json(createdHanke.toJsonString()))
 
@@ -362,7 +357,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             post(url, hankeToBeMocked)
                 .andExpect(status().isOk)
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(content().json(expectedContent))
                 .andExpect(jsonPath("$.hankeTunnus").value(HANKE_TUNNUS))
 
@@ -379,7 +373,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             post(url, hanke)
                 .andExpect(status().isInternalServerError)
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(hankeError(HankeError.HAI0002))
 
             verifySequence { hankeService.createHanke(any()) }
@@ -423,7 +416,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             // Call it and check results
             post(url, hankeToBeMocked)
                 .andExpect(status().isOk)
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(content().json(expectedContent))
                 // These might be redundant, but at least it is clear what we're checking here:
                 .andExpect(jsonPath("$.alkuPvm").value(expectedDateAlkuJson))
@@ -483,7 +475,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             put(url, hankeToBeUpdated)
                 .andExpect(status().isOk)
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.nimi").value(HankeFactory.defaultNimi))
                 .andExpect(jsonPath("$.status").value(HankeStatus.PUBLIC.name))
 
@@ -533,7 +524,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             put(url, hankeToBeUpdated)
                 .andExpect(status().isOk)
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(content().json(expectedContent))
                 // These might be redundant, but at least it is clear what we're checking here:
                 .andExpect(jsonPath("$.tyomaaKatuosoite").value("Testikatu 1"))

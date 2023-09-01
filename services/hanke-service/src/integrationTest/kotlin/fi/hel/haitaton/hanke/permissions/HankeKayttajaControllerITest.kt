@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaController.Tunnistautuminen
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -376,6 +377,74 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 ex(hanke)
 
             return Pair(hanke, updates)
+        }
+    }
+
+    @Nested
+    inner class IdentifyUser {
+        private val url = "/kayttajat"
+        private val tunniste = "r5cmC0BmJaSX5Q6WA981ow8j"
+        private val tunnisteId = UUID.fromString("827fe492-2add-4d87-9564-049f963c1d86")
+        private val kayttajaId = UUID.fromString("ee239f7a-c5bb-4462-b9a5-3695eb410086")
+        private val permissionId = 156
+
+        @Test
+        fun `Returns 204 on success`() {
+            justRun { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
+
+            post(url, Tunnistautuminen(tunniste))
+                .andExpect(status().isNoContent)
+                .andExpect(content().string(""))
+
+            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
+        }
+
+        @Test
+        fun `Returns 404 when tunniste not found`() {
+            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } throws
+                TunnisteNotFoundException(USERNAME, tunniste)
+
+            post(url, Tunnistautuminen(tunniste))
+                .andExpect(status().isNotFound)
+                .andExpect(hankeError(HankeError.HAI4004))
+
+            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
+        }
+
+        @Test
+        fun `Returns 500 when tunniste is orphaned`() {
+            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } throws
+                OrphanedTunnisteException(USERNAME, tunnisteId)
+
+            post(url, Tunnistautuminen(tunniste))
+                .andExpect(status().isInternalServerError)
+                .andExpect(hankeError(HankeError.HAI4001))
+
+            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
+        }
+
+        @Test
+        fun `Returns 409 when user already has a permission`() {
+            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } throws
+                UserAlreadyHasPermissionException(USERNAME, tunnisteId, permissionId)
+
+            post(url, Tunnistautuminen(tunniste))
+                .andExpect(status().isConflict)
+                .andExpect(hankeError(HankeError.HAI4003))
+
+            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
+        }
+
+        @Test
+        fun `Returns 409 when other user already has a permission for the hanke kayttaja`() {
+            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } throws
+                PermissionAlreadyExistsException(USERNAME, "Other user", kayttajaId, permissionId)
+
+            post(url, Tunnistautuminen(tunniste))
+                .andExpect(status().isConflict)
+                .andExpect(hankeError(HankeError.HAI4003))
+
+            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
         }
     }
 }

@@ -65,4 +65,7 @@ class KayttajaTunnisteEntity(
     }
 }
 
-@Repository interface KayttajaTunnisteRepository : JpaRepository<KayttajaTunnisteEntity, UUID> {}
+@Repository
+interface KayttajaTunnisteRepository : JpaRepository<KayttajaTunnisteEntity, UUID> {
+    fun findByTunniste(tunniste: String): KayttajaTunnisteEntity?
+}
