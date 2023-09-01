@@ -100,6 +100,9 @@ This adds a hook that will build the project and run all tests and other checks
 before any push you make. The checks need to be run successfully for the push to
 happen. If necessary, the checks can be skipped with `git push --no-verify`.
 
+Custom pre-push scripts can be added under `.git/hooks/pre-push.d`. Push will
+fail if any of the pre-push scripts fail.
+
 ### Code coverage report
 
 Gradle Jacoco plugin is used to create a code coverage report.
