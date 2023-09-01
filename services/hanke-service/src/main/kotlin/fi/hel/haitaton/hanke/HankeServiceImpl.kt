@@ -21,8 +21,8 @@ import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
@@ -246,7 +246,8 @@ open class HankeServiceImpl(
 
     private fun initAccessForCreatedHanke(hanke: Hanke, perustaja: Perustaja?, userId: String) {
         val hankeId = hanke.id!!
-        val permissionAll = permissionService.setPermission(hankeId, userId, Role.KAIKKI_OIKEUDET)
+        val permissionAll =
+            permissionService.setPermission(hankeId, userId, Kayttooikeustaso.KAIKKI_OIKEUDET)
         perustaja?.let { hankeKayttajaService.addHankeFounder(hankeId, it, permissionAll) }
         hankeKayttajaService.saveNewTokensFromHanke(hanke)
     }

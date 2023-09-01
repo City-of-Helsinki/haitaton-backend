@@ -21,7 +21,7 @@ data class HankeKayttajaDto(
     @field:Schema(description = "Id, set by the service") val id: UUID,
     @field:Schema(description = "Email address") val sahkoposti: String,
     @field:Schema(description = "Full name") val nimi: String,
-    @field:Schema(description = "Role in Hanke") val rooli: Role?,
+    @field:Schema(description = "Access level in Hanke") val kayttooikeustaso: Kayttooikeustaso?,
     @field:Schema(description = "Has user logged in to view Hanke") val tunnistautunut: Boolean,
 )
 
@@ -44,17 +44,18 @@ class HankeKayttajaEntity(
             id = id,
             sahkoposti = sahkoposti,
             nimi = nimi,
-            rooli = deriveRole(),
+            kayttooikeustaso = deriveKayttooikeustaso(),
             tunnistautunut = permission != null,
         )
 
     /**
-     * [KayttajaTunnisteEntity] stores role temporarily until user has signed in. After that,
-     * [PermissionEntity] is used.
+     * [KayttajaTunnisteEntity] stores kayttooikeustaso temporarily until user has signed in. After
+     * that, [PermissionEntity] is used.
      *
-     * Thus, role is read primarily from [PermissionEntity] if the relation exists.
+     * Thus, kayttooikeustaso is read primarily from [PermissionEntity] if the relation exists.
      */
-    fun deriveRole(): Role? = permission?.role?.role ?: kayttajaTunniste?.role
+    fun deriveKayttooikeustaso(): Kayttooikeustaso? =
+        permission?.kayttooikeustaso?.kayttooikeustaso ?: kayttajaTunniste?.kayttooikeustaso
 }
 
 @Repository

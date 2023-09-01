@@ -151,7 +151,12 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 )
             } throws HankeNotFoundException(HANKE_TUNNUS)
 
-            put(url, PermissionUpdate(listOf(PermissionDto(hankeKayttajaId, Role.HANKEMUOKKAUS))))
+            put(
+                    url,
+                    PermissionUpdate(
+                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
+                    )
+                )
                 .andExpect(status().isNotFound)
 
             verifySequence {
@@ -183,10 +188,15 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                     PermissionCode.MODIFY_DELETE_PERMISSIONS
                 )
             } returns false
-            val updates = mapOf(hankeKayttajaId to Role.HANKEMUOKKAUS)
+            val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
             justRun { hankeKayttajaService.updatePermissions(hanke, updates, false, USERNAME) }
 
-            put(url, PermissionUpdate(listOf(PermissionDto(hankeKayttajaId, Role.HANKEMUOKKAUS))))
+            put(
+                    url,
+                    PermissionUpdate(
+                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
+                    )
+                )
                 .andExpect(status().isNoContent)
                 .andExpect(content().string(""))
 
@@ -211,10 +221,15 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                     PermissionCode.MODIFY_DELETE_PERMISSIONS
                 )
             } returns true
-            val updates = mapOf(hankeKayttajaId to Role.HANKEMUOKKAUS)
+            val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
             justRun { hankeKayttajaService.updatePermissions(hanke, updates, true, USERNAME) }
 
-            put(url, PermissionUpdate(listOf(PermissionDto(hankeKayttajaId, Role.HANKEMUOKKAUS))))
+            put(
+                    url,
+                    PermissionUpdate(
+                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
+                    )
+                )
                 .andExpect(status().isNoContent)
 
             verifyCalls(hanke, updates, deleteAdminPermission = true)
@@ -224,7 +239,12 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         fun `Returns forbidden when missing admin permissions`() {
             val (hanke, updates) = setupForException(MissingAdminPermissionException(USERNAME))
 
-            put(url, PermissionUpdate(listOf(PermissionDto(hankeKayttajaId, Role.HANKEMUOKKAUS))))
+            put(
+                    url,
+                    PermissionUpdate(
+                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
+                    )
+                )
                 .andExpect(status().isForbidden)
                 .andExpect(hankeError(HankeError.HAI0005))
 
@@ -235,7 +255,12 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         fun `Returns forbidden when changing own permissions`() {
             val (hanke, updates) = setupForException(ChangingOwnPermissionException(USERNAME))
 
-            put(url, PermissionUpdate(listOf(PermissionDto(hankeKayttajaId, Role.HANKEMUOKKAUS))))
+            put(
+                    url,
+                    PermissionUpdate(
+                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
+                    )
+                )
                 .andExpect(status().isForbidden)
                 .andExpect(hankeError(HankeError.HAI4002))
 
@@ -245,9 +270,16 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         @Test
         fun `Returns internal server error if there are users without either permission or tunniste`() {
             val (hanke, updates) =
-                setupForException(UsersWithoutRolesException(missingIds = listOf(hankeKayttajaId)))
+                setupForException(
+                    UsersWithoutKayttooikeustasoException(missingIds = listOf(hankeKayttajaId))
+                )
 
-            put(url, PermissionUpdate(listOf(PermissionDto(hankeKayttajaId, Role.HANKEMUOKKAUS))))
+            put(
+                    url,
+                    PermissionUpdate(
+                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
+                    )
+                )
                 .andExpect(status().isInternalServerError)
                 .andExpect(hankeError(HankeError.HAI4003))
 
@@ -258,7 +290,12 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         fun `Returns conflict if there would be no admins remaining`() {
             val (hanke, updates) = setupForException { hanke -> NoAdminRemainingException(hanke) }
 
-            put(url, PermissionUpdate(listOf(PermissionDto(hankeKayttajaId, Role.HANKEMUOKKAUS))))
+            put(
+                    url,
+                    PermissionUpdate(
+                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
+                    )
+                )
                 .andExpect(status().isConflict)
                 .andExpect(hankeError(HankeError.HAI4003))
 
@@ -272,7 +309,12 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                     HankeKayttajatNotFoundException(listOf(hankeKayttajaId), hanke)
                 }
 
-            put(url, PermissionUpdate(listOf(PermissionDto(hankeKayttajaId, Role.HANKEMUOKKAUS))))
+            put(
+                    url,
+                    PermissionUpdate(
+                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
+                    )
+                )
                 .andExpect(status().isBadRequest)
                 .andExpect(hankeError(HankeError.HAI4001))
 
@@ -281,7 +323,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
 
         private fun verifyCalls(
             hanke: Hanke,
-            updates: Map<UUID, Role>,
+            updates: Map<UUID, Kayttooikeustaso>,
             deleteAdminPermission: Boolean = false,
         ) {
             verifySequence {
@@ -305,12 +347,14 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             }
         }
 
-        private fun setupForException(ex: Throwable): Pair<Hanke, Map<UUID, Role>> =
+        private fun setupForException(ex: Throwable): Pair<Hanke, Map<UUID, Kayttooikeustaso>> =
             setupForException {
                 ex
             }
 
-        private fun setupForException(ex: (Hanke) -> Throwable): Pair<Hanke, Map<UUID, Role>> {
+        private fun setupForException(
+            ex: (Hanke) -> Throwable
+        ): Pair<Hanke, Map<UUID, Kayttooikeustaso>> {
             val hanke = HankeFactory.create()
             every { hankeService.findHankeOrThrow(HANKE_TUNNUS) } returns hanke
             justRun {
@@ -327,7 +371,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                     PermissionCode.MODIFY_DELETE_PERMISSIONS
                 )
             } returns false
-            val updates = mapOf(hankeKayttajaId to Role.HANKEMUOKKAUS)
+            val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
             every { hankeKayttajaService.updatePermissions(hanke, updates, false, USERNAME) } throws
                 ex(hanke)
 
@@ -352,7 +396,12 @@ class HankeKayttajaControllerFeatureDisabledITest(@Autowired override val mockMv
     inner class UpdatePermissions {
         @Test
         fun `Returns not found when feature disabled`() {
-            put(url, PermissionUpdate(listOf(PermissionDto(hankeKayttajaId, Role.HANKEMUOKKAUS))))
+            put(
+                    url,
+                    PermissionUpdate(
+                        listOf(PermissionDto(hankeKayttajaId, Kayttooikeustaso.HANKEMUOKKAUS))
+                    )
+                )
                 .andExpect(status().isNotFound)
                 .andExpect(hankeError(HankeError.HAI0004))
         }

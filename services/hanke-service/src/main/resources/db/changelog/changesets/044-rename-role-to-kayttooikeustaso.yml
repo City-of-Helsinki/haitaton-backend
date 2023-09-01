@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 044-rename-role-to-kayttooikeustaso
+      author: Topias Heinonen
+      comment: Rename role to kayttooikeustaso, since role means something else
+      changes:
+        - renameTable:
+            oldTableName: role
+            newTableName: kayttooikeustaso
+        - renameColumn:
+            tableName: kayttooikeustaso
+            oldColumnName: role
+            newColumnName: kayttooikeustaso
+        - renameColumn:
+            tableName: permissions
+            oldColumnName: roleid
+            newColumnName: kayttooikeustaso_id
+        - renameColumn:
+            tableName: kayttaja_tunniste
+            oldColumnName: role
+            newColumnName: kayttooikeustaso

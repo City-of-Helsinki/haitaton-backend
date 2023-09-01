@@ -50,7 +50,7 @@ private const val BASE_URL = "/hankkeet"
 @WebMvcTest(HankeController::class)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("itest")
-@WithMockUser(USERNAME, roles = ["haitaton-user"])
+@WithMockUser(USERNAME)
 class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired lateinit var hankeService: HankeService // faking these calls

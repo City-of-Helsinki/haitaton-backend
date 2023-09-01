@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.permissions.KayttajaTunniste
-import fi.hel.haitaton.hanke.permissions.Role
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -10,7 +10,7 @@ object KayttajaTunnisteFactory {
     const val TUNNISTE: String = "K6NqNdCJOrNRh45aCP08e9wc"
     val CREATED_AT: OffsetDateTime = OffsetDateTime.parse("2023-08-31T14:25:13Z")
     val SENT_AT: OffsetDateTime = OffsetDateTime.parse("2023-08-31T14:25:14Z")
-    val ROLE: Role = Role.KATSELUOIKEUS
+    val KAYTTOOIKEUSTASO: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS
     val KAYTTAJA_ID: UUID = UUID.fromString("597431b3-3be1-4594-a07a-bef77c8167df")
 
     fun create(
@@ -18,7 +18,7 @@ object KayttajaTunnisteFactory {
         tunniste: String = TUNNISTE,
         createdAt: OffsetDateTime = CREATED_AT,
         sentAt: OffsetDateTime? = SENT_AT,
-        role: Role = ROLE,
+        kayttooikeustaso: Kayttooikeustaso = KAYTTOOIKEUSTASO,
         hankeKayttajaId: UUID? = KAYTTAJA_ID,
-    ) = KayttajaTunniste(id, tunniste, createdAt, sentAt, role, hankeKayttajaId)
+    ) = KayttajaTunniste(id, tunniste, createdAt, sentAt, kayttooikeustaso, hankeKayttajaId)
 }

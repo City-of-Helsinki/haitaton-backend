@@ -18,7 +18,7 @@ private val logger = KotlinLogging.logger {}
 class HankeKayttajaService(
     private val hankeKayttajaRepository: HankeKayttajaRepository,
     private val kayttajaTunnisteRepository: KayttajaTunnisteRepository,
-    private val roleRepository: RoleRepository,
+    private val kayttooikeustasoRepository: KayttooikeustasoRepository,
     private val permissionService: PermissionService,
     private val featureFlags: FeatureFlags,
     private val logService: HankeKayttajaLoggingService,
@@ -83,7 +83,7 @@ class HankeKayttajaService(
     @Transactional
     fun updatePermissions(
         hanke: Hanke,
-        updates: Map<UUID, Role>,
+        updates: Map<UUID, Kayttooikeustaso>,
         deleteAdminPermission: Boolean,
         userId: String,
     ) {
@@ -102,12 +102,13 @@ class HankeKayttajaService(
 
         kayttajat.forEach { kayttaja ->
             if (kayttaja.permission != null) {
-                val roleBefore = kayttaja.permission.role.role
-                kayttaja.permission.role = roleRepository.findOneByRole(updates[kayttaja.id]!!)
-                logService.logUpdate(roleBefore, kayttaja.permission.toDomain(), userId)
+                val kayttooikeustasoBefore = kayttaja.permission.kayttooikeustaso.kayttooikeustaso
+                kayttaja.permission.kayttooikeustaso =
+                    kayttooikeustasoRepository.findOneByKayttooikeustaso(updates[kayttaja.id]!!)
+                logService.logUpdate(kayttooikeustasoBefore, kayttaja.permission.toDomain(), userId)
             } else {
                 val kayttajaTunnisteBefore = kayttaja.kayttajaTunniste!!.toDomain()
-                kayttaja.kayttajaTunniste.role = updates[kayttaja.id]!!
+                kayttaja.kayttajaTunniste.kayttooikeustaso = updates[kayttaja.id]!!
                 val kayttajaTunnisteAfter = kayttaja.kayttajaTunniste.toDomain()
                 logService.logUpdate(kayttajaTunnisteBefore, kayttajaTunnisteAfter, userId)
             }
@@ -119,7 +120,7 @@ class HankeKayttajaService(
     /** Check that every user an update was requested for was found as a user of the hanke. */
     private fun validateAllKayttajatFound(
         existingKayttajat: List<HankeKayttajaEntity>,
-        requestedUpdates: Map<UUID, Role>,
+        requestedUpdates: Map<UUID, Kayttooikeustaso>,
         hanke: Hanke,
     ) {
         with(existingKayttajat.map { it.id }) {
@@ -131,49 +132,63 @@ class HankeKayttajaService(
     }
 
     /**
-     * The user needs to have admin permission (KAIKKI_OIKEUDET role) whenever removing or adding a
-     * KAIKKI_OIKEUDET from users.
+     * The user needs to have admin permission (KAIKKI_OIKEUDET kayttooikeustaso) whenever removing
+     * or adding a KAIKKI_OIKEUDET from users.
      */
     private fun validateAdminPermissionIfNeeded(
         kayttajat: List<HankeKayttajaEntity>,
-        updates: Map<UUID, Role>,
+        updates: Map<UUID, Kayttooikeustaso>,
         deleteAdminPermission: Boolean,
         userId: String,
     ) {
-        val currentRoles = currentRoles(kayttajat)
+        val currentKayttooikeustasot = currentKayttooikeustasot(kayttajat)
 
         if (
-            (currentRoles.any { (_, role) -> role == Role.KAIKKI_OIKEUDET } ||
-                updates.any { (_, role) -> role == Role.KAIKKI_OIKEUDET }) && !deleteAdminPermission
+            (currentKayttooikeustasot.any { (_, kayttooikeustaso) ->
+                kayttooikeustaso == Kayttooikeustaso.KAIKKI_OIKEUDET
+            } ||
+                updates.any { (_, kayttooikeustaso) ->
+                    kayttooikeustaso == Kayttooikeustaso.KAIKKI_OIKEUDET
+                }) && !deleteAdminPermission
         ) {
             throw MissingAdminPermissionException(userId)
         }
     }
 
     /**
-     * After any change to users' roles, at least one user with KAIKKI_OIKEUDET role in an activated
-     * permission needs to remain. Otherwise, there's no one who can add that role.
+     * After any change to users' access levels, at least one user with KAIKKI_OIKEUDET
+     * kayttooikeustaso in an activated permission needs to remain. Otherwise, there's no one who
+     * can add that access level.
      */
     private fun validateAdminRemains(hanke: Hanke) {
         if (
-            permissionService.findByHankeId(hanke.id!!).all { it.role.role != Role.KAIKKI_OIKEUDET }
+            permissionService.findByHankeId(hanke.id!!).all {
+                it.kayttooikeustaso.kayttooikeustaso != Kayttooikeustaso.KAIKKI_OIKEUDET
+            }
         ) {
             throw NoAdminRemainingException(hanke)
         }
     }
 
-    /** Finds the current roles of the given HankeKayttajat. Returns an ID -> Role map with */
-    private fun currentRoles(kayttajat: List<HankeKayttajaEntity>): Map<UUID, Role> {
-        val currentRoles = kayttajat.map { it.id to it.deriveRole() }
-        currentRoles
-            .filter { (_, role) -> role == null }
+    /**
+     * Finds the current access levels of the given HankeKayttajat. Returns an ID ->
+     * Kayttooikeustaso map.
+     */
+    private fun currentKayttooikeustasot(
+        kayttajat: List<HankeKayttajaEntity>
+    ): Map<UUID, Kayttooikeustaso> {
+        val currentKayttooikeustasot = kayttajat.map { it.id to it.deriveKayttooikeustaso() }
+        currentKayttooikeustasot
+            .filter { (_, kayttooikeustaso) -> kayttooikeustaso == null }
             .map { (id, _) -> id }
             .also { missingIds ->
                 if (missingIds.isNotEmpty()) {
-                    throw UsersWithoutRolesException(missingIds)
+                    throw UsersWithoutKayttooikeustasoException(missingIds)
                 }
             }
-        return currentRoles.associate { (id, role) -> id to role!! }
+        return currentKayttooikeustasot.associate { (id, kayttooikeustaso) ->
+            id to kayttooikeustaso!!
+        }
     }
 
     private fun createToken(hankeId: Int, contact: UserContact) {
@@ -232,7 +247,7 @@ class ChangingOwnPermissionException(userId: String) :
 class MissingAdminPermissionException(userId: String) :
     RuntimeException("User doesn't have permission to change admin permissions. userId=$userId")
 
-class UsersWithoutRolesException(missingIds: Collection<UUID>) :
+class UsersWithoutKayttooikeustasoException(missingIds: Collection<UUID>) :
     RuntimeException(
         "Some HankeKayttaja have neither permissions nor user tokens, " +
             "their ids = ${missingIds.joinToString()}"
