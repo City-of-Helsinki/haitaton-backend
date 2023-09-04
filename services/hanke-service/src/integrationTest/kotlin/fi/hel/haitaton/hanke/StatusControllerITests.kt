@@ -14,7 +14,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 
 @WebMvcTest(StatusController::class)
 @Import(IntegrationTestConfiguration::class)
-@ActiveProfiles("itest")
+@ActiveProfiles("test")
 class StatusControllerITests(@Autowired val mockMvc: MockMvc) {
 
     @Autowired lateinit var jdbcOperations: JdbcOperations

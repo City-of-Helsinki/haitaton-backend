@@ -12,7 +12,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("default")
+@ActiveProfiles("test")
 internal class HankeRepositoryITests : DatabaseTest() {
 
     @Autowired private lateinit var hankeRepository: HankeRepository

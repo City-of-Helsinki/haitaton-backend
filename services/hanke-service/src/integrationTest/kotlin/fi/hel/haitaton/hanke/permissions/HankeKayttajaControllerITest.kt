@@ -46,12 +46,9 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 private const val USERNAME = "testUser"
 private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
 
-@WebMvcTest(
-    HankeKayttajaController::class,
-    properties = ["haitaton.features.user-management=true"],
-)
+@WebMvcTest(HankeKayttajaController::class)
 @Import(IntegrationTestConfiguration::class)
-@ActiveProfiles("itest")
+@ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
@@ -454,7 +451,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     properties = ["haitaton.features.user-management=false"],
 )
 @Import(IntegrationTestConfiguration::class)
-@ActiveProfiles("itest")
+@ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class HankeKayttajaControllerFeatureDisabledITest(@Autowired override val mockMvc: MockMvc) :
     ControllerTest {

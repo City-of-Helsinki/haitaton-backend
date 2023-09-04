@@ -33,7 +33,7 @@ private const val USERID = "test-user"
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("default")
+@ActiveProfiles("test")
 @WithMockUser(USERID)
 class GdprServiceITest : DatabaseTest() {
 

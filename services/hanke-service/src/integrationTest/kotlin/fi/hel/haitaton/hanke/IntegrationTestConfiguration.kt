@@ -25,7 +25,6 @@ import io.sentry.protocol.SentryId
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Profile
 import org.springframework.context.event.ContextRefreshedEvent
 import org.springframework.context.event.EventListener
 import org.springframework.jdbc.core.JdbcOperations
@@ -33,7 +32,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.web.SecurityFilterChain
 
 @TestConfiguration
-@Profile("itest")
 @EnableConfigurationProperties(GdprProperties::class, FeatureFlags::class)
 class IntegrationTestConfiguration {
 

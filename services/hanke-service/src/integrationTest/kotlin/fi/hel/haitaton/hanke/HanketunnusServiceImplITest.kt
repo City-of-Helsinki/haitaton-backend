@@ -10,7 +10,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("default")
+@ActiveProfiles("test")
 internal class HanketunnusServiceImplITest : DatabaseTest() {
 
     @Autowired lateinit var hanketunnusService: HanketunnusService

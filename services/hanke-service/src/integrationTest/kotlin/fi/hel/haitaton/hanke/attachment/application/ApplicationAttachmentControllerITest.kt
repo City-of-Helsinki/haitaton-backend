@@ -64,7 +64,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @WebMvcTest(ApplicationAttachmentController::class)
 @Import(IntegrationTestConfiguration::class)
-@ActiveProfiles("itest")
+@ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: MockMvc) :
     ControllerTest {
