@@ -1,0 +1,41 @@
+<mjml>
+    <mj-body>
+        <mj-include path="./header-content.mjml"/>
+        <mj-section>
+            <mj-column>
+                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="36px">
+                    Haitaton: Sinut on lisätty hakemukselle {{applicationIdentifier}}
+                </mj-text>
+                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    {{inviterInfo}} on tehnyt {{applicationType}} ({{applicationIdentifier}}) hankkeella
+                    {{hankeTunnus}}, ja lähettänyt sen käsittelyyn. Sinut on määritetty hakemuksella rooliin
+                    {{recipientRole}}. Tarkastele hakemusta Haitattomassa
+                    <a href="{{baseUrl}}">{{baseUrl}}</a>
+                </mj-text>
+                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    Löydät hakemuksesi siirtymällä etusivulta Omiin hankkeisiin ja valitsemalla sieltä oikean
+                    hankkeen.
+                    Avaa listanäkymässä hankkeen tiedot ja valitse "Näytä hankkeen hakemukset".
+                </mj-text>
+                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    Haitaton on Helsingin kaupungin asiointijärjestelmä yleisille alueille sijoittuvien hankkeiden
+                    edistämiseen ja haittojen hallintaan.
+                </mj-text>
+                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.
+                </mj-text>
+                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    Ystävällisin terveisin,
+                    <br/>
+                    <br/>
+                    Helsingin kaupungin kaupunkiympäristön toimiala
+                    <br/>
+                    Haitaton-asiointi
+                    <br/>
+                    haitaton@hel.fi
+                </mj-text>
+            </mj-column>
+        </mj-section>
+        <mj-include path="./footer-content.mjml"/>
+    </mj-body>
+</mjml>

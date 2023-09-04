@@ -56,12 +56,14 @@ class EmailSenderService(
     private val mailSender: JavaMailSender,
     private val emailConfig: EmailProperties,
 ) {
+
     fun sendJohtoselvitysCompleteEmail(
         to: String,
         applicationId: Long?,
         applicationIdentifier: String,
     ) {
         logger.info { "Sending email for completed johtoselvitys $applicationIdentifier" }
+
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,

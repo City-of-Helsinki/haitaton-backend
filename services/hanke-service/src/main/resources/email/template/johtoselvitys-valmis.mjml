@@ -1,0 +1,108 @@
+<mjml>
+    <mj-body>
+        <mj-include path="./header-content.mjml"/>
+        <mj-section>
+            <mj-column>
+                <mj-text padding="0px 24px 16px 24px" font-family="Arial" font-size="36px">Haitaton: Johtoselvitys
+                    {{applicationIdentifier}}
+                </mj-text>
+                <mj-text padding="0px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    Hakemanne johtoselvitys {{applicationIdentifier}} on käsitelty. Lataa selvitys Haitattomasta <a
+                        href="{{baseUrl}}/fi/hakemus/{{applicationId}}">{{baseUrl}}/fi/hakemus/{{applicationId}}
+                </a> ja
+                    tutustu sen
+                    sisältöön huolellisesti.
+                </mj-text>
+                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    Miten onnistuimme? Kerro mielipiteesi <a
+                        href="https://response.questback.com/isa/qbv.dll/bylink?p=x6TIpQ4sCcJt9Dv1T-AuuKa-DssX27rx6er2ohTVVipooPTA8H0u-weNFWY9GsVI0">
+                    täällä</a>.
+                </mj-text>
+                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    Ystävällisin terveisin,
+                    <br/>
+                    <br/>
+                    Helsingin kaupunkiympäristön asukas- ja yrityspalvelut
+                    <br/>
+                    Alueidenkäyttö ja -valvonta
+                    <br/>
+                    Johtotietopalvelu
+                    <br/>
+                    Puh. 09 310 31940
+                    <br/>
+                    johtotietopalvelu@hel.fi
+                </mj-text>
+            </mj-column>
+        </mj-section>
+        <mj-section>
+            <mj-column>
+                <mj-text padding="0px 24px 16px 24px" font-family="Arial" font-size="36px">
+                    Haitaton: Ledningsutredning {{applicationIdentifier}}
+                </mj-text>
+                <mj-text padding="0px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    Ledningsutredningen {{applicationIdentifier}} ni ansökt om har behandlats. Ladda ned utredningen
+                    från Haitaton
+                    <a href="{{baseUrl}}/sv/ansokan/{{applicationId}}">
+                        {{baseUrl}}/sv/ansokan/{{applicationId}}
+                    </a>
+                    och läs
+                    innehållet i den noggrannt.
+                </mj-text>
+                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    Hur lyckades vi? Ge din åsikt <a
+                        href="https://response.questback.com/isa/qbv.dll/bylink?p=x6TIpQ4sCcJt9Dv1T-AuuKa-DssX27rx6er2ohTVVipooPTA8H0u-weNFWY9GsVI0">
+                    här</a>.
+                </mj-text>
+                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    Med vänlig hälsning,
+                    <br/>
+                    <br/>
+                    Helsingfors stadsmiljös boende- och företagstjänster
+                    <br/>
+                    Användning och tillsyn av områden
+                    <br/>
+                    Ledningstjänsten
+                    <br/>
+                    Tfn 09 310 31940
+                    <br/>
+                    johtotietopalvelu@hel.fi
+                </mj-text>
+            </mj-column>
+        </mj-section>
+        <mj-section>
+            <mj-column>
+                <mj-text padding="0px 24px 16px 24px" font-family="Arial" font-size="36px">
+                    Haitaton: Cable report {{applicationIdentifier}}
+                </mj-text>
+                <mj-text padding="0px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    Cable report {{applicationIdentifier}} that you requested has been processed. Download the
+                    report
+                    via Haitaton <a href="{{baseUrl}}/en/application/{{applicationId}}">
+                    {{baseUrl}}/en/application/{{applicationId}}
+                </a> and read it carefully.
+                </mj-text>
+                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    How did we do? Please share your opinion <a
+                        href="https://response.questback.com/isa/qbv.dll/bylink?p=x6TIpQ4sCcJt9Dv1T-AuuKa-DssX27rx6er2ohTVVipooPTA8H0u-weNFWY9GsVI0">
+                    here</a>.
+                </mj-text>
+                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                    Kind regards,
+                    <br/>
+                    <br/>
+                    Helsinki Urban Environment Resident and Business Services
+                    <br/>
+                    Land Use and Monitoring
+                    <br/>
+                    Cable Location Service
+                    <br/>
+                    Tel. +358 9 310 31940
+                    <br/>
+                    johtotietopalvelu@hel.fi
+                    <br/>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+        <mj-include path="./footer-content.mjml"/>
+    </mj-body>
+</mjml>

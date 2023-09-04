@@ -153,12 +153,12 @@ class EmailSenderServiceITest : DatabaseTest() {
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = getBodiesFromHybridEmail(email)
             assertThat(textBody).all {
-                startsWith("${data.inviterName} (${data.inviterEmail}) lisäsi sinut")
+                contains("${data.inviterName} (${data.inviterEmail}) lisäsi sinut")
                 contains("hankkeelle ${data.hankeNimi} (${data.hankeTunnus}).")
                 contains("http://localhost:3001/${data.invitationToken}")
             }
             assertThat(htmlBody).all {
-                contains("<p>${data.inviterName} (${data.inviterEmail}) lisäsi sinut")
+                contains("${data.inviterName} (${data.inviterEmail})")
                 contains("hankkeelle <b>${data.hankeNimi} (${data.hankeTunnus})</b>.")
                 contains("""<a href="http://localhost:3001/${data.invitationToken}">""")
             }
@@ -172,8 +172,8 @@ class EmailSenderServiceITest : DatabaseTest() {
 
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = getBodiesFromHybridEmail(email)
-            assertThat(textBody).startsWith("Asioija ${data.inviterEmail} lisäsi sinut")
-            assertThat(htmlBody).contains("<p>Asioija ${data.inviterEmail} lisäsi sinut")
+            assertThat(textBody).contains("Asioija ${data.inviterEmail}")
+            assertThat(htmlBody).contains("Asioija ${data.inviterEmail}")
         }
     }
 
@@ -216,7 +216,7 @@ class EmailSenderServiceITest : DatabaseTest() {
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = getBodiesFromHybridEmail(email)
             assertThat(textBody).all {
-                startsWith("${data.inviterName} (${data.inviterEmail}) on")
+                contains("${data.inviterName} (${data.inviterEmail}) on")
                 contains("tehnyt johtoselvityshakemuksen (${data.applicationIdentifier})")
                 contains("hankkeella ${data.hankeTunnus}")
                 contains("rooliin ${data.roleType.text()}.")
@@ -226,7 +226,7 @@ class EmailSenderServiceITest : DatabaseTest() {
                 contains("${data.inviterName} (${data.inviterEmail})")
                 contains("johtoselvityshakemuksen (${data.applicationIdentifier})")
                 contains("rooliin ${data.roleType.text()}")
-                contains("""Tarkastele hakemusta Haitattomassa: <a href="http://localhost:3001">""")
+                contains("""<a href="http://localhost:3001">""")
             }
         }
 
@@ -238,8 +238,8 @@ class EmailSenderServiceITest : DatabaseTest() {
 
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = getBodiesFromHybridEmail(email)
-            assertThat(textBody).startsWith("Asioija ${data.inviterEmail} on tehnyt")
-            assertThat(htmlBody).contains("<p>Asioija ${data.inviterEmail} on tehnyt")
+            assertThat(textBody).contains("Asioija ${data.inviterEmail} on tehnyt")
+            assertThat(htmlBody).contains("Asioija ${data.inviterEmail} on tehnyt")
         }
     }
 
