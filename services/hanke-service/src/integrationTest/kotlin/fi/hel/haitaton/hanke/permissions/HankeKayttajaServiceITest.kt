@@ -46,7 +46,7 @@ const val kayttajaTunnistePattern = "[a-zA-z0-9]{24}"
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("default")
+@ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class HankeKayttajaServiceITest : DatabaseTest() {
 

@@ -25,7 +25,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 //  Thus, have to use this test containers -way, which uses the proper PostgreSQL.
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("default")
+@ActiveProfiles("test")
 class AuditLogServiceITests : DatabaseTest() {
 
     @Autowired private lateinit var entityManager: EntityManager

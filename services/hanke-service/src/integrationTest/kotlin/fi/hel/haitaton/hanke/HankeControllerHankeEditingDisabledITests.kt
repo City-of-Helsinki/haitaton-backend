@@ -21,7 +21,7 @@ private const val BASE_URL = "/hankkeet"
 
 @WebMvcTest(HankeController::class, properties = ["haitaton.features.hanke-editing=false"])
 @Import(IntegrationTestConfiguration::class)
-@ActiveProfiles("itest")
+@ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class HankeControllerHankeEditingDisabledITests(@Autowired override val mockMvc: MockMvc) :
     ControllerTest {

@@ -14,7 +14,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
-@ActiveProfiles("default")
+@ActiveProfiles("test")
 @AutoConfigureMockMvc
 class SpringdocITest(@Autowired override val mockMvc: MockMvc) : ControllerTest, DatabaseTest() {
 

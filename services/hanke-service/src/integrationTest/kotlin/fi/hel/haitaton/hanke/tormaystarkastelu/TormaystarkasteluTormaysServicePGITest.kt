@@ -17,7 +17,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("default")
+@ActiveProfiles("test")
 internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
 
     @Autowired private lateinit var geometriatDao: GeometriatDao

@@ -53,7 +53,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @WebMvcTest(HankeAttachmentController::class)
 @Import(IntegrationTestConfiguration::class)
-@ActiveProfiles("itest")
+@ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
@@ -201,7 +201,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
     properties = ["haitaton.features.hanke-editing=false"]
 )
 @Import(IntegrationTestConfiguration::class)
-@ActiveProfiles("itest")
+@ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class HankeAttachmentControllerHankeEditingDisabledITests(
     @Autowired override val mockMvc: MockMvc

@@ -28,7 +28,7 @@ private const val BASE_URL = "/testdata"
     properties = ["haitaton.testdata.enabled=true"],
 )
 @Import(IntegrationTestConfiguration::class)
-@ActiveProfiles("itest")
+@ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class TestDataControllerEnabledITest(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
