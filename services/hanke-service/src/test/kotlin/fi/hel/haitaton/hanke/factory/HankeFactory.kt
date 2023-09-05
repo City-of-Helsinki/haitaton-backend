@@ -57,6 +57,7 @@ class HankeFactory(
     }
 
     fun save(hanke: Hanke) = hankeService.createHanke(hanke)
+
     fun saveMinimal(hankeTunnus: String): HankeEntity =
         hankeRepository.save(HankeEntity(hankeTunnus = hankeTunnus))
 
