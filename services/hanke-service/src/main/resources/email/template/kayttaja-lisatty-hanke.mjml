@@ -1,29 +1,32 @@
 <mjml>
+    <mj-head>
+        <mj-include path="./attributes.mjml"/>
+    </mj-head>
     <mj-body>
         <mj-include path="./header-content.mjml"/>
         <mj-section>
             <mj-column>
-                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="36px">
+                <mj-text mj-class="header-txt">
                     Haitaton: Sinut on lisätty hankkeelle {{hankeTunnus}}
                 </mj-text>
-                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                <mj-text mj-class="basic-txt">
                     {{inviterInfo}} lisäsi sinut hankkeelle <b>{{hankeNimi}} ({{hankeTunnus}})</b>. Tunnistaudu
                     Haitattomaan alla olevan linkin kautta.
                 </mj-text>
-                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                <mj-text mj-class="basic-txt">
                     <a href="{{baseUrl}}/{{invitationToken}}">Haitattomaan</a>
                 </mj-text>
-                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                <mj-text mj-class="basic-txt">
                     Löydät hankkeesi Haitattoman etusivun Omat hankkeet -osion alta hankkeen nimellä.
                 </mj-text>
-                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                <mj-text mj-class="basic-txt">
                     Haitaton on Helsingin kaupungin asiointijärjestelmä yleisille alueille sijoittuvien hankkeiden
                     edistämiseen ja haittojen hallintaan.
                 </mj-text>
-                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                <mj-text mj-class="basic-txt">
                     Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.
                 </mj-text>
-                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                <mj-text mj-class="basic-txt">
                     Ystävällisin terveisin,
                     <br/>
                     <br/>

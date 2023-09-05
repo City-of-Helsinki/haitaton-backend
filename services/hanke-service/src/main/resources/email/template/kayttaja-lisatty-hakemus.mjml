@@ -1,9 +1,12 @@
 <mjml>
+    <mj-head>
+        <mj-include path="./attributes.mjml"/>
+    </mj-head>
     <mj-body>
         <mj-include path="./header-content.mjml"/>
         <mj-section>
             <mj-column>
-                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="36px">
+                <mj-text mj-class="header-txt">
                     Haitaton: Sinut on lisätty hakemukselle {{applicationIdentifier}}
                 </mj-text>
                 <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
@@ -12,19 +15,19 @@
                     {{recipientRole}}. Tarkastele hakemusta Haitattomassa
                     <a href="{{baseUrl}}">{{baseUrl}}</a>
                 </mj-text>
-                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                <mj-text mj-class="basic-txt">
                     Löydät hakemuksesi siirtymällä etusivulta Omiin hankkeisiin ja valitsemalla sieltä oikean
                     hankkeen.
                     Avaa listanäkymässä hankkeen tiedot ja valitse "Näytä hankkeen hakemukset".
                 </mj-text>
-                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                <mj-text mj-class="basic-txt">
                     Haitaton on Helsingin kaupungin asiointijärjestelmä yleisille alueille sijoittuvien hankkeiden
                     edistämiseen ja haittojen hallintaan.
                 </mj-text>
-                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                <mj-text mj-class="basic-txt">
                     Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.
                 </mj-text>
-                <mj-text padding="16px 24px 16px 24px" font-family="Arial" font-size="16px">
+                <mj-text mj-class="basic-txt">
                     Ystävällisin terveisin,
                     <br/>
                     <br/>
