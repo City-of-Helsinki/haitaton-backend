@@ -1,13 +1,20 @@
 package fi.hel.haitaton.hanke.permissions
 
 import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.logging.PermissionLoggingService
+import mu.KotlinLogging
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+private val logger = KotlinLogging.logger {}
 
 @Service
 class PermissionService(
     private val permissionRepository: PermissionRepository,
-    private val kayttooikeustasoRepository: KayttooikeustasoRepository
+    private val kayttooikeustasoRepository: KayttooikeustasoRepository,
+    private val logService: PermissionLoggingService,
 ) {
     fun findByHankeId(hankeId: Int) = permissionRepository.findAllByHankeId(hankeId)
 
@@ -16,43 +23,26 @@ class PermissionService(
             it.hankeId
         }
 
-    fun hasPermission(hankeId: Int, userId: String, permission: PermissionCode): Boolean {
-        val kayttooikeustaso =
-            permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.kayttooikeustaso
-        return hasPermission(kayttooikeustaso, permission)
-    }
+    fun hasPermission(hankeId: Int, userId: String, permission: PermissionCode): Boolean =
+        permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.hasPermission(permission)
+            ?: false
 
     fun findPermission(hankeId: Int, userId: String): PermissionEntity? =
         permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)
 
-    /** When you don't want to accidentally update existing permissions. */
+    @Transactional
     fun create(hankeId: Int, userId: String, kayttooikeustaso: Kayttooikeustaso): PermissionEntity {
         val kayttooikeustasoEntity = findKayttooikeustaso(kayttooikeustaso)
-        return permissionRepository.save(
-            PermissionEntity(
-                userId = userId,
-                hankeId = hankeId,
-                kayttooikeustaso = kayttooikeustasoEntity,
-            )
-        )
-    }
-
-    fun setPermission(
-        hankeId: Int,
-        userId: String,
-        kayttooikeustaso: Kayttooikeustaso
-    ): PermissionEntity {
-        val kayttooikeustasoEntity = findKayttooikeustaso(kayttooikeustaso)
-        val entity =
-            permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.apply {
-                this.kayttooikeustaso = kayttooikeustasoEntity
-            }
-                ?: PermissionEntity(
+        val permission =
+            permissionRepository.save(
+                PermissionEntity(
                     userId = userId,
                     hankeId = hankeId,
-                    kayttooikeustaso = kayttooikeustasoEntity
+                    kayttooikeustasoEntity = kayttooikeustasoEntity,
                 )
-        return permissionRepository.save(entity)
+            )
+        logService.logCreate(permission.toDomain(), currentUserId())
+        return permission
     }
 
     fun verifyHankeUserAuthorization(userId: String, hanke: Hanke, permissionCode: PermissionCode) {
@@ -65,10 +55,19 @@ class PermissionService(
     fun findKayttooikeustaso(kayttooikeustaso: Kayttooikeustaso): KayttooikeustasoEntity =
         kayttooikeustasoRepository.findOneByKayttooikeustaso(kayttooikeustaso)
 
-    companion object {
-        fun hasPermission(
-            kayttooikeustaso: KayttooikeustasoEntity?,
-            permission: PermissionCode
-        ): Boolean = (kayttooikeustaso?.permissionCode ?: 0) and permission.code > 0
+    @Transactional
+    fun updateKayttooikeustaso(
+        permission: PermissionEntity,
+        kayttooikeustaso: Kayttooikeustaso,
+        currentUser: String
+    ) {
+        val kayttooikeustasoBefore = permission.kayttooikeustaso
+        permission.kayttooikeustasoEntity = findKayttooikeustaso(kayttooikeustaso)
+        permissionRepository.save(permission)
+        logger.info {
+            "Updated kayttooikeustaso for permission, " +
+                "permissionId=${permission.id}, new kayttooikeustaso=$kayttooikeustaso, userId=$currentUser"
+        }
+        logService.logUpdate(kayttooikeustasoBefore, permission.toDomain(), currentUser)
     }
 }

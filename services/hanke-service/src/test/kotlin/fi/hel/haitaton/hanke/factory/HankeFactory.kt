@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.HankeStatus
+import fi.hel.haitaton.hanke.HanketunnusService
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
@@ -18,7 +19,8 @@ import org.springframework.stereotype.Component
 @Component
 class HankeFactory(
     private val hankeService: HankeService,
-    private val hankeRepository: HankeRepository
+    private val hanketunnusService: HanketunnusService,
+    private val hankeRepository: HankeRepository,
 ) {
 
     /**
@@ -55,6 +57,12 @@ class HankeFactory(
     }
 
     fun save(hanke: Hanke) = hankeService.createHanke(hanke)
+    fun saveMinimal(hankeTunnus: String): HankeEntity =
+        hankeRepository.save(HankeEntity(hankeTunnus = hankeTunnus))
+
+    fun saveMinimal(): HankeEntity = saveMinimal(hanketunnusService.newHanketunnus())
+
+    fun saveSeveralMinimal(n: Int): List<HankeEntity> = (1..n).map { saveMinimal() }
 
     companion object {
 

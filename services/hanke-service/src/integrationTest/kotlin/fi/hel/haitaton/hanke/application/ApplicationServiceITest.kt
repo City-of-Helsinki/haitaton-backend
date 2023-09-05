@@ -345,8 +345,8 @@ class ApplicationServiceITest : DatabaseTest() {
         val otherUser = "otherUser"
         val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
         val hanke2 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1235"))
-        permissionService.setPermission(hanke.id!!, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
-        permissionService.setPermission(hanke2.id!!, "otherUser", Kayttooikeustaso.HAKEMUSASIOINTI)
+        permissionService.create(hanke.id!!, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
+        permissionService.create(hanke2.id!!, "otherUser", Kayttooikeustaso.HAKEMUSASIOINTI)
 
         alluDataFactory.saveApplicationEntities(3, USERNAME, hanke = hanke) { _, application ->
             application.userId = USERNAME
@@ -376,8 +376,8 @@ class ApplicationServiceITest : DatabaseTest() {
         val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
         val hanke2 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1235"))
         val hanke3 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1236"))
-        permissionService.setPermission(hanke.id!!, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
-        permissionService.setPermission(hanke2.id!!, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
+        permissionService.create(hanke.id!!, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
+        permissionService.create(hanke2.id!!, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
         val application1 = alluDataFactory.saveApplicationEntity(username = USERNAME, hanke = hanke)
         val application2 =
             alluDataFactory.saveApplicationEntity(username = "secondUser", hanke = hanke2)

@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.permissions
 
+import fi.hel.haitaton.hanke.domain.HasId
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -48,6 +49,16 @@ class HankeKayttajaEntity(
             tunnistautunut = permission != null,
         )
 
+    fun toDomain(): HankeKayttaja =
+        HankeKayttaja(
+            id = id,
+            hankeId = hankeId,
+            nimi = nimi,
+            sahkoposti = sahkoposti,
+            permissionId = permission?.id,
+            kayttajaTunnisteId = kayttajaTunniste?.id,
+        )
+
     /**
      * [KayttajaTunnisteEntity] stores kayttooikeustaso temporarily until user has signed in. After
      * that, [PermissionEntity] is used.
@@ -55,8 +66,17 @@ class HankeKayttajaEntity(
      * Thus, kayttooikeustaso is read primarily from [PermissionEntity] if the relation exists.
      */
     fun deriveKayttooikeustaso(): Kayttooikeustaso? =
-        permission?.kayttooikeustaso?.kayttooikeustaso ?: kayttajaTunniste?.kayttooikeustaso
+        permission?.kayttooikeustaso ?: kayttajaTunniste?.kayttooikeustaso
 }
+
+data class HankeKayttaja(
+    override val id: UUID,
+    val hankeId: Int,
+    val nimi: String,
+    val sahkoposti: String,
+    val permissionId: Int?,
+    val kayttajaTunnisteId: UUID?
+) : HasId<UUID>
 
 @Repository
 interface HankeKayttajaRepository : JpaRepository<HankeKayttajaEntity, UUID> {

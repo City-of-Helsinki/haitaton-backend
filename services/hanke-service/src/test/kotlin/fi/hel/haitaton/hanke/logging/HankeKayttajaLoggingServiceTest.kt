@@ -2,13 +2,19 @@ package fi.hel.haitaton.hanke.logging
 
 import assertk.all
 import assertk.assertThat
-import assertk.assertions.contains
-import assertk.assertions.isEqualTo
-import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.prop
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.KayttajaTunnisteFactory
-import fi.hel.haitaton.hanke.factory.PermissionFactory
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.hasObjectAfter
+import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.hasObjectBefore
+import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.hasObjectId
+import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.hasObjectType
+import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.hasUserActor
+import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.isCreate
+import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.isSuccess
+import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.isUpdate
 import io.mockk.called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -38,51 +44,29 @@ class HankeKayttajaLoggingServiceTest {
     }
 
     @Nested
-    inner class LogPermissionUpdate {
+    inner class LogTunnisteCreate {
         @Test
-        fun `Creates audit log entry for updated permission`() {
-            val kayttooikeustasoBefore = Kayttooikeustaso.KATSELUOIKEUS
-            val permissionAfter =
-                PermissionFactory.create(kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS)
+        fun `Creates audit log entry for created kayttajatunniste`() {
+            val tunniste =
+                KayttajaTunnisteFactory.create(kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS)
 
-            loggingService.logUpdate(kayttooikeustasoBefore, permissionAfter, userId)
+            loggingService.logCreate(tunniste, userId)
 
             verify {
                 auditLogService.create(
                     withArg { entry ->
-                        assertThat(entry.operation).isEqualTo(Operation.UPDATE)
-                        assertThat(entry.status).isEqualTo(Status.SUCCESS)
-                        assertThat(entry.failureDescription).isNull()
-                        assertThat(entry.userId).isEqualTo(userId)
-                        assertThat(entry.userRole).isEqualTo(UserRole.USER)
-                        assertThat(entry.objectId)
-                            .isEqualTo(PermissionFactory.PERMISSION_ID.toString())
-                        assertThat(entry.objectType).isEqualTo(ObjectType.PERMISSION)
-                        assertThat(entry.objectBefore).isNotNull().all {
-                            contains(PermissionFactory.PERMISSION_ID.toString())
-                            contains(PermissionFactory.USER_ID)
-                            contains(PermissionFactory.HANKE_ID.toString())
-                            contains("KATSELUOIKEUS")
-                        }
-                        assertThat(entry.objectAfter).isNotNull().all {
-                            contains(PermissionFactory.PERMISSION_ID.toString())
-                            contains(PermissionFactory.USER_ID)
-                            contains(PermissionFactory.HANKE_ID.toString())
-                            contains("HANKEMUOKKAUS")
+                        assertThat(entry).all {
+                            isCreate()
+                            isSuccess()
+                            hasUserActor(userId)
+                            hasObjectId(tunniste.id)
+                            hasObjectType(ObjectType.KAYTTAJA_TUNNISTE)
+                            prop(AuditLogEntry::objectBefore).isNull()
+                            hasObjectAfter(tunniste)
                         }
                     }
                 )
             }
-        }
-
-        @Test
-        fun `Doesn't create audit log entry if permission not updated`() {
-            val kayttooikeustasoBefore = PermissionFactory.KAYTTOOIKEUSTASO
-            val permissionAfter = PermissionFactory.create()
-
-            loggingService.logUpdate(kayttooikeustasoBefore, permissionAfter, userId)
-
-            verify { auditLogService wasNot called }
         }
     }
 
@@ -99,29 +83,14 @@ class HankeKayttajaLoggingServiceTest {
             verify {
                 auditLogService.create(
                     withArg { entry ->
-                        assertThat(entry.operation).isEqualTo(Operation.UPDATE)
-                        assertThat(entry.status).isEqualTo(Status.SUCCESS)
-                        assertThat(entry.failureDescription).isNull()
-                        assertThat(entry.userId).isEqualTo(userId)
-                        assertThat(entry.userRole).isEqualTo(UserRole.USER)
-                        assertThat(entry.objectId)
-                            .isEqualTo(KayttajaTunnisteFactory.TUNNISTE_ID.toString())
-                        assertThat(entry.objectType).isEqualTo(ObjectType.KAYTTAJA_TUNNISTE)
-                        assertThat(entry.objectBefore).isNotNull().all {
-                            contains(KayttajaTunnisteFactory.TUNNISTE_ID.toString())
-                            contains(KayttajaTunnisteFactory.TUNNISTE)
-                            contains(KayttajaTunnisteFactory.CREATED_AT.toString())
-                            contains("null")
-                            contains(KayttajaTunnisteFactory.KAYTTAJA_ID.toString())
-                            contains("KATSELUOIKEUS")
-                        }
-                        assertThat(entry.objectAfter).isNotNull().all {
-                            contains(KayttajaTunnisteFactory.TUNNISTE_ID.toString())
-                            contains(KayttajaTunnisteFactory.TUNNISTE)
-                            contains(KayttajaTunnisteFactory.CREATED_AT.toString())
-                            contains(KayttajaTunnisteFactory.SENT_AT.toString())
-                            contains(KayttajaTunnisteFactory.KAYTTAJA_ID.toString())
-                            contains("HANKEMUOKKAUS")
+                        assertThat(entry).all {
+                            isUpdate()
+                            isSuccess()
+                            hasUserActor(userId)
+                            hasObjectId(KayttajaTunnisteFactory.TUNNISTE_ID)
+                            hasObjectType(ObjectType.KAYTTAJA_TUNNISTE)
+                            hasObjectBefore(kayttajaTunnisteBefore)
+                            hasObjectAfter(kayttajaTunnisteAfter)
                         }
                     }
                 )
@@ -136,6 +105,32 @@ class HankeKayttajaLoggingServiceTest {
             loggingService.logUpdate(kayttajaTunnisteBefore, kayttajaTunnisteAfter, userId)
 
             verify { auditLogService wasNot called }
+        }
+    }
+
+    @Nested
+    inner class LogKayttajaCreate {
+        @Test
+        fun `Creates audit log entry for created hanke kayttaja`() {
+            val kayttaja = HankeKayttajaFactory.create()
+
+            loggingService.logCreate(kayttaja, userId)
+
+            verify {
+                auditLogService.create(
+                    withArg { entry ->
+                        assertThat(entry).all {
+                            isCreate()
+                            isSuccess()
+                            hasUserActor(userId)
+                            hasObjectId(kayttaja.id)
+                            hasObjectType(ObjectType.HANKE_KAYTTAJA)
+                            prop(AuditLogEntry::objectBefore).isNull()
+                            hasObjectAfter(kayttaja)
+                        }
+                    }
+                )
+            }
         }
     }
 }

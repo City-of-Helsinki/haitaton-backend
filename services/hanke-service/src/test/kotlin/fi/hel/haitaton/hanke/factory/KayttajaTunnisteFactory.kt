@@ -11,7 +11,7 @@ object KayttajaTunnisteFactory {
     val CREATED_AT: OffsetDateTime = OffsetDateTime.parse("2023-08-31T14:25:13Z")
     val SENT_AT: OffsetDateTime = OffsetDateTime.parse("2023-08-31T14:25:14Z")
     val KAYTTOOIKEUSTASO: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS
-    val KAYTTAJA_ID: UUID = UUID.fromString("597431b3-3be1-4594-a07a-bef77c8167df")
+    val KAYTTAJA_ID: UUID = HankeKayttajaFactory.KAYTTAJA_ID
 
     fun create(
         id: UUID = TUNNISTE_ID,
