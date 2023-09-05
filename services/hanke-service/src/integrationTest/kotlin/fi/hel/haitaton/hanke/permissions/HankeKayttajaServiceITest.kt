@@ -973,14 +973,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         k.prop(HankeKayttajaEntity::kayttajaTunniste).isNotNull()
     }
 
-    private fun Assert<PermissionEntity>.isOfEqualDataTo(other: PermissionEntity) =
-        given { actual ->
-            assertThat(actual.id).isEqualTo(other.id)
-            assertThat(actual.hankeId).isEqualTo(other.hankeId)
-            assertThat(actual.userId).isEqualTo(other.userId)
-            assertThat(actual.kayttooikeustaso).isEqualTo(other.kayttooikeustaso)
-        }
-
     private val expectedNames =
         arrayOf(
             "yhteys-etu1 yhteys-suku1",

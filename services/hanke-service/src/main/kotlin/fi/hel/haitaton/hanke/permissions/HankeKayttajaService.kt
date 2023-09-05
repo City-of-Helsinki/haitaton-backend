@@ -224,7 +224,7 @@ class HankeKayttajaService(
     }
 
     private fun createTunnisteAndKayttaja(hankeId: Int, contact: UserContact, userId: String) {
-        val kayttajaTunnisteEntity = saveTunniste(hankeId, userId)
+        val kayttajaTunnisteEntity = createTunniste(hankeId, userId)
         createUser(
             userId,
             hankeId = hankeId,
@@ -251,7 +251,7 @@ class HankeKayttajaService(
         logService.logUpdate(kayttajaTunnisteBefore, kayttajaTunnisteAfter, userId)
     }
 
-    private fun saveTunniste(hankeId: Int, userId: String): KayttajaTunnisteEntity {
+    private fun createTunniste(hankeId: Int, userId: String): KayttajaTunnisteEntity {
         logger.info { "Creating a new user token, hankeId=$hankeId" }
         val token = KayttajaTunnisteEntity.create()
         val kayttajaTunnisteEntity = kayttajaTunnisteRepository.save(token)
