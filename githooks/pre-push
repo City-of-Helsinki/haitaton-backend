@@ -1,3 +1,14 @@
 #!/bin/sh
 
-./gradlew build integrationTest
+hooks="$(dirname "$0")/pre-push.d"
+
+for hook in ${hooks}/*; do
+    bash $hook
+    RESULT=$?
+    if [ $RESULT != 0 ]; then
+        echo "pre-push.d/$hook returned non-zero: $RESULT, abort push"
+        exit $RESULT
+    fi
+done
+
+exit 0
