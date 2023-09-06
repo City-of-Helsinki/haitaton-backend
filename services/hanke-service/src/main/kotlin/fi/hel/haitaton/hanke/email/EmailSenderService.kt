@@ -45,7 +45,7 @@ data class HankeInvitationData(
     val invitationToken: String,
 )
 
-enum class EmailContext(val value: String) {
+enum class EmailTemplate(val value: String) {
     CABLE_REPORT_DONE("johtoselvitys-valmis"),
     INVITATION_HANKE("kayttaja-lisatty-hanke"),
     INVITATION_APPLICATION("kayttaja-lisatty-hakemus")
@@ -71,7 +71,7 @@ class EmailSenderService(
                 "applicationIdentifier" to applicationIdentifier,
             )
 
-        sendHybridEmail(to, EmailContext.CABLE_REPORT_DONE, templateData)
+        sendHybridEmail(to, EmailTemplate.CABLE_REPORT_DONE, templateData)
     }
 
     fun sendHankeInvitationEmail(data: HankeInvitationData) {
@@ -86,7 +86,7 @@ class EmailSenderService(
                 "invitationToken" to data.invitationToken,
             )
 
-        sendHybridEmail(data.recipientEmail, EmailContext.INVITATION_HANKE, templateData)
+        sendHybridEmail(data.recipientEmail, EmailTemplate.INVITATION_HANKE, templateData)
     }
 
     fun sendApplicationInvitationEmail(data: ApplicationInvitationData) {
@@ -104,10 +104,10 @@ class EmailSenderService(
                 "recipientRole" to data.roleType.toString().lowercase(),
             )
 
-        sendHybridEmail(data.recipientEmail, EmailContext.INVITATION_APPLICATION, templateData)
+        sendHybridEmail(data.recipientEmail, EmailTemplate.INVITATION_APPLICATION, templateData)
     }
 
-    private fun sendHybridEmail(to: String, context: EmailContext, data: Map<String, String>) {
+    private fun sendHybridEmail(to: String, context: EmailTemplate, data: Map<String, String>) {
         if (emailConfig.filter.use && emailNotAllowed(to)) {
             logger.info { "Email recipient not allowed, ignoring email." }
             return
