@@ -1,7 +1,5 @@
 #!/bin/sh
 
-#!/bin/bash
-
 hooks="$(dirname "$0")/pre-push.d"
 
 for hook in ${hooks}/*; do
