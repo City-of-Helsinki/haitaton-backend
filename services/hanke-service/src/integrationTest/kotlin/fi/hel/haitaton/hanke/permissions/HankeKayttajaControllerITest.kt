@@ -69,6 +69,58 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     }
 
     @Nested
+    inner class Whoami {
+        private val url = "/hankkeet/$HANKE_TUNNUS/whoami"
+        private val hankeId = 14
+        private val kayttooikeustaso = Kayttooikeustaso.KAIKKIEN_MUOKKAUS
+
+        private val permissionEntity =
+            PermissionEntity(
+                hankeId = hankeId,
+                userId = USERNAME,
+                kayttooikeustaso = KayttooikeustasoEntity(0, kayttooikeustaso, 0)
+            )
+
+        @Test
+        fun `Returns 404 if hanke not found`() {
+            every { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) } throws
+                HankeNotFoundException(HANKE_TUNNUS)
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
+
+            verify { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) }
+        }
+
+        @Test
+        fun `Returns 404 if permission not found`() {
+            every { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) } returns hankeId
+            every { permissionService.findPermission(hankeId, USERNAME) } returns null
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
+
+            verifySequence {
+                hankeService.getHankeIdOrThrow(HANKE_TUNNUS)
+                permissionService.findPermission(hankeId, USERNAME)
+            }
+        }
+
+        @Test
+        fun `Returns kayttooikeustaso`() {
+            every { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) } returns hankeId
+            every { permissionService.findPermission(hankeId, USERNAME) } returns permissionEntity
+
+            val response: WhoamiResponse = get(url).andExpect(status().isOk).andReturnBody()
+
+            val expectedResponse = WhoamiResponse(USERNAME, kayttooikeustaso)
+            assertThat(response).isEqualTo(expectedResponse)
+            verifySequence {
+                hankeService.getHankeIdOrThrow(HANKE_TUNNUS)
+                permissionService.findPermission(hankeId, USERNAME)
+            }
+        }
+    }
+
+    @Nested
     inner class GetHankeKayttajat {
 
         @Test
