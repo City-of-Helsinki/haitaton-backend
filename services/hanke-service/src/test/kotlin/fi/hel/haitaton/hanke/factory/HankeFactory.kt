@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.HanketunnusService
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
@@ -63,6 +64,12 @@ class HankeFactory(
 
     fun saveSeveralMinimal(n: Int): List<HankeEntity> = (1..n).map { saveMinimal() }
 
+    fun saveGenerated(
+        cableReportWithoutHanke: CableReportWithoutHanke =
+            AlluDataFactory.cableReportWithoutHanke(),
+        userId: String
+    ) = hankeService.generateHankeWithApplication(cableReportWithoutHanke, userId)
+
     companion object {
 
         const val defaultHankeTunnus = "HAI21-1"
@@ -106,12 +113,6 @@ class HankeFactory(
                 null,
                 hankeStatus,
             )
-
-        /** Create minimal Entity with identifier fields and mandatory fields. */
-        fun createMinimalEntity(
-            id: Int? = defaultId,
-            hankeTunnus: String? = defaultHankeTunnus,
-        ) = HankeEntity(id = id, hankeTunnus = hankeTunnus)
 
         /**
          * Add a hankealue with haitat to a test Hanke.

@@ -4,8 +4,11 @@ import fi.hel.haitaton.hanke.HankeArgumentException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
+import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.Perustaja
+import fi.hel.haitaton.hanke.email.EmailSenderService
+import fi.hel.haitaton.hanke.email.HankeInvitationData
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
 import java.util.UUID
 import mu.KotlinLogging
@@ -21,11 +24,31 @@ class HankeKayttajaService(
     private val permissionService: PermissionService,
     private val featureFlags: FeatureFlags,
     private val logService: HankeKayttajaLoggingService,
+    private val emailSenderService: EmailSenderService,
 ) {
 
     @Transactional(readOnly = true)
     fun getKayttajatByHankeId(hankeId: Int): List<HankeKayttajaDto> =
         hankeKayttajaRepository.findByHankeId(hankeId).map { it.toDto() }
+
+    @Transactional(readOnly = true)
+    fun getKayttajaByUserId(hankeId: Int, userId: String = currentUserId()): HankeKayttajaDto? {
+        val permission = permissionService.findPermission(hankeId, userId)
+        if (permission == null) {
+            logger.warn {
+                "UserId=$userId does not have a permission instance for HankeId=$hankeId"
+            }
+            return null
+        }
+
+        val hankeKayttaja = hankeKayttajaRepository.findByPermissionId(permission.id)
+        if (hankeKayttaja == null) {
+            logger.warn { "No kayttaja instance found (hankeId=$hankeId, userId=$userId) " }
+            return null
+        }
+
+        return hankeKayttaja.toDto()
+    }
 
     @Transactional
     fun saveNewTokensFromApplication(application: ApplicationEntity, hankeId: Int, userId: String) {
@@ -62,7 +85,10 @@ class HankeKayttajaService(
                 .mapNotNull { userContactOrNull(it.fullName(), it.email) }
 
         filterNewContacts(hankeId, contacts).forEach { contact ->
-            createTunnisteAndKayttaja(hankeId, contact, userId)
+            val newHankeKayttaja = createTunnisteAndKayttaja(hankeId, contact, userId)
+            getKayttajaByUserId(hankeId, userId)?.let {
+                sendHankeInvitationEmails(hanke, it, newHankeKayttaja)
+            }
         }
     }
 
@@ -223,10 +249,14 @@ class HankeKayttajaService(
         }
     }
 
-    private fun createTunnisteAndKayttaja(hankeId: Int, contact: UserContact, userId: String) {
+    private fun createTunnisteAndKayttaja(
+        hankeId: Int,
+        contact: UserContact,
+        userId: String
+    ): HankeKayttajaEntity {
         val kayttajaTunnisteEntity = createTunniste(hankeId, userId)
-        createUser(
-            userId,
+        return createUser(
+            currentUser = userId,
             hankeId = hankeId,
             nimi = contact.name,
             sahkoposti = contact.email,
@@ -251,6 +281,25 @@ class HankeKayttajaService(
         logService.logUpdate(kayttajaTunnisteBefore, kayttajaTunnisteAfter, userId)
     }
 
+    private fun sendHankeInvitationEmails(
+        hanke: Hanke,
+        inviter: HankeKayttajaDto,
+        recipient: HankeKayttajaEntity,
+    ) {
+        logger.info { "Sending Hanke invitations." }
+
+        emailSenderService.sendHankeInvitationEmail(
+            HankeInvitationData(
+                inviterName = inviter.nimi,
+                inviterEmail = inviter.sahkoposti,
+                recipientEmail = recipient.sahkoposti,
+                hankeTunnus = hanke.hankeTunnus!!,
+                hankeNimi = hanke.nimi!!,
+                invitationToken = recipient.kayttajaTunniste!!.tunniste,
+            )
+        )
+    }
+
     private fun createTunniste(hankeId: Int, userId: String): KayttajaTunnisteEntity {
         logger.info { "Creating a new user token, hankeId=$hankeId" }
         val token = KayttajaTunnisteEntity.create()
@@ -267,7 +316,7 @@ class HankeKayttajaService(
         sahkoposti: String,
         permission: PermissionEntity? = null,
         tunniste: KayttajaTunnisteEntity? = null,
-    ) {
+    ): HankeKayttajaEntity {
         val kayttajaEntity =
             hankeKayttajaRepository.save(
                 HankeKayttajaEntity(
@@ -280,6 +329,7 @@ class HankeKayttajaService(
             )
         logger.info { "Saved the user information, id=${kayttajaEntity.id}" }
         logService.logCreate(kayttajaEntity.toDomain(), currentUser)
+        return kayttajaEntity
     }
 
     private fun userContactOrNull(name: String?, email: String?): UserContact? {

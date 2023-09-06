@@ -27,7 +27,7 @@ data class EmailFilterProperties(
 )
 
 data class ApplicationInvitationData(
-    val inviterName: String?,
+    val inviterName: String,
     val inviterEmail: String,
     val recipientEmail: String,
     val applicationType: ApplicationType,
@@ -37,7 +37,7 @@ data class ApplicationInvitationData(
 )
 
 data class HankeInvitationData(
-    val inviterName: String?,
+    val inviterName: String,
     val inviterEmail: String,
     val recipientEmail: String,
     val hankeTunnus: String,
@@ -80,7 +80,7 @@ class EmailSenderService(
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
-                "inviterInfo" to defineInviterInfo(data.inviterName, data.inviterEmail),
+                "inviterInfo" to inviterInfo(data.inviterName, data.inviterEmail),
                 "hankeTunnus" to data.hankeTunnus,
                 "hankeNimi" to data.hankeNimi,
                 "invitationToken" to data.invitationToken,
@@ -97,7 +97,7 @@ class EmailSenderService(
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
-                "inviterInfo" to defineInviterInfo(data.inviterName, data.inviterEmail),
+                "inviterInfo" to inviterInfo(data.inviterName, data.inviterEmail),
                 "applicationType" to applicationTypeText,
                 "applicationIdentifier" to data.applicationIdentifier,
                 "hankeTunnus" to data.hankeTunnus,
@@ -127,8 +127,7 @@ class EmailSenderService(
         mailSender.send(mimeMessage)
     }
 
-    private fun defineInviterInfo(name: String?, email: String): String =
-        if (name.isNullOrBlank()) "Asioija $email" else "$name ($email)"
+    private fun inviterInfo(name: String, email: String): String = "$name ($email)"
 
     private fun convertApplicationTypeFinnish(type: ApplicationType): String =
         when (type) {

@@ -182,7 +182,11 @@ When Hanke is created:
         if (hanke == null) {
             throw HankeArgumentException("No hanke given when creating hanke")
         }
-        val sanitizedHanke = hanke.copy(id = null, generated = false)
+        val sanitizedHanke =
+            hanke.apply {
+                id = null
+                generated = false
+            }
 
         val userId = currentUserId()
         logger.info { "Creating Hanke for user $userId: ${hanke.toLogString()} " }
