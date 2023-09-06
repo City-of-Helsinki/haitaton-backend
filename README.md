@@ -52,6 +52,7 @@ See docker-compose.yml for details.
 Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON). You
 can use the Swagger UI to send requests, if you copy your bearer token over from
 the browser. So,
+
 1. Log in to Haitaton.
 2. Open the Network tab from developer tools.
 3. Open e.g. Omat Hankkeet in Haitaton.
@@ -166,6 +167,13 @@ cd haitaton-backend
 
 When running locally, the system emails are sent to smtp4dev, which is started as part of the Docker
 Compose setup. You can access the sent emails by opening http://localhost:3003.
+
+Creation of new emails is done with [mjml.io](https://mjml.io/). Either IntelliJ or Visual Studio Code plugin MJML is
+needed. Mjml templates are located in email/. The output email content (html) is in
+hanke-service/resources/email/template.
+
+Once the Mjml template is done, it is converted to html. For example in Visual Studio, type >MJML:Copy HTML. The html
+output is the actual email content.
 
 ## File scan
 

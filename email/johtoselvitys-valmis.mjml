@@ -1,0 +1,109 @@
+<mjml>
+    <mj-head>
+        <mj-include path="common/attributes.mjml"/>
+    </mj-head>
+    <mj-body>
+        <mj-include path="common/header-content.mjml"/>
+        <mj-section>
+            <mj-column>
+                <mj-text mj-class="header-txt">Haitaton: Johtoselvitys
+                    {{applicationIdentifier}}
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Hakemanne johtoselvitys {{applicationIdentifier}} on käsitelty. Lataa selvitys Haitattomasta <a
+                        href="{{baseUrl}}/fi/hakemus/{{applicationId}}">{{baseUrl}}/fi/hakemus/{{applicationId}}
+                </a> ja tutustu sen sisältöön huolellisesti.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Miten onnistuimme? Kerro mielipiteesi <a
+                        href="https://response.questback.com/isa/qbv.dll/bylink?p=x6TIpQ4sCcJt9Dv1T-AuuKa-DssX27rx6er2ohTVVipooPTA8H0u-weNFWY9GsVI0">
+                    täällä</a>.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Ystävällisin terveisin,
+                    <br/>
+                    <br/>
+                    Helsingin kaupunkiympäristön asukas- ja yrityspalvelut
+                    <br/>
+                    Alueidenkäyttö ja -valvonta
+                    <br/>
+                    Johtotietopalvelu
+                    <br/>
+                    Puh. 09 310 31940
+                    <br/>
+                    johtotietopalvelu@hel.fi
+                </mj-text>
+            </mj-column>
+        </mj-section>
+        <mj-section>
+            <mj-column>
+                <mj-text mj-class="header-txt">
+                    Haitaton: Ledningsutredning {{applicationIdentifier}}
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Ledningsutredningen {{applicationIdentifier}} ni ansökt om har behandlats. Ladda ned utredningen
+                    från Haitaton
+                    <a href="{{baseUrl}}/sv/ansokan/{{applicationId}}">
+                        {{baseUrl}}/sv/ansokan/{{applicationId}}
+                    </a>
+                    och läs
+                    innehållet i den noggrannt.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Hur lyckades vi? Ge din åsikt <a
+                        href="https://response.questback.com/isa/qbv.dll/bylink?p=x6TIpQ4sCcJt9Dv1T-AuuKa-DssX27rx6er2ohTVVipooPTA8H0u-weNFWY9GsVI0">
+                    här</a>.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Med vänlig hälsning,
+                    <br/>
+                    <br/>
+                    Helsingfors stadsmiljös boende- och företagstjänster
+                    <br/>
+                    Användning och tillsyn av områden
+                    <br/>
+                    Ledningstjänsten
+                    <br/>
+                    Tfn 09 310 31940
+                    <br/>
+                    johtotietopalvelu@hel.fi
+                </mj-text>
+            </mj-column>
+        </mj-section>
+        <mj-section>
+            <mj-column>
+                <mj-text mj-class="header-txt">
+                    Haitaton: Cable report {{applicationIdentifier}}
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Cable report {{applicationIdentifier}} that you requested has been processed. Download the
+                    report
+                    via Haitaton <a href="{{baseUrl}}/en/application/{{applicationId}}">
+                    {{baseUrl}}/en/application/{{applicationId}}
+                </a> and read it carefully.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    How did we do? Please share your opinion <a
+                        href="https://response.questback.com/isa/qbv.dll/bylink?p=x6TIpQ4sCcJt9Dv1T-AuuKa-DssX27rx6er2ohTVVipooPTA8H0u-weNFWY9GsVI0">
+                    here</a>.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Kind regards,
+                    <br/>
+                    <br/>
+                    Helsinki Urban Environment Resident and Business Services
+                    <br/>
+                    Land Use and Monitoring
+                    <br/>
+                    Cable Location Service
+                    <br/>
+                    Tel. +358 9 310 31940
+                    <br/>
+                    johtotietopalvelu@hel.fi
+                    <br/>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+        <mj-include path="common/footer-content.mjml"/>
+    </mj-body>
+</mjml>
