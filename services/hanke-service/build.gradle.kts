@@ -48,7 +48,7 @@ spotless {
 }
 
 plugins {
-    id("org.springframework.boot") version "3.0.8"
+    id("org.springframework.boot") version "3.1.3"
     id("io.spring.dependency-management") version "1.1.3"
     id("com.diffplug.spotless") version "6.21.0"
     kotlin("jvm") version "1.8.22"
