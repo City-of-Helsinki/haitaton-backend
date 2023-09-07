@@ -6,7 +6,7 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "6.23.0"
+val sentryVersion = "6.29.0"
 
 ext["spring-security.version"] = "6.0.4"
 
