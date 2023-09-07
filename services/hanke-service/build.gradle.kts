@@ -82,7 +82,7 @@ dependencies {
     implementation("commons-io:commons-io:2.13.0")
     implementation("com.github.librepdf:openpdf:1.3.30")
     implementation("net.pwall.mustache:kotlin-mustache:0.10")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
     implementation("org.postgresql:postgresql")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
