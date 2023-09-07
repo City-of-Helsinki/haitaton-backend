@@ -24,7 +24,9 @@ class KayttooikeustasoEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Int = 0,
     @Enumerated(EnumType.STRING) val kayttooikeustaso: Kayttooikeustaso,
     val permissionCode: Long,
-)
+) {
+    fun hasPermission(permission: PermissionCode): Boolean = permissionCode and permission.code > 0
+}
 
 @Repository
 interface KayttooikeustasoRepository : JpaRepository<KayttooikeustasoEntity, Int> {

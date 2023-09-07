@@ -105,6 +105,14 @@ class AlluDataFactory(
         fun Customer.withContacts(vararg contacts: Contact): CustomerWithContacts =
             CustomerWithContacts(this, contacts.asList())
 
+        fun Customer.withContact(
+            firstName: String? = "Teppo",
+            lastName: String? = "Testihenkilö",
+            email: String? = teppoEmail,
+            phone: String? = "04012345678",
+            orderer: Boolean = false,
+        ) = withContacts(createContact(firstName, lastName, email, phone, orderer))
+
         fun createContact(
             firstName: String? = "Teppo",
             lastName: String? = "Testihenkilö",

@@ -21,7 +21,6 @@ import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
@@ -216,7 +215,7 @@ open class HankeServiceImpl(
         postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
         return createHankeDomainObjectFromEntity(entity).also {
-            hankeKayttajaService.saveNewTokensFromHanke(it)
+            hankeKayttajaService.saveNewTokensFromHanke(it, userId)
             hankeLoggingService.logUpdate(hankeBeforeUpdate, it, userId)
         }
     }
@@ -246,10 +245,8 @@ open class HankeServiceImpl(
 
     private fun initAccessForCreatedHanke(hanke: Hanke, perustaja: Perustaja?, userId: String) {
         val hankeId = hanke.id!!
-        val permissionAll =
-            permissionService.setPermission(hankeId, userId, Kayttooikeustaso.KAIKKI_OIKEUDET)
-        perustaja?.let { hankeKayttajaService.addHankeFounder(hankeId, it, permissionAll) }
-        hankeKayttajaService.saveNewTokensFromHanke(hanke)
+        hankeKayttajaService.addHankeFounder(hankeId, perustaja, userId)
+        hankeKayttajaService.saveNewTokensFromHanke(hanke, userId)
     }
 
     // TODO: functions to remove and invalidate Hanke's tormaystarkastelu-data

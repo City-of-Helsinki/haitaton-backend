@@ -207,7 +207,7 @@ open class ApplicationService(
             return application.toApplication()
         }
 
-        hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!)
+        hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!, userId)
 
         // The application should no longer be a draft
         application.applicationData = application.applicationData.copy(pendingOnClient = false)

@@ -28,7 +28,7 @@ class HankeKayttajaService(
         hankeKayttajaRepository.findByHankeId(hankeId).map { it.toDto() }
 
     @Transactional
-    fun saveNewTokensFromApplication(application: ApplicationEntity, hankeId: Int) {
+    fun saveNewTokensFromApplication(application: ApplicationEntity, hankeId: Int, userId: String) {
         if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
             return
         }
@@ -41,11 +41,13 @@ class HankeKayttajaService(
                 .flatMap { it.contacts }
                 .mapNotNull { userContactOrNull(it.fullName(), it.email) }
 
-        filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
+        filterNewContacts(hankeId, contacts).forEach { contact ->
+            createTunnisteAndKayttaja(hankeId, contact, userId)
+        }
     }
 
     @Transactional
-    fun saveNewTokensFromHanke(hanke: Hanke) {
+    fun saveNewTokensFromHanke(hanke: Hanke, userId: String) {
         if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
             return
         }
@@ -59,24 +61,29 @@ class HankeKayttajaService(
                 .flatMap { it.alikontaktit }
                 .mapNotNull { userContactOrNull(it.fullName(), it.email) }
 
-        filterNewContacts(hankeId, contacts).forEach { contact -> createToken(hankeId, contact) }
+        filterNewContacts(hankeId, contacts).forEach { contact ->
+            createTunnisteAndKayttaja(hankeId, contact, userId)
+        }
     }
 
     @Transactional
-    fun addHankeFounder(hankeId: Int, founder: Perustaja, permissionEntity: PermissionEntity) {
+    fun addHankeFounder(hankeId: Int, perustaja: Perustaja?, currentUser: String) {
+        val permissionEntity =
+            permissionService.create(hankeId, currentUser, Kayttooikeustaso.KAIKKI_OIKEUDET)
+
         if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
             return
         }
-        logger.info { "Saving user for Hanke perustaja." }
-        saveUser(
-            HankeKayttajaEntity(
+        perustaja?.let {
+            logger.info { "Saving user for Hanke perustaja." }
+            createUser(
+                currentUser,
                 hankeId = hankeId,
-                nimi = founder.nimi!!,
-                sahkoposti = founder.email,
+                nimi = it.nimi!!,
+                sahkoposti = it.email,
                 permission = permissionEntity,
-                kayttajaTunniste = null,
             )
-        )
+        }
     }
 
     @Transactional
@@ -101,16 +108,10 @@ class HankeKayttajaService(
 
         kayttajat.forEach { kayttaja ->
             kayttaja.permission?.let { permission ->
-                val kayttooikeustasoBefore = permission.kayttooikeustaso.kayttooikeustaso
-                permission.kayttooikeustaso =
-                    permissionService.findKayttooikeustaso(updates[kayttaja.id]!!)
-                logService.logUpdate(kayttooikeustasoBefore, permission.toDomain(), userId)
+                permissionService.updateKayttooikeustaso(permission, updates[kayttaja.id]!!, userId)
             }
-                ?: kayttaja.kayttajaTunniste?.let {
-                    val kayttajaTunnisteBefore = it.toDomain()
-                    it.kayttooikeustaso = updates[kayttaja.id]!!
-                    val kayttajaTunnisteAfter = it.toDomain()
-                    logService.logUpdate(kayttajaTunnisteBefore, kayttajaTunnisteAfter, userId)
+                ?: kayttaja.kayttajaTunniste?.let { tunniste ->
+                    updateKayttooikeustaso(tunniste, updates[kayttaja.id]!!, userId)
                 }
         }
 
@@ -194,7 +195,7 @@ class HankeKayttajaService(
     private fun validateAdminRemains(hanke: Hanke) {
         if (
             permissionService.findByHankeId(hanke.id!!).all {
-                it.kayttooikeustaso.kayttooikeustaso != Kayttooikeustaso.KAIKKI_OIKEUDET
+                it.kayttooikeustaso != Kayttooikeustaso.KAIKKI_OIKEUDET
             }
         ) {
             throw NoAdminRemainingException(hanke)
@@ -222,26 +223,63 @@ class HankeKayttajaService(
         }
     }
 
-    private fun createToken(hankeId: Int, contact: UserContact) {
+    private fun createTunnisteAndKayttaja(hankeId: Int, contact: UserContact, userId: String) {
+        val kayttajaTunnisteEntity = createTunniste(hankeId, userId)
+        createUser(
+            userId,
+            hankeId = hankeId,
+            nimi = contact.name,
+            sahkoposti = contact.email,
+            tunniste = kayttajaTunnisteEntity,
+        )
+    }
+
+    private fun updateKayttooikeustaso(
+        kayttajaTunnisteEntity: KayttajaTunnisteEntity,
+        kayttooikeustaso: Kayttooikeustaso,
+        userId: String
+    ) {
+        val kayttajaTunnisteBefore = kayttajaTunnisteEntity.toDomain()
+        kayttajaTunnisteEntity.kayttooikeustaso = kayttooikeustaso
+        val kayttajaTunnisteAfter = kayttajaTunnisteEntity.toDomain()
+        logger.info {
+            "Updated kayttooikeustaso in kayttajatunniste, " +
+                "kayttajaTunnisteId=${kayttajaTunnisteEntity.id}, " +
+                "new kayttooikeustaso=${kayttooikeustaso}, " +
+                "userId=$userId"
+        }
+        logService.logUpdate(kayttajaTunnisteBefore, kayttajaTunnisteAfter, userId)
+    }
+
+    private fun createTunniste(hankeId: Int, userId: String): KayttajaTunnisteEntity {
         logger.info { "Creating a new user token, hankeId=$hankeId" }
         val token = KayttajaTunnisteEntity.create()
         val kayttajaTunnisteEntity = kayttajaTunnisteRepository.save(token)
         logger.info { "Saved the new user token, id=${kayttajaTunnisteEntity.id}" }
-
-        saveUser(
-            HankeKayttajaEntity(
-                hankeId = hankeId,
-                nimi = contact.name,
-                sahkoposti = contact.email,
-                permission = null,
-                kayttajaTunniste = kayttajaTunnisteEntity
-            )
-        )
+        logService.logCreate(kayttajaTunnisteEntity.toDomain(), userId)
+        return kayttajaTunnisteEntity
     }
 
-    private fun saveUser(hankeKayttajaEntity: HankeKayttajaEntity) {
-        val user = hankeKayttajaRepository.save(hankeKayttajaEntity)
-        logger.info { "Saved the user information, id=${user.id}" }
+    private fun createUser(
+        currentUser: String,
+        hankeId: Int,
+        nimi: String,
+        sahkoposti: String,
+        permission: PermissionEntity? = null,
+        tunniste: KayttajaTunnisteEntity? = null,
+    ) {
+        val kayttajaEntity =
+            hankeKayttajaRepository.save(
+                HankeKayttajaEntity(
+                    hankeId = hankeId,
+                    nimi = nimi,
+                    sahkoposti = sahkoposti,
+                    permission = permission,
+                    kayttajaTunniste = tunniste,
+                )
+            )
+        logger.info { "Saved the user information, id=${kayttajaEntity.id}" }
+        logService.logCreate(kayttajaEntity.toDomain(), currentUser)
     }
 
     private fun userContactOrNull(name: String?, email: String?): UserContact? {
