@@ -154,6 +154,8 @@ tasks {
 }
 
 tasks.register("installGitHook", Copy::class) {
+    group = "other"
+    description = "Installs shared git hooks"
     from(file("$rootDir/githooks"))
     into(file("$rootDir/.git/hooks"))
     fileMode = 0b0111101101 // -rwxr-xr-x
