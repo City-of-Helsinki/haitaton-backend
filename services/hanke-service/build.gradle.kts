@@ -48,14 +48,15 @@ spotless {
 }
 
 plugins {
+    val kotlinVersion = "1.9.10"
     id("org.springframework.boot") version "3.0.8"
     id("io.spring.dependency-management") version "1.1.3"
     id("com.diffplug.spotless") version "6.21.0"
-    kotlin("jvm") version "1.8.22"
+    kotlin("jvm") version kotlinVersion
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
-    kotlin("plugin.spring") version "1.8.22"
+    kotlin("plugin.spring") version kotlinVersion
     // Gives kotlin-noarg for @Entity, @Embeddable
-    kotlin("plugin.jpa") version "1.8.22"
+    kotlin("plugin.jpa") version kotlinVersion
     idea
     id("com.github.ben-manes.versions") version "0.42.0"
     id("jacoco")
