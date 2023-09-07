@@ -77,7 +77,7 @@ dependencies {
     implementation("de.grundid.opendatalab:geojson-jackson:1.14")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
-    implementation("com.github.blagerweij:liquibase-sessionlock:1.6.2")
+    implementation("com.github.blagerweij:liquibase-sessionlock:1.6.5")
     implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.5.0")
     implementation("commons-io:commons-io:2.13.0")
     implementation("com.github.librepdf:openpdf:1.3.30")
