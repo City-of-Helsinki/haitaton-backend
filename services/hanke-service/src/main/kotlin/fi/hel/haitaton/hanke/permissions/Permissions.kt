@@ -39,7 +39,7 @@ interface PermissionRepository : JpaRepository<PermissionEntity, Int> {
      */
     @Query(
         "select pe from PermissionEntity pe " +
-            "inner join pe.kayttooikeustaso as kayttooikeustaso " +
+            "inner join pe.kayttooikeustasoEntity as kayttooikeustaso " +
             "where pe.userId = :userId " +
             "and mod(kayttooikeustaso.permissionCode / :permissionBit , 2) = 1"
     )
@@ -54,9 +54,15 @@ class PermissionEntity(
     val hankeId: Int,
     @ManyToOne(optional = false, fetch = FetchType.EAGER)
     @JoinColumn(name = "kayttooikeustaso_id")
-    var kayttooikeustaso: KayttooikeustasoEntity,
+    var kayttooikeustasoEntity: KayttooikeustasoEntity,
 ) {
-    fun toDomain() = Permission(id, userId, hankeId, kayttooikeustaso.kayttooikeustaso)
+    val kayttooikeustaso: Kayttooikeustaso
+        get() = kayttooikeustasoEntity.kayttooikeustaso
+
+    fun toDomain() = Permission(id, userId, hankeId, kayttooikeustaso)
+
+    fun hasPermission(permission: PermissionCode): Boolean =
+        kayttooikeustasoEntity.hasPermission(permission)
 }
 
 @JsonView(ChangeLogView::class)

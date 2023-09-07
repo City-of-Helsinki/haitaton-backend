@@ -1,31 +1,13 @@
 package fi.hel.haitaton.hanke.logging
 
+import fi.hel.haitaton.hanke.permissions.HankeKayttaja
 import fi.hel.haitaton.hanke.permissions.KayttajaTunniste
-import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
-import fi.hel.haitaton.hanke.permissions.Permission
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class HankeKayttajaLoggingService(private val auditLogService: AuditLogService) {
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    fun logUpdate(
-        kayttooikeustasoBefore: Kayttooikeustaso,
-        permissionAfter: Permission,
-        userId: String
-    ) {
-        val permissionBefore = permissionAfter.copy(kayttooikeustaso = kayttooikeustasoBefore)
-
-        AuditLogService.updateEntry(
-                userId,
-                ObjectType.PERMISSION,
-                permissionBefore,
-                permissionAfter,
-            )
-            ?.let { auditLogService.create(it) }
-    }
 
     @Transactional(propagation = Propagation.MANDATORY)
     fun logUpdate(
@@ -40,5 +22,19 @@ class HankeKayttajaLoggingService(private val auditLogService: AuditLogService) 
                 kayttajaTunnisteAfter,
             )
             ?.let { auditLogService.create(it) }
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    fun logCreate(kayttajaTunniste: KayttajaTunniste, userId: String) {
+        auditLogService.create(
+            AuditLogService.createEntry(userId, ObjectType.KAYTTAJA_TUNNISTE, kayttajaTunniste)
+        )
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    fun logCreate(hankeKayttaja: HankeKayttaja, currentUser: String) {
+        auditLogService.create(
+            AuditLogService.createEntry(currentUser, ObjectType.HANKE_KAYTTAJA, hankeKayttaja)
+        )
     }
 }

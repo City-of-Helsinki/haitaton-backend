@@ -1,15 +1,33 @@
 package fi.hel.haitaton.hanke.permissions
 
+import assertk.all
 import assertk.assertThat
+import assertk.assertions.first
 import assertk.assertions.hasSize
-import assertk.assertions.isFalse
-import assertk.assertions.isTrue
+import assertk.assertions.isEmpty
+import assertk.assertions.isEqualTo
+import assertk.assertions.isNull
+import assertk.assertions.key
+import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.logging.AuditLogEvent
+import fi.hel.haitaton.hanke.logging.AuditLogRepository
+import fi.hel.haitaton.hanke.logging.AuditLogTarget
+import fi.hel.haitaton.hanke.logging.ObjectType
+import fi.hel.haitaton.hanke.logging.Operation
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.auditEvent
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectAfter
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectBefore
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
@@ -20,10 +38,12 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.junit.jupiter.Testcontainers
 
+private const val CURRENT_USER: String = "test7358"
+
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
-@WithMockUser(username = "test7358")
+@WithMockUser(username = CURRENT_USER)
 class PermissionServiceITest : DatabaseTest() {
 
     val username = "user"
@@ -31,6 +51,8 @@ class PermissionServiceITest : DatabaseTest() {
     @Autowired lateinit var permissionService: PermissionService
     @Autowired lateinit var permissionRepository: PermissionRepository
     @Autowired lateinit var hankeService: HankeService
+    @Autowired lateinit var hankeFactory: HankeFactory
+    @Autowired lateinit var auditLogRepository: AuditLogRepository
 
     companion object {
         @JvmStatic
@@ -74,18 +96,12 @@ class PermissionServiceITest : DatabaseTest() {
     ) {
         val kayttooikeustasoEntity = permissionService.findKayttooikeustaso(kayttooikeustaso)
 
-        allowedPermissions.forEach { code ->
-            assertThat(code)
-                .transform { PermissionService.hasPermission(kayttooikeustasoEntity, it) }
-                .isTrue()
+        val permissions =
+            PermissionCode.values().associateWith { kayttooikeustasoEntity.hasPermission(it) }
+
+        PermissionCode.values().forEach {
+            assertThat(permissions).key(it).isEqualTo(allowedPermissions.contains(it))
         }
-        PermissionCode.values()
-            .filter { !allowedPermissions.contains(it) }
-            .forEach { code ->
-                assertThat(code)
-                    .transform { PermissionService.hasPermission(kayttooikeustasoEntity, it) }
-                    .isFalse()
-            }
     }
 
     @Test
@@ -97,18 +113,14 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Test
     fun `getAllowedHankeIds with permissions returns list of IDs`() {
-        val kaikkiOikeudet =
-            permissionService.findKayttooikeustaso(Kayttooikeustaso.KAIKKI_OIKEUDET)
-        val hankkeet = saveSeveralHanke(3)
+        val hankkeet = hankeFactory.saveSeveralMinimal(3)
         hankkeet
             .map { it.id!! }
             .forEach {
-                permissionRepository.save(
-                    PermissionEntity(
-                        userId = username,
-                        hankeId = it,
-                        kayttooikeustaso = kaikkiOikeudet,
-                    )
+                permissionService.create(
+                    userId = username,
+                    hankeId = it,
+                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
                 )
             }
 
@@ -119,23 +131,15 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Test
     fun `getAllowedHankeIds return ids with correct permissions`() {
-        val kaikkiOikeudet =
-            permissionService.findKayttooikeustaso(Kayttooikeustaso.KAIKKI_OIKEUDET)
-        val hankemuokkaus = permissionService.findKayttooikeustaso(Kayttooikeustaso.HANKEMUOKKAUS)
-        val hakemusasiointi =
-            permissionService.findKayttooikeustaso(Kayttooikeustaso.HAKEMUSASIOINTI)
-        val katseluoikeus = permissionService.findKayttooikeustaso(Kayttooikeustaso.KATSELUOIKEUS)
-        val hankkeet = saveSeveralHanke(4)
+        val kaikkiOikeudet = Kayttooikeustaso.KAIKKI_OIKEUDET
+        val hankemuokkaus = Kayttooikeustaso.HANKEMUOKKAUS
+        val hakemusasiointi = Kayttooikeustaso.HAKEMUSASIOINTI
+        val katseluoikeus = Kayttooikeustaso.KATSELUOIKEUS
+        val hankkeet = hankeFactory.saveSeveralMinimal(4)
         listOf(kaikkiOikeudet, hankemuokkaus, hakemusasiointi, katseluoikeus).zip(hankkeet) {
             kayttooikeustaso,
             hanke ->
-            permissionRepository.save(
-                PermissionEntity(
-                    userId = username,
-                    hankeId = hanke.id!!,
-                    kayttooikeustaso = kayttooikeustaso,
-                )
-            )
+            permissionService.create(hanke.id!!, username, kayttooikeustaso)
         }
 
         val response = permissionService.getAllowedHankeIds(username, PermissionCode.EDIT)
@@ -150,79 +154,127 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Test
     fun `hasPermission with correct permission`() {
-        val kaikkiOikeudet =
-            permissionService.findKayttooikeustaso(Kayttooikeustaso.KAIKKI_OIKEUDET)
-        val hankeId = saveSeveralHanke(1)[0].id!!
-        permissionRepository.save(
-            PermissionEntity(
-                userId = username,
-                hankeId = hankeId,
-                kayttooikeustaso = kaikkiOikeudet
-            )
-        )
+        val hankeId = hankeFactory.saveMinimal().id!!
+        permissionService.create(hankeId, username, Kayttooikeustaso.KAIKKI_OIKEUDET)
 
         assertTrue(permissionService.hasPermission(hankeId, username, PermissionCode.EDIT))
     }
 
     @Test
     fun `hasPermission with insufficient permissions`() {
-        val hakemusasiointi =
-            permissionService.findKayttooikeustaso(Kayttooikeustaso.HAKEMUSASIOINTI)
-        val hankeId = saveSeveralHanke(1)[0].id!!
-        permissionRepository.save(
-            PermissionEntity(
-                userId = username,
-                hankeId = hankeId,
-                kayttooikeustaso = hakemusasiointi
-            )
-        )
+        val hankeId = hankeFactory.saveMinimal().id!!
+        permissionService.create(hankeId, username, Kayttooikeustaso.HAKEMUSASIOINTI)
 
         assertFalse(permissionService.hasPermission(hankeId, username, PermissionCode.EDIT))
     }
 
-    @Test
-    fun `setPermission creates a new permission`() {
-        val hankeId = saveSeveralHanke(1)[0].id!!
-        permissionRepository.deleteAll() // remove permission created in hanke creation
+    @Nested
+    inner class Create {
 
-        permissionService.setPermission(hankeId, username, Kayttooikeustaso.KATSELUOIKEUS)
+        @Test
+        fun `Creates a new permission`() {
+            val hankeId = hankeFactory.saveMinimal().id!!
 
-        val permissions = permissionRepository.findAll()
-        assertThat(permissions).hasSize(1)
-        assertEquals(hankeId, permissions[0].hankeId)
-        assertEquals(
-            Kayttooikeustaso.KATSELUOIKEUS,
-            permissions[0].kayttooikeustaso.kayttooikeustaso
-        )
+            val result = permissionService.create(hankeId, username, Kayttooikeustaso.KATSELUOIKEUS)
+
+            val permissions = permissionRepository.findAll()
+            assertThat(permissions).hasSize(1)
+            assertThat(permissions).first().all {
+                prop(PermissionEntity::id).isEqualTo(result.id)
+                prop(PermissionEntity::hankeId).isEqualTo(hankeId)
+                prop(PermissionEntity::userId).isEqualTo(username)
+                prop(PermissionEntity::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
+            }
+        }
+
+        @Test
+        fun `Writes to audit log`() {
+            val hankeId = hankeFactory.saveMinimal().id!!
+            assertThat(auditLogRepository.findAll()).isEmpty()
+
+            val permission =
+                permissionService.create(hankeId, username, Kayttooikeustaso.KATSELUOIKEUS)
+
+            val logs = auditLogRepository.findAll()
+            assertThat(logs).hasSize(1)
+            val expectedObject =
+                Permission(
+                    id = permission.id,
+                    userId = username,
+                    hankeId = hankeId,
+                    kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+                )
+            assertThat(logs).first().auditEvent {
+                withTarget {
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.PERMISSION)
+                    hasId(permission.id)
+                    prop(AuditLogTarget::objectBefore).isNull()
+                    hasObjectAfter(expectedObject)
+                }
+                prop(AuditLogEvent::operation).isEqualTo(Operation.CREATE)
+                hasUserActor(CURRENT_USER)
+            }
+        }
     }
 
-    @Test
-    fun `setPermission updates an existing permission`() {
-        val hankeId = saveSeveralHanke(1)[0].id!!
-        permissionRepository.deleteAll() // remove permission created in hanke creation
-        val kayttooikeustaso =
-            permissionService.findKayttooikeustaso(Kayttooikeustaso.KATSELUOIKEUS)
-        permissionRepository.save(
-            PermissionEntity(
-                userId = username,
-                hankeId = hankeId,
-                kayttooikeustaso = kayttooikeustaso
+    @Nested
+    inner class UpdateKayttooikeustaso {
+
+        @Test
+        fun `updateKayttooikeustaso updates an existing permission`() {
+            val hankeId = hankeFactory.saveMinimal().id!!
+            val permission =
+                permissionService.create(hankeId, username, Kayttooikeustaso.KATSELUOIKEUS)
+
+            permissionService.updateKayttooikeustaso(
+                permission,
+                Kayttooikeustaso.HAKEMUSASIOINTI,
+                username,
             )
-        )
 
-        permissionService.setPermission(hankeId, username, Kayttooikeustaso.HAKEMUSASIOINTI)
+            val permissions = permissionRepository.findAll()
+            assertThat(permissions).hasSize(1)
+            assertThat(permissions).first().all {
+                prop(PermissionEntity::id).isEqualTo(permission.id)
+                prop(PermissionEntity::hankeId).isEqualTo(hankeId)
+                prop(PermissionEntity::userId).isEqualTo(username)
+                prop(PermissionEntity::kayttooikeustaso).isEqualTo(Kayttooikeustaso.HAKEMUSASIOINTI)
+            }
+        }
 
-        val permissions = permissionRepository.findAll()
-        assertThat(permissions).hasSize(1)
-        assertEquals(hankeId, permissions[0].hankeId)
-        assertEquals(
-            Kayttooikeustaso.HAKEMUSASIOINTI,
-            permissions[0].kayttooikeustaso.kayttooikeustaso
-        )
+        @Test
+        fun `updateKayttooikeustaso writes to audit log`() {
+            val hankeId = hankeFactory.saveMinimal().id!!
+            val permission =
+                permissionService.create(hankeId, username, Kayttooikeustaso.KATSELUOIKEUS)
+            auditLogRepository.deleteAll()
+
+            permissionService.updateKayttooikeustaso(
+                permission,
+                Kayttooikeustaso.HAKEMUSASIOINTI,
+                CURRENT_USER,
+            )
+
+            val logs = auditLogRepository.findAll()
+            assertThat(logs).hasSize(1)
+            val expectedObject =
+                Permission(
+                    id = permission.id,
+                    userId = username,
+                    hankeId = hankeId,
+                    kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+                )
+            assertThat(logs).first().isSuccess(Operation.UPDATE) {
+                withTarget {
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.PERMISSION)
+                    hasId(permission.id)
+                    hasObjectBefore(expectedObject)
+                    hasObjectAfter(
+                        expectedObject.copy(kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI)
+                    )
+                }
+                hasUserActor(CURRENT_USER)
+            }
+        }
     }
-
-    private fun saveSeveralHanke(n: Int) =
-        createSeveralHanke(n).map { hankeService.createHanke(it) }
-
-    private fun createSeveralHanke(n: Int) = (1..n).map { HankeFactory.create(id = null) }
 }
