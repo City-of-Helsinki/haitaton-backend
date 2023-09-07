@@ -50,7 +50,7 @@ spotless {
 plugins {
     id("org.springframework.boot") version "3.0.8"
     id("io.spring.dependency-management") version "1.1.3"
-    id("com.diffplug.spotless") version "6.18.0"
+    id("com.diffplug.spotless") version "6.21.0"
     kotlin("jvm") version "1.8.22"
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
     kotlin("plugin.spring") version "1.8.22"
