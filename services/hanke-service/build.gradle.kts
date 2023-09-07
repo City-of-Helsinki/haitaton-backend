@@ -55,7 +55,7 @@ plugins {
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
     kotlin("plugin.spring") version "1.8.22"
     // Gives kotlin-noarg for @Entity, @Embeddable
-    kotlin("plugin.jpa") version "1.8.22"
+    kotlin("plugin.jpa") version "1.9.10"
     idea
     id("com.github.ben-manes.versions") version "0.42.0"
     id("jacoco")
