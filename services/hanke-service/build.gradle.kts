@@ -53,7 +53,7 @@ plugins {
     id("com.diffplug.spotless") version "6.21.0"
     kotlin("jvm") version "1.8.22"
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
-    kotlin("plugin.spring") version "1.8.22"
+    kotlin("plugin.spring") version "1.9.10"
     // Gives kotlin-noarg for @Entity, @Embeddable
     kotlin("plugin.jpa") version "1.8.22"
     idea
