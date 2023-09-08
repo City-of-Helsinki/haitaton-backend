@@ -32,23 +32,8 @@ class HankeKayttajaService(
         hankeKayttajaRepository.findByHankeId(hankeId).map { it.toDto() }
 
     @Transactional(readOnly = true)
-    fun getKayttajaByUserId(hankeId: Int, userId: String = currentUserId()): HankeKayttajaDto? {
-        val permission = permissionService.findPermission(hankeId, userId)
-        if (permission == null) {
-            logger.warn {
-                "UserId=$userId does not have a permission instance for HankeId=$hankeId"
-            }
-            return null
-        }
-
-        val hankeKayttaja = hankeKayttajaRepository.findByPermissionId(permission.id)
-        if (hankeKayttaja == null) {
-            logger.warn { "No kayttaja instance found (hankeId=$hankeId, userId=$userId) " }
-            return null
-        }
-
-        return hankeKayttaja.toDto()
-    }
+    fun getKayttajaByUserId(hankeId: Int, userId: String): HankeKayttajaDto? =
+        getKayttajaEntityByUserId(hankeId, userId)?.toDto()
 
     @Transactional
     fun saveNewTokensFromApplication(application: ApplicationEntity, hankeId: Int, userId: String) {
@@ -86,7 +71,7 @@ class HankeKayttajaService(
 
         filterNewContacts(hankeId, contacts).forEach { contact ->
             val newHankeKayttaja = createTunnisteAndKayttaja(hankeId, contact, userId)
-            getKayttajaByUserId(hankeId, userId)?.let {
+            getKayttajaEntityByUserId(hankeId, userId)?.let {
                 sendHankeInvitationEmails(hanke, it, newHankeKayttaja)
             }
         }
@@ -173,6 +158,23 @@ class HankeKayttajaService(
 
         kayttaja.kayttajaTunniste = null
         kayttajaTunnisteRepository.delete(tunnisteEntity)
+    }
+
+    private fun getKayttajaEntityByUserId(hankeId: Int, userId: String): HankeKayttajaEntity? {
+        val permission = permissionService.findPermission(hankeId, userId)
+        if (permission == null) {
+            logger.warn {
+                "UserId=$userId does not have a permission instance for HankeId=$hankeId"
+            }
+            return null
+        }
+
+        val hankeKayttaja = hankeKayttajaRepository.findByPermissionId(permission.id)
+        if (hankeKayttaja == null) {
+            logger.warn { "No kayttaja instance found (hankeId=$hankeId, userId=$userId) " }
+            return null
+        }
+        return hankeKayttaja
     }
 
     /** Check that every user an update was requested for was found as a user of the hanke. */
@@ -283,7 +285,7 @@ class HankeKayttajaService(
 
     private fun sendHankeInvitationEmails(
         hanke: Hanke,
-        inviter: HankeKayttajaDto,
+        inviter: HankeKayttajaEntity,
         recipient: HankeKayttajaEntity,
     ) {
         logger.info { "Sending Hanke invitations." }

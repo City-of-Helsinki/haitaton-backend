@@ -132,14 +132,14 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     }
 
     @Nested
-    inner class GetKayttajaByCurrentUser {
+    inner class GetKayttajaByUserId {
 
         @Test
         fun `When user exists should return current hanke user`() {
             val hankeWithApplications = hankeFactory.saveGenerated(userId = USERNAME)
 
             val result: HankeKayttajaDto? =
-                hankeKayttajaService.getKayttajaByUserId(hankeId = hankeWithApplications.hanke.id!!)
+                hankeKayttajaService.getKayttajaByUserId(hankeWithApplications.hanke.id!!, USERNAME)
 
             assertThat(result).isNotNull()
             with(result!!) {
@@ -153,7 +153,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `When no hanke should return null`() {
-            val result: HankeKayttajaDto? = hankeKayttajaService.getKayttajaByUserId(hankeId = 123)
+            val result: HankeKayttajaDto? = hankeKayttajaService.getKayttajaByUserId(123, USERNAME)
 
             assertThat(result).isNull()
         }
@@ -164,7 +164,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             permissionRepository.deleteAll()
 
             val result: HankeKayttajaDto? =
-                hankeKayttajaService.getKayttajaByUserId(hankeId = hanke.id!!)
+                hankeKayttajaService.getKayttajaByUserId(hanke.id!!, USERNAME)
 
             assertThat(result).isNull()
         }
@@ -173,11 +173,11 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `When no kayttaja should return null`() {
             val hankeWithApplications = hankeFactory.saveGenerated(userId = USERNAME)
             val hankeId = hankeWithApplications.hanke.id!!
-            val jou = hankeKayttajaService.getKayttajaByUserId(hankeId)!!
+            val jou = hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)!!
             hankeKayttajaRepository.deleteById(jou.id)
 
             val result: HankeKayttajaDto? =
-                hankeKayttajaService.getKayttajaByUserId(hankeId = hankeId)
+                hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)
 
             assertThat(result).isNull()
         }
