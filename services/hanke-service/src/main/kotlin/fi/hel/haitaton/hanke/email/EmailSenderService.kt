@@ -80,7 +80,8 @@ class EmailSenderService(
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
-                "inviterInfo" to inviterInfo(data.inviterName, data.inviterEmail),
+                "inviterName" to data.inviterName,
+                "inviterEmail" to data.inviterEmail,
                 "hankeTunnus" to data.hankeTunnus,
                 "hankeNimi" to data.hankeNimi,
                 "invitationToken" to data.invitationToken,
@@ -97,7 +98,8 @@ class EmailSenderService(
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
-                "inviterInfo" to inviterInfo(data.inviterName, data.inviterEmail),
+                "inviterName" to data.inviterName,
+                "inviterEmail" to data.inviterEmail,
                 "applicationType" to applicationTypeText,
                 "applicationIdentifier" to data.applicationIdentifier,
                 "hankeTunnus" to data.hankeTunnus,
@@ -126,8 +128,6 @@ class EmailSenderService(
         helper.setFrom(emailConfig.from)
         mailSender.send(mimeMessage)
     }
-
-    private fun inviterInfo(name: String, email: String): String = "$name ($email)"
 
     private fun convertApplicationTypeFinnish(type: ApplicationType): String =
         when (type) {

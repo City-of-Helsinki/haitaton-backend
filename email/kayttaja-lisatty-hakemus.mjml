@@ -10,7 +10,8 @@
                     Haitaton: Sinut on lisätty hakemukselle {{applicationIdentifier}}
                 </mj-text>
                 <mj-text mj-class="basic-txt">
-                    {{inviterInfo}} on tehnyt {{applicationType}} ({{applicationIdentifier}}) hankkeella
+                    {{inviterName}} ({{inviterEmail}}) on tehnyt {{applicationType}} ({{applicationIdentifier}})
+                    hankkeella
                     {{hankeTunnus}}, ja lähettänyt sen käsittelyyn. Sinut on määritetty hakemuksella rooliin
                     {{recipientRole}}. Tarkastele hakemusta Haitattomassa
                     <a href="{{baseUrl}}">{{baseUrl}}</a>
