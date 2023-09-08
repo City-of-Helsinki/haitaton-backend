@@ -17,7 +17,6 @@ import assertk.assertions.isIn
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
-import assertk.assertions.isTrue
 import assertk.assertions.matches
 import assertk.assertions.messageContains
 import assertk.assertions.prop
@@ -138,7 +137,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `When user exists should return current hanke user`() {
             val hankeWithApplications = hankeFactory.saveGenerated(userId = USERNAME)
 
-            val result: HankeKayttajaDto? =
+            val result: HankeKayttajaEntity? =
                 hankeKayttajaService.getKayttajaByUserId(hankeWithApplications.hanke.id!!, USERNAME)
 
             assertThat(result).isNotNull()
@@ -146,14 +145,15 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 assertThat(id).isNotNull()
                 assertThat(sahkoposti).isEqualTo(teppoEmail)
                 assertThat(nimi).isEqualTo(TEPPO_TESTI)
-                assertThat(kayttooikeustaso).isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
-                assertThat(tunnistautunut).isTrue()
+                assertThat(permission?.kayttooikeustaso).isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
+                assertThat(permission).isNotNull()
             }
         }
 
         @Test
         fun `When no hanke should return null`() {
-            val result: HankeKayttajaDto? = hankeKayttajaService.getKayttajaByUserId(123, USERNAME)
+            val result: HankeKayttajaEntity? =
+                hankeKayttajaService.getKayttajaByUserId(123, USERNAME)
 
             assertThat(result).isNull()
         }
@@ -163,7 +163,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val hanke = hankeFactory.save()
             permissionRepository.deleteAll()
 
-            val result: HankeKayttajaDto? =
+            val result: HankeKayttajaEntity? =
                 hankeKayttajaService.getKayttajaByUserId(hanke.id!!, USERNAME)
 
             assertThat(result).isNull()
@@ -176,7 +176,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val createdKayttaja = hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)!!
             hankeKayttajaRepository.deleteById(createdKayttaja.id)
 
-            val result: HankeKayttajaDto? =
+            val result: HankeKayttajaEntity? =
                 hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)
 
             assertThat(result).isNull()
