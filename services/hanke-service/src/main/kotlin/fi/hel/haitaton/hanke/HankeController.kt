@@ -182,16 +182,14 @@ When Hanke is created:
         if (hanke == null) {
             throw HankeArgumentException("No hanke given when creating hanke")
         }
-        val sanitizedHanke =
-            hanke.apply {
-                id = null
-                generated = false
-            }
+
+        hanke.id = null
+        hanke.generated = false
 
         val userId = currentUserId()
         logger.info { "Creating Hanke for user $userId: ${hanke.toLogString()} " }
 
-        val createdHanke = hankeService.createHanke(sanitizedHanke)
+        val createdHanke = hankeService.createHanke(hanke)
 
         disclosureLogService.saveDisclosureLogsForHanke(createdHanke, userId)
         return createdHanke
