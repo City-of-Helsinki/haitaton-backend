@@ -58,8 +58,12 @@ class HankeKayttajaController(
         val userId = currentUserId()
         val hankeId = hankeService.getHankeIdOrThrow(hankeTunnus)
 
-        return permissionService.findPermission(hankeId, userId)?.let { WhoamiResponse(it) }
-            ?: throw HankeNotFoundException(hankeTunnus)
+        val permission =
+            permissionService.findPermission(hankeId, userId)
+                ?: throw HankeNotFoundException(hankeTunnus)
+
+        val hankeKayttaja = hankeKayttajaService.getKayttajaByUserId(hankeId, userId)
+        return WhoamiResponse(hankeKayttaja?.id, permission.kayttooikeustasoEntity)
     }
 
     @GetMapping("/hankkeet/{hankeTunnus}/kayttajat")

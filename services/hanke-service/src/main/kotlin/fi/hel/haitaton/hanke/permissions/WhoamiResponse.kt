@@ -1,15 +1,18 @@
 package fi.hel.haitaton.hanke.permissions
 
+import java.util.UUID
+
 data class WhoamiResponse(
-    val userId: String,
+    val hankeKayttajaId: UUID?,
     val kayttooikeustaso: Kayttooikeustaso,
     val kayttooikeudet: List<PermissionCode>
 ) {
     constructor(
-        permissionEntity: PermissionEntity
+        hankeKayttajaId: UUID?,
+        kayttooikeustasoEntity: KayttooikeustasoEntity
     ) : this(
-        permissionEntity.userId,
-        permissionEntity.kayttooikeustaso,
-        permissionEntity.kayttooikeustasoEntity.permissionCodes
+        hankeKayttajaId,
+        kayttooikeustasoEntity.kayttooikeustaso,
+        kayttooikeustasoEntity.permissionCodes
     )
 }
