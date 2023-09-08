@@ -332,10 +332,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         fun `Sanitize hanke input and return 200`() {
             val hanke = HankeFactory.create().withYhteystiedot().apply { generated = true }
             val expectedServiceArgument =
-                hanke.apply {
-                    generated = false
-                    id = null
-                }
+                HankeFactory.create(id = null).withYhteystiedot().apply { generated = false }
             every { hankeService.createHanke(expectedServiceArgument) } returns
                 expectedServiceArgument
 
