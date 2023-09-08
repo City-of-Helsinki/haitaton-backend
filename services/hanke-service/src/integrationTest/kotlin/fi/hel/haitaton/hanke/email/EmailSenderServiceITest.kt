@@ -163,18 +163,6 @@ class EmailSenderServiceITest : DatabaseTest() {
                 contains("""<a href="http://localhost:3001/${data.invitationToken}">""")
             }
         }
-
-        @Test
-        fun `sendHankeInvitationEmail handles input without inviter name`() {
-            val data = hankeInvitationData(inviterName = null)
-
-            emailSenderService.sendHankeInvitationEmail(data)
-
-            val email = greenMail.firstReceivedMessage()
-            val (textBody, htmlBody) = getBodiesFromHybridEmail(email)
-            assertThat(textBody).contains("Asioija ${data.inviterEmail}")
-            assertThat(htmlBody).contains("Asioija ${data.inviterEmail}")
-        }
     }
 
     @Nested
@@ -229,18 +217,6 @@ class EmailSenderServiceITest : DatabaseTest() {
                 contains("""<a href="http://localhost:3001">""")
             }
         }
-
-        @Test
-        fun `sendApplicationInvitationEmail handles input without inviter name`() {
-            val data = applicationInvitationData(inviterName = null)
-
-            emailSenderService.sendApplicationInvitationEmail(data)
-
-            val email = greenMail.firstReceivedMessage()
-            val (textBody, htmlBody) = getBodiesFromHybridEmail(email)
-            assertThat(textBody).contains("Asioija ${data.inviterEmail} on tehnyt")
-            assertThat(htmlBody).contains("Asioija ${data.inviterEmail} on tehnyt")
-        }
     }
 
     /** Returns a (text body, HTML body) pair. */
@@ -270,7 +246,7 @@ class EmailSenderServiceITest : DatabaseTest() {
         return Pair(bodies[0], bodies[1])
     }
 
-    private fun hankeInvitationData(inviterName: String? = DEFAULT_INVITER_NAME) =
+    private fun hankeInvitationData(inviterName: String = DEFAULT_INVITER_NAME) =
         HankeInvitationData(
             inviterName = inviterName,
             inviterEmail = "kalle.kutsuja@test.fi",
@@ -280,7 +256,7 @@ class EmailSenderServiceITest : DatabaseTest() {
             invitationToken = "MgtzRbcPsvoKQamnaSxCnmW7",
         )
 
-    private fun applicationInvitationData(inviterName: String? = DEFAULT_INVITER_NAME) =
+    private fun applicationInvitationData(inviterName: String = DEFAULT_INVITER_NAME) =
         ApplicationInvitationData(
             inviterName = inviterName,
             inviterEmail = "kalle.kutsuja@test.fi",
