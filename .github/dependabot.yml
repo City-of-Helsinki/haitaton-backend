@@ -1,0 +1,9 @@
+version: 2
+updates:
+  - package-ecosystem: "gradle"
+    directory: "/services/hanke-service"
+    schedule:
+      interval: "daily"
+      timezone: "Europe/Helsinki"
+    target-branch: "dev"
+    open-pull-requests-limit: 10
