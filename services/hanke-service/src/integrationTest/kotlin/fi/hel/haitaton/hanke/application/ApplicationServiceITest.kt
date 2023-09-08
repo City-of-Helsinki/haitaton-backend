@@ -110,6 +110,14 @@ class ApplicationServiceITest : DatabaseTest() {
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
     @Autowired private lateinit var attachmentFactory: AttachmentFactory
 
+    companion object {
+        @JvmField
+        @RegisterExtension
+        val greenMail: GreenMailExtension =
+            GreenMailExtension(ServerSetupTest.SMTP)
+                .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication())
+    }
+
     @BeforeEach
     fun clearMocks() {
         clearAllMocks()
@@ -1044,7 +1052,7 @@ class ApplicationServiceITest : DatabaseTest() {
             assertThat(tunnisteet).hasSize(1)
             assertThat(tunnisteet[0].kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
             assertThat(tunnisteet[0].createdAt).isRecent()
-            assertThat(tunnisteet[0].sentAt).isNull()
+            assertThat(tunnisteet[0].sentAt).isRecent()
             assertThat(tunnisteet[0].tunniste).matches(Regex(kayttajaTunnistePattern))
             assertThat(tunnisteet[0].hankeKayttaja).isNotNull()
             val kayttaja = tunnisteet[0].hankeKayttaja!!
@@ -1406,12 +1414,6 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @Nested
     inner class HandleApplicationUpdates {
-
-        @JvmField
-        @RegisterExtension
-        val greenMail: GreenMailExtension =
-            GreenMailExtension(ServerSetupTest.SMTP)
-                .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication())
 
         /** The timestamp used in the initial DB migration. */
         private val placeholderUpdateTime = OffsetDateTime.parse("2017-01-01T00:00:00Z")

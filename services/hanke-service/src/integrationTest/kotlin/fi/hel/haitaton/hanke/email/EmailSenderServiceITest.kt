@@ -10,8 +10,8 @@ import assertk.assertions.startsWith
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
-import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import jakarta.mail.internet.MimeMessage
@@ -27,7 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 private const val TEST_EMAIL = "test@test.test"
 private const val HAITATON_NO_REPLY = "no-reply@hel.fi"
 private const val APPLICATION_IDENTIFIER = "JS2300001"
-private const val DEFAULT_INVITER_NAME = "Kalle Kutsuja"
+private const val DEFAULT_INVITER_NAME = "Matti Meikäläinen"
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -158,7 +158,8 @@ class EmailSenderServiceITest : DatabaseTest() {
                 contains("http://localhost:3001/${data.invitationToken}")
             }
             assertThat(htmlBody).all {
-                contains("${data.inviterName} (${data.inviterEmail})")
+                val htmlEscapedName = "Matti Meik&auml;l&auml;inen"
+                contains("$htmlEscapedName (${data.inviterEmail})")
                 contains("hankkeelle <b>${data.hankeNimi} (${data.hankeTunnus})</b>.")
                 contains("""<a href="http://localhost:3001/${data.invitationToken}">""")
             }
@@ -207,13 +208,15 @@ class EmailSenderServiceITest : DatabaseTest() {
                 contains("${data.inviterName} (${data.inviterEmail}) on")
                 contains("tehnyt johtoselvityshakemuksen (${data.applicationIdentifier})")
                 contains("hankkeella ${data.hankeTunnus}")
-                contains("rooliin ${data.roleType.text()}.")
+                contains("rooliin ${data.roleType.value}.")
                 contains("Tarkastele hakemusta Haitattomassa: http://localhost:3001")
             }
             assertThat(htmlBody).all {
-                contains("${data.inviterName} (${data.inviterEmail})")
+                val htmlEscapedName = "Matti Meik&auml;l&auml;inen"
+                val htmlEscapedRole = "ty&ouml;n suorittaja"
+                contains("$htmlEscapedName (${data.inviterEmail})")
                 contains("johtoselvityshakemuksen (${data.applicationIdentifier})")
-                contains("rooliin ${data.roleType.text()}")
+                contains("rooliin $htmlEscapedRole")
                 contains("""<a href="http://localhost:3001">""")
             }
         }
@@ -249,7 +252,7 @@ class EmailSenderServiceITest : DatabaseTest() {
     private fun hankeInvitationData(inviterName: String = DEFAULT_INVITER_NAME) =
         HankeInvitationData(
             inviterName = inviterName,
-            inviterEmail = "kalle.kutsuja@test.fi",
+            inviterEmail = "matti.meikalainen@test.fi",
             recipientEmail = TEST_EMAIL,
             hankeTunnus = "HAI24-1",
             hankeNimi = "Mannerheimintien liikenneuudistus",
@@ -259,13 +262,11 @@ class EmailSenderServiceITest : DatabaseTest() {
     private fun applicationInvitationData(inviterName: String = DEFAULT_INVITER_NAME) =
         ApplicationInvitationData(
             inviterName = inviterName,
-            inviterEmail = "kalle.kutsuja@test.fi",
+            inviterEmail = "matti.meikalainen@test.fi",
             recipientEmail = TEST_EMAIL,
             applicationType = ApplicationType.CABLE_REPORT,
             applicationIdentifier = APPLICATION_IDENTIFIER,
             hankeTunnus = "HAI24-1",
-            roleType = ContactType.RAKENNUTTAJA,
+            roleType = ApplicationContactType.TYON_SUORITTAJA,
         )
-
-    private fun ContactType.text() = toString().lowercase()
 }

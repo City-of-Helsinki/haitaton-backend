@@ -22,14 +22,32 @@ import assertk.assertions.messageContains
 import assertk.assertions.prop
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.application.ApplicationArgumentException
+import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
+import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
+import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
+import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
+import fi.hel.haitaton.hanke.email.ApplicationInvitationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.HankeInvitationData
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.asianHoitajaCustomerContact
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createApplicationEntity
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createCableReportApplicationData
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createCompanyCustomer
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createContact
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationIdentifier
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationName
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaApplicationContact
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaCustomerContact
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.rakennuttajaCustomerContact
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.defaultNimi
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
@@ -47,6 +65,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.toChangeLogJsonString
+import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -58,6 +77,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
@@ -82,6 +102,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     @Autowired private lateinit var hankeKayttajaRepository: HankeKayttajaRepository
     @Autowired private lateinit var permissionRepository: PermissionRepository
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
+    @Autowired private lateinit var applicationRepository: ApplicationRepository
 
     @MockkBean private lateinit var emailSenderService: EmailSenderService
 
@@ -266,17 +287,24 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `Does nothing if application has no contacts`() {
             val hanke = hankeFactory.saveEntity()
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
-                    customerWithContacts = AlluDataFactory.createCompanyCustomer().withContacts(),
-                    contractorWithContacts = AlluDataFactory.createCompanyCustomer().withContacts()
+                createCableReportApplicationData(
+                    customerWithContacts = createCompanyCustomer().withContacts(),
+                    contractorWithContacts = createCompanyCustomer().withContacts()
                 )
             val application =
-                AlluDataFactory.createApplicationEntity(
+                createApplicationEntity(
+                    applicationIdentifier = defaultApplicationIdentifier,
                     applicationData = applicationData,
                     hanke = hanke
                 )
 
-            hankeKayttajaService.saveNewTokensFromApplication(application, 1, USERNAME)
+            hankeKayttajaService.saveNewTokensFromApplication(
+                application,
+                hanke.id!!,
+                hanke.hankeTunnus!!,
+                hanke.nimi!!,
+                USERNAME
+            )
 
             assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
             assertThat(hankeKayttajaRepository.findAll()).isEmpty()
@@ -286,27 +314,34 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `With different contact emails creates tokens for them all`() {
             val hanke = hankeFactory.saveEntity()
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                createCableReportApplicationData(
                     customerWithContacts =
-                        AlluDataFactory.createCompanyCustomer()
+                        createCompanyCustomer()
                             .withContacts(
-                                AlluDataFactory.createContact(email = "email1"),
-                                AlluDataFactory.createContact(email = "email2")
+                                createContact(email = "email1"),
+                                createContact(email = "email2")
                             ),
                     contractorWithContacts =
-                        AlluDataFactory.createCompanyCustomer()
+                        createCompanyCustomer()
                             .withContacts(
-                                AlluDataFactory.createContact(email = "email3"),
-                                AlluDataFactory.createContact(email = "email4")
+                                createContact(email = "email3"),
+                                createContact(email = "email4")
                             )
                 )
             val application =
-                AlluDataFactory.createApplicationEntity(
+                createApplicationEntity(
+                    applicationIdentifier = defaultApplicationIdentifier,
                     applicationData = applicationData,
                     hanke = hanke
                 )
 
-            hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!, USERNAME)
+            hankeKayttajaService.saveNewTokensFromApplication(
+                application,
+                hanke.id!!,
+                hanke.hankeTunnus!!,
+                hanke.nimi!!,
+                USERNAME
+            )
 
             val tunnisteet = kayttajaTunnisteRepository.findAll()
             assertThat(tunnisteet).hasSize(4)
@@ -329,34 +364,140 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         }
 
         @Test
+        fun `With application identifier null throws exception`() {
+            val hanke = hankeFactory.saveEntity()
+            val application =
+                createApplicationEntity(
+                    hanke = hanke,
+                    applicationIdentifier = null,
+                    userId = USERNAME
+                )
+
+            val exception =
+                assertThrows<ApplicationArgumentException> {
+                    hankeKayttajaService.saveNewTokensFromApplication(
+                        application,
+                        hanke.id!!,
+                        hanke.hankeTunnus!!,
+                        hanke.nimi!!,
+                        USERNAME
+                    )
+                }
+
+            assertThat(exception.message).isEqualTo("Application identifier null")
+        }
+
+        @Test
+        fun `When no inviter info should skip invitations`() {
+            val hanke = hankeFactory.saveMinimal(nimi = defaultNimi)
+            val application =
+                createApplicationEntity(
+                    hanke = hanke,
+                    applicationIdentifier = defaultApplicationIdentifier,
+                    userId = USERNAME
+                )
+
+            hankeKayttajaService.saveNewTokensFromApplication(
+                application,
+                hanke.id!!,
+                hanke.hankeTunnus!!,
+                hanke.nimi!!,
+                USERNAME
+            )
+
+            verify { emailSenderService wasNot Called }
+        }
+
+        @Test
+        fun `With different contact emails sends invitations`() {
+            val applicationData =
+                createCableReportApplicationData(
+                    customerWithContacts = hakijaCustomerContact,
+                    contractorWithContacts = suorittajaCustomerContact,
+                    representativeWithContacts = asianHoitajaCustomerContact,
+                    propertyDeveloperWithContacts = rakennuttajaCustomerContact
+                )
+            val cableReportWithoutHanke =
+                CableReportWithoutHanke(ApplicationType.CABLE_REPORT, applicationData)
+            val (hanke, applications) =
+                hankeFactory.saveGenerated(cableReportWithoutHanke, USERNAME)
+            val applicationEntity =
+                with(applications.first()) { applicationRepository.findById(id!!).orElseThrow() }
+                    .apply { applicationIdentifier = defaultApplicationIdentifier }
+            val capturedHankeMails = mutableListOf<HankeInvitationData>()
+            val capturedApplicationMails = mutableListOf<ApplicationInvitationData>()
+            justRun { emailSenderService.sendHankeInvitationEmail(capture(capturedHankeMails)) }
+            justRun {
+                emailSenderService.sendApplicationInvitationEmail(capture(capturedApplicationMails))
+            }
+
+            hankeKayttajaService.saveNewTokensFromApplication(
+                applicationEntity,
+                hanke.id!!,
+                hanke.hankeTunnus!!,
+                hanke.nimi!!,
+                USERNAME
+            )
+
+            assertThat(capturedHankeMails).each { inv ->
+                inv.transform { it.inviterEmail }.isEqualTo(hakijaApplicationContact.email)
+                inv.transform { it.inviterName }.isEqualTo(hakijaApplicationContact.name)
+                inv.transform { it.invitationToken }.isNotEmpty()
+                inv.transform { it.recipientEmail }.isIn(*expectedRecipients)
+                inv.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
+                inv.transform { it.hankeNimi }.isEqualTo(hanke.nimi)
+            }
+            assertThat(capturedApplicationMails).each { inv ->
+                inv.transform { it.inviterEmail }.isEqualTo(hakijaApplicationContact.email)
+                inv.transform { it.inviterName }.isEqualTo(hakijaApplicationContact.name)
+                inv.transform { it.applicationIdentifier }
+                    .isEqualTo(applicationEntity.applicationIdentifier)
+                inv.transform { it.applicationType }.isEqualTo(applicationEntity.applicationType)
+                inv.transform { it.roleType }.isIn(ASIANHOITAJA, RAKENNUTTAJA, TYON_SUORITTAJA)
+                inv.transform { it.recipientEmail }.isIn(*expectedRecipients)
+                inv.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
+            }
+            // 4 contacts but one is the sender
+            verify(exactly = 3) { emailSenderService.sendHankeInvitationEmail(any()) }
+            verify(exactly = 3) { emailSenderService.sendApplicationInvitationEmail(any()) }
+        }
+
+        @Test
         fun `With non-unique contact emails creates only the unique ones`() {
             val hanke = hankeFactory.saveEntity()
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                createCableReportApplicationData(
                     customerWithContacts =
-                        AlluDataFactory.createCompanyCustomer()
+                        createCompanyCustomer()
                             .withContacts(
-                                AlluDataFactory.createContact(email = "email1"),
-                                AlluDataFactory.createContact(email = "email2"),
-                                AlluDataFactory.createContact(
+                                createContact(email = "email1"),
+                                createContact(email = "email2"),
+                                createContact(
                                     email = "email2",
                                     firstName = "Other",
                                     lastName = "Name"
                                 ),
                             ),
                     contractorWithContacts =
-                        AlluDataFactory.createCompanyCustomer()
+                        createCompanyCustomer()
                             .withContacts(
-                                AlluDataFactory.createContact(email = "email1"),
+                                createContact(email = "email1"),
                             )
                 )
             val application =
-                AlluDataFactory.createApplicationEntity(
+                createApplicationEntity(
+                    applicationIdentifier = defaultApplicationIdentifier,
                     applicationData = applicationData,
                     hanke = hanke
                 )
 
-            hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!, USERNAME)
+            hankeKayttajaService.saveNewTokensFromApplication(
+                application,
+                hanke.id!!,
+                hanke.hankeTunnus!!,
+                hanke.nimi!!,
+                USERNAME
+            )
 
             assertThat(kayttajaTunnisteRepository.findAll()).hasSize(2)
             val kayttajat = hankeKayttajaRepository.findAll()
@@ -374,28 +515,35 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             saveUserAndToken(hanke.id!!, "Existing User", "email1")
             saveUserAndToken(hanke.id!!, "Other User", "email4")
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                createCableReportApplicationData(
                     customerWithContacts =
-                        AlluDataFactory.createCompanyCustomer()
+                        createCompanyCustomer()
                             .withContacts(
-                                AlluDataFactory.createContact(email = "email1"),
-                                AlluDataFactory.createContact(email = "email2")
+                                createContact(email = "email1"),
+                                createContact(email = "email2")
                             ),
                     contractorWithContacts =
-                        AlluDataFactory.createCompanyCustomer()
+                        createCompanyCustomer()
                             .withContacts(
-                                AlluDataFactory.createContact(email = "email3"),
-                                AlluDataFactory.createContact(email = "email4")
+                                createContact(email = "email3"),
+                                createContact(email = "email4")
                             )
                 )
             val application =
-                AlluDataFactory.createApplicationEntity(
+                createApplicationEntity(
+                    applicationIdentifier = defaultApplicationIdentifier,
                     applicationData = applicationData,
                     hanke = hanke
                 )
             assertThat(kayttajaTunnisteRepository.findAll()).hasSize(2)
 
-            hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!, USERNAME)
+            hankeKayttajaService.saveNewTokensFromApplication(
+                application,
+                hanke.id!!,
+                hanke.hankeTunnus!!,
+                hanke.nimi!!,
+                USERNAME
+            )
 
             assertThat(kayttajaTunnisteRepository.findAll()).hasSize(4)
             val kayttajat = hankeKayttajaRepository.findAll()
@@ -415,28 +563,35 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             saveUserAndPermission(hanke.id!!, "Existing User", "email1")
             saveUserAndPermission(hanke.id!!, "Other User", "email4")
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                createCableReportApplicationData(
                     customerWithContacts =
-                        AlluDataFactory.createCompanyCustomer()
+                        createCompanyCustomer()
                             .withContacts(
-                                AlluDataFactory.createContact(email = "email1"),
-                                AlluDataFactory.createContact(email = "email2")
+                                createContact(email = "email1"),
+                                createContact(email = "email2")
                             ),
                     contractorWithContacts =
-                        AlluDataFactory.createCompanyCustomer()
+                        createCompanyCustomer()
                             .withContacts(
-                                AlluDataFactory.createContact(email = "email3"),
-                                AlluDataFactory.createContact(email = "email4")
+                                createContact(email = "email3"),
+                                createContact(email = "email4")
                             )
                 )
             val application =
-                AlluDataFactory.createApplicationEntity(
+                createApplicationEntity(
+                    applicationIdentifier = defaultApplicationIdentifier,
                     applicationData = applicationData,
                     hanke = hanke
                 )
             assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
 
-            hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!, USERNAME)
+            hankeKayttajaService.saveNewTokensFromApplication(
+                application,
+                hanke.id!!,
+                hanke.hankeTunnus!!,
+                hanke.nimi!!,
+                USERNAME
+            )
 
             val tunnisteet = kayttajaTunnisteRepository.findAll()
             assertThat(tunnisteet).hasSize(2)
@@ -458,20 +613,25 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `Writes new users and tokens to audit log`() {
             val hanke = hankeFactory.saveEntity()
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
-                    customerWithContacts =
-                        AlluDataFactory.createCompanyCustomer().withContact(email = "email1"),
-                    contractorWithContacts =
-                        AlluDataFactory.createCompanyCustomer().withContact(email = "email3"),
+                createCableReportApplicationData(
+                    customerWithContacts = createCompanyCustomer().withContact(email = "email1"),
+                    contractorWithContacts = createCompanyCustomer().withContact(email = "email3"),
                 )
             val application =
-                AlluDataFactory.createApplicationEntity(
+                createApplicationEntity(
+                    applicationIdentifier = defaultApplicationIdentifier,
                     applicationData = applicationData,
                     hanke = hanke
                 )
             auditLogRepository.deleteAll()
 
-            hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!, USERNAME)
+            hankeKayttajaService.saveNewTokensFromApplication(
+                application,
+                hanke.id!!,
+                hanke.hankeTunnus!!,
+                hanke.nimi!!,
+                USERNAME
+            )
 
             assertThat(auditLogRepository.findAll()).all {
                 hasSize(4)
@@ -1059,7 +1219,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         t.prop(KayttajaTunnisteEntity::id).isNotNull()
         t.prop(KayttajaTunnisteEntity::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
         t.prop(KayttajaTunnisteEntity::createdAt).isRecent()
-        t.prop(KayttajaTunnisteEntity::sentAt).isNull()
+        t.prop(KayttajaTunnisteEntity::sentAt).isRecent()
         t.prop(KayttajaTunnisteEntity::tunniste).matches(Regex(kayttajaTunnistePattern))
         t.prop(KayttajaTunnisteEntity::hankeKayttaja).isNotNull()
     }
@@ -1143,5 +1303,12 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 kayttooikeustaso = kayttooikeustaso,
                 hankeKayttaja = null,
             )
+        )
+
+    private val expectedRecipients =
+        arrayOf(
+            "timo.työnsuorittaja@mail.com",
+            "anssi.asianhoitaja@mail.com",
+            "rane.rakennuttaja@mail.com",
         )
 }

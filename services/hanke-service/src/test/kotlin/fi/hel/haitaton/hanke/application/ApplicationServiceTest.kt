@@ -25,6 +25,7 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withHanke
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -250,13 +251,15 @@ class ApplicationServiceTest {
 
     @Test
     fun `sendApplication saves disclosure logs for successful attempts`() {
+        val hankeEntity =
+            HankeEntity(id = 1, nimi = HankeFactory.defaultNimi, hankeTunnus = HANKE_TUNNUS)
         val applicationEntity =
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = null,
                 userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
+                hanke = hankeEntity,
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
@@ -275,7 +278,6 @@ class ApplicationServiceTest {
         verifySequence {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
-            hankeKayttajaService.saveNewTokensFromApplication(applicationEntity, 1, USERNAME)
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(any())
@@ -283,19 +285,28 @@ class ApplicationServiceTest {
             cableReportService.addAttachment(42, any())
             attachmentService.sendInitialAttachments(42, any())
             cableReportService.getApplicationInformation(42)
+            hankeKayttajaService.saveNewTokensFromApplication(
+                applicationEntity,
+                hankeEntity.id!!,
+                hankeEntity.hankeTunnus!!,
+                hankeEntity.nimi!!,
+                USERNAME
+            )
             applicationRepo.save(any())
         }
     }
 
     @Test
     fun `sendApplication saves disclosure logs for failed attempts`() {
+        val hankeEntity =
+            HankeEntity(hankeTunnus = HANKE_TUNNUS, id = 1, nimi = HankeFactory.defaultNimi)
         val applicationEntity =
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = null,
                 userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
+                hanke = hankeEntity,
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.calculateCombinedArea(any()) } returns 100f
@@ -307,9 +318,9 @@ class ApplicationServiceTest {
 
         val expectedApplication = applicationData.copy(pendingOnClient = false)
         verifySequence {
+            hankeKayttajaService wasNot Called
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
-            hankeKayttajaService.saveNewTokensFromApplication(applicationEntity, 1, USERNAME)
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(any())
@@ -323,13 +334,15 @@ class ApplicationServiceTest {
 
     @Test
     fun `sendApplication doesn't save disclosure logs for login errors`() {
+        val hankeEntity =
+            HankeEntity(hankeTunnus = HANKE_TUNNUS, id = 1, nimi = HankeFactory.defaultNimi)
         val applicationEntity =
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = null,
                 userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeEntity(hankeTunnus = HANKE_TUNNUS, id = 1),
+                hanke = hankeEntity,
             )
         assertThat(applicationEntity.applicationData.areas).isNotNull().isNotEmpty()
         every { applicationRepo.findOneById(3) } returns applicationEntity
@@ -344,7 +357,6 @@ class ApplicationServiceTest {
             disclosureLogService wasNot called
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(any(), any())
-            hankeKayttajaService.saveNewTokensFromApplication(applicationEntity, 1, USERNAME)
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(any())
@@ -357,13 +369,15 @@ class ApplicationServiceTest {
         rockExcavation: Boolean,
         expectedSuffix: String
     ) {
+        val hankeEntity =
+            HankeEntity(hankeTunnus = HANKE_TUNNUS, id = 1, nimi = HankeFactory.defaultNimi)
         val applicationEntity =
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = null,
                 userId = USERNAME,
                 applicationData = applicationData.copy(rockExcavation = rockExcavation),
-                hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
+                hanke = hankeEntity,
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
@@ -387,13 +401,19 @@ class ApplicationServiceTest {
         verifySequence {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
-            hankeKayttajaService.saveNewTokensFromApplication(any(), 1, USERNAME)
             geometriatDao.calculateCombinedArea(any())
             geometriatDao.calculateArea(any())
             cableReportService.create(expectedAlluData)
             disclosureLogService.saveDisclosureLogsForAllu(expectedApplicationData, Status.SUCCESS)
             cableReportService.addAttachment(852, any())
             cableReportService.getApplicationInformation(852)
+            hankeKayttajaService.saveNewTokensFromApplication(
+                any(),
+                hankeEntity.id!!,
+                hankeEntity.hankeTunnus!!,
+                hankeEntity.nimi!!,
+                USERNAME
+            )
             applicationRepo.save(any())
         }
     }
@@ -404,13 +424,15 @@ class ApplicationServiceTest {
         applicationData: ApplicationData,
         path: String,
     ) {
+        val hankeEntity =
+            HankeEntity(hankeTunnus = HANKE_TUNNUS, id = 1, nimi = HankeFactory.defaultNimi)
         val applicationEntity =
             AlluDataFactory.createApplicationEntity(
                 id = 3,
                 alluid = null,
                 userId = USERNAME,
                 applicationData = applicationData,
-                hanke = HankeEntity(id = 1, hankeTunnus = HANKE_TUNNUS),
+                hanke = hankeEntity,
             )
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
@@ -424,9 +446,9 @@ class ApplicationServiceTest {
         verifySequence {
             applicationRepo.findOneById(3)
             geometriatDao.isInsideHankeAlueet(1, any())
-            hankeKayttajaService.saveNewTokensFromApplication(applicationEntity, 1, USERNAME)
             cableReportService wasNot Called
             disclosureLogService wasNot Called
+            hankeKayttajaService wasNot Called
             applicationLoggingService wasNot Called
         }
     }

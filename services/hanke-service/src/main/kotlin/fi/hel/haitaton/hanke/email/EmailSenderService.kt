@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.email
 
-import fi.hel.haitaton.hanke.ContactType
+import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.getResource
 import jakarta.mail.internet.MimeMessage
@@ -33,7 +33,7 @@ data class ApplicationInvitationData(
     val applicationType: ApplicationType,
     val applicationIdentifier: String,
     val hankeTunnus: String,
-    val roleType: ContactType,
+    val roleType: ApplicationContactType,
 )
 
 data class HankeInvitationData(
@@ -103,7 +103,7 @@ class EmailSenderService(
                 "applicationType" to applicationTypeText,
                 "applicationIdentifier" to data.applicationIdentifier,
                 "hankeTunnus" to data.hankeTunnus,
-                "recipientRole" to data.roleType.toString().lowercase(),
+                "recipientRole" to data.roleType.value,
             )
 
         sendHybridEmail(data.recipientEmail, EmailTemplate.INVITATION_APPLICATION, templateData)

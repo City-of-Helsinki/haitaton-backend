@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.application
 
+import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
@@ -207,8 +208,6 @@ open class ApplicationService(
             return application.toApplication()
         }
 
-        hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!, userId)
-
         // The application should no longer be a draft
         application.applicationData = application.applicationData.copy(pendingOnClient = false)
 
@@ -218,14 +217,39 @@ open class ApplicationService(
         logger.info {
             "Application sent, fetching application identifier and status. id=$id, alluid=${application.alluid}."
         }
-        getApplicationInformationFromAllu(application.alluid!!)?.let {
-            application.applicationIdentifier = it.applicationId
-            application.alluStatus = it.status
+        getApplicationInformationFromAllu(application.alluid!!)?.let { response ->
+            application.applicationIdentifier = response.applicationId
+            application.alluStatus = response.status
+            initAccessForApplication(application, hanke, userId)
         }
 
         logger.info("Sent application id=$id, alluid=${application.alluid}")
         // Save only if sendApplicationToAllu didn't throw an exception
         return applicationRepository.save(application).toApplication()
+    }
+
+    private fun initAccessForApplication(
+        application: ApplicationEntity,
+        hanke: HankeEntity,
+        userId: String
+    ) {
+        val hankeId = hanke.id
+        val hankeTunnus = hanke.hankeTunnus
+        val hankeNimi = hanke.nimi
+
+        if (hankeId == null || hankeTunnus == null || hankeNimi == null) {
+            throw ApplicationArgumentException(
+                "Hanke info missing: (id=$hankeId, tunnus=$hankeTunnus, nimi=$hankeNimi)"
+            )
+        }
+
+        hankeKayttajaService.saveNewTokensFromApplication(
+            application = application,
+            hankeId = hankeId,
+            hankeTunnus = hankeTunnus,
+            hankeNimi = hankeNimi,
+            userId = userId
+        )
     }
 
     @Transactional
