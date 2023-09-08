@@ -84,12 +84,13 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.junit.jupiter.Testcontainers
 
-private const val USER_NAME = "test7358"
+private const val HANKE_TUNNUS = "HAI23-41"
 private const val NAME_1 = "etu1 suku1"
 private const val NAME_2 = "etu2 suku2"
 private const val NAME_3 = "etu3 suku3"
 private const val NAME_4 = "etu4 suku4"
 private const val NAME_SOMETHING = "Som Et Hing"
+private const val USER_NAME = "test7358"
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -121,11 +122,9 @@ class HankeServiceITests : DatabaseTest() {
 
     @Nested
     inner class GetHankeId {
-        private val hankeTunnus = "HAI23-41"
-
         @Test
         fun `Returns null if hanke not found`() {
-            val response = hankeService.getHankeId(hankeTunnus)
+            val response = hankeService.getHankeId(HANKE_TUNNUS)
 
             assertThat(response).isNull()
         }
@@ -142,14 +141,12 @@ class HankeServiceITests : DatabaseTest() {
 
     @Nested
     inner class GetHankeIdOrThrow {
-        private val hankeTunnus = "HAI23-41"
-
         @Test
         fun `Throws exception if hanke not found`() {
-            assertFailure { hankeService.getHankeIdOrThrow(hankeTunnus) }
+            assertFailure { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) }
                 .all {
                     hasClass(HankeNotFoundException::class)
-                    messageContains(hankeTunnus)
+                    messageContains(HANKE_TUNNUS)
                 }
         }
 
@@ -176,7 +173,7 @@ class HankeServiceITests : DatabaseTest() {
         val returnedHanke = hankeService.createHanke(hanke)
 
         // Verify privileges
-        PermissionCode.values().forEach {
+        PermissionCode.entries.forEach {
             assertThat(permissionService.hasPermission(returnedHanke.id!!, USER_NAME, it)).isTrue()
         }
         // Check the return object in general:

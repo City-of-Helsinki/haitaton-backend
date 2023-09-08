@@ -26,6 +26,9 @@ class KayttooikeustasoEntity(
     val permissionCode: Long,
 ) {
     fun hasPermission(permission: PermissionCode): Boolean = permissionCode and permission.code > 0
+
+    val permissionCodes: List<PermissionCode>
+        get() = PermissionCode.entries.filter(this::hasPermission)
 }
 
 @Repository

@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaController.Tunnistautuminen
+import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -72,13 +73,14 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     inner class Whoami {
         private val url = "/hankkeet/$HANKE_TUNNUS/whoami"
         private val hankeId = 14
-        private val kayttooikeustaso = Kayttooikeustaso.KAIKKIEN_MUOKKAUS
+        private val kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS
+        private val kayttooikeudet = listOf(VIEW, EDIT)
 
         private val permissionEntity =
             PermissionEntity(
                 hankeId = hankeId,
                 userId = USERNAME,
-                kayttooikeustaso = KayttooikeustasoEntity(0, kayttooikeustaso, 0)
+                kayttooikeustasoEntity = KayttooikeustasoEntity(0, kayttooikeustaso, 1 or 4)
             )
 
         @Test
@@ -111,7 +113,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
 
             val response: WhoamiResponse = get(url).andExpect(status().isOk).andReturnBody()
 
-            val expectedResponse = WhoamiResponse(USERNAME, kayttooikeustaso)
+            val expectedResponse = WhoamiResponse(USERNAME, kayttooikeustaso, kayttooikeudet)
             assertThat(response).isEqualTo(expectedResponse)
             verifySequence {
                 hankeService.getHankeIdOrThrow(HANKE_TUNNUS)
