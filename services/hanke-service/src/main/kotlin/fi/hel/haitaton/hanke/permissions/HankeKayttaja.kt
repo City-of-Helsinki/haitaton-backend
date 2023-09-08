@@ -88,4 +88,6 @@ interface HankeKayttajaRepository : JpaRepository<HankeKayttajaEntity, UUID> {
         hankeId: Int,
         sahkopostit: List<String>
     ): List<HankeKayttajaEntity>
+
+    fun findByPermissionId(permissionId: Int): HankeKayttajaEntity?
 }

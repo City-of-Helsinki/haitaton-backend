@@ -14,19 +14,26 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isIn
+import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.matches
 import assertk.assertions.messageContains
 import assertk.assertions.prop
+import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.email.EmailSenderService
+import fi.hel.haitaton.hanke.email.HankeInvitationData
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationName
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
+import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
@@ -40,8 +47,15 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.toChangeLogJsonString
+import io.mockk.checkUnnecessaryStub
+import io.mockk.clearAllMocks
+import io.mockk.confirmVerified
+import io.mockk.justRun
+import io.mockk.verify
 import java.time.OffsetDateTime
 import java.util.UUID
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -60,6 +74,7 @@ const val kayttajaTunnistePattern = "[a-zA-z0-9]{24}"
 class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Autowired private lateinit var hankeKayttajaService: HankeKayttajaService
+    @Autowired private lateinit var permissionService: PermissionService
 
     @Autowired private lateinit var hankeFactory: HankeFactory
 
@@ -68,7 +83,18 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     @Autowired private lateinit var permissionRepository: PermissionRepository
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
 
-    @Autowired private lateinit var permissionService: PermissionService
+    @MockkBean private lateinit var emailSenderService: EmailSenderService
+
+    @BeforeEach
+    fun setup() {
+        clearAllMocks()
+    }
+
+    @AfterEach
+    fun tearDown() {
+        checkUnnecessaryStub()
+        confirmVerified(emailSenderService)
+    }
 
     @Nested
     inner class GetKayttajatByHankeId {
@@ -101,6 +127,59 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 assertThat(kayttooikeustaso).isEqualTo(entity.kayttajaTunniste!!.kayttooikeustaso)
                 assertThat(tunnistautunut).isEqualTo(false)
             }
+        }
+    }
+
+    @Nested
+    inner class GetKayttajaByUserId {
+
+        @Test
+        fun `When user exists should return current hanke user`() {
+            val hankeWithApplications = hankeFactory.saveGenerated(userId = USERNAME)
+
+            val result: HankeKayttajaEntity? =
+                hankeKayttajaService.getKayttajaByUserId(hankeWithApplications.hanke.id!!, USERNAME)
+
+            assertThat(result).isNotNull()
+            with(result!!) {
+                assertThat(id).isNotNull()
+                assertThat(sahkoposti).isEqualTo(teppoEmail)
+                assertThat(nimi).isEqualTo(TEPPO_TESTI)
+                assertThat(permission?.kayttooikeustaso).isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
+                assertThat(permission).isNotNull()
+            }
+        }
+
+        @Test
+        fun `When no hanke should return null`() {
+            val result: HankeKayttajaEntity? =
+                hankeKayttajaService.getKayttajaByUserId(123, USERNAME)
+
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `When no related permission should return null`() {
+            val hanke = hankeFactory.save()
+            permissionRepository.deleteAll()
+
+            val result: HankeKayttajaEntity? =
+                hankeKayttajaService.getKayttajaByUserId(hanke.id!!, USERNAME)
+
+            assertThat(result).isNull()
+        }
+
+        @Test
+        fun `When no kayttaja should return null`() {
+            val hankeWithApplications = hankeFactory.saveGenerated(userId = USERNAME)
+            val hankeId = hankeWithApplications.hanke.id!!
+            val createdKayttaja = hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)!!
+            hankeKayttajaRepository.deleteById(createdKayttaja.id)
+
+            val result: HankeKayttajaEntity? =
+                hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)
+
+            assertThat(result).isNull()
         }
     }
 
@@ -483,6 +562,27 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                     "ali.kontakti@meili.com",
                 )
             assertThat(auditLogRepository.findAll()).isEmpty()
+        }
+
+        @Test
+        fun `Sends emails for new hanke users`() {
+            val hanke = hankeFactory.saveGenerated(userId = USERNAME).hanke
+            val hankeWithYhteystiedot = hanke.withYhteystiedot() // 4 sub contacts
+            val capturedEmails = mutableListOf<HankeInvitationData>()
+            justRun { emailSenderService.sendHankeInvitationEmail(capture(capturedEmails)) }
+
+            hankeKayttajaService.saveNewTokensFromHanke(hankeWithYhteystiedot, USERNAME)
+
+            verify(exactly = 4) { emailSenderService.sendHankeInvitationEmail(any()) }
+            assertThat(capturedEmails).each { inv ->
+                inv.transform { it.inviterName }.isEqualTo(TEPPO_TESTI)
+                inv.transform { it.inviterEmail }.isEqualTo(teppoEmail)
+                inv.transform { it.recipientEmail }
+                    .isIn("yhteys-email1", "yhteys-email2", "yhteys-email3", "yhteys-email4")
+                inv.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus!!)
+                inv.transform { it.hankeNimi }.isEqualTo(defaultApplicationName)
+                inv.transform { it.invitationToken }.isNotEmpty()
+            }
         }
     }
 
