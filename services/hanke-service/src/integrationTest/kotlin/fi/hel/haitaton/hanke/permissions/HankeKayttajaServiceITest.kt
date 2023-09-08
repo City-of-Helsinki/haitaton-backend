@@ -173,8 +173,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `When no kayttaja should return null`() {
             val hankeWithApplications = hankeFactory.saveGenerated(userId = USERNAME)
             val hankeId = hankeWithApplications.hanke.id!!
-            val jou = hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)!!
-            hankeKayttajaRepository.deleteById(jou.id)
+            val createdKayttaja = hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)!!
+            hankeKayttajaRepository.deleteById(createdKayttaja.id)
 
             val result: HankeKayttajaDto? =
                 hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)
