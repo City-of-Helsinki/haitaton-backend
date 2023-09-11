@@ -35,8 +35,9 @@ internal class HankePublicValidatorTest {
     }
 
     @Test
-    fun `Empty alikontaktit is ok`() {
-        val hanke = completeHanke().apply { omistajat.first().apply { alikontaktit = emptyList() } }
+    fun `Empty yhteyshenkilot is ok`() {
+        val hanke =
+            completeHanke().apply { omistajat.first().apply { yhteyshenkilot = emptyList() } }
 
         val result = HankePublicValidator.validateHankeHasMandatoryFields(hanke)
 
@@ -44,10 +45,10 @@ internal class HankePublicValidatorTest {
     }
 
     @Test
-    fun `Alikontaktit missing data is not ok`() {
+    fun `Yhteyshenkilot missing data is not ok`() {
         val hanke =
             completeHanke().apply {
-                omistajat.first().apply { alikontaktit = listOf(Yhteyshenkilo("", "", "", "")) }
+                omistajat.first().apply { yhteyshenkilot = listOf(Yhteyshenkilo("", "", "", "")) }
             }
 
         val result = HankePublicValidator.validateHankeHasMandatoryFields(hanke)
@@ -55,10 +56,10 @@ internal class HankePublicValidatorTest {
         assertFalse(result.isOk())
         assertThat(result.errorPaths())
             .containsExactlyInAnyOrder(
-                "alikontaktit[0].etunimi",
-                "alikontaktit[0].sukunimi",
-                "alikontaktit[0].email",
-                "alikontaktit[0].puhelinnumero"
+                "yhteyshenkilot[0].etunimi",
+                "yhteyshenkilot[0].sukunimi",
+                "yhteyshenkilot[0].email",
+                "yhteyshenkilot[0].puhelinnumero"
             )
     }
 

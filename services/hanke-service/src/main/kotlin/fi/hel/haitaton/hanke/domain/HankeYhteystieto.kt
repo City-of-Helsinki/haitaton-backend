@@ -31,8 +31,8 @@ data class HankeYhteystieto(
 
     // Optional subcontacts (person)
     @JsonView(ChangeLogView::class)
-    @field:Schema(description = "Sub-contacts, i.e. contacts of this contact")
-    var alikontaktit: List<Yhteyshenkilo> = emptyList(),
+    @field:Schema(description = "Contact persons for this contact.")
+    var yhteyshenkilot: List<Yhteyshenkilo> = emptyList(),
 
     // Optional
     @JsonView(ChangeLogView::class)

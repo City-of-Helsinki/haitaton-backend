@@ -185,7 +185,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(muu.osasto).isNotEmpty
         assertThat(muu.rooli).isNotEmpty
         listOf(omistaja, rakennuttaja, toteuttaja, muu).forEach {
-            verifyYhteyshenkilot(it.alikontaktit)
+            verifyYhteyshenkilot(it.yhteyshenkilot)
         }
         // Check that all fields got there and back (with just one of the Yhteystietos):
         assertThat(omistaja.email).isEqualTo("email1")
@@ -1580,7 +1580,7 @@ class HankeServiceITests : DatabaseTest() {
           "osasto":"osasto$i",
           "rooli": "Isännöitsijä$i",
           "tyyppi": "YHTEISO",
-          "alikontaktit": ${expectedYhteyshenkilot(i)}
+          "yhteyshenkilot": ${expectedYhteyshenkilot(i)}
         }"""
 
     private fun expectedYhteyshenkilot(i: Int) =

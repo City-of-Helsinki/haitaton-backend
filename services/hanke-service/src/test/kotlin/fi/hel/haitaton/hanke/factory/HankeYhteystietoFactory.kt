@@ -23,7 +23,7 @@ object HankeYhteystietoFactory {
             modifiedAt = getCurrentTimeUTC(),
             rooli = "Isännöitsijä",
             tyyppi = YRITYS,
-            alikontaktit =
+            yhteyshenkilot =
                 listOf(Yhteyshenkilo("Ali", "Kontakti", "ali.kontakti@meili.com", "050-4567890"))
         )
     }
@@ -42,7 +42,7 @@ object HankeYhteystietoFactory {
             osasto = "osasto$i",
             rooli = "Isännöitsijä$i",
             tyyppi = YHTEISO,
-            alikontaktit =
+            yhteyshenkilot =
                 listOf(
                     Yhteyshenkilo(
                         sukunimi = "yhteys-suku$i",

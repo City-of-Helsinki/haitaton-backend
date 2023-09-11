@@ -61,9 +61,12 @@ object HankePublicValidator {
     private fun validateYhteystieto(yhteystieto: HankeYhteystieto, path: String): ValidationResult =
         validate { notBlank(yhteystieto.nimi, "$path.nimi") }
             .and { notBlank(yhteystieto.email, "$path.email") }
-            .andAllIn(yhteystieto.alikontaktit, "alikontaktit", ::validateAlikontakti)
+            .andAllIn(yhteystieto.yhteyshenkilot, "yhteyshenkilot", ::validateYhteyshenkilo)
 
-    private fun validateAlikontakti(yhteyshenkilo: Yhteyshenkilo, path: String): ValidationResult =
+    private fun validateYhteyshenkilo(
+        yhteyshenkilo: Yhteyshenkilo,
+        path: String
+    ): ValidationResult =
         validate { notBlank(yhteyshenkilo.etunimi, "$path.etunimi") }
             .and { notBlank(yhteyshenkilo.sukunimi, "$path.sukunimi") }
             .and { notBlank(yhteyshenkilo.email, "$path.email") }

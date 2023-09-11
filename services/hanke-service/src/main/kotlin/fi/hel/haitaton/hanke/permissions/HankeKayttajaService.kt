@@ -80,7 +80,7 @@ class HankeKayttajaService(
         val contacts =
             hanke
                 .extractYhteystiedot()
-                .flatMap { it.alikontaktit }
+                .flatMap { it.yhteyshenkilot }
                 .mapNotNull { userContactOrNull(it.fullName(), it.email) }
 
         filterNewContacts(hankeId, contacts).forEach { contact ->

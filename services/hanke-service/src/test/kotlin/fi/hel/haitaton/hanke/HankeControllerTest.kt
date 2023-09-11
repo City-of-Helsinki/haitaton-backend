@@ -266,7 +266,7 @@ class HankeControllerTest {
                     osasto = null,
                     rooli = null,
                     tyyppi = YKSITYISHENKILO,
-                    alikontaktit =
+                    yhteyshenkilot =
                         listOf(
                             Yhteyshenkilo(
                                 "Ali",
