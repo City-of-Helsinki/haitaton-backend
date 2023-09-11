@@ -1588,7 +1588,8 @@ class HankeServiceITests : DatabaseTest() {
             | "etunimi": "yhteys-etu$i",
             | "sukunimi": "yhteys-suku$i",
             | "email": "yhteys-email$i",
-            | "puhelinnumero": "010$i$i$i$i$i$i$i"
+            | "puhelinnumero": "010$i$i$i$i$i$i$i",
+            | "perustaja": false
             | }]""".trimMargin()
 
     /**

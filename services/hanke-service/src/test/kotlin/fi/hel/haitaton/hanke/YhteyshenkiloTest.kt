@@ -19,7 +19,7 @@ class YhteyshenkiloTest {
         lastName: String,
         expectedResult: String
     ) {
-        Yhteyshenkilo(firstName, lastName, "dummymail", "04012345678").let {
+        Yhteyshenkilo(firstName, lastName, "dummymail", "04012345678", false).let {
             assertThat(it.fullName()).isEqualTo(expectedResult)
         }
     }

@@ -48,7 +48,9 @@ internal class HankePublicValidatorTest {
     fun `Yhteyshenkilot missing data is not ok`() {
         val hanke =
             completeHanke().apply {
-                omistajat.first().apply { yhteyshenkilot = listOf(Yhteyshenkilo("", "", "", "")) }
+                omistajat.first().apply {
+                    yhteyshenkilot = listOf(Yhteyshenkilo("", "", "", "", false))
+                }
             }
 
         val result = HankePublicValidator.validateHankeHasMandatoryFields(hanke)

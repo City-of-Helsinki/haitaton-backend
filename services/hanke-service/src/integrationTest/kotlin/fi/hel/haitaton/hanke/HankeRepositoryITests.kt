@@ -234,5 +234,5 @@ internal class HankeRepositoryITests : DatabaseTest() {
         )
 
     private fun createYhteyshenkilo() =
-        Yhteyshenkilo("Ali", "Kontakti", "ali.kontakti@testi.com", "050-3785641")
+        Yhteyshenkilo("Ali", "Kontakti", "ali.kontakti@testi.com", "050-3785641", false)
 }

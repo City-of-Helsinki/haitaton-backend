@@ -24,7 +24,9 @@ object HankeYhteystietoFactory {
             rooli = "Isännöitsijä",
             tyyppi = YRITYS,
             yhteyshenkilot =
-                listOf(Yhteyshenkilo("Ali", "Kontakti", "ali.kontakti@meili.com", "050-4567890"))
+                listOf(
+                    Yhteyshenkilo("Ali", "Kontakti", "ali.kontakti@meili.com", "050-4567890", false)
+                )
         )
     }
 
@@ -49,6 +51,7 @@ object HankeYhteystietoFactory {
                         etunimi = "yhteys-etu$i",
                         email = "yhteys-email$i",
                         puhelinnumero = dummyPhoneNumber(i),
+                        perustaja = false,
                     )
                 )
         )

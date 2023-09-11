@@ -117,6 +117,7 @@ data class Yhteyshenkilo(
     @field:Schema(description = "Last name") val sukunimi: String,
     @field:Schema(description = "Email address") val email: String,
     @field:Schema(description = "Phone number") val puhelinnumero: String,
+    @field:Schema(description = "Whether this is the founder of the hanke") val perustaja: Boolean,
 ) {
     fun fullName(): String = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
 }
