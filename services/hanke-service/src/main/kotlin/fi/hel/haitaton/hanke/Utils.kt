@@ -104,6 +104,9 @@ fun userContact(
         else -> ApplicationUserContact(name, email, type)
     }
 
+/**
+ * Map application contacts to [ApplicationUserContact] set containing information on contact type.
+ */
 fun ApplicationData.typedContacts(): Set<ApplicationUserContact> =
     when (this) {
         is CableReportApplicationData ->
