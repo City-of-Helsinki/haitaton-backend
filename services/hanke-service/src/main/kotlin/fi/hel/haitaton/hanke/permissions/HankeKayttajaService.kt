@@ -2,13 +2,15 @@ package fi.hel.haitaton.hanke.permissions
 
 import fi.hel.haitaton.hanke.HankeArgumentException
 import fi.hel.haitaton.hanke.application.ApplicationArgumentException
-import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
+import fi.hel.haitaton.hanke.domain.ApplicationUserContact
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeUserContact
 import fi.hel.haitaton.hanke.domain.Perustaja
+import fi.hel.haitaton.hanke.domain.UserContact
 import fi.hel.haitaton.hanke.email.ApplicationInvitationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.HankeInvitationData
@@ -16,26 +18,12 @@ import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
 import fi.hel.haitaton.hanke.removeInviter
 import fi.hel.haitaton.hanke.typedContacts
-import fi.hel.haitaton.hanke.userContact
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
-
-interface UserContact {
-    val name: String
-    val email: String
-}
-
-data class HankeUserContact(override val name: String, override val email: String) : UserContact
-
-data class ApplicationUserContact(
-    override val name: String,
-    override val email: String,
-    val type: ApplicationContactType
-) : UserContact
 
 @Service
 class HankeKayttajaService(
@@ -122,7 +110,7 @@ class HankeKayttajaService(
             hanke
                 .extractYhteystiedot()
                 .flatMap { it.alikontaktit }
-                .mapNotNull { userContact(it.fullName(), it.email) }
+                .mapNotNull { HankeUserContact.from(it.fullName(), it.email) }
 
         val inviter = getKayttajaByUserId(hankeId, userId)
         filterNewContacts(hankeId, contacts).forEach { contact ->

@@ -8,10 +8,9 @@ import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
+import fi.hel.haitaton.hanke.domain.ApplicationUserContact
 import fi.hel.haitaton.hanke.domain.BusinessId
-import fi.hel.haitaton.hanke.permissions.ApplicationUserContact
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaEntity
-import fi.hel.haitaton.hanke.permissions.HankeUserContact
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
@@ -87,23 +86,6 @@ fun BusinessId.isValidBusinessId(): Boolean {
 
 fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }
 
-fun userContact(name: String?, email: String?): HankeUserContact? {
-    return when {
-        name.isNullOrBlank() || email.isNullOrBlank() -> null
-        else -> HankeUserContact(name, email)
-    }
-}
-
-fun userContact(
-    name: String?,
-    email: String?,
-    type: ApplicationContactType
-): ApplicationUserContact? =
-    when {
-        name.isNullOrBlank() || email.isNullOrBlank() -> null
-        else -> ApplicationUserContact(name, email, type)
-    }
-
 /**
  * Map application contacts to [ApplicationUserContact] set containing information on contact type.
  */
@@ -125,4 +107,5 @@ fun Set<ApplicationUserContact>.removeInviter(inviter: HankeKayttajaEntity?) =
 
 private fun CustomerWithContacts.typedContacts(
     type: ApplicationContactType
-): List<ApplicationUserContact> = contacts.mapNotNull { userContact(it.fullName(), it.email, type) }
+): List<ApplicationUserContact> =
+    contacts.mapNotNull { ApplicationUserContact.from(it.fullName(), it.email, type) }
