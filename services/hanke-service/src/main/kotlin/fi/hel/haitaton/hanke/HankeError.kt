@@ -71,7 +71,7 @@ data class HankeErrorDetail(
 )
 
 class HankeNotFoundException(val hankeTunnus: String?) :
-    RuntimeException("Hanke $hankeTunnus not found")
+    RuntimeException("Hanke not found with hankeTunnus $hankeTunnus")
 
 class HankeArgumentException(message: String) : RuntimeException(message)
 

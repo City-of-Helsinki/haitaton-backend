@@ -1,10 +1,14 @@
 package fi.hel.haitaton.hanke
 
+import assertk.all
+import assertk.assertFailure
 import assertk.assertions.each
+import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNull
+import assertk.assertions.messageContains
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
@@ -66,6 +70,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.skyscreamer.jsonassert.JSONAssert
@@ -79,12 +84,13 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.junit.jupiter.Testcontainers
 
-private const val USER_NAME = "test7358"
+private const val HANKE_TUNNUS = "HAI23-41"
 private const val NAME_1 = "etu1 suku1"
 private const val NAME_2 = "etu2 suku2"
 private const val NAME_3 = "etu3 suku3"
 private const val NAME_4 = "etu4 suku4"
 private const val NAME_SOMETHING = "Som Et Hing"
+private const val USER_NAME = "test7358"
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -101,6 +107,7 @@ class HankeServiceITests : DatabaseTest() {
     @Autowired private lateinit var hankeKayttajaRepository: HankeKayttajaRepository
     @Autowired private lateinit var kayttajaTunnisteRepository: KayttajaTunnisteRepository
     @Autowired private lateinit var jdbcTemplate: JdbcTemplate
+    @Autowired private lateinit var hankeFactory: HankeFactory
 
     @BeforeEach
     fun clearMocks() {
@@ -111,6 +118,46 @@ class HankeServiceITests : DatabaseTest() {
     fun checkMocks() {
         checkUnnecessaryStub()
         confirmVerified(cableReportService)
+    }
+
+    @Nested
+    inner class GetHankeId {
+        @Test
+        fun `Returns null if hanke not found`() {
+            val response = hankeService.getHankeId(HANKE_TUNNUS)
+
+            assertThat(response).isNull()
+        }
+
+        @Test
+        fun `Returns hanke id if hanke found`() {
+            val hanke = hankeFactory.save()
+
+            val response = hankeService.getHankeId(hanke.hankeTunnus!!)
+
+            assertThat(response).isEqualTo(hanke.id!!)
+        }
+    }
+
+    @Nested
+    inner class GetHankeIdOrThrow {
+        @Test
+        fun `Throws exception if hanke not found`() {
+            assertFailure { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) }
+                .all {
+                    hasClass(HankeNotFoundException::class)
+                    messageContains(HANKE_TUNNUS)
+                }
+        }
+
+        @Test
+        fun `Returns hanke id if hanke found`() {
+            val hanke = hankeFactory.save()
+
+            val response = hankeService.getHankeIdOrThrow(hanke.hankeTunnus!!)
+
+            assertThat(response).isEqualTo(hanke.id!!)
+        }
     }
 
     @Test
@@ -126,7 +173,7 @@ class HankeServiceITests : DatabaseTest() {
         val returnedHanke = hankeService.createHanke(hanke)
 
         // Verify privileges
-        PermissionCode.values().forEach {
+        PermissionCode.entries.forEach {
             assertThat(permissionService.hasPermission(returnedHanke.id!!, USER_NAME, it)).isTrue()
         }
         // Check the return object in general:
@@ -302,12 +349,13 @@ class HankeServiceITests : DatabaseTest() {
 
     @Test
     fun `getHankeHakemuksetPair hanke does not exist throws not found`() {
-        val exception =
-            assertThrows<HankeNotFoundException> {
-                hankeService.getHankeWithApplications("HAI-1234")
-            }
+        val hankeTunnus = "HAI-1234"
 
-        assertThat(exception).hasMessage("Hanke HAI-1234 not found")
+        assertFailure { hankeService.getHankeWithApplications(hankeTunnus) }
+            .all {
+                hasClass(HankeNotFoundException::class)
+                messageContains(hankeTunnus)
+            }
     }
 
     @Test

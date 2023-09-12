@@ -1,9 +1,11 @@
 package fi.hel.haitaton.hanke.permissions
 
+import assertk.all
 import assertk.assertThat
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import assertk.assertions.prop
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeNotFoundException
@@ -17,6 +19,7 @@ import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaController.Tunnistautuminen
+import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -66,6 +69,96 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     fun checkMocks() {
         checkUnnecessaryStub()
         confirmVerified(hankeKayttajaService, hankeService, permissionService)
+    }
+
+    @Nested
+    inner class Whoami {
+        private val url = "/hankkeet/$HANKE_TUNNUS/whoami"
+        private val hankeId = 14
+        private val kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS
+        private val kayttooikeudet = listOf(VIEW, EDIT)
+        private val hankeKayttajaId = UUID.fromString("3d1ff704-1177-4478-ac66-9187b7bbe84a")
+
+        private val permissionEntity =
+            PermissionEntity(
+                hankeId = hankeId,
+                userId = USERNAME,
+                kayttooikeustasoEntity = KayttooikeustasoEntity(0, kayttooikeustaso, 1 or 4)
+            )
+
+        private val hankeKayttajaEntity =
+            HankeKayttajaEntity(
+                id = hankeKayttajaId,
+                sahkoposti = "Doesn't",
+                nimi = "Matter",
+                hankeId = hankeId,
+                kayttajaTunniste = null,
+                permission = null,
+            )
+
+        @Test
+        fun `Returns 404 if hanke not found`() {
+            every { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) } throws
+                HankeNotFoundException(HANKE_TUNNUS)
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
+
+            verify { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) }
+        }
+
+        @Test
+        fun `Returns 404 if permission not found`() {
+            every { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) } returns hankeId
+            every { permissionService.findPermission(hankeId, USERNAME) } returns null
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
+
+            verifySequence {
+                hankeService.getHankeIdOrThrow(HANKE_TUNNUS)
+                permissionService.findPermission(hankeId, USERNAME)
+            }
+        }
+
+        @Test
+        fun `Returns kayttooikeustaso if hankeKayttaja not found`() {
+            every { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) } returns hankeId
+            every { permissionService.findPermission(hankeId, USERNAME) } returns permissionEntity
+            every { hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME) } returns null
+
+            val response: WhoamiResponse = get(url).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).all {
+                prop(WhoamiResponse::hankeKayttajaId).isEqualTo(null)
+                prop(WhoamiResponse::kayttooikeustaso).isEqualTo(kayttooikeustaso)
+                prop(WhoamiResponse::kayttooikeudet).hasSameElementsAs(kayttooikeudet)
+            }
+            verifySequence {
+                hankeService.getHankeIdOrThrow(HANKE_TUNNUS)
+                permissionService.findPermission(hankeId, USERNAME)
+                hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)
+            }
+        }
+
+        @Test
+        fun `Returns kayttooikeustaso and hankeKayttajaId if hankeKayttaja is found`() {
+            every { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) } returns hankeId
+            every { permissionService.findPermission(hankeId, USERNAME) } returns permissionEntity
+            every { hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME) } returns
+                hankeKayttajaEntity
+
+            val response: WhoamiResponse = get(url).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).all {
+                prop(WhoamiResponse::hankeKayttajaId).isEqualTo(hankeKayttajaId)
+                prop(WhoamiResponse::kayttooikeustaso).isEqualTo(kayttooikeustaso)
+                prop(WhoamiResponse::kayttooikeudet).hasSameElementsAs(kayttooikeudet)
+            }
+            verifySequence {
+                hankeService.getHankeIdOrThrow(HANKE_TUNNUS)
+                permissionService.findPermission(hankeId, USERNAME)
+                hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)
+            }
+        }
     }
 
     @Nested
