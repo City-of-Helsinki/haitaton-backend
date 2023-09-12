@@ -77,6 +77,9 @@ open class HankeServiceImpl(
     override fun getHankeId(hankeTunnus: String): Int? =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.id
 
+    override fun getHankeIdOrThrow(hankeTunnus: String): Int =
+        getHankeId(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
+
     /**
      * Hanke does not contain hakemukset. This function wraps Hanke and its hakemukset to a pair.
      */

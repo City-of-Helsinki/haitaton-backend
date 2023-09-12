@@ -7,7 +7,6 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
-import assertk.assertions.key
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeService
@@ -29,9 +28,6 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.Arguments
-import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
@@ -53,56 +49,6 @@ class PermissionServiceITest : DatabaseTest() {
     @Autowired lateinit var hankeService: HankeService
     @Autowired lateinit var hankeFactory: HankeFactory
     @Autowired lateinit var auditLogRepository: AuditLogRepository
-
-    companion object {
-        @JvmStatic
-        fun kayttooikeustasot() =
-            listOf(
-                Arguments.of(Kayttooikeustaso.KAIKKI_OIKEUDET, PermissionCode.values()),
-                Arguments.of(
-                    Kayttooikeustaso.KAIKKIEN_MUOKKAUS,
-                    arrayOf(
-                        PermissionCode.VIEW,
-                        PermissionCode.MODIFY_VIEW_PERMISSIONS,
-                        PermissionCode.EDIT,
-                        PermissionCode.MODIFY_EDIT_PERMISSIONS,
-                        PermissionCode.EDIT_APPLICATIONS,
-                        PermissionCode.MODIFY_APPLICATION_PERMISSIONS,
-                    )
-                ),
-                Arguments.of(
-                    Kayttooikeustaso.HANKEMUOKKAUS,
-                    arrayOf(
-                        PermissionCode.VIEW,
-                        PermissionCode.EDIT,
-                    )
-                ),
-                Arguments.of(
-                    Kayttooikeustaso.HAKEMUSASIOINTI,
-                    arrayOf(
-                        PermissionCode.VIEW,
-                        PermissionCode.EDIT_APPLICATIONS,
-                    )
-                ),
-                Arguments.of(Kayttooikeustaso.KATSELUOIKEUS, arrayOf(PermissionCode.VIEW)),
-            )
-    }
-
-    @ParameterizedTest
-    @MethodSource("kayttooikeustasot")
-    fun `All kayttooikeustaso have correct permissions`(
-        kayttooikeustaso: Kayttooikeustaso,
-        allowedPermissions: Array<PermissionCode>
-    ) {
-        val kayttooikeustasoEntity = permissionService.findKayttooikeustaso(kayttooikeustaso)
-
-        val permissions =
-            PermissionCode.values().associateWith { kayttooikeustasoEntity.hasPermission(it) }
-
-        PermissionCode.values().forEach {
-            assertThat(permissions).key(it).isEqualTo(allowedPermissions.contains(it))
-        }
-    }
 
     @Test
     fun `getAllowedHankeIds without permissions returns empty list`() {

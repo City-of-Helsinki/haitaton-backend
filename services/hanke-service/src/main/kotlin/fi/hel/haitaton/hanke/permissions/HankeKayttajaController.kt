@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.permissions
 
 import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
@@ -36,6 +37,34 @@ class HankeKayttajaController(
     private val disclosureLogService: DisclosureLogService,
     private val featureFlags: FeatureFlags,
 ) {
+    @GetMapping("/hankkeet/{hankeTunnus}/whoami")
+    @Operation(summary = "Get your own permission for a hanke")
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Your permissions",
+                    responseCode = "200",
+                    content = [Content(schema = Schema(implementation = WhoamiResponse::class))]
+                ),
+                ApiResponse(
+                    description = "Hanke not found",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+            ]
+    )
+    fun whoami(@PathVariable hankeTunnus: String): WhoamiResponse {
+        val userId = currentUserId()
+        val hankeId = hankeService.getHankeIdOrThrow(hankeTunnus)
+
+        val permission =
+            permissionService.findPermission(hankeId, userId)
+                ?: throw HankeNotFoundException(hankeTunnus)
+
+        val hankeKayttaja = hankeKayttajaService.getKayttajaByUserId(hankeId, userId)
+        return WhoamiResponse(hankeKayttaja?.id, permission.kayttooikeustasoEntity)
+    }
 
     @GetMapping("/hankkeet/{hankeTunnus}/kayttajat")
     @Operation(
