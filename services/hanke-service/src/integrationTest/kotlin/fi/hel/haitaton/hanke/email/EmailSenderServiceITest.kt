@@ -120,7 +120,7 @@ class EmailSenderServiceITest : DatabaseTest() {
 
         @Test
         fun `sendHankeInvitationEmail sends email with correct recipient`() {
-            emailSenderService.sendHankeInvitationEmail(hankeInvitationData())
+            emailSenderService.sendHankeInvitationEmail(hankeInvitation())
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
@@ -129,7 +129,7 @@ class EmailSenderServiceITest : DatabaseTest() {
 
         @Test
         fun `sendHankeInvitationEmail sends email with sender from properties`() {
-            emailSenderService.sendHankeInvitationEmail(hankeInvitationData())
+            emailSenderService.sendHankeInvitationEmail(hankeInvitation())
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.from).hasSize(1)
@@ -138,7 +138,7 @@ class EmailSenderServiceITest : DatabaseTest() {
 
         @Test
         fun `sendHankeInvitationEmail sends email with correct subject`() {
-            emailSenderService.sendHankeInvitationEmail(hankeInvitationData())
+            emailSenderService.sendHankeInvitationEmail(hankeInvitation())
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject).isEqualTo("Sinut on lisätty hankkeelle HAI24-1")
@@ -146,7 +146,7 @@ class EmailSenderServiceITest : DatabaseTest() {
 
         @Test
         fun `sendHankeInvitationEmail sends email with parametrized hybrid body`() {
-            val data = hankeInvitationData()
+            val data = hankeInvitation()
 
             emailSenderService.sendHankeInvitationEmail(data)
 
@@ -167,10 +167,10 @@ class EmailSenderServiceITest : DatabaseTest() {
     }
 
     @Nested
-    inner class ApplicationInvitation {
+    inner class ApplicationNotification {
         @Test
-        fun `sendApplicationInvitationEmail sends email with correct recipient`() {
-            emailSenderService.sendApplicationInvitationEmail(applicationInvitationData())
+        fun `sendApplicationNotificationEmail sends email with correct recipient`() {
+            emailSenderService.sendApplicationNotificationEmail(applicationNotification())
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
@@ -178,8 +178,8 @@ class EmailSenderServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `sendApplicationInvitationEmail sends email with sender from properties`() {
-            emailSenderService.sendApplicationInvitationEmail(applicationInvitationData())
+        fun `sendApplicationNotificationEmail sends email with sender from properties`() {
+            emailSenderService.sendApplicationNotificationEmail(applicationNotification())
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.from).hasSize(1)
@@ -187,9 +187,9 @@ class EmailSenderServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `sendApplicationInvitationEmail sends email with correct subject`() {
-            val data = applicationInvitationData()
-            emailSenderService.sendApplicationInvitationEmail(data)
+        fun `sendApplicationNotificationEmail sends email with correct subject`() {
+            val data = applicationNotification()
+            emailSenderService.sendApplicationNotificationEmail(data)
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
@@ -197,10 +197,10 @@ class EmailSenderServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `sendApplicationInvitationEmail sends email with parametrized hybrid body`() {
-            val data = applicationInvitationData()
+        fun `sendApplicationNotificationEmail sends email with parametrized hybrid body`() {
+            val data = applicationNotification()
 
-            emailSenderService.sendApplicationInvitationEmail(data)
+            emailSenderService.sendApplicationNotificationEmail(data)
 
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = getBodiesFromHybridEmail(email)
@@ -249,7 +249,7 @@ class EmailSenderServiceITest : DatabaseTest() {
         return Pair(bodies[0], bodies[1])
     }
 
-    private fun hankeInvitationData(inviterName: String = DEFAULT_INVITER_NAME) =
+    private fun hankeInvitation(inviterName: String = DEFAULT_INVITER_NAME) =
         HankeInvitationData(
             inviterName = inviterName,
             inviterEmail = "matti.meikalainen@test.fi",
@@ -259,8 +259,8 @@ class EmailSenderServiceITest : DatabaseTest() {
             invitationToken = "MgtzRbcPsvoKQamnaSxCnmW7",
         )
 
-    private fun applicationInvitationData(inviterName: String = DEFAULT_INVITER_NAME) =
-        ApplicationInvitationData(
+    private fun applicationNotification(inviterName: String = DEFAULT_INVITER_NAME) =
+        ApplicationNotificationData(
             inviterName = inviterName,
             inviterEmail = "matti.meikalainen@test.fi",
             recipientEmail = TEST_EMAIL,

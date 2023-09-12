@@ -11,7 +11,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeUserContact
 import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.domain.UserContact
-import fi.hel.haitaton.hanke.email.ApplicationInvitationData
+import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.HankeInvitationData
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
@@ -83,7 +83,7 @@ class HankeKayttajaService(
             createTunnisteAndKayttaja(hankeId, hankeTunnus, hankeNimi, inviter, contact, userId)
         }
         contacts.forEach { contact ->
-            sendApplicationInvitation(
+            sendApplicationNotification(
                 hankeTunnus,
                 applicationIdentifier,
                 application.applicationType,
@@ -321,7 +321,7 @@ class HankeKayttajaService(
         logger.info { "Sending Hanke invitation." }
 
         if (inviter == null) {
-            logger.warn { "Inviter kaytaja null, will not send Hanke invitation." }
+            logger.warn { "Inviter kayttaja null, will not send Hanke invitation." }
             return
         }
 
@@ -337,22 +337,22 @@ class HankeKayttajaService(
         )
     }
 
-    private fun sendApplicationInvitation(
+    private fun sendApplicationNotification(
         hankeTunnus: String,
         applicationIdentifier: String,
         applicationType: ApplicationType,
         inviter: HankeKayttajaEntity?,
         recipient: ApplicationUserContact
     ) {
-        logger.info { "Sending Application invitation." }
+        logger.info { "Sending Application notification." }
 
         if (inviter == null) {
-            logger.warn { "Inviter kaytaja null, will not send application invitation." }
+            logger.warn { "Inviter kayttaja null, will not send application notification." }
             return
         }
 
-        emailSenderService.sendApplicationInvitationEmail(
-            ApplicationInvitationData(
+        emailSenderService.sendApplicationNotificationEmail(
+            ApplicationNotificationData(
                 inviterName = inviter.nimi,
                 inviterEmail = inviter.sahkoposti,
                 recipientEmail = recipient.email,

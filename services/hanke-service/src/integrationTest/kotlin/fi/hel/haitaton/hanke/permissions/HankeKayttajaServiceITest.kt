@@ -29,7 +29,7 @@ import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
-import fi.hel.haitaton.hanke.email.ApplicationInvitationData
+import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.HankeInvitationData
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.asianHoitajaCustomerContact
@@ -425,10 +425,12 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 with(applications.first()) { applicationRepository.findById(id!!).orElseThrow() }
                     .apply { applicationIdentifier = defaultApplicationIdentifier }
             val capturedHankeMails = mutableListOf<HankeInvitationData>()
-            val capturedApplicationMails = mutableListOf<ApplicationInvitationData>()
+            val capturedApplicationMails = mutableListOf<ApplicationNotificationData>()
             justRun { emailSenderService.sendHankeInvitationEmail(capture(capturedHankeMails)) }
             justRun {
-                emailSenderService.sendApplicationInvitationEmail(capture(capturedApplicationMails))
+                emailSenderService.sendApplicationNotificationEmail(
+                    capture(capturedApplicationMails)
+                )
             }
 
             hankeKayttajaService.saveNewTokensFromApplication(
@@ -459,7 +461,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             }
             // 4 contacts but one is the sender
             verify(exactly = 3) { emailSenderService.sendHankeInvitationEmail(any()) }
-            verify(exactly = 3) { emailSenderService.sendApplicationInvitationEmail(any()) }
+            verify(exactly = 3) { emailSenderService.sendApplicationNotificationEmail(any()) }
         }
 
         @Test

@@ -26,7 +26,7 @@ data class EmailFilterProperties(
     @Delimiter(";") val allowList: List<String>,
 )
 
-data class ApplicationInvitationData(
+data class ApplicationNotificationData(
     val inviterName: String,
     val inviterEmail: String,
     val recipientEmail: String,
@@ -90,8 +90,8 @@ class EmailSenderService(
         sendHybridEmail(data.recipientEmail, EmailTemplate.INVITATION_HANKE, templateData)
     }
 
-    fun sendApplicationInvitationEmail(data: ApplicationInvitationData) {
-        logger.info { "Sending invitation email for application" }
+    fun sendApplicationNotificationEmail(data: ApplicationNotificationData) {
+        logger.info { "Sending notification email for application" }
 
         val applicationTypeText = convertApplicationTypeFinnish(data.applicationType)
 
