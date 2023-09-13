@@ -262,7 +262,7 @@ class ApplicationServiceTest {
                 applicationData = applicationData,
                 hanke = hankeEntity,
             )
-        val inviter = HankeKayttajaFactory.createEntity()
+        val sender = HankeKayttajaFactory.createEntity()
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
         every { cableReportService.create(any()) } returns 42
@@ -273,7 +273,7 @@ class ApplicationServiceTest {
         every { geometriatDao.calculateArea(any()) } returns 100f
         every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
         justRun { attachmentService.sendInitialAttachments(42, any()) }
-        every { hankeKayttajaService.getKayttajaByUserId(1, USERNAME) } returns inviter
+        every { hankeKayttajaService.getKayttajaByUserId(1, USERNAME) } returns sender
         justRun { emailSenderService.sendApplicationNotificationEmail(any()) }
 
         applicationService.sendApplication(3, USERNAME)
@@ -296,7 +296,7 @@ class ApplicationServiceTest {
                 hankeEntity.hankeTunnus!!,
                 hankeEntity.nimi!!,
                 USERNAME,
-                inviter
+                sender
             )
             emailSenderService.sendApplicationNotificationEmail(any())
             emailSenderService.sendApplicationNotificationEmail(any())
@@ -387,7 +387,7 @@ class ApplicationServiceTest {
                 applicationData = applicationData.copy(rockExcavation = rockExcavation),
                 hanke = hankeEntity,
             )
-        val inviter = HankeKayttajaFactory.createEntity()
+        val sender = HankeKayttajaFactory.createEntity()
         every { applicationRepo.findOneById(3) } returns applicationEntity
         every { applicationRepo.save(any()) } answers { firstArg() }
         every { geometriatDao.calculateCombinedArea(any()) } returns 100f
@@ -398,7 +398,7 @@ class ApplicationServiceTest {
         every { cableReportService.getApplicationInformation(852) } returns
             AlluDataFactory.createAlluApplicationResponse(852)
         justRun { attachmentService.sendInitialAttachments(852, any()) }
-        every { hankeKayttajaService.getKayttajaByUserId(1, USERNAME) } returns inviter
+        every { hankeKayttajaService.getKayttajaByUserId(1, USERNAME) } returns sender
         justRun { emailSenderService.sendApplicationNotificationEmail(any()) }
 
         applicationService.sendApplication(3, USERNAME)
@@ -425,7 +425,7 @@ class ApplicationServiceTest {
                 hankeEntity.hankeTunnus!!,
                 hankeEntity.nimi!!,
                 USERNAME,
-                inviter
+                sender
             )
             emailSenderService.sendApplicationNotificationEmail(any())
             emailSenderService.sendApplicationNotificationEmail(any())

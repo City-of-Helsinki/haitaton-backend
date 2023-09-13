@@ -1100,10 +1100,10 @@ class ApplicationServiceITest : DatabaseTest() {
 
             applicationService.sendApplication(application.id!!, USERNAME)
 
-            assertThat(capturedEmails).hasSize(3) // 4 contacts, but one is the inviter
+            assertThat(capturedEmails).hasSize(3) // 4 contacts, but one is the sender
             assertThat(capturedEmails).each { inv ->
-                inv.transform { it.inviterEmail }.isEqualTo(hakijaApplicationContact.email)
-                inv.transform { it.inviterName }.isEqualTo(hakijaApplicationContact.name)
+                inv.transform { it.senderEmail }.isEqualTo(hakijaApplicationContact.email)
+                inv.transform { it.senderName }.isEqualTo(hakijaApplicationContact.name)
                 inv.transform { it.applicationIdentifier }.isEqualTo(defaultApplicationIdentifier)
                 inv.transform { it.applicationType }.isEqualTo(application.applicationType)
                 inv.transform { it.roleType }.isIn(ASIANHOITAJA, RAKENNUTTAJA, TYON_SUORITTAJA)

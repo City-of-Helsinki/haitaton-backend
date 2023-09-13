@@ -59,7 +59,7 @@ class HankeKayttajaService(
         hankeTunnus: String,
         hankeNimi: String,
         currentUserId: String,
-        inviter: HankeKayttajaEntity? = null,
+        currentKayttaja: HankeKayttajaEntity? = null,
     ) {
         if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
             return
@@ -79,7 +79,7 @@ class HankeKayttajaService(
                 hankeId,
                 hankeTunnus,
                 hankeNimi,
-                inviter,
+                currentKayttaja,
                 contact,
                 currentUserId
             )
@@ -272,7 +272,7 @@ class HankeKayttajaService(
         hankeId: Int,
         hankeTunnus: String,
         hankeNimi: String,
-        inviter: HankeKayttajaEntity?,
+        currentKayttaja: HankeKayttajaEntity?,
         contact: UserContact,
         currentUserId: String
     ) {
@@ -285,7 +285,7 @@ class HankeKayttajaService(
                 sahkoposti = contact.email,
                 tunniste = kayttajaTunnisteEntity,
             )
-        sendHankeInvitation(hankeTunnus, hankeNimi, inviter, newHankeUser)
+        sendHankeInvitation(hankeTunnus, hankeNimi, currentKayttaja, newHankeUser)
     }
 
     private fun updateKayttooikeustaso(

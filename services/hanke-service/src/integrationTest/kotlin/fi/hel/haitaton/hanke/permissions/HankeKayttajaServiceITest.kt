@@ -361,7 +361,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `When no inviter info should skip invitations`() {
+        fun `When no sender info should skip invitations`() {
             val hanke = hankeFactory.saveMinimal(nimi = defaultNimi)
             val application =
                 createApplicationEntity(
@@ -376,7 +376,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 hanke.hankeTunnus!!,
                 hanke.nimi!!,
                 USERNAME,
-                inviter = null
+                currentKayttaja = null
             )
 
             verify { emailSenderService wasNot Called }

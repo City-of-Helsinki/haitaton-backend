@@ -60,8 +60,8 @@ class EmailSenderServicePropertiesITest : DatabaseTest() {
     fun `sendApplicationNotificationEmail when user management not enabled does not send`() {
         emailSenderService.sendApplicationNotificationEmail(
             ApplicationNotificationData(
-                inviterName = "Kalle Kutsuja",
-                inviterEmail = "kalle.kutsuja@mail.com",
+                senderName = "Kalle Kutsuja",
+                senderEmail = "kalle.kutsuja@mail.com",
                 recipientEmail = "matti.meikalainen@mail.com",
                 applicationType = CABLE_REPORT,
                 applicationIdentifier = "JS002",

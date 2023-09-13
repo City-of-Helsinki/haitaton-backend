@@ -205,7 +205,7 @@ class EmailSenderServiceITest : DatabaseTest() {
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = getBodiesFromHybridEmail(email)
             assertThat(textBody).all {
-                contains("${data.inviterName} (${data.inviterEmail}) on")
+                contains("${data.senderName} (${data.senderEmail}) on")
                 contains("tehnyt johtoselvityshakemuksen (${data.applicationIdentifier})")
                 contains("hankkeella ${data.hankeTunnus}")
                 contains("rooliin ${data.roleType.value}.")
@@ -214,7 +214,7 @@ class EmailSenderServiceITest : DatabaseTest() {
             assertThat(htmlBody).all {
                 val htmlEscapedName = "Matti Meik&auml;l&auml;inen"
                 val htmlEscapedRole = "ty&ouml;n suorittaja"
-                contains("$htmlEscapedName (${data.inviterEmail})")
+                contains("$htmlEscapedName (${data.senderEmail})")
                 contains("johtoselvityshakemuksen (${data.applicationIdentifier})")
                 contains("rooliin $htmlEscapedRole")
                 contains("""<a href="http://localhost:3001">""")
@@ -259,10 +259,10 @@ class EmailSenderServiceITest : DatabaseTest() {
             invitationToken = "MgtzRbcPsvoKQamnaSxCnmW7",
         )
 
-    private fun applicationNotification(inviterName: String = DEFAULT_INVITER_NAME) =
+    private fun applicationNotification(senderName: String = DEFAULT_INVITER_NAME) =
         ApplicationNotificationData(
-            inviterName = inviterName,
-            inviterEmail = "matti.meikalainen@test.fi",
+            senderName = senderName,
+            senderEmail = "matti.meikalainen@test.fi",
             recipientEmail = TEST_EMAIL,
             applicationType = ApplicationType.CABLE_REPORT,
             applicationIdentifier = APPLICATION_IDENTIFIER,

@@ -296,23 +296,23 @@ open class ApplicationService(
         hanke: HankeEntity,
         currentUserId: String
     ) {
-        val inviter = hankeKayttajaService.getKayttajaByUserId(hanke.id!!, currentUserId)
+        val currentKayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id!!, currentUserId)
         hankeKayttajaService.saveNewTokensFromApplication(
             application = application,
             hankeId = hanke.id!!,
             hankeTunnus = hanke.hankeTunnus!!,
             hankeNimi = hanke.nimi!!,
             currentUserId = currentUserId,
-            inviter = inviter
+            currentKayttaja = currentKayttaja
         )
 
-        val contacts = application.applicationData.typedContacts(omit = inviter?.sahkoposti)
+        val contacts = application.applicationData.typedContacts(omit = currentKayttaja?.sahkoposti)
         contacts.forEach {
             notifyOnApplication(
                 hanke.hankeTunnus!!,
                 application.applicationIdentifier!!,
                 application.applicationType,
-                inviter,
+                currentKayttaja,
                 it,
             )
         }
@@ -322,20 +322,20 @@ open class ApplicationService(
         hankeTunnus: String,
         applicationIdentifier: String,
         applicationType: ApplicationType,
-        inviter: HankeKayttajaEntity?,
+        currentKayttaja: HankeKayttajaEntity?,
         recipient: ApplicationUserContact
     ) {
         logger.info { "Sending Application notification." }
 
-        if (inviter == null) {
-            logger.warn { "Inviter kayttaja null, will not send application notification." }
+        if (currentKayttaja == null) {
+            logger.warn { "Sending kayttaja is null, will not send application notification." }
             return
         }
 
         emailSenderService.sendApplicationNotificationEmail(
             ApplicationNotificationData(
-                inviterName = inviter.nimi,
-                inviterEmail = inviter.sahkoposti,
+                senderName = currentKayttaja.nimi,
+                senderEmail = currentKayttaja.sahkoposti,
                 recipientEmail = recipient.email,
                 hankeTunnus = hankeTunnus,
                 applicationIdentifier = applicationIdentifier,

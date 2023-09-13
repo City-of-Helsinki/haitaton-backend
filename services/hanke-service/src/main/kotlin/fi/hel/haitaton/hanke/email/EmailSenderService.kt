@@ -29,8 +29,8 @@ data class EmailFilterProperties(
 )
 
 data class ApplicationNotificationData(
-    val inviterName: String,
-    val inviterEmail: String,
+    val senderName: String,
+    val senderEmail: String,
     val recipientEmail: String,
     val applicationType: ApplicationType,
     val applicationIdentifier: String,
@@ -50,7 +50,7 @@ data class HankeInvitationData(
 enum class EmailTemplate(val value: String) {
     CABLE_REPORT_DONE("johtoselvitys-valmis"),
     INVITATION_HANKE("kayttaja-lisatty-hanke"),
-    INVITATION_APPLICATION("kayttaja-lisatty-hakemus")
+    APPLICATION_NOTIFICATION("kayttaja-lisatty-hakemus")
 }
 
 @Service
@@ -105,15 +105,15 @@ class EmailSenderService(
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
-                "inviterName" to data.inviterName,
-                "inviterEmail" to data.inviterEmail,
+                "senderName" to data.senderName,
+                "senderEmail" to data.senderEmail,
                 "applicationType" to applicationTypeText,
                 "applicationIdentifier" to data.applicationIdentifier,
                 "hankeTunnus" to data.hankeTunnus,
                 "recipientRole" to data.roleType.value,
             )
 
-        sendHybridEmail(data.recipientEmail, EmailTemplate.INVITATION_APPLICATION, templateData)
+        sendHybridEmail(data.recipientEmail, EmailTemplate.APPLICATION_NOTIFICATION, templateData)
     }
 
     private fun sendHybridEmail(to: String, context: EmailTemplate, data: Map<String, String>) {

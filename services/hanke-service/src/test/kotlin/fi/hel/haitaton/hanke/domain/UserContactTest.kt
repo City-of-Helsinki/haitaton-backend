@@ -5,9 +5,17 @@ import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.asianHoitajaCustomerContact
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.asianhoitajaApplicationContact
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createCableReportApplicationData
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaApplicationContact
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaCustomerContact
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.rakennuttajaApplicationContact
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.rakennuttajaCustomerContact
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaApplicationContact
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
-import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.createEntity
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -53,76 +61,70 @@ class UserContactTest {
         @Test
         fun `typedContacts when all types are present should return all as typed`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
-                    customerWithContacts = AlluDataFactory.hakijaCustomerContact,
-                    contractorWithContacts = AlluDataFactory.suorittajaCustomerContact,
-                    representativeWithContacts = AlluDataFactory.asianHoitajaCustomerContact,
-                    propertyDeveloperWithContacts = AlluDataFactory.rakennuttajaCustomerContact
+                createCableReportApplicationData(
+                    customerWithContacts = hakijaCustomerContact,
+                    contractorWithContacts = suorittajaCustomerContact,
+                    representativeWithContacts = asianHoitajaCustomerContact,
+                    propertyDeveloperWithContacts = rakennuttajaCustomerContact
                 )
 
             val result = applicationData.typedContacts()
 
             assertThat(result)
                 .containsExactlyInAnyOrder(
-                    AlluDataFactory.hakijaApplicationContact,
-                    AlluDataFactory.suorittajaApplicationContact,
-                    AlluDataFactory.asianhoitajaApplicationContact,
-                    AlluDataFactory.rakennuttajaApplicationContact
+                    hakijaApplicationContact,
+                    suorittajaApplicationContact,
+                    asianhoitajaApplicationContact,
+                    rakennuttajaApplicationContact
                 )
         }
 
         @Test
         fun `typedContacts when not all types present should return existing as typed`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
-                    customerWithContacts = AlluDataFactory.hakijaCustomerContact,
-                    contractorWithContacts = AlluDataFactory.suorittajaCustomerContact
+                createCableReportApplicationData(
+                    customerWithContacts = hakijaCustomerContact,
+                    contractorWithContacts = suorittajaCustomerContact
                 )
 
             val result = applicationData.typedContacts()
 
             assertThat(result)
-                .containsExactlyInAnyOrder(
-                    AlluDataFactory.hakijaApplicationContact,
-                    AlluDataFactory.suorittajaApplicationContact
-                )
+                .containsExactlyInAnyOrder(hakijaApplicationContact, suorittajaApplicationContact)
         }
 
         @Test
-        fun `removeInviter when inviter present filters inviter from contacts`() {
+        fun `typedContacts when omitted present filters out given contact`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
-                    customerWithContacts = AlluDataFactory.hakijaCustomerContact,
-                    contractorWithContacts = AlluDataFactory.suorittajaCustomerContact
+                createCableReportApplicationData(
+                    customerWithContacts = hakijaCustomerContact,
+                    contractorWithContacts = suorittajaCustomerContact
                 )
-            val inviter =
-                HankeKayttajaFactory.createEntity(
-                    sahkoposti = AlluDataFactory.suorittajaApplicationContact.email
-                )
+            val kayttaja = createEntity(sahkoposti = suorittajaApplicationContact.email)
 
-            val result = applicationData.typedContacts(omit = inviter.sahkoposti)
+            val result = applicationData.typedContacts(omit = kayttaja.sahkoposti)
 
-            assertThat(result).containsExactlyInAnyOrder(AlluDataFactory.hakijaApplicationContact)
+            assertThat(result).containsExactlyInAnyOrder(hakijaApplicationContact)
         }
 
         @Test
-        fun `removeInviter when inviter is null does no filtering`() {
+        fun `typedContacts when omitted is null does no filtering`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
-                    customerWithContacts = AlluDataFactory.hakijaCustomerContact,
-                    contractorWithContacts = AlluDataFactory.suorittajaCustomerContact,
-                    representativeWithContacts = AlluDataFactory.asianHoitajaCustomerContact,
-                    propertyDeveloperWithContacts = AlluDataFactory.rakennuttajaCustomerContact
+                createCableReportApplicationData(
+                    customerWithContacts = hakijaCustomerContact,
+                    contractorWithContacts = suorittajaCustomerContact,
+                    representativeWithContacts = asianHoitajaCustomerContact,
+                    propertyDeveloperWithContacts = rakennuttajaCustomerContact
                 )
 
             val result = applicationData.typedContacts(omit = null)
 
             assertThat(result)
                 .containsExactlyInAnyOrder(
-                    AlluDataFactory.hakijaApplicationContact,
-                    AlluDataFactory.suorittajaApplicationContact,
-                    AlluDataFactory.asianhoitajaApplicationContact,
-                    AlluDataFactory.rakennuttajaApplicationContact
+                    hakijaApplicationContact,
+                    suorittajaApplicationContact,
+                    asianhoitajaApplicationContact,
+                    rakennuttajaApplicationContact
                 )
         }
     }
