@@ -16,15 +16,19 @@ import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.domain.ApplicationUserContact
+import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
+import fi.hel.haitaton.hanke.typedContacts
 import fi.hel.haitaton.hanke.validation.ApplicationDataValidator.ensureValidForSend
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -228,30 +232,6 @@ open class ApplicationService(
         return applicationRepository.save(application).toApplication()
     }
 
-    private fun initAccessForApplication(
-        application: ApplicationEntity,
-        hanke: HankeEntity,
-        userId: String
-    ) {
-        val hankeId = hanke.id
-        val hankeTunnus = hanke.hankeTunnus
-        val hankeNimi = hanke.nimi
-
-        if (hankeId == null || hankeTunnus == null || hankeNimi == null) {
-            throw ApplicationArgumentException(
-                "Hanke info missing: (id=$hankeId, tunnus=$hankeTunnus, nimi=$hankeNimi)"
-            )
-        }
-
-        hankeKayttajaService.saveNewTokensFromApplication(
-            application = application,
-            hankeId = hankeId,
-            hankeTunnus = hankeTunnus,
-            hankeNimi = hankeNimi,
-            userId = userId
-        )
-    }
-
     @Transactional
     open fun handleApplicationUpdates(
         applicationHistories: List<ApplicationHistory>,
@@ -310,6 +290,60 @@ open class ApplicationService(
             PENDING_CLIENT -> isStillPendingInAllu(application.alluid)
             else -> false
         }
+
+    private fun initAccessForApplication(
+        application: ApplicationEntity,
+        hanke: HankeEntity,
+        currentUserId: String
+    ) {
+        val inviter = hankeKayttajaService.getKayttajaByUserId(hanke.id!!, currentUserId)
+        hankeKayttajaService.saveNewTokensFromApplication(
+            application = application,
+            hankeId = hanke.id!!,
+            hankeTunnus = hanke.hankeTunnus!!,
+            hankeNimi = hanke.nimi!!,
+            currentUserId = currentUserId,
+            inviter = inviter
+        )
+
+        val contacts = application.applicationData.typedContacts(omit = inviter?.sahkoposti)
+        contacts.forEach {
+            notifyOnApplication(
+                hanke.hankeTunnus!!,
+                application.applicationIdentifier!!,
+                application.applicationType,
+                inviter,
+                it,
+            )
+        }
+    }
+
+    private fun notifyOnApplication(
+        hankeTunnus: String,
+        applicationIdentifier: String,
+        applicationType: ApplicationType,
+        inviter: HankeKayttajaEntity?,
+        recipient: ApplicationUserContact
+    ) {
+        logger.info { "Sending Application notification." }
+
+        if (inviter == null) {
+            logger.warn { "Inviter kayttaja null, will not send application notification." }
+            return
+        }
+
+        emailSenderService.sendApplicationNotificationEmail(
+            ApplicationNotificationData(
+                inviterName = inviter.nimi,
+                inviterEmail = inviter.sahkoposti,
+                recipientEmail = recipient.email,
+                hankeTunnus = hankeTunnus,
+                applicationIdentifier = applicationIdentifier,
+                applicationType = applicationType,
+                roleType = recipient.type,
+            )
+        )
+    }
 
     private fun isStillPendingInAllu(alluid: Int?): Boolean {
         // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)

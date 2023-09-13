@@ -22,14 +22,9 @@ import assertk.assertions.messageContains
 import assertk.assertions.prop
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.DatabaseTest
-import fi.hel.haitaton.hanke.application.ApplicationArgumentException
-import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
-import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.HankeInvitationData
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.asianHoitajaCustomerContact
@@ -50,6 +45,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.defaultNimi
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -77,7 +73,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
@@ -303,7 +298,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 hanke.id!!,
                 hanke.hankeTunnus!!,
                 hanke.nimi!!,
-                USERNAME
+                USERNAME,
+                HankeKayttajaFactory.createEntity()
             )
 
             assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
@@ -364,30 +360,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `With application identifier null throws exception`() {
-            val hanke = hankeFactory.saveEntity()
-            val application =
-                createApplicationEntity(
-                    hanke = hanke,
-                    applicationIdentifier = null,
-                    userId = USERNAME
-                )
-
-            val exception =
-                assertThrows<ApplicationArgumentException> {
-                    hankeKayttajaService.saveNewTokensFromApplication(
-                        application,
-                        hanke.id!!,
-                        hanke.hankeTunnus!!,
-                        hanke.nimi!!,
-                        USERNAME
-                    )
-                }
-
-            assertThat(exception.message).isEqualTo("Application identifier null")
-        }
-
-        @Test
         fun `When no inviter info should skip invitations`() {
             val hanke = hankeFactory.saveMinimal(nimi = defaultNimi)
             val application =
@@ -402,7 +374,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 hanke.id!!,
                 hanke.hankeTunnus!!,
                 hanke.nimi!!,
-                USERNAME
+                USERNAME,
+                inviter = null
             )
 
             verify { emailSenderService wasNot Called }
@@ -424,24 +397,23 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val applicationEntity =
                 with(applications.first()) { applicationRepository.findById(id!!).orElseThrow() }
                     .apply { applicationIdentifier = defaultApplicationIdentifier }
-            val capturedHankeMails = mutableListOf<HankeInvitationData>()
-            val capturedApplicationMails = mutableListOf<ApplicationNotificationData>()
-            justRun { emailSenderService.sendHankeInvitationEmail(capture(capturedHankeMails)) }
-            justRun {
-                emailSenderService.sendApplicationNotificationEmail(
-                    capture(capturedApplicationMails)
-                )
-            }
+            val capturedEmails = mutableListOf<HankeInvitationData>()
+            justRun { emailSenderService.sendHankeInvitationEmail(capture(capturedEmails)) }
+            val inviter =
+                with(hakijaApplicationContact) {
+                    HankeKayttajaFactory.createEntity(nimi = name, sahkoposti = email)
+                }
 
             hankeKayttajaService.saveNewTokensFromApplication(
                 applicationEntity,
                 hanke.id!!,
                 hanke.hankeTunnus!!,
                 hanke.nimi!!,
-                USERNAME
+                USERNAME,
+                inviter
             )
 
-            assertThat(capturedHankeMails).each { inv ->
+            assertThat(capturedEmails).each { inv ->
                 inv.transform { it.inviterEmail }.isEqualTo(hakijaApplicationContact.email)
                 inv.transform { it.inviterName }.isEqualTo(hakijaApplicationContact.name)
                 inv.transform { it.invitationToken }.isNotEmpty()
@@ -449,19 +421,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 inv.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
                 inv.transform { it.hankeNimi }.isEqualTo(hanke.nimi)
             }
-            assertThat(capturedApplicationMails).each { inv ->
-                inv.transform { it.inviterEmail }.isEqualTo(hakijaApplicationContact.email)
-                inv.transform { it.inviterName }.isEqualTo(hakijaApplicationContact.name)
-                inv.transform { it.applicationIdentifier }
-                    .isEqualTo(applicationEntity.applicationIdentifier)
-                inv.transform { it.applicationType }.isEqualTo(applicationEntity.applicationType)
-                inv.transform { it.roleType }.isIn(ASIANHOITAJA, RAKENNUTTAJA, TYON_SUORITTAJA)
-                inv.transform { it.recipientEmail }.isIn(*expectedRecipients)
-                inv.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
-            }
             // 4 contacts but one is the sender
             verify(exactly = 3) { emailSenderService.sendHankeInvitationEmail(any()) }
-            verify(exactly = 3) { emailSenderService.sendApplicationNotificationEmail(any()) }
         }
 
         @Test

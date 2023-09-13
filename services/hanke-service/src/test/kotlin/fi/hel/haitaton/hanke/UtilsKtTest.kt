@@ -111,7 +111,7 @@ class UtilsKtTest {
             val inviter =
                 HankeKayttajaFactory.createEntity(sahkoposti = suorittajaApplicationContact.email)
 
-            val result = applicationData.typedContacts().removeInviter(inviter)
+            val result = applicationData.typedContacts(omit = inviter.sahkoposti)
 
             assertThat(result).containsExactlyInAnyOrder(hakijaApplicationContact)
         }
@@ -126,7 +126,7 @@ class UtilsKtTest {
                     propertyDeveloperWithContacts = rakennuttajaCustomerContact
                 )
 
-            val result = applicationData.typedContacts().removeInviter(null)
+            val result = applicationData.typedContacts(omit = null)
 
             assertThat(result)
                 .containsExactlyInAnyOrder(

@@ -1,23 +1,17 @@
 package fi.hel.haitaton.hanke.permissions
 
 import fi.hel.haitaton.hanke.HankeArgumentException
-import fi.hel.haitaton.hanke.application.ApplicationArgumentException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
-import fi.hel.haitaton.hanke.domain.ApplicationUserContact
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeUserContact
 import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.domain.UserContact
-import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.HankeInvitationData
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
-import fi.hel.haitaton.hanke.removeInviter
-import fi.hel.haitaton.hanke.typedContacts
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
@@ -64,7 +58,8 @@ class HankeKayttajaService(
         hankeId: Int,
         hankeTunnus: String,
         hankeNimi: String,
-        userId: String
+        currentUserId: String,
+        inviter: HankeKayttajaEntity? = null,
     ) {
         if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
             return
@@ -72,23 +67,21 @@ class HankeKayttajaService(
         logger.info {
             "Creating users and user tokens for application ${application.id}, alluid=${application.alluid}}"
         }
-        val applicationIdentifier =
-            application.applicationIdentifier
-                ?: throw ApplicationArgumentException("Application identifier null")
 
-        val inviter = getKayttajaByUserId(hankeId, userId)
-        val contacts = application.applicationData.typedContacts().removeInviter(inviter)
+        val contacts =
+            application.applicationData
+                .customersWithContacts()
+                .flatMap { it.contacts }
+                .mapNotNull { HankeUserContact.from(it.fullName(), it.email) }
 
         filterNewContacts(hankeId, contacts).forEach { contact ->
-            createTunnisteAndKayttaja(hankeId, hankeTunnus, hankeNimi, inviter, contact, userId)
-        }
-        contacts.forEach { contact ->
-            sendApplicationNotification(
+            createTunnisteAndKayttaja(
+                hankeId,
                 hankeTunnus,
-                applicationIdentifier,
-                application.applicationType,
+                hankeNimi,
                 inviter,
                 contact,
+                currentUserId
             )
         }
     }
@@ -281,12 +274,12 @@ class HankeKayttajaService(
         hankeNimi: String,
         inviter: HankeKayttajaEntity?,
         contact: UserContact,
-        userId: String
+        currentUserId: String
     ) {
-        val kayttajaTunnisteEntity = createTunniste(hankeId, userId)
+        val kayttajaTunnisteEntity = createTunniste(hankeId, currentUserId)
         val newHankeUser =
             createUser(
-                currentUser = userId,
+                currentUser = currentUserId,
                 hankeId = hankeId,
                 nimi = contact.name,
                 sahkoposti = contact.email,
@@ -337,33 +330,6 @@ class HankeKayttajaService(
         )
     }
 
-    private fun sendApplicationNotification(
-        hankeTunnus: String,
-        applicationIdentifier: String,
-        applicationType: ApplicationType,
-        inviter: HankeKayttajaEntity?,
-        recipient: ApplicationUserContact
-    ) {
-        logger.info { "Sending Application notification." }
-
-        if (inviter == null) {
-            logger.warn { "Inviter kayttaja null, will not send application notification." }
-            return
-        }
-
-        emailSenderService.sendApplicationNotificationEmail(
-            ApplicationNotificationData(
-                inviterName = inviter.nimi,
-                inviterEmail = inviter.sahkoposti,
-                recipientEmail = recipient.email,
-                hankeTunnus = hankeTunnus,
-                applicationIdentifier = applicationIdentifier,
-                applicationType = applicationType,
-                roleType = recipient.type,
-            )
-        )
-    }
-
     private fun createTunniste(
         hankeId: Int,
         userId: String,
@@ -399,10 +365,7 @@ class HankeKayttajaService(
         return kayttajaEntity
     }
 
-    private fun <T : UserContact> filterNewContacts(
-        hankeId: Int,
-        contacts: Collection<T>
-    ): List<T> {
+    private fun filterNewContacts(hankeId: Int, contacts: List<UserContact>): List<UserContact> {
         val existingEmails = hankeExistingEmails(hankeId, contacts)
 
         val newContacts =
@@ -415,7 +378,7 @@ class HankeKayttajaService(
         return newContacts
     }
 
-    private fun hankeExistingEmails(hankeId: Int, contacts: Collection<UserContact>): List<String> =
+    private fun hankeExistingEmails(hankeId: Int, contacts: List<UserContact>): List<String> =
         hankeKayttajaRepository
             .findByHankeIdAndSahkopostiIn(hankeId, contacts.map { it.email })
             .map { it.sahkoposti }

@@ -10,7 +10,6 @@ import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.domain.ApplicationUserContact
 import fi.hel.haitaton.hanke.domain.BusinessId
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaEntity
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
@@ -89,7 +88,7 @@ fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { 
 /**
  * Map application contacts to [ApplicationUserContact] set containing information on contact type.
  */
-fun ApplicationData.typedContacts(): Set<ApplicationUserContact> =
+fun ApplicationData.typedContacts(omit: String? = null): Set<ApplicationUserContact> =
     when (this) {
         is CableReportApplicationData ->
             listOfNotNull(
@@ -99,11 +98,12 @@ fun ApplicationData.typedContacts(): Set<ApplicationUserContact> =
                     propertyDeveloperWithContacts?.typedContacts(RAKENNUTTAJA)
                 )
                 .flatten()
+                .remove(omit)
                 .toSet()
     }
 
-fun Set<ApplicationUserContact>.removeInviter(inviter: HankeKayttajaEntity?) =
-    if (inviter == null) this else filter { it.email != inviter.sahkoposti }
+private fun List<ApplicationUserContact>.remove(email: String?) =
+    if (email == null) this else filter { it.email != email }
 
 private fun CustomerWithContacts.typedContacts(
     type: ApplicationContactType
