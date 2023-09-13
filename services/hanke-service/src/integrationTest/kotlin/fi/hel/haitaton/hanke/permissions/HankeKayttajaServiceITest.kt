@@ -34,6 +34,7 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createCompanyCust
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationIdentifier
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationName
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.expectedRecipients
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaApplicationContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.rakennuttajaCustomerContact
@@ -1266,12 +1267,5 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 kayttooikeustaso = kayttooikeustaso,
                 hankeKayttaja = null,
             )
-        )
-
-    private val expectedRecipients =
-        arrayOf(
-            "timo.työnsuorittaja@mail.com",
-            "anssi.asianhoitaja@mail.com",
-            "rane.rakennuttaja@mail.com",
         )
 }

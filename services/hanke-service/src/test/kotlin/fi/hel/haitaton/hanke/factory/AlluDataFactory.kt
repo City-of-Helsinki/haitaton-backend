@@ -37,6 +37,12 @@ class AlluDataFactory(
         const val defaultApplicationName: String = "Johtoselvityksen oletusnimi"
         const val defaultApplicationIdentifier: String = "JS230014"
         const val teppoEmail = "teppo@example.test"
+        val expectedRecipients =
+            arrayOf(
+                "timo.työnsuorittaja@mail.com",
+                "anssi.asianhoitaja@mail.com",
+                "rane.rakennuttaja@mail.com",
+            )
 
         fun createPostalAddress(
             streetAddress: String = "Katu 1",

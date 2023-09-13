@@ -4,11 +4,9 @@ import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.contains
-import assertk.assertions.each
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
-import assertk.assertions.isIn
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.HankeEntity
@@ -19,19 +17,10 @@ import fi.hel.haitaton.hanke.allu.AlluStatus
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
-import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.asianHoitajaCustomerContact
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaApplicationContact
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaCustomerContact
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.rakennuttajaCustomerContact
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withHanke
@@ -314,89 +303,6 @@ class ApplicationServiceTest {
             applicationRepo.save(any())
         }
     }
-
-    @Test
-    fun `sendApplication sends application notifications to contacts`() {
-        val hankeEntity =
-            HankeEntity(id = 1, nimi = HankeFactory.defaultNimi, hankeTunnus = HANKE_TUNNUS)
-        val cableReportData =
-            AlluDataFactory.createCableReportApplicationData(
-                customerWithContacts = hakijaCustomerContact,
-                contractorWithContacts = suorittajaCustomerContact,
-                representativeWithContacts = asianHoitajaCustomerContact,
-                propertyDeveloperWithContacts = rakennuttajaCustomerContact
-            )
-        val applicationEntity =
-            AlluDataFactory.createApplicationEntity(
-                id = 3,
-                alluid = null,
-                userId = USERNAME,
-                applicationData = cableReportData,
-                hanke = hankeEntity,
-            )
-        val inviter =
-            with(hakijaApplicationContact) {
-                HankeKayttajaFactory.createEntity(nimi = name, sahkoposti = email)
-            }
-        every { applicationRepo.findOneById(3) } returns applicationEntity
-        every { applicationRepo.save(any()) } answers { firstArg() }
-        every { cableReportService.create(any()) } returns 42
-        justRun { cableReportService.addAttachment(42, any()) }
-        every { cableReportService.getApplicationInformation(42) } returns
-            AlluDataFactory.createAlluApplicationResponse(42)
-        every { geometriatDao.calculateCombinedArea(any()) } returns 100f
-        every { geometriatDao.calculateArea(any()) } returns 100f
-        every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
-        justRun { attachmentService.sendInitialAttachments(42, any()) }
-        every { hankeKayttajaService.getKayttajaByUserId(1, USERNAME) } returns inviter
-        val capturedEmails = mutableListOf<ApplicationNotificationData>()
-        justRun { emailSenderService.sendApplicationNotificationEmail(capture(capturedEmails)) }
-
-        applicationService.sendApplication(3, USERNAME)
-
-        assertThat(capturedEmails).each { inv ->
-            inv.transform { it.inviterEmail }.isEqualTo(inviter.sahkoposti)
-            inv.transform { it.inviterName }.isEqualTo(inviter.nimi)
-            inv.transform { it.applicationIdentifier }
-                .isEqualTo(applicationEntity.applicationIdentifier)
-            inv.transform { it.applicationType }.isEqualTo(applicationEntity.applicationType)
-            inv.transform { it.roleType }.isIn(ASIANHOITAJA, RAKENNUTTAJA, TYON_SUORITTAJA)
-            inv.transform { it.recipientEmail }.isIn(*expectedRecipients)
-            inv.transform { it.hankeTunnus }.isEqualTo(HANKE_TUNNUS)
-        }
-        val expectedApplication = cableReportData.copy(pendingOnClient = false)
-        verifySequence {
-            applicationRepo.findOneById(3)
-            geometriatDao.isInsideHankeAlueet(1, any())
-            geometriatDao.calculateCombinedArea(any())
-            geometriatDao.calculateArea(any())
-            cableReportService.create(any())
-            disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
-            cableReportService.addAttachment(42, any())
-            attachmentService.sendInitialAttachments(42, any())
-            cableReportService.getApplicationInformation(42)
-            hankeKayttajaService.getKayttajaByUserId(1, USERNAME)
-            hankeKayttajaService.saveNewTokensFromApplication(
-                applicationEntity,
-                hankeEntity.id!!,
-                hankeEntity.hankeTunnus!!,
-                hankeEntity.nimi!!,
-                USERNAME,
-                inviter
-            )
-            emailSenderService.sendApplicationNotificationEmail(any())
-            emailSenderService.sendApplicationNotificationEmail(any())
-            emailSenderService.sendApplicationNotificationEmail(any())
-            applicationRepo.save(any())
-        }
-    }
-
-    private val expectedRecipients =
-        arrayOf(
-            "timo.työnsuorittaja@mail.com",
-            "anssi.asianhoitaja@mail.com",
-            "rane.rakennuttaja@mail.com",
-        )
 
     @Test
     fun `sendApplication saves disclosure logs for failed attempts`() {
