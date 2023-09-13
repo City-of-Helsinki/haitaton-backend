@@ -1,14 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.application.ApplicationContactType
-import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
-import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.CustomerWithContacts
-import fi.hel.haitaton.hanke.domain.ApplicationUserContact
 import fi.hel.haitaton.hanke.domain.BusinessId
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
@@ -82,30 +73,3 @@ fun BusinessId.isValidBusinessId(): Boolean {
         false
     }
 }
-
-fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }
-
-/**
- * Map application contacts to [ApplicationUserContact] set containing information on contact type.
- */
-fun ApplicationData.typedContacts(omit: String? = null): Set<ApplicationUserContact> =
-    when (this) {
-        is CableReportApplicationData ->
-            listOfNotNull(
-                    customerWithContacts.typedContacts(HAKIJA),
-                    contractorWithContacts.typedContacts(TYON_SUORITTAJA),
-                    representativeWithContacts?.typedContacts(ASIANHOITAJA),
-                    propertyDeveloperWithContacts?.typedContacts(RAKENNUTTAJA)
-                )
-                .flatten()
-                .remove(omit)
-                .toSet()
-    }
-
-private fun List<ApplicationUserContact>.remove(email: String?) =
-    if (email == null) this else filter { it.email != email }
-
-private fun CustomerWithContacts.typedContacts(
-    type: ApplicationContactType
-): List<ApplicationUserContact> =
-    contacts.mapNotNull { ApplicationUserContact.from(it.fullName(), it.email, type) }

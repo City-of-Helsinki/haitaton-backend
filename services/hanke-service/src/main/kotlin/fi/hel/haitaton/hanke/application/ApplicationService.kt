@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.domain.ApplicationUserContact
+import fi.hel.haitaton.hanke.domain.typedContacts
 import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -28,7 +29,6 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
-import fi.hel.haitaton.hanke.typedContacts
 import fi.hel.haitaton.hanke.validation.ApplicationDataValidator.ensureValidForSend
 import java.time.LocalDateTime
 import java.time.OffsetDateTime

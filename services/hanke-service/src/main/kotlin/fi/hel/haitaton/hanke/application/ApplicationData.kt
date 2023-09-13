@@ -98,3 +98,5 @@ enum class AlluDataError(private val errorDescription: String) {
 
     override fun toString(): String = errorDescription
 }
+
+fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }
