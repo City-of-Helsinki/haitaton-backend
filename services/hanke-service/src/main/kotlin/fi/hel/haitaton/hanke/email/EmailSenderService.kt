@@ -2,6 +2,8 @@ package fi.hel.haitaton.hanke.email
 
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.configuration.Feature
+import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.getResource
 import jakarta.mail.internet.MimeMessage
 import mu.KotlinLogging
@@ -55,6 +57,7 @@ enum class EmailTemplate(val value: String) {
 class EmailSenderService(
     private val mailSender: JavaMailSender,
     private val emailConfig: EmailProperties,
+    private val featureFlags: FeatureFlags,
 ) {
 
     fun sendJohtoselvitysCompleteEmail(
@@ -91,6 +94,10 @@ class EmailSenderService(
     }
 
     fun sendApplicationNotificationEmail(data: ApplicationNotificationData) {
+        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
+            return
+        }
+
         logger.info { "Sending notification email for application" }
 
         val applicationTypeText = convertApplicationTypeFinnish(data.applicationType)
