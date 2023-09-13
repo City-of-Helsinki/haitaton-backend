@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 050-make-nimi-mandatory-in-hanke
+      author: Topias Heinonen
+      changes:
+        - addNotNullConstraint:
+            tableName: hanke
+            columnName: nimi
+            # There shouldn't be unnamed hanke, but let's add a default name
+            # just in case, instead of failing to start.
+            defaultNullValue: "Unnamed"

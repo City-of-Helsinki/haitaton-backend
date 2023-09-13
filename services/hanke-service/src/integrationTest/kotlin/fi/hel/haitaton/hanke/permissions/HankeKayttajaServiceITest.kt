@@ -305,7 +305,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 application,
                 hanke.id!!,
                 hanke.hankeTunnus!!,
-                hanke.nimi!!,
+                hanke.nimi,
                 USERNAME,
                 HankeKayttajaFactory.createEntity()
             )
@@ -343,7 +343,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 application,
                 hanke.id!!,
                 hanke.hankeTunnus!!,
-                hanke.nimi!!,
+                hanke.nimi,
                 USERNAME
             )
 
@@ -381,7 +381,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 application,
                 hanke.id!!,
                 hanke.hankeTunnus!!,
-                hanke.nimi!!,
+                hanke.nimi,
                 USERNAME,
                 currentKayttaja = null
             )
@@ -416,7 +416,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 applicationEntity,
                 hanke.id!!,
                 hanke.hankeTunnus!!,
-                hanke.nimi!!,
+                hanke.nimi,
                 USERNAME,
                 inviter
             )
@@ -466,7 +466,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 application,
                 hanke.id!!,
                 hanke.hankeTunnus!!,
-                hanke.nimi!!,
+                hanke.nimi,
                 USERNAME
             )
 
@@ -512,7 +512,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 application,
                 hanke.id!!,
                 hanke.hankeTunnus!!,
-                hanke.nimi!!,
+                hanke.nimi,
                 USERNAME
             )
 
@@ -560,7 +560,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 application,
                 hanke.id!!,
                 hanke.hankeTunnus!!,
-                hanke.nimi!!,
+                hanke.nimi,
                 USERNAME
             )
 
@@ -600,7 +600,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 application,
                 hanke.id!!,
                 hanke.hankeTunnus!!,
-                hanke.nimi!!,
+                hanke.nimi,
                 USERNAME
             )
 

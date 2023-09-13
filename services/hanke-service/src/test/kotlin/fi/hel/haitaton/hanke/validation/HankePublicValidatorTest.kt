@@ -35,7 +35,6 @@ class HankePublicValidatorTest {
         @JvmStatic
         private fun draftHankkeet(): Stream<Arguments> =
             Stream.of(
-                Arguments.of("nimi", "missing", completeHanke().apply { nimi = null }),
                 Arguments.of("nimi", "empty", completeHanke().apply { nimi = "" }),
                 Arguments.of("nimi", "blank", completeHanke().apply { nimi = BLANK }),
                 Arguments.of("kuvaus", "missing", completeHanke().apply { kuvaus = null }),

@@ -71,15 +71,6 @@ class HankeValidatorTest {
     }
 
     @Test
-    fun `fails if nimi is missing`() {
-        val hanke = HankeFactory.create(nimi = null)
-
-        assertThat(hankeValidator.isValid(hanke, context)).isFalse()
-
-        verifyError(HankeError.HAI1002, "nimi")
-    }
-
-    @Test
     fun `fails if nimi is empty`() {
         val hanke = HankeFactory.create(nimi = "")
 

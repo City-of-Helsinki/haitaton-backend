@@ -40,7 +40,7 @@ class HankeFactory(
      * Needs a mock user set up, since `hankeService.createHanke` calls currentUserId() directly.
      */
     fun save(
-        nimi: String? = defaultNimi,
+        nimi: String = defaultNimi,
         vaihe: Vaihe? = Vaihe.OHJELMOINTI,
         suunnitteluVaihe: SuunnitteluVaihe? = null,
     ) =
@@ -59,7 +59,7 @@ class HankeFactory(
      * even though we want to return the entity, not the domain object.
      */
     fun saveEntity(
-        nimi: String? = defaultNimi,
+        nimi: String = defaultNimi,
         vaihe: Vaihe? = Vaihe.OHJELMOINTI,
         suunnitteluVaihe: SuunnitteluVaihe? = null,
     ): HankeEntity {
@@ -71,8 +71,12 @@ class HankeFactory(
 
     fun saveMinimal(
         hankeTunnus: String = hanketunnusService.newHanketunnus(),
-        nimi: String? = null
-    ): HankeEntity = hankeRepository.save(HankeEntity(hankeTunnus = hankeTunnus, nimi = nimi))
+        nimi: String = defaultNimi,
+        generated: Boolean = false,
+    ): HankeEntity =
+        hankeRepository.save(
+            HankeEntity(hankeTunnus = hankeTunnus, nimi = nimi, generated = generated)
+        )
 
     fun saveSeveralMinimal(n: Int): List<HankeEntity> = (1..n).map { saveMinimal() }
 
@@ -106,7 +110,7 @@ class HankeFactory(
         fun create(
             id: Int? = defaultId,
             hankeTunnus: String? = defaultHankeTunnus,
-            nimi: String? = defaultNimi,
+            nimi: String = defaultNimi,
             vaihe: Vaihe? = Vaihe.OHJELMOINTI,
             suunnitteluVaihe: SuunnitteluVaihe? = null,
             version: Int? = 1,
@@ -129,6 +133,13 @@ class HankeFactory(
                 null,
                 hankeStatus,
             )
+
+        fun createMinimalEntity(
+            id: Int? = defaultId,
+            hankeTunnus: String? = defaultHankeTunnus,
+            nimi: String = defaultNimi,
+            generated: Boolean = false,
+        ) = HankeEntity(id = id, hankeTunnus = hankeTunnus, nimi = nimi, generated = generated)
 
         fun createEntity(mockId: Int = 1): HankeEntity =
             HankeEntity(

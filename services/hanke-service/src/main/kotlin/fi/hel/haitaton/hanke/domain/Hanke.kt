@@ -38,7 +38,7 @@ data class Hanke(
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Name of the Hanke, must not be blank")
-    var nimi: String?,
+    var nimi: String,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Description of the Hanke contents ")

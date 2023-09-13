@@ -405,7 +405,7 @@ open class ApplicationService(
             application = application,
             hankeId = hanke.id!!,
             hankeTunnus = hanke.hankeTunnus!!,
-            hankeNimi = hanke.nimi!!,
+            hankeNimi = hanke.nimi,
             currentUserId = currentUserId,
             currentKayttaja = currentKayttaja
         )

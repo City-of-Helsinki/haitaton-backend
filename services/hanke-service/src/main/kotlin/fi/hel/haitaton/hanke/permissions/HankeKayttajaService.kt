@@ -95,7 +95,7 @@ class HankeKayttajaService(
 
         val hankeId = hanke.id ?: throw HankeArgumentException("Hanke without id")
         val hankeTunnus = hanke.hankeTunnus ?: throw HankeArgumentException("Hanke without tunnus")
-        val hankeNimi = hanke.nimi ?: throw HankeArgumentException("Hanke without name")
+        val hankeNimi = hanke.nimi
 
         val contacts =
             hanke
@@ -205,7 +205,7 @@ class HankeKayttajaService(
 
         recreateTunniste(kayttaja, currentUserId)
         val hanke = hankeRepository.getReferenceById(kayttaja.hankeId)
-        sendHankeInvitation(hanke.hankeTunnus!!, hanke.nimi!!, inviter, kayttaja)
+        sendHankeInvitation(hanke.hankeTunnus!!, hanke.nimi, inviter, kayttaja)
     }
 
     /** Check that every user an update was requested for was found as a user of the hanke. */
