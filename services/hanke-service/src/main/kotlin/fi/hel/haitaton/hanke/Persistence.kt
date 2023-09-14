@@ -233,11 +233,20 @@ class HankeEntity(
 }
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
+    fun findOneByHankeTunnus(hankeTunnus: String): HankeIds?
+
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
 
     override fun findAll(): List<HankeEntity>
 
     fun findAllByStatus(status: HankeStatus): List<HankeEntity>
+}
+
+interface HankeIds {
+    val id: Int
+    val hankeTunnus: String
+
+    fun logString() = "Hanke: (id=${id}, tunnus=${hankeTunnus})"
 }
 
 enum class CounterType {

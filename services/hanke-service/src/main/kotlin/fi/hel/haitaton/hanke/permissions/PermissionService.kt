@@ -1,8 +1,6 @@
 package fi.hel.haitaton.hanke.permissions
 
-import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.currentUserId
-import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.PermissionLoggingService
 import mu.KotlinLogging
 import org.springframework.stereotype.Service
@@ -43,13 +41,6 @@ class PermissionService(
             )
         logService.logCreate(permission.toDomain(), currentUserId())
         return permission
-    }
-
-    fun verifyHankeUserAuthorization(userId: String, hanke: Hanke, permissionCode: PermissionCode) {
-        val hankeId = hanke.id
-        if (hankeId == null || !hasPermission(hankeId, userId, permissionCode)) {
-            throw HankeNotFoundException(hanke.hankeTunnus)
-        }
     }
 
     fun findKayttooikeustaso(kayttooikeustaso: Kayttooikeustaso): KayttooikeustasoEntity =

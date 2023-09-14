@@ -9,17 +9,19 @@ import assertk.assertions.prop
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeNotFoundException
-import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
-import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeIdsFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
+import fi.hel.haitaton.hanke.factory.TestHankeIds
+import fi.hel.haitaton.hanke.factory.ids
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaController.Tunnistautuminen
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
+import fi.hel.haitaton.hanke.permissions.PermissionCode.MODIFY_EDIT_PERMISSIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -56,9 +58,9 @@ private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
 class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired private lateinit var hankeKayttajaService: HankeKayttajaService
-    @Autowired private lateinit var hankeService: HankeService
     @Autowired private lateinit var permissionService: PermissionService
     @Autowired private lateinit var disclosureLogService: DisclosureLogService
+    @Autowired private lateinit var authorizer: HankeKayttajaAuthorizer
 
     @BeforeEach
     fun clearMocks() {
@@ -68,13 +70,14 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     @AfterEach
     fun checkMocks() {
         checkUnnecessaryStub()
-        confirmVerified(hankeKayttajaService, hankeService, permissionService)
+        confirmVerified(hankeKayttajaService, permissionService, disclosureLogService, authorizer)
     }
 
     @Nested
     inner class Whoami {
         private val url = "/hankkeet/$HANKE_TUNNUS/whoami"
         private val hankeId = 14
+        private val hankeIds = TestHankeIds(14, HANKE_TUNNUS)
         private val kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS
         private val kayttooikeudet = listOf(VIEW, EDIT)
         private val hankeKayttajaId = UUID.fromString("3d1ff704-1177-4478-ac66-9187b7bbe84a")
@@ -98,30 +101,17 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
 
         @Test
         fun `Returns 404 if hanke not found`() {
-            every { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) } throws
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW) } throws
                 HankeNotFoundException(HANKE_TUNNUS)
 
             get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
 
-            verify { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) }
-        }
-
-        @Test
-        fun `Returns 404 if permission not found`() {
-            every { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) } returns hankeId
-            every { permissionService.findPermission(hankeId, USERNAME) } returns null
-
-            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
-
-            verifySequence {
-                hankeService.getHankeIdOrThrow(HANKE_TUNNUS)
-                permissionService.findPermission(hankeId, USERNAME)
-            }
+            verify { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW) }
         }
 
         @Test
         fun `Returns kayttooikeustaso if hankeKayttaja not found`() {
-            every { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) } returns hankeId
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW) } returns hankeIds
             every { permissionService.findPermission(hankeId, USERNAME) } returns permissionEntity
             every { hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME) } returns null
 
@@ -133,7 +123,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 prop(WhoamiResponse::kayttooikeudet).hasSameElementsAs(kayttooikeudet)
             }
             verifySequence {
-                hankeService.getHankeIdOrThrow(HANKE_TUNNUS)
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW)
                 permissionService.findPermission(hankeId, USERNAME)
                 hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)
             }
@@ -141,7 +131,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
 
         @Test
         fun `Returns kayttooikeustaso and hankeKayttajaId if hankeKayttaja is found`() {
-            every { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) } returns hankeId
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW) } returns hankeIds
             every { permissionService.findPermission(hankeId, USERNAME) } returns permissionEntity
             every { hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME) } returns
                 hankeKayttajaEntity
@@ -154,7 +144,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 prop(WhoamiResponse::kayttooikeudet).hasSameElementsAs(kayttooikeudet)
             }
             verifySequence {
-                hankeService.getHankeIdOrThrow(HANKE_TUNNUS)
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW)
                 permissionService.findPermission(hankeId, USERNAME)
                 hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)
             }
@@ -168,8 +158,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         fun `With valid request returns users of given hanke and logs audit`() {
             val hanke = HankeFactory.create()
             val testData = HankeKayttajaFactory.generateHankeKayttajat()
-            every { hankeService.findHankeOrThrow(HANKE_TUNNUS) } returns hanke
-            justRun { permissionService.verifyHankeUserAuthorization(USERNAME, hanke, VIEW) }
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW) } returns hanke.ids()
             every { hankeKayttajaService.getKayttajatByHankeId(hanke.id!!) } returns testData
 
             val response: HankeKayttajaResponse =
@@ -184,8 +173,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             }
             assertThat(response.kayttajat).hasSameElementsAs(testData)
             verifyOrder {
-                hankeService.findHankeOrThrow(HANKE_TUNNUS)
-                permissionService.verifyHankeUserAuthorization(USERNAME, hanke, VIEW)
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW)
                 hankeKayttajaService.getKayttajatByHankeId(hanke.id!!)
                 disclosureLogService.saveDisclosureLogsForHankeKayttajat(
                     response.kayttajat,
@@ -196,17 +184,12 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
 
         @Test
         fun `getHankeKayttajat when no permission for hanke returns not found`() {
-            val hanke = HankeFactory.create()
-            every { hankeService.findHankeOrThrow(HANKE_TUNNUS) } returns hanke
-            every { permissionService.verifyHankeUserAuthorization(USERNAME, hanke, VIEW) } throws
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW) } throws
                 HankeNotFoundException(HANKE_TUNNUS)
 
             getHankeKayttajat().andExpect(status().isNotFound)
 
-            verifyOrder {
-                hankeService.findHankeOrThrow(HANKE_TUNNUS)
-                permissionService.verifyHankeUserAuthorization(USERNAME, hanke, VIEW)
-            }
+            verifyOrder { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW) }
             verify { hankeKayttajaService wasNot Called }
         }
 
@@ -223,6 +206,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     inner class UpdatePermissions {
         private val url = "/hankkeet/$HANKE_TUNNUS/kayttajat"
         private val hankeKayttajaId = UUID.fromString("5d67712f-ea0b-490c-957f-9b30bddb848c")
+        private val hankeIds = HankeIdsFactory.create()
 
         @Test
         @WithAnonymousUser
@@ -232,15 +216,8 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
 
         @Test
         fun `Returns not found when no permission for hanke`() {
-            val hanke = HankeFactory.create()
-            every { hankeService.findHankeOrThrow(HANKE_TUNNUS) } returns hanke
-            every {
-                permissionService.verifyHankeUserAuthorization(
-                    USERNAME,
-                    hanke,
-                    PermissionCode.MODIFY_EDIT_PERMISSIONS
-                )
-            } throws HankeNotFoundException(HANKE_TUNNUS)
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, MODIFY_EDIT_PERMISSIONS) } throws
+                HankeNotFoundException(HANKE_TUNNUS)
 
             put(
                     url,
@@ -250,37 +227,23 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 )
                 .andExpect(status().isNotFound)
 
-            verifySequence {
-                hankeService.findHankeOrThrow(HANKE_TUNNUS)
-                permissionService.verifyHankeUserAuthorization(
-                    USERNAME,
-                    hanke,
-                    PermissionCode.MODIFY_EDIT_PERMISSIONS
-                )
-            }
+            verify { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, MODIFY_EDIT_PERMISSIONS) }
             verify { hankeKayttajaService wasNot Called }
         }
 
         @Test
         fun `Returns 204 on success`() {
-            val hanke = HankeFactory.create()
-            every { hankeService.findHankeOrThrow(HANKE_TUNNUS) } returns hanke
-            justRun {
-                permissionService.verifyHankeUserAuthorization(
-                    USERNAME,
-                    hanke,
-                    PermissionCode.MODIFY_EDIT_PERMISSIONS
-                )
-            }
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, MODIFY_EDIT_PERMISSIONS) } returns
+                hankeIds
             every {
                 permissionService.hasPermission(
-                    hanke.id!!,
+                    hankeIds.id,
                     USERNAME,
                     PermissionCode.MODIFY_DELETE_PERMISSIONS
                 )
             } returns false
             val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
-            justRun { hankeKayttajaService.updatePermissions(hanke, updates, false, USERNAME) }
+            justRun { hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME) }
 
             put(
                     url,
@@ -291,29 +254,22 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 .andExpect(status().isNoContent)
                 .andExpect(content().string(""))
 
-            verifyCalls(hanke, updates)
+            verifyCalls(updates)
         }
 
         @Test
         fun `Calls service with admin permission when user has them`() {
-            val hanke = HankeFactory.create()
-            every { hankeService.findHankeOrThrow(HANKE_TUNNUS) } returns hanke
-            justRun {
-                permissionService.verifyHankeUserAuthorization(
-                    USERNAME,
-                    hanke,
-                    PermissionCode.MODIFY_EDIT_PERMISSIONS
-                )
-            }
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, MODIFY_EDIT_PERMISSIONS) } returns
+                hankeIds
             every {
                 permissionService.hasPermission(
-                    hanke.id!!,
+                    hankeIds.id,
                     USERNAME,
                     PermissionCode.MODIFY_DELETE_PERMISSIONS
                 )
             } returns true
             val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
-            justRun { hankeKayttajaService.updatePermissions(hanke, updates, true, USERNAME) }
+            justRun { hankeKayttajaService.updatePermissions(hankeIds, updates, true, USERNAME) }
 
             put(
                     url,
@@ -323,12 +279,12 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 )
                 .andExpect(status().isNoContent)
 
-            verifyCalls(hanke, updates, deleteAdminPermission = true)
+            verifyCalls(updates, deleteAdminPermission = true)
         }
 
         @Test
         fun `Returns forbidden when missing admin permissions`() {
-            val (hanke, updates) = setupForException(MissingAdminPermissionException(USERNAME))
+            val updates = setupForException(MissingAdminPermissionException(USERNAME))
 
             put(
                     url,
@@ -339,12 +295,12 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 .andExpect(status().isForbidden)
                 .andExpect(hankeError(HankeError.HAI0005))
 
-            verifyCalls(hanke, updates)
+            verifyCalls(updates)
         }
 
         @Test
         fun `Returns forbidden when changing own permissions`() {
-            val (hanke, updates) = setupForException(ChangingOwnPermissionException(USERNAME))
+            val updates = setupForException(ChangingOwnPermissionException(USERNAME))
 
             put(
                     url,
@@ -355,12 +311,12 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 .andExpect(status().isForbidden)
                 .andExpect(hankeError(HankeError.HAI4002))
 
-            verifyCalls(hanke, updates)
+            verifyCalls(updates)
         }
 
         @Test
         fun `Returns internal server error if there are users without either permission or tunniste`() {
-            val (hanke, updates) =
+            val updates =
                 setupForException(
                     UsersWithoutKayttooikeustasoException(missingIds = listOf(hankeKayttajaId))
                 )
@@ -374,12 +330,12 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 .andExpect(status().isInternalServerError)
                 .andExpect(hankeError(HankeError.HAI4003))
 
-            verifyCalls(hanke, updates)
+            verifyCalls(updates)
         }
 
         @Test
         fun `Returns conflict if there would be no admins remaining`() {
-            val (hanke, updates) = setupForException { hanke -> NoAdminRemainingException(hanke) }
+            val updates = setupForException(NoAdminRemainingException(hankeIds))
 
             put(
                     url,
@@ -390,15 +346,15 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 .andExpect(status().isConflict)
                 .andExpect(hankeError(HankeError.HAI4003))
 
-            verifyCalls(hanke, updates)
+            verifyCalls(updates)
         }
 
         @Test
         fun `Returns bad request if there would be no admins remaining`() {
-            val (hanke, updates) =
-                setupForException { hanke ->
-                    HankeKayttajatNotFoundException(listOf(hankeKayttajaId), hanke)
-                }
+            val updates =
+                setupForException(
+                    HankeKayttajatNotFoundException(listOf(hankeKayttajaId), hankeIds)
+                )
 
             put(
                     url,
@@ -409,28 +365,22 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 .andExpect(status().isBadRequest)
                 .andExpect(hankeError(HankeError.HAI4001))
 
-            verifyCalls(hanke, updates)
+            verifyCalls(updates)
         }
 
         private fun verifyCalls(
-            hanke: Hanke,
             updates: Map<UUID, Kayttooikeustaso>,
             deleteAdminPermission: Boolean = false,
         ) {
             verifySequence {
-                hankeService.findHankeOrThrow(HANKE_TUNNUS)
-                permissionService.verifyHankeUserAuthorization(
-                    USERNAME,
-                    hanke,
-                    PermissionCode.MODIFY_EDIT_PERMISSIONS
-                )
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, MODIFY_EDIT_PERMISSIONS)
                 permissionService.hasPermission(
-                    hanke.id!!,
+                    hankeIds.id,
                     USERNAME,
                     PermissionCode.MODIFY_DELETE_PERMISSIONS
                 )
                 hankeKayttajaService.updatePermissions(
-                    hanke,
+                    hankeIds,
                     updates,
                     deleteAdminPermission,
                     USERNAME
@@ -438,35 +388,22 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             }
         }
 
-        private fun setupForException(ex: Throwable): Pair<Hanke, Map<UUID, Kayttooikeustaso>> =
-            setupForException {
-                ex
-            }
-
-        private fun setupForException(
-            ex: (Hanke) -> Throwable
-        ): Pair<Hanke, Map<UUID, Kayttooikeustaso>> {
-            val hanke = HankeFactory.create()
-            every { hankeService.findHankeOrThrow(HANKE_TUNNUS) } returns hanke
-            justRun {
-                permissionService.verifyHankeUserAuthorization(
-                    USERNAME,
-                    hanke,
-                    PermissionCode.MODIFY_EDIT_PERMISSIONS
-                )
-            }
+        private fun setupForException(ex: Throwable): Map<UUID, Kayttooikeustaso> {
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, MODIFY_EDIT_PERMISSIONS) } returns
+                hankeIds
             every {
                 permissionService.hasPermission(
-                    hanke.id!!,
+                    hankeIds.id,
                     USERNAME,
                     PermissionCode.MODIFY_DELETE_PERMISSIONS
                 )
             } returns false
             val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
-            every { hankeKayttajaService.updatePermissions(hanke, updates, false, USERNAME) } throws
-                ex(hanke)
+            every {
+                hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+            } throws ex
 
-            return Pair(hanke, updates)
+            return updates
         }
     }
 

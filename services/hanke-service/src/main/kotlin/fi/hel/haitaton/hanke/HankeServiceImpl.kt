@@ -21,7 +21,6 @@ import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
@@ -70,15 +69,8 @@ open class HankeServiceImpl(
     private val auditLogService: AuditLogService,
     private val hankeLoggingService: HankeLoggingService,
     private val applicationService: ApplicationService,
-    private val permissionService: PermissionService,
     private val hankeKayttajaService: HankeKayttajaService,
 ) : HankeService {
-
-    override fun getHankeId(hankeTunnus: String): Int? =
-        hankeRepository.findByHankeTunnus(hankeTunnus)?.id
-
-    override fun getHankeIdOrThrow(hankeTunnus: String): Int =
-        getHankeId(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
 
     /**
      * Hanke does not contain hakemukset. This function wraps Hanke and its hakemukset to a pair.
@@ -100,10 +92,6 @@ open class HankeServiceImpl(
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let {
             createHankeDomainObjectFromEntity(it)
         }
-
-    @Transactional(readOnly = true)
-    override fun findHankeOrThrow(hankeTunnus: String) =
-        loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
 
     @Transactional(readOnly = true)
     override fun loadPublicHanke() =

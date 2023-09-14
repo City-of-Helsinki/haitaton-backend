@@ -6,17 +6,21 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.TestHankeIds
+import fi.hel.haitaton.hanke.factory.ids
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.permissions.HankeAuthorizer
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.mockk.Called
 import io.mockk.clearAllMocks
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import jakarta.validation.ConstraintViolationException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
-import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mockito
@@ -47,6 +51,8 @@ class HankeControllerTest {
 
         @Bean fun yhteystietoLoggingService(): DisclosureLogService = mockk(relaxUnitFun = true)
 
+        @Bean fun hankeAuthorizer(): HankeAuthorizer = mockk(relaxUnitFun = true)
+
         val featureFlags = FeatureFlags(mapOf(Pair(Feature.HANKE_EDITING, true)))
 
         @Bean
@@ -54,21 +60,26 @@ class HankeControllerTest {
             hankeService: HankeService,
             permissionService: PermissionService,
             disclosureLogService: DisclosureLogService,
+            hankeAuthorizer: HankeAuthorizer,
         ): HankeController =
-            HankeController(hankeService, permissionService, disclosureLogService, featureFlags)
+            HankeController(
+                hankeService,
+                permissionService,
+                disclosureLogService,
+                featureFlags,
+                hankeAuthorizer
+            )
     }
 
     private val mockedHankeTunnus = "AFC1234"
 
     @Autowired private lateinit var hankeService: HankeService
-
     @Autowired private lateinit var permissionService: PermissionService
-
     @Autowired private lateinit var hankeController: HankeController
-
     @Autowired private lateinit var disclosureLogService: DisclosureLogService
+    @Autowired private lateinit var hankeAuthorizer: HankeAuthorizer
 
-    @AfterEach
+    @BeforeEach
     fun cleanUp() {
         clearAllMocks()
     }
@@ -97,6 +108,9 @@ class HankeControllerTest {
                     HankeStatus.DRAFT
                 )
             )
+        every {
+            hankeAuthorizer.authorizeHankeTunnus(mockedHankeTunnus, PermissionCode.VIEW)
+        } returns TestHankeIds(hankeId, mockedHankeTunnus)
 
         val response = hankeController.getHankeByTunnus(mockedHankeTunnus)
 
@@ -155,10 +169,11 @@ class HankeControllerTest {
 
     @Test
     fun `test that the updateHanke can be called with hanke data and response will be 200`() {
+        val hanketunnus = "id123"
         val partialHanke =
             Hanke(
                 id = 123,
-                hankeTunnus = "id123",
+                hankeTunnus = hanketunnus,
                 nimi = "hankkeen nimi",
                 kuvaus = "lorem ipsum dolor sit amet...",
                 onYKTHanke = false,
@@ -175,28 +190,32 @@ class HankeControllerTest {
         // mock HankeService response
         Mockito.`when`(hankeService.updateHanke(partialHanke))
             .thenReturn(partialHanke.copy(modifiedBy = username, modifiedAt = getCurrentTimeUTC()))
-        Mockito.`when`(hankeService.findHankeOrThrow("id123"))
-            .thenReturn(HankeFactory.create(hankeTunnus = "id123"))
         Mockito.`when`(permissionService.hasPermission(123, username, PermissionCode.EDIT))
             .thenReturn(true)
+        every { hankeAuthorizer.authorizeHankeTunnus(hanketunnus, PermissionCode.EDIT) } returns
+            partialHanke.ids()
 
         // Actual call
-        val response: Hanke = hankeController.updateHanke(partialHanke, "id123")
+        val response: Hanke = hankeController.updateHanke(partialHanke, hanketunnus)
 
         assertThat(response).isNotNull
         assertThat(response.nimi).isEqualTo("hankkeen nimi")
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
+        verify {
+            hankeAuthorizer.authorizeHankeTunnus(hanketunnus, PermissionCode.EDIT)
+            disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username))
+        }
     }
 
     @Test
     fun `test that the updateHanke will throw if mismatch in hanke tunnus payload vs path`() {
         val hankeUpdate = HankeFactory.create()
         val existingHanke = HankeFactory.create(hankeTunnus = "wrong")
-        Mockito.`when`(hankeService.findHankeOrThrow("wrong")).thenReturn(existingHanke)
         Mockito.`when`(
                 permissionService.hasPermission(existingHanke.id!!, username, PermissionCode.EDIT)
             )
             .thenReturn(true)
+        every { hankeAuthorizer.authorizeHankeTunnus("wrong", PermissionCode.EDIT) } returns
+            existingHanke.ids()
 
         assertThatExceptionOfType(HankeArgumentException::class.java)
             .isThrownBy { hankeController.updateHanke(hankeUpdate, "wrong") }

@@ -1,14 +1,11 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
-import assertk.assertThat
-import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeError.HAI0001
-import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
-import fi.hel.haitaton.hanke.attachment.HANKE_ID
 import fi.hel.haitaton.hanke.attachment.HANKE_TUNNUS
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.andExpectError
@@ -16,18 +13,18 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.dummyData
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.HankeIdsFactory
+import fi.hel.haitaton.hanke.hankeError
+import fi.hel.haitaton.hanke.permissions.HankeAuthorizer
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
-import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
-import io.mockk.verify
 import io.mockk.verifyOrder
 import java.util.UUID
-import java.util.UUID.randomUUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -58,8 +55,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired private lateinit var hankeAttachmentService: HankeAttachmentService
-    @Autowired private lateinit var hankeService: HankeService
-    @Autowired private lateinit var permissionService: PermissionService
+    @Autowired private lateinit var authorizer: HankeAuthorizer
 
     @BeforeEach
     fun clearMocks() {
@@ -69,33 +65,32 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
     @AfterEach
     fun checkMocks() {
         checkUnnecessaryStub()
-        confirmVerified(hankeAttachmentService, hankeService, permissionService)
+        confirmVerified(hankeAttachmentService, authorizer)
     }
 
     @Test
     fun `getMetadataList when valid request should return metadata list`() {
         val data =
             (1..3).map { AttachmentFactory.hankeAttachmentMetadata(fileName = "${it}file.pdf") }
-        every { hankeService.getHankeId(HANKE_TUNNUS) }.returns(HANKE_ID)
-        every { permissionService.hasPermission(HANKE_ID, USERNAME, VIEW) } returns true
+        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW) } returns
+            HankeIdsFactory.create()
         every { hankeAttachmentService.getMetadataList(HANKE_TUNNUS) } returns data
 
         getMetadataList().andExpect(status().isOk)
 
         verifyOrder {
-            hankeService.getHankeId(HANKE_TUNNUS)
-            permissionService.hasPermission(HANKE_ID, USERNAME, VIEW)
+            authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW)
             hankeAttachmentService.getMetadataList(HANKE_TUNNUS)
         }
     }
 
     @Test
     fun `getAttachmentContent when valid request should return attachment file`() {
-        val liiteId = randomUUID()
-        every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
+        val liiteId = UUID.fromString("19d6a9f7-afb0-469f-b570-cba0d10b03fc")
+        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW) } returns
+            HankeIdsFactory.create()
         every { hankeAttachmentService.getContent(HANKE_TUNNUS, liiteId) } returns
             AttachmentContent(FILE_NAME_PDF, APPLICATION_PDF_VALUE, dummyData)
-        every { permissionService.hasPermission(HANKE_ID, USERNAME, VIEW) } returns true
 
         getAttachmentContent(attachmentId = liiteId)
             .andExpect(status().isOk)
@@ -103,8 +98,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
             .andExpect(content().bytes(dummyData))
 
         verifyOrder {
-            hankeService.getHankeId(HANKE_TUNNUS)
-            permissionService.hasPermission(HANKE_ID, USERNAME, VIEW)
+            authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW)
             hankeAttachmentService.getContent(HANKE_TUNNUS, liiteId)
         }
     }
@@ -112,54 +106,40 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
     @Test
     fun `postAttachment when valid request should succeed`() {
         val file = testFile()
-        every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
-        every { permissionService.hasPermission(HANKE_ID, USERNAME, EDIT) } returns true
+        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT) } returns
+            HankeIdsFactory.create()
         every { hankeAttachmentService.addAttachment(HANKE_TUNNUS, file) } returns
             AttachmentFactory.hankeAttachmentMetadata(fileName = "text.txt")
 
         postAttachment(file = file).andExpect(status().isOk)
 
         verifyOrder {
-            hankeService.getHankeId(HANKE_TUNNUS)
-            permissionService.hasPermission(HANKE_ID, USERNAME, EDIT)
+            authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT)
             hankeAttachmentService.addAttachment(HANKE_TUNNUS, file)
         }
     }
 
     @Test
-    fun `postAttachment when unknown hankeTunnus should fail`() {
-        every { hankeService.getHankeId(HANKE_TUNNUS) } returns null
-
-        postAttachment().andExpect(status().isNotFound)
-
-        verify { hankeService.getHankeId(HANKE_TUNNUS) }
-    }
-
-    @Test
     fun `postAttachment when no rights for hanke should fail`() {
-        every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
-        every { permissionService.hasPermission(HANKE_ID, USERNAME, EDIT) } returns false
+        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT) } throws
+            HankeNotFoundException(HANKE_TUNNUS)
 
         postAttachment().andExpect(status().isNotFound)
 
-        verifyOrder {
-            hankeService.getHankeId(HANKE_TUNNUS)
-            permissionService.hasPermission(HANKE_ID, USERNAME, EDIT)
-        }
+        verifyOrder { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT) }
     }
 
     @Test
     fun `deleteAttachment when valid request should succeed`() {
-        val liiteId = randomUUID()
-        every { hankeService.getHankeId(HANKE_TUNNUS) } returns HANKE_ID
-        every { permissionService.hasPermission(HANKE_ID, USERNAME, EDIT) } returns true
+        val liiteId = UUID.fromString("357bb2e4-9464-4aff-9e66-f4b2764ffbf4")
+        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT) } returns
+            HankeIdsFactory.create()
         justRun { hankeAttachmentService.deleteAttachment(HANKE_TUNNUS, liiteId) }
 
         deleteAttachment(attachmentId = liiteId).andExpect(status().isOk)
 
         verifyOrder {
-            hankeService.getHankeId(HANKE_TUNNUS)
-            permissionService.hasPermission(HANKE_ID, USERNAME, EDIT)
+            authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT)
             hankeAttachmentService.deleteAttachment(HANKE_TUNNUS, liiteId)
         }
     }
@@ -178,7 +158,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
 
     private fun getAttachmentContent(
         hankeTunnus: String = HANKE_TUNNUS,
-        attachmentId: UUID = randomUUID(),
+        attachmentId: UUID = UUID.fromString("919a765f-3ef0-46f0-a52b-9b47024ac33c"),
         resultType: MediaType = APPLICATION_PDF,
     ): ResultActions =
         get("/hankkeet/$hankeTunnus/liitteet/$attachmentId/content", resultType = resultType)
@@ -192,7 +172,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
 
     private fun deleteAttachment(
         hankeTunnus: String = HANKE_TUNNUS,
-        attachmentId: UUID = randomUUID(),
+        attachmentId: UUID = UUID.fromString("68cbd5fd-bf5f-4665-b157-d1eca6800f0c"),
     ): ResultActions = delete("/hankkeet/$hankeTunnus/liitteet/$attachmentId")
 }
 
@@ -209,28 +189,16 @@ class HankeAttachmentControllerHankeEditingDisabledITests(
 
     @Test
     fun `post attachment when hanke editing is disabled should return 404`() {
-        val response =
-            mockMvc
-                .perform(
-                    multipart("/hankkeet/$HANKE_TUNNUS/liitteet").file(testFile()).with(csrf())
-                )
-                .andExpect(status().isNotFound)
-                .andReturn()
-                .response
-
-        assertThat(response.contentAsString).isEqualTo(expectedResponse())
+        mockMvc
+            .perform(multipart("/hankkeet/$HANKE_TUNNUS/liitteet").file(testFile()).with(csrf()))
+            .andExpect(status().isNotFound)
+            .andExpect(hankeError(HankeError.HAI0004))
     }
 
     @Test
     fun `delete attachment when hanke editing is disabled should return 404`() {
-        val response =
-            delete("/hankkeet/$HANKE_TUNNUS/liitteet/${randomUUID()}").andReturn().response
-
-        assertThat(response.contentAsString).isEqualTo(expectedResponse())
+        delete("/hankkeet/$HANKE_TUNNUS/liitteet/4cf0c32d-710a-49a8-a496-6be50a8e0f40")
+            .andExpect(status().isNotFound)
+            .andExpect(hankeError(HankeError.HAI0004))
     }
-
-    private fun expectedResponse(): String =
-        with(HankeError.HAI0004) {
-            return """{"errorMessage":"$errorMessage","errorCode":"$errorCode"}"""
-        }
 }

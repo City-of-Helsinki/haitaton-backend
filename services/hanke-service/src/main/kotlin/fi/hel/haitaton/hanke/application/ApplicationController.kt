@@ -2,14 +2,11 @@ package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
-import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
-import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
 import fi.hel.haitaton.hanke.validation.ValidApplication
 import io.swagger.v3.oas.annotations.Hidden
@@ -47,7 +44,7 @@ class ApplicationController(
     private val service: ApplicationService,
     private val hankeService: HankeService,
     private val disclosureLogService: DisclosureLogService,
-    private val permissionService: PermissionService,
+    private val authorizer: ApplicationAuthorizer,
 ) {
     @GetMapping
     @Operation(
@@ -79,10 +76,10 @@ class ApplicationController(
             ]
     )
     fun getById(@PathVariable(name = "id") id: Long): Application {
-        checkHakemusPermission(id, VIEW)
-        val userId = currentUserId()
+        authorizer.authorizeApplicationId(id, VIEW)
+
         val application = service.getApplicationById(id)
-        disclosureLogService.saveDisclosureLogsForApplication(application, userId)
+        disclosureLogService.saveDisclosureLogsForApplication(application, currentUserId())
         return application
     }
 
@@ -105,11 +102,9 @@ class ApplicationController(
             ]
     )
     fun create(@ValidApplication @RequestBody application: Application): Application {
+        authorizer.authorizeHankeTunnus(application.hankeTunnus, EDIT_APPLICATIONS)
+
         val userId = currentUserId()
-        val hankeTunnus = application.hankeTunnus
-
-        checkPermissionToCreate(hankeTunnus, userId)
-
         val createdApplication = service.create(application, userId)
 
         disclosureLogService.saveDisclosureLogsForApplication(createdApplication, userId)
@@ -184,11 +179,12 @@ class ApplicationController(
         @PathVariable(name = "id") id: Long,
         @ValidApplication @RequestBody application: Application
     ): Application {
-        checkHakemusPermission(id, EDIT_APPLICATIONS)
+        authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS)
+
         val userId = currentUserId()
         val updatedApplication =
             service.updateApplicationData(id, application.applicationData, userId)
-        disclosureLogService.saveDisclosureLogsForApplication(updatedApplication, currentUserId())
+        disclosureLogService.saveDisclosureLogsForApplication(updatedApplication, userId)
         return updatedApplication
     }
 
@@ -220,7 +216,7 @@ class ApplicationController(
             ]
     )
     fun delete(@PathVariable(name = "id") id: Long) {
-        checkHakemusPermission(id, EDIT_APPLICATIONS)
+        authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS)
         service.delete(id, currentUserId())
     }
 
@@ -258,7 +254,7 @@ class ApplicationController(
             ]
     )
     fun sendApplication(@PathVariable(name = "id") id: Long): Application {
-        checkHakemusPermission(id, EDIT_APPLICATIONS)
+        authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS)
         return service.sendApplication(id, currentUserId())
     }
 
@@ -284,28 +280,12 @@ class ApplicationController(
             ]
     )
     fun downloadDecision(@PathVariable(name = "id") id: Long): ResponseEntity<ByteArray> {
-        checkHakemusPermission(id, VIEW)
+        authorizer.authorizeApplicationId(id, VIEW)
         val (filename, pdfBytes) = service.downloadDecision(id, currentUserId())
 
         val headers = HttpHeaders()
         headers.add("Content-Disposition", "inline; filename=$filename.pdf")
         return ResponseEntity.ok().headers(headers).contentType(APPLICATION_PDF).body(pdfBytes)
-    }
-
-    fun checkHakemusPermission(hakemusId: Long, permissionCode: PermissionCode) {
-        val userId = currentUserId()
-        val application = service.getApplicationById(hakemusId)
-        val hankeId = hankeService.getHankeId(application.hankeTunnus)
-
-        if (hankeId == null || !permissionService.hasPermission(hankeId, userId, permissionCode)) {
-            throw ApplicationNotFoundException(hakemusId)
-        }
-    }
-
-    fun checkPermissionToCreate(hankeTunnus: String, userId: String) {
-        val id = hankeService.getHankeId(hankeTunnus)
-        if (id == null || !permissionService.hasPermission(id, userId, EDIT_APPLICATIONS))
-            throw HankeNotFoundException(hankeTunnus)
     }
 
     @ExceptionHandler(IncompatibleApplicationException::class)

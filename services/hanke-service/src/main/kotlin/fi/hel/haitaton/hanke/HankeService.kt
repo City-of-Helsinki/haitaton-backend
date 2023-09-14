@@ -10,12 +10,6 @@ interface HankeService {
 
     fun loadHanke(hankeTunnus: String): Hanke?
 
-    fun findHankeOrThrow(hankeTunnus: String): Hanke
-
-    fun getHankeId(hankeTunnus: String): Int?
-
-    fun getHankeIdOrThrow(hankeTunnus: String): Int
-
     fun getHankeWithApplications(hankeTunnus: String): HankeWithApplications
 
     @Transactional fun createHanke(hanke: Hanke): Hanke
