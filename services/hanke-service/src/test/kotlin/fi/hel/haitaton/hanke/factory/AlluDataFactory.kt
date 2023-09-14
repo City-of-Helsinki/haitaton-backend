@@ -185,7 +185,7 @@ class AlluDataFactory(
             propertyDeveloperWithContacts: CustomerWithContacts? = null,
             rockExcavation: Boolean = false,
             postalAddress: PostalAddress? = null,
-        ) =
+        ): CableReportApplicationData =
             CableReportApplicationData(
                 applicationType = ApplicationType.CABLE_REPORT,
                 name = name,
@@ -228,6 +228,7 @@ class AlluDataFactory(
                         customerWithContacts = customer
                     )
             )
+
         fun Application.withCustomerContacts(vararg contacts: Contact): Application =
             this.withCustomer(
                 (applicationData as CableReportApplicationData)
@@ -241,13 +242,14 @@ class AlluDataFactory(
             city: String = "Helsinki",
         ) = this.copy(postalAddress = PostalAddress(StreetAddress(streetAddress), postalCode, city))
 
-        fun cableReportWithoutHanke(): CableReportWithoutHanke =
-            with(createApplication()) {
-                CableReportWithoutHanke(
-                    applicationType,
-                    applicationData as CableReportApplicationData
-                )
-            }
+        fun CableReportApplicationData.withArea(name: String, geometry: Polygon) =
+            this.copy(areas = (areas ?: listOf()) + ApplicationArea(name, geometry))
+
+        fun cableReportWithoutHanke(
+            applicationData: CableReportApplicationData = createCableReportApplicationData(),
+            applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
+            f: CableReportApplicationData.() -> CableReportApplicationData = { this },
+        ): CableReportWithoutHanke = CableReportWithoutHanke(applicationType, applicationData.f())
 
         fun createApplications(
             n: Long,

@@ -1,18 +1,16 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.ContactType.MUU
-import fi.hel.haitaton.hanke.ContactType.OMISTAJA
-import fi.hel.haitaton.hanke.ContactType.RAKENNUTTAJA
-import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.application.Contact
+import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasId
+import fi.hel.haitaton.hanke.domain.HasYhteystiedot
 import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.geometria.GeometriatService
@@ -103,51 +101,68 @@ open class HankeServiceImpl(
         hankeRepository.findAllById(ids).map { createHankeDomainObjectFromEntity(it) }
 
     @Transactional
-    override fun createHanke(hanke: Hanke): Hanke =
-        createHankeInternal(hanke = hanke, perustaja = null)
+    override fun createHanke(request: CreateHankeRequest): Hanke =
+        createHankeInternal(request = request, perustaja = null, generated = false)
 
-    private fun createHankeInternal(hanke: Hanke, perustaja: Perustaja?): Hanke {
+    private fun createHankeInternal(
+        request: CreateHankeRequest,
+        perustaja: Perustaja?,
+        generated: Boolean
+    ): Hanke {
         val userId = currentUserId()
 
-        val entity = HankeEntity(nimi = hanke.nimi)
-        val loggingEntryHolder = prepareLogging(entity)
+        val entity: HankeEntity = createEntityFromCreateRequest(request, userId)
 
-        // Create a new hanketunnus for it and save it:
-        val hanketunnus = hanketunnusService.newHanketunnus()
-        entity.hankeTunnus = hanketunnus
-        hanke.hankeTunnus = hanketunnus
-
+        entity.generated = generated
         entity.perustaja = perustaja?.toEntity()
 
-        // Copy values from the incoming domain object, and set some internal fields:
-        copyNonNullHankeFieldsToEntity(hanke, entity)
+        val loggingEntryHolder = prepareLogging(entity)
+        copyYhteystietosToEntity(request, entity, userId, loggingEntryHolder, mutableMapOf())
 
-        val existingYTs = prepareMapOfExistingYhteystietos(entity)
-        copyYhteystietosToEntity(hanke, entity, userId, loggingEntryHolder, existingYTs)
-
-        // NOTE: liikennehaittaindeksi and tormaystarkastelutulos are NOT
-        //  copied from incoming data. Use setTormaystarkasteluTulos() for that.
-        // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
-        // Special fields; handled "manually"..
-        entity.version = 0
-        entity.createdByUserId = userId
-        entity.createdAt = getCurrentTimeUTCAsLocalTime()
-        entity.modifiedByUserId = null
-        entity.modifiedAt = null
-
-        calculateTormaystarkastelu(hanke, entity)
+        calculateTormaystarkastelu(request.alueet ?: listOf(), entity)
         entity.status = decideNewHankeStatus(entity)
 
-        logger.debug { "Creating Hanke ${hanke.hankeTunnus}: ${hanke.toLogString()}" }
         val savedHankeEntity = hankeRepository.save(entity)
-        logger.debug { "Created Hanke ${hanke.hankeTunnus}." }
-
         postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
         return createHankeDomainObjectFromEntity(savedHankeEntity).also {
             initAccessForCreatedHanke(it, perustaja, userId)
             hankeLoggingService.logCreate(it, userId)
         }
+    }
+
+    private fun createEntityFromCreateRequest(
+        request: CreateHankeRequest,
+        currentUserId: String
+    ): HankeEntity {
+        val entity = HankeEntity(nimi = request.nimi)
+
+        // Create a new hanketunnus:
+        val hanketunnus = hanketunnusService.newHanketunnus()
+        entity.hankeTunnus = hanketunnus
+
+        // Set audit fields
+        entity.version = 0
+        entity.createdByUserId = currentUserId
+        entity.createdAt = getCurrentTimeUTCAsLocalTime()
+        entity.modifiedByUserId = null
+        entity.modifiedAt = null
+
+        entity.onYKTHanke = request.onYKTHanke
+        entity.kuvaus = request.kuvaus
+        entity.vaihe = request.vaihe
+        entity.suunnitteluVaihe = request.suunnitteluVaihe
+        entity.tyomaaKatuosoite = request.tyomaaKatuosoite
+        entity.tyomaaTyyppi = (request.tyomaaTyyppi ?: setOf()).toMutableSet()
+
+        // Create hankealueet
+        request.alueet?.forEach {
+            val alueEntity = copyNonNullHankealueFieldsToEntity(hanketunnus, it, null)
+            alueEntity.hanke = entity
+            entity.listOfHankeAlueet.add(alueEntity)
+        }
+
+        return entity
     }
 
     /**
@@ -193,7 +208,7 @@ open class HankeServiceImpl(
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
         entity.generated = false
 
-        calculateTormaystarkastelu(hanke, entity)
+        calculateTormaystarkastelu(hanke.alueet, entity)
         entity.status = decideNewHankeStatus(entity)
 
         // Save changes:
@@ -247,7 +262,7 @@ open class HankeServiceImpl(
 
     // ======================================================================
 
-    private fun calculateTormaystarkastelu(source: Hanke, target: HankeEntity) {
+    private fun calculateTormaystarkastelu(source: List<Hankealue>, target: HankeEntity) {
         tormaystarkasteluService.calculateTormaystarkastelu(source)?.let {
             target.tormaystarkasteluTulokset.clear()
             target.tormaystarkasteluTulokset.add(
@@ -463,14 +478,14 @@ open class HankeServiceImpl(
 
         // Merge hankealueet
         mergeDataInto(hanke.alueet, entity.listOfHankeAlueet) { source, target ->
-            copyNonNullHankealueFieldsToEntity(hanke, source, target)
+            copyNonNullHankealueFieldsToEntity(entity.hankeTunnus!!, source, target)
         }
 
         entity.listOfHankeAlueet.forEach { it.hanke = entity }
     }
 
     private fun copyNonNullHankealueFieldsToEntity(
-        hanke: Hanke,
+        hankeTunnus: String,
         source: Hankealue,
         target: HankealueEntity?
     ): HankealueEntity {
@@ -489,7 +504,7 @@ open class HankeServiceImpl(
         source.tarinaHaitta?.let { result.tarinaHaitta = source.tarinaHaitta }
         source.geometriat?.let {
             it.id = result.geometriat ?: it.id
-            it.resetFeatureProperties(hanke.hankeTunnus)
+            it.resetFeatureProperties(hankeTunnus)
             val saved = geometriatService.saveGeometriat(it)
             result.geometriat = saved?.id
         }
@@ -530,7 +545,7 @@ open class HankeServiceImpl(
      * three lists into one list, and sets the audit fields as relevant.
      */
     private fun copyYhteystietosToEntity(
-        hanke: Hanke,
+        hanke: HasYhteystiedot,
         entity: HankeEntity,
         userid: String,
         loggingEntryHolder: YhteystietoLoggingEntryHolder,
@@ -544,22 +559,16 @@ open class HankeServiceImpl(
 
         // Check each incoming yhteystieto (from three lists) for being new or an update to existing
         // one, and add to the main entity's single list if necessary:
-        listOf(
-                OMISTAJA to hanke.omistajat,
-                RAKENNUTTAJA to hanke.rakennuttajat,
-                TOTEUTTAJA to hanke.toteuttajat,
-                MUU to hanke.muut
+        hanke.yhteystiedotByType().forEach { (type, yhteystiedot) ->
+            processIncomingHankeYhteystietosOfSpecificTypeToEntity(
+                yhteystiedot,
+                entity,
+                type,
+                userid,
+                existingYTs,
+                loggingEntryHolder
             )
-            .forEach { (type, yhteystiedot) ->
-                processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-                    yhteystiedot,
-                    entity,
-                    type,
-                    userid,
-                    existingYTs,
-                    loggingEntryHolder
-                )
-            }
+        }
 
         // TODO: this method of removing entries if they are missing in the incoming data is
         //  different to behavior of the other simpler fields, where missing or null field is
@@ -829,23 +838,9 @@ open class HankeServiceImpl(
      */
     private fun generateHankeFrom(cableReport: CableReportWithoutHanke): Hanke =
         createHankeInternal(
-            Hanke(
-                id = null,
-                hankeTunnus = null,
-                onYKTHanke = null,
-                nimi = limitHankeName(cableReport.applicationData.name),
-                kuvaus = null,
-                vaihe = null,
-                suunnitteluVaihe = null,
-                version = null,
-                createdBy = null,
-                createdAt = null,
-                modifiedBy = null,
-                modifiedAt = null,
-                status = HankeStatus.DRAFT,
-                generated = true,
-            ),
+            CreateHankeRequest(nimi = limitHankeName(cableReport.applicationData.name)),
             perustaja = perustajaFrom(cableReport.applicationData),
+            generated = true,
         )
 
     private fun limitHankeName(name: String): String =

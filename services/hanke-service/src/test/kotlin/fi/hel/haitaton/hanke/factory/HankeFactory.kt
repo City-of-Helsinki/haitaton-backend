@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Vaihe.SUUNNITTELU
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
+import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Perustaja
@@ -43,12 +44,16 @@ class HankeFactory(
         nimi: String = defaultNimi,
         vaihe: Vaihe? = Vaihe.OHJELMOINTI,
         suunnitteluVaihe: SuunnitteluVaihe? = null,
+        tyomaaKatuosoite: String? = null,
+        tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
     ) =
         hankeService.createHanke(
-            create(
+            CreateHankeRequest(
                 nimi = nimi,
                 vaihe = vaihe,
                 suunnitteluVaihe = suunnitteluVaihe,
+                tyomaaKatuosoite = tyomaaKatuosoite,
+                tyomaaTyyppi = tyomaaTyyppi,
             )
         )
 
@@ -66,8 +71,6 @@ class HankeFactory(
         val hanke = save(nimi, vaihe, suunnitteluVaihe)
         return hankeRepository.getReferenceById(hanke.id!!)
     }
-
-    fun save(hanke: Hanke) = hankeService.createHanke(hanke)
 
     fun saveMinimal(
         hankeTunnus: String = hanketunnusService.newHanketunnus(),
@@ -88,6 +91,26 @@ class HankeFactory(
         val application = hankeService.generateHankeWithApplication(cableReportWithoutHanke, userId)
         return hankeService.loadHanke(application.hankeTunnus)!!
     }
+
+    fun createRequest(
+        nimi: String = defaultNimi,
+        onYKTHanke: Boolean? = true,
+        kuvaus: String? = defaultKuvaus,
+        vaihe: Vaihe? = Vaihe.OHJELMOINTI,
+        suunnitteluVaihe: SuunnitteluVaihe? = null,
+        tyomaaKatuosoite: String? = null,
+        tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
+    ) =
+        Companion.createRequest(
+                nimi,
+                onYKTHanke,
+                kuvaus,
+                vaihe,
+                suunnitteluVaihe,
+                tyomaaKatuosoite,
+                tyomaaTyyppi,
+            )
+            .copy(hankeService = hankeService)
 
     companion object {
 
@@ -175,6 +198,28 @@ class HankeFactory(
                         )
                     tormaystarkasteluTulokset = mutableListOf(tormaysTarkastelu(hankeEntity = this))
                 }
+
+        fun createRequest(
+            nimi: String = defaultNimi,
+            onYKTHanke: Boolean? = true,
+            kuvaus: String? = defaultKuvaus,
+            vaihe: Vaihe? = Vaihe.OHJELMOINTI,
+            suunnitteluVaihe: SuunnitteluVaihe? = null,
+            tyomaaKatuosoite: String? = null,
+            tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
+        ): CreateHankeRequestBuilder =
+            CreateHankeRequestBuilder(
+                null,
+                CreateHankeRequest(
+                    nimi = nimi,
+                    onYKTHanke = onYKTHanke,
+                    kuvaus = kuvaus,
+                    vaihe = vaihe,
+                    suunnitteluVaihe = suunnitteluVaihe,
+                    tyomaaKatuosoite = tyomaaKatuosoite,
+                    tyomaaTyyppi = tyomaaTyyppi
+                )
+            )
 
         /**
          * Add a hankealue with haitat to a test Hanke.

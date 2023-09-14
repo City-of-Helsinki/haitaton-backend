@@ -69,7 +69,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
     fun `getMetadataList should return related metadata list`() {
         mockWebServer.enqueue(response(body(results = successResult())))
         mockWebServer.enqueue(response(body(results = successResult())))
-        val hanke = hankeService.createHanke(HankeFactory.create())
+        val hanke = hankeFactory.save()
         (1..2).forEach { _ ->
             hankeAttachmentService.addAttachment(
                 hankeTunnus = hanke.hankeTunnus!!,
@@ -93,7 +93,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
     fun `getContent when status is OK should succeed`() {
         mockWebServer.enqueue(response(body(results = successResult())))
         val file = testFile()
-        val hanke = hankeService.createHanke(HankeFactory.create())
+        val hanke = hankeFactory.save()
         val attachment = hankeAttachmentService.addAttachment(hanke.hankeTunnus!!, file)
 
         val result = hankeAttachmentService.getContent(hanke.hankeTunnus!!, attachment.id)
@@ -107,8 +107,8 @@ class HankeAttachmentServiceITests : DatabaseTest() {
     fun `getContent when attachment is not in requested hanke should throw`() {
         mockWebServer.enqueue(response(body(results = successResult())))
         mockWebServer.enqueue(response(body(results = successResult())))
-        val firstHanke = hankeService.createHanke(HankeFactory.create())
-        val secondHanke = hankeService.createHanke(HankeFactory.create())
+        val firstHanke = hankeFactory.save()
+        val secondHanke = hankeFactory.save()
         hankeAttachmentService.addAttachment(
             hankeTunnus = firstHanke.hankeTunnus!!,
             attachment = testFile(),
@@ -130,7 +130,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
     @Test
     fun `addAttachment when valid input returns metadata of saved attachment`() {
         mockWebServer.enqueue(response(body(results = successResult())))
-        val hanke = hankeService.createHanke(HankeFactory.create())
+        val hanke = hankeFactory.save()
 
         val result = hankeAttachmentService.addAttachment(hanke.hankeTunnus!!, testFile())
 
@@ -154,7 +154,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
     @Test
     fun `addAttachment with special characters in filename sanitizes filename`() {
         mockWebServer.enqueue(response(body(results = successResult())))
-        val hanke = hankeService.createHanke(HankeFactory.create())
+        val hanke = hankeFactory.save()
 
         val result =
             hankeAttachmentService.addAttachment(
@@ -199,7 +199,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
 
     @Test
     fun `addAttachment when content type not supported should throw`() {
-        val hanke = hankeService.createHanke(HankeFactory.create())
+        val hanke = hankeFactory.save()
         val invalidFilename = "hello.html"
 
         val ex =
@@ -218,7 +218,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
     @Test
     fun `addAttachment when scan fails should throw`() {
         mockWebServer.enqueue(response(body(results = failResult())))
-        val hanke = hankeService.createHanke(HankeFactory.create())
+        val hanke = hankeFactory.save()
 
         val exception =
             assertThrows<AttachmentInvalidException> {
@@ -233,7 +233,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
     @Test
     fun `deleteAttachment when valid input should succeed`() {
         mockWebServer.enqueue(response(body(results = successResult())))
-        val hanke = hankeService.createHanke(HankeFactory.create())
+        val hanke = hankeFactory.save()
         val attachment = hankeAttachmentService.addAttachment(hanke.hankeTunnus!!, testFile())
         val attachmentId = attachment.id
         assertThat(hankeAttachmentRepository.findById(attachmentId)).isPresent()
