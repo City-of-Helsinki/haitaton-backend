@@ -1,7 +1,9 @@
 package fi.hel.haitaton.hanke.email
 
-import fi.hel.haitaton.hanke.ContactType
+import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.configuration.Feature
+import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.getResource
 import jakarta.mail.internet.MimeMessage
 import mu.KotlinLogging
@@ -26,14 +28,14 @@ data class EmailFilterProperties(
     @Delimiter(";") val allowList: List<String>,
 )
 
-data class ApplicationInvitationData(
-    val inviterName: String,
-    val inviterEmail: String,
+data class ApplicationNotificationData(
+    val senderName: String,
+    val senderEmail: String,
     val recipientEmail: String,
     val applicationType: ApplicationType,
     val applicationIdentifier: String,
     val hankeTunnus: String,
-    val roleType: ContactType,
+    val roleType: ApplicationContactType,
 )
 
 data class HankeInvitationData(
@@ -48,13 +50,14 @@ data class HankeInvitationData(
 enum class EmailTemplate(val value: String) {
     CABLE_REPORT_DONE("johtoselvitys-valmis"),
     INVITATION_HANKE("kayttaja-lisatty-hanke"),
-    INVITATION_APPLICATION("kayttaja-lisatty-hakemus")
+    APPLICATION_NOTIFICATION("kayttaja-lisatty-hakemus")
 }
 
 @Service
 class EmailSenderService(
     private val mailSender: JavaMailSender,
     private val emailConfig: EmailProperties,
+    private val featureFlags: FeatureFlags,
 ) {
 
     fun sendJohtoselvitysCompleteEmail(
@@ -90,23 +93,27 @@ class EmailSenderService(
         sendHybridEmail(data.recipientEmail, EmailTemplate.INVITATION_HANKE, templateData)
     }
 
-    fun sendApplicationInvitationEmail(data: ApplicationInvitationData) {
-        logger.info { "Sending invitation email for application" }
+    fun sendApplicationNotificationEmail(data: ApplicationNotificationData) {
+        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
+            return
+        }
+
+        logger.info { "Sending notification email for application" }
 
         val applicationTypeText = convertApplicationTypeFinnish(data.applicationType)
 
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
-                "inviterName" to data.inviterName,
-                "inviterEmail" to data.inviterEmail,
+                "senderName" to data.senderName,
+                "senderEmail" to data.senderEmail,
                 "applicationType" to applicationTypeText,
                 "applicationIdentifier" to data.applicationIdentifier,
                 "hankeTunnus" to data.hankeTunnus,
-                "recipientRole" to data.roleType.toString().lowercase(),
+                "recipientRole" to data.roleType.value,
             )
 
-        sendHybridEmail(data.recipientEmail, EmailTemplate.INVITATION_APPLICATION, templateData)
+        sendHybridEmail(data.recipientEmail, EmailTemplate.APPLICATION_NOTIFICATION, templateData)
     }
 
     private fun sendHybridEmail(to: String, context: EmailTemplate, data: Map<String, String>) {

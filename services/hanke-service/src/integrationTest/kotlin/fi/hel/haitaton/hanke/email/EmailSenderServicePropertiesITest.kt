@@ -7,6 +7,8 @@ import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
+import fi.hel.haitaton.hanke.application.ApplicationType.CABLE_REPORT
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
@@ -21,11 +23,12 @@ import org.testcontainers.junit.jupiter.Testcontainers
     properties =
         [
             "haitaton.email.filter.use=true",
-            "haitaton.email.filter.allow-list=test@test.test;something@mail.com"
+            "haitaton.email.filter.allow-list=test@test.test;something@mail.com",
+            "haitaton.features.user-management=false"
         ]
 )
 @ActiveProfiles("test")
-class EmailSenderServiceFilterITest : DatabaseTest() {
+class EmailSenderServicePropertiesITest : DatabaseTest() {
 
     companion object {
         @JvmField
@@ -49,6 +52,23 @@ class EmailSenderServiceFilterITest : DatabaseTest() {
     @Test
     fun `sendJohtoselvitysCompleteEmail when recipient not in allow list does not send`() {
         emailSenderService.sendJohtoselvitysCompleteEmail("foo@bar.test", 13L, "JS2300001")
+
+        assertThat(greenMail.receivedMessages.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `sendApplicationNotificationEmail when user management not enabled does not send`() {
+        emailSenderService.sendApplicationNotificationEmail(
+            ApplicationNotificationData(
+                senderName = "Kalle Kutsuja",
+                senderEmail = "kalle.kutsuja@mail.com",
+                recipientEmail = "matti.meikalainen@mail.com",
+                applicationType = CABLE_REPORT,
+                applicationIdentifier = "JS002",
+                hankeTunnus = "HAI24-1",
+                roleType = TYON_SUORITTAJA,
+            )
+        )
 
         assertThat(greenMail.receivedMessages.size).isEqualTo(0)
     }

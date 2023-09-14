@@ -10,8 +10,8 @@ import assertk.assertions.startsWith
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
-import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import jakarta.mail.internet.MimeMessage
@@ -27,7 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers
 private const val TEST_EMAIL = "test@test.test"
 private const val HAITATON_NO_REPLY = "no-reply@hel.fi"
 private const val APPLICATION_IDENTIFIER = "JS2300001"
-private const val DEFAULT_INVITER_NAME = "Kalle Kutsuja"
+private const val DEFAULT_INVITER_NAME = "Matti Meikäläinen"
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -120,7 +120,7 @@ class EmailSenderServiceITest : DatabaseTest() {
 
         @Test
         fun `sendHankeInvitationEmail sends email with correct recipient`() {
-            emailSenderService.sendHankeInvitationEmail(hankeInvitationData())
+            emailSenderService.sendHankeInvitationEmail(hankeInvitation())
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
@@ -129,7 +129,7 @@ class EmailSenderServiceITest : DatabaseTest() {
 
         @Test
         fun `sendHankeInvitationEmail sends email with sender from properties`() {
-            emailSenderService.sendHankeInvitationEmail(hankeInvitationData())
+            emailSenderService.sendHankeInvitationEmail(hankeInvitation())
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.from).hasSize(1)
@@ -138,7 +138,7 @@ class EmailSenderServiceITest : DatabaseTest() {
 
         @Test
         fun `sendHankeInvitationEmail sends email with correct subject`() {
-            emailSenderService.sendHankeInvitationEmail(hankeInvitationData())
+            emailSenderService.sendHankeInvitationEmail(hankeInvitation())
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject).isEqualTo("Sinut on lisätty hankkeelle HAI24-1")
@@ -146,7 +146,7 @@ class EmailSenderServiceITest : DatabaseTest() {
 
         @Test
         fun `sendHankeInvitationEmail sends email with parametrized hybrid body`() {
-            val data = hankeInvitationData()
+            val data = hankeInvitation()
 
             emailSenderService.sendHankeInvitationEmail(data)
 
@@ -158,7 +158,8 @@ class EmailSenderServiceITest : DatabaseTest() {
                 contains("http://localhost:3001/${data.invitationToken}")
             }
             assertThat(htmlBody).all {
-                contains("${data.inviterName} (${data.inviterEmail})")
+                val htmlEscapedName = "Matti Meik&auml;l&auml;inen"
+                contains("$htmlEscapedName (${data.inviterEmail})")
                 contains("hankkeelle <b>${data.hankeNimi} (${data.hankeTunnus})</b>.")
                 contains("""<a href="http://localhost:3001/${data.invitationToken}">""")
             }
@@ -166,10 +167,10 @@ class EmailSenderServiceITest : DatabaseTest() {
     }
 
     @Nested
-    inner class ApplicationInvitation {
+    inner class ApplicationNotification {
         @Test
-        fun `sendApplicationInvitationEmail sends email with correct recipient`() {
-            emailSenderService.sendApplicationInvitationEmail(applicationInvitationData())
+        fun `sendApplicationNotificationEmail sends email with correct recipient`() {
+            emailSenderService.sendApplicationNotificationEmail(applicationNotification())
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
@@ -177,8 +178,8 @@ class EmailSenderServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `sendApplicationInvitationEmail sends email with sender from properties`() {
-            emailSenderService.sendApplicationInvitationEmail(applicationInvitationData())
+        fun `sendApplicationNotificationEmail sends email with sender from properties`() {
+            emailSenderService.sendApplicationNotificationEmail(applicationNotification())
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.from).hasSize(1)
@@ -186,9 +187,9 @@ class EmailSenderServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `sendApplicationInvitationEmail sends email with correct subject`() {
-            val data = applicationInvitationData()
-            emailSenderService.sendApplicationInvitationEmail(data)
+        fun `sendApplicationNotificationEmail sends email with correct subject`() {
+            val data = applicationNotification()
+            emailSenderService.sendApplicationNotificationEmail(data)
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
@@ -196,24 +197,26 @@ class EmailSenderServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `sendApplicationInvitationEmail sends email with parametrized hybrid body`() {
-            val data = applicationInvitationData()
+        fun `sendApplicationNotificationEmail sends email with parametrized hybrid body`() {
+            val data = applicationNotification()
 
-            emailSenderService.sendApplicationInvitationEmail(data)
+            emailSenderService.sendApplicationNotificationEmail(data)
 
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = getBodiesFromHybridEmail(email)
             assertThat(textBody).all {
-                contains("${data.inviterName} (${data.inviterEmail}) on")
+                contains("${data.senderName} (${data.senderEmail}) on")
                 contains("tehnyt johtoselvityshakemuksen (${data.applicationIdentifier})")
                 contains("hankkeella ${data.hankeTunnus}")
-                contains("rooliin ${data.roleType.text()}.")
+                contains("rooliin ${data.roleType.value}.")
                 contains("Tarkastele hakemusta Haitattomassa: http://localhost:3001")
             }
             assertThat(htmlBody).all {
-                contains("${data.inviterName} (${data.inviterEmail})")
+                val htmlEscapedName = "Matti Meik&auml;l&auml;inen"
+                val htmlEscapedRole = "ty&ouml;n suorittaja"
+                contains("$htmlEscapedName (${data.senderEmail})")
                 contains("johtoselvityshakemuksen (${data.applicationIdentifier})")
-                contains("rooliin ${data.roleType.text()}")
+                contains("rooliin $htmlEscapedRole")
                 contains("""<a href="http://localhost:3001">""")
             }
         }
@@ -246,26 +249,24 @@ class EmailSenderServiceITest : DatabaseTest() {
         return Pair(bodies[0], bodies[1])
     }
 
-    private fun hankeInvitationData(inviterName: String = DEFAULT_INVITER_NAME) =
+    private fun hankeInvitation(inviterName: String = DEFAULT_INVITER_NAME) =
         HankeInvitationData(
             inviterName = inviterName,
-            inviterEmail = "kalle.kutsuja@test.fi",
+            inviterEmail = "matti.meikalainen@test.fi",
             recipientEmail = TEST_EMAIL,
             hankeTunnus = "HAI24-1",
             hankeNimi = "Mannerheimintien liikenneuudistus",
             invitationToken = "MgtzRbcPsvoKQamnaSxCnmW7",
         )
 
-    private fun applicationInvitationData(inviterName: String = DEFAULT_INVITER_NAME) =
-        ApplicationInvitationData(
-            inviterName = inviterName,
-            inviterEmail = "kalle.kutsuja@test.fi",
+    private fun applicationNotification(senderName: String = DEFAULT_INVITER_NAME) =
+        ApplicationNotificationData(
+            senderName = senderName,
+            senderEmail = "matti.meikalainen@test.fi",
             recipientEmail = TEST_EMAIL,
             applicationType = ApplicationType.CABLE_REPORT,
             applicationIdentifier = APPLICATION_IDENTIFIER,
             hankeTunnus = "HAI24-1",
-            roleType = ContactType.RAKENNUTTAJA,
+            roleType = ApplicationContactType.TYON_SUORITTAJA,
         )
-
-    private fun ContactType.text() = toString().lowercase()
 }

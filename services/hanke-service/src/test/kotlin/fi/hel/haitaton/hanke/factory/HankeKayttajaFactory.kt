@@ -2,7 +2,10 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.permissions.HankeKayttaja
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaEntity
+import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteEntity
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.permissions.PermissionEntity
 import java.util.UUID
 
 object HankeKayttajaFactory {
@@ -23,6 +26,23 @@ object HankeKayttajaFactory {
         kayttajaTunnisteId: UUID? = TUNNISTE_ID,
     ): HankeKayttaja =
         HankeKayttaja(id, hankeId, nimi, sahkoposti, permissionId, kayttajaTunnisteId)
+
+    fun createEntity(
+        id: UUID = KAYTTAJA_ID,
+        hankeId: Int = HANKE_ID,
+        nimi: String = NIMI,
+        sahkoposti: String = SAHKOPOSTI,
+        permission: PermissionEntity? = null,
+        kayttajaTunniste: KayttajaTunnisteEntity? = null,
+    ): HankeKayttajaEntity =
+        HankeKayttajaEntity(
+            id,
+            hankeId,
+            nimi,
+            sahkoposti,
+            permission = permission,
+            kayttajaTunniste = kayttajaTunniste
+        )
 
     fun generateHankeKayttajat(amount: Int = 3): List<HankeKayttajaDto> =
         (1..amount).map {
