@@ -47,11 +47,11 @@ class KayttajaTunnisteEntity(
         private val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
         private val secureRandom: SecureRandom = SecureRandom()
 
-        fun create() =
+        fun create(sentAt: OffsetDateTime? = null) =
             KayttajaTunnisteEntity(
                 tunniste = randomToken(),
                 createdAt = getCurrentTimeUTC().toOffsetDateTime(),
-                sentAt = null,
+                sentAt = sentAt,
                 kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
                 hankeKayttaja = null
             )

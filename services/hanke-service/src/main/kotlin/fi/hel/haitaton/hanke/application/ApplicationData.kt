@@ -10,6 +10,13 @@ import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import java.time.ZonedDateTime
 
+enum class ApplicationContactType(val value: String) {
+    HAKIJA("hakija"),
+    TYON_SUORITTAJA("työn suorittaja"),
+    RAKENNUTTAJA("rakennuttaja"),
+    ASIANHOITAJA("asianhoitaja"),
+}
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -91,3 +98,5 @@ enum class AlluDataError(private val errorDescription: String) {
 
     override fun toString(): String = errorDescription
 }
+
+fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }
