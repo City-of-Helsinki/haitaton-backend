@@ -15,6 +15,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 
+/** The codes are just bitmasks. Their value or order has no meaning. */
 enum class PermissionCode(val code: Long) {
     VIEW(1),
     MODIFY_VIEW_PERMISSIONS(2),
@@ -23,7 +24,8 @@ enum class PermissionCode(val code: Long) {
     DELETE(16),
     MODIFY_DELETE_PERMISSIONS(32),
     EDIT_APPLICATIONS(64),
-    MODIFY_APPLICATION_PERMISSIONS(128)
+    MODIFY_APPLICATION_PERMISSIONS(128),
+    RESEND_INVITATION(256),
 }
 
 @Repository
