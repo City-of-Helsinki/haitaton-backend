@@ -1,8 +1,7 @@
 package fi.hel.haitaton.hanke.permissions
 
 import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.configuration.Feature
-import fi.hel.haitaton.hanke.configuration.FeatureFlags
+import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.validation.ValidHanke
@@ -16,6 +15,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -30,11 +30,10 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @SecurityRequirement(name = "bearerAuth")
 class HankeKayttajaController(
-    private val authorizer: HankeKayttajaAuthorizer,
+    private val hankeService: HankeService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val permissionService: PermissionService,
     private val disclosureLogService: DisclosureLogService,
-    private val featureFlags: FeatureFlags,
 ) {
     @GetMapping("/hankkeet/{hankeTunnus}/whoami")
     @Operation(summary = "Get your own permission for a hanke")
@@ -53,11 +52,11 @@ class HankeKayttajaController(
                 ),
             ]
     )
+    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun whoami(@PathVariable hankeTunnus: String): WhoamiResponse {
         val userId = currentUserId()
-        val hankeIds =
-            authorizer.authorizeHankeTunnus(hankeTunnus, PermissionCode.VIEW)
 
+        val hankeIds = hankeService.findIds(hankeTunnus)!!
         val permission = permissionService.findPermission(hankeIds.id, userId)!!
 
         val hankeKayttaja = hankeKayttajaService.getKayttajaByUserId(hankeIds.id, userId)
@@ -85,11 +84,11 @@ class HankeKayttajaController(
                 ),
             ]
     )
+    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun getHankeKayttajat(@PathVariable hankeTunnus: String): HankeKayttajaResponse {
         logger.info { "Finding kayttajat for hanke $hankeTunnus" }
 
-        val hankeIds =
-            authorizer.authorizeHankeTunnus(hankeTunnus, PermissionCode.VIEW)
+        val hankeIds = hankeService.findIds(hankeTunnus)!!
 
         val users = hankeKayttajaService.getKayttajatByHankeId(hankeIds.id)
         disclosureLogService.saveDisclosureLogsForHankeKayttajat(users, currentUserId())
@@ -149,17 +148,15 @@ have those same permissions.
             ]
     )
     @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(
+        "@featureService.isEnabled('USER_MANAGEMENT') && " +
+            "@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'MODIFY_EDIT_PERMISSIONS')"
+    )
     fun updatePermissions(
         @ValidHanke @RequestBody permissions: PermissionUpdate,
         @PathVariable hankeTunnus: String
     ) {
-        featureFlags.ensureEnabled(Feature.USER_MANAGEMENT)
-
-        val hankeIds =
-            authorizer.authorizeHankeTunnus(
-                hankeTunnus,
-                PermissionCode.MODIFY_EDIT_PERMISSIONS
-            )
+        val hankeIds = hankeService.findIds(hankeTunnus)!!
 
         val userId = currentUserId()
 
@@ -220,9 +217,8 @@ Removes the token after a successful identification.
     }
 
     @PostMapping("/kayttajat/{kayttajaId}/kutsu")
+    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'RESEND_INVITATION')")
     fun resendInvitations(@PathVariable kayttajaId: UUID) {
-        authorizer.authorizeKayttajaId(kayttajaId, PermissionCode.RESEND_INVITATION)
-
         hankeKayttajaService.resendInvitation(kayttajaId, currentUserId())
     }
 

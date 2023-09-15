@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.TestHankeIds
 import fi.hel.haitaton.hanke.permissions.HankeAuthorizer
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import io.mockk.every
@@ -50,8 +49,8 @@ class HankeControllerHankeEditingDisabledITests(@Autowired override val mockMvc:
         val hankeWithApplications =
             HankeWithApplications(HankeFactory.create(id = mockHankeId), listOf())
         every { hankeService.getHankeWithApplications(HANKE_TUNNUS) }.returns(hankeWithApplications)
-        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.DELETE) } returns
-            TestHankeIds(mockHankeId, HANKE_TUNNUS)
+        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.DELETE.name) } returns
+            true
         justRun {
             hankeService.deleteHanke(
                 hankeWithApplications.hanke,

@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.permissions
 
-import fi.hel.haitaton.hanke.HankeIds
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.currentUserId
@@ -17,12 +16,18 @@ abstract class Authorizer(
             .let { if (it != true) throw ex() }
     }
 
-    @Transactional(readOnly = false)
-    open fun authorizeHankeTunnus(hankeTunnus: String, permissionCode: PermissionCode): HankeIds {
+    internal fun authorizeHankeTunnus(
+        hankeTunnus: String,
+        permissionCode: PermissionCode
+    ): Boolean {
         val hankeIds = hankeRepository!!.findOneByHankeTunnus(hankeTunnus)
         authorize(hankeIds?.id, permissionCode) { HankeNotFoundException(hankeTunnus) }
-        return hankeIds!!
+        return true
     }
+
+    @Transactional(readOnly = false)
+    open fun authorizeHankeTunnus(hankeTunnus: String, permissionCode: String): Boolean =
+        authorizeHankeTunnus(hankeTunnus, PermissionCode.valueOf(permissionCode))
 }
 
 @Component

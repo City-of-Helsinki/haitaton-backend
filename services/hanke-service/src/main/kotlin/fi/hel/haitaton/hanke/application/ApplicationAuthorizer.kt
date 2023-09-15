@@ -13,9 +13,20 @@ class ApplicationAuthorizer(
     hankeRepository: HankeRepository,
     private val applicationRepository: ApplicationRepository,
 ) : Authorizer(permissionService, hankeRepository) {
-    @Transactional(readOnly = false)
-    fun authorizeApplicationId(applicationId: Long, permissionCode: PermissionCode) {
+    private fun authorizeApplicationId(
+        applicationId: Long,
+        permissionCode: PermissionCode
+    ): Boolean {
         val hankeId = applicationRepository.findOneById(applicationId)?.hanke?.id
         authorize(hankeId, permissionCode) { ApplicationNotFoundException(applicationId) }
+        return true
     }
+
+    @Transactional(readOnly = true)
+    fun authorizeApplicationId(applicationId: Long, permissionCode: String): Boolean =
+        authorizeApplicationId(applicationId, PermissionCode.valueOf(permissionCode))
+
+    @Transactional(readOnly = true)
+    fun authorizeCreate(application: Application): Boolean =
+        authorizeHankeTunnus(application.hankeTunnus, PermissionCode.EDIT_APPLICATIONS)
 }

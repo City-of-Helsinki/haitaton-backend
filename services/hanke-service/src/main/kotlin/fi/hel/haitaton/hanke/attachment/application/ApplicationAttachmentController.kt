@@ -1,11 +1,9 @@
 package fi.hel.haitaton.hanke.attachment.application
 
 import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
-import fi.hel.haitaton.hanke.permissions.PermissionCode
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -14,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import java.util.UUID
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -28,7 +27,6 @@ import org.springframework.web.multipart.MultipartFile
 @SecurityRequirement(name = "bearerAuth")
 class ApplicationAttachmentController(
     private val applicationAttachmentService: ApplicationAttachmentService,
-    private val authorizer: ApplicationAuthorizer,
 ) {
 
     @GetMapping
@@ -46,10 +44,10 @@ class ApplicationAttachmentController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#applicationId, 'VIEW')")
     fun getApplicationAttachments(
         @PathVariable applicationId: Long
     ): List<ApplicationAttachmentMetadata> {
-        authorizer.authorizeApplicationId(applicationId, PermissionCode.VIEW)
         return applicationAttachmentService.getMetadataList(applicationId)
     }
 
@@ -66,11 +64,11 @@ class ApplicationAttachmentController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#applicationId, 'VIEW')")
     fun getApplicationAttachmentContent(
         @PathVariable applicationId: Long,
         @PathVariable attachmentId: UUID,
     ): ResponseEntity<ByteArray> {
-        authorizer.authorizeApplicationId(applicationId, PermissionCode.VIEW)
         val content = applicationAttachmentService.getContent(applicationId, attachmentId)
 
         return ResponseEntity.ok()
@@ -105,12 +103,14 @@ class ApplicationAttachmentController(
                 ),
             ]
     )
+    @PreAuthorize(
+        "@applicationAuthorizer.authorizeApplicationId(#applicationId, 'EDIT_APPLICATIONS')"
+    )
     fun postAttachment(
         @PathVariable applicationId: Long,
         @RequestParam("tyyppi") tyyppi: ApplicationAttachmentType,
         @RequestParam("liite") attachment: MultipartFile
     ): ApplicationAttachmentMetadata {
-        authorizer.authorizeApplicationId(applicationId, PermissionCode.EDIT_APPLICATIONS)
         return applicationAttachmentService.addAttachment(applicationId, tyyppi, attachment)
     }
 
@@ -136,8 +136,10 @@ class ApplicationAttachmentController(
                 ),
             ]
     )
+    @PreAuthorize(
+        "@applicationAuthorizer.authorizeApplicationId(#applicationId, 'EDIT_APPLICATIONS')"
+    )
     fun removeAttachment(@PathVariable applicationId: Long, @PathVariable attachmentId: UUID) {
-        authorizer.authorizeApplicationId(applicationId, PermissionCode.EDIT_APPLICATIONS)
         return applicationAttachmentService.deleteAttachment(applicationId, attachmentId)
     }
 }

@@ -5,8 +5,17 @@ import mu.KotlinLogging
 import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.context.event.EventListener
+import org.springframework.stereotype.Component
 
 private val logger = KotlinLogging.logger {}
+
+@Component
+class FeatureService(private val featureFlags: FeatureFlags) {
+    fun isEnabled(feature: String): Boolean {
+        featureFlags.ensureEnabled(Feature.valueOf(feature))
+        return true
+    }
+}
 
 @ConfigurationProperties(prefix = "haitaton")
 data class FeatureFlags(val features: Map<Feature, Boolean>) {

@@ -72,6 +72,10 @@ open class HankeServiceImpl(
     private val hankeKayttajaService: HankeKayttajaService,
 ) : HankeService {
 
+    @Transactional(readOnly = true)
+    override fun findIds(hankeTunnus: String): HankeIds? =
+        hankeRepository.findOneByHankeTunnus(hankeTunnus)
+
     /**
      * Hanke does not contain hakemukset. This function wraps Hanke and its hakemukset to a pair.
      */

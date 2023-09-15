@@ -5,8 +5,6 @@ import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
-import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
 import fi.hel.haitaton.hanke.validation.ValidApplication
 import io.swagger.v3.oas.annotations.Hidden
@@ -22,6 +20,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -44,7 +43,6 @@ class ApplicationController(
     private val service: ApplicationService,
     private val hankeService: HankeService,
     private val disclosureLogService: DisclosureLogService,
-    private val authorizer: ApplicationAuthorizer,
 ) {
     @GetMapping
     @Operation(
@@ -75,9 +73,8 @@ class ApplicationController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'VIEW')")
     fun getById(@PathVariable(name = "id") id: Long): Application {
-        authorizer.authorizeApplicationId(id, VIEW)
-
         val application = service.getApplicationById(id)
         disclosureLogService.saveDisclosureLogsForApplication(application, currentUserId())
         return application
@@ -101,9 +98,8 @@ class ApplicationController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeCreate(#application)")
     fun create(@ValidApplication @RequestBody application: Application): Application {
-        authorizer.authorizeHankeTunnus(application.hankeTunnus, EDIT_APPLICATIONS)
-
         val userId = currentUserId()
         val createdApplication = service.create(application, userId)
 
@@ -175,12 +171,11 @@ class ApplicationController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
     fun update(
         @PathVariable(name = "id") id: Long,
         @ValidApplication @RequestBody application: Application
     ): Application {
-        authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS)
-
         val userId = currentUserId()
         val updatedApplication =
             service.updateApplicationData(id, application.applicationData, userId)
@@ -215,8 +210,8 @@ class ApplicationController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
     fun delete(@PathVariable(name = "id") id: Long) {
-        authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS)
         service.delete(id, currentUserId())
     }
 
@@ -253,8 +248,8 @@ class ApplicationController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
     fun sendApplication(@PathVariable(name = "id") id: Long): Application {
-        authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS)
         return service.sendApplication(id, currentUserId())
     }
 
@@ -279,8 +274,8 @@ class ApplicationController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'VIEW')")
     fun downloadDecision(@PathVariable(name = "id") id: Long): ResponseEntity<ByteArray> {
-        authorizer.authorizeApplicationId(id, VIEW)
         val (filename, pdfBytes) = service.downloadDecision(id, currentUserId())
 
         val headers = HttpHeaders()

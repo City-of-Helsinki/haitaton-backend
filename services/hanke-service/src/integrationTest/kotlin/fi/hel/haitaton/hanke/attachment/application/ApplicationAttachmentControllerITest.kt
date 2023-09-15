@@ -31,7 +31,6 @@ import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
-import io.mockk.verify
 import io.mockk.verifyOrder
 import io.mockk.verifySequence
 import java.util.UUID
@@ -85,8 +84,8 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
             (1..3).map {
                 AttachmentFactory.applicationAttachmentMetadata(fileName = "${it}file.pdf")
             }
+        every { authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name) } returns true
         every { applicationAttachmentService.getMetadataList(APPLICATION_ID) } returns data
-
         val result: List<ApplicationAttachmentMetadata> =
             getMetadataList().andExpect(status().isOk).andReturnBody()
 
@@ -99,7 +98,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
             d.transform { it.attachmentType }.isEqualTo(MUU)
         }
         verifySequence {
-            authorizer.authorizeApplicationId(APPLICATION_ID, VIEW)
+            authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name)
             applicationAttachmentService.getMetadataList(APPLICATION_ID)
         }
     }
@@ -108,6 +107,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     fun `getAttachmentContent when valid request should return attachment file`() {
         val attachmentId = UUID.fromString("afc778b1-eb7c-4bad-951c-de70e173a757")
 
+        every { authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name) } returns true
         every { applicationAttachmentService.getContent(APPLICATION_ID, attachmentId) } returns
             AttachmentContent(FILE_NAME_PDF, APPLICATION_PDF_VALUE, dummyData)
 
@@ -117,7 +117,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
             .andExpect(content().bytes(dummyData))
 
         verifyOrder {
-            authorizer.authorizeApplicationId(APPLICATION_ID, VIEW)
+            authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name)
             applicationAttachmentService.getContent(APPLICATION_ID, attachmentId)
         }
     }
@@ -125,6 +125,8 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     @Test
     fun `postAttachment when valid request should succeed`() {
         val file = testFile()
+        every { authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name) } returns
+            true
         every { applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file) } returns
             AttachmentFactory.applicationAttachmentMetadata()
 
@@ -140,7 +142,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
             assertThat(attachmentType).isEqualTo(MUU)
         }
         verifyOrder {
-            authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS)
+            authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name)
             applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file)
         }
     }
@@ -148,46 +150,40 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     @Test
     fun `postAttachment when application processing should return conflict`() {
         val file = testFile()
+        every { authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name) } returns
+            true
         every { applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file) } throws
             ApplicationAlreadyProcessingException(APPLICATION_ID, 123)
 
         postAttachment(file = file).andExpect(status().isConflict)
 
         verifyOrder {
-            authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS)
+            authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name)
             applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file)
         }
     }
 
     @Test
-    fun `postAttachment when unknown application should fail`() {
-        every { authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS) } throws
-            ApplicationNotFoundException(APPLICATION_ID)
-
-        postAttachment().andExpect(status().isNotFound)
-
-        verify { authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS) }
-    }
-
-    @Test
     fun `postAttachment when no rights for hanke should fail`() {
-        every { authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS) } throws
+        every { authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name) } throws
             ApplicationNotFoundException(APPLICATION_ID)
 
         postAttachment().andExpect(status().isNotFound)
 
-        verifyOrder { authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS) }
+        verifyOrder { authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name) }
     }
 
     @Test
     fun `deleteAttachment when valid request should succeed`() {
         val attachmentId = UUID.fromString("5c97dcf2-686f-4cd6-9b9d-4124aff23a07")
+        every { authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name) } returns
+            true
         justRun { applicationAttachmentService.deleteAttachment(APPLICATION_ID, attachmentId) }
 
         deleteAttachment(attachmentId = attachmentId).andExpect(status().isOk)
 
         verifyOrder {
-            authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS)
+            authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name)
             applicationAttachmentService.deleteAttachment(APPLICATION_ID, attachmentId)
         }
     }
@@ -196,13 +192,15 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     fun `deleteAttachment when application is sent to Allu should return conflict`() {
         val attachmentId = UUID.fromString("48de0b68-1070-47c1-b760-195bac6261f4")
         val alluId = 123
+        every { authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name) } returns
+            true
         every { applicationAttachmentService.deleteAttachment(APPLICATION_ID, attachmentId) } throws
             ApplicationInAlluException(APPLICATION_ID, alluId)
 
         deleteAttachment(attachmentId = attachmentId).andExpect(status().isConflict)
 
         verifyOrder {
-            authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS)
+            authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name)
             applicationAttachmentService.deleteAttachment(APPLICATION_ID, attachmentId)
         }
     }

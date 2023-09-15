@@ -2,9 +2,7 @@ package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.HankeIdsFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.permissions.PermissionCode
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -29,14 +27,12 @@ class ApplicationControllerTest {
     private val applicationService: ApplicationService = mockk()
     private val hankeService: HankeService = mockk()
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
-    private val authorizer: ApplicationAuthorizer = mockk(relaxUnitFun = true)
 
     private val applicationController =
         ApplicationController(
             applicationService,
             hankeService,
             disclosureLogService,
-            authorizer,
         )
 
     @BeforeEach
@@ -47,7 +43,7 @@ class ApplicationControllerTest {
     @AfterEach
     fun cleanUp() {
         checkUnnecessaryStub()
-        confirmVerified(applicationService, disclosureLogService, authorizer)
+        confirmVerified(applicationService, disclosureLogService)
     }
 
     @Test
@@ -81,7 +77,6 @@ class ApplicationControllerTest {
         applicationController.getById(1)
 
         verifySequence {
-            authorizer.authorizeApplicationId(1, PermissionCode.VIEW)
             applicationService.getApplicationById(1)
             disclosureLogService.saveDisclosureLogsForApplication(application, username)
         }
@@ -93,15 +88,11 @@ class ApplicationControllerTest {
         val requestApplication =
             AlluDataFactory.createApplication(id = null, hankeTunnus = hankeTunnus)
         val createdApplication = requestApplication.copy(id = 1)
-        every {
-            authorizer.authorizeHankeTunnus(hankeTunnus, PermissionCode.EDIT_APPLICATIONS)
-        } returns HankeIdsFactory.create(hankeTunnus = hankeTunnus)
         every { applicationService.create(requestApplication, username) } returns createdApplication
 
         applicationController.create(requestApplication)
 
         verifySequence {
-            authorizer.authorizeHankeTunnus(hankeTunnus, PermissionCode.EDIT_APPLICATIONS)
             applicationService.create(requestApplication, username)
             disclosureLogService.saveDisclosureLogsForApplication(createdApplication, username)
         }
@@ -118,7 +109,6 @@ class ApplicationControllerTest {
         applicationController.update(1, application)
 
         verifySequence {
-            authorizer.authorizeApplicationId(1, PermissionCode.EDIT_APPLICATIONS)
             applicationService.updateApplicationData(1, application.applicationData, username)
             disclosureLogService.saveDisclosureLogsForApplication(application, username)
         }
