@@ -10,7 +10,6 @@ import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.domain.UserContact
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.HankeInvitationData
-import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
 import java.util.UUID
 import mu.KotlinLogging
@@ -335,7 +334,7 @@ class HankeKayttajaService(
         userId: String,
     ): KayttajaTunnisteEntity {
         logger.info { "Creating a new user token, hankeId=$hankeId" }
-        val token = KayttajaTunnisteEntity.create(sentAt = getCurrentTimeUTC().toOffsetDateTime())
+        val token = KayttajaTunnisteEntity.create()
         val kayttajaTunnisteEntity = kayttajaTunnisteRepository.save(token)
         logger.info { "Saved the new user token, id=${kayttajaTunnisteEntity.id}" }
         logService.logCreate(kayttajaTunnisteEntity.toDomain(), userId)

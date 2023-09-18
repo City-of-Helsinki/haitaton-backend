@@ -823,7 +823,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                     KayttajaTunnisteEntity(
                         tunniste = "token for both",
                         createdAt = OffsetDateTime.parse("2023-03-31T15:41:21Z"),
-                        sentAt = null,
                         kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
                         hankeKayttaja = null,
                     )
@@ -1183,7 +1182,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         t.prop(KayttajaTunnisteEntity::id).isNotNull()
         t.prop(KayttajaTunnisteEntity::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
         t.prop(KayttajaTunnisteEntity::createdAt).isRecent()
-        t.prop(KayttajaTunnisteEntity::sentAt).isRecent()
         t.prop(KayttajaTunnisteEntity::tunniste).matches(Regex(kayttajaTunnistePattern))
         t.prop(KayttajaTunnisteEntity::hankeKayttaja).isNotNull()
     }
@@ -1263,7 +1261,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             KayttajaTunnisteEntity(
                 tunniste = tunniste,
                 createdAt = OffsetDateTime.parse("2023-03-31T15:41:21Z"),
-                sentAt = null,
                 kayttooikeustaso = kayttooikeustaso,
                 hankeKayttaja = null,
             )
