@@ -122,7 +122,7 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Nested
-    inner class FindIds {
+    inner class FindIdentifier {
         val hankeTunnus = "HAI23-13"
 
         @Test

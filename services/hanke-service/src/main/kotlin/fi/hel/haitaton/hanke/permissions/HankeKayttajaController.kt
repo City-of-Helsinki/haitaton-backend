@@ -55,10 +55,10 @@ class HankeKayttajaController(
     fun whoami(@PathVariable hankeTunnus: String): WhoamiResponse {
         val userId = currentUserId()
 
-        val hankeIds = hankeService.findIdentifier(hankeTunnus)!!
-        val permission = permissionService.findPermission(hankeIds.id, userId)!!
+        val hankeIdentifier = hankeService.findIdentifier(hankeTunnus)!!
+        val permission = permissionService.findPermission(hankeIdentifier.id, userId)!!
 
-        val hankeKayttaja = hankeKayttajaService.getKayttajaByUserId(hankeIds.id, userId)
+        val hankeKayttaja = hankeKayttajaService.getKayttajaByUserId(hankeIdentifier.id, userId)
         return WhoamiResponse(hankeKayttaja?.id, permission.kayttooikeustasoEntity)
     }
 
@@ -87,12 +87,12 @@ class HankeKayttajaController(
     fun getHankeKayttajat(@PathVariable hankeTunnus: String): HankeKayttajaResponse {
         logger.info { "Finding kayttajat for hanke $hankeTunnus" }
 
-        val hankeIds = hankeService.findIdentifier(hankeTunnus)!!
+        val hankeIdentifier = hankeService.findIdentifier(hankeTunnus)!!
 
-        val users = hankeKayttajaService.getKayttajatByHankeId(hankeIds.id)
+        val users = hankeKayttajaService.getKayttajatByHankeId(hankeIdentifier.id)
         disclosureLogService.saveDisclosureLogsForHankeKayttajat(users, currentUserId())
 
-        logger.info { "Found ${users.size} kayttajat for ${hankeIds.logString()}" }
+        logger.info { "Found ${users.size} kayttajat for ${hankeIdentifier.logString()}" }
 
         return HankeKayttajaResponse(users)
     }
@@ -155,19 +155,19 @@ have those same permissions.
         @ValidHanke @RequestBody permissions: PermissionUpdate,
         @PathVariable hankeTunnus: String
     ) {
-        val hankeIds = hankeService.findIdentifier(hankeTunnus)!!
+        val hankeIdentifier = hankeService.findIdentifier(hankeTunnus)!!
 
         val userId = currentUserId()
 
         val deleteAdminPermission =
             permissionService.hasPermission(
-                hankeIds.id,
+                hankeIdentifier.id,
                 userId,
                 PermissionCode.MODIFY_DELETE_PERMISSIONS
             )
 
         hankeKayttajaService.updatePermissions(
-            hankeIds,
+            hankeIdentifier,
             permissions.kayttajat.associate { it.id to it.kayttooikeustaso },
             deleteAdminPermission,
             userId
