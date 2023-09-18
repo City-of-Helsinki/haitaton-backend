@@ -7,8 +7,10 @@ import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
+import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.messageContains
+import assertk.assertions.prop
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
@@ -70,6 +72,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.skyscreamer.jsonassert.JSONAssert
@@ -105,6 +108,7 @@ class HankeServiceITests : DatabaseTest() {
     @Autowired private lateinit var hankeKayttajaRepository: HankeKayttajaRepository
     @Autowired private lateinit var kayttajaTunnisteRepository: KayttajaTunnisteRepository
     @Autowired private lateinit var jdbcTemplate: JdbcTemplate
+    @Autowired private lateinit var hankeFactory: HankeFactory
 
     @BeforeEach
     fun clearMocks() {
@@ -115,6 +119,28 @@ class HankeServiceITests : DatabaseTest() {
     fun checkMocks() {
         checkUnnecessaryStub()
         confirmVerified(cableReportService)
+    }
+
+    @Nested
+    inner class FindIds {
+        val hankeTunnus = "HAI23-13"
+
+        @Test
+        fun `Returns null if hanke doesn't exist`() {
+            assertThat(hankeService.findIds(hankeTunnus)).isNull()
+        }
+
+        @Test
+        fun `Returns id and hanke tunnus`() {
+            val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
+
+            val result = hankeService.findIds(hankeTunnus)
+
+            assertk.assertThat(result).isNotNull().all {
+                prop(HankeIds::hankeTunnus).isEqualTo(hankeTunnus)
+                prop(HankeIds::id).isNotNull().isEqualTo(hanke.id)
+            }
+        }
     }
 
     @Test
