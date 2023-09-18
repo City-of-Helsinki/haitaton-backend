@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.permissions
 
 import fi.hel.haitaton.hanke.HankeArgumentException
-import fi.hel.haitaton.hanke.HankeIds
+import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
@@ -134,20 +134,21 @@ class HankeKayttajaService(
 
     @Transactional
     fun updatePermissions(
-        hankeIds: HankeIds,
+        hankeIdentifier: HankeIdentifier,
         updates: Map<UUID, Kayttooikeustaso>,
         deleteAdminPermission: Boolean,
         userId: String,
     ) {
-        logger.info { "Updating permissions for hankekayttajat. ${hankeIds.logString()}" }
+        logger.info { "Updating permissions for hankekayttajat. ${hankeIdentifier.logString()}" }
 
-        val kayttajat = hankeKayttajaRepository.findByHankeIdAndIdIn(hankeIds.id, updates.keys)
+        val kayttajat =
+            hankeKayttajaRepository.findByHankeIdAndIdIn(hankeIdentifier.id, updates.keys)
 
         if (kayttajat.any { it.permission?.userId == userId }) {
             throw ChangingOwnPermissionException(userId)
         }
 
-        validateAllKayttajatFound(kayttajat, updates, hankeIds)
+        validateAllKayttajatFound(kayttajat, updates, hankeIdentifier)
         validateAdminPermissionIfNeeded(kayttajat, updates, deleteAdminPermission, userId)
 
         kayttajat.forEach { kayttaja ->
@@ -159,7 +160,7 @@ class HankeKayttajaService(
                 }
         }
 
-        validateAdminRemains(hankeIds)
+        validateAdminRemains(hankeIdentifier)
     }
 
     @Transactional
@@ -197,12 +198,12 @@ class HankeKayttajaService(
     private fun validateAllKayttajatFound(
         existingKayttajat: List<HankeKayttajaEntity>,
         requestedUpdates: Map<UUID, Kayttooikeustaso>,
-        hankeIds: HankeIds,
+        hankeIdentifier: HankeIdentifier,
     ) {
         with(existingKayttajat.map { it.id }) {
             if (!this.containsAll(requestedUpdates.keys)) {
                 val missingIds = requestedUpdates.keys.subtract(this.toSet())
-                throw HankeKayttajatNotFoundException(missingIds, hankeIds)
+                throw HankeKayttajatNotFoundException(missingIds, hankeIdentifier)
             }
         }
     }
@@ -236,13 +237,13 @@ class HankeKayttajaService(
      * kayttooikeustaso in an activated permission needs to remain. Otherwise, there's no one who
      * can add that access level.
      */
-    private fun validateAdminRemains(hankeIds: HankeIds) {
+    private fun validateAdminRemains(hankeIdentifier: HankeIdentifier) {
         if (
-            permissionService.findByHankeId(hankeIds.id).all {
+            permissionService.findByHankeId(hankeIdentifier.id).all {
                 it.kayttooikeustaso != Kayttooikeustaso.KAIKKI_OIKEUDET
             }
         ) {
-            throw NoAdminRemainingException(hankeIds)
+            throw NoAdminRemainingException(hankeIdentifier)
         }
     }
 
@@ -395,15 +396,18 @@ class UsersWithoutKayttooikeustasoException(missingIds: Collection<UUID>) :
             "their ids = ${missingIds.joinToString()}"
     )
 
-class NoAdminRemainingException(hankeIds: HankeIds) :
+class NoAdminRemainingException(hankeIdentifier: HankeIdentifier) :
     RuntimeException(
-        "No one with admin rights would remain after permission changes. ${hankeIds.logString()}"
+        "No one with admin rights would remain after permission changes. ${hankeIdentifier.logString()}"
     )
 
-class HankeKayttajatNotFoundException(missingIds: Collection<UUID>, hankeIds: HankeIds) :
+class HankeKayttajatNotFoundException(
+    missingIds: Collection<UUID>,
+    hankeIdentifier: HankeIdentifier
+) :
     RuntimeException(
         "Some HankeKayttaja were not found. Either the IDs don't exist or they belong to another " +
-            "hanke. Missing IDs: ${missingIds.joinToString()}, ${hankeIds.logString()}"
+            "hanke. Missing IDs: ${missingIds.joinToString()}, ${hankeIdentifier.logString()}"
     )
 
 class TunnisteNotFoundException(userId: String, tunniste: String) :

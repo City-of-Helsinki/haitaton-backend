@@ -49,7 +49,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
-import fi.hel.haitaton.hanke.factory.ids
+import fi.hel.haitaton.hanke.factory.identifier
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
@@ -716,19 +716,19 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Doesn't throw any exceptions with no updates`() {
-            val hankeIds = hankeFactory.save().ids()
+            val hankeIdentifier = hankeFactory.save().identifier()
             val updates = mapOf<UUID, Kayttooikeustaso>()
 
-            hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+            hankeKayttajaService.updatePermissions(hankeIdentifier, updates, false, USERNAME)
         }
 
         @Test
         fun `Updates kayttooikeustaso to permission if it exists`() {
-            val hankeIds = hankeFactory.save().ids()
-            val kayttaja = saveUserAndPermission(hankeIds.id)
+            val hankeIdentifier = hankeFactory.save().identifier()
+            val kayttaja = saveUserAndPermission(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
-            hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+            hankeKayttajaService.updatePermissions(hankeIdentifier, updates, false, USERNAME)
 
             val updatedKayttaja = hankeKayttajaRepository.getReferenceById(kayttaja.id)
             assertThat(updatedKayttaja.kayttajaTunniste).isNull()
@@ -739,12 +739,12 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Writes permission update to audit log`() {
-            val hankeIds = hankeFactory.save().ids()
-            val kayttaja = saveUserAndPermission(hankeIds.id)
+            val hankeIdentifier = hankeFactory.save().identifier()
+            val kayttaja = saveUserAndPermission(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
             auditLogRepository.deleteAll()
 
-            hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+            hankeKayttajaService.updatePermissions(hankeIdentifier, updates, false, USERNAME)
 
             val logs = auditLogRepository.findAll()
             assertThat(logs).hasSize(1)
@@ -771,11 +771,12 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Updates kayttooikeustaso to tunniste if permission doesn't exist`() {
-            val hankeIds = hankeFactory.save().ids()
-            val kayttaja = saveUserAndToken(hankeIds.id, "Toinen Tohelo", "urho@kekkonen.test")
+            val hankehankeIdentifier = hankeFactory.save().identifier()
+            val kayttaja =
+                saveUserAndToken(hankehankeIdentifier.id, "Toinen Tohelo", "urho@kekkonen.test")
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
-            hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+            hankeKayttajaService.updatePermissions(hankehankeIdentifier, updates, false, USERNAME)
 
             val updatedKayttaja = hankeKayttajaRepository.getReferenceById(kayttaja.id)
             assertThat(updatedKayttaja.permission).isNull()
@@ -786,12 +787,13 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Writes tunniste update to audit log`() {
-            val hankeIds = hankeFactory.save().ids()
-            val kayttaja = saveUserAndToken(hankeIds.id, "Toinen Tohelo", "urho@kekkonen.test")
+            val hankeIdentifier = hankeFactory.save().identifier()
+            val kayttaja =
+                saveUserAndToken(hankeIdentifier.id, "Toinen Tohelo", "urho@kekkonen.test")
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
             auditLogRepository.deleteAll()
 
-            hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+            hankeKayttajaService.updatePermissions(hankeIdentifier, updates, false, USERNAME)
 
             val logs = auditLogRepository.findAll()
             assertThat(logs).hasSize(1)
@@ -818,7 +820,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Updates kayttooikeustaso to only permission if both permission and tunniste exist`() {
-            val hankeIds = hankeFactory.save().ids()
+            val hankeIdentifier = hankeFactory.save().identifier()
             val tunniste =
                 kayttajaTunnisteRepository.save(
                     KayttajaTunnisteEntity(
@@ -831,14 +833,14 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 )
             val kayttaja =
                 saveUserAndPermission(
-                    hankeIds.id,
+                    hankeIdentifier.id,
                     "Kolmas Kehveli",
                     "kolmas@kehveli.test",
                     kayttajaTunniste = tunniste,
                 )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
-            hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+            hankeKayttajaService.updatePermissions(hankeIdentifier, updates, false, USERNAME)
 
             val updatedKayttaja = hankeKayttajaRepository.getReferenceById(kayttaja.id)
             assertThat(updatedKayttaja.permission).isNotNull().transform {
@@ -851,17 +853,22 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception if changing the user's own permission`() {
-            val hankeIds = hankeFactory.save().ids()
+            val hankeIdentifier = hankeFactory.save().identifier()
             val kayttaja =
                 saveUserAndPermission(
-                    hankeIds.id,
+                    hankeIdentifier.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKIEN_MUOKKAUS,
                     userId = USERNAME
                 )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
-                    hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+                    hankeKayttajaService.updatePermissions(
+                        hankeIdentifier,
+                        updates,
+                        false,
+                        USERNAME
+                    )
                 }
                 .all {
                     hasClass(ChangingOwnPermissionException::class)
@@ -872,23 +879,28 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Throws exception if given a non-existing Kayttaja Id`() {
             val missingId = UUID.fromString("b4f4872d-ac5a-43e0-b0bc-79d7d56d238e")
-            val hankeIds = hankeFactory.save().ids()
+            val hankeIdentifier = hankeFactory.save().identifier()
             val updates = mapOf(missingId to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
-                    hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+                    hankeKayttajaService.updatePermissions(
+                        hankeIdentifier,
+                        updates,
+                        false,
+                        USERNAME
+                    )
                 }
                 .all {
                     hasClass(HankeKayttajatNotFoundException::class)
                     messageContains(missingId.toString())
-                    messageContains(hankeIds.id.toString())
+                    messageContains(hankeIdentifier.id.toString())
                 }
         }
 
         @Test
         fun `Throws exception if given Kayttaja from another Hanke`() {
-            val hanke1 = hankeFactory.save().ids()
-            val hanke2 = hankeFactory.save().ids()
+            val hanke1 = hankeFactory.save().identifier()
+            val hanke2 = hankeFactory.save().identifier()
             val kayttaja = saveUserAndPermission(hanke2.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
@@ -904,12 +916,17 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception if the kayttaja to update has neither permission nor tunniste`() {
-            val hankeIds = hankeFactory.save().ids()
-            val kayttaja = saveUser(hankeIds.id)
+            val hankeIdentifier = hankeFactory.save().identifier()
+            val kayttaja = saveUser(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
-                    hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+                    hankeKayttajaService.updatePermissions(
+                        hankeIdentifier,
+                        updates,
+                        false,
+                        USERNAME
+                    )
                 }
                 .all {
                     hasClass(UsersWithoutKayttooikeustasoException::class)
@@ -919,16 +936,21 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception without admin permission if the kayttaja to update has KAIKKI_OIKEUDET in permission`() {
-            val hankeIds = hankeFactory.save().ids()
+            val hankeIdentifier = hankeFactory.save().identifier()
             val kayttaja =
                 saveUserAndPermission(
-                    hankeIds.id,
+                    hankeIdentifier.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
                 )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
-                    hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+                    hankeKayttajaService.updatePermissions(
+                        hankeIdentifier,
+                        updates,
+                        false,
+                        USERNAME
+                    )
                 }
                 .all {
                     hasClass(MissingAdminPermissionException::class)
@@ -938,13 +960,21 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception without admin permission if the kayttaja to update has KAIKKI_OIKEUDET in tunniste`() {
-            val hankeIds = hankeFactory.save().ids()
+            val hankeIdentifier = hankeFactory.save().identifier()
             val kayttaja =
-                saveUserAndToken(hankeIds.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+                saveUserAndToken(
+                    hankeIdentifier.id,
+                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
+                )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
-                    hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+                    hankeKayttajaService.updatePermissions(
+                        hankeIdentifier,
+                        updates,
+                        false,
+                        USERNAME
+                    )
                 }
                 .all {
                     hasClass(MissingAdminPermissionException::class)
@@ -954,15 +984,15 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Succeeds with admin permission when the kayttaja to update has KAIKKI_OIKEUDET in permission`() {
-            val hankeIds = hankeFactory.save().ids()
+            val hankeIdentifier = hankeFactory.save().identifier()
             val kayttaja =
                 saveUserAndPermission(
-                    hankeIds.id,
+                    hankeIdentifier.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
                 )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
-            hankeKayttajaService.updatePermissions(hankeIds, updates, true, USERNAME)
+            hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
 
             val updatedKayttaja = hankeKayttajaRepository.getReferenceById(kayttaja.id)
             assertThat(updatedKayttaja.kayttajaTunniste).isNull()
@@ -973,12 +1003,15 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Succeeds with with admin permission when the kayttaja to update has KAIKKI_OIKEUDET in tunniste`() {
-            val hankeIds = hankeFactory.save().ids()
+            val hankeIdentifier = hankeFactory.save().identifier()
             val kayttaja =
-                saveUserAndToken(hankeIds.id, kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+                saveUserAndToken(
+                    hankeIdentifier.id,
+                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
+                )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
-            hankeKayttajaService.updatePermissions(hankeIds, updates, true, USERNAME)
+            hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
 
             val updatedKayttaja = hankeKayttajaRepository.getReferenceById(kayttaja.id)
             assertThat(updatedKayttaja.permission).isNull()
@@ -989,12 +1022,17 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception without admin permission if updating to KAIKKI_OIKEUDET`() {
-            val hankeIds = hankeFactory.save().ids()
-            val kayttaja = saveUserAndToken(hankeIds.id)
+            val hankeIdentifier = hankeFactory.save().identifier()
+            val kayttaja = saveUserAndToken(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.KAIKKI_OIKEUDET)
 
             assertFailure {
-                    hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+                    hankeKayttajaService.updatePermissions(
+                        hankeIdentifier,
+                        updates,
+                        false,
+                        USERNAME
+                    )
                 }
                 .all {
                     hasClass(MissingAdminPermissionException::class)
@@ -1004,11 +1042,11 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Succeeds with with admin permission if updating to KAIKKI_OIKEUDET`() {
-            val hankeIds = hankeFactory.save().ids()
-            val kayttaja = saveUserAndToken(hankeIds.id)
+            val hankeIdentifier = hankeFactory.save().identifier()
+            val kayttaja = saveUserAndToken(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.KAIKKI_OIKEUDET)
 
-            hankeKayttajaService.updatePermissions(hankeIds, updates, true, USERNAME)
+            hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
 
             val updatedKayttaja = hankeKayttajaRepository.getReferenceById(kayttaja.id)
             assertThat(updatedKayttaja.permission).isNull()
@@ -1019,49 +1057,49 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throw exception if trying to demote the last KAIKKI_OIKEUDET kayttaja`() {
-            val hankeIds = hankeFactory.save().ids()
+            val hankeIdentifier = hankeFactory.save().identifier()
             permissionRepository.deleteAll()
             val kayttaja =
                 saveUserAndPermission(
-                    hankeIds.id,
+                    hankeIdentifier.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
                 )
             saveUserAndPermission(
-                hankeIds.id,
+                hankeIdentifier.id,
                 kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS,
                 sahkoposti = "hankemuokkaus"
             )
             saveUserAndPermission(
-                hankeIds.id,
+                hankeIdentifier.id,
                 kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI,
                 sahkoposti = "hakemusasiointi"
             )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
-                    hankeKayttajaService.updatePermissions(hankeIds, updates, true, USERNAME)
+                    hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
                 }
                 .all {
                     hasClass(NoAdminRemainingException::class)
-                    messageContains(hankeIds.id.toString())
-                    messageContains(hankeIds.hankeTunnus)
+                    messageContains(hankeIdentifier.id.toString())
+                    messageContains(hankeIdentifier.hankeTunnus)
                 }
         }
 
         @Test
         fun `Don't throw an exception if an anonymous user still has KAIKKI_OIKEUDET`() {
-            val hankeIds = hankeFactory.save().ids()
+            val hankeIdentifier = hankeFactory.save().identifier()
             hankeKayttajaRepository.deleteAll()
             permissionRepository.deleteAll()
-            permissionService.create(hankeIds.id, USERNAME, Kayttooikeustaso.KAIKKI_OIKEUDET)
+            permissionService.create(hankeIdentifier.id, USERNAME, Kayttooikeustaso.KAIKKI_OIKEUDET)
             val kayttaja =
                 saveUserAndPermission(
-                    hankeIds.id,
+                    hankeIdentifier.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
                 )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
-            hankeKayttajaService.updatePermissions(hankeIds, updates, true, USERNAME)
+            hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
 
             val updatedKayttaja = hankeKayttajaRepository.getReferenceById(kayttaja.id)
             assertThat(updatedKayttaja.permission).isNotNull().transform {

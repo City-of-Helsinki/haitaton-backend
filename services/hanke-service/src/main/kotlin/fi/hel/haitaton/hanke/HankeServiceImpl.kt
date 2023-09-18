@@ -73,7 +73,7 @@ open class HankeServiceImpl(
 ) : HankeService {
 
     @Transactional(readOnly = true)
-    override fun findIds(hankeTunnus: String): HankeIds? =
+    override fun findIdentifier(hankeTunnus: String): HankeIdentifier? =
         hankeRepository.findOneByHankeTunnus(hankeTunnus)
 
     /**

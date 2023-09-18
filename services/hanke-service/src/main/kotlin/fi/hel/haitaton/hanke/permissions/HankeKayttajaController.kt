@@ -55,7 +55,7 @@ class HankeKayttajaController(
     fun whoami(@PathVariable hankeTunnus: String): WhoamiResponse {
         val userId = currentUserId()
 
-        val hankeIds = hankeService.findIds(hankeTunnus)!!
+        val hankeIds = hankeService.findIdentifier(hankeTunnus)!!
         val permission = permissionService.findPermission(hankeIds.id, userId)!!
 
         val hankeKayttaja = hankeKayttajaService.getKayttajaByUserId(hankeIds.id, userId)
@@ -87,7 +87,7 @@ class HankeKayttajaController(
     fun getHankeKayttajat(@PathVariable hankeTunnus: String): HankeKayttajaResponse {
         logger.info { "Finding kayttajat for hanke $hankeTunnus" }
 
-        val hankeIds = hankeService.findIds(hankeTunnus)!!
+        val hankeIds = hankeService.findIdentifier(hankeTunnus)!!
 
         val users = hankeKayttajaService.getKayttajatByHankeId(hankeIds.id)
         disclosureLogService.saveDisclosureLogsForHankeKayttajat(users, currentUserId())
@@ -155,7 +155,7 @@ have those same permissions.
         @ValidHanke @RequestBody permissions: PermissionUpdate,
         @PathVariable hankeTunnus: String
     ) {
-        val hankeIds = hankeService.findIds(hankeTunnus)!!
+        val hankeIds = hankeService.findIdentifier(hankeTunnus)!!
 
         val userId = currentUserId()
 

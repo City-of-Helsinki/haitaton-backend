@@ -20,8 +20,8 @@ abstract class Authorizer(
         hankeTunnus: String,
         permissionCode: PermissionCode
     ): Boolean {
-        val hankeIds = hankeRepository!!.findOneByHankeTunnus(hankeTunnus)
-        authorize(hankeIds?.id, permissionCode) { HankeNotFoundException(hankeTunnus) }
+        val hankeIdentifier = hankeRepository!!.findOneByHankeTunnus(hankeTunnus)
+        authorize(hankeIdentifier?.id, permissionCode) { HankeNotFoundException(hankeTunnus) }
         return true
     }
 

@@ -10,7 +10,7 @@ interface HankeService {
 
     fun loadHanke(hankeTunnus: String): Hanke?
 
-    fun findIds(hankeTunnus: String): HankeIds?
+    fun findIdentifier(hankeTunnus: String): HankeIdentifier?
 
     fun getHankeWithApplications(hankeTunnus: String): HankeWithApplications
 

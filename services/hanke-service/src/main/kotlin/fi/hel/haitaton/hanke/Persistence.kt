@@ -233,7 +233,7 @@ class HankeEntity(
 }
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
-    fun findOneByHankeTunnus(hankeTunnus: String): HankeIds?
+    fun findOneByHankeTunnus(hankeTunnus: String): HankeIdentifier?
 
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
 
@@ -242,7 +242,7 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findAllByStatus(status: HankeStatus): List<HankeEntity>
 }
 
-interface HankeIds {
+interface HankeIdentifier {
     val id: Int
     val hankeTunnus: String
 

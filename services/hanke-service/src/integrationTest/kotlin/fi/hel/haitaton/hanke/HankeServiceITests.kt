@@ -127,18 +127,18 @@ class HankeServiceITests : DatabaseTest() {
 
         @Test
         fun `Returns null if hanke doesn't exist`() {
-            assertThat(hankeService.findIds(hankeTunnus)).isNull()
+            assertThat(hankeService.findIdentifier(hankeTunnus)).isNull()
         }
 
         @Test
         fun `Returns id and hanke tunnus`() {
             val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
 
-            val result = hankeService.findIds(hankeTunnus)
+            val result = hankeService.findIdentifier(hankeTunnus)
 
             assertk.assertThat(result).isNotNull().all {
-                prop(HankeIds::hankeTunnus).isEqualTo(hankeTunnus)
-                prop(HankeIds::id).isNotNull().isEqualTo(hanke.id)
+                prop(HankeIdentifier::hankeTunnus).isEqualTo(hankeTunnus)
+                prop(HankeIdentifier::id).isNotNull().isEqualTo(hanke.id)
             }
         }
     }

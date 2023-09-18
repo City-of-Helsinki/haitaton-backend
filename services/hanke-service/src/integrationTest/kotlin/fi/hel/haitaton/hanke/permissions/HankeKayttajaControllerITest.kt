@@ -13,10 +13,10 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeIdsFactory
+import fi.hel.haitaton.hanke.factory.HankeIdentifierFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
-import fi.hel.haitaton.hanke.factory.TestHankeIds
-import fi.hel.haitaton.hanke.factory.ids
+import fi.hel.haitaton.hanke.factory.TestHankeIdentifier
+import fi.hel.haitaton.hanke.factory.identifier
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -79,7 +79,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     inner class Whoami {
         private val url = "/hankkeet/$HANKE_TUNNUS/whoami"
         private val hankeId = 14
-        private val hankeIds = TestHankeIds(14, HANKE_TUNNUS)
+        private val hankeIdentifier = TestHankeIdentifier(14, HANKE_TUNNUS)
         private val kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS
         private val kayttooikeudet = listOf(VIEW, EDIT)
         private val hankeKayttajaId = UUID.fromString("3d1ff704-1177-4478-ac66-9187b7bbe84a")
@@ -114,7 +114,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         @Test
         fun `Returns kayttooikeustaso if hankeKayttaja not found`() {
             every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
-            every { hankeService.findIds(HANKE_TUNNUS) } returns hankeIds
+            every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hankeIdentifier
             every { permissionService.findPermission(hankeId, USERNAME) } returns permissionEntity
             every { hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME) } returns null
 
@@ -135,7 +135,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         @Test
         fun `Returns kayttooikeustaso and hankeKayttajaId if hankeKayttaja is found`() {
             every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
-            every { hankeService.findIds(HANKE_TUNNUS) } returns hankeIds
+            every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hankeIdentifier
             every { permissionService.findPermission(hankeId, USERNAME) } returns permissionEntity
             every { hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME) } returns
                 hankeKayttajaEntity
@@ -163,7 +163,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             val hanke = HankeFactory.create()
             val testData = HankeKayttajaFactory.generateHankeKayttajat()
             every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
-            every { hankeService.findIds(HANKE_TUNNUS) } returns hanke.ids()
+            every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hanke.identifier()
             every { hankeKayttajaService.getKayttajatByHankeId(hanke.id!!) } returns testData
 
             val response: HankeKayttajaResponse =
@@ -211,7 +211,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     inner class UpdatePermissions {
         private val url = "/hankkeet/$HANKE_TUNNUS/kayttajat"
         private val hankeKayttajaId = UUID.fromString("5d67712f-ea0b-490c-957f-9b30bddb848c")
-        private val hankeIds = HankeIdsFactory.create()
+        private val hankeIdentifier = HankeIdentifierFactory.create()
 
         @Test
         @WithAnonymousUser
@@ -242,16 +242,18 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, MODIFY_EDIT_PERMISSIONS.name)
             } returns true
-            every { hankeService.findIds(HANKE_TUNNUS) } returns hankeIds
+            every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hankeIdentifier
             every {
                 permissionService.hasPermission(
-                    hankeIds.id,
+                    hankeIdentifier.id,
                     USERNAME,
                     PermissionCode.MODIFY_DELETE_PERMISSIONS
                 )
             } returns false
             val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
-            justRun { hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME) }
+            justRun {
+                hankeKayttajaService.updatePermissions(hankeIdentifier, updates, false, USERNAME)
+            }
 
             put(
                     url,
@@ -270,16 +272,18 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, MODIFY_EDIT_PERMISSIONS.name)
             } returns true
-            every { hankeService.findIds(HANKE_TUNNUS) } returns hankeIds
+            every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hankeIdentifier
             every {
                 permissionService.hasPermission(
-                    hankeIds.id,
+                    hankeIdentifier.id,
                     USERNAME,
                     PermissionCode.MODIFY_DELETE_PERMISSIONS
                 )
             } returns true
             val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
-            justRun { hankeKayttajaService.updatePermissions(hankeIds, updates, true, USERNAME) }
+            justRun {
+                hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
+            }
 
             put(
                     url,
@@ -345,7 +349,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
 
         @Test
         fun `Returns conflict if there would be no admins remaining`() {
-            val updates = setupForException(NoAdminRemainingException(hankeIds))
+            val updates = setupForException(NoAdminRemainingException(hankeIdentifier))
 
             put(
                     url,
@@ -363,7 +367,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         fun `Returns bad request if there would be no admins remaining`() {
             val updates =
                 setupForException(
-                    HankeKayttajatNotFoundException(listOf(hankeKayttajaId), hankeIds)
+                    HankeKayttajatNotFoundException(listOf(hankeKayttajaId), hankeIdentifier)
                 )
 
             put(
@@ -385,12 +389,12 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, MODIFY_EDIT_PERMISSIONS.name)
                 permissionService.hasPermission(
-                    hankeIds.id,
+                    hankeIdentifier.id,
                     USERNAME,
                     PermissionCode.MODIFY_DELETE_PERMISSIONS
                 )
                 hankeKayttajaService.updatePermissions(
-                    hankeIds,
+                    hankeIdentifier,
                     updates,
                     deleteAdminPermission,
                     USERNAME
@@ -402,17 +406,17 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, MODIFY_EDIT_PERMISSIONS.name)
             } returns true
-            every { hankeService.findIds(HANKE_TUNNUS) } returns hankeIds
+            every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hankeIdentifier
             every {
                 permissionService.hasPermission(
-                    hankeIds.id,
+                    hankeIdentifier.id,
                     USERNAME,
                     PermissionCode.MODIFY_DELETE_PERMISSIONS
                 )
             } returns false
             val updates = mapOf(hankeKayttajaId to Kayttooikeustaso.HANKEMUOKKAUS)
             every {
-                hankeKayttajaService.updatePermissions(hankeIds, updates, false, USERNAME)
+                hankeKayttajaService.updatePermissions(hankeIdentifier, updates, false, USERNAME)
             } throws ex
 
             return updates
