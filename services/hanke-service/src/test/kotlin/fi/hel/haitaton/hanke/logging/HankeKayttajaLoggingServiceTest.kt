@@ -74,7 +74,7 @@ class HankeKayttajaLoggingServiceTest {
     inner class LogTunnisteUpdate {
         @Test
         fun `Creates audit log entry for updated kayttajatunniste`() {
-            val kayttajaTunnisteBefore = KayttajaTunnisteFactory.create()
+            val kayttajaTunnisteBefore = KayttajaTunnisteFactory.create(sentAt = null)
             val kayttajaTunnisteAfter =
                 KayttajaTunnisteFactory.create(kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS)
 
