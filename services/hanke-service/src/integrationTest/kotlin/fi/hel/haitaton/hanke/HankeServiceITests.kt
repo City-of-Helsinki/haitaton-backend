@@ -5,6 +5,7 @@ import assertk.assertFailure
 import assertk.assertions.each
 import assertk.assertions.hasClass
 import assertk.assertions.hasSize
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
@@ -1272,6 +1273,19 @@ class HankeServiceITests : DatabaseTest() {
 
         assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNotNull
         verify { cableReportService.getApplicationInformation(hakemusAlluId) }
+    }
+
+    @Test
+    fun `deleteHanke when hanke has users should remove users and tokens`() {
+        val hanke = hankeFactory.save(HankeFactory.create().withYhteystiedot()).hankeTunnus!!
+        assertk.assertThat(hankeKayttajaRepository.findAll()).hasSize(4)
+        assertk.assertThat(kayttajaTunnisteRepository.findAll()).hasSize(4)
+
+        hankeService.deleteHanke(hanke, USER_NAME)
+
+        assertk.assertThat(hankeRepository.findAll()).isEmpty()
+        assertk.assertThat(hankeKayttajaRepository.findAll()).isEmpty()
+        assertk.assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
     }
 
     @Test

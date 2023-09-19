@@ -468,18 +468,6 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         }
 
         @Test
-        fun `Returns 500 when tunniste is orphaned`() {
-            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } throws
-                OrphanedTunnisteException(USERNAME, tunnisteId)
-
-            post(url, Tunnistautuminen(tunniste))
-                .andExpect(status().isInternalServerError)
-                .andExpect(hankeError(HankeError.HAI4001))
-
-            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
-        }
-
-        @Test
         fun `Returns 409 when user already has a permission`() {
             every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } throws
                 UserAlreadyHasPermissionException(USERNAME, tunnisteId, permissionId)

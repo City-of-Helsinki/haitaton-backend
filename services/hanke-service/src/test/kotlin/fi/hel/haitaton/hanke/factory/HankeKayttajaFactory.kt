@@ -26,10 +26,8 @@ class HankeKayttajaFactory(
         sahkoposti: String = "kake@katselu.test",
         kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
         tunniste: String = "existing",
-    ): HankeKayttajaEntity {
-        val kayttajaTunnisteEntity = saveToken(tunniste, kayttooikeustaso)
-        return saveUser(hankeId, nimi, sahkoposti, null, kayttajaTunnisteEntity)
-    }
+    ): HankeKayttajaEntity =
+        addToken(saveUser(hankeId, nimi, sahkoposti, null), tunniste, kayttooikeustaso)
 
     fun saveUserAndPermission(
         hankeId: Int,
@@ -37,11 +35,10 @@ class HankeKayttajaFactory(
         sahkoposti: String = "kake@katselu.test",
         kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
         userId: String = "fake id",
-        kayttajaTunniste: KayttajaTunnisteEntity? = null,
     ): HankeKayttajaEntity {
         val permissionEntity = permissionService.create(hankeId, userId, kayttooikeustaso)
 
-        return saveUser(hankeId, nimi, sahkoposti, permissionEntity, kayttajaTunniste)
+        return saveUser(hankeId, nimi, sahkoposti, permissionEntity)
     }
 
     fun saveUser(
@@ -62,7 +59,16 @@ class HankeKayttajaFactory(
         )
     }
 
-    fun saveToken(
+    fun addToken(
+        hankeKayttaja: HankeKayttajaEntity,
+        tunniste: String = "existing",
+        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+    ): HankeKayttajaEntity {
+        hankeKayttaja.kayttajaTunniste = hankeKayttaja.saveToken(tunniste, kayttooikeustaso)
+        return hankeKayttajaRepository.save(hankeKayttaja)
+    }
+
+    private fun HankeKayttajaEntity.saveToken(
         tunniste: String = "existing",
         kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
     ) =
@@ -71,7 +77,7 @@ class HankeKayttajaFactory(
                 tunniste = tunniste,
                 createdAt = OffsetDateTime.parse("2023-03-31T15:41:21Z"),
                 kayttooikeustaso = kayttooikeustaso,
-                hankeKayttaja = null,
+                hankeKayttaja = this,
             )
         )
 
