@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.annotation.JsonView
+import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import io.swagger.v3.oas.annotations.media.Schema
@@ -61,6 +62,23 @@ class HankeYhteystietoEntity(
     @JoinColumn(name = "hankeid")
     var hanke: HankeEntity? = null,
 ) {
+
+    fun toDomain(): HankeYhteystieto =
+        HankeYhteystieto(
+            id = id,
+            nimi = nimi,
+            email = email,
+            alikontaktit = yhteyshenkilot,
+            puhelinnumero = puhelinnumero,
+            organisaatioNimi = organisaatioNimi,
+            osasto = osasto,
+            rooli = rooli,
+            tyyppi = tyyppi,
+            createdAt = createdAt?.zonedDateTime(),
+            createdBy = createdByUserId,
+            modifiedAt = modifiedAt?.zonedDateTime(),
+            modifiedBy = modifiedByUserId,
+        )
 
     // Must consider both id and all non-audit fields for correct operations in certain collections
     // Id can not be used as the only comparison, as one can have entities with null id (before they

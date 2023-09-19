@@ -23,6 +23,7 @@ import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
@@ -56,6 +57,7 @@ open class ApplicationService(
     private val geometriatDao: GeometriatDao,
     private val permissionService: PermissionService,
     private val hankeRepository: HankeRepository,
+    private val hankeLoggingService: HankeLoggingService,
 ) {
     @Transactional(readOnly = true)
     open fun getAllApplicationsForUser(userId: String): List<Application> {
@@ -248,23 +250,32 @@ open class ApplicationService(
      * delete, if the application is in Allu, and it's beyond the pending status.
      */
     @Transactional
-    open fun delete(id: Long, userId: String) {
-        val application = getById(id)
-        val alluid = application.alluid
-        logger.info { "Deleting application, id=$id, alluid=$alluid userid=$userId" }
-
-        if (alluid == null) {
-            logger.info { "Application not sent to Allu yet, simply deleting it. id=$id" }
-        } else {
-            logger.info {
-                "Application is sent to Allu, trying to cancel it before deleting. id=$id alluid=$alluid"
-            }
-            cancelApplication(alluid, application.id)
+    open fun delete(applicationId: Long, userId: String) =
+        with(getById(applicationId)) {
+            cancelIfSent(alluid, id)
+            deleteAndLog(this, userId)
         }
-        applicationRepository.deleteById(id)
-        logger.info { "Application deleted, id=$id, alluid=$alluid userid=$userId" }
-        applicationLoggingService.logDelete(application.toApplication(), userId)
-    }
+
+    /**
+     * Deletes an application. Cancels the application in Allu if it's still pending. Refuses to
+     * delete, if the application is in Allu, and it's beyond the pending status.
+     *
+     * Furthermore, if the owning Hanke is generated and has no more applications, also deletes the
+     * Hanke.
+     */
+    @Transactional
+    open fun deleteWithOrphanGeneratedHankeRemoval(applicationId: Long, userId: String) =
+        with(getById(applicationId)) {
+            cancelIfSent(alluid, id)
+            deleteAndLog(this, userId)
+            if (hanke.generated && hanke.hakemukset.size == 1) {
+                logger.info {
+                    "Application $id was the only one of a generated Hanke, removing Hanke ${hanke.hankeTunnus}."
+                }
+                hankeRepository.delete(hanke)
+                hankeLoggingService.logDelete(hanke, userId)
+            }
+        }
 
     @Transactional(readOnly = true)
     open fun downloadDecision(applicationId: Long, userId: String): Pair<String, ByteArray> {
@@ -289,6 +300,27 @@ open class ApplicationService(
             PENDING,
             PENDING_CLIENT -> isStillPendingInAllu(application.alluid)
             else -> false
+        }
+
+    private fun cancelIfSent(alluid: Int?, applicationId: Long?) {
+        if (alluid == null) {
+            logger.info {
+                "Application not sent to Allu yet, simply deleting it. id=$applicationId"
+            }
+        } else {
+            logger.info {
+                "Application is sent to Allu, trying to cancel it before deleting. id=$applicationId alluid=$alluid"
+            }
+            cancelApplication(alluid, applicationId)
+        }
+    }
+
+    private fun deleteAndLog(application: ApplicationEntity, userId: String) =
+        with(application) {
+            logger.info { "Deleting application, id=$id, alluid=$alluid userid=$userId" }
+            applicationRepository.delete(this)
+            logger.info { "Application deleted, id=$id, alluid=$alluid userid=$userId" }
+            applicationLoggingService.logDelete(toApplication(), userId)
         }
 
     private fun initAccessForApplication(

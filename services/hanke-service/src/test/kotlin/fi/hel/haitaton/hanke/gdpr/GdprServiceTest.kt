@@ -32,10 +32,10 @@ class GdprServiceTest {
             gdprService.deleteApplications(applications, USERID)
 
             verifyAll {
-                applicationService.delete(1, USERID)
-                applicationService.delete(2, USERID)
-                applicationService.delete(3, USERID)
-                applicationService.delete(4, USERID)
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(1, USERID)
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(2, USERID)
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(3, USERID)
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(4, USERID)
             }
         }
     }

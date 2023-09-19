@@ -40,7 +40,7 @@ private val logger = KotlinLogging.logger {}
 @RequestMapping("/hakemukset")
 @SecurityRequirement(name = "bearerAuth")
 class ApplicationController(
-    private val service: ApplicationService,
+    private val applicationService: ApplicationService,
     private val hankeService: HankeService,
     private val disclosureLogService: DisclosureLogService,
 ) {
@@ -52,7 +52,7 @@ class ApplicationController(
     )
     @ApiResponse(description = "List of application", responseCode = "200")
     fun getAll(): List<Application> {
-        val applications = service.getAllApplicationsForUser(currentUserId())
+        val applications = applicationService.getAllApplicationsForUser(currentUserId())
         disclosureLogService.saveDisclosureLogsForApplications(applications, currentUserId())
         return applications
     }
@@ -75,7 +75,7 @@ class ApplicationController(
     )
     @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'VIEW')")
     fun getById(@PathVariable(name = "id") id: Long): Application {
-        val application = service.getApplicationById(id)
+        val application = applicationService.getApplicationById(id)
         disclosureLogService.saveDisclosureLogsForApplication(application, currentUserId())
         return application
     }
@@ -101,8 +101,7 @@ class ApplicationController(
     @PreAuthorize("@applicationAuthorizer.authorizeCreate(#application)")
     fun create(@ValidApplication @RequestBody application: Application): Application {
         val userId = currentUserId()
-        val createdApplication = service.create(application, userId)
-
+        val createdApplication = applicationService.create(application, userId)
         disclosureLogService.saveDisclosureLogsForApplication(createdApplication, userId)
         return createdApplication
     }
@@ -176,7 +175,7 @@ class ApplicationController(
     ): Application {
         val userId = currentUserId()
         val updatedApplication =
-            service.updateApplicationData(id, application.applicationData, userId)
+            applicationService.updateApplicationData(id, application.applicationData, userId)
         disclosureLogService.saveDisclosureLogsForApplication(updatedApplication, userId)
         return updatedApplication
     }
@@ -210,7 +209,9 @@ class ApplicationController(
     )
     @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
     fun delete(@PathVariable(name = "id") id: Long) {
-        service.delete(id, currentUserId())
+        val userId = currentUserId()
+        logger.info { "Received request to delete application id=$id, userId=$userId" }
+        applicationService.deleteWithOrphanGeneratedHankeRemoval(id, userId)
     }
 
     @PostMapping("/{id}/send-application")
@@ -247,9 +248,8 @@ class ApplicationController(
             ]
     )
     @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
-    fun sendApplication(@PathVariable(name = "id") id: Long): Application {
-        return service.sendApplication(id, currentUserId())
-    }
+    fun sendApplication(@PathVariable(name = "id") id: Long): Application =
+        applicationService.sendApplication(id, currentUserId())
 
     @GetMapping("/{id}/paatos")
     @Operation(
@@ -274,8 +274,7 @@ class ApplicationController(
     )
     @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'VIEW')")
     fun downloadDecision(@PathVariable(name = "id") id: Long): ResponseEntity<ByteArray> {
-        val (filename, pdfBytes) = service.downloadDecision(id, currentUserId())
-
+        val (filename, pdfBytes) = applicationService.downloadDecision(id, currentUserId())
         val headers = HttpHeaders()
         headers.add("Content-Disposition", "inline; filename=$filename.pdf")
         return ResponseEntity.ok().headers(headers).contentType(APPLICATION_PDF).body(pdfBytes)

@@ -672,7 +672,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `With pre-existing permissions does not create duplicate`() {
             val hanke = hankeFactory.save()
-            val yhteystieto = HankeYhteystietoFactory.create()
+            val yhteystieto = HankeYhteystietoFactory.createYhteytieto()
             val contact = yhteystieto.alikontaktit[0]
             kayttajaFactory.saveUserAndPermission(hanke.id!!, contact.fullName(), contact.email)
             auditLogRepository.deleteAll()
