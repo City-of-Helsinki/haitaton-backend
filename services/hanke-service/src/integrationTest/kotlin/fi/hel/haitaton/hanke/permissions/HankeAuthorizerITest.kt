@@ -7,6 +7,7 @@ import assertk.assertions.hasClass
 import assertk.assertions.isTrue
 import assertk.assertions.messageContains
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.HankeAuthorizer
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import org.junit.jupiter.api.Nested

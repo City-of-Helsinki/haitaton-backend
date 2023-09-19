@@ -9,7 +9,6 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaj
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.permissions.HankeAuthorizer
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.mockk.checkUnnecessaryStub

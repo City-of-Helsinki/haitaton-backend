@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.permissions.HankeAuthorizer
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import io.mockk.every
 import io.mockk.justRun

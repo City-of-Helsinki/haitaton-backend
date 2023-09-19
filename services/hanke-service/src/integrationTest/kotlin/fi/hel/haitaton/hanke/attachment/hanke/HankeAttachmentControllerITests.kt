@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.ControllerTest
+import fi.hel.haitaton.hanke.HankeAuthorizer
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeError.HAI0001
 import fi.hel.haitaton.hanke.HankeNotFoundException
@@ -14,7 +15,6 @@ import fi.hel.haitaton.hanke.attachment.dummyData
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.hankeError
-import fi.hel.haitaton.hanke.permissions.HankeAuthorizer
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import io.mockk.checkUnnecessaryStub

@@ -12,7 +12,6 @@ import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.permissions.HankeAuthorizer
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaAuthorizer
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService

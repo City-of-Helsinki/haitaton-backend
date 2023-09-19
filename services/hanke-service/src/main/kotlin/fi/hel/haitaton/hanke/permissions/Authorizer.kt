@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.permissions
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.currentUserId
-import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
 abstract class Authorizer(
@@ -29,9 +28,3 @@ abstract class Authorizer(
     open fun authorizeHankeTunnus(hankeTunnus: String, permissionCode: String): Boolean =
         authorizeHankeTunnus(hankeTunnus, PermissionCode.valueOf(permissionCode))
 }
-
-@Component
-class HankeAuthorizer(
-    permissionService: PermissionService,
-    hankeRepository: HankeRepository,
-) : Authorizer(permissionService, hankeRepository)
