@@ -153,10 +153,10 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `When user exists should return current hanke user`() {
-            val hankeWithApplications = hankeFactory.saveGenerated(userId = USERNAME)
+            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
 
             val result: HankeKayttajaEntity? =
-                hankeKayttajaService.getKayttajaByUserId(hankeWithApplications.hanke.id!!, USERNAME)
+                hankeKayttajaService.getKayttajaByUserId(hanke.id!!, USERNAME)
 
             assertThat(result).isNotNull()
             with(result!!) {
@@ -189,8 +189,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `When no kayttaja should return null`() {
-            val hankeWithApplications = hankeFactory.saveGenerated(userId = USERNAME)
-            val hankeId = hankeWithApplications.hanke.id!!
+            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
+            val hankeId = hanke.id!!
             val createdKayttaja = hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)!!
             hankeKayttajaRepository.deleteById(createdKayttaja.id)
 
@@ -394,11 +394,11 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 )
             val cableReportWithoutHanke =
                 CableReportWithoutHanke(ApplicationType.CABLE_REPORT, applicationData)
-            val (hanke, applications) =
-                hankeFactory.saveGenerated(cableReportWithoutHanke, USERNAME)
+            val hanke = hankeFactory.saveGenerated(cableReportWithoutHanke, USERNAME)
             val applicationEntity =
-                with(applications.first()) { applicationRepository.findById(id!!).orElseThrow() }
-                    .apply { applicationIdentifier = defaultApplicationIdentifier }
+                applicationRepository.findAll().first().apply {
+                    applicationIdentifier = defaultApplicationIdentifier
+                }
             val capturedEmails = mutableListOf<HankeInvitationData>()
             justRun { emailSenderService.sendHankeInvitationEmail(capture(capturedEmails)) }
             val inviter =
@@ -691,7 +691,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Sends emails for new hanke users`() {
-            val hanke = hankeFactory.saveGenerated(userId = USERNAME).hanke
+            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
             val hankeWithYhteystiedot = hanke.withYhteystiedot() // 4 sub contacts
             val capturedEmails = mutableListOf<HankeInvitationData>()
             justRun { emailSenderService.sendHankeInvitationEmail(capture(capturedEmails)) }

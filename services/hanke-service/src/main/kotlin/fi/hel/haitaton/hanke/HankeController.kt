@@ -126,7 +126,7 @@ class HankeController(
 
         val userId = currentUserId()
 
-        hankeService.getHankeWithApplications(hankeTunnus).let { (_, hakemukset) ->
+        hankeService.getHankeApplications(hankeTunnus).let { hakemukset ->
             if (hakemukset.isNotEmpty()) {
                 disclosureLogService.saveDisclosureLogsForApplications(hakemukset, userId)
             }
@@ -260,11 +260,8 @@ On update following will happen automatically:
     fun deleteHanke(@PathVariable hankeTunnus: String) {
         logger.info { "Deleting hanke: $hankeTunnus" }
 
-        // TODO: Move getHankeWithApplications inside deleteHanke
-        hankeService.getHankeWithApplications(hankeTunnus).let { (hanke, hakemukset) ->
-            hankeService.deleteHanke(hanke, hakemukset, currentUserId())
-            logger.info { "Deleted Hanke: ${hanke.toLogString()}" }
-        }
+        hankeService.deleteHanke(hankeTunnus, currentUserId())
+        logger.info { "Deleted Hanke: $hankeTunnus" }
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)

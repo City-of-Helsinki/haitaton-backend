@@ -129,11 +129,9 @@ class ApplicationController(
         @ValidApplication @RequestBody cableReport: CableReportWithoutHanke
     ): Application {
         val userId = currentUserId()
-        return hankeService
-            .generateHankeWithApplication(cableReport, userId)
-            .applications
-            .first()
-            .also { disclosureLogService.saveDisclosureLogsForApplication(it, userId) }
+        return hankeService.generateHankeWithApplication(cableReport, userId).also {
+            disclosureLogService.saveDisclosureLogsForApplication(it, userId)
+        }
     }
 
     @PutMapping("/{id}")

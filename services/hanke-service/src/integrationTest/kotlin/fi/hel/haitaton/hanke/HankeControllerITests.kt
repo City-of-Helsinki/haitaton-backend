@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
-import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
@@ -220,14 +219,14 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
             } returns true
-            every { hankeService.getHankeWithApplications(HANKE_TUNNUS) } throws
+            every { hankeService.getHankeApplications(HANKE_TUNNUS) } throws
                 HankeNotFoundException(HANKE_TUNNUS)
 
             get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
-                hankeService.getHankeWithApplications(HANKE_TUNNUS)
+                hankeService.getHankeApplications(HANKE_TUNNUS)
             }
         }
 
@@ -245,9 +244,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
         @Test
         fun `With no applications return empty list`() {
-            val hanke = HankeFactory.create()
-            every { hankeService.getHankeWithApplications(HANKE_TUNNUS) } returns
-                HankeWithApplications(hanke, listOf())
+            every { hankeService.getHankeApplications(HANKE_TUNNUS) } returns listOf()
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
             } returns true
@@ -257,16 +254,14 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             assertTrue(response.applications.isEmpty())
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
-                hankeService.getHankeWithApplications(HANKE_TUNNUS)
+                hankeService.getHankeApplications(HANKE_TUNNUS)
             }
         }
 
         @Test
         fun `With known hanketunnus return applications`() {
-            val hanke = HankeFactory.create()
             val applications = AlluDataFactory.createApplications(5)
-            every { hankeService.getHankeWithApplications(HANKE_TUNNUS) } returns
-                HankeWithApplications(hanke, applications)
+            every { hankeService.getHankeApplications(HANKE_TUNNUS) } returns applications
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
             } returns true
@@ -277,7 +272,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             assertEquals(ApplicationsResponse(applications), response)
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
-                hankeService.getHankeWithApplications(HANKE_TUNNUS)
+                hankeService.getHankeApplications(HANKE_TUNNUS)
                 disclosureLogService.saveDisclosureLogsForApplications(applications, USERNAME)
             }
         }
@@ -555,30 +550,15 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
         @Test
         fun `When user has permission and hanke exists should call delete and return no content`() {
-            val hankeWithApplications =
-                HankeWithApplications(HankeFactory.create(id = hankeId), listOf())
-            every { hankeService.getHankeWithApplications(HANKE_TUNNUS) }
-                .returns(hankeWithApplications)
             every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.DELETE.name) }
                 .returns(true)
-            justRun {
-                hankeService.deleteHanke(
-                    hankeWithApplications.hanke,
-                    hankeWithApplications.applications,
-                    USERNAME
-                )
-            }
+            justRun { hankeService.deleteHanke(HANKE_TUNNUS, USERNAME) }
 
             delete(url).andExpect(status().isNoContent)
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.DELETE.name)
-                hankeService.getHankeWithApplications(HANKE_TUNNUS)
-                hankeService.deleteHanke(
-                    hankeWithApplications.hanke,
-                    hankeWithApplications.applications,
-                    USERNAME
-                )
+                hankeService.deleteHanke(HANKE_TUNNUS, USERNAME)
             }
         }
 

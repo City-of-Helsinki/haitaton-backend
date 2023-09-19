@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.permissions.HankeAuthorizer
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -45,19 +44,10 @@ class HankeControllerHankeEditingDisabledITests(@Autowired override val mockMvc:
 
     @Test
     fun `delete hanke works even if hanke editing is disabled`() {
-        val mockHankeId = 56
-        val hankeWithApplications =
-            HankeWithApplications(HankeFactory.create(id = mockHankeId), listOf())
-        every { hankeService.getHankeWithApplications(HANKE_TUNNUS) }.returns(hankeWithApplications)
+        every { hankeService.getHankeApplications(HANKE_TUNNUS) }.returns(listOf())
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.DELETE.name) } returns
             true
-        justRun {
-            hankeService.deleteHanke(
-                hankeWithApplications.hanke,
-                hankeWithApplications.applications,
-                USERNAME
-            )
-        }
+        justRun { hankeService.deleteHanke(HANKE_TUNNUS, USERNAME) }
 
         delete("$BASE_URL/$HANKE_TUNNUS").andExpect(MockMvcResultMatchers.status().isNoContent)
     }
