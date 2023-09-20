@@ -131,7 +131,6 @@ class Configuration {
             auditLogService,
             hankeLoggingService,
             applicationService,
-            permissionService,
             hankeKayttajaService,
         )
 

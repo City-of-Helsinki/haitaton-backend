@@ -12,13 +12,13 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime
 import java.util.UUID
-import java.util.UUID.randomUUID
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.stereotype.Component
 
 private const val FILE_NAME = "file.pdf"
 
 private val dummyData = "ABC".toByteArray()
+private val defaultAttachmentId = UUID.fromString("5cba3a76-28ad-42aa-b7e6-b5c1775be81a")
 
 @Component
 class AttachmentFactory(
@@ -37,7 +37,7 @@ class AttachmentFactory(
     companion object {
 
         fun applicationAttachmentEntity(
-            id: UUID = randomUUID(),
+            id: UUID = defaultAttachmentId,
             fileName: String = FILE_NAME,
             contentType: String = APPLICATION_PDF_VALUE,
             createdByUserId: String = "currentUserId",
@@ -56,7 +56,7 @@ class AttachmentFactory(
             )
 
         fun hankeAttachmentEntity(
-            id: UUID = randomUUID(),
+            id: UUID = defaultAttachmentId,
             fileName: String = FILE_NAME,
             contentType: String = APPLICATION_PDF_VALUE,
             createdByUser: String = currentUserId(),
@@ -73,7 +73,7 @@ class AttachmentFactory(
             )
 
         fun hankeAttachmentMetadata(
-            attachmentId: UUID = randomUUID(),
+            attachmentId: UUID = defaultAttachmentId,
             fileName: String = FILE_NAME,
             createdByUser: String = currentUserId(),
             createdAt: OffsetDateTime = OffsetDateTime.now(),
@@ -88,7 +88,7 @@ class AttachmentFactory(
             )
 
         fun applicationAttachmentMetadata(
-            attachmentId: UUID = randomUUID(),
+            attachmentId: UUID = defaultAttachmentId,
             fileName: String = FILE_NAME,
             createdBy: String = currentUserId(),
             createdAt: OffsetDateTime = OffsetDateTime.now(),

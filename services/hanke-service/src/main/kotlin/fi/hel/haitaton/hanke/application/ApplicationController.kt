@@ -2,14 +2,9 @@ package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
-import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.permissions.PermissionCode
-import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
-import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
-import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
 import fi.hel.haitaton.hanke.validation.ValidApplication
 import io.swagger.v3.oas.annotations.Hidden
@@ -25,6 +20,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -47,7 +43,6 @@ class ApplicationController(
     private val service: ApplicationService,
     private val hankeService: HankeService,
     private val disclosureLogService: DisclosureLogService,
-    private val permissionService: PermissionService,
 ) {
     @GetMapping
     @Operation(
@@ -78,11 +73,10 @@ class ApplicationController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'VIEW')")
     fun getById(@PathVariable(name = "id") id: Long): Application {
-        checkHakemusPermission(id, VIEW)
-        val userId = currentUserId()
         val application = service.getApplicationById(id)
-        disclosureLogService.saveDisclosureLogsForApplication(application, userId)
+        disclosureLogService.saveDisclosureLogsForApplication(application, currentUserId())
         return application
     }
 
@@ -104,12 +98,9 @@ class ApplicationController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeCreate(#application)")
     fun create(@ValidApplication @RequestBody application: Application): Application {
         val userId = currentUserId()
-        val hankeTunnus = application.hankeTunnus
-
-        checkPermissionToCreate(hankeTunnus, userId)
-
         val createdApplication = service.create(application, userId)
 
         disclosureLogService.saveDisclosureLogsForApplication(createdApplication, userId)
@@ -138,11 +129,9 @@ class ApplicationController(
         @ValidApplication @RequestBody cableReport: CableReportWithoutHanke
     ): Application {
         val userId = currentUserId()
-        return hankeService
-            .generateHankeWithApplication(cableReport, userId)
-            .applications
-            .first()
-            .also { disclosureLogService.saveDisclosureLogsForApplication(it, userId) }
+        return hankeService.generateHankeWithApplication(cableReport, userId).also {
+            disclosureLogService.saveDisclosureLogsForApplication(it, userId)
+        }
     }
 
     @PutMapping("/{id}")
@@ -180,15 +169,15 @@ class ApplicationController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
     fun update(
         @PathVariable(name = "id") id: Long,
         @ValidApplication @RequestBody application: Application
     ): Application {
-        checkHakemusPermission(id, EDIT_APPLICATIONS)
         val userId = currentUserId()
         val updatedApplication =
             service.updateApplicationData(id, application.applicationData, userId)
-        disclosureLogService.saveDisclosureLogsForApplication(updatedApplication, currentUserId())
+        disclosureLogService.saveDisclosureLogsForApplication(updatedApplication, userId)
         return updatedApplication
     }
 
@@ -219,8 +208,8 @@ class ApplicationController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
     fun delete(@PathVariable(name = "id") id: Long) {
-        checkHakemusPermission(id, EDIT_APPLICATIONS)
         service.delete(id, currentUserId())
     }
 
@@ -257,8 +246,8 @@ class ApplicationController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
     fun sendApplication(@PathVariable(name = "id") id: Long): Application {
-        checkHakemusPermission(id, EDIT_APPLICATIONS)
         return service.sendApplication(id, currentUserId())
     }
 
@@ -283,29 +272,13 @@ class ApplicationController(
                 ),
             ]
     )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'VIEW')")
     fun downloadDecision(@PathVariable(name = "id") id: Long): ResponseEntity<ByteArray> {
-        checkHakemusPermission(id, VIEW)
         val (filename, pdfBytes) = service.downloadDecision(id, currentUserId())
 
         val headers = HttpHeaders()
         headers.add("Content-Disposition", "inline; filename=$filename.pdf")
         return ResponseEntity.ok().headers(headers).contentType(APPLICATION_PDF).body(pdfBytes)
-    }
-
-    fun checkHakemusPermission(hakemusId: Long, permissionCode: PermissionCode) {
-        val userId = currentUserId()
-        val application = service.getApplicationById(hakemusId)
-        val hankeId = hankeService.getHankeId(application.hankeTunnus)
-
-        if (hankeId == null || !permissionService.hasPermission(hankeId, userId, permissionCode)) {
-            throw ApplicationNotFoundException(hakemusId)
-        }
-    }
-
-    fun checkPermissionToCreate(hankeTunnus: String, userId: String) {
-        val id = hankeService.getHankeId(hankeTunnus)
-        if (id == null || !permissionService.hasPermission(id, userId, EDIT_APPLICATIONS))
-            throw HankeNotFoundException(hankeTunnus)
     }
 
     @ExceptionHandler(IncompatibleApplicationException::class)

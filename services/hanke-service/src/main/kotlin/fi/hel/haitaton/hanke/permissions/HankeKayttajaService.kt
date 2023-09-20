@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.permissions
 
 import fi.hel.haitaton.hanke.HankeArgumentException
+import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
@@ -133,22 +134,21 @@ class HankeKayttajaService(
 
     @Transactional
     fun updatePermissions(
-        hanke: Hanke,
+        hankeIdentifier: HankeIdentifier,
         updates: Map<UUID, Kayttooikeustaso>,
         deleteAdminPermission: Boolean,
         userId: String,
     ) {
-        logger.info {
-            "Updating permissions for hankekayttajat. hankeId=${hanke.id} hanketunnus=${hanke.hankeTunnus}"
-        }
+        logger.info { "Updating permissions for hankekayttajat. ${hankeIdentifier.logString()}" }
 
-        val kayttajat = hankeKayttajaRepository.findByHankeIdAndIdIn(hanke.id!!, updates.keys)
+        val kayttajat =
+            hankeKayttajaRepository.findByHankeIdAndIdIn(hankeIdentifier.id, updates.keys)
 
         if (kayttajat.any { it.permission?.userId == userId }) {
             throw ChangingOwnPermissionException(userId)
         }
 
-        validateAllKayttajatFound(kayttajat, updates, hanke)
+        validateAllKayttajatFound(kayttajat, updates, hankeIdentifier)
         validateAdminPermissionIfNeeded(kayttajat, updates, deleteAdminPermission, userId)
 
         kayttajat.forEach { kayttaja ->
@@ -160,7 +160,7 @@ class HankeKayttajaService(
                 }
         }
 
-        validateAdminRemains(hanke)
+        validateAdminRemains(hankeIdentifier)
     }
 
     @Transactional
@@ -175,7 +175,7 @@ class HankeKayttajaService(
                 ?: throw OrphanedTunnisteException(userId, tunnisteEntity.id)
 
         permissionService.findPermission(kayttaja.hankeId, userId)?.let { permission ->
-            throw UserAlreadyHasPermissionException(userId, tunnisteEntity.id, permission.id)
+            throw UserAlreadyHasPermissionException(userId, kayttaja.id, permission.id)
         }
 
         kayttaja.permission?.let { permission ->
@@ -198,12 +198,12 @@ class HankeKayttajaService(
     private fun validateAllKayttajatFound(
         existingKayttajat: List<HankeKayttajaEntity>,
         requestedUpdates: Map<UUID, Kayttooikeustaso>,
-        hanke: Hanke,
+        hankeIdentifier: HankeIdentifier,
     ) {
         with(existingKayttajat.map { it.id }) {
             if (!this.containsAll(requestedUpdates.keys)) {
                 val missingIds = requestedUpdates.keys.subtract(this.toSet())
-                throw HankeKayttajatNotFoundException(missingIds, hanke)
+                throw HankeKayttajatNotFoundException(missingIds, hankeIdentifier)
             }
         }
     }
@@ -237,13 +237,13 @@ class HankeKayttajaService(
      * kayttooikeustaso in an activated permission needs to remain. Otherwise, there's no one who
      * can add that access level.
      */
-    private fun validateAdminRemains(hanke: Hanke) {
+    private fun validateAdminRemains(hankeIdentifier: HankeIdentifier) {
         if (
-            permissionService.findByHankeId(hanke.id!!).all {
+            permissionService.findByHankeId(hankeIdentifier.id).all {
                 it.kayttooikeustaso != Kayttooikeustaso.KAIKKI_OIKEUDET
             }
         ) {
-            throw NoAdminRemainingException(hanke)
+            throw NoAdminRemainingException(hankeIdentifier)
         }
     }
 
@@ -332,13 +332,13 @@ class HankeKayttajaService(
 
     private fun createTunniste(
         hankeId: Int,
-        userId: String,
+        currentUserId: String,
     ): KayttajaTunnisteEntity {
         logger.info { "Creating a new user token, hankeId=$hankeId" }
         val token = KayttajaTunnisteEntity.create(sentAt = getCurrentTimeUTC().toOffsetDateTime())
         val kayttajaTunnisteEntity = kayttajaTunnisteRepository.save(token)
         logger.info { "Saved the new user token, id=${kayttajaTunnisteEntity.id}" }
-        logService.logCreate(kayttajaTunnisteEntity.toDomain(), userId)
+        logService.logCreate(kayttajaTunnisteEntity.toDomain(), currentUserId)
         return kayttajaTunnisteEntity
     }
 
@@ -396,15 +396,18 @@ class UsersWithoutKayttooikeustasoException(missingIds: Collection<UUID>) :
             "their ids = ${missingIds.joinToString()}"
     )
 
-class NoAdminRemainingException(hanke: Hanke) :
+class NoAdminRemainingException(hankeIdentifier: HankeIdentifier) :
     RuntimeException(
-        "No one with admin rights would remain after permission changes. hankeId=${hanke.id}, hanketunnus=${hanke.hankeTunnus}"
+        "No one with admin rights would remain after permission changes. ${hankeIdentifier.logString()}"
     )
 
-class HankeKayttajatNotFoundException(missingIds: Collection<UUID>, hanke: Hanke) :
+class HankeKayttajatNotFoundException(
+    missingIds: Collection<UUID>,
+    hankeIdentifier: HankeIdentifier
+) :
     RuntimeException(
         "Some HankeKayttaja were not found. Either the IDs don't exist or they belong to another " +
-            "hanke. Missing IDs: ${missingIds.joinToString()}, hankeId=${hanke.id}, hanketunnus=${hanke.hankeTunnus}"
+            "hanke. Missing IDs: ${missingIds.joinToString()}, ${hankeIdentifier.logString()}"
     )
 
 class TunnisteNotFoundException(userId: String, tunniste: String) :
@@ -415,9 +418,9 @@ class OrphanedTunnisteException(userId: String, tunnisteId: UUID) :
         "A token didn't have a matching user, userId=$userId, kayttajaTunnisteId=$tunnisteId"
     )
 
-class UserAlreadyHasPermissionException(userId: String, tunnisteId: UUID, permissionId: Int) :
+class UserAlreadyHasPermissionException(userId: String, kayttajaId: UUID, permissionId: Int) :
     RuntimeException(
-        "A user already had an active permission, userId=$userId, kayttajaTunnisteId=$tunnisteId, permissionsId=$permissionId"
+        "The user already has an active permission, userId=$userId, hankeKayttajaId=$kayttajaId, permissionsId=$permissionId"
     )
 
 class PermissionAlreadyExistsException(

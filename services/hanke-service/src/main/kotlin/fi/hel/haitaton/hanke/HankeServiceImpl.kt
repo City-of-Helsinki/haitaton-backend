@@ -10,7 +10,6 @@ import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasId
@@ -21,7 +20,6 @@ import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
@@ -70,40 +68,25 @@ open class HankeServiceImpl(
     private val auditLogService: AuditLogService,
     private val hankeLoggingService: HankeLoggingService,
     private val applicationService: ApplicationService,
-    private val permissionService: PermissionService,
     private val hankeKayttajaService: HankeKayttajaService,
 ) : HankeService {
 
-    override fun getHankeId(hankeTunnus: String): Int? =
-        hankeRepository.findByHankeTunnus(hankeTunnus)?.id
-
-    override fun getHankeIdOrThrow(hankeTunnus: String): Int =
-        getHankeId(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-
-    /**
-     * Hanke does not contain hakemukset. This function wraps Hanke and its hakemukset to a pair.
-     */
     @Transactional(readOnly = true)
-    override fun getHankeWithApplications(hankeTunnus: String): HankeWithApplications =
-        hankeRepository.findByHankeTunnus(hankeTunnus).let { entity ->
-            if (entity == null) {
-                throw HankeNotFoundException(hankeTunnus)
-            }
-            return HankeWithApplications(
-                createHankeDomainObjectFromEntity(entity),
-                entity.hakemukset.map { hakemus -> hakemus.toApplication() }
-            )
+    override fun findIdentifier(hankeTunnus: String): HankeIdentifier? =
+        hankeRepository.findOneByHankeTunnus(hankeTunnus)
+
+    @Transactional(readOnly = true)
+    override fun getHankeApplications(hankeTunnus: String): List<Application> =
+        hankeRepository.findByHankeTunnus(hankeTunnus)?.let { entity ->
+            entity.hakemukset.map { hakemus -> hakemus.toApplication() }
         }
+            ?: throw HankeNotFoundException(hankeTunnus)
 
     @Transactional(readOnly = true)
     override fun loadHanke(hankeTunnus: String) =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let {
             createHankeDomainObjectFromEntity(it)
         }
-
-    @Transactional(readOnly = true)
-    override fun findHankeOrThrow(hankeTunnus: String) =
-        loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
 
     @Transactional(readOnly = true)
     override fun loadPublicHanke() =
@@ -170,12 +153,10 @@ open class HankeServiceImpl(
     override fun generateHankeWithApplication(
         cableReport: CableReportWithoutHanke,
         userId: String
-    ): HankeWithApplications {
+    ): Application {
         val hanke = generateHankeFrom(cableReport)
         val tunnus = hanke.hankeTunnus ?: throw HankeArgumentException("Hanke must have tunnus")
-        val createdApplication =
-            applicationService.create(cableReport.toNewApplication(tunnus), userId)
-        return HankeWithApplications(hanke, listOf(createdApplication))
+        return applicationService.create(cableReport.toNewApplication(tunnus), userId)
     }
 
     @Transactional
@@ -224,8 +205,10 @@ open class HankeServiceImpl(
     }
 
     @Transactional
-    override fun deleteHanke(hanke: Hanke, hakemukset: List<Application>, userId: String) {
-        val hankeId = hanke.id ?: throw HankeArgumentException("Hanke must have an id")
+    override fun deleteHanke(hankeTunnus: String, userId: String) {
+        val hanke = loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
+        val hakemukset = getHankeApplications(hankeTunnus)
+
         if (anyHakemusProcessingInAllu(hakemukset)) {
             throw HankeAlluConflictException(
                 "Hanke ${hanke.hankeTunnus} has hakemus in Allu processing. Cannot delete."
@@ -236,7 +219,7 @@ open class HankeServiceImpl(
             hakemus.id?.let { id -> applicationService.delete(id, userId) }
         }
 
-        hankeRepository.deleteById(hankeId)
+        hankeRepository.deleteById(hanke.id!!)
         hankeLoggingService.logDelete(hanke, userId)
     }
 

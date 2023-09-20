@@ -24,7 +24,6 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
@@ -549,20 +548,6 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `create when hanke was generated skips verify areas inside hankealue succeeds`() {
-        val applicationInput = cableReportWithoutHanke()
-
-        val result = hankeService.generateHankeWithApplication(applicationInput, USERNAME)
-
-        with(result) {
-            val application = applications.first()
-            assertEquals(application.applicationData.name, hanke.nimi)
-            assertEquals(true, hanke.generated)
-            assertEquals(HankeStatus.DRAFT, hanke.status)
-        }
-    }
-
-    @Test
     fun `updateApplicationData with unknown ID throws exception`() {
         assertThat(applicationRepository.findAll()).isEmpty()
 
@@ -577,8 +562,8 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @Test
     fun `updateApplicationData when hanke was generated should skip area inside hanke check`() {
-        val initial = hankeService.generateHankeWithApplication(cableReportWithoutHanke(), USERNAME)
-        val initialApplication = initial.applications.first()
+        val initialApplication =
+            hankeService.generateHankeWithApplication(cableReportWithoutHanke(), USERNAME)
         assertFalse(initialApplication.applicationData.areas.isNullOrEmpty())
         val newApplicationData =
             createCableReportApplicationData(
@@ -929,9 +914,8 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `Skips the area inside hanke check with a generated hanke`() {
-            val initial =
+            val initialApplication =
                 hankeService.generateHankeWithApplication(cableReportWithoutHanke(), USERNAME)
-            val initialApplication = initial.applications.first()
             assertFalse(initialApplication.applicationData.areas.isNullOrEmpty())
             val alluIdMock = 123
             every { cableReportServiceAllu.create(any()) } returns alluIdMock
@@ -1080,13 +1064,11 @@ class ApplicationServiceITest : DatabaseTest() {
                     representativeWithContacts = asianHoitajaCustomerContact,
                     propertyDeveloperWithContacts = rakennuttajaCustomerContact
                 )
-            val (hanke, application) =
-                hankeService
-                    .generateHankeWithApplication(
-                        CableReportWithoutHanke(CABLE_REPORT, cableReportData),
-                        USERNAME
-                    )
-                    .let { Pair(it.hanke, it.applications.first()) }
+            val application =
+                hankeService.generateHankeWithApplication(
+                    CableReportWithoutHanke(CABLE_REPORT, cableReportData),
+                    USERNAME,
+                )
             val capturedEmails = mutableListOf<ApplicationNotificationData>()
             with(cableReportServiceAllu) {
                 every { create(any()) } returns 26
@@ -1108,7 +1090,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 inv.transform { it.applicationType }.isEqualTo(application.applicationType)
                 inv.transform { it.roleType }.isIn(ASIANHOITAJA, RAKENNUTTAJA, TYON_SUORITTAJA)
                 inv.transform { it.recipientEmail }.isIn(*expectedRecipients)
-                inv.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
+                inv.transform { it.hankeTunnus }.isEqualTo(application.hankeTunnus)
             }
             verifySequence {
                 with(cableReportServiceAllu) {

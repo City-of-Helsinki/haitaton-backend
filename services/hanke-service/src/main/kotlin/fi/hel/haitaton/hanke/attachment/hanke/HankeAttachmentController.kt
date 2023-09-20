@@ -1,17 +1,8 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.HankeNotFoundException
-import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
-import fi.hel.haitaton.hanke.configuration.Feature
-import fi.hel.haitaton.hanke.configuration.FeatureFlags
-import fi.hel.haitaton.hanke.currentUserId
-import fi.hel.haitaton.hanke.permissions.PermissionCode
-import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
-import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
-import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -19,9 +10,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import java.util.UUID
-import mu.KotlinLogging
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.ResponseEntity
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -31,17 +21,10 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 
-private val logger = KotlinLogging.logger {}
-
 @RestController
 @RequestMapping("/hankkeet/{hankeTunnus}/liitteet")
 @SecurityRequirement(name = "bearerAuth")
-class HankeAttachmentController(
-    private val hankeAttachmentService: HankeAttachmentService,
-    private val hankeService: HankeService,
-    private val permissionService: PermissionService,
-    @Autowired private val featureFlags: FeatureFlags,
-) {
+class HankeAttachmentController(private val hankeAttachmentService: HankeAttachmentService) {
 
     @GetMapping
     @Operation(summary = "Get metadata from hanke attachments")
@@ -56,8 +39,8 @@ class HankeAttachmentController(
                 ),
             ]
     )
+    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus,'VIEW')")
     fun getMetadataList(@PathVariable hankeTunnus: String): List<HankeAttachmentMetadata> {
-        permissionOrThrow(hankeTunnus, VIEW)
         return hankeAttachmentService.getMetadataList(hankeTunnus)
     }
 
@@ -74,11 +57,11 @@ class HankeAttachmentController(
                 ),
             ]
     )
+    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus,'VIEW')")
     fun getAttachmentContent(
         @PathVariable hankeTunnus: String,
         @PathVariable attachmentId: UUID,
     ): ResponseEntity<ByteArray> {
-        permissionOrThrow(hankeTunnus, VIEW)
         val content = hankeAttachmentService.getContent(hankeTunnus, attachmentId)
 
         return ResponseEntity.ok()
@@ -108,13 +91,14 @@ class HankeAttachmentController(
                 ),
             ]
     )
+    @PreAuthorize(
+        "@featureService.isEnabled('HANKE_EDITING') && " +
+            "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus,'EDIT')"
+    )
     fun postAttachment(
         @PathVariable hankeTunnus: String,
         @RequestParam("liite") attachment: MultipartFile
     ): HankeAttachmentMetadata {
-        featureFlags.ensureEnabled(Feature.HANKE_EDITING)
-
-        permissionOrThrow(hankeTunnus, EDIT)
         return hankeAttachmentService.addAttachment(hankeTunnus, attachment)
     }
 
@@ -131,21 +115,11 @@ class HankeAttachmentController(
                 )
             ]
     )
+    @PreAuthorize(
+        "@featureService.isEnabled('HANKE_EDITING') && " +
+            "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus,'EDIT')"
+    )
     fun deleteAttachment(@PathVariable hankeTunnus: String, @PathVariable attachmentId: UUID) {
-        featureFlags.ensureEnabled(Feature.HANKE_EDITING)
-
-        permissionOrThrow(hankeTunnus, EDIT)
         return hankeAttachmentService.deleteAttachment(hankeTunnus, attachmentId)
-    }
-
-    private fun permissionOrThrow(hankeTunnus: String, permissionCode: PermissionCode) {
-        val userId = currentUserId()
-        val hankeId =
-            hankeService.getHankeId(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-
-        if (!permissionService.hasPermission(hankeId, userId, permissionCode)) {
-            logger.warn { "User $userId has no permission $permissionCode for hanke: $hankeId" }
-            throw HankeNotFoundException(hankeTunnus)
-        }
     }
 }
