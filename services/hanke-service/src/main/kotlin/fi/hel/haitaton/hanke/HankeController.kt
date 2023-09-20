@@ -1,8 +1,6 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
-import fi.hel.haitaton.hanke.configuration.Feature
-import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -19,8 +17,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import jakarta.validation.ConstraintViolationException
 import mu.KotlinLogging
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -41,10 +39,9 @@ private val logger = KotlinLogging.logger {}
 @Validated
 @SecurityRequirement(name = "bearerAuth")
 class HankeController(
-    @Autowired private val hankeService: HankeService,
-    @Autowired private val permissionService: PermissionService,
-    @Autowired private val disclosureLogService: DisclosureLogService,
-    @Autowired private val featureFlags: FeatureFlags,
+    private val hankeService: HankeService,
+    private val permissionService: PermissionService,
+    private val disclosureLogService: DisclosureLogService,
 ) {
 
     @GetMapping("/{hankeTunnus}")
@@ -64,15 +61,10 @@ class HankeController(
                 )
             ]
     )
+    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String): Hanke {
-        val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-
-        val userid = currentUserId()
-        if (!permissionService.hasPermission(hanke.id!!, userid, PermissionCode.VIEW)) {
-            throw HankeNotFoundException(hankeTunnus)
-        }
-
-        disclosureLogService.saveDisclosureLogsForHanke(hanke, userid)
+        val hanke = hankeService.loadHanke(hankeTunnus)!!
+        disclosureLogService.saveDisclosureLogsForHanke(hanke, currentUserId())
         return hanke
     }
 
@@ -128,15 +120,13 @@ class HankeController(
         summary = "Get hanke applications",
         description = "Returns list of applications belonging to a given hanke."
     )
+    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun getHankeHakemukset(@PathVariable hankeTunnus: String): ApplicationsResponse {
         logger.info { "Finding applications for hanke $hankeTunnus" }
 
         val userId = currentUserId()
 
-        hankeService.getHankeWithApplications(hankeTunnus).let { (hanke, hakemukset) ->
-            hanke.verifyUserAuthorization(userId, PermissionCode.VIEW)
-
-            disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
+        hankeService.getHankeApplications(hankeTunnus).let { hakemukset ->
             if (hakemukset.isNotEmpty()) {
                 disclosureLogService.saveDisclosureLogsForApplications(hakemukset, userId)
             }
@@ -176,9 +166,8 @@ When Hanke is created:
                 )
             ]
     )
+    @PreAuthorize("@featureService.isEnabled('HANKE_EDITING')")
     fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): Hanke {
-        featureFlags.ensureEnabled(Feature.HANKE_EDITING)
-
         if (hanke == null) {
             throw HankeArgumentException("No hanke given when creating hanke")
         }
@@ -227,15 +216,15 @@ On update following will happen automatically:
                 )
             ]
     )
+    @PreAuthorize(
+        "@featureService.isEnabled('HANKE_EDITING') && " +
+            "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'EDIT')"
+    )
     fun updateHanke(
         @ValidHanke @RequestBody hanke: Hanke,
         @PathVariable hankeTunnus: String
     ): Hanke {
-        featureFlags.ensureEnabled(Feature.HANKE_EDITING)
-
         logger.info { "Updating Hanke: ${hanke.toLogString()}" }
-        val existingHanke = hankeService.findHankeOrThrow(hankeTunnus)
-        existingHanke.verifyUserAuthorization(currentUserId(), PermissionCode.EDIT)
         validateUpdatable(hanke, hankeTunnus)
 
         val updatedHanke = hankeService.updateHanke(hanke)
@@ -267,18 +256,12 @@ On update following will happen automatically:
                 )
             ]
     )
+    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'DELETE')")
     fun deleteHanke(@PathVariable hankeTunnus: String) {
         logger.info { "Deleting hanke: $hankeTunnus" }
 
-        hankeService.getHankeWithApplications(hankeTunnus).let { (hanke, hakemukset) ->
-            val hankeId = hanke.id!!
-            val userId = currentUserId()
-            if (!permissionService.hasPermission(hankeId, userId, PermissionCode.DELETE)) {
-                throw HankeNotFoundException(hankeTunnus)
-            }
-            hankeService.deleteHanke(hanke, hakemukset, userId)
-            logger.info { "Deleted Hanke: ${hanke.toLogString()}" }
-        }
+        hankeService.deleteHanke(hankeTunnus, currentUserId())
+        logger.info { "Deleted Hanke: $hankeTunnus" }
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -295,13 +278,6 @@ On update following will happen automatically:
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
         logger.warn { ex.message }
         return ex.toHankeError(HankeError.HAI1002)
-    }
-
-    private fun Hanke.verifyUserAuthorization(userId: String, permissionCode: PermissionCode) {
-        val hankeId = id
-        if (hankeId == null || !permissionService.hasPermission(hankeId, userId, permissionCode)) {
-            throw HankeNotFoundException(hankeTunnus)
-        }
     }
 
     private fun validateUpdatable(hankeUpdate: Hanke, hankeTunnusFromPath: String) {

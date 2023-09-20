@@ -7,8 +7,10 @@ import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
+import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.messageContains
+import assertk.assertions.prop
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
@@ -68,7 +70,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -84,7 +85,6 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import org.testcontainers.junit.jupiter.Testcontainers
 
-private const val HANKE_TUNNUS = "HAI23-41"
 private const val NAME_1 = "etu1 suku1"
 private const val NAME_2 = "etu2 suku2"
 private const val NAME_3 = "etu3 suku3"
@@ -121,42 +121,24 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Nested
-    inner class GetHankeId {
-        @Test
-        fun `Returns null if hanke not found`() {
-            val response = hankeService.getHankeId(HANKE_TUNNUS)
+    inner class FindIdentifier {
+        val hankeTunnus = "HAI23-13"
 
-            assertThat(response).isNull()
+        @Test
+        fun `Returns null if hanke doesn't exist`() {
+            assertThat(hankeService.findIdentifier(hankeTunnus)).isNull()
         }
 
         @Test
-        fun `Returns hanke id if hanke found`() {
-            val hanke = hankeFactory.save()
+        fun `Returns id and hanke tunnus`() {
+            val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
 
-            val response = hankeService.getHankeId(hanke.hankeTunnus!!)
+            val result = hankeService.findIdentifier(hankeTunnus)
 
-            assertThat(response).isEqualTo(hanke.id!!)
-        }
-    }
-
-    @Nested
-    inner class GetHankeIdOrThrow {
-        @Test
-        fun `Throws exception if hanke not found`() {
-            assertFailure { hankeService.getHankeIdOrThrow(HANKE_TUNNUS) }
-                .all {
-                    hasClass(HankeNotFoundException::class)
-                    messageContains(HANKE_TUNNUS)
-                }
-        }
-
-        @Test
-        fun `Returns hanke id if hanke found`() {
-            val hanke = hankeFactory.save()
-
-            val response = hankeService.getHankeIdOrThrow(hanke.hankeTunnus!!)
-
-            assertThat(response).isEqualTo(hanke.id!!)
+            assertk.assertThat(result).isNotNull().all {
+                prop(HankeIdentifier::hankeTunnus).isEqualTo(hankeTunnus)
+                prop(HankeIdentifier::id).isNotNull().isEqualTo(hanke.id)
+            }
         }
     }
 
@@ -336,22 +318,20 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
-    fun `getHankeHakemuksetPair maps hanke and hakemukset to a pair correctly`() {
+    fun `getHankeApplications return applications`() {
         val hanke = initHankeWithHakemus(123)
 
-        val result = hankeService.getHankeWithApplications(hanke.hankeTunnus!!)
+        val result = hankeService.getHankeApplications(hanke.hankeTunnus!!)
 
-        val expectedHanke = hanke.toDomainObject().apply { tyomaaTyyppi = hanke.tyomaaTyyppi }
         val expectedHakemus = applicationRepository.findAll().first().toDomainObject()
-        assertThat(result.hanke).usingRecursiveComparison().isEqualTo(expectedHanke)
-        assertThat(result.applications).hasSameElementsAs(listOf(expectedHakemus))
+        assertThat(result).hasSameElementsAs(listOf(expectedHakemus))
     }
 
     @Test
-    fun `getHankeHakemuksetPair hanke does not exist throws not found`() {
+    fun `getHankeApplications hanke does not exist throws not found`() {
         val hankeTunnus = "HAI-1234"
 
-        assertFailure { hankeService.getHankeWithApplications(hankeTunnus) }
+        assertFailure { hankeService.getHankeApplications(hankeTunnus) }
             .all {
                 hasClass(HankeNotFoundException::class)
                 messageContains(hankeTunnus)
@@ -359,15 +339,12 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
-    fun `getHankeHakemuksetPair when no hakemukset returns hanke and empty list`() {
+    fun `getHankeApplications when no hakemukset returns an empty list`() {
         val hankeInitial = hankeService.createHanke(HankeFactory.create())
 
-        val result = hankeService.getHankeWithApplications(hankeInitial.hankeTunnus!!)
+        val result = hankeService.getHankeApplications(hankeInitial.hankeTunnus!!)
 
-        with(result) {
-            assertThat(hanke).usingRecursiveComparison().isEqualTo(hankeInitial)
-            assertTrue(applications.isEmpty())
-        }
+        assertThat(result).isEmpty()
     }
 
     @Test
@@ -992,18 +969,17 @@ class HankeServiceITests : DatabaseTest() {
     fun `generateHankeWithApplication generates hanke based on application`() {
         val inputApplication = AlluDataFactory.cableReportWithoutHanke()
 
-        val result = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
+        val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
 
-        with(result) {
-            val application = applications.first()
-            assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
-            assertThat(hanke.nimi).isEqualTo(application.applicationData.name)
-            assertThat(application.applicationData.name)
-                .isEqualTo(inputApplication.applicationData.name)
-            val hankePerustaja = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)?.perustaja
-            assertThat(hankePerustaja?.nimi).isEqualTo("Teppo Testihenkilö")
-            assertThat(hankePerustaja?.email).isEqualTo("teppo@example.test")
-        }
+        assertThat(application.applicationData.name)
+            .isEqualTo(inputApplication.applicationData.name)
+        val hanke = hankeRepository.findByHankeTunnus(application.hankeTunnus)!!
+        assertThat(hanke.generated).isTrue()
+        assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
+        assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
+        assertThat(hanke.nimi).isEqualTo(application.applicationData.name)
+        assertThat(hanke.perustaja?.nimi).isEqualTo("Teppo Testihenkilö")
+        assertThat(hanke.perustaja?.email).isEqualTo("teppo@example.test")
     }
 
     @Test
@@ -1142,12 +1118,11 @@ class HankeServiceITests : DatabaseTest() {
     @Test
     fun `deleteHanke creates audit log entry for deleted hanke`() {
         val hanke = hankeService.createHanke(HankeFactory.create(id = null).withHankealue())
-        val hankeWithTulos = hankeService.loadHanke(hanke.hankeTunnus!!)!!
         auditLogRepository.deleteAll()
         assertEquals(0, auditLogRepository.count())
         TestUtils.addMockedRequestIp()
 
-        hankeService.deleteHanke(hankeWithTulos, listOf(), "testUser")
+        hankeService.deleteHanke(hanke.hankeTunnus!!, "testUser")
 
         val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
         assertEquals(1, hankeLogs.size)
@@ -1189,7 +1164,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(0, auditLogRepository.count())
         TestUtils.addMockedRequestIp()
 
-        hankeService.deleteHanke(hanke, listOf(), "testUser")
+        hankeService.deleteHanke(hanke.hankeTunnus!!, "testUser")
 
         val logs = auditLogRepository.findByType(ObjectType.YHTEYSTIETO)
         assertEquals(4, logs.size)
@@ -1241,7 +1216,7 @@ class HankeServiceITests : DatabaseTest() {
     fun `deleteHanke hanke when no hakemus should delete hanke`() {
         val hanke = hankeService.createHanke(HankeFactory.create(id = null))
 
-        hankeService.deleteHanke(hanke, listOf(), USER_NAME)
+        hankeService.deleteHanke(hanke.hankeTunnus!!, USER_NAME)
 
         assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNull()
     }
@@ -1250,13 +1225,12 @@ class HankeServiceITests : DatabaseTest() {
     fun `deleteHanke when hakemus is pending should delete hanke`() {
         val hakemusAlluId = 356
         val hanke = initHankeWithHakemus(hakemusAlluId)
-        val hakemukset = hanke.hakemukset.map { it.toApplication() }
         every { cableReportService.getApplicationInformation(hakemusAlluId) } returns
             AlluDataFactory.createAlluApplicationResponse(status = ApplicationStatus.PENDING)
         justRun { cableReportService.cancel(hakemusAlluId) }
         every { cableReportService.sendSystemComment(hakemusAlluId, any()) } returns 1324
 
-        hankeService.deleteHanke(hanke.toDomainObject(), hakemukset, USER_NAME)
+        hankeService.deleteHanke(hanke.hankeTunnus!!, USER_NAME)
 
         assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNull()
         verifySequence {
@@ -1271,12 +1245,11 @@ class HankeServiceITests : DatabaseTest() {
     fun `deleteHanke hakemus is not pending should throw`() {
         val hakemusAlluId = 123
         val hanke = initHankeWithHakemus(hakemusAlluId)
-        val hakemukset = hanke.hakemukset.map { it.toApplication() }
         every { cableReportService.getApplicationInformation(hakemusAlluId) } returns
             AlluDataFactory.createAlluApplicationResponse(status = ApplicationStatus.HANDLING)
 
         assertThrows<HankeAlluConflictException> {
-            hankeService.deleteHanke(hanke.toDomainObject(), hakemukset, USER_NAME)
+            hankeService.deleteHanke(hanke.hankeTunnus!!, USER_NAME)
         }
 
         assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNotNull

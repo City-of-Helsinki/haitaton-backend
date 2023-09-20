@@ -3,14 +3,13 @@ package fi.hel.haitaton.hanke.application
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.permissions.PermissionCode
-import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.verifySequence
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -28,14 +27,12 @@ class ApplicationControllerTest {
     private val applicationService: ApplicationService = mockk()
     private val hankeService: HankeService = mockk()
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
-    private val permissionService: PermissionService = mockk()
 
     private val applicationController =
         ApplicationController(
             applicationService,
             hankeService,
             disclosureLogService,
-            permissionService,
         )
 
     @BeforeEach
@@ -46,7 +43,7 @@ class ApplicationControllerTest {
     @AfterEach
     fun cleanUp() {
         checkUnnecessaryStub()
-        confirmVerified(applicationService, disclosureLogService, permissionService)
+        confirmVerified(applicationService, disclosureLogService)
     }
 
     @Test
@@ -76,14 +73,12 @@ class ApplicationControllerTest {
         val hankeTunnus = "HAI-1234"
         val application = AlluDataFactory.createApplication(hankeTunnus = hankeTunnus)
         every { applicationService.getApplicationById(1) } returns application
-        every { hankeService.getHankeId(hankeTunnus) } returns 42
-        every { permissionService.hasPermission(42, username, PermissionCode.VIEW) } returns true
+
         applicationController.getById(1)
 
-        verify { permissionService.hasPermission(42, username, PermissionCode.VIEW) }
-        verify {
-            disclosureLogService.saveDisclosureLogsForApplication(application, username)
+        verifySequence {
             applicationService.getApplicationById(1)
+            disclosureLogService.saveDisclosureLogsForApplication(application, username)
         }
     }
 
@@ -93,18 +88,13 @@ class ApplicationControllerTest {
         val requestApplication =
             AlluDataFactory.createApplication(id = null, hankeTunnus = hankeTunnus)
         val createdApplication = requestApplication.copy(id = 1)
-        every { hankeService.getHankeId(hankeTunnus) } returns 42
-        every {
-            permissionService.hasPermission(42, username, PermissionCode.EDIT_APPLICATIONS)
-        } returns true
         every { applicationService.create(requestApplication, username) } returns createdApplication
 
         applicationController.create(requestApplication)
 
-        verify { permissionService.hasPermission(42, username, PermissionCode.EDIT_APPLICATIONS) }
-        verify {
-            disclosureLogService.saveDisclosureLogsForApplication(createdApplication, username)
+        verifySequence {
             applicationService.create(requestApplication, username)
+            disclosureLogService.saveDisclosureLogsForApplication(createdApplication, username)
         }
     }
 
@@ -115,19 +105,12 @@ class ApplicationControllerTest {
         every {
             applicationService.updateApplicationData(1, application.applicationData, username)
         } returns application
-        every { applicationService.getApplicationById(1) } returns application
-        every { hankeService.getHankeId(hankeTunnus) } returns 42
-        every {
-            permissionService.hasPermission(42, username, PermissionCode.EDIT_APPLICATIONS)
-        } returns true
 
         applicationController.update(1, application)
 
-        verify { applicationService.getApplicationById(1) }
-        verify { permissionService.hasPermission(42, username, PermissionCode.EDIT_APPLICATIONS) }
-        verify {
-            disclosureLogService.saveDisclosureLogsForApplication(application, username)
+        verifySequence {
             applicationService.updateApplicationData(1, application.applicationData, username)
+            disclosureLogService.saveDisclosureLogsForApplication(application, username)
         }
     }
 }

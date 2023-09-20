@@ -70,7 +70,10 @@ class HankeFactory(
         cableReportWithoutHanke: CableReportWithoutHanke =
             AlluDataFactory.cableReportWithoutHanke(),
         userId: String
-    ) = hankeService.generateHankeWithApplication(cableReportWithoutHanke, userId)
+    ): Hanke {
+        val application = hankeService.generateHankeWithApplication(cableReportWithoutHanke, userId)
+        return hankeService.loadHanke(application.hankeTunnus)!!
+    }
 
     companion object {
 
