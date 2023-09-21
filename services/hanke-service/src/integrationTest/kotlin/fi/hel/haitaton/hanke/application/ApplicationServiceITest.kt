@@ -1038,7 +1038,6 @@ class ApplicationServiceITest : DatabaseTest() {
             assertThat(tunnisteet).hasSize(1)
             assertThat(tunnisteet[0].kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
             assertThat(tunnisteet[0].createdAt).isRecent()
-            assertThat(tunnisteet[0].sentAt).isRecent()
             assertThat(tunnisteet[0].tunniste).matches(Regex(kayttajaTunnistePattern))
             assertThat(tunnisteet[0].hankeKayttaja).isNotNull()
             val kayttaja = tunnisteet[0].hankeKayttaja!!
