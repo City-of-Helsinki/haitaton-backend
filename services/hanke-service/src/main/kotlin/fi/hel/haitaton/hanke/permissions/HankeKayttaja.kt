@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.permissions
 
+import fi.hel.haitaton.hanke.domain.HasId
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -21,7 +22,7 @@ data class HankeKayttajaDto(
     @field:Schema(description = "Id, set by the service") val id: UUID,
     @field:Schema(description = "Email address") val sahkoposti: String,
     @field:Schema(description = "Full name") val nimi: String,
-    @field:Schema(description = "Role in Hanke") val rooli: Role?,
+    @field:Schema(description = "Access level in Hanke") val kayttooikeustaso: Kayttooikeustaso?,
     @field:Schema(description = "Has user logged in to view Hanke") val tunnistautunut: Boolean,
 )
 
@@ -34,35 +35,59 @@ class HankeKayttajaEntity(
     val sahkoposti: String,
     @OneToOne
     @JoinColumn(name = "permission_id", updatable = true, nullable = true)
-    val permission: PermissionEntity?,
+    var permission: PermissionEntity?,
     @OneToOne
     @JoinColumn(name = "tunniste_id", updatable = true, nullable = true)
-    val kayttajaTunniste: KayttajaTunnisteEntity?,
+    var kayttajaTunniste: KayttajaTunnisteEntity?,
 ) {
     fun toDto(): HankeKayttajaDto =
         HankeKayttajaDto(
             id = id,
             sahkoposti = sahkoposti,
             nimi = nimi,
-            rooli = deriveRole(),
+            kayttooikeustaso = deriveKayttooikeustaso(),
             tunnistautunut = permission != null,
         )
 
+    fun toDomain(): HankeKayttaja =
+        HankeKayttaja(
+            id = id,
+            hankeId = hankeId,
+            nimi = nimi,
+            sahkoposti = sahkoposti,
+            permissionId = permission?.id,
+            kayttajaTunnisteId = kayttajaTunniste?.id,
+        )
+
     /**
-     * [KayttajaTunnisteEntity] stores role temporarily until user has signed in. After that,
-     * [PermissionEntity] is used.
+     * [KayttajaTunnisteEntity] stores kayttooikeustaso temporarily until user has signed in. After
+     * that, [PermissionEntity] is used.
      *
-     * Thus, role is read primarily from [PermissionEntity] if the relation exists.
+     * Thus, kayttooikeustaso is read primarily from [PermissionEntity] if the relation exists.
      */
-    private fun deriveRole(): Role? = permission?.role?.role ?: kayttajaTunniste?.role
+    fun deriveKayttooikeustaso(): Kayttooikeustaso? =
+        permission?.kayttooikeustaso ?: kayttajaTunniste?.kayttooikeustaso
 }
+
+data class HankeKayttaja(
+    override val id: UUID,
+    val hankeId: Int,
+    val nimi: String,
+    val sahkoposti: String,
+    val permissionId: Int?,
+    val kayttajaTunnisteId: UUID?
+) : HasId<UUID>
 
 @Repository
 interface HankeKayttajaRepository : JpaRepository<HankeKayttajaEntity, UUID> {
     fun findByHankeId(hankeId: Int): List<HankeKayttajaEntity>
 
+    fun findByHankeIdAndIdIn(hankeId: Int, ids: Collection<UUID>): List<HankeKayttajaEntity>
+
     fun findByHankeIdAndSahkopostiIn(
         hankeId: Int,
         sahkopostit: List<String>
     ): List<HankeKayttajaEntity>
+
+    fun findByPermissionId(permissionId: Int): HankeKayttajaEntity?
 }

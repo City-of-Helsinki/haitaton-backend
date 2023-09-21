@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.attachment.common.FileResult
 import fi.hel.haitaton.hanke.attachment.common.FileScanData
 import fi.hel.haitaton.hanke.attachment.common.FileScanResponse
 import fi.hel.haitaton.hanke.getResourceAsBytes
+import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.toJsonString
 import okhttp3.mockwebserver.MockResponse
 import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
@@ -12,7 +13,6 @@ import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated
 import org.springframework.test.web.servlet.ResultActions
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 const val USERNAME = "username"
@@ -34,10 +34,7 @@ fun testFile(
 ) = MockMultipartFile(fileParam, fileName, contentType, data)
 
 fun ResultActions.andExpectError(error: HankeError): ResultActions =
-    andExpect(unauthenticated())
-        .andExpect(status().isUnauthorized)
-        .andExpect(jsonPath("$.errorCode").value(error.errorCode))
-        .andExpect(jsonPath("$.errorMessage").value(error.errorMessage))
+    andExpect(unauthenticated()).andExpect(status().isUnauthorized).andExpect(hankeError(error))
 
 fun response(data: String): MockResponse =
     MockResponse()

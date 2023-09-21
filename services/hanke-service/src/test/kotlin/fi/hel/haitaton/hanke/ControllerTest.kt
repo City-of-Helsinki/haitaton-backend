@@ -6,6 +6,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 
 interface ControllerTest {
     val mockMvc: MockMvc
@@ -13,9 +14,11 @@ interface ControllerTest {
     /** Send a GET request to the given URL. */
     fun get(
         url: String,
-        vararg accept: MediaType = arrayOf(MediaType.APPLICATION_JSON)
+        resultType: MediaType = MediaType.APPLICATION_JSON,
     ): ResultActions {
-        return mockMvc.perform(MockMvcRequestBuilders.get(url).accept(*accept))
+        return mockMvc
+            .perform(MockMvcRequestBuilders.get(url).accept(MediaType.APPLICATION_JSON))
+            .andExpect(content().contentType(resultType))
     }
 
     /**

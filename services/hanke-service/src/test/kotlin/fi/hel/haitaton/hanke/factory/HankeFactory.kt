@@ -4,9 +4,11 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.HankeStatus
+import fi.hel.haitaton.hanke.HanketunnusService
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
@@ -18,7 +20,8 @@ import org.springframework.stereotype.Component
 @Component
 class HankeFactory(
     private val hankeService: HankeService,
-    private val hankeRepository: HankeRepository
+    private val hanketunnusService: HanketunnusService,
+    private val hankeRepository: HankeRepository,
 ) {
 
     /**
@@ -56,12 +59,29 @@ class HankeFactory(
 
     fun save(hanke: Hanke) = hankeService.createHanke(hanke)
 
+    fun saveMinimal(
+        hankeTunnus: String = hanketunnusService.newHanketunnus(),
+        nimi: String? = null
+    ): HankeEntity = hankeRepository.save(HankeEntity(hankeTunnus = hankeTunnus, nimi = nimi))
+
+    fun saveSeveralMinimal(n: Int): List<HankeEntity> = (1..n).map { saveMinimal() }
+
+    fun saveGenerated(
+        cableReportWithoutHanke: CableReportWithoutHanke =
+            AlluDataFactory.cableReportWithoutHanke(),
+        userId: String
+    ): Hanke {
+        val application = hankeService.generateHankeWithApplication(cableReportWithoutHanke, userId)
+        return hankeService.loadHanke(application.hankeTunnus)!!
+    }
+
     companion object {
 
         const val defaultHankeTunnus = "HAI21-1"
         const val defaultNimi = "Hämeentien perusparannus ja katuvalot"
         const val defaultId = 123
         const val defaultUser = "Risto"
+        val defaultPerustaja = Perustaja("Pertti Perustaja", "foo@bar.com")
 
         /**
          * Create a simple Hanke with test values. The default values can be overridden with named
@@ -175,10 +195,6 @@ class HankeFactory(
             this.muut.addAll(HankeYhteystietoFactory.createDifferentiated(muut, mutator))
             return this
         }
-
-        fun Hanke.withPerustaja(
-            newPerustaja: Perustaja? = Perustaja("Pertti Perustaja", "foo@bar.com")
-        ): Hanke = apply { perustaja = newPerustaja }
 
         /**
          * Add a number of omistaja to a hanke. Generates the yhteystiedot with

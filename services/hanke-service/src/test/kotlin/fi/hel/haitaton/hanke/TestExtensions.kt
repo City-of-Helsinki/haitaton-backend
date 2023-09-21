@@ -25,6 +25,8 @@ inline fun <reified T> ResultActions.andReturnBody(): T =
 
 fun String.getResourceAsBytes(): ByteArray = this.getResource().readBytes()
 
+inline fun <reified T> String.parseJson(): T = OBJECT_MAPPER.readValue(this)
+
 /**
  * Find all audit logs for a specific object type. Getting all and filtering would obviously not be
  * acceptable in production, but in tests we usually have a very limited number of entities at any

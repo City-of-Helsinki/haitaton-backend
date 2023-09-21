@@ -7,6 +7,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 data class Perustaja(
     @field:Schema(description = "Name") val nimi: String?,
     @field:Schema(description = "Email address") val email: String
-)
-
-fun Perustaja.toEntity(): PerustajaEntity = PerustajaEntity(nimi, email)
+) {
+    fun toEntity(): PerustajaEntity = PerustajaEntity(nimi, email)
+}

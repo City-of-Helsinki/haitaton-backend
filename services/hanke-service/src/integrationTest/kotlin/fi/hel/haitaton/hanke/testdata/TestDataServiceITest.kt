@@ -25,7 +25,7 @@ private const val USERNAME = "testUser"
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = ["haitaton.testdata.enabled=true"],
 )
-@ActiveProfiles("default")
+@ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class TestDataServiceITest : DatabaseTest() {
 

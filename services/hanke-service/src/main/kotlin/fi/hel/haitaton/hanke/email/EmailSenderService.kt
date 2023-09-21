@@ -1,5 +1,9 @@
 package fi.hel.haitaton.hanke.email
 
+import fi.hel.haitaton.hanke.application.ApplicationContactType
+import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.configuration.Feature
+import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.getResource
 import jakarta.mail.internet.MimeMessage
 import mu.KotlinLogging
@@ -24,10 +28,36 @@ data class EmailFilterProperties(
     @Delimiter(";") val allowList: List<String>,
 )
 
+data class ApplicationNotificationData(
+    val senderName: String,
+    val senderEmail: String,
+    val recipientEmail: String,
+    val applicationType: ApplicationType,
+    val applicationIdentifier: String,
+    val hankeTunnus: String,
+    val roleType: ApplicationContactType,
+)
+
+data class HankeInvitationData(
+    val inviterName: String,
+    val inviterEmail: String,
+    val recipientEmail: String,
+    val hankeTunnus: String,
+    val hankeNimi: String,
+    val invitationToken: String,
+)
+
+enum class EmailTemplate(val value: String) {
+    CABLE_REPORT_DONE("johtoselvitys-valmis"),
+    INVITATION_HANKE("kayttaja-lisatty-hanke"),
+    APPLICATION_NOTIFICATION("kayttaja-lisatty-hakemus")
+}
+
 @Service
 class EmailSenderService(
     private val mailSender: JavaMailSender,
     private val emailConfig: EmailProperties,
+    private val featureFlags: FeatureFlags,
 ) {
 
     fun sendJohtoselvitysCompleteEmail(
@@ -36,24 +66,65 @@ class EmailSenderService(
         applicationIdentifier: String,
     ) {
         logger.info { "Sending email for completed johtoselvitys $applicationIdentifier" }
+
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
                 "applicationId" to applicationId.toString(),
                 "applicationIdentifier" to applicationIdentifier,
             )
-        sendHybridEmail(to, "johtoselvitys-valmis", templateData)
+
+        sendHybridEmail(to, EmailTemplate.CABLE_REPORT_DONE, templateData)
     }
 
-    private fun sendHybridEmail(to: String, template: String, templateData: Map<String, String>) {
+    fun sendHankeInvitationEmail(data: HankeInvitationData) {
+        logger.info { "Sending invitation email for Hanke" }
+
+        val templateData =
+            mapOf(
+                "baseUrl" to emailConfig.baseUrl,
+                "inviterName" to data.inviterName,
+                "inviterEmail" to data.inviterEmail,
+                "hankeTunnus" to data.hankeTunnus,
+                "hankeNimi" to data.hankeNimi,
+                "invitationToken" to data.invitationToken,
+            )
+
+        sendHybridEmail(data.recipientEmail, EmailTemplate.INVITATION_HANKE, templateData)
+    }
+
+    fun sendApplicationNotificationEmail(data: ApplicationNotificationData) {
+        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
+            return
+        }
+
+        logger.info { "Sending notification email for application" }
+
+        val applicationTypeText = convertApplicationTypeFinnish(data.applicationType)
+
+        val templateData =
+            mapOf(
+                "baseUrl" to emailConfig.baseUrl,
+                "senderName" to data.senderName,
+                "senderEmail" to data.senderEmail,
+                "applicationType" to applicationTypeText,
+                "applicationIdentifier" to data.applicationIdentifier,
+                "hankeTunnus" to data.hankeTunnus,
+                "recipientRole" to data.roleType.value,
+            )
+
+        sendHybridEmail(data.recipientEmail, EmailTemplate.APPLICATION_NOTIFICATION, templateData)
+    }
+
+    private fun sendHybridEmail(to: String, context: EmailTemplate, data: Map<String, String>) {
         if (emailConfig.filter.use && emailNotAllowed(to)) {
             logger.info { "Email recipient not allowed, ignoring email." }
             return
         }
-        val textBody = parseTemplate("/email/template/$template.text.mustache", templateData)
-        val htmlBody = parseTemplate("/email/template/$template.html.mustache", templateData)
-        val subject =
-            parseTemplate("/email/template/$template.subject.mustache", templateData).trimEnd()
+        val basePath = "/email/template"
+        val textBody = parseTemplate("$basePath/${context.value}.text.mustache", data)
+        val htmlBody = parseTemplate("$basePath/${context.value}.html.mustache", data)
+        val subject = parseTemplate("$basePath/${context.value}.subject.mustache", data).trimEnd()
 
         val mimeMessage: MimeMessage = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(mimeMessage, true, "utf-8")
@@ -64,6 +135,11 @@ class EmailSenderService(
         helper.setFrom(emailConfig.from)
         mailSender.send(mimeMessage)
     }
+
+    private fun convertApplicationTypeFinnish(type: ApplicationType): String =
+        when (type) {
+            ApplicationType.CABLE_REPORT -> "johtoselvityshakemuksen"
+        }
 
     private fun emailNotAllowed(email: String) = !emailConfig.filter.allowList.contains(email)
 

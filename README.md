@@ -49,8 +49,22 @@ See docker-compose.yml for details.
 
 ### Swagger UI
 
-Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON). Note though that the swagger
-setup can not currently support authentication, so can not test the actions with it.
+Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON). You
+can use the Swagger UI to send requests, if you copy your bearer token over from
+the browser. So,
+
+1. Log in to Haitaton.
+2. Open the Network tab from developer tools.
+3. Open e.g. Omat Hankkeet in Haitaton.
+4. From the backend request, copy the content of the Authorization header, that
+   comes after the Bearer keyword.
+5. In the Swagger UI of the same environment, open the Authorize dialog.
+6. Paste the bearer token.
+7. Send a request as a logged-in user.
+
+Authentication for the GDPR API is different from the other application, and
+it's not configured for the Swagger UI. GDPR API can be tested using the
+specialized tester, as detailed in [GDPR API section](#gdpr-api).
 
 Locally without Docker:
 
@@ -86,6 +100,9 @@ $ ./gradlew installGitHooks
 This adds a hook that will build the project and run all tests and other checks
 before any push you make. The checks need to be run successfully for the push to
 happen. If necessary, the checks can be skipped with `git push --no-verify`.
+
+Custom pre-push scripts can be added under `.git/hooks/pre-push.d`. Push will
+fail if any of the pre-push scripts fail.
 
 ### Code coverage report
 
@@ -150,6 +167,13 @@ cd haitaton-backend
 
 When running locally, the system emails are sent to smtp4dev, which is started as part of the Docker
 Compose setup. You can access the sent emails by opening http://localhost:3003.
+
+Creation of new emails is done with [mjml.io](https://mjml.io/). Either IntelliJ or Visual Studio Code plugin MJML is
+needed. Mjml templates are located in email/. The output email content (html) is in
+hanke-service/resources/email/template.
+
+Once the Mjml template is done, it is converted to html. For example in Visual Studio, type >MJML:Copy HTML. The html
+output is the actual email content.
 
 ## File scan
 

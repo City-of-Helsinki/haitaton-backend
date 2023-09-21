@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
@@ -13,13 +14,13 @@ import org.testcontainers.junit.jupiter.Testcontainers
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
-@ActiveProfiles("default")
+@ActiveProfiles("test")
 @AutoConfigureMockMvc
 class SpringdocITest(@Autowired override val mockMvc: MockMvc) : ControllerTest, DatabaseTest() {
 
     @Test
     fun `Should display Swagger UI page`() {
-        get("/swagger-ui/index.html")
+        get("/swagger-ui/index.html", resultType = MediaType.TEXT_HTML)
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("Swagger UI")))
     }
