@@ -18,7 +18,6 @@ import fi.hel.haitaton.hanke.Vaihe.SUUNNITTELU
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.factory.AttachmentFactory.Companion.hankeAttachmentEntity
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createEntity
@@ -175,17 +174,20 @@ class HankeFactory(
          * ```
          */
         fun Hanke.withHankealue(
-            alue: Hankealue =
-                HankealueFactory.create(
-                    hankeId = this.id,
-                    haittaAlkuPvm = DateFactory.getStartDatetime(),
-                    haittaLoppuPvm = DateFactory.getEndDatetime()
-                )
+            nimi: String? = null,
+            haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
+            haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
         ): Hanke {
             this.tyomaaKatuosoite = "Testikatu 1"
             this.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
             this.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
-
+            val alue =
+                HankealueFactory.create(
+                    hankeId = this.id,
+                    nimi = nimi,
+                    haittaAlkuPvm = haittaAlkuPvm,
+                    haittaLoppuPvm = haittaLoppuPvm,
+                )
             this.alueet.add(alue)
 
             return this
