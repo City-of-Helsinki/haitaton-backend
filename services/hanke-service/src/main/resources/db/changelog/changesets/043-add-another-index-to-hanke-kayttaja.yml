@@ -1,0 +1,26 @@
+databaseChangeLog:
+  - changeSet:
+      id: 043-add-indices-to-hanke-kayttaja-tables
+      author: Topias Heinonen
+      comment: Indices for hanke_kayttaja and permissions to improve search performance
+      changes:
+        - createIndex:
+            tableName: hanke_kayttaja
+            indexName: hanke_kayttaja_hanke_id_idx
+            columns:
+              - column:
+                  name: hanke_id
+        - createIndex:
+            tableName: permissions
+            indexName: permissions_hanke_id_idx
+            columns:
+              - column:
+                  name: hankeid
+        - createIndex:
+            tableName: permissions
+            indexName: permissions_hankeid_userid_idx
+            columns:
+              - column:
+                  name: hankeid
+              - column:
+                  name: userid

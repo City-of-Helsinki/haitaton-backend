@@ -1,0 +1,43 @@
+<mjml>
+    <mj-head>
+        <mj-include path="common/attributes.mjml"/>
+    </mj-head>
+    <mj-body>
+        <mj-include path="common/header-content.mjml"/>
+        <mj-section>
+            <mj-column>
+                <mj-text mj-class="header-txt">
+                    Haitaton: Sinut on lisätty hankkeelle {{hankeTunnus}}
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    {{inviterName}} ({{inviterEmail}}) lisäsi sinut hankkeelle <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
+                    Tunnistaudu Haitattomaan alla olevan linkin kautta.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    <a href="{{baseUrl}}/{{invitationToken}}">Haitattomaan</a>
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Löydät hankkeesi Haitattoman etusivun Omat hankkeet -osion alta hankkeen nimellä.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Haitaton on Helsingin kaupungin asiointijärjestelmä yleisille alueille sijoittuvien hankkeiden
+                    edistämiseen ja haittojen hallintaan.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    Ystävällisin terveisin,
+                    <br/>
+                    <br/>
+                    Helsingin kaupungin kaupunkiympäristön toimiala
+                    <br/>
+                    Haitaton-asiointi
+                    <br/>
+                    haitaton@hel.fi
+                </mj-text>
+            </mj-column>
+        </mj-section>
+        <mj-include path="common/footer-content.mjml"/>
+    </mj-body>
+</mjml>

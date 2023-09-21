@@ -1,9 +1,7 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.domain.HankeWithApplications
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.permissions.PermissionCode
-import fi.hel.haitaton.hanke.permissions.PermissionService
 import io.mockk.every
 import io.mockk.justRun
 import org.junit.jupiter.api.Test
@@ -21,13 +19,13 @@ private const val BASE_URL = "/hankkeet"
 
 @WebMvcTest(HankeController::class, properties = ["haitaton.features.hanke-editing=false"])
 @Import(IntegrationTestConfiguration::class)
-@ActiveProfiles("itest")
-@WithMockUser(USERNAME, roles = ["haitaton-user"])
+@ActiveProfiles("test")
+@WithMockUser(USERNAME)
 class HankeControllerHankeEditingDisabledITests(@Autowired override val mockMvc: MockMvc) :
     ControllerTest {
 
     @Autowired lateinit var hankeService: HankeService
-    @Autowired lateinit var permissionService: PermissionService
+    @Autowired lateinit var authorizer: HankeAuthorizer
 
     @Test
     fun `post hanke when hanke editing is disabled should return 404`() {
@@ -45,19 +43,10 @@ class HankeControllerHankeEditingDisabledITests(@Autowired override val mockMvc:
 
     @Test
     fun `delete hanke works even if hanke editing is disabled`() {
-        val mockHankeId = 56
-        val hankeWithApplications =
-            HankeWithApplications(HankeFactory.create(id = mockHankeId), listOf())
-        every { hankeService.getHankeWithApplications(HANKE_TUNNUS) }.returns(hankeWithApplications)
-        every { permissionService.hasPermission(mockHankeId, USERNAME, PermissionCode.DELETE) }
-            .returns(true)
-        justRun {
-            hankeService.deleteHanke(
-                hankeWithApplications.hanke,
-                hankeWithApplications.applications,
-                USERNAME
-            )
-        }
+        every { hankeService.getHankeApplications(HANKE_TUNNUS) }.returns(listOf())
+        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.DELETE.name) } returns
+            true
+        justRun { hankeService.deleteHanke(HANKE_TUNNUS, USERNAME) }
 
         delete("$BASE_URL/$HANKE_TUNNUS").andExpect(MockMvcResultMatchers.status().isNoContent)
     }

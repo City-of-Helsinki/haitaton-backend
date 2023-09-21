@@ -2,14 +2,17 @@ package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.annotation.JsonFormat
 import com.fasterxml.jackson.annotation.JsonUnwrapped
+import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.ConstraintViolation
 
 @JsonFormat(shape = JsonFormat.Shape.OBJECT)
+@Schema(enumAsRef = true)
 enum class HankeError(val errorMessage: String) {
     HAI0001("Access denied"),
     HAI0002("Internal error"),
     HAI0003("Invalid data"),
     HAI0004("Resource does not exist"),
+    HAI0005("Insufficient permissions"),
     HAI1001("Hanke not found"),
     HAI1002("Invalid Hanke data"),
     HAI1003("Internal error while saving Hanke"),
@@ -40,6 +43,10 @@ enum class HankeError(val errorMessage: String) {
     HAI3001("Attachment upload failed"),
     HAI3002("Loading attachment failed"),
     HAI3003("Attachment limit reached"),
+    HAI4001("HankeKayttaja not found"),
+    HAI4002("Trying to change own permission"),
+    HAI4003("Permission data conflict"),
+    HAI4004("Kayttajatunniste not found"),
     ;
 
     val errorCode: String
@@ -64,7 +71,7 @@ data class HankeErrorDetail(
 )
 
 class HankeNotFoundException(val hankeTunnus: String?) :
-    RuntimeException("Hanke $hankeTunnus not found")
+    RuntimeException("Hanke not found with hankeTunnus $hankeTunnus")
 
 class HankeArgumentException(message: String) : RuntimeException(message)
 

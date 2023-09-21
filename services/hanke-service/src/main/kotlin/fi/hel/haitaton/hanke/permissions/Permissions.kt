@@ -1,5 +1,8 @@
 package fi.hel.haitaton.hanke.permissions
 
+import com.fasterxml.jackson.annotation.JsonView
+import fi.hel.haitaton.hanke.ChangeLogView
+import fi.hel.haitaton.hanke.domain.HasId
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
@@ -12,6 +15,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 
+/** The codes are just bitmasks. Their value or order has no meaning. */
 enum class PermissionCode(val code: Long) {
     VIEW(1),
     MODIFY_VIEW_PERMISSIONS(2),
@@ -20,12 +24,15 @@ enum class PermissionCode(val code: Long) {
     DELETE(16),
     MODIFY_DELETE_PERMISSIONS(32),
     EDIT_APPLICATIONS(64),
-    MODIFY_APPLICATION_PERMISSIONS(128)
+    MODIFY_APPLICATION_PERMISSIONS(128),
+    RESEND_INVITATION(256),
 }
 
 @Repository
 interface PermissionRepository : JpaRepository<PermissionEntity, Int> {
     fun findOneByHankeIdAndUserId(hankeId: Int, userId: String): PermissionEntity?
+
+    fun findAllByHankeId(hankeId: Int): List<PermissionEntity>
 
     /**
      * Search for permissions with the given user and a single permission code. JPQL doesn't have
@@ -34,9 +41,9 @@ interface PermissionRepository : JpaRepository<PermissionEntity, Int> {
      */
     @Query(
         "select pe from PermissionEntity pe " +
-            "inner join pe.role as role " +
+            "inner join pe.kayttooikeustasoEntity as kayttooikeustaso " +
             "where pe.userId = :userId " +
-            "and mod(role.permissionCode / :permissionBit , 2) = 1"
+            "and mod(kayttooikeustaso.permissionCode / :permissionBit , 2) = 1"
     )
     fun findAllByUserIdAndPermission(userId: String, permissionBit: Long): List<PermissionEntity>
 }
@@ -48,6 +55,22 @@ class PermissionEntity(
     val userId: String,
     val hankeId: Int,
     @ManyToOne(optional = false, fetch = FetchType.EAGER)
-    @JoinColumn(name = "roleid")
-    var role: RoleEntity,
-)
+    @JoinColumn(name = "kayttooikeustaso_id")
+    var kayttooikeustasoEntity: KayttooikeustasoEntity,
+) {
+    val kayttooikeustaso: Kayttooikeustaso
+        get() = kayttooikeustasoEntity.kayttooikeustaso
+
+    fun toDomain() = Permission(id, userId, hankeId, kayttooikeustaso)
+
+    fun hasPermission(permission: PermissionCode): Boolean =
+        kayttooikeustasoEntity.hasPermission(permission)
+}
+
+@JsonView(ChangeLogView::class)
+data class Permission(
+    override val id: Int,
+    val userId: String,
+    val hankeId: Int,
+    var kayttooikeustaso: Kayttooikeustaso,
+) : HasId<Int>

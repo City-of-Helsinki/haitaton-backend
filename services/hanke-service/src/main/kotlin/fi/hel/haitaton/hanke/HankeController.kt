@@ -1,13 +1,10 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
-import fi.hel.haitaton.hanke.configuration.Feature
-import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.permissions.Role
 import fi.hel.haitaton.hanke.validation.ValidHanke
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
@@ -17,11 +14,11 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import jakarta.validation.ConstraintViolationException
 import mu.KotlinLogging
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpStatus
-import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -40,14 +37,14 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/hankkeet")
 @Validated
+@SecurityRequirement(name = "bearerAuth")
 class HankeController(
-    @Autowired private val hankeService: HankeService,
-    @Autowired private val permissionService: PermissionService,
-    @Autowired private val disclosureLogService: DisclosureLogService,
-    @Autowired private val featureFlags: FeatureFlags,
+    private val hankeService: HankeService,
+    private val permissionService: PermissionService,
+    private val disclosureLogService: DisclosureLogService,
 ) {
 
-    @GetMapping("/{hankeTunnus}", produces = [APPLICATION_JSON_VALUE])
+    @GetMapping("/{hankeTunnus}")
     @Operation(summary = "Get hanke", description = "Get specific hanke by hankeTunnus.")
     @ApiResponses(
         value =
@@ -64,19 +61,14 @@ class HankeController(
                 )
             ]
     )
+    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String): Hanke {
-        val hanke = hankeService.loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-
-        val userid = currentUserId()
-        if (!permissionService.hasPermission(hanke.id!!, userid, PermissionCode.VIEW)) {
-            throw HankeNotFoundException(hankeTunnus)
-        }
-
-        disclosureLogService.saveDisclosureLogsForHanke(hanke, userid)
+        val hanke = hankeService.loadHanke(hankeTunnus)!!
+        disclosureLogService.saveDisclosureLogsForHanke(hanke, currentUserId())
         return hanke
     }
 
-    @GetMapping(produces = [APPLICATION_JSON_VALUE])
+    @GetMapping
     @Operation(
         summary = "Get hanke list",
         description =
@@ -123,20 +115,18 @@ class HankeController(
         return hankeList
     }
 
-    @GetMapping("/{hankeTunnus}/hakemukset", produces = [APPLICATION_JSON_VALUE])
+    @GetMapping("/{hankeTunnus}/hakemukset")
     @Operation(
         summary = "Get hanke applications",
         description = "Returns list of applications belonging to a given hanke."
     )
+    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun getHankeHakemukset(@PathVariable hankeTunnus: String): ApplicationsResponse {
         logger.info { "Finding applications for hanke $hankeTunnus" }
 
         val userId = currentUserId()
 
-        hankeService.getHankeWithApplications(hankeTunnus).let { (hanke, hakemukset) ->
-            hanke.verifyUserAuthorization(userId, PermissionCode.VIEW)
-
-            disclosureLogService.saveDisclosureLogsForHanke(hanke, userId)
+        hankeService.getHankeApplications(hankeTunnus).let { hakemukset ->
             if (hakemukset.isNotEmpty()) {
                 disclosureLogService.saveDisclosureLogsForApplications(hakemukset, userId)
             }
@@ -147,18 +137,19 @@ class HankeController(
         }
     }
 
-    @PostMapping(consumes = [APPLICATION_JSON_VALUE], produces = [APPLICATION_JSON_VALUE])
+    @PostMapping
     @Operation(
         summary = "Create new hanke",
         description =
             """
-              A valid new hanke must comply with the restrictions in Hanke schema definition.
-              When Hanke is created:
-              1. A unique Hanke tunnus is created.
-              2. The status of the created hanke is set automatically:
-                  - PUBLIC (i.e. visible to everyone) if all mandatory fields are filled. 
-                  - DRAFT if all mandatory fields are not filled.
-        """
+A valid new hanke must comply with the restrictions in Hanke schema definition.
+
+When Hanke is created:
+1. A unique Hanke tunnus is created.
+2. The status of the created hanke is set automatically:
+    - PUBLIC (i.e. visible to everyone) if all mandatory fields are filled.
+    - DRAFT if all mandatory fields are not filled.
+"""
     )
     @ApiResponses(
         value =
@@ -175,43 +166,35 @@ class HankeController(
                 )
             ]
     )
+    @PreAuthorize("@featureService.isEnabled('HANKE_EDITING')")
     fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): Hanke {
-        featureFlags.ensureEnabled(Feature.HANKE_EDITING)
-
         if (hanke == null) {
             throw HankeArgumentException("No hanke given when creating hanke")
         }
-        val sanitizedHanke = hanke.copy(id = null, generated = false)
+
+        hanke.id = null
+        hanke.generated = false
 
         val userId = currentUserId()
         logger.info { "Creating Hanke for user $userId: ${hanke.toLogString()} " }
 
-        val createdHanke = hankeService.createHanke(sanitizedHanke)
+        val createdHanke = hankeService.createHanke(hanke)
 
-        permissionService.setPermission(
-            createdHanke.id!!,
-            currentUserId(),
-            Role.KAIKKI_OIKEUDET,
-        )
         disclosureLogService.saveDisclosureLogsForHanke(createdHanke, userId)
         return createdHanke
     }
 
-    @PutMapping(
-        "/{hankeTunnus}",
-        consumes = [APPLICATION_JSON_VALUE],
-        produces = [APPLICATION_JSON_VALUE]
-    )
+    @PutMapping("/{hankeTunnus}")
     @Operation(
         summary = "Update hanke",
         description =
             """
-               Update an existing hanke. Data must comply with the restrictions defined in Hanke schema definition. 
-               
-               On update following will happen automatically:
-               1. Status is updated. PUBLIC if required fields are filled. Else DRAFT.
-               2. Tormaystarkastelu (project nuisance) is re-calculated.
-            """
+Update an existing hanke. Data must comply with the restrictions defined in Hanke schema definition.
+
+On update following will happen automatically:
+1. Status is updated. PUBLIC if required fields are filled. Else DRAFT.
+2. Tormaystarkastelu (project nuisance) is re-calculated.
+"""
     )
     @ApiResponses(
         value =
@@ -233,21 +216,16 @@ class HankeController(
                 )
             ]
     )
+    @PreAuthorize(
+        "@featureService.isEnabled('HANKE_EDITING') && " +
+            "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'EDIT')"
+    )
     fun updateHanke(
         @ValidHanke @RequestBody hanke: Hanke,
         @PathVariable hankeTunnus: String
     ): Hanke {
-        featureFlags.ensureEnabled(Feature.HANKE_EDITING)
-
         logger.info { "Updating Hanke: ${hanke.toLogString()}" }
-
-        val existingHanke =
-            hankeService.loadHanke(hankeTunnus)?.also {
-                it.verifyUserAuthorization(currentUserId(), PermissionCode.EDIT)
-            }
-                ?: throw HankeNotFoundException(hankeTunnus)
-
-        existingHanke.validateUpdatable(hanke, hankeTunnus)
+        validateUpdatable(hanke, hankeTunnus)
 
         val updatedHanke = hankeService.updateHanke(hanke)
         logger.info { "Updated hanke ${updatedHanke.hankeTunnus}." }
@@ -278,18 +256,12 @@ class HankeController(
                 )
             ]
     )
+    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'DELETE')")
     fun deleteHanke(@PathVariable hankeTunnus: String) {
         logger.info { "Deleting hanke: $hankeTunnus" }
 
-        hankeService.getHankeWithApplications(hankeTunnus).let { (hanke, hakemukset) ->
-            val hankeId = hanke.id!!
-            val userId = currentUserId()
-            if (!permissionService.hasPermission(hankeId, userId, PermissionCode.DELETE)) {
-                throw HankeNotFoundException(hankeTunnus)
-            }
-            hankeService.deleteHanke(hanke, hakemukset, userId)
-            logger.info { "Deleted Hanke: ${hanke.toLogString()}" }
-        }
+        hankeService.deleteHanke(hankeTunnus, currentUserId())
+        logger.info { "Deleted Hanke: $hankeTunnus" }
     }
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -308,19 +280,11 @@ class HankeController(
         return ex.toHankeError(HankeError.HAI1002)
     }
 
-    private fun Hanke.verifyUserAuthorization(userId: String, permissionCode: PermissionCode) {
-        val hankeId = id
-        if (hankeId == null || !permissionService.hasPermission(hankeId, userId, permissionCode)) {
-            throw HankeNotFoundException(hankeTunnus)
-        }
-    }
-
-    private fun Hanke.validateUpdatable(updatedHanke: Hanke, hankeTunnusFromPath: String) {
-        if (hankeTunnusFromPath != updatedHanke.hankeTunnus) {
-            throw HankeArgumentException("Hanketunnus not given or doesn't match the hanke data")
-        }
-        if (perustaja != null && perustaja != updatedHanke.perustaja) {
-            throw HankeArgumentException("Updating perustaja not allowed.")
+    private fun validateUpdatable(hankeUpdate: Hanke, hankeTunnusFromPath: String) {
+        if (hankeUpdate.hankeTunnus != hankeTunnusFromPath) {
+            throw HankeArgumentException(
+                "Hanketunnus mismatch. (In payload=${hankeUpdate.hankeTunnus}, In path=$hankeTunnusFromPath)"
+            )
         }
     }
 }

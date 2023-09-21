@@ -6,7 +6,7 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "6.23.0"
+val sentryVersion = "6.29.0"
 
 ext["spring-security.version"] = "6.0.4"
 
@@ -48,16 +48,16 @@ spotless {
 }
 
 plugins {
-    id("org.springframework.boot") version "3.0.8"
-    id("io.spring.dependency-management") version "1.1.0"
-    id("com.diffplug.spotless") version "6.18.0"
-    kotlin("jvm") version "1.8.22"
+    val kotlinVersion = "1.9.10"
+    id("org.springframework.boot") version "3.0.10"
+    id("io.spring.dependency-management") version "1.1.3"
+    id("com.diffplug.spotless") version "6.21.0"
+    kotlin("jvm") version kotlinVersion
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
-    kotlin("plugin.spring") version "1.8.22"
+    kotlin("plugin.spring") version kotlinVersion
     // Gives kotlin-noarg for @Entity, @Embeddable
-    kotlin("plugin.jpa") version "1.8.22"
+    kotlin("plugin.jpa") version kotlinVersion
     idea
-    id("com.github.ben-manes.versions") version "0.42.0"
     id("jacoco")
 }
 
@@ -77,12 +77,12 @@ dependencies {
     implementation("de.grundid.opendatalab:geojson-jackson:1.14")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
-    implementation("com.github.blagerweij:liquibase-sessionlock:1.6.2")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.5.0")
+    implementation("com.github.blagerweij:liquibase-sessionlock:1.6.5")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.5.3")
     implementation("commons-io:commons-io:2.13.0")
     implementation("com.github.librepdf:openpdf:1.3.30")
-    implementation("net.pwall.mustache:kotlin-mustache:0.10")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.2")
+    implementation("net.pwall.mustache:kotlin-mustache:0.11")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
     implementation("org.postgresql:postgresql")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.2.0")
@@ -90,14 +90,14 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
-    testImplementation("io.mockk:mockk:1.13.5")
+    testImplementation("io.mockk:mockk:1.13.7")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
-    testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.26.1")
+    testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.27.0")
     testImplementation("com.squareup.okhttp3:mockwebserver")
     testImplementation("com.icegreen:greenmail-junit5:2.0.0")
 
     // Testcontainers
-    implementation(platform("org.testcontainers:testcontainers-bom:1.18.3"))
+    implementation(platform("org.testcontainers:testcontainers-bom:1.19.0"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
 
@@ -154,6 +154,8 @@ tasks {
 }
 
 tasks.register("installGitHook", Copy::class) {
+    group = "other"
+    description = "Installs shared git hooks"
     from(file("$rootDir/githooks"))
     into(file("$rootDir/.git/hooks"))
     fileMode = 0b0111101101 // -rwxr-xr-x

@@ -1,43 +1,64 @@
 package fi.hel.haitaton.hanke.permissions
 
-import fi.hel.haitaton.hanke.HankeNotFoundException
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.currentUserId
+import fi.hel.haitaton.hanke.logging.PermissionLoggingService
+import mu.KotlinLogging
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+private val logger = KotlinLogging.logger {}
 
 @Service
 class PermissionService(
     private val permissionRepository: PermissionRepository,
-    private val roleRepository: RoleRepository
+    private val kayttooikeustasoRepository: KayttooikeustasoRepository,
+    private val logService: PermissionLoggingService,
 ) {
+    fun findByHankeId(hankeId: Int) = permissionRepository.findAllByHankeId(hankeId)
+
     fun getAllowedHankeIds(userId: String, permission: PermissionCode): List<Int> =
         permissionRepository.findAllByUserIdAndPermission(userId, permission.code).map {
             it.hankeId
         }
 
-    fun hasPermission(hankeId: Int, userId: String, permission: PermissionCode): Boolean {
-        val role = permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.role
-        return hasPermission(role, permission)
+    fun hasPermission(hankeId: Int, userId: String, permission: PermissionCode): Boolean =
+        permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.hasPermission(permission)
+            ?: false
+
+    fun findPermission(hankeId: Int, userId: String): PermissionEntity? =
+        permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)
+
+    @Transactional
+    fun create(hankeId: Int, userId: String, kayttooikeustaso: Kayttooikeustaso): PermissionEntity {
+        val kayttooikeustasoEntity = findKayttooikeustaso(kayttooikeustaso)
+        val permission =
+            permissionRepository.save(
+                PermissionEntity(
+                    userId = userId,
+                    hankeId = hankeId,
+                    kayttooikeustasoEntity = kayttooikeustasoEntity,
+                )
+            )
+        logService.logCreate(permission.toDomain(), currentUserId())
+        return permission
     }
 
-    fun setPermission(hankeId: Int, userId: String, role: Role) {
-        val roleEntity = roleRepository.findOneByRole(role)
-        val entity =
-            permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.apply {
-                this.role = roleEntity
-            }
-                ?: PermissionEntity(userId = userId, hankeId = hankeId, role = roleEntity)
-        permissionRepository.save(entity)
-    }
+    fun findKayttooikeustaso(kayttooikeustaso: Kayttooikeustaso): KayttooikeustasoEntity =
+        kayttooikeustasoRepository.findOneByKayttooikeustaso(kayttooikeustaso)
 
-    fun verifyHankeUserAuthorization(userId: String, hanke: Hanke, permissionCode: PermissionCode) {
-        val hankeId = hanke.id
-        if (hankeId == null || !hasPermission(hankeId, userId, permissionCode)) {
-            throw HankeNotFoundException(hanke.hankeTunnus)
+    @Transactional
+    fun updateKayttooikeustaso(
+        permission: PermissionEntity,
+        kayttooikeustaso: Kayttooikeustaso,
+        currentUser: String
+    ) {
+        val kayttooikeustasoBefore = permission.kayttooikeustaso
+        permission.kayttooikeustasoEntity = findKayttooikeustaso(kayttooikeustaso)
+        permissionRepository.save(permission)
+        logger.info {
+            "Updated kayttooikeustaso for permission, " +
+                "permissionId=${permission.id}, new kayttooikeustaso=$kayttooikeustaso, userId=$currentUser"
         }
-    }
-
-    companion object {
-        fun hasPermission(role: RoleEntity?, permission: PermissionCode): Boolean =
-            (role?.permissionCode ?: 0) and permission.code > 0
+        logService.logUpdate(kayttooikeustasoBefore, permission.toDomain(), currentUser)
     }
 }

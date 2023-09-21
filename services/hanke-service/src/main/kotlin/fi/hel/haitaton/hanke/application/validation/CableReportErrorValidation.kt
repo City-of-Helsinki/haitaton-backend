@@ -5,8 +5,8 @@ import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
+import fi.hel.haitaton.hanke.application.ordererCount
 import fi.hel.haitaton.hanke.isValidBusinessId
-import fi.hel.haitaton.hanke.ordererCount
 import fi.hel.haitaton.hanke.validation.ValidationResult
 import fi.hel.haitaton.hanke.validation.Validators.isBeforeOrEqual
 import fi.hel.haitaton.hanke.validation.Validators.notJustWhitespace

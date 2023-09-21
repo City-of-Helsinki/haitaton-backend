@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
+import fi.hel.haitaton.hanke.HankeArgumentException
 import fi.hel.haitaton.hanke.allu.Contact as AlluContact
 import fi.hel.haitaton.hanke.allu.Customer as AlluCustomer
 import fi.hel.haitaton.hanke.allu.CustomerType
@@ -11,6 +12,7 @@ import fi.hel.haitaton.hanke.allu.CustomerWithContacts as AlluCustomerWithContac
 import fi.hel.haitaton.hanke.allu.PostalAddress as AlluPostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress as AlluStreetAddress
 import fi.hel.haitaton.hanke.domain.BusinessId
+import fi.hel.haitaton.hanke.domain.Perustaja
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CustomerWithContacts(val customer: Customer, val contacts: List<Contact>) {
@@ -43,6 +45,19 @@ data class Contact(
             return null
         }
         return names.filter { !it.isNullOrBlank() }.joinToString(" ")
+    }
+
+    /**
+     * It is possible to create a cable report without an existing Hanke. In these cases an
+     * application contact (orderer) is used as Hanke perustaja.
+     */
+    fun toHankePerustaja(): Perustaja {
+        val name = fullName()
+        if (name.isNullOrBlank() || email.isNullOrBlank()) {
+            throw HankeArgumentException("Invalid orderer $this for Hanke perustaja")
+        }
+
+        return Perustaja(name, email)
     }
 }
 

@@ -35,7 +35,7 @@ private const val USERID = "test-user"
 
 @WebMvcTest(controllers = [GdprController::class], properties = ["haitaton.gdpr.disabled=false"])
 @Import(IntegrationTestConfiguration::class)
-@ActiveProfiles("itest")
+@ActiveProfiles("test")
 @WithMockUser(USERID)
 class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
 

@@ -1,5 +1,8 @@
 package fi.hel.haitaton.hanke.permissions
 
+import com.fasterxml.jackson.annotation.JsonView
+import fi.hel.haitaton.hanke.ChangeLogView
+import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -15,6 +18,16 @@ import kotlin.streams.asSequence
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
+@JsonView(ChangeLogView::class)
+data class KayttajaTunniste(
+    override val id: UUID,
+    val tunniste: String,
+    val createdAt: OffsetDateTime,
+    val sentAt: OffsetDateTime?,
+    var kayttooikeustaso: Kayttooikeustaso,
+    val hankeKayttajaId: UUID?
+) : HasId<UUID>
+
 @Entity
 @Table(name = "kayttaja_tunniste")
 class KayttajaTunnisteEntity(
@@ -22,21 +35,24 @@ class KayttajaTunnisteEntity(
     val tunniste: String,
     @Column(name = "created_at") val createdAt: OffsetDateTime,
     @Column(name = "sent_at") val sentAt: OffsetDateTime?,
-    @Enumerated(EnumType.STRING) val role: Role,
+    @Enumerated(EnumType.STRING) var kayttooikeustaso: Kayttooikeustaso,
     @OneToOne(mappedBy = "kayttajaTunniste") val hankeKayttaja: HankeKayttajaEntity?
 ) {
+
+    fun toDomain() =
+        KayttajaTunniste(id, tunniste, createdAt, sentAt, kayttooikeustaso, hankeKayttaja?.id)
 
     companion object {
         private const val tokenLength: Int = 24
         private val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
         private val secureRandom: SecureRandom = SecureRandom()
 
-        fun create() =
+        fun create(sentAt: OffsetDateTime? = null) =
             KayttajaTunnisteEntity(
                 tunniste = randomToken(),
                 createdAt = getCurrentTimeUTC().toOffsetDateTime(),
-                sentAt = null,
-                role = Role.KATSELUOIKEUS,
+                sentAt = sentAt,
+                kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
                 hankeKayttaja = null
             )
 
@@ -49,4 +65,7 @@ class KayttajaTunnisteEntity(
     }
 }
 
-@Repository interface KayttajaTunnisteRepository : JpaRepository<KayttajaTunnisteEntity, UUID> {}
+@Repository
+interface KayttajaTunnisteRepository : JpaRepository<KayttajaTunnisteEntity, UUID> {
+    fun findByTunniste(tunniste: String): KayttajaTunnisteEntity?
+}

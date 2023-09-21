@@ -6,6 +6,7 @@ import io.sentry.Sentry
 import jakarta.servlet.http.HttpServletResponse
 import mu.KotlinLogging
 import org.springframework.http.HttpMethod
+import org.springframework.http.MediaType.APPLICATION_JSON_VALUE
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 
 private val logger = KotlinLogging.logger {}
@@ -45,6 +46,7 @@ object AccessRules {
                 Sentry.captureException(authenticationException)
                 response.writer.print(OBJECT_MAPPER.writeValueAsString(HankeError.HAI0001))
                 response.status = HttpServletResponse.SC_UNAUTHORIZED
+                response.contentType = APPLICATION_JSON_VALUE
             }
     }
 }

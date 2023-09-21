@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.application
 
+import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
@@ -15,11 +16,15 @@ import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.domain.ApplicationUserContact
+import fi.hel.haitaton.hanke.domain.typedContacts
+import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.Status
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -207,8 +212,6 @@ open class ApplicationService(
             return application.toApplication()
         }
 
-        hankeKayttajaService.saveNewTokensFromApplication(application, hanke.id!!)
-
         // The application should no longer be a draft
         application.applicationData = application.applicationData.copy(pendingOnClient = false)
 
@@ -218,9 +221,10 @@ open class ApplicationService(
         logger.info {
             "Application sent, fetching application identifier and status. id=$id, alluid=${application.alluid}."
         }
-        getApplicationInformationFromAllu(application.alluid!!)?.let {
-            application.applicationIdentifier = it.applicationId
-            application.alluStatus = it.status
+        getApplicationInformationFromAllu(application.alluid!!)?.let { response ->
+            application.applicationIdentifier = response.applicationId
+            application.alluStatus = response.status
+            initAccessForApplication(application, hanke, userId)
         }
 
         logger.info("Sent application id=$id, alluid=${application.alluid}")
@@ -286,6 +290,60 @@ open class ApplicationService(
             PENDING_CLIENT -> isStillPendingInAllu(application.alluid)
             else -> false
         }
+
+    private fun initAccessForApplication(
+        application: ApplicationEntity,
+        hanke: HankeEntity,
+        currentUserId: String
+    ) {
+        val currentKayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id!!, currentUserId)
+        hankeKayttajaService.saveNewTokensFromApplication(
+            application = application,
+            hankeId = hanke.id!!,
+            hankeTunnus = hanke.hankeTunnus!!,
+            hankeNimi = hanke.nimi!!,
+            currentUserId = currentUserId,
+            currentKayttaja = currentKayttaja
+        )
+
+        val contacts = application.applicationData.typedContacts(omit = currentKayttaja?.sahkoposti)
+        contacts.forEach {
+            notifyOnApplication(
+                hanke.hankeTunnus!!,
+                application.applicationIdentifier!!,
+                application.applicationType,
+                currentKayttaja,
+                it,
+            )
+        }
+    }
+
+    private fun notifyOnApplication(
+        hankeTunnus: String,
+        applicationIdentifier: String,
+        applicationType: ApplicationType,
+        currentKayttaja: HankeKayttajaEntity?,
+        recipient: ApplicationUserContact
+    ) {
+        logger.info { "Sending Application notification." }
+
+        if (currentKayttaja == null) {
+            logger.warn { "Sending kayttaja is null, will not send application notification." }
+            return
+        }
+
+        emailSenderService.sendApplicationNotificationEmail(
+            ApplicationNotificationData(
+                senderName = currentKayttaja.nimi,
+                senderEmail = currentKayttaja.sahkoposti,
+                recipientEmail = recipient.email,
+                hankeTunnus = hankeTunnus,
+                applicationIdentifier = applicationIdentifier,
+                applicationType = applicationType,
+                roleType = recipient.type,
+            )
+        )
+    }
 
     private fun isStillPendingInAllu(alluid: Int?): Boolean {
         // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)

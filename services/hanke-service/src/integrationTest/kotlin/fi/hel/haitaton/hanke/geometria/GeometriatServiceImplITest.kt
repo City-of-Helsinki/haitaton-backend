@@ -25,8 +25,8 @@ import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@ActiveProfiles("default")
-@WithMockUser(username = "test", roles = ["haitaton-user"])
+@ActiveProfiles("test")
+@WithMockUser(username = "test")
 internal class GeometriatServiceImplITest : DatabaseTest() {
 
     @Autowired private lateinit var hankeService: HankeService

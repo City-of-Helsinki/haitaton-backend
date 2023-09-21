@@ -4,7 +4,7 @@ import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
-import fi.hel.haitaton.hanke.ordererCount
+import fi.hel.haitaton.hanke.application.ordererCount
 import fi.hel.haitaton.hanke.validation.ValidationResult
 import fi.hel.haitaton.hanke.validation.Validators.notBlank
 import fi.hel.haitaton.hanke.validation.Validators.notNull

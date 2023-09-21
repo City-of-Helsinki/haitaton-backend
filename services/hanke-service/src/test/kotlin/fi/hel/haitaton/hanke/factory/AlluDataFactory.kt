@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationArea
+import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
@@ -19,6 +20,7 @@ import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.domain.ApplicationUserContact
 import java.time.ZonedDateTime
 import org.geojson.Polygon
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
@@ -35,6 +37,12 @@ class AlluDataFactory(
         const val defaultApplicationName: String = "Johtoselvityksen oletusnimi"
         const val defaultApplicationIdentifier: String = "JS230014"
         const val teppoEmail = "teppo@example.test"
+        val expectedRecipients =
+            arrayOf(
+                "timo.työnsuorittaja@mail.com",
+                "anssi.asianhoitaja@mail.com",
+                "rane.rakennuttaja@mail.com",
+            )
 
         fun createPostalAddress(
             streetAddress: String = "Katu 1",
@@ -104,6 +112,14 @@ class AlluDataFactory(
 
         fun Customer.withContacts(vararg contacts: Contact): CustomerWithContacts =
             CustomerWithContacts(this, contacts.asList())
+
+        fun Customer.withContact(
+            firstName: String? = "Teppo",
+            lastName: String? = "Testihenkilö",
+            email: String? = teppoEmail,
+            phone: String? = "04012345678",
+            orderer: Boolean = false,
+        ) = withContacts(createContact(firstName, lastName, email, phone, orderer))
 
         fun createContact(
             firstName: String? = "Teppo",
@@ -321,6 +337,90 @@ class AlluDataFactory(
                 name = name,
                 description = description,
             )
+
+        val hakijaApplicationContact =
+            ApplicationUserContact(
+                "Henri Hakija",
+                "henri.hakija@mail.com",
+                ApplicationContactType.HAKIJA
+            )
+
+        val rakennuttajaApplicationContact =
+            ApplicationUserContact(
+                "Rane Rakennuttaja",
+                "rane.rakennuttaja@mail.com",
+                ApplicationContactType.RAKENNUTTAJA
+            )
+
+        val asianhoitajaApplicationContact =
+            ApplicationUserContact(
+                "Anssi Asianhoitaja",
+                "anssi.asianhoitaja@mail.com",
+                ApplicationContactType.ASIANHOITAJA
+            )
+
+        val suorittajaApplicationContact =
+            ApplicationUserContact(
+                "Timo Työnsuorittaja",
+                "timo.työnsuorittaja@mail.com",
+                ApplicationContactType.TYON_SUORITTAJA
+            )
+
+        val hakijaCustomerContact: CustomerWithContacts =
+            with(hakijaApplicationContact) {
+                val (firstName, lastName) = name.split(" ")
+                createCompanyCustomer()
+                    .withContacts(
+                        createContact(
+                            firstName = firstName,
+                            lastName = lastName,
+                            email = email,
+                            orderer = true
+                        )
+                    )
+            }
+
+        val suorittajaCustomerContact: CustomerWithContacts =
+            with(suorittajaApplicationContact) {
+                val (firstName, lastName) = name.split(" ")
+                createCompanyCustomer()
+                    .withContacts(
+                        createContact(
+                            firstName = firstName,
+                            lastName = lastName,
+                            email = email,
+                            orderer = false
+                        )
+                    )
+            }
+
+        val asianHoitajaCustomerContact: CustomerWithContacts =
+            with(asianhoitajaApplicationContact) {
+                val (firstName, lastName) = name.split(" ")
+                createCompanyCustomer()
+                    .withContacts(
+                        createContact(
+                            firstName = firstName,
+                            lastName = lastName,
+                            email = email,
+                            orderer = false
+                        )
+                    )
+            }
+
+        val rakennuttajaCustomerContact: CustomerWithContacts =
+            with(rakennuttajaApplicationContact) {
+                val (firstName, lastName) = name.split(" ")
+                createCompanyCustomer()
+                    .withContacts(
+                        createContact(
+                            firstName = firstName,
+                            lastName = lastName,
+                            email = email,
+                            orderer = false
+                        )
+                    )
+            }
     }
 
     /**
@@ -339,7 +439,7 @@ class AlluDataFactory(
                 id = null,
                 alluid = application.alluid,
                 alluStatus = null,
-                applicationIdentifier = null,
+                applicationIdentifier = application.applicationIdentifier,
                 username,
                 application.applicationType,
                 application.applicationData,
