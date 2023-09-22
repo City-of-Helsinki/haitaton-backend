@@ -142,6 +142,23 @@ class HankeServiceITests : DatabaseTest() {
         }
     }
 
+    @Nested
+    inner class LoadHankeById {
+        @Test
+        fun `returns null if hanke not found`() {
+            assertThat(hankeService.loadHankeById(44)).isNull()
+        }
+
+        @Test
+        fun `returns hanke if hanke exists`() {
+            val hanke = hankeFactory.save()
+
+            val response = hankeService.loadHankeById(hanke.id!!)
+
+            assertk.assertThat(response).isNotNull().prop(Hanke::id).isEqualTo(hanke.id!!)
+        }
+    }
+
     @Test
     fun `create Hanke with full data set succeeds and returns a new domain object with the correct values`() {
         val hanke: Hanke = getATestHanke().withYhteystiedot { it.id = null }.withHankealue()

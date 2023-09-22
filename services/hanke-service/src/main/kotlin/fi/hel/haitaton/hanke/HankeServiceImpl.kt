@@ -26,6 +26,7 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import fi.hel.haitaton.hanke.validation.HankePublicValidator
 import java.time.ZonedDateTime
 import mu.KotlinLogging
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
@@ -93,6 +94,10 @@ open class HankeServiceImpl(
         hankeRepository.findAllByStatus(HankeStatus.PUBLIC).map {
             createHankeDomainObjectFromEntity(it)
         }
+
+    @Transactional(readOnly = true)
+    override fun loadHankeById(id: Int): Hanke? =
+        hankeRepository.findByIdOrNull(id)?.let { createHankeDomainObjectFromEntity(it) }
 
     @Transactional(readOnly = true)
     override fun loadHankkeetByIds(ids: List<Int>) =

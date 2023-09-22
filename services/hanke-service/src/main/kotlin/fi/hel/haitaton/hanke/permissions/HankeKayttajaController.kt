@@ -176,7 +176,6 @@ have those same permissions.
     }
 
     @PostMapping("/kayttajat")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(
         summary = "Identify a user",
         description =
@@ -186,6 +185,8 @@ that's the same as the token given in the request. Activates the permission to
 the hanke the token was created for.
 
 Removes the token after a successful identification.
+
+Responds with information about the activated user and the hanke associated with it.
 """
     )
     @ApiResponses(
@@ -193,7 +194,7 @@ Removes the token after a successful identification.
             [
                 ApiResponse(
                     description = "User identified, permission to hanke given",
-                    responseCode = "204",
+                    responseCode = "200",
                 ),
                 ApiResponse(
                     description = "Token not found or outdated",
@@ -212,8 +213,15 @@ Removes the token after a successful identification.
                 ),
             ]
     )
-    fun identifyUser(@RequestBody tunnistautuminen: Tunnistautuminen) {
-        hankeKayttajaService.createPermissionFromToken(currentUserId(), tunnistautuminen.tunniste)
+    fun identifyUser(@RequestBody tunnistautuminen: Tunnistautuminen): TunnistautuminenResponse {
+        val kayttaja =
+            hankeKayttajaService.createPermissionFromToken(
+                currentUserId(),
+                tunnistautuminen.tunniste
+            )
+
+        val hanke = hankeService.loadHankeById(kayttaja.hankeId)!!
+        return TunnistautuminenResponse(kayttaja.id, hanke.hankeTunnus!!, hanke.nimi!!)
     }
 
     @PostMapping("/kayttajat/{kayttajaId}/kutsu")
@@ -258,6 +266,12 @@ of the token and link will be reset.
     }
 
     data class Tunnistautuminen(val tunniste: String)
+
+    data class TunnistautuminenResponse(
+        val kayttajaId: UUID,
+        val hankeTunnus: String,
+        val hankeNimi: String,
+    )
 
     @ExceptionHandler(MissingAdminPermissionException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)

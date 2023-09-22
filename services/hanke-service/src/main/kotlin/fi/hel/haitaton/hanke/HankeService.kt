@@ -27,5 +27,7 @@ interface HankeService {
 
     fun loadPublicHanke(): List<Hanke>
 
+    @Transactional(readOnly = true) fun loadHankeById(id: Int): Hanke?
+
     fun loadHankkeetByIds(ids: List<Int>): List<Hanke>
 }
