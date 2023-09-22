@@ -14,7 +14,7 @@
                     Tunnistaudu Haitattomaan alla olevan linkin kautta.
                 </mj-text>
                 <mj-text mj-class="basic-txt">
-                    <a href="{{baseUrl}}/{{invitationToken}}">Haitattomaan</a>
+                    <a href="{{baseUrl}}/fi/kutsu?id={{invitationToken}}">Haitattomaan</a>
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     Löydät hankkeesi Haitattoman etusivun Omat hankkeet -osion alta hankkeen nimellä.
