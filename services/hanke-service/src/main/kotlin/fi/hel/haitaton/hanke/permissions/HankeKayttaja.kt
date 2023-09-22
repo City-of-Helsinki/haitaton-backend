@@ -36,7 +36,7 @@ class HankeKayttajaEntity(
     @OneToOne
     @JoinColumn(name = "permission_id", updatable = true, nullable = true)
     var permission: PermissionEntity?,
-    @OneToOne
+    @OneToOne(orphanRemoval = true)
     @JoinColumn(name = "tunniste_id", updatable = true, nullable = true)
     var kayttajaTunniste: KayttajaTunnisteEntity?,
 ) {

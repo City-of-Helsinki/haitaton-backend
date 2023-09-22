@@ -23,6 +23,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaController.Tunnistautuminen
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.MODIFY_EDIT_PERMISSIONS
+import fi.hel.haitaton.hanke.permissions.PermissionCode.RESEND_INVITATION
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -490,6 +491,66 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
         }
     }
+
+    @Nested
+    inner class ResendInvitations {
+        private val kayttajaId = HankeKayttajaFactory.KAYTTAJA_ID
+        private val url = "/kayttajat/$kayttajaId/kutsu"
+
+        @Test
+        fun `Returns 404 if current user doesn't have permission for hanke`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name) } throws
+                HankeKayttajaNotFoundException(kayttajaId)
+
+            post(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI4001))
+
+            verifySequence { authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name) }
+        }
+
+        @Test
+        fun `Returns 409 if kayttaja already has permission`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name) } returns
+                true
+            every { hankeKayttajaService.resendInvitation(kayttajaId, USERNAME) } throws
+                UserAlreadyHasPermissionException(USERNAME, kayttajaId, 41)
+
+            post(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI4003))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name)
+                hankeKayttajaService.resendInvitation(kayttajaId, USERNAME)
+            }
+        }
+
+        @Test
+        fun `Returns 409 if current user doesn't have a kayttaja`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name) } returns
+                true
+            every { hankeKayttajaService.resendInvitation(kayttajaId, USERNAME) } throws
+                CurrentUserWithoutKayttajaException(USERNAME)
+
+            post(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI4003))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name)
+                hankeKayttajaService.resendInvitation(kayttajaId, USERNAME)
+            }
+        }
+
+        @Test
+        fun `Returns 204 if invitation resent`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name) } returns
+                true
+            justRun { hankeKayttajaService.resendInvitation(kayttajaId, USERNAME) }
+
+            post(url).andExpect(status().isNoContent).andExpect(content().string(""))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, RESEND_INVITATION.name)
+                hankeKayttajaService.resendInvitation(kayttajaId, USERNAME)
+            }
+        }
+    }
 }
 
 @WebMvcTest(
@@ -501,11 +562,12 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
 @WithMockUser(USERNAME)
 class HankeKayttajaControllerFeatureDisabledITest(@Autowired override val mockMvc: MockMvc) :
     ControllerTest {
-    private val url = "/hankkeet/$HANKE_TUNNUS/kayttajat"
     private val hankeKayttajaId = UUID.fromString("5d67712f-ea0b-490c-957f-9b30bddb848c")
 
     @Nested
     inner class UpdatePermissions {
+        private val url = "/hankkeet/$HANKE_TUNNUS/kayttajat"
+
         @Test
         fun `Returns not found when feature disabled`() {
             put(
@@ -516,6 +578,17 @@ class HankeKayttajaControllerFeatureDisabledITest(@Autowired override val mockMv
                 )
                 .andExpect(status().isNotFound)
                 .andExpect(hankeError(HankeError.HAI0004))
+        }
+    }
+
+    @Nested
+    inner class ResendInvitations {
+        private val kayttajaId = UUID.fromString("0b384506-3ad2-4588-b032-b825c6f89bd5")
+        private val url = "/kayttajat/$kayttajaId/kutsu"
+
+        @Test
+        fun `Returns not found when feature disabled`() {
+            post(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI0004))
         }
     }
 }

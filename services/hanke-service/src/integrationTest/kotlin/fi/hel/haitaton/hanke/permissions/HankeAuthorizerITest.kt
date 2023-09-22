@@ -77,9 +77,6 @@ class HankeAuthorizerITest(
 
         @Test
         fun `throws error if enum value not found`() {
-            val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
-            permissionService.create(hanke.id!!, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
-
             assertFailure { authorizer.authorizeHankeTunnus(hankeTunnus, "Not real") }
                 .all {
                     hasClass(IllegalArgumentException::class)
