@@ -21,7 +21,7 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.factory.AttachmentFactory.Companion.hankeAttachmentEntity
-import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createYhteystietoEntity
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createEntity
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
@@ -154,14 +154,10 @@ class HankeFactory(
                 .apply {
                     listOfHankeYhteystieto =
                         mutableListOf(
-                            createYhteystietoEntity(id = 1, contactType = OMISTAJA, hanke = this),
-                            createYhteystietoEntity(id = 2, contactType = TOTEUTTAJA, hanke = this),
-                            createYhteystietoEntity(
-                                id = 3,
-                                contactType = RAKENNUTTAJA,
-                                hanke = this
-                            ),
-                            createYhteystietoEntity(id = 4, contactType = MUU, hanke = this)
+                            createEntity(id = 1, contactType = OMISTAJA, hanke = this),
+                            createEntity(id = 2, contactType = TOTEUTTAJA, hanke = this),
+                            createEntity(id = 3, contactType = RAKENNUTTAJA, hanke = this),
+                            createEntity(id = 4, contactType = MUU, hanke = this)
                         )
                     listOfHankeAlueet =
                         mutableListOf(createHankeAlueEntity(mockId = mockId, hankeEntity = this))

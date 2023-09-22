@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.HankeMapper.domainFrom
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
@@ -251,10 +252,7 @@ open class ApplicationService(
      */
     @Transactional
     open fun delete(applicationId: Long, userId: String) =
-        with(getById(applicationId)) {
-            cancelIfSent(alluid, id)
-            deleteAndLog(this, userId)
-        }
+        with(getById(applicationId)) { cancelAndDelete(this, userId) }
 
     /**
      * Deletes an application. Cancels the application in Allu if it's still pending. Refuses to
@@ -266,14 +264,14 @@ open class ApplicationService(
     @Transactional
     open fun deleteWithOrphanGeneratedHankeRemoval(applicationId: Long, userId: String) =
         with(getById(applicationId)) {
-            cancelIfSent(alluid, id)
-            deleteAndLog(this, userId)
+            cancelAndDelete(this, userId)
             if (hanke.generated && hanke.hakemukset.size == 1) {
                 logger.info {
                     "Application $id was the only one of a generated Hanke, removing Hanke ${hanke.hankeTunnus}."
                 }
                 hankeRepository.delete(hanke)
-                hankeLoggingService.logDelete(hanke, userId)
+                val hankeDomain = domainFrom(hanke, geometryMapFrom(hanke))
+                hankeLoggingService.logDelete(hankeDomain, userId)
             }
         }
 
@@ -302,25 +300,23 @@ open class ApplicationService(
             else -> false
         }
 
-    private fun cancelIfSent(alluid: Int?, applicationId: Long?) {
-        if (alluid == null) {
-            logger.info {
-                "Application not sent to Allu yet, simply deleting it. id=$applicationId"
-            }
-        } else {
-            logger.info {
-                "Application is sent to Allu, trying to cancel it before deleting. id=$applicationId alluid=$alluid"
-            }
-            cancelApplication(alluid, applicationId)
-        }
-    }
-
-    private fun deleteAndLog(application: ApplicationEntity, userId: String) =
+    private fun cancelAndDelete(application: ApplicationEntity, userId: String) =
         with(application) {
+            val alluIdentity = alluid
+
+            if (alluIdentity == null) {
+                logger.info { "Application not sent to Allu yet, simply deleting it. id=$id" }
+            } else {
+                logger.info {
+                    "Application is sent to Allu, trying to cancel it before deleting. id=$id alluid=$alluid"
+                }
+                cancelApplication(alluIdentity, id)
+            }
+
             logger.info { "Deleting application, id=$id, alluid=$alluid userid=$userId" }
             applicationRepository.delete(this)
-            logger.info { "Application deleted, id=$id, alluid=$alluid userid=$userId" }
             applicationLoggingService.logDelete(toApplication(), userId)
+            logger.info { "Application deleted, id=$id, alluid=$alluid userid=$userId" }
         }
 
     private fun initAccessForApplication(
@@ -674,6 +670,12 @@ open class ApplicationService(
             throw e
         }
     }
+
+    /** Map by area geometry id to area geometry data. */
+    private fun geometryMapFrom(hanke: HankeEntity) =
+        hanke.listOfHankeAlueet
+            .mapNotNull { it.geometriat }
+            .associateBy({ it }, { geometriatDao.retrieveGeometriat(it) })
 }
 
 class IncompatibleApplicationException(

@@ -14,7 +14,7 @@ import java.time.ZonedDateTime
 object HankeYhteystietoFactory {
 
     /** Create a test yhteystieto with values in all fields. */
-    fun createYhteytieto(
+    fun create(
         id: Int? = 1,
         nimi: String = "Teppo Testihenkilö",
         email: String = teppoEmail,
@@ -40,12 +40,12 @@ object HankeYhteystietoFactory {
         )
     }
 
-    fun createYhteystietoEntity(
+    fun createEntity(
         id: Int? = 1,
         contactType: ContactType,
         hanke: HankeEntity
     ): HankeYhteystietoEntity =
-        with(createYhteytieto(id = id)) {
+        with(create(id = id)) {
             HankeYhteystietoEntity(
                 id = id,
                 contactType = contactType,

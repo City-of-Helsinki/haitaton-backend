@@ -1,17 +1,12 @@
 package fi.hel.haitaton.hanke.logging
 
-import fi.hel.haitaton.hanke.HankeEntity
-import fi.hel.haitaton.hanke.HankeMapper
 import fi.hel.haitaton.hanke.domain.Hanke
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class HankeLoggingService(
-    private val auditLogService: AuditLogService,
-    private val hankeMapper: HankeMapper
-) {
+class HankeLoggingService(private val auditLogService: AuditLogService) {
 
     /**
      * Create audit log entry for a deleted hanke.
@@ -28,12 +23,6 @@ class HankeLoggingService(
             }
 
         auditLogService.createAll(yhteystietoEntries + auditLogEntry)
-    }
-
-    @Transactional(propagation = Propagation.MANDATORY)
-    fun logDelete(hankeEntity: HankeEntity, userId: String) {
-        val hanke = hankeMapper.domainFromEntity(hankeEntity)
-        logDelete(hanke, userId)
     }
 
     /**

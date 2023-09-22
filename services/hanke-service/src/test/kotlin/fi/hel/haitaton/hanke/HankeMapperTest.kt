@@ -13,35 +13,23 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createYhteytieto
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.create
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.geometria.Geometriat
-import fi.hel.haitaton.hanke.geometria.GeometriatService
-import io.mockk.every
-import io.mockk.impl.annotations.InjectMockKs
-import io.mockk.impl.annotations.MockK
-import io.mockk.verify
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
-import org.springframework.test.context.junit.jupiter.SpringExtension
 
 private const val MOCK_ID = 1
 
-@ExtendWith(SpringExtension::class)
 class HankeMapperTest {
 
     val geometry: Geometriat =
         "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource()
 
-    @MockK private lateinit var geometriatService: GeometriatService
-    @InjectMockKs private lateinit var hankeMapper: HankeMapper
-
     @Test
     fun `when entity contains all fields should map domain object correspondingly`() {
         val entity = HankeFactory.createEntity()
-        every { geometriatService.getGeometriat(MOCK_ID) } returns geometry
 
-        val result = hankeMapper.domainFromEntity(entity)
+        val result = HankeMapper.domainFrom(entity, mapOf(MOCK_ID to geometry))
 
         assertThat(result).all {
             prop(Hanke::id).isEqualTo(entity.id)
@@ -67,7 +55,6 @@ class HankeMapperTest {
             prop(Hanke::alueet).isEqualTo(entity.listOfHankeAlueet.map { it.toDomain() })
             prop(Hanke::permissions).isNull()
         }
-        verify { geometriatService.getGeometriat(MOCK_ID) }
     }
 
     private fun HankeEntity.yhteystietoCreatedAt(contactType: ContactType) =
@@ -83,12 +70,18 @@ class HankeMapperTest {
             haittaAlkuPvm = haittaAlkuPvm?.atStartOfDay(TZ_UTC),
             haittaLoppuPvm = haittaLoppuPvm?.atStartOfDay(TZ_UTC),
             geometriat = geometry,
+            kaistaHaitta = kaistaHaitta,
+            kaistaPituusHaitta = kaistaPituusHaitta,
+            meluHaitta = meluHaitta,
+            polyHaitta = polyHaitta,
+            tarinaHaitta = tarinaHaitta,
+            nimi = nimi,
         )
     }
 
     private fun expectedYhteystieto(hankeEntity: HankeEntity, type: ContactType, id: Int) =
         mutableListOf(
-            createYhteytieto(
+            create(
                 id = id,
                 nimi = "$TEPPO_TESTI $type",
                 email = "$type.$teppoEmail",
