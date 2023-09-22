@@ -32,6 +32,13 @@ class HankeKayttajaLoggingService(private val auditLogService: AuditLogService) 
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
+    fun logDelete(tunniste: KayttajaTunniste, currentUserId: String) {
+        auditLogService.create(
+            AuditLogService.deleteEntry(currentUserId, ObjectType.KAYTTAJA_TUNNISTE, tunniste)
+        )
+    }
+
+    @Transactional(propagation = Propagation.MANDATORY)
     fun logCreate(hankeKayttaja: HankeKayttaja, currentUser: String) {
         auditLogService.create(
             AuditLogService.createEntry(currentUser, ObjectType.HANKE_KAYTTAJA, hankeKayttaja)

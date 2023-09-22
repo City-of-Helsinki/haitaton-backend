@@ -15,7 +15,7 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.rakennuttajaCusto
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaApplicationContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
-import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.createEntity
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -100,7 +100,8 @@ class UserContactTest {
                     customerWithContacts = hakijaCustomerContact,
                     contractorWithContacts = suorittajaCustomerContact
                 )
-            val kayttaja = createEntity(sahkoposti = suorittajaApplicationContact.email)
+            val kayttaja =
+                HankeKayttajaFactory.createEntity(sahkoposti = suorittajaApplicationContact.email)
 
             val result = applicationData.typedContacts(omit = kayttaja.sahkoposti)
 

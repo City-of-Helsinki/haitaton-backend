@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
@@ -215,6 +216,47 @@ Removes the token after a successful identification.
         hankeKayttajaService.createPermissionFromToken(currentUserId(), tunnistautuminen.tunniste)
     }
 
+    @PostMapping("/kayttajat/{kayttajaId}/kutsu")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+        summary = "Resend an invitation email",
+        description =
+            """
+Resend the invitation email the user was sent when they were first added to the
+hanke as a contact person.
+
+Regenerates the invitation token and link. This means that the link in the
+original email will not work anymore. It also means that the period of validity
+of the token and link will be reset.
+"""
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Invitation email resent",
+                    responseCode = "204",
+                ),
+                ApiResponse(
+                    description = "User not found",
+                    responseCode = "404",
+                ),
+                ApiResponse(
+                    description =
+                        "User has already been activated or the current user doesn't have name and email registered.",
+                    responseCode = "409",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+            ]
+    )
+    @PreAuthorize(
+        "@featureService.isEnabled('USER_MANAGEMENT') && " +
+            "@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'RESEND_INVITATION')"
+    )
+    fun resendInvitations(@PathVariable kayttajaId: UUID) {
+        hankeKayttajaService.resendInvitation(kayttajaId, currentUserId())
+    }
+
     data class Tunnistautuminen(val tunniste: String)
 
     @ExceptionHandler(MissingAdminPermissionException::class)
@@ -287,6 +329,22 @@ Removes the token after a successful identification.
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden
     fun permissionAlreadyExistsException(ex: PermissionAlreadyExistsException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4003
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
+    fun hankeKayttajaNotFoundException(ex: HankeKayttajaNotFoundException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4001
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun currentUserWithoutKayttajaException(ex: CurrentUserWithoutKayttajaException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI4003
     }
