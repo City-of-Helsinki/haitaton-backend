@@ -155,13 +155,13 @@ class EmailSenderServiceITest : DatabaseTest() {
             assertThat(textBody).all {
                 contains("${data.inviterName} (${data.inviterEmail}) lisäsi sinut")
                 contains("hankkeelle ${data.hankeNimi} (${data.hankeTunnus}).")
-                contains("http://localhost:3001/${data.invitationToken}")
+                contains("http://localhost:3001/fi/kutsu?id=${data.invitationToken}")
             }
             assertThat(htmlBody).all {
                 val htmlEscapedName = "Matti Meik&auml;l&auml;inen"
                 contains("$htmlEscapedName (${data.inviterEmail})")
                 contains("hankkeelle <b>${data.hankeNimi} (${data.hankeTunnus})</b>.")
-                contains("""<a href="http://localhost:3001/${data.invitationToken}">""")
+                contains("""<a href="http://localhost:3001/fi/kutsu?id=${data.invitationToken}">""")
             }
         }
     }
