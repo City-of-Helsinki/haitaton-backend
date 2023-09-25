@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.create
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.geometria.Geometriat
+import java.time.ZonedDateTime
 import org.junit.jupiter.api.Test
 
 private const val MOCK_ID = 1
@@ -58,12 +59,6 @@ class HankeMapperTest {
         }
     }
 
-    private fun HankeEntity.yhteystietoCreatedAt(contactType: ContactType) =
-        listOfHankeYhteystieto.find { it.contactType == contactType }?.createdAt?.zonedDateTime()
-
-    private fun HankeEntity.yhteystietoModifiedAt(contactType: ContactType) =
-        listOfHankeYhteystieto.find { it.contactType == contactType }?.modifiedAt?.zonedDateTime()
-
     private fun expectedYhteystieto(hankeEntity: HankeEntity, type: ContactType, id: Int) =
         mutableListOf(
             create(
@@ -74,6 +69,18 @@ class HankeMapperTest {
                 modifiedAt = hankeEntity.yhteystietoModifiedAt(type),
             )
         )
+
+    private fun HankeEntity.yhteystietoCreatedAt(contactType: ContactType) =
+        listOfHankeYhteystieto
+            .find { it.contactType == contactType }
+            ?.createdAt
+            ?.let { ZonedDateTime.of(it, TZ_UTC) }
+
+    private fun HankeEntity.yhteystietoModifiedAt(contactType: ContactType) =
+        listOfHankeYhteystieto
+            .find { it.contactType == contactType }
+            ?.modifiedAt
+            ?.let { ZonedDateTime.of(it, TZ_UTC) }
 
     private fun expectedAlueet(hankeId: Int?, hankeTunnus: String?) =
         listOf(
