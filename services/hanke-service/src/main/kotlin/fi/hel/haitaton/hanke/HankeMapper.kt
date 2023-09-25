@@ -20,7 +20,7 @@ object HankeMapper {
      */
     fun domainFrom(entity: HankeEntity, geometriaData: Map<Int, Geometriat?>): Hanke =
         with(entity) {
-            Hanke(
+                Hanke(
                     id = id,
                     hankeTunnus = hankeTunnus,
                     onYKTHanke = onYKTHanke,
@@ -36,27 +36,21 @@ object HankeMapper {
                     status = status,
                     generated = generated
                 )
-                .apply {
-                    val contacts = contacts(entity)
-                    omistajat = contacts[OMISTAJA].orEmpty().toMutableList()
-                    rakennuttajat = contacts[RAKENNUTTAJA].orEmpty().toMutableList()
-                    toteuttajat = contacts[TOTEUTTAJA].orEmpty().toMutableList()
-                    muut = contacts[MUU].orEmpty().toMutableList()
-                    tyomaaKatuosoite = entity.tyomaaKatuosoite
-                    tyomaaTyyppi = entity.tyomaaTyyppi
-                    alueet = alueList(entity.hankeTunnus, entity.listOfHankeAlueet, geometriaData)
-                    tormaystarkasteluTulos =
-                        tormaystarkasteluTulokset.firstOrNull()?.let {
-                            TormaystarkasteluTulos(it.perus, it.pyoraily, it.joukkoliikenne)
-                        }
-                }
-        }
+            }
+            .apply {
+                val contacts = contacts(entity)
+                omistajat = contacts[OMISTAJA].orEmpty().toMutableList()
+                rakennuttajat = contacts[RAKENNUTTAJA].orEmpty().toMutableList()
+                toteuttajat = contacts[TOTEUTTAJA].orEmpty().toMutableList()
+                muut = contacts[MUU].orEmpty().toMutableList()
+                tyomaaKatuosoite = entity.tyomaaKatuosoite
+                tyomaaTyyppi = entity.tyomaaTyyppi
+                alueet = alueList(entity.hankeTunnus, entity.listOfHankeAlueet, geometriaData)
+                tormaystarkasteluTulos = tormaystarkasteluTulos(entity)
+            }
 
-    private fun contacts(entity: HankeEntity): Map<ContactType, MutableList<HankeYhteystieto>> =
-        entity.listOfHankeYhteystieto.groupBy({ it.contactType }, { it.toDomain() }).mapValues {
-            (_, contacts) ->
-            contacts.toMutableList()
-        }
+    private fun contacts(entity: HankeEntity): Map<ContactType, List<HankeYhteystieto>> =
+        entity.listOfHankeYhteystieto.groupBy({ it.contactType }, { it.toDomain() })
 
     private fun alueList(
         hankeTunnus: String?,
@@ -80,5 +74,10 @@ object HankeMapper {
                 tarinaHaitta = tarinaHaitta,
                 nimi = nimi,
             )
+        }
+
+    private fun tormaystarkasteluTulos(entity: HankeEntity) =
+        entity.tormaystarkasteluTulokset.firstOrNull()?.let {
+            TormaystarkasteluTulos(it.perus, it.pyoraily, it.joukkoliikenne)
         }
 }
