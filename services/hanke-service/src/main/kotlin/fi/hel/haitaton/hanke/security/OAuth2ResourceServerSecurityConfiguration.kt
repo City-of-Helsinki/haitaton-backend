@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.core.annotation.Order
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator
 import org.springframework.security.oauth2.core.OAuth2AuthenticatedPrincipal
@@ -24,6 +25,7 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.web.reactive.function.client.WebClient
 
 @Configuration
+@EnableMethodSecurity(prePostEnabled = true)
 class OAuth2ResourceServerSecurityConfiguration(
     @Value("\${security.oauth2.resource.user-info-uri}") private val userinfoUri: String,
     private val gdprProperties: GdprProperties,
