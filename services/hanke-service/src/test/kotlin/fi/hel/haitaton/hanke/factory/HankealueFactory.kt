@@ -8,7 +8,6 @@ import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihi
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
-import java.time.LocalDate
 import java.time.ZonedDateTime
 
 object HankealueFactory {
@@ -77,8 +76,8 @@ object HankealueFactory {
             id = alue.id
             hanke = hankeEntity
             geometriat = alue.geometriat?.id
-            haittaAlkuPvm = LocalDate.now().plusDays(5)
-            haittaLoppuPvm = LocalDate.now().plusDays(10)
+            haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate()
+            haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate()
             kaistaHaitta = alue.kaistaHaitta
             kaistaPituusHaitta = alue.kaistaPituusHaitta
             meluHaitta = alue.meluHaitta

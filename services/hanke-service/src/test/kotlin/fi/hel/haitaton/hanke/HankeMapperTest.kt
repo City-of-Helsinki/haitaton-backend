@@ -10,10 +10,11 @@ import fi.hel.haitaton.hanke.ContactType.OMISTAJA
 import fi.hel.haitaton.hanke.ContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
+import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.create
+import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import org.junit.jupiter.api.Test
@@ -40,9 +41,9 @@ class HankeMapperTest {
             prop(Hanke::vaihe).isEqualTo(entity.vaihe)
             prop(Hanke::suunnitteluVaihe).isEqualTo(entity.suunnitteluVaihe)
             prop(Hanke::version).isEqualTo(entity.version)
-            prop(Hanke::createdAt).isEqualTo(entity.createdAt?.zonedDateTime())
+            prop(Hanke::createdAt).isEqualTo(DateFactory.getStartDatetime())
             prop(Hanke::createdBy).isEqualTo(entity.createdByUserId)
-            prop(Hanke::modifiedAt).isEqualTo(entity.modifiedAt?.zonedDateTime())
+            prop(Hanke::modifiedAt).isEqualTo(DateFactory.getEndDatetime())
             prop(Hanke::modifiedBy).isEqualTo(entity.modifiedByUserId)
             prop(Hanke::status).isEqualTo(entity.status)
             prop(Hanke::generated).isEqualTo(entity.generated)
@@ -52,7 +53,7 @@ class HankeMapperTest {
             prop(Hanke::muut).isEqualTo(expectedYhteystieto(entity, MUU, 4))
             prop(Hanke::tyomaaKatuosoite).isEqualTo(entity.tyomaaKatuosoite)
             prop(Hanke::tyomaaTyyppi).isEqualTo(entity.tyomaaTyyppi)
-            prop(Hanke::alueet).isEqualTo(entity.listOfHankeAlueet.map { it.toDomain() })
+            prop(Hanke::alueet).isEqualTo(expectedAlueet(entity.id, entity.hankeTunnus))
             prop(Hanke::permissions).isNull()
         }
     }
@@ -63,22 +64,6 @@ class HankeMapperTest {
     private fun HankeEntity.yhteystietoModifiedAt(contactType: ContactType) =
         listOfHankeYhteystieto.find { it.contactType == contactType }?.modifiedAt?.zonedDateTime()
 
-    private fun HankealueEntity.toDomain(): Hankealue {
-        return Hankealue(
-            id = id,
-            hankeId = hanke?.id,
-            haittaAlkuPvm = haittaAlkuPvm?.atStartOfDay(TZ_UTC),
-            haittaLoppuPvm = haittaLoppuPvm?.atStartOfDay(TZ_UTC),
-            geometriat = geometry,
-            kaistaHaitta = kaistaHaitta,
-            kaistaPituusHaitta = kaistaPituusHaitta,
-            meluHaitta = meluHaitta,
-            polyHaitta = polyHaitta,
-            tarinaHaitta = tarinaHaitta,
-            nimi = nimi,
-        )
-    }
-
     private fun expectedYhteystieto(hankeEntity: HankeEntity, type: ContactType, id: Int) =
         mutableListOf(
             create(
@@ -87,6 +72,16 @@ class HankeMapperTest {
                 email = "$type.$teppoEmail",
                 createdAt = hankeEntity.yhteystietoCreatedAt(type),
                 modifiedAt = hankeEntity.yhteystietoModifiedAt(type),
+            )
+        )
+
+    private fun expectedAlueet(hankeId: Int?, hankeTunnus: String?) =
+        listOf(
+            HankealueFactory.create(
+                hankeId = hankeId,
+                haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate().atStartOfDay(TZ_UTC),
+                haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate().atStartOfDay(TZ_UTC),
+                geometriat = geometry.apply { resetFeatureProperties(hankeTunnus) },
             )
         )
 }

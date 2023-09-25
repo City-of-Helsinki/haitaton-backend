@@ -25,9 +25,7 @@ import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createEntity
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
-import java.time.LocalDateTime
 import java.time.ZonedDateTime
-import kotlin.random.Random
 import org.springframework.stereotype.Component
 
 @Component
@@ -145,9 +143,9 @@ class HankeFactory(
                     onYKTHanke = true,
                     version = 0,
                     createdByUserId = defaultUser,
-                    createdAt = LocalDateTime.now().minusHours(1),
+                    createdAt = DateFactory.getStartDatetime().toLocalDateTime(),
                     modifiedByUserId = defaultUser,
-                    modifiedAt = LocalDateTime.now(),
+                    modifiedAt = DateFactory.getEndDatetime().toLocalDateTime(),
                     perustaja = defaultPerustaja.toEntity(),
                     generated = false,
                 )
@@ -381,9 +379,9 @@ class HankeFactory(
         ): TormaystarkasteluTulosEntity =
             TormaystarkasteluTulosEntity(
                 id = id,
-                perus = Random.nextFloat(),
-                pyoraily = Random.nextFloat(),
-                joukkoliikenne = Random.nextFloat(),
+                perus = 1.25f,
+                pyoraily = 2.5f,
+                joukkoliikenne = 3.75f,
                 hanke = hankeEntity,
             )
     }
