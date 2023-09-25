@@ -25,7 +25,6 @@ import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
-import io.mockk.justRun
 import io.mockk.verify
 import io.mockk.verifySequence
 import java.time.ZonedDateTime
@@ -34,6 +33,8 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
@@ -624,12 +625,19 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             verify { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) }
         }
 
-        @Test
-        fun `when application exists should delete application and return ok`() {
+        @ParameterizedTest
+        @ValueSource(booleans = [true, false])
+        fun `when application exists should delete application and return deletion result`(
+            hankeDeleted: Boolean
+        ) {
+            val expectedResponseBody = ApplicationDeletionResultDto(hankeDeleted)
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
-            justRun { applicationService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME) }
+            every { applicationService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME) } returns
+                expectedResponseBody
 
-            delete("$BASE_URL/$id").andExpect(status().isOk).andExpect(content().string(""))
+            delete("$BASE_URL/$id")
+                .andExpect(status().isOk)
+                .andExpect(content().json(expectedResponseBody.toJsonString()))
 
             verifySequence {
                 authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)

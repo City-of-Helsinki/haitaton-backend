@@ -208,10 +208,11 @@ class ApplicationController(
             ]
     )
     @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
-    fun delete(@PathVariable(name = "id") id: Long) {
+    fun delete(@PathVariable(name = "id") id: Long): ApplicationDeletionResultDto {
         val userId = currentUserId()
         logger.info { "Received request to delete application id=$id, userId=$userId" }
-        applicationService.deleteWithOrphanGeneratedHankeRemoval(id, userId)
+        val result = applicationService.deleteWithOrphanGeneratedHankeRemoval(id, userId)
+        return result
     }
 
     @PostMapping("/{id}/send-application")

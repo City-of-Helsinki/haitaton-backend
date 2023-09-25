@@ -1425,8 +1425,10 @@ class ApplicationServiceITest : DatabaseTest() {
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
             assertThat(applicationRepository.findAll()).hasSize(1)
 
-            applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id!!, USERNAME)
+            val result =
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id!!, USERNAME)
 
+            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
             assertThat(applicationRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
             verify { cableReportServiceAllu wasNot Called }
@@ -1441,8 +1443,10 @@ class ApplicationServiceITest : DatabaseTest() {
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
             assertThat(applicationRepository.findAll()).hasSize(1)
 
-            applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id!!, USERNAME)
+            val result =
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id!!, USERNAME)
 
+            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
             assertThat(applicationRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)).isNotNull()
             verify { cableReportServiceAllu wasNot Called }
@@ -1456,8 +1460,13 @@ class ApplicationServiceITest : DatabaseTest() {
             val application2 = alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke)
             assertThat(applicationRepository.findAll()).hasSize(2)
 
-            applicationService.deleteWithOrphanGeneratedHankeRemoval(application1.id!!, USERNAME)
+            val result =
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(
+                    application1.id!!,
+                    USERNAME
+                )
 
+            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
             assertThat(applicationRepository.findAll()).hasSize(1)
             assertThat(applicationRepository.findById(application2.id!!)).isPresent()
             assertThat(hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)).isNotNull()

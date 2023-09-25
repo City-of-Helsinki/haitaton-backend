@@ -262,18 +262,28 @@ open class ApplicationService(
      * Hanke.
      */
     @Transactional
-    open fun deleteWithOrphanGeneratedHankeRemoval(applicationId: Long, userId: String) =
-        with(getById(applicationId)) {
-            cancelAndDelete(this, userId)
-            if (hanke.generated && hanke.hakemukset.size == 1) {
-                logger.info {
-                    "Application $id was the only one of a generated Hanke, removing Hanke ${hanke.hankeTunnus}."
-                }
-                hankeRepository.delete(hanke)
-                val hankeDomain = domainFrom(hanke, geometryMapFrom(hanke))
-                hankeLoggingService.logDelete(hankeDomain, userId)
+    open fun deleteWithOrphanGeneratedHankeRemoval(
+        applicationId: Long,
+        userId: String
+    ): ApplicationDeletionResultDto {
+        val application = getById(applicationId)
+        val hanke = application.hanke
+
+        cancelAndDelete(application, userId)
+
+        if (hanke.generated && hanke.hakemukset.size == 1) {
+            logger.info {
+                "Application ${application.id} was the only one of a generated Hanke, removing Hanke ${hanke.hankeTunnus}."
             }
+            hankeRepository.delete(hanke)
+            val hankeDomain = domainFrom(hanke, geometryMapFrom(hanke))
+            hankeLoggingService.logDelete(hankeDomain, userId)
+
+            return ApplicationDeletionResultDto(hankeDeleted = true)
         }
+
+        return ApplicationDeletionResultDto(hankeDeleted = false)
+    }
 
     @Transactional(readOnly = true)
     open fun downloadDecision(applicationId: Long, userId: String): Pair<String, ByteArray> {
