@@ -324,14 +324,6 @@ of the token and link will be reset.
     }
 
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    @Hidden
-    fun orphanedTunnisteException(ex: OrphanedTunnisteException): HankeError {
-        logger.error(ex) { ex.message }
-        return HankeError.HAI4001
-    }
-
-    @ExceptionHandler
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden
     fun userAlreadyHasPermissionException(ex: UserAlreadyHasPermissionException): HankeError {

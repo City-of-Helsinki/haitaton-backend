@@ -119,3 +119,7 @@ databaseChangeLog:
       file: db/changelog/changesets/044-rename-role-to-kayttooikeustaso.yml
   - include:
       file: db/changelog/changesets/045-add-new-permission-code.sql
+  - include:
+      file: db/changelog/changesets/046-remove-sentat-from-tunniste.yml
+  - include:
+      file: db/changelog/changesets/047-reverse-tunniste-foreign-key-direction.sql
