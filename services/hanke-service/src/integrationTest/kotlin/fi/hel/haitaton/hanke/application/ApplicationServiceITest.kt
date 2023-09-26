@@ -1040,7 +1040,7 @@ class ApplicationServiceITest : DatabaseTest() {
             assertThat(tunnisteet[0].createdAt).isRecent()
             assertThat(tunnisteet[0].tunniste).matches(Regex(kayttajaTunnistePattern))
             assertThat(tunnisteet[0].hankeKayttaja).isNotNull()
-            val kayttaja = tunnisteet[0].hankeKayttaja!!
+            val kayttaja = tunnisteet[0].hankeKayttaja
             assertThat(kayttaja.nimi).isEqualTo("Teppo Testihenkilö")
             assertThat(kayttaja.sahkoposti).isEqualTo(teppoEmail)
             assertThat(kayttaja.hankeId).isEqualTo(application.hanke.id)

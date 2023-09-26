@@ -176,9 +176,7 @@ class HankeKayttajaService(
             kayttajaTunnisteRepository.findByTunniste(tunniste)
                 ?: throw TunnisteNotFoundException(userId, tunniste)
 
-        val kayttaja =
-            tunnisteEntity.hankeKayttaja
-                ?: throw OrphanedTunnisteException(userId, tunnisteEntity.id)
+        val kayttaja = tunnisteEntity.hankeKayttaja
 
         permissionService.findPermission(kayttaja.hankeId, userId)?.let { permission ->
             throw UserAlreadyHasPermissionException(userId, kayttaja.id, permission.id)
@@ -301,15 +299,15 @@ class HankeKayttajaService(
         contact: UserContact,
         currentUserId: String
     ) {
-        val kayttajaTunnisteEntity = createTunniste(hankeId, currentUserId)
         val newHankeUser =
             createUser(
                 currentUser = currentUserId,
                 hankeId = hankeId,
                 nimi = contact.name,
                 sahkoposti = contact.email,
-                tunniste = kayttajaTunnisteEntity,
             )
+        val kayttajaTunnisteEntity = createTunniste(newHankeUser, currentUserId)
+        newHankeUser.kayttajaTunniste = kayttajaTunnisteEntity
         sendHankeInvitation(hankeTunnus, hankeNimi, currentKayttaja, newHankeUser)
     }
 
@@ -356,11 +354,14 @@ class HankeKayttajaService(
     }
 
     private fun createTunniste(
-        hankeId: Int,
+        hankeKayttaja: HankeKayttajaEntity,
         currentUserId: String,
     ): KayttajaTunnisteEntity {
-        logger.info { "Creating a new user token, hankeId=$hankeId" }
-        val token = KayttajaTunnisteEntity.create()
+        logger.info {
+            "Creating a new user token, " +
+                "hankeKayttajaId=${hankeKayttaja.id}, hankeId=${hankeKayttaja.hankeId}"
+        }
+        val token = KayttajaTunnisteEntity.create(hankeKayttaja)
         val kayttajaTunnisteEntity = kayttajaTunnisteRepository.save(token)
         logger.info { "Saved the new user token, id=${kayttajaTunnisteEntity.id}" }
         logService.logCreate(kayttajaTunnisteEntity.toDomain(), currentUserId)
@@ -369,9 +370,13 @@ class HankeKayttajaService(
 
     private fun recreateTunniste(hankeKayttaja: HankeKayttajaEntity, currentUserId: String) {
         hankeKayttaja.kayttajaTunniste?.let { tunniste ->
+            logger.info { "Deleting old tunniste ${tunniste.id}" }
+            kayttajaTunnisteRepository.delete(tunniste)
+            // Flush to avoid unique key collision on hanke_kayttaja_id
+            kayttajaTunnisteRepository.flush()
             logService.logDelete(tunniste.toDomain(), currentUserId)
         }
-        hankeKayttaja.kayttajaTunniste = createTunniste(hankeKayttaja.hankeId, currentUserId)
+        hankeKayttaja.kayttajaTunniste = createTunniste(hankeKayttaja, currentUserId)
     }
 
     private fun createUser(
@@ -447,11 +452,6 @@ class HankeKayttajatNotFoundException(
 
 class TunnisteNotFoundException(userId: String, tunniste: String) :
     RuntimeException("A matching token was not found, userId=$userId, tunniste=$tunniste")
-
-class OrphanedTunnisteException(userId: String, tunnisteId: UUID) :
-    RuntimeException(
-        "A token didn't have a matching user, userId=$userId, kayttajaTunnisteId=$tunnisteId"
-    )
 
 class UserAlreadyHasPermissionException(userId: String, kayttajaId: UUID, permissionId: Int) :
     RuntimeException(
