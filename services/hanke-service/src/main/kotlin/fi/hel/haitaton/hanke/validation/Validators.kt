@@ -20,6 +20,12 @@ object Validators {
         return ValidationResult.success().and(f)
     }
 
+    /**
+     * Starts a validation chain with a success. Useful if only [ValidationResult.andAllIn],
+     * [ValidationResult.whenNotNull] or similar are needed.
+     */
+    fun validate(): ValidationResult = ValidationResult.success()
+
     fun validateTrue(condition: Boolean, path: String): ValidationResult =
         if (condition) ValidationResult.success() else ValidationResult.failure(path)
 
@@ -49,6 +55,9 @@ object Validators {
     fun notNullOrBlank(value: String?, path: String): ValidationResult =
         validateFalse(value.isNullOrBlank(), path)
 
+    fun String.notLongerThan(maxLength: Int, path: String): ValidationResult =
+        validateFalse(this.length > maxLength, path)
+
     fun <T> notEmpty(value: Collection<T>, path: String): ValidationResult =
         validateFalse(value.isEmpty(), path)
 
@@ -58,8 +67,12 @@ object Validators {
     fun isBeforeOrEqual(start: ZonedDateTime, end: ZonedDateTime, path: String): ValidationResult =
         validateFalse(start.isAfter(end), path)
 
-    /** Run the validation only if the pre-condition is true. */
-    fun given(condition: Boolean, f: () -> ValidationResult): ValidationResult =
+    /**
+     * Run the validation only if the pre-condition is true.
+     *
+     * If needed outside this class, use [ValidationResult.andWhen] instead.
+     */
+    private fun given(condition: Boolean, f: () -> ValidationResult): ValidationResult =
         if (condition) f() else ValidationResult.success()
 
     /**
@@ -82,12 +95,8 @@ private constructor(private val errorPaths: MutableList<String> = mutableListOf(
     }
 
     /** Run the validation only when the value is not null. */
-    fun <T> whenNotNull(value: T?, f: (T) -> ValidationResult): ValidationResult {
-        if (value != null) {
-            and { f(value) }
-        }
-        return this
-    }
+    fun <T> whenNotNull(value: T?, f: (T) -> ValidationResult): ValidationResult =
+        if (value != null) this.and { f(value) } else this
 
     /** Check run the validation lambda only if the pre-condition is true. */
     fun andWhen(condition: Boolean, f: () -> ValidationResult): ValidationResult =

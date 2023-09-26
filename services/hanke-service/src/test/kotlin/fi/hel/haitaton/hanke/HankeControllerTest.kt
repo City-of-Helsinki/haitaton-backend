@@ -21,7 +21,6 @@ import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
-import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -41,11 +40,9 @@ class HankeControllerTest {
     class TestConfiguration {
         // makes validation happen here in unit test as well
         @Bean fun bean(): MethodValidationPostProcessor = MethodValidationPostProcessor()
+        @Bean fun hankeService(): HankeService = mockk()
 
-        @Bean fun hankeService(): HankeService = Mockito.mock(HankeService::class.java)
-
-        @Bean
-        fun permissionService(): PermissionService = Mockito.mock(PermissionService::class.java)
+        @Bean fun permissionService(): PermissionService = mockk()
 
         @Bean fun yhteystietoLoggingService(): DisclosureLogService = mockk(relaxUnitFun = true)
 
@@ -84,10 +81,10 @@ class HankeControllerTest {
     fun `test that the getHankeByTunnus returns ok`() {
         val hankeId = 1234
 
-        Mockito.`when`(permissionService.hasPermission(hankeId, username, PermissionCode.VIEW))
-            .thenReturn(true)
-        Mockito.`when`(hankeService.loadHanke(mockedHankeTunnus))
-            .thenReturn(
+        every { permissionService.hasPermission(hankeId, username, PermissionCode.VIEW) }
+            .returns(true)
+        every { hankeService.loadHanke(mockedHankeTunnus) }
+            .returns(
                 Hanke(
                     hankeId,
                     mockedHankeTunnus,
@@ -150,9 +147,9 @@ class HankeControllerTest {
                     HankeStatus.DRAFT
                 )
             )
-        Mockito.`when`(permissionService.getAllowedHankeIds(username, PermissionCode.VIEW))
-            .thenReturn(listOf(1234, 50))
-        Mockito.`when`(hankeService.loadHankkeetByIds(listOf(1234, 50))).thenReturn(listOfHanke)
+        every { permissionService.getAllowedHankeIds(username, PermissionCode.VIEW) }
+            .returns(listOf(1234, 50))
+        every { hankeService.loadHankkeetByIds(listOf(1234, 50)) }.returns(listOfHanke)
 
         val hankeList = hankeController.getHankeList(false)
 
@@ -184,10 +181,9 @@ class HankeControllerTest {
             )
 
         // mock HankeService response
-        Mockito.`when`(hankeService.updateHanke(partialHanke))
-            .thenReturn(partialHanke.copy(modifiedBy = username, modifiedAt = getCurrentTimeUTC()))
-        Mockito.`when`(permissionService.hasPermission(123, username, PermissionCode.EDIT))
-            .thenReturn(true)
+        every { hankeService.updateHanke(partialHanke) }
+            .returns(partialHanke.copy(modifiedBy = username, modifiedAt = getCurrentTimeUTC()))
+        every { permissionService.hasPermission(123, username, PermissionCode.EDIT) }.returns(true)
 
         // Actual call
         val response: Hanke = hankeController.updateHanke(partialHanke, hanketunnus)
@@ -201,10 +197,8 @@ class HankeControllerTest {
     fun `test that the updateHanke will throw if mismatch in hanke tunnus payload vs path`() {
         val hankeUpdate = HankeFactory.create()
         val existingHanke = HankeFactory.create(hankeTunnus = "wrong")
-        Mockito.`when`(
-                permissionService.hasPermission(existingHanke.id!!, username, PermissionCode.EDIT)
-            )
-            .thenReturn(true)
+        every { permissionService.hasPermission(existingHanke.id!!, username, PermissionCode.EDIT) }
+            .returns(true)
         every { hankeAuthorizer.authorizeHankeTunnus("wrong", PermissionCode.EDIT) } returns true
 
         assertThatExceptionOfType(HankeArgumentException::class.java)
@@ -233,8 +227,8 @@ class HankeControllerTest {
                 status = HankeStatus.DRAFT
             )
 
-        Mockito.`when`(hankeService.loadHanke("id123")).thenReturn(HankeFactory.create())
-        Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
+        every { hankeService.loadHanke("id123") }.returns(HankeFactory.create())
+        every { hankeService.updateHanke(partialHanke) }.returns(partialHanke)
 
         // Actual call
         assertThatExceptionOfType(ConstraintViolationException::class.java)
@@ -294,7 +288,7 @@ class HankeControllerTest {
         mockedHanke.omistajat[0].id = 1
 
         // mock HankeService response
-        Mockito.`when`(hankeService.createHanke(hanke)).thenReturn(mockedHanke)
+        every { hankeService.createHanke(hanke) }.returns(mockedHanke)
 
         // Actual call
         val response: Hanke = hankeController.createHanke(hanke)
@@ -329,7 +323,7 @@ class HankeControllerTest {
                 status = null,
             )
         // mock HankeService response
-        Mockito.`when`(hankeService.updateHanke(partialHanke)).thenReturn(partialHanke)
+        every { hankeService.updateHanke(partialHanke) }.returns(partialHanke)
 
         // Actual call
         assertThatExceptionOfType(ConstraintViolationException::class.java)

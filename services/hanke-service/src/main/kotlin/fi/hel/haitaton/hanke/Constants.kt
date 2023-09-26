@@ -22,6 +22,12 @@ val TZ_UTC: ZoneId = ZoneId.of("UTC")
 val DATABASE_TIMESTAMP_FORMAT: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
 
+/** Hanke names are limited to 100 characters in the DB. */
+const val MAXIMUM_HANKE_NIMI_LENGTH = 100
+
+/** Hanke alue names are limited to 100 characters in the DB. */
+const val MAXIMUM_HANKE_ALUE_NIMI_LENGTH = 100
+
 // Note: database definition has no limit, so this is sort of important; must be quite long,
 // but not excessive (considering database size etc.)
 const val MAXIMUM_TYOMAAKATUOSOITE_LENGTH = 2000
