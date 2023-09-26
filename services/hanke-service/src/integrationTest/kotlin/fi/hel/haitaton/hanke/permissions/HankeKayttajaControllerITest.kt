@@ -21,6 +21,7 @@ import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaController.Tunnistautuminen
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaController.TunnistautuminenResponse
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.MODIFY_EDIT_PERMISSIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.RESEND_INVITATION
@@ -433,14 +434,25 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         private val permissionId = 156
 
         @Test
-        fun `Returns 204 on success`() {
-            justRun { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
+        fun `Returns 200 with information on success`() {
+            val kayttaja = HankeKayttajaFactory.create(id = kayttajaId)
+            val hanke = HankeFactory.create(id = kayttaja.hankeId)
+            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } returns
+                kayttaja
+            every { hankeService.loadHankeById(kayttaja.hankeId) } returns hanke
 
-            post(url, Tunnistautuminen(tunniste))
-                .andExpect(status().isNoContent)
-                .andExpect(content().string(""))
+            val response: TunnistautuminenResponse =
+                post(url, Tunnistautuminen(tunniste)).andExpect(status().isOk).andReturnBody()
 
-            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
+            assertThat(response).all {
+                prop(TunnistautuminenResponse::kayttajaId).isEqualTo(kayttaja.id)
+                prop(TunnistautuminenResponse::hankeTunnus).isEqualTo(hanke.hankeTunnus)
+                prop(TunnistautuminenResponse::hankeNimi).isEqualTo(hanke.nimi)
+            }
+            verify {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste)
+                hankeService.loadHankeById(kayttaja.hankeId)
+            }
         }
 
         @Test
