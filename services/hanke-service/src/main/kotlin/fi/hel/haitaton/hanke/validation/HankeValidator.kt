@@ -2,9 +2,17 @@ package fi.hel.haitaton.hanke.validation
 
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.MAXIMUM_DATE
+import fi.hel.haitaton.hanke.MAXIMUM_HANKE_ALUE_NIMI_LENGTH
+import fi.hel.haitaton.hanke.MAXIMUM_HANKE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_TYOMAAKATUOSOITE_LENGTH
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.validation.Validators.isBeforeOrEqual
+import fi.hel.haitaton.hanke.validation.Validators.notLongerThan
+import fi.hel.haitaton.hanke.validation.Validators.notNull
+import fi.hel.haitaton.hanke.validation.Validators.notNullOrBlank
+import fi.hel.haitaton.hanke.validation.Validators.validate
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
 
@@ -19,92 +27,41 @@ class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
             return false
         }
 
-        var ok = true
-        if (hanke.nimi.isNullOrBlank()) {
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("nimi")
-                .addConstraintViolation()
-            ok = false
-        }
+        val hankeResult = hanke.validate()
+        hankeResult.errorPaths().forEach { context.addViolation(HankeError.HAI1002, it) }
 
-        if (hanke.vaihe == null) {
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("vaihe")
-                .addConstraintViolation()
-            ok = false
-        } else if (hanke.vaihe!! == Vaihe.SUUNNITTELU && hanke.suunnitteluVaihe == null) {
-            // if vaihe = SUUNNITTELU then suunnitteluVaihe must have value
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("suunnitteluVaihe")
-                .addConstraintViolation()
-            ok = false
-        }
+        val alueResult = validate().andAllIn(hanke.alueet, "alueet", ::validateHankeAlue)
+        alueResult.errorPaths().forEach { context.addViolation(HankeError.HAI1032, it) }
 
-        ok = ok && checkHankealueet(hanke, context)
-        ok = ok && checkTyomaaTiedot(hanke, context)
-
-        return ok
-    }
-
-    private fun checkHankealueet(hanke: Hanke, context: ConstraintValidatorContext): Boolean {
-        for (hankealue in hanke.alueet) {
-            // Must be earlier than some relevant maximum date.
-            // The starting date can be in the past, since sometimes the permission to dig a hole is
-            // applied for after the hole has already been dug.
-            if (
-                hankealue.haittaAlkuPvm == null || hankealue.haittaAlkuPvm!!.isAfter(MAXIMUM_DATE)
-            ) {
-                context
-                    .buildConstraintViolationWithTemplate(HankeError.HAI1032.toString())
-                    .addPropertyNode("haittaAlkuPvm")
-                    .addConstraintViolation()
-                return false
-            }
-            // Must be from the and earlier than some relevant maximum date,
-            // and same or later than alkuPvm.
-            // The end date can be in the past, since sometimes the permission to dig a hole is
-            // applied for only after the hole has already been dug and covered.
-            if (
-                hankealue.haittaLoppuPvm == null || hankealue.haittaLoppuPvm!!.isAfter(MAXIMUM_DATE)
-            ) {
-                context
-                    .buildConstraintViolationWithTemplate(HankeError.HAI1032.toString())
-                    .addPropertyNode("haittaLoppuPvm")
-                    .addConstraintViolation()
-                return false
-            }
-            if (
-                hankealue.haittaAlkuPvm != null &&
-                    hankealue.haittaLoppuPvm != null &&
-                    hankealue.haittaLoppuPvm!!.isBefore(hankealue.haittaAlkuPvm)
-            ) {
-                context
-                    .buildConstraintViolationWithTemplate(HankeError.HAI1032.toString())
-                    .addPropertyNode("haittaLoppuPvm")
-                    .addConstraintViolation()
-                return false
-            }
-        }
-        return true
-    }
-
-    private fun checkTyomaaTiedot(hanke: Hanke, context: ConstraintValidatorContext): Boolean {
-        var ok = true
-        // tyomaaKatuosoite - either null or length <= maximum
-        if (
-            hanke.tyomaaKatuosoite != null &&
-                hanke.tyomaaKatuosoite!!.length > MAXIMUM_TYOMAAKATUOSOITE_LENGTH
-        ) {
-            context
-                .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
-                .addPropertyNode("tyomaaKatuosoite")
-                .addConstraintViolation()
-            ok = false
-        }
-
-        return ok
+        return hankeResult.isOk() && alueResult.isOk()
     }
 }
+
+private fun ConstraintValidatorContext.addViolation(error: HankeError, node: String) {
+    buildConstraintViolationWithTemplate(error.toString())
+        .addPropertyNode(node)
+        .addConstraintViolation()
+}
+
+/** Doesn't check hanke alue, because they use a different error code. */
+private fun Hanke.validate() =
+    validate { notNullOrBlank(nimi, "nimi") }
+        .whenNotNull(nimi) { it.notLongerThan(MAXIMUM_HANKE_NIMI_LENGTH, "nimi") }
+        .and { notNull(vaihe, "vaihe") }
+        .andWhen(vaihe == Vaihe.SUUNNITTELU) { notNull(suunnitteluVaihe, "suunnitteluVaihe") }
+        .whenNotNull(tyomaaKatuosoite) {
+            it.notLongerThan(MAXIMUM_TYOMAAKATUOSOITE_LENGTH, "tyomaaKatuosoite")
+        }
+
+private fun validateHankeAlue(hankealue: Hankealue, path: String) = hankealue.validate(path)
+
+private fun Hankealue.validate(path: String) =
+    validate()
+        .whenNotNull(nimi) { it.notLongerThan(MAXIMUM_HANKE_ALUE_NIMI_LENGTH, "$path.nimi") }
+        .and { notNull(haittaAlkuPvm, "$path.haittaAlkuPvm") }
+        .whenNotNull(haittaAlkuPvm) { isBeforeOrEqual(it, MAXIMUM_DATE, "$path.haittaAlkuPvm") }
+        .and { notNull(haittaLoppuPvm, "$path.haittaLoppuPvm") }
+        .whenNotNull(haittaLoppuPvm) { isBeforeOrEqual(it, MAXIMUM_DATE, "$path.haittaLoppuPvm") }
+        .andWhen(haittaAlkuPvm != null && haittaLoppuPvm != null) {
+            isBeforeOrEqual(haittaAlkuPvm!!, haittaLoppuPvm!!, "$path.haittaLoppuPvm")
+        }
