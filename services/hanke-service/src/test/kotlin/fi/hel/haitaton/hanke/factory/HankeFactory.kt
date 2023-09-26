@@ -1,19 +1,30 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.ContactType.MUU
+import fi.hel.haitaton.hanke.ContactType.OMISTAJA
+import fi.hel.haitaton.hanke.ContactType.RAKENNUTTAJA
+import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.HankeStatus
+import fi.hel.haitaton.hanke.HankeStatus.DRAFT
 import fi.hel.haitaton.hanke.HanketunnusService
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
+import fi.hel.haitaton.hanke.SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.Vaihe.SUUNNITTELU
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.Perustaja
+import fi.hel.haitaton.hanke.factory.AttachmentFactory.Companion.hankeAttachmentEntity
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createEntity
+import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.ZonedDateTime
 import org.springframework.stereotype.Component
 
@@ -79,6 +90,7 @@ class HankeFactory(
 
         const val defaultHankeTunnus = "HAI21-1"
         const val defaultNimi = "Hämeentien perusparannus ja katuvalot"
+        const val defaultKuvaus = "lorem ipsum dolor sit amet..."
         const val defaultId = 123
         const val defaultUser = "Risto"
         val defaultPerustaja = Perustaja("Pertti Perustaja", "foo@bar.com")
@@ -101,14 +113,14 @@ class HankeFactory(
             version: Int? = 1,
             createdBy: String? = defaultUser,
             createdAt: ZonedDateTime? = DateFactory.getStartDatetime(),
-            hankeStatus: HankeStatus = HankeStatus.DRAFT,
+            hankeStatus: HankeStatus = DRAFT,
         ): Hanke =
             Hanke(
                 id,
                 hankeTunnus,
                 true,
                 nimi,
-                "lorem ipsum dolor sit amet...",
+                defaultKuvaus,
                 vaihe,
                 suunnitteluVaihe,
                 version,
@@ -118,6 +130,41 @@ class HankeFactory(
                 null,
                 hankeStatus,
             )
+
+        fun createEntity(mockId: Int = 1): HankeEntity =
+            HankeEntity(
+                    id = mockId,
+                    status = DRAFT,
+                    hankeTunnus = defaultHankeTunnus,
+                    nimi = defaultNimi,
+                    kuvaus = defaultKuvaus,
+                    vaihe = SUUNNITTELU,
+                    suunnitteluVaihe = RAKENNUS_TAI_TOTEUTUS,
+                    onYKTHanke = true,
+                    version = 0,
+                    createdByUserId = defaultUser,
+                    createdAt = DateFactory.getStartDatetime().toLocalDateTime(),
+                    modifiedByUserId = defaultUser,
+                    modifiedAt = DateFactory.getEndDatetime().toLocalDateTime(),
+                    perustaja = defaultPerustaja.toEntity(),
+                    generated = false,
+                )
+                .apply {
+                    listOfHankeYhteystieto =
+                        mutableListOf(
+                            createEntity(id = 1, contactType = OMISTAJA, hanke = this),
+                            createEntity(id = 2, contactType = TOTEUTTAJA, hanke = this),
+                            createEntity(id = 3, contactType = RAKENNUTTAJA, hanke = this),
+                            createEntity(id = 4, contactType = MUU, hanke = this)
+                        )
+                    listOfHankeAlueet =
+                        mutableListOf(createHankeAlueEntity(mockId = mockId, hankeEntity = this))
+                    liitteet =
+                        mutableListOf(
+                            hankeAttachmentEntity(hanke = this, createdByUser = defaultUser)
+                        )
+                    tormaystarkasteluTulokset = mutableListOf(tormaysTarkastelu(hankeEntity = this))
+                }
 
         /**
          * Add a hankealue with haitat to a test Hanke.
@@ -325,5 +372,17 @@ class HankeFactory(
             id: Int,
             mutator: (HankeYhteystieto) -> Unit = {}
         ): Hanke = withGeneratedToteuttajat(listOf(id), mutator)
+
+        private fun tormaysTarkastelu(
+            id: Int = 1,
+            hankeEntity: HankeEntity
+        ): TormaystarkasteluTulosEntity =
+            TormaystarkasteluTulosEntity(
+                id = id,
+                perus = 1.25f,
+                pyoraily = 2.5f,
+                joukkoliikenne = 3.75f,
+                hanke = hankeEntity,
+            )
     }
 }

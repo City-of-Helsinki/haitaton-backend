@@ -1,8 +1,10 @@
 package fi.hel.haitaton.hanke.gdpr
 
+import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import io.mockk.Called
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyAll
@@ -28,14 +30,17 @@ class GdprServiceTest {
         @Test
         fun `Deletes all given applications`() {
             val applications = AlluDataFactory.createApplications(4)
+            every {
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(any(), USERID)
+            } returns ApplicationDeletionResultDto(hankeDeleted = false)
 
             gdprService.deleteApplications(applications, USERID)
 
             verifyAll {
-                applicationService.delete(1, USERID)
-                applicationService.delete(2, USERID)
-                applicationService.delete(3, USERID)
-                applicationService.delete(4, USERID)
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(1, USERID)
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(2, USERID)
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(3, USERID)
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(4, USERID)
             }
         }
     }

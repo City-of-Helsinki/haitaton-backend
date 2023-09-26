@@ -92,6 +92,7 @@ class Configuration {
         geometriatDao: GeometriatDao,
         permissionService: PermissionService,
         hankeRepository: HankeRepository,
+        hankeLoggingService: HankeLoggingService,
     ): ApplicationService =
         ApplicationService(
             applicationRepository,
@@ -105,6 +106,7 @@ class Configuration {
             geometriatDao,
             permissionService,
             hankeRepository,
+            hankeLoggingService,
         )
 
     @Bean

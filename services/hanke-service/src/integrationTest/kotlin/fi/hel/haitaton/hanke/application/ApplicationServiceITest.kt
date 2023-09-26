@@ -12,6 +12,7 @@ import assertk.assertions.isFalse
 import assertk.assertions.isIn
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.isPresent
 import assertk.assertions.matches
 import assertk.assertions.prop
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
@@ -28,6 +29,12 @@ import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.APPROVED
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.DECISION
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.DECISIONMAKING
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.HANDLING
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
+import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
 import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
@@ -43,8 +50,12 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.asianHoitajaCusto
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.cableReportWithoutHanke
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createAlluApplicationResponse
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createApplication
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createApplicationArea
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createApplicationEntity
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createCableReportApplicationData
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createCompanyCustomerWithOrderer
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationIdentifier
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationName
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.expectedRecipients
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaApplicationContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaCustomerContact
@@ -66,9 +77,12 @@ import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso.HAKEMUSASIOINTI
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.permissions.kayttajaTunnistePattern
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
@@ -118,6 +132,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @MockkBean private lateinit var cableReportServiceAllu: CableReportService
     @SpykBean private lateinit var emailSenderService: EmailSenderService
+
     @Autowired private lateinit var applicationService: ApplicationService
     @Autowired private lateinit var hankeService: HankeService
     @Autowired private lateinit var permissionService: PermissionService
@@ -127,6 +142,7 @@ class ApplicationServiceITest : DatabaseTest() {
     @Autowired private lateinit var alluStatusRepository: AlluStatusRepository
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
     @Autowired private lateinit var kayttajaTunnisteRepository: KayttajaTunnisteRepository
+
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
     @Autowired private lateinit var attachmentFactory: AttachmentFactory
 
@@ -153,751 +169,774 @@ class ApplicationServiceITest : DatabaseTest() {
         return hankeService.createHanke(HankeFactory.create())
     }
 
-    fun createHankeEntity(): HankeEntity {
-        return hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
+    fun createHankeEntity(
+        hankeTunnus: String? = HANKE_TUNNUS,
+        generated: Boolean = false
+    ): HankeEntity {
+        return hankeRepository.save(HankeEntity(hankeTunnus = hankeTunnus, generated = generated))
     }
 
-    @Test
-    fun `create creates an audit log entry for created application`() {
-        TestUtils.addMockedRequestIp()
-        val hanke = createHanke()
-        val application =
-            applicationService.create(
-                createApplication(
-                    id = null,
-                    hankeTunnus = hanke.hankeTunnus!!,
-                    applicationData = dataWithoutAreas
-                ),
-                USERNAME
-            )
+    @Nested
+    inner class CreateApplication {
+        @Test
+        fun `when valid input should create and audit log entry`() {
+            TestUtils.addMockedRequestIp()
+            val hanke = createHanke()
 
-        val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
-        assertThat(applicationLogs).hasSize(1)
-        val logEntry = applicationLogs[0]
-        assertThat(logEntry::isSent).isFalse()
-        assertThat(logEntry::createdAt).isRecent()
-        val event = logEntry.message.auditEvent
-        assertThat(event::dateTime).isRecent()
-        assertThat(event::operation).isEqualTo(Operation.CREATE)
-        assertThat(event::status).isEqualTo(Status.SUCCESS)
-        assertThat(event::failureDescription).isNull()
-        assertThat(event::appVersion).isEqualTo("1")
-        assertThat(event.actor::userId).isEqualTo(USERNAME)
-        assertThat(event.actor::role).isEqualTo(UserRole.USER)
-        assertThat(event.actor::ipAddress).isEqualTo(TestUtils.mockedIp)
-        assertThat(event.target::id).isEqualTo(application.id?.toString())
-        assertThat(event.target::type).isEqualTo(ObjectType.APPLICATION)
-        assertThat(event.target::objectBefore).isNull()
-        val expectedObject =
-            expectedLogObject(application.id, null, hankeTunnus = hanke.hankeTunnus)
-        JSONAssert.assertEquals(
-            expectedObject,
-            event.target.objectAfter,
-            JSONCompareMode.NON_EXTENSIBLE
-        )
-        verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    fun `updateApplicationData creates an audit log entry for updated application`() {
-        TestUtils.addMockedRequestIp()
-        val hanke = createHanke()
-        val application =
-            applicationService.create(
-                createApplication(
-                    id = null,
-                    hankeTunnus = hanke.hankeTunnus!!,
-                    applicationData = dataWithoutAreas
-                ),
-                USERNAME
-            )
-        auditLogRepository.deleteAll()
-        assertThat(auditLogRepository.findAll()).isEmpty()
-
-        applicationService.updateApplicationData(
-            application.id!!,
-            dataWithoutAreas.copy(name = "Modified application"),
-            USERNAME
-        )
-
-        val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
-        assertThat(applicationLogs).hasSize(1)
-        val logEntry = applicationLogs[0]
-        assertThat(logEntry::isSent).isFalse()
-        assertThat(logEntry::createdAt).isRecent()
-        val event = logEntry.message.auditEvent
-        assertThat(event::dateTime).isRecent()
-        assertThat(event::operation).isEqualTo(Operation.UPDATE)
-        assertThat(event::status).isEqualTo(Status.SUCCESS)
-        assertThat(event::failureDescription).isNull()
-        assertThat(event::appVersion).isEqualTo("1")
-        assertThat(event.actor::userId).isEqualTo(USERNAME)
-        assertThat(event.actor::role).isEqualTo(UserRole.USER)
-        assertThat(event.actor::ipAddress).isEqualTo(TestUtils.mockedIp)
-        assertThat(event.target::id).isEqualTo(application.id?.toString())
-        assertThat(event.target::type).isEqualTo(ObjectType.APPLICATION)
-        val expectedObjectBefore =
-            expectedLogObject(application.id, null, hankeTunnus = hanke.hankeTunnus)
-        JSONAssert.assertEquals(
-            expectedObjectBefore,
-            event.target.objectBefore,
-            JSONCompareMode.NON_EXTENSIBLE
-        )
-        val expectedObjectAfter =
-            expectedLogObject(
-                application.id,
-                null,
-                "Modified application",
-                hankeTunnus = hanke.hankeTunnus
-            )
-        JSONAssert.assertEquals(
-            expectedObjectAfter,
-            event.target.objectAfter,
-            JSONCompareMode.NON_EXTENSIBLE
-        )
-        verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    @Sql("/sql/senaatintorin-hanke.sql")
-    fun `updateApplicationData sends to Allu if application is in allu and is still pending`() {
-        val alluId = 21
-        val application =
-            alluDataFactory.saveApplicationEntity(
-                USERNAME,
-                hanke = initializedHanke(),
-                application = mockApplicationWithArea(alluId = alluId)
-            )
-        val newApplicationData =
-            createCableReportApplicationData(
-                name = "Uudistettu johtoselvitys",
-                areas = application.applicationData.areas
-            )
-        every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
-            createAlluApplicationResponse(alluId)
-        justRun { cableReportServiceAllu.update(alluId, any()) }
-        justRun { cableReportServiceAllu.addAttachment(alluId, any()) }
-
-        applicationService.updateApplicationData(application.id!!, newApplicationData, USERNAME)
-
-        verifyOrder {
-            cableReportServiceAllu.getApplicationInformation(alluId)
-            cableReportServiceAllu.update(alluId, any())
-            cableReportServiceAllu.addAttachment(alluId, any())
-        }
-    }
-
-    @Test
-    fun `updateApplicationData doesn't create an audit log entry if the application hasn't changed`() {
-        TestUtils.addMockedRequestIp()
-        val hanke = createHankeEntity()
-        val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
-        assertThat(auditLogRepository.findAll()).isEmpty()
-
-        applicationService.updateApplicationData(
-            application.id!!,
-            application.applicationData,
-            USERNAME
-        )
-
-        val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
-        assertThat(applicationLogs).isEmpty()
-        verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    fun `updateApplicationData when missing data throws error when trying to send`() {
-        TestUtils.addMockedRequestIp()
-        val alluId = 21
-        val hanke = createHankeEntity()
-        val applicationData: CableReportApplicationData = dataWithoutAreas
-        val application = createApplication(alluid = alluId, applicationData = applicationData)
-        val savedApplication =
-            alluDataFactory.saveApplicationEntity(
-                username = USERNAME,
-                hanke = hanke,
-                application = application
-            )
-        every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
-            createAlluApplicationResponse(alluId)
-
-        val exception =
-            assertThrows<InvalidApplicationDataException> {
-                applicationService.updateApplicationData(
-                    savedApplication.id!!,
-                    applicationData.copy(startTime = null),
+            val application =
+                applicationService.create(
+                    createApplication(
+                        id = null,
+                        hankeTunnus = hanke.hankeTunnus!!,
+                        applicationData = dataWithoutAreas
+                    ),
                     USERNAME
                 )
-            }
 
-        assertThat(exception.message)
-            .isEqualTo(
-                "Application contains invalid data. Errors at paths: applicationData.startTime"
+            val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
+            assertThat(applicationLogs).hasSize(1)
+            val logEntry = applicationLogs[0]
+            assertThat(logEntry::isSent).isFalse()
+            assertThat(logEntry::createdAt).isRecent()
+            val event = logEntry.message.auditEvent
+            assertThat(event::dateTime).isRecent()
+            assertThat(event::operation).isEqualTo(Operation.CREATE)
+            assertThat(event::status).isEqualTo(Status.SUCCESS)
+            assertThat(event::failureDescription).isNull()
+            assertThat(event::appVersion).isEqualTo("1")
+            assertThat(event.actor::userId).isEqualTo(USERNAME)
+            assertThat(event.actor::role).isEqualTo(UserRole.USER)
+            assertThat(event.actor::ipAddress).isEqualTo(TestUtils.mockedIp)
+            assertThat(event.target::id).isEqualTo(application.id?.toString())
+            assertThat(event.target::type).isEqualTo(ObjectType.APPLICATION)
+            assertThat(event.target::objectBefore).isNull()
+            val expectedObject =
+                expectedLogObject(application.id, null, hankeTunnus = hanke.hankeTunnus)
+            JSONAssert.assertEquals(
+                expectedObject,
+                event.target.objectAfter,
+                JSONCompareMode.NON_EXTENSIBLE
             )
-        verify { cableReportServiceAllu.getApplicationInformation(alluId) }
-        verify(exactly = 0) { cableReportServiceAllu.update(any(), any()) }
-    }
-
-    @Test
-    fun `updateApplicationData doesn't send application to Allu if it hasn't changed`() {
-        TestUtils.addMockedRequestIp()
-        val hanke = createHankeEntity()
-        val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 2 }
-        assertThat(auditLogRepository.findAll()).isEmpty()
-
-        applicationService.updateApplicationData(
-            application.id!!,
-            application.applicationData,
-            USERNAME
-        )
-
-        verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    fun `getAllApplicationsForUser with no applications returns empty list`() {
-        assertThat(applicationRepository.findAll()).isEmpty()
-
-        val response = applicationService.getAllApplicationsForUser(USERNAME)
-
-        assertEquals(listOf<Application>(), response)
-        verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    fun `getAllApplicationsForUser returns applications for the correct user`() {
-        assertThat(applicationRepository.findAll()).isEmpty()
-        val otherUser = "otherUser"
-        val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
-        val hanke2 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1235"))
-        permissionService.create(hanke.id!!, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
-        permissionService.create(hanke2.id!!, "otherUser", Kayttooikeustaso.HAKEMUSASIOINTI)
-
-        alluDataFactory.saveApplicationEntities(3, USERNAME, hanke = hanke) { _, application ->
-            application.userId = USERNAME
-            application.applicationData =
-                createCableReportApplicationData(name = "Application data for $USERNAME")
+            verify { cableReportServiceAllu wasNot Called }
         }
-        alluDataFactory.saveApplicationEntities(3, "otherUser", hanke = hanke2)
 
-        assertThat(applicationRepository.findAll()).hasSize(6)
-        assertThat(applicationRepository.getAllByUserId(USERNAME)).hasSize(3)
-        assertThat(applicationRepository.getAllByUserId(otherUser)).hasSize(3)
+        @Test
+        @Sql("/sql/senaatintorin-hanke.sql")
+        fun `when valid input should save application with correct ids`() {
+            val givenId: Long = 123456789
+            val hanke = initializedHanke()
+            val cableReportApplicationData =
+                createCableReportApplicationData(
+                    pendingOnClient = true,
+                    areas = listOf(aleksanterinpatsas)
+                )
+            val newApplication =
+                createApplication(
+                    id = givenId,
+                    applicationData = cableReportApplicationData,
+                    hankeTunnus = hanke.hankeTunnus!!,
+                )
+            assertTrue(cableReportApplicationData.pendingOnClient)
 
-        val response = applicationService.getAllApplicationsForUser(USERNAME)
+            val response = applicationService.create(newApplication, USERNAME)
 
-        assertThat(response).hasSize(3)
-        assertThat(response)
-            .extracting { a -> a.applicationData.name }
-            .each { name -> name.isEqualTo("Application data for $USERNAME") }
-        verify { cableReportServiceAllu wasNot Called }
-    }
+            assertNotEquals(givenId, response.id)
+            assertEquals(null, response.alluid)
+            assertEquals(newApplication.applicationType, response.applicationType)
+            assertEquals(newApplication.applicationData, response.applicationData)
+            assertTrue(response.applicationData.pendingOnClient)
+            assertTrue(cableReportApplicationData.pendingOnClient)
+            val savedApplications = applicationRepository.findAll()
+            assertThat(savedApplications).hasSize(1)
+            val savedApplication = savedApplications[0]
+            assertEquals(response.id, savedApplication.id)
+            assertEquals(null, savedApplication.alluid)
+            assertEquals(newApplication.applicationType, savedApplication.applicationType)
+            assertEquals(newApplication.applicationData, savedApplication.applicationData)
+            assertTrue(savedApplication.applicationData.pendingOnClient)
+            verify { cableReportServiceAllu wasNot Called }
+        }
 
-    @Test
-    fun `getAllApplicationsForUser returns applications for user hankkeet`() {
-        assertThat(applicationRepository.findAll()).isEmpty()
-        val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
-        val hanke2 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1235"))
-        val hanke3 = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1236"))
-        permissionService.create(hanke.id!!, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
-        permissionService.create(hanke2.id!!, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
-        val application1 = alluDataFactory.saveApplicationEntity(username = USERNAME, hanke = hanke)
-        val application2 =
-            alluDataFactory.saveApplicationEntity(username = "secondUser", hanke = hanke2)
-        alluDataFactory.saveApplicationEntity(username = "thirdUser", hanke = hanke3)
+        @Test
+        @Sql("/sql/senaatintorin-hanke.sql")
+        fun `when created should set pendingOnClient true`() {
+            val givenId: Long = 123456789
+            val hanke = initializedHanke()
+            val cableReportApplicationData =
+                createCableReportApplicationData(
+                    pendingOnClient = false,
+                    areas = listOf(aleksanterinpatsas)
+                )
+            val newApplication =
+                createApplication(
+                    id = givenId,
+                    applicationData = cableReportApplicationData,
+                    hankeTunnus = hanke.hankeTunnus!!,
+                )
 
-        val response = applicationService.getAllApplicationsForUser(USERNAME).map { it.id }
+            val response = applicationService.create(newApplication, USERNAME)
 
-        assertThat(applicationRepository.findAll()).hasSize(3)
-        assertThat(response).containsExactlyInAnyOrder(application1.id, application2.id)
-    }
+            assertTrue(response.applicationData.pendingOnClient)
+            val savedApplication = applicationRepository.findById(response.id!!).get()
+            assertTrue(savedApplication.applicationData.pendingOnClient)
+            verify { cableReportServiceAllu wasNot Called }
+        }
 
-    @Test
-    fun `getApplicationById with unknown ID throws error`() {
-        assertThat(applicationRepository.findAll()).isEmpty()
+        @Test
+        fun `when invalid geometry in areas should throw`() {
+            val cableReportData = createCableReportApplicationData(areas = listOf(intersectingArea))
+            val newApplication = createApplication(id = null, applicationData = cableReportData)
 
-        assertThrows<ApplicationNotFoundException> { applicationService.getApplicationById(1234) }
+            val exception =
+                assertThrows<ApplicationGeometryException> {
+                    applicationService.create(newApplication, USERNAME)
+                }
 
-        verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    fun `getApplicationById returns correct application`() {
-        val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI-1234"))
-        val applications = alluDataFactory.saveApplicationEntities(3, USERNAME, hanke = hanke)
-        val selectedId = applications[1].id!!
-        assertThat(applicationRepository.findAll()).hasSize(3)
-
-        val response = applicationService.getApplicationById(selectedId)
-
-        assertEquals(selectedId, response.id)
-        verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    @Sql("/sql/senaatintorin-hanke.sql")
-    fun `create saves new application with correct IDs`() {
-        val givenId: Long = 123456789
-        val hanke = initializedHanke()
-        val cableReportApplicationData =
-            createCableReportApplicationData(
-                pendingOnClient = true,
-                areas = listOf(aleksanterinpatsas)
-            )
-        val newApplication =
-            createApplication(
-                id = givenId,
-                applicationData = cableReportApplicationData,
-                hankeTunnus = hanke.hankeTunnus!!,
-            )
-        assertTrue(cableReportApplicationData.pendingOnClient)
-
-        val response = applicationService.create(newApplication, USERNAME)
-
-        assertNotEquals(givenId, response.id)
-        assertEquals(null, response.alluid)
-        assertEquals(newApplication.applicationType, response.applicationType)
-        assertEquals(newApplication.applicationData, response.applicationData)
-        assertTrue(response.applicationData.pendingOnClient)
-        assertTrue(cableReportApplicationData.pendingOnClient)
-
-        val savedApplications = applicationRepository.findAll()
-        assertThat(savedApplications).hasSize(1)
-        val savedApplication = savedApplications[0]
-        assertEquals(response.id, savedApplication.id)
-        assertEquals(null, savedApplication.alluid)
-        assertEquals(newApplication.applicationType, savedApplication.applicationType)
-        assertEquals(newApplication.applicationData, savedApplication.applicationData)
-        assertTrue(savedApplication.applicationData.pendingOnClient)
-
-        verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    @Sql("/sql/senaatintorin-hanke.sql")
-    fun `create sets pendingOnClient to true`() {
-        val givenId: Long = 123456789
-        val hanke = initializedHanke()
-        val cableReportApplicationData =
-            createCableReportApplicationData(
-                pendingOnClient = false,
-                areas = listOf(aleksanterinpatsas)
-            )
-        val newApplication =
-            createApplication(
-                id = givenId,
-                applicationData = cableReportApplicationData,
-                hankeTunnus = hanke.hankeTunnus!!,
-            )
-
-        val response = applicationService.create(newApplication, USERNAME)
-
-        assertTrue(response.applicationData.pendingOnClient)
-        val savedApplication = applicationRepository.findById(response.id!!).get()
-        assertTrue(savedApplication.applicationData.pendingOnClient)
-        verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    fun `create throws exception with invalid geometry in areas`() {
-        val cableReportApplicationData =
-            createCableReportApplicationData(
-                areas =
-                    listOf(
-                        ApplicationArea(
-                            "area",
-                            "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json".asJsonResource()
-                        )
-                    )
-            )
-        val newApplication =
-            createApplication(id = null, applicationData = cableReportApplicationData)
-
-        val exception =
-            assertThrows<ApplicationGeometryException> {
-                applicationService.create(newApplication, USERNAME)
-            }
-
-        assertEquals(
-            """Invalid geometry received when creating a new application
+            assertEquals(
+                """Invalid geometry received when creating a new application
                 | for user $USERNAME, reason = Self-intersection,
                 | location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
-                .trimMargin()
-                .replace("\n", ""),
-            exception.message
-        )
-    }
-
-    @Test
-    fun `create throws exception when application area is outside hankealue`() {
-        val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
-        val cableReportApplicationData =
-            createCableReportApplicationData(areas = listOf(havisAmanda))
-        val newApplication =
-            createApplication(
-                id = null,
-                hankeTunnus = hanke.hankeTunnus!!,
-                applicationData = cableReportApplicationData
+                    .trimMargin()
+                    .replace("\n", ""),
+                exception.message
             )
+        }
 
-        assertThrows<ApplicationGeometryNotInsideHankeException> {
-            applicationService.create(newApplication, USERNAME)
+        @Test
+        fun `when application area is outside hankealue should throw`() {
+            val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
+            val cableReportApplicationData =
+                createCableReportApplicationData(areas = listOf(havisAmanda))
+            val newApplication =
+                createApplication(
+                    id = null,
+                    hankeTunnus = hanke.hankeTunnus!!,
+                    applicationData = cableReportApplicationData
+                )
+
+            assertThrows<ApplicationGeometryNotInsideHankeException> {
+                applicationService.create(newApplication, USERNAME)
+            }
+        }
+
+        @Test
+        fun `when application without hankeTunnus should throw`() {
+            assertThrows<HankeNotFoundException> {
+                applicationService.create(createApplication(id = null, hankeTunnus = ""), USERNAME)
+            }
         }
     }
 
-    @Test
-    fun `updateApplicationData with unknown ID throws exception`() {
-        assertThat(applicationRepository.findAll()).isEmpty()
-
-        assertThrows<ApplicationNotFoundException> {
-            applicationService.updateApplicationData(
-                1234,
-                createCableReportApplicationData(),
-                USERNAME
-            )
-        }
-    }
-
-    @Test
-    fun `updateApplicationData when hanke was generated should skip area inside hanke check`() {
-        val initialApplication =
-            hankeService.generateHankeWithApplication(cableReportWithoutHanke(), USERNAME)
-        assertFalse(initialApplication.applicationData.areas.isNullOrEmpty())
-        val newApplicationData =
-            createCableReportApplicationData(
-                pendingOnClient = true,
-                name = "Uudistettu johtoselvitys",
-                areas = initialApplication.applicationData.areas
-            )
-
-        val response =
-            applicationService.updateApplicationData(
-                initialApplication.id!!,
-                newApplicationData,
-                USERNAME
-            )
-
-        assertEquals(newApplicationData, response.applicationData)
-    }
-
-    @Test
-    @Sql("/sql/senaatintorin-hanke.sql")
-    fun `updateApplicationData saves new application data to database`() {
-        val application =
-            alluDataFactory.saveApplicationEntity(
-                USERNAME,
-                hanke = initializedHanke(),
-                application = mockApplicationWithArea()
-            )
-        val newApplicationData =
-            createCableReportApplicationData(
-                name = "Uudistettu johtoselvitys",
-                areas = application.applicationData.areas
-            )
-
-        val response =
-            applicationService.updateApplicationData(application.id!!, newApplicationData, USERNAME)
-
-        assertEquals(null, response.alluid)
-        assertEquals(application.applicationType, response.applicationType)
-        assertEquals(newApplicationData, response.applicationData)
-        val savedApplications = applicationRepository.findAll()
-        assertThat(savedApplications).hasSize(1)
-        val savedApplication = savedApplications[0]
-        assertEquals(response.id, savedApplication.id)
-        assertEquals(null, savedApplication.alluid)
-        assertEquals(application.applicationType, savedApplication.applicationType)
-        assertEquals(newApplicationData, savedApplication.applicationData)
-        verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    @Sql("/sql/senaatintorin-hanke.sql")
-    fun `updateApplicationData with application that's already saved to Allu is updated in Allu`() {
-        val application =
-            alluDataFactory.saveApplicationEntity(
-                USERNAME,
-                hanke = initializedHanke(),
-                application = mockApplicationWithArea()
-            ) { it.alluid = 21 }
-        val newApplicationData =
-            createCableReportApplicationData(
-                name = "Uudistettu johtoselvitys",
-                areas = application.applicationData.areas
-            )
-        every { cableReportServiceAllu.getApplicationInformation(21) } returns
-            createAlluApplicationResponse(21)
-        val expectedAlluRequest = newApplicationData.toAlluData(HANKE_TUNNUS)
-        justRun { cableReportServiceAllu.update(21, expectedAlluRequest) }
-        justRun { cableReportServiceAllu.addAttachment(21, any()) }
-
-        val response =
-            applicationService.updateApplicationData(application.id!!, newApplicationData, USERNAME)
-
-        assertEquals(newApplicationData, response.applicationData)
-        val savedApplication = applicationRepository.findById(application.id!!).orElseThrow()
-        assertEquals(response.id, savedApplication.id)
-        assertEquals(21, savedApplication.alluid)
-        assertEquals(application.applicationType, savedApplication.applicationType)
-        assertEquals(newApplicationData, savedApplication.applicationData)
-
-        verifyOrder {
-            cableReportServiceAllu.getApplicationInformation(21)
-            cableReportServiceAllu.update(21, expectedAlluRequest)
-            cableReportServiceAllu.addAttachment(21, any())
-        }
-    }
-
-    @Test
-    @Sql("/sql/senaatintorin-hanke.sql")
-    fun `updateApplicationData doesn't save to database if Allu update fails`() {
-        val application =
-            alluDataFactory.saveApplicationEntity(
-                USERNAME,
-                hanke = initializedHanke(),
-                application = mockApplicationWithArea()
-            ) { it.alluid = 21 }
-        val newApplicationData =
-            createCableReportApplicationData(
-                name = "Uudistettu johtoselvitys",
-                areas = application.applicationData.areas
-            )
-        every { cableReportServiceAllu.getApplicationInformation(21) } returns
-            createAlluApplicationResponse(21)
-        every {
-            cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS))
-        } throws RuntimeException("Allu call failed")
-
-        val exception =
-            assertThrows<RuntimeException> {
-                applicationService.updateApplicationData(
-                    application.id!!,
-                    newApplicationData,
+    @Nested
+    inner class UpdateApplicationData {
+        @Test
+        fun `when valid input should audit log`() {
+            TestUtils.addMockedRequestIp()
+            val hanke = createHanke()
+            val application =
+                applicationService.create(
+                    createApplication(
+                        id = null,
+                        hankeTunnus = hanke.hankeTunnus!!,
+                        applicationData = dataWithoutAreas
+                    ),
                     USERNAME
                 )
-            }
+            auditLogRepository.deleteAll()
+            assertThat(auditLogRepository.findAll()).isEmpty()
 
-        assertEquals("Allu call failed", exception.message)
-        val savedApplication = applicationRepository.findById(application.id!!).orElseThrow()
-        assertEquals(AlluDataFactory.defaultApplicationName, savedApplication.applicationData.name)
-        verifyOrder {
-            cableReportServiceAllu.getApplicationInformation(21)
-            cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS))
-        }
-    }
-
-    @Test
-    @Sql("/sql/senaatintorin-hanke.sql")
-    fun `updateApplicationData with application that's pending on Allu is updated in Allu`() {
-        val application =
-            alluDataFactory.saveApplicationEntity(
-                USERNAME,
-                hanke = initializedHanke(),
-                application = mockApplicationWithArea()
-            ) {
-                it.alluid = 21
-                it.applicationData = it.applicationData.copy(pendingOnClient = false)
-            }
-        val newApplicationData =
-            createCableReportApplicationData(
-                name = "Uudistettu johtoselvitys",
-                pendingOnClient = false,
-                areas = application.applicationData.areas
+            applicationService.updateApplicationData(
+                application.id!!,
+                dataWithoutAreas.copy(name = "Modified application"),
+                USERNAME
             )
-        every { cableReportServiceAllu.getApplicationInformation(21) } returns
-            createAlluApplicationResponse(21)
-        justRun { cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS)) }
-        justRun { cableReportServiceAllu.addAttachment(21, any()) }
 
-        val response =
-            applicationService.updateApplicationData(application.id!!, newApplicationData, USERNAME)
-
-        assertEquals(21, response.alluid)
-        assertEquals(newApplicationData, response.applicationData)
-
-        val savedApplications = applicationRepository.findAll()
-        assertThat(savedApplications).hasSize(1)
-        val savedApplication = savedApplications[0]
-        assertEquals(21, savedApplication.alluid)
-        assertEquals(newApplicationData, savedApplication.applicationData)
-
-        verifyOrder {
-            cableReportServiceAllu.getApplicationInformation(21)
-            cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS))
-            cableReportServiceAllu.addAttachment(21, any())
-        }
-    }
-
-    @Test
-    @Sql("/sql/senaatintorin-hanke.sql")
-    fun `updateApplicationData with application that's pending on Allu is not updated on Allu if new data is invalid`() {
-        val application =
-            alluDataFactory.saveApplicationEntity(
-                USERNAME,
-                hanke = initializedHanke(),
-                application = mockApplicationWithArea()
-            ) {
-                it.apply {
-                    alluid = 21
-                    applicationData = applicationData.copy(pendingOnClient = false)
-                }
-            }
-        val newApplicationData =
-            createCableReportApplicationData(
-                startTime = null,
-                pendingOnClient = false,
-                areas = application.applicationData.areas
+            val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
+            assertThat(applicationLogs).hasSize(1)
+            val logEntry = applicationLogs[0]
+            assertThat(logEntry::isSent).isFalse()
+            assertThat(logEntry::createdAt).isRecent()
+            val event = logEntry.message.auditEvent
+            assertThat(event::dateTime).isRecent()
+            assertThat(event::operation).isEqualTo(Operation.UPDATE)
+            assertThat(event::status).isEqualTo(Status.SUCCESS)
+            assertThat(event::failureDescription).isNull()
+            assertThat(event::appVersion).isEqualTo("1")
+            assertThat(event.actor::userId).isEqualTo(USERNAME)
+            assertThat(event.actor::role).isEqualTo(UserRole.USER)
+            assertThat(event.actor::ipAddress).isEqualTo(TestUtils.mockedIp)
+            assertThat(event.target::id).isEqualTo(application.id?.toString())
+            assertThat(event.target::type).isEqualTo(ObjectType.APPLICATION)
+            val expectedObjectBefore =
+                expectedLogObject(application.id, null, hankeTunnus = hanke.hankeTunnus)
+            JSONAssert.assertEquals(
+                expectedObjectBefore,
+                event.target.objectBefore,
+                JSONCompareMode.NON_EXTENSIBLE
             )
-        every { cableReportServiceAllu.getApplicationInformation(21) } returns
-            createAlluApplicationResponse(21)
-
-        val exception =
-            assertThrows<InvalidApplicationDataException> {
-                applicationService.updateApplicationData(
-                    application.id!!,
-                    newApplicationData,
-                    USERNAME
+            val expectedObjectAfter =
+                expectedLogObject(
+                    application.id,
+                    null,
+                    "Modified application",
+                    hankeTunnus = hanke.hankeTunnus
                 )
-            }
-
-        assertEquals(
-            "Application contains invalid data. Errors at paths: applicationData.startTime",
-            exception.message
-        )
-        val savedApplications = applicationRepository.findAll()
-        assertThat(savedApplications).hasSize(1)
-        val savedApplication = savedApplications[0]
-        assertEquals(21, savedApplication.alluid)
-        assertEquals(application.applicationData, savedApplication.applicationData)
-
-        verify { cableReportServiceAllu.getApplicationInformation(21) }
-        verify(exactly = 0) { cableReportServiceAllu.update(any(), any()) }
-    }
-
-    @Test
-    @Sql("/sql/senaatintorin-hanke.sql")
-    fun `updateApplicationData doesn't update pendingOnClient`() {
-        val application =
-            alluDataFactory.saveApplicationEntity(
-                USERNAME,
-                hanke = initializedHanke(),
-                application = mockApplicationWithArea()
-            ) {
-                it.alluid = 21
-                it.applicationData = it.applicationData.copy(pendingOnClient = false)
-            }
-        val newApplicationData =
-            createCableReportApplicationData(
-                name = "Päivitetty hakemus",
-                pendingOnClient = true,
-                areas = application.applicationData.areas
+            JSONAssert.assertEquals(
+                expectedObjectAfter,
+                event.target.objectAfter,
+                JSONCompareMode.NON_EXTENSIBLE
             )
-        val expectedApplicationData =
-            newApplicationData.copy(pendingOnClient = false).toAlluData(HANKE_TUNNUS)
-        every { cableReportServiceAllu.getApplicationInformation(21) } returns
-            createAlluApplicationResponse(21)
-        justRun { cableReportServiceAllu.update(21, expectedApplicationData) }
-        justRun { cableReportServiceAllu.addAttachment(21, any()) }
-
-        val response =
-            applicationService.updateApplicationData(application.id!!, newApplicationData, USERNAME)
-
-        assertFalse(response.applicationData.pendingOnClient)
-        val savedApplication = applicationRepository.findById(application.id!!).get()
-        assertFalse(savedApplication.applicationData.pendingOnClient)
-        verifyOrder {
-            cableReportServiceAllu.getApplicationInformation(21)
-            cableReportServiceAllu.update(21, expectedApplicationData)
-            cableReportServiceAllu.addAttachment(21, any())
-        }
-    }
-
-    @Test
-    @Sql("/sql/senaatintorin-hanke.sql")
-    fun `updateApplicationData with application that's already beyond pending in Allu is not updated`() {
-        val application =
-            alluDataFactory.saveApplicationEntity(
-                USERNAME,
-                hanke = initializedHanke(),
-                application = mockApplicationWithArea()
-            ) { it.alluid = 21 }
-        val newApplicationData =
-            createCableReportApplicationData(
-                name = "Uudistettu johtoselvitys",
-                areas = application.applicationData.areas
-            )
-        every { cableReportServiceAllu.getApplicationInformation(21) } returns
-            createAlluApplicationResponse(21, ApplicationStatus.HANDLING)
-
-        assertThrows<ApplicationAlreadyProcessingException> {
-            applicationService.updateApplicationData(application.id!!, newApplicationData, USERNAME)
+            verify { cableReportServiceAllu wasNot Called }
         }
 
-        val savedApplications = applicationRepository.findAll()
-        assertThat(savedApplications).hasSize(1)
-        val savedApplication = savedApplications[0]
-        assertEquals(
-            AlluDataFactory.defaultApplicationName,
-            (savedApplication.applicationData as CableReportApplicationData).name
-        )
+        @Test
+        @Sql("/sql/senaatintorin-hanke.sql")
+        fun `when application in Allu and pending sends update to Allu`() {
+            val alluId = 21
+            val application =
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = initializedHanke(),
+                    application = mockApplicationWithArea(alluId = alluId)
+                )
+            val newApplicationData =
+                createCableReportApplicationData(
+                    name = "Uudistettu johtoselvitys",
+                    areas = application.applicationData.areas
+                )
+            every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
+                createAlluApplicationResponse(alluId)
+            justRun { cableReportServiceAllu.update(alluId, any()) }
+            justRun { cableReportServiceAllu.addAttachment(alluId, any()) }
 
-        verify { cableReportServiceAllu.getApplicationInformation(21) }
-        verify(exactly = 0) { cableReportServiceAllu.update(any(), any()) }
-    }
+            applicationService.updateApplicationData(application.id!!, newApplicationData, USERNAME)
 
-    @Test
-    fun `updateApplicationData throws exception with invalid geometry in areas`() {
-        val hanke = createHankeEntity()
-        val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 21 }
-        val cableReportApplicationData =
-            createCableReportApplicationData(
-                areas =
-                    listOf(
-                        ApplicationArea(
-                            "area",
-                            "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json".asJsonResource()
-                        )
+            verifyOrder {
+                cableReportServiceAllu.getApplicationInformation(alluId)
+                cableReportServiceAllu.update(alluId, any())
+                cableReportServiceAllu.addAttachment(alluId, any())
+            }
+        }
+
+        @Test
+        fun `when application has not changed should not create an audit log entry`() {
+            TestUtils.addMockedRequestIp()
+            val hanke = createHankeEntity()
+            val application =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
+            assertThat(auditLogRepository.findAll()).isEmpty()
+
+            applicationService.updateApplicationData(
+                application.id!!,
+                application.applicationData,
+                USERNAME
+            )
+
+            val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
+            assertThat(applicationLogs).isEmpty()
+            verify { cableReportServiceAllu wasNot Called }
+        }
+
+        @Test
+        fun `when missing data should throw on send`() {
+            TestUtils.addMockedRequestIp()
+            val alluId = 21
+            val hanke = createHankeEntity()
+            val applicationData: CableReportApplicationData = dataWithoutAreas
+            val application = createApplication(alluid = alluId, applicationData = applicationData)
+            val savedApplication =
+                alluDataFactory.saveApplicationEntity(
+                    username = USERNAME,
+                    hanke = hanke,
+                    application = application
+                )
+            every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
+                createAlluApplicationResponse(alluId)
+
+            val exception =
+                assertThrows<InvalidApplicationDataException> {
+                    applicationService.updateApplicationData(
+                        savedApplication.id!!,
+                        applicationData.copy(startTime = null),
+                        USERNAME
                     )
+                }
+
+            assertThat(exception.message)
+                .isEqualTo(
+                    "Application contains invalid data. Errors at paths: applicationData.startTime"
+                )
+            verify { cableReportServiceAllu.getApplicationInformation(alluId) }
+            verify(exactly = 0) { cableReportServiceAllu.update(any(), any()) }
+        }
+
+        @Test
+        fun `when application has not changed should not send application to Allu`() {
+            TestUtils.addMockedRequestIp()
+            val hanke = createHankeEntity()
+            val application =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 2 }
+            assertThat(auditLogRepository.findAll()).isEmpty()
+
+            applicationService.updateApplicationData(
+                application.id!!,
+                application.applicationData,
+                USERNAME
             )
 
-        val exception =
-            assertThrows<ApplicationGeometryException> {
+            verify { cableReportServiceAllu wasNot Called }
+        }
+
+        @Test
+        fun `when no application should throw`() {
+            assertThat(applicationRepository.findAll()).isEmpty()
+
+            assertThrows<ApplicationNotFoundException> {
+                applicationService.updateApplicationData(
+                    1234,
+                    createCableReportApplicationData(),
+                    USERNAME
+                )
+            }
+        }
+
+        @Test
+        fun `when hanke was generated should skip area inside hanke check`() {
+            val initialApplication =
+                hankeService.generateHankeWithApplication(cableReportWithoutHanke(), USERNAME)
+            assertFalse(initialApplication.applicationData.areas.isNullOrEmpty())
+            val newApplicationData =
+                createCableReportApplicationData(
+                    pendingOnClient = true,
+                    name = "Uudistettu johtoselvitys",
+                    areas = initialApplication.applicationData.areas
+                )
+
+            val response =
+                applicationService.updateApplicationData(
+                    initialApplication.id!!,
+                    newApplicationData,
+                    USERNAME
+                )
+
+            assertEquals(newApplicationData, response.applicationData)
+        }
+
+        @Test
+        @Sql("/sql/senaatintorin-hanke.sql")
+        fun `when valid input should save data`() {
+            val application =
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = initializedHanke(),
+                    application = mockApplicationWithArea()
+                )
+            val newApplicationData =
+                createCableReportApplicationData(
+                    name = "Uudistettu johtoselvitys",
+                    areas = application.applicationData.areas
+                )
+
+            val response =
+                applicationService.updateApplicationData(
+                    application.id!!,
+                    newApplicationData,
+                    USERNAME
+                )
+
+            assertEquals(null, response.alluid)
+            assertEquals(application.applicationType, response.applicationType)
+            assertEquals(newApplicationData, response.applicationData)
+            val savedApplications = applicationRepository.findAll()
+            assertThat(savedApplications).hasSize(1)
+            val savedApplication = savedApplications[0]
+            assertEquals(response.id, savedApplication.id)
+            assertEquals(null, savedApplication.alluid)
+            assertEquals(application.applicationType, savedApplication.applicationType)
+            assertEquals(newApplicationData, savedApplication.applicationData)
+            verify { cableReportServiceAllu wasNot Called }
+        }
+
+        @Test
+        @Sql("/sql/senaatintorin-hanke.sql")
+        fun `when application already in Allu should update in Allu`() {
+            val application =
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = initializedHanke(),
+                    application = mockApplicationWithArea()
+                ) { it.alluid = 21 }
+            val newApplicationData =
+                createCableReportApplicationData(
+                    name = "Uudistettu johtoselvitys",
+                    areas = application.applicationData.areas
+                )
+            every { cableReportServiceAllu.getApplicationInformation(21) } returns
+                createAlluApplicationResponse(21)
+            val expectedAlluRequest = newApplicationData.toAlluData(HANKE_TUNNUS)
+            justRun { cableReportServiceAllu.update(21, expectedAlluRequest) }
+            justRun { cableReportServiceAllu.addAttachment(21, any()) }
+
+            val response =
+                applicationService.updateApplicationData(
+                    application.id!!,
+                    newApplicationData,
+                    USERNAME
+                )
+
+            assertEquals(newApplicationData, response.applicationData)
+            val savedApplication = applicationRepository.findById(application.id!!).orElseThrow()
+            assertEquals(response.id, savedApplication.id)
+            assertEquals(21, savedApplication.alluid)
+            assertEquals(application.applicationType, savedApplication.applicationType)
+            assertEquals(newApplicationData, savedApplication.applicationData)
+            verifyOrder {
+                cableReportServiceAllu.getApplicationInformation(21)
+                cableReportServiceAllu.update(21, expectedAlluRequest)
+                cableReportServiceAllu.addAttachment(21, any())
+            }
+        }
+
+        @Test
+        @Sql("/sql/senaatintorin-hanke.sql")
+        fun `when Allu update fails should roll back transaction`() {
+            val application =
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = initializedHanke(),
+                    application = mockApplicationWithArea()
+                ) { it.alluid = 21 }
+            val newApplicationData =
+                createCableReportApplicationData(
+                    name = "Uudistettu johtoselvitys",
+                    areas = application.applicationData.areas
+                )
+            every { cableReportServiceAllu.getApplicationInformation(21) } returns
+                createAlluApplicationResponse(21)
+            every {
+                cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS))
+            } throws RuntimeException("Allu call failed")
+
+            val exception =
+                assertThrows<RuntimeException> {
+                    applicationService.updateApplicationData(
+                        application.id!!,
+                        newApplicationData,
+                        USERNAME
+                    )
+                }
+
+            assertEquals("Allu call failed", exception.message)
+            val savedApplication = applicationRepository.findById(application.id!!).orElseThrow()
+            assertEquals(defaultApplicationName, savedApplication.applicationData.name)
+            verifyOrder {
+                cableReportServiceAllu.getApplicationInformation(21)
+                cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS))
+            }
+        }
+
+        @Test
+        @Sql("/sql/senaatintorin-hanke.sql")
+        fun `when application still pending should update in Allu`() {
+            val application =
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = initializedHanke(),
+                    application = mockApplicationWithArea()
+                ) {
+                    it.alluid = 21
+                    it.applicationData = it.applicationData.copy(pendingOnClient = false)
+                }
+            val newApplicationData =
+                createCableReportApplicationData(
+                    name = "Uudistettu johtoselvitys",
+                    pendingOnClient = false,
+                    areas = application.applicationData.areas
+                )
+            every { cableReportServiceAllu.getApplicationInformation(21) } returns
+                createAlluApplicationResponse(21)
+            justRun {
+                cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS))
+            }
+            justRun { cableReportServiceAllu.addAttachment(21, any()) }
+
+            val response =
+                applicationService.updateApplicationData(
+                    application.id!!,
+                    newApplicationData,
+                    USERNAME
+                )
+
+            assertEquals(21, response.alluid)
+            assertEquals(newApplicationData, response.applicationData)
+            val savedApplications = applicationRepository.findAll()
+            assertThat(savedApplications).hasSize(1)
+            val savedApplication = savedApplications[0]
+            assertEquals(21, savedApplication.alluid)
+            assertEquals(newApplicationData, savedApplication.applicationData)
+            verifyOrder {
+                cableReportServiceAllu.getApplicationInformation(21)
+                cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS))
+                cableReportServiceAllu.addAttachment(21, any())
+            }
+        }
+
+        @Test
+        @Sql("/sql/senaatintorin-hanke.sql")
+        fun `when update data invalid should not update Allu`() {
+            val application =
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = initializedHanke(),
+                    application = mockApplicationWithArea()
+                ) {
+                    it.apply {
+                        alluid = 21
+                        applicationData = applicationData.copy(pendingOnClient = false)
+                    }
+                }
+            val newApplicationData =
+                createCableReportApplicationData(
+                    startTime = null,
+                    pendingOnClient = false,
+                    areas = application.applicationData.areas
+                )
+            every { cableReportServiceAllu.getApplicationInformation(21) } returns
+                createAlluApplicationResponse(21)
+
+            val exception =
+                assertThrows<InvalidApplicationDataException> {
+                    applicationService.updateApplicationData(
+                        application.id!!,
+                        newApplicationData,
+                        USERNAME
+                    )
+                }
+
+            assertEquals(
+                "Application contains invalid data. Errors at paths: applicationData.startTime",
+                exception.message
+            )
+            val savedApplications = applicationRepository.findAll()
+            assertThat(savedApplications).hasSize(1)
+            val savedApplication = savedApplications[0]
+            assertEquals(21, savedApplication.alluid)
+            assertEquals(application.applicationData, savedApplication.applicationData)
+            verify { cableReportServiceAllu.getApplicationInformation(21) }
+            verify(exactly = 0) { cableReportServiceAllu.update(any(), any()) }
+        }
+
+        @Test
+        @Sql("/sql/senaatintorin-hanke.sql")
+        fun `when updated should not update pendingOnClient`() {
+            val application =
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = initializedHanke(),
+                    application = mockApplicationWithArea()
+                ) {
+                    it.alluid = 21
+                    it.applicationData = it.applicationData.copy(pendingOnClient = false)
+                }
+            val newApplicationData =
+                createCableReportApplicationData(
+                    name = "Päivitetty hakemus",
+                    pendingOnClient = true,
+                    areas = application.applicationData.areas
+                )
+            val expectedApplicationData =
+                newApplicationData.copy(pendingOnClient = false).toAlluData(HANKE_TUNNUS)
+            every { cableReportServiceAllu.getApplicationInformation(21) } returns
+                createAlluApplicationResponse(21)
+            justRun { cableReportServiceAllu.update(21, expectedApplicationData) }
+            justRun { cableReportServiceAllu.addAttachment(21, any()) }
+
+            val response =
+                applicationService.updateApplicationData(
+                    application.id!!,
+                    newApplicationData,
+                    USERNAME
+                )
+
+            assertFalse(response.applicationData.pendingOnClient)
+            val savedApplication = applicationRepository.findById(application.id!!).get()
+            assertFalse(savedApplication.applicationData.pendingOnClient)
+            verifyOrder {
+                cableReportServiceAllu.getApplicationInformation(21)
+                cableReportServiceAllu.update(21, expectedApplicationData)
+                cableReportServiceAllu.addAttachment(21, any())
+            }
+        }
+
+        @Test
+        @Sql("/sql/senaatintorin-hanke.sql")
+        fun `when application beyond pending in Allu should not update`() {
+            val application =
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = initializedHanke(),
+                    application = mockApplicationWithArea()
+                ) { it.alluid = 21 }
+            val newApplicationData =
+                createCableReportApplicationData(
+                    name = "Uudistettu johtoselvitys",
+                    areas = application.applicationData.areas
+                )
+            every { cableReportServiceAllu.getApplicationInformation(21) } returns
+                createAlluApplicationResponse(21, HANDLING)
+
+            assertThrows<ApplicationAlreadyProcessingException> {
+                applicationService.updateApplicationData(
+                    application.id!!,
+                    newApplicationData,
+                    USERNAME
+                )
+            }
+
+            val savedApplications = applicationRepository.findAll()
+            assertThat(savedApplications).hasSize(1)
+            val savedApplication = savedApplications[0]
+            assertEquals(
+                defaultApplicationName,
+                (savedApplication.applicationData as CableReportApplicationData).name
+            )
+            verify { cableReportServiceAllu.getApplicationInformation(21) }
+            verify(exactly = 0) { cableReportServiceAllu.update(any(), any()) }
+        }
+
+        @Test
+        fun `when invalid geometry in areas should throw`() {
+            val hanke = createHankeEntity()
+            val application =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 21 }
+            val cableReportApplicationData =
+                createCableReportApplicationData(areas = listOf(intersectingArea))
+
+            val exception =
+                assertThrows<ApplicationGeometryException> {
+                    applicationService.updateApplicationData(
+                        application.id!!,
+                        cableReportApplicationData,
+                        USERNAME
+                    )
+                }
+
+            assertEquals(
+                """Invalid geometry received when updating application for
+                | user $USERNAME, id=${application.id}, alluid=${application.alluid},
+                | reason = Self-intersection,
+                | location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
+                    .trimMargin()
+                    .replace("\n", ""),
+                exception.message
+            )
+        }
+
+        @Test
+        fun `when application area outside hankealue should throw`() {
+            val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
+            val hankeEntity = hankeRepository.getReferenceById(hanke.id!!)
+            val application =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hankeEntity) {
+                    it.alluid = 21
+                }
+            val cableReportApplicationData =
+                createCableReportApplicationData(areas = listOf(havisAmanda))
+
+            assertThrows<ApplicationGeometryNotInsideHankeException> {
                 applicationService.updateApplicationData(
                     application.id!!,
                     cableReportApplicationData,
                     USERNAME
                 )
             }
-
-        assertEquals(
-            """Invalid geometry received when updating application for
-                | user $USERNAME, id=${application.id}, alluid=${application.alluid},
-                | reason = Self-intersection,
-                | location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
-                .trimMargin()
-                .replace("\n", ""),
-            exception.message
-        )
+        }
     }
 
-    @Test
-    fun `updateApplicationData throws exception when application area is outside hankealue`() {
-        val hanke = hankeService.createHanke(HankeFactory.create().withHankealue())
-        val hankeEntity = hankeRepository.getReferenceById(hanke.id!!)
-        val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hankeEntity) { it.alluid = 21 }
-        val cableReportApplicationData =
-            createCableReportApplicationData(areas = listOf(havisAmanda))
+    @Nested
+    inner class GetAllApplicationsForUser {
+        @Test
+        fun `when no applications should return empty list`() {
+            assertThat(applicationRepository.findAll()).isEmpty()
 
-        assertThrows<ApplicationGeometryNotInsideHankeException> {
-            applicationService.updateApplicationData(
-                application.id!!,
-                cableReportApplicationData,
-                USERNAME
-            )
+            val response = applicationService.getAllApplicationsForUser(USERNAME)
+
+            assertEquals(listOf<Application>(), response)
+            verify { cableReportServiceAllu wasNot Called }
+        }
+
+        @Test
+        fun `when applications exist should return users applications`() {
+            assertThat(applicationRepository.findAll()).isEmpty()
+            val otherUser = "otherUser"
+            val hanke = createHankeEntity(hankeTunnus = HANKE_TUNNUS)
+            val hanke2 = createHankeEntity(hankeTunnus = "HAI-1236")
+            permissionService.create(hanke.id!!, USERNAME, HAKEMUSASIOINTI)
+            permissionService.create(hanke2.id!!, "otherUser", HAKEMUSASIOINTI)
+            alluDataFactory.saveApplicationEntities(3, USERNAME, hanke = hanke) { _, application ->
+                application.userId = USERNAME
+                application.applicationData =
+                    createCableReportApplicationData(name = "Application data for $USERNAME")
+            }
+            alluDataFactory.saveApplicationEntities(3, "otherUser", hanke = hanke2)
+            assertThat(applicationRepository.findAll()).hasSize(6)
+            assertThat(applicationRepository.getAllByUserId(USERNAME)).hasSize(3)
+            assertThat(applicationRepository.getAllByUserId(otherUser)).hasSize(3)
+
+            val response = applicationService.getAllApplicationsForUser(USERNAME)
+
+            assertThat(response).hasSize(3)
+            assertThat(response)
+                .extracting { a -> a.applicationData.name }
+                .each { name -> name.isEqualTo("Application data for $USERNAME") }
+            verify { cableReportServiceAllu wasNot Called }
+        }
+
+        @Test
+        fun `when applications in different projects should returns applications`() {
+            assertThat(applicationRepository.findAll()).isEmpty()
+            val hanke = createHankeEntity(hankeTunnus = HANKE_TUNNUS)
+            val hanke2 = createHankeEntity(hankeTunnus = "HAI-1236")
+            val hanke3 = createHankeEntity(hankeTunnus = "HAI-1237")
+            permissionService.create(hanke.id!!, USERNAME, HAKEMUSASIOINTI)
+            permissionService.create(hanke2.id!!, USERNAME, HAKEMUSASIOINTI)
+            val application1 =
+                alluDataFactory.saveApplicationEntity(username = USERNAME, hanke = hanke)
+            val application2 =
+                alluDataFactory.saveApplicationEntity(username = "secondUser", hanke = hanke2)
+            alluDataFactory.saveApplicationEntity(username = "thirdUser", hanke = hanke3)
+
+            val response = applicationService.getAllApplicationsForUser(USERNAME).map { it.id }
+
+            assertThat(applicationRepository.findAll()).hasSize(3)
+            assertThat(response).containsExactlyInAnyOrder(application1.id, application2.id)
+        }
+    }
+
+    @Nested
+    inner class GetApplicationById {
+        @Test
+        fun `when application does not exist should throw`() {
+            assertThat(applicationRepository.findAll()).isEmpty()
+
+            assertThrows<ApplicationNotFoundException> {
+                applicationService.getApplicationById(1234)
+            }
+
+            verify { cableReportServiceAllu wasNot Called }
+        }
+
+        @Test
+        fun `when application exists should return it`() {
+            val hanke = createHankeEntity()
+            val applications = alluDataFactory.saveApplicationEntities(3, USERNAME, hanke = hanke)
+            val selectedId = applications[1].id!!
+            assertThat(applicationRepository.findAll()).hasSize(3)
+
+            val response = applicationService.getApplicationById(selectedId)
+
+            assertEquals(selectedId, response.id)
+            verify { cableReportServiceAllu wasNot Called }
         }
     }
 
@@ -957,7 +996,7 @@ class ApplicationServiceITest : DatabaseTest() {
             justRun { cableReportServiceAllu.update(21, pendingApplicationData) }
             justRun { cableReportServiceAllu.addAttachment(21, any()) }
             every { cableReportServiceAllu.getApplicationInformation(21) } returns
-                createAlluApplicationResponse(21, ApplicationStatus.PENDING)
+                createAlluApplicationResponse(21, PENDING)
 
             val response = applicationService.sendApplication(application.id!!, USERNAME)
 
@@ -967,50 +1006,11 @@ class ApplicationServiceITest : DatabaseTest() {
             val savedApplicationData =
                 savedApplication.applicationData as CableReportApplicationData
             assertFalse(savedApplicationData.pendingOnClient)
-
             verifyOrder {
                 cableReportServiceAllu.getApplicationInformation(21)
                 cableReportServiceAllu.update(21, pendingApplicationData)
                 cableReportServiceAllu.addAttachment(21, any())
                 cableReportServiceAllu.getApplicationInformation(21)
-            }
-        }
-
-        @Test
-        @Sql("/sql/senaatintorin-hanke.sql")
-        fun `Creates new application to Allu and saves ID and status to database`() {
-            val application =
-                alluDataFactory.saveApplicationEntity(
-                    USERNAME,
-                    hanke = initializedHanke(),
-                    application = mockApplicationWithArea()
-                )
-            attachmentFactory.saveAttachment(application.id!!)
-            val applicationData = application.applicationData as CableReportApplicationData
-            val pendingApplicationData = applicationData.copy(pendingOnClient = false)
-            val expectedAlluRequest = pendingApplicationData.toAlluData(HANKE_TUNNUS)
-            every { cableReportServiceAllu.create(expectedAlluRequest) } returns 26
-            justRun { cableReportServiceAllu.addAttachment(26, any()) }
-            justRun { cableReportServiceAllu.addAttachments(26, any(), any()) }
-            every { cableReportServiceAllu.getApplicationInformation(26) } returns
-                createAlluApplicationResponse(26)
-
-            val response = applicationService.sendApplication(application.id!!, USERNAME)
-
-            assertEquals(26, response.alluid)
-            assertEquals(pendingApplicationData, response.applicationData)
-            assertEquals(defaultApplicationIdentifier, response.applicationIdentifier)
-            assertEquals(ApplicationStatus.PENDING, response.alluStatus)
-            val savedApplication = applicationRepository.findById(application.id!!).get()
-            assertEquals(26, savedApplication.alluid)
-            assertEquals(pendingApplicationData, savedApplication.applicationData)
-            assertEquals(defaultApplicationIdentifier, savedApplication.applicationIdentifier)
-            assertEquals(ApplicationStatus.PENDING, savedApplication.alluStatus)
-            verifyOrder {
-                cableReportServiceAllu.create(expectedAlluRequest)
-                cableReportServiceAllu.addAttachment(26, any())
-                cableReportServiceAllu.addAttachments(26, any(), any())
-                cableReportServiceAllu.getApplicationInformation(26)
             }
         }
 
@@ -1117,7 +1117,7 @@ class ApplicationServiceITest : DatabaseTest() {
                     it.applicationData = it.applicationData.copy(pendingOnClient = false)
                 }
             every { cableReportServiceAllu.getApplicationInformation(21) } returns
-                createAlluApplicationResponse(21, ApplicationStatus.PENDING)
+                createAlluApplicationResponse(21, PENDING)
 
             applicationService.sendApplication(application.id!!, USERNAME)
 
@@ -1138,7 +1138,7 @@ class ApplicationServiceITest : DatabaseTest() {
                     it.applicationData = it.applicationData.copy(pendingOnClient = false)
                 }
             every { cableReportServiceAllu.getApplicationInformation(21) } returns
-                createAlluApplicationResponse(21, ApplicationStatus.DECISIONMAKING)
+                createAlluApplicationResponse(21, DECISIONMAKING)
 
             assertThrows<ApplicationAlreadyProcessingException> {
                 applicationService.sendApplication(application.id!!, USERNAME)
@@ -1260,190 +1260,296 @@ class ApplicationServiceITest : DatabaseTest() {
             val response = applicationService.sendApplication(application.id!!, USERNAME)
 
             assertThat(response.alluid).isEqualTo(alluId)
-            assertThat(response.alluStatus).isEqualTo(ApplicationStatus.PENDING)
+            assertThat(response.alluStatus).isEqualTo(PENDING)
             val savedApplication = applicationRepository.findById(application.id!!).get()
             assertThat(savedApplication.alluid).isEqualTo(alluId)
-            assertThat(savedApplication.alluStatus).isEqualTo(ApplicationStatus.PENDING)
+            assertThat(savedApplication.alluStatus).isEqualTo(PENDING)
             verifyOrder {
                 cableReportServiceAllu.create(expectedAlluRequest)
                 cableReportServiceAllu.addAttachment(alluId, any())
                 cableReportServiceAllu.getApplicationInformation(alluId)
             }
         }
-    }
 
-    @Test
-    fun `delete with unknown ID throws exception`() {
-        assertThat(applicationRepository.findAll()).isEmpty()
+        @Test
+        @Sql("/sql/senaatintorin-hanke.sql")
+        fun `Creates new application to Allu and saves ID and status to database`() {
+            val application =
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = initializedHanke(),
+                    application = mockApplicationWithArea()
+                )
+            attachmentFactory.saveAttachment(application.id!!)
+            val applicationData = application.applicationData as CableReportApplicationData
+            val pendingApplicationData = applicationData.copy(pendingOnClient = false)
+            val expectedAlluRequest = pendingApplicationData.toAlluData(HANKE_TUNNUS)
+            every { cableReportServiceAllu.create(expectedAlluRequest) } returns 26
+            justRun { cableReportServiceAllu.addAttachment(26, any()) }
+            justRun { cableReportServiceAllu.addAttachments(26, any(), any()) }
+            every { cableReportServiceAllu.getApplicationInformation(26) } returns
+                createAlluApplicationResponse(26)
 
-        assertThrows<ApplicationNotFoundException> { applicationService.delete(1234, USERNAME) }
-    }
+            val response = applicationService.sendApplication(application.id!!, USERNAME)
 
-    @Test
-    fun `delete with an application not yet in Allu just deletes application`() {
-        val hanke = createHankeEntity()
-        val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
-        assertThat(applicationRepository.findAll()).hasSize(1)
-
-        applicationService.delete(application.id!!, USERNAME)
-
-        assertThat(applicationRepository.findAll()).isEmpty()
-        verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    fun `delete creates an audit log entry for delete application`() {
-        TestUtils.addMockedRequestIp()
-        val hanke = createHanke()
-        val application =
-            applicationService.create(
-                createApplication(
-                    id = null,
-                    hankeTunnus = hanke.hankeTunnus!!,
-                    applicationData = dataWithoutAreas
-                ),
-                USERNAME
-            )
-        auditLogRepository.deleteAll()
-        assertThat(auditLogRepository.findAll()).isEmpty()
-
-        applicationService.delete(application.id!!, USERNAME)
-
-        val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
-        assertThat(applicationLogs).hasSize(1)
-        val logEntry = applicationLogs[0]
-        assertThat(logEntry::isSent).isFalse()
-        assertThat(logEntry::createdAt).isRecent()
-        val event = logEntry.message.auditEvent
-        assertThat(event::dateTime).isRecent()
-        assertThat(event::operation).isEqualTo(Operation.DELETE)
-        assertThat(event::status).isEqualTo(Status.SUCCESS)
-        assertThat(event::failureDescription).isNull()
-        assertThat(event::appVersion).isEqualTo("1")
-        assertThat(event.actor::userId).isEqualTo(USERNAME)
-        assertThat(event.actor::role).isEqualTo(UserRole.USER)
-        assertThat(event.actor::ipAddress).isEqualTo(TestUtils.mockedIp)
-        assertThat(event.target::id).isEqualTo(application.id?.toString())
-        assertThat(event.target::type).isEqualTo(ObjectType.APPLICATION)
-        val expectedObject =
-            expectedLogObject(application.id, null, hankeTunnus = hanke.hankeTunnus)
-        JSONAssert.assertEquals(
-            expectedObject,
-            event.target.objectBefore,
-            JSONCompareMode.NON_EXTENSIBLE
-        )
-        assertThat(event.target::objectAfter).isNull()
-        verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    fun `delete with a pending application in Allu cancels application before deleting it`() {
-        val hanke = createHankeEntity()
-        val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 73 }
-        assertThat(applicationRepository.findAll()).hasSize(1)
-        every { cableReportServiceAllu.getApplicationInformation(73) } returns
-            createAlluApplicationResponse(73, ApplicationStatus.PENDING)
-        justRun { cableReportServiceAllu.cancel(73) }
-        every { cableReportServiceAllu.sendSystemComment(73, any()) } returns 1324
-
-        applicationService.delete(application.id!!, USERNAME)
-
-        assertThat(applicationRepository.findAll()).hasSize(0)
-        verifyOrder {
-            cableReportServiceAllu.getApplicationInformation(73)
-            cableReportServiceAllu.cancel(73)
-            cableReportServiceAllu.sendSystemComment(73, ALLU_USER_CANCELLATION_MSG)
+            assertEquals(26, response.alluid)
+            assertEquals(pendingApplicationData, response.applicationData)
+            assertEquals(defaultApplicationIdentifier, response.applicationIdentifier)
+            assertEquals(PENDING, response.alluStatus)
+            val savedApplication = applicationRepository.findById(application.id!!).get()
+            assertEquals(26, savedApplication.alluid)
+            assertEquals(pendingApplicationData, savedApplication.applicationData)
+            assertEquals(defaultApplicationIdentifier, savedApplication.applicationIdentifier)
+            assertEquals(PENDING, savedApplication.alluStatus)
+            verifyOrder {
+                cableReportServiceAllu.create(expectedAlluRequest)
+                cableReportServiceAllu.addAttachment(26, any())
+                cableReportServiceAllu.addAttachments(26, any(), any())
+                cableReportServiceAllu.getApplicationInformation(26)
+            }
         }
     }
 
-    @Test
-    fun `delete with a non-pending application in Allu throws exception`() {
-        val hanke = createHankeEntity()
-        val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 73 }
-        assertThat(applicationRepository.findAll()).hasSize(1)
-        every { cableReportServiceAllu.getApplicationInformation(73) } returns
-            createAlluApplicationResponse(73, ApplicationStatus.APPROVED)
+    @Nested
+    inner class DeleteApplication {
+        @Test
+        fun `when no application should throw`() {
+            assertThat(applicationRepository.findAll()).isEmpty()
 
-        assertThrows<ApplicationAlreadyProcessingException> {
+            assertThrows<ApplicationNotFoundException> { applicationService.delete(1234, USERNAME) }
+        }
+
+        @Test
+        fun `when application not in Allu should delete application`() {
+            val hanke = createHankeEntity()
+            val application =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
+            assertThat(applicationRepository.findAll()).hasSize(1)
+
             applicationService.delete(application.id!!, USERNAME)
+
+            assertThat(applicationRepository.findAll()).isEmpty()
+            verify { cableReportServiceAllu wasNot Called }
         }
 
-        assertThat(applicationRepository.findAll()).hasSize(1)
-        verifyOrder { cableReportServiceAllu.getApplicationInformation(73) }
-    }
+        @Test
+        fun `when deleted should audit log for deleted application`() {
+            TestUtils.addMockedRequestIp()
+            val hanke = createHanke()
+            val application =
+                applicationService.create(
+                    createApplication(
+                        id = null,
+                        hankeTunnus = hanke.hankeTunnus!!,
+                        applicationData = dataWithoutAreas
+                    ),
+                    USERNAME
+                )
+            auditLogRepository.deleteAll()
+            assertThat(auditLogRepository.findAll()).isEmpty()
 
-    @Test
-    fun `downloadDecision with unknown ID throws exception`() {
-        assertThrows<ApplicationNotFoundException> {
-            applicationService.downloadDecision(1234, USERNAME)
+            applicationService.delete(application.id!!, USERNAME)
+
+            val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
+            assertThat(applicationLogs).hasSize(1)
+            val logEntry = applicationLogs[0]
+            assertThat(logEntry::isSent).isFalse()
+            assertThat(logEntry::createdAt).isRecent()
+            val event = logEntry.message.auditEvent
+            assertThat(event::dateTime).isRecent()
+            assertThat(event::operation).isEqualTo(Operation.DELETE)
+            assertThat(event::status).isEqualTo(Status.SUCCESS)
+            assertThat(event::failureDescription).isNull()
+            assertThat(event::appVersion).isEqualTo("1")
+            assertThat(event.actor::userId).isEqualTo(USERNAME)
+            assertThat(event.actor::role).isEqualTo(UserRole.USER)
+            assertThat(event.actor::ipAddress).isEqualTo(TestUtils.mockedIp)
+            assertThat(event.target::id).isEqualTo(application.id?.toString())
+            assertThat(event.target::type).isEqualTo(ObjectType.APPLICATION)
+            val expectedObject =
+                expectedLogObject(application.id, null, hankeTunnus = hanke.hankeTunnus)
+            JSONAssert.assertEquals(
+                expectedObject,
+                event.target.objectBefore,
+                JSONCompareMode.NON_EXTENSIBLE
+            )
+            assertThat(event.target::objectAfter).isNull()
+            verify { cableReportServiceAllu wasNot Called }
         }
-    }
 
-    @Test
-    fun `downloadDecision without alluid throws exception`() {
-        val hanke = createHankeEntity()
-        val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
+        @Test
+        fun `when pending application in Allu should cancel before delete`() {
+            val hanke = createHankeEntity()
+            val application =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 73 }
+            assertThat(applicationRepository.findAll()).hasSize(1)
+            every { cableReportServiceAllu.getApplicationInformation(73) } returns
+                createAlluApplicationResponse(73, PENDING)
+            justRun { cableReportServiceAllu.cancel(73) }
+            every { cableReportServiceAllu.sendSystemComment(73, any()) } returns 1324
 
-        assertThrows<ApplicationDecisionNotFoundException> {
-            applicationService.downloadDecision(application.id!!, USERNAME)
-        }
+            applicationService.delete(application.id!!, USERNAME)
 
-        verify { cableReportServiceAllu wasNot Called }
-    }
-
-    @Test
-    fun `downloadDecision without decision in Allu throws exception`() {
-        val hanke = createHankeEntity()
-        val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 134 }
-        every { cableReportServiceAllu.getDecisionPdf(134) }
-            .throws(ApplicationDecisionNotFoundException(""))
-
-        assertThrows<ApplicationDecisionNotFoundException> {
-            applicationService.downloadDecision(application.id!!, USERNAME)
-        }
-
-        verify { cableReportServiceAllu.getDecisionPdf(134) }
-    }
-
-    @Test
-    fun `downloadDecision returns application identifier with the PDF bytes`() {
-        val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
-        val hanke = createHankeEntity()
-        val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
-                it.alluid = 134
-                it.applicationIdentifier = "JS230001"
+            assertThat(applicationRepository.findAll()).hasSize(0)
+            verifyOrder {
+                cableReportServiceAllu.getApplicationInformation(73)
+                cableReportServiceAllu.cancel(73)
+                cableReportServiceAllu.sendSystemComment(73, ALLU_USER_CANCELLATION_MSG)
             }
-        every { cableReportServiceAllu.getDecisionPdf(134) }.returns(pdfBytes)
+        }
 
-        val (filename, bytes) = applicationService.downloadDecision(application.id!!, USERNAME)
+        @Test
+        fun `when past pending application in Allu should throw`() {
+            val hanke = createHankeEntity()
+            val application =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 73 }
+            assertThat(applicationRepository.findAll()).hasSize(1)
+            every { cableReportServiceAllu.getApplicationInformation(73) } returns
+                createAlluApplicationResponse(73, APPROVED)
 
-        assertThat(filename).isNotNull().isEqualTo("JS230001")
-        assertThat(bytes).isEqualTo(pdfBytes)
-        verify { cableReportServiceAllu.getDecisionPdf(134) }
+            assertThrows<ApplicationAlreadyProcessingException> {
+                applicationService.delete(application.id!!, USERNAME)
+            }
+
+            assertThat(applicationRepository.findAll()).hasSize(1)
+            verifyOrder { cableReportServiceAllu.getApplicationInformation(73) }
+        }
     }
 
-    @Test
-    fun `downloadDecision returns default filename when application has no identifier`() {
-        val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
-        val hanke = createHankeEntity()
-        val application =
-            alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
-                it.alluid = 134
-                it.applicationIdentifier = null
+    @Nested
+    inner class DeleteWithOrphanGeneratedHankeRemoval {
+        @Test
+        fun `when deleted application is the only one of generated hanke should delete hanke also`() {
+            val hanke = createHankeEntity(generated = true)
+            val application =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
+            assertThat(applicationRepository.findAll()).hasSize(1)
+
+            val result =
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id!!, USERNAME)
+
+            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hankeRepository.findAll()).isEmpty()
+            verify { cableReportServiceAllu wasNot Called }
+            val auditLogEntry = auditLogRepository.findByType(ObjectType.HANKE).first()
+            assertThat(auditLogEntry).isSuccess(Operation.DELETE) { hasUserActor(USERNAME) }
+        }
+
+        @Test
+        fun `when hanke not generated should not delete hanke`() {
+            val hanke = createHankeEntity(generated = false)
+            val application =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
+            assertThat(applicationRepository.findAll()).hasSize(1)
+
+            val result =
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id!!, USERNAME)
+
+            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)).isNotNull()
+            verify { cableReportServiceAllu wasNot Called }
+        }
+
+        @Test
+        fun `when generated hanke has other applications should not delete hanke`() {
+            val hanke = createHankeEntity(generated = true)
+            val application1 =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
+            val application2 = alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke)
+            assertThat(applicationRepository.findAll()).hasSize(2)
+
+            val result =
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(
+                    application1.id!!,
+                    USERNAME
+                )
+
+            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
+            assertThat(applicationRepository.findAll()).hasSize(1)
+            assertThat(applicationRepository.findById(application2.id!!)).isPresent()
+            assertThat(hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)).isNotNull()
+            verify { cableReportServiceAllu wasNot Called }
+        }
+    }
+
+    @Nested
+    inner class DownloadDecision {
+        private val alluId = 134
+        private val decisionPdf: ByteArray =
+            "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
+
+        @Test
+        fun `when unknown ID should throw`() {
+            assertThrows<ApplicationNotFoundException> {
+                applicationService.downloadDecision(1234, USERNAME)
             }
-        every { cableReportServiceAllu.getDecisionPdf(134) }.returns(pdfBytes)
+        }
 
-        val (filename, bytes) = applicationService.downloadDecision(application.id!!, USERNAME)
+        @Test
+        fun `when no alluid should throw`() {
+            val hanke = createHankeEntity()
+            val application =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
 
-        assertThat(filename).isNotNull().isEqualTo("paatos")
-        assertThat(bytes).isEqualTo(pdfBytes)
-        verify { cableReportServiceAllu.getDecisionPdf(134) }
+            assertThrows<ApplicationDecisionNotFoundException> {
+                applicationService.downloadDecision(application.id!!, USERNAME)
+            }
+
+            verify { cableReportServiceAllu wasNot Called }
+        }
+
+        @Test
+        fun `when no decision in Allu should throw`() {
+            val hanke = createHankeEntity()
+            val application =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
+                    it.alluid = alluId
+                }
+            every { cableReportServiceAllu.getDecisionPdf(alluId) }
+                .throws(ApplicationDecisionNotFoundException(""))
+
+            assertThrows<ApplicationDecisionNotFoundException> {
+                applicationService.downloadDecision(application.id!!, USERNAME)
+            }
+
+            verify { cableReportServiceAllu.getDecisionPdf(alluId) }
+        }
+
+        @Test
+        fun `when decision exists should return it`() {
+            val hanke = createHankeEntity()
+            val application =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
+                    it.alluid = alluId
+                    it.applicationIdentifier = "JS230001"
+                }
+            every { cableReportServiceAllu.getDecisionPdf(alluId) }.returns(decisionPdf)
+
+            val (filename, bytes) = applicationService.downloadDecision(application.id!!, USERNAME)
+
+            assertThat(filename).isNotNull().isEqualTo("JS230001")
+            assertThat(bytes).isEqualTo(decisionPdf)
+            verify { cableReportServiceAllu.getDecisionPdf(alluId) }
+        }
+
+        @Test
+        fun `when application has no identifier should use default file name`() {
+            val hanke = createHankeEntity()
+            val application =
+                alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
+                    it.alluid = alluId
+                    it.applicationIdentifier = null
+                }
+            every { cableReportServiceAllu.getDecisionPdf(alluId) }.returns(decisionPdf)
+
+            val (filename, bytes) = applicationService.downloadDecision(application.id!!, USERNAME)
+
+            assertThat(filename).isNotNull().isEqualTo("paatos")
+            assertThat(bytes).isEqualTo(decisionPdf)
+            verify { cableReportServiceAllu.getDecisionPdf(alluId) }
+        }
     }
 
     @Nested
@@ -1475,18 +1581,9 @@ class ApplicationServiceITest : DatabaseTest() {
             val history =
                 ApplicationHistoryFactory.create(
                     alluid,
-                    ApplicationHistoryFactory.createEvent(
-                        firstEventTime.plusDays(5),
-                        ApplicationStatus.PENDING
-                    ),
-                    ApplicationHistoryFactory.createEvent(
-                        firstEventTime.plusDays(10),
-                        ApplicationStatus.HANDLING
-                    ),
-                    ApplicationHistoryFactory.createEvent(
-                        firstEventTime,
-                        ApplicationStatus.PENDING
-                    ),
+                    ApplicationHistoryFactory.createEvent(firstEventTime.plusDays(5), PENDING),
+                    ApplicationHistoryFactory.createEvent(firstEventTime.plusDays(10), HANDLING),
+                    ApplicationHistoryFactory.createEvent(firstEventTime, PENDING),
                 )
 
             applicationService.handleApplicationUpdates(listOf(history), updateTime)
@@ -1496,9 +1593,8 @@ class ApplicationServiceITest : DatabaseTest() {
             assertThat(application)
                 .isNotNull()
                 .prop("alluStatus", ApplicationEntity::alluStatus)
-                .isEqualTo(ApplicationStatus.HANDLING)
-            assertThat(application!!.applicationIdentifier)
-                .isEqualTo(ApplicationHistoryFactory.defaultApplicationIdentifier)
+                .isEqualTo(HANDLING)
+            assertThat(application!!.applicationIdentifier).isEqualTo(identifier)
         }
 
         @Test
@@ -1524,10 +1620,7 @@ class ApplicationServiceITest : DatabaseTest() {
             assertThat(applications).hasSize(2)
             assertThat(applications.map { it.alluid }).containsExactlyInAnyOrder(alluid, alluid + 2)
             assertThat(applications.map { it.alluStatus })
-                .containsExactlyInAnyOrder(
-                    ApplicationStatus.PENDING_CLIENT,
-                    ApplicationStatus.PENDING_CLIENT
-                )
+                .containsExactlyInAnyOrder(PENDING_CLIENT, PENDING_CLIENT)
             assertThat(applications.map { it.applicationIdentifier })
                 .containsExactlyInAnyOrder("JS2300082", "JS2300084")
         }
@@ -1536,13 +1629,13 @@ class ApplicationServiceITest : DatabaseTest() {
         fun `sends email to the orderer when application gets a decision`() {
             val hanke = createHankeEntity()
             applicationRepository.save(
-                AlluDataFactory.createApplicationEntity(
+                createApplicationEntity(
                         alluid = alluid,
                         applicationIdentifier = identifier,
                         userId = "user",
                         hanke = hanke,
                     )
-                    .withCustomer(AlluDataFactory.createCompanyCustomerWithOrderer())
+                    .withCustomer(createCompanyCustomerWithOrderer())
             )
             val histories =
                 listOf(
@@ -1550,7 +1643,7 @@ class ApplicationServiceITest : DatabaseTest() {
                         alluid,
                         ApplicationHistoryFactory.createEvent(
                             applicationIdentifier = identifier,
-                            newStatus = ApplicationStatus.DECISION
+                            newStatus = DECISION
                         )
                     ),
                 )
@@ -1592,69 +1685,70 @@ class ApplicationServiceITest : DatabaseTest() {
         }
     }
 
-    @Test
-    fun `Creating an application without hankeTunnus fails`() {
-        assertThrows<HankeNotFoundException> {
-            applicationService.create(createApplication(id = null, hankeTunnus = ""), USERNAME)
+    @Nested
+    inner class IsApplicationStillPending {
+        private val alluId = 123
+
+        @ParameterizedTest(name = "{displayName} ({arguments})")
+        @EnumSource(value = ApplicationStatus::class, names = ["PENDING", "PENDING_CLIENT"])
+        fun `when status is pending and allu confirms should return true`(
+            status: ApplicationStatus
+        ) {
+            val application = createApplication(alluid = alluId, alluStatus = status)
+            every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
+                createAlluApplicationResponse(status = status)
+
+            assertTrue(applicationService.isStillPending(application))
+
+            verify { cableReportServiceAllu.getApplicationInformation(alluId) }
         }
-    }
 
-    @ParameterizedTest(name = "{displayName} ({arguments})")
-    @EnumSource(value = ApplicationStatus::class, names = ["PENDING", "PENDING_CLIENT"])
-    fun `isStillPending when status is pending and allu confirms should return true`(
-        status: ApplicationStatus
-    ) {
-        val alluId = 123
-        val application = createApplication(alluid = alluId, alluStatus = status)
-        every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
-            createAlluApplicationResponse(status = status)
+        @ParameterizedTest(name = "{displayName} ({arguments})")
+        @EnumSource(value = ApplicationStatus::class, names = ["PENDING", "PENDING_CLIENT"])
+        fun `when status is pending but status in Allu in handling should return false`(
+            status: ApplicationStatus
+        ) {
+            val application = createApplication(alluid = alluId, alluStatus = status)
+            every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
+                createAlluApplicationResponse(status = HANDLING)
 
-        assertTrue(applicationService.isStillPending(application))
+            assertFalse(applicationService.isStillPending(application))
 
-        verify { cableReportServiceAllu.getApplicationInformation(alluId) }
-    }
+            verify { cableReportServiceAllu.getApplicationInformation(alluId) }
+        }
 
-    @ParameterizedTest(name = "{displayName} ({arguments})")
-    @EnumSource(value = ApplicationStatus::class, names = ["PENDING", "PENDING_CLIENT"])
-    fun `isStillPending when status is pending but status in allu in handling should return false`(
-        status: ApplicationStatus
-    ) {
-        val alluId = 123
-        val application = createApplication(alluid = alluId, alluStatus = status)
-        every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
-            createAlluApplicationResponse(status = ApplicationStatus.HANDLING)
+        @ParameterizedTest(name = "{displayName} ({arguments})")
+        @EnumSource(
+            value = ApplicationStatus::class,
+            mode = EnumSource.Mode.EXCLUDE,
+            names = ["PENDING", "PENDING_CLIENT"]
+        )
+        fun `when status is not pending should return false`(status: ApplicationStatus) {
+            val application = createApplication(alluid = alluId, alluStatus = status)
 
-        assertFalse(applicationService.isStillPending(application))
+            assertFalse(applicationService.isStillPending(application))
 
-        verify { cableReportServiceAllu.getApplicationInformation(alluId) }
-    }
-
-    @ParameterizedTest(name = "{displayName} ({arguments})")
-    @EnumSource(
-        value = ApplicationStatus::class,
-        mode = EnumSource.Mode.EXCLUDE,
-        names = ["PENDING", "PENDING_CLIENT"]
-    )
-    fun `isStillPending when status is not pending should return false`(status: ApplicationStatus) {
-        val alluId = 123
-        val application = createApplication(alluid = alluId, alluStatus = status)
-
-        assertFalse(applicationService.isStillPending(application))
-
-        verify { cableReportServiceAllu wasNot Called }
+            verify { cableReportServiceAllu wasNot Called }
+        }
     }
 
     private fun initializedHanke(): HankeEntity =
         hankeRepository.findByHankeTunnus("HAI23-5") ?: throw NoSuchElementException()
 
     private val aleksanterinpatsas: ApplicationArea =
-        AlluDataFactory.createApplicationArea(
+        createApplicationArea(
             geometry = "/fi/hel/haitaton/hanke/geometria/aleksanterin-patsas.json".asJsonResource()
         )
 
     private val havisAmanda: ApplicationArea =
-        AlluDataFactory.createApplicationArea(
+        createApplicationArea(
             geometry = "/fi/hel/haitaton/hanke/geometria/havis-amanda.json".asJsonResource()
+        )
+
+    private val intersectingArea =
+        createApplicationArea(
+            name = "area",
+            geometry = "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json".asJsonResource()
         )
 
     private fun mockApplicationWithArea(
@@ -1690,7 +1784,7 @@ class ApplicationServiceITest : DatabaseTest() {
     private fun expectedLogObject(
         id: Long?,
         alluId: Int?,
-        name: String = AlluDataFactory.defaultApplicationName,
+        name: String = defaultApplicationName,
         hankeTunnus: String?,
     ) =
         """

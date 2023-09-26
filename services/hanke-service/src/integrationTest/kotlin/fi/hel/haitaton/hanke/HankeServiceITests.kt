@@ -30,6 +30,7 @@ import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.defaultKuvaus
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistajat
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedRakennuttaja
@@ -187,7 +188,7 @@ class HankeServiceITests : DatabaseTest() {
             datetimeLoppu!!.truncatedTo(ChronoUnit.DAYS)
         assertThat(returnedHanke.status).isEqualTo(HankeStatus.PUBLIC)
         assertThat(returnedHanke.nimi).isEqualTo("Hämeentien perusparannus ja katuvalot")
-        assertThat(returnedHanke.kuvaus).isEqualTo("lorem ipsum dolor sit amet...")
+        assertThat(returnedHanke.kuvaus).isEqualTo(defaultKuvaus)
         assertThat(returnedHanke.alkuPvm).isEqualTo(expectedDateAlku)
         assertThat(returnedHanke.loppuPvm).isEqualTo(expectedDateLoppu)
         assertThat(returnedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
@@ -1509,25 +1510,6 @@ class HankeServiceITests : DatabaseTest() {
             )
         return hanke.apply { hakemukset = mutableSetOf(application) }
     }
-
-    private fun HankeEntity.toDomainObject(): Hanke =
-        with(this) {
-            Hanke(
-                id,
-                hankeTunnus,
-                onYKTHanke,
-                nimi,
-                kuvaus,
-                vaihe,
-                suunnitteluVaihe,
-                version,
-                createdByUserId ?: "",
-                createdAt?.atZone(TZ_UTC),
-                modifiedByUserId,
-                modifiedAt?.atZone(TZ_UTC),
-                this.status
-            )
-        }
 
     private fun ApplicationEntity.toDomainObject(): Application =
         with(this) {
