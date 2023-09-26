@@ -170,7 +170,7 @@ class HankeKayttajaService(
     }
 
     @Transactional
-    fun createPermissionFromToken(userId: String, tunniste: String) {
+    fun createPermissionFromToken(userId: String, tunniste: String): HankeKayttaja {
         logger.info { "Trying to activate token $tunniste for user $userId" }
         val tunnisteEntity =
             kayttajaTunnisteRepository.findByTunniste(tunniste)
@@ -198,6 +198,9 @@ class HankeKayttajaService(
 
         kayttaja.kayttajaTunniste = null
         kayttajaTunnisteRepository.delete(tunnisteEntity)
+        logService.logDelete(tunnisteEntity.toDomain(), userId)
+
+        return kayttaja.toDomain()
     }
 
     @Transactional

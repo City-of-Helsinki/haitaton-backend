@@ -1218,6 +1218,28 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
             assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
         }
+
+        @Test
+        fun `Writes the token removal to audit logs`() {
+            val hanke = hankeFactory.save()
+            kayttajaFactory.saveUserAndToken(hanke.id!!, tunniste = tunniste)
+            auditLogRepository.deleteAll()
+
+            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
+
+            val logs =
+                auditLogRepository.findAll().filter {
+                    it.message.auditEvent.target.type == ObjectType.KAYTTAJA_TUNNISTE
+                }
+            assertThat(logs).hasSize(1)
+            assertThat(logs).first().isSuccess(Operation.DELETE) {
+                hasUserActor(newUserId)
+                withTarget {
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.KAYTTAJA_TUNNISTE)
+                    prop(AuditLogTarget::objectAfter).isNull()
+                }
+            }
+        }
     }
 
     @Nested
