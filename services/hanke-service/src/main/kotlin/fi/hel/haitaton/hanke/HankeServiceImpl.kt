@@ -14,6 +14,7 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.domain.Perustaja
+import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
@@ -21,10 +22,8 @@ import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import fi.hel.haitaton.hanke.validation.HankePublicValidator
-import java.time.ZonedDateTime
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.transaction.annotation.Transactional
@@ -295,119 +294,14 @@ open class HankeServiceImpl(
         }
     }
 
-    // --------------- Helpers for data transfer from database ------------
-    private fun createHankealueDomainObjectFromEntity(hankealueEntity: HankealueEntity): Hankealue {
-        return Hankealue(
-            id = hankealueEntity.id,
-            hankeId = hankealueEntity.hanke?.id,
-            haittaAlkuPvm = hankealueEntity.haittaAlkuPvm?.atStartOfDay(TZ_UTC),
-            haittaLoppuPvm = hankealueEntity.haittaLoppuPvm?.atStartOfDay(TZ_UTC),
-            geometriat = hankealueEntity.geometriat?.let { geometriatService.getGeometriat(it) },
-            kaistaHaitta = hankealueEntity.kaistaHaitta,
-            kaistaPituusHaitta = hankealueEntity.kaistaPituusHaitta,
-            meluHaitta = hankealueEntity.meluHaitta,
-            polyHaitta = hankealueEntity.polyHaitta,
-            tarinaHaitta = hankealueEntity.tarinaHaitta,
-            nimi = hankealueEntity.nimi,
-        )
-    }
+    private fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke =
+        HankeMapper.domainFrom(hankeEntity, geometryMapFrom(hankeEntity))
 
-    private fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke {
-        val h =
-            Hanke(
-                hankeEntity.id,
-                hankeEntity.hankeTunnus,
-                hankeEntity.onYKTHanke,
-                hankeEntity.nimi,
-                hankeEntity.kuvaus,
-                hankeEntity.vaihe,
-                hankeEntity.suunnitteluVaihe,
-                hankeEntity.version,
-                // TODO: will need in future to actually fetch the username from another
-                //   service.. (or whatever we choose to pass out here)
-                //   Do it below, outside this construction call.
-                hankeEntity.createdByUserId ?: "",
-                // From UTC without timezone info to UTC with timezone info
-                if (hankeEntity.createdAt != null) ZonedDateTime.of(hankeEntity.createdAt, TZ_UTC)
-                else null,
-                hankeEntity.modifiedByUserId,
-                if (hankeEntity.modifiedAt != null) ZonedDateTime.of(hankeEntity.modifiedAt, TZ_UTC)
-                else null,
-                hankeEntity.status,
-                hankeEntity.generated,
-            )
-
-        h.tyomaaKatuosoite = hankeEntity.tyomaaKatuosoite
-        h.tyomaaTyyppi = hankeEntity.tyomaaTyyppi
-
-        createSeparateYhteystietoListsFromEntityData(h, hankeEntity)
-
-        hankeEntity.listOfHankeAlueet.forEach {
-            val alue = createHankealueDomainObjectFromEntity(it)
-            alue.geometriat?.resetFeatureProperties(h)
-            h.alueet.add(alue)
-        }
-
-        hankeEntity.tormaystarkasteluTulokset.firstOrNull()?.let {
-            h.tormaystarkasteluTulos =
-                TormaystarkasteluTulos(it.perus, it.pyoraily, it.joukkoliikenne)
-        }
-
-        return h
-    }
-
-    /**
-     * createSeparateYhteystietoListsFromEntityData splits entity's one list to three different
-     * contact information lists and adds them for Hanke domain object
-     */
-    private fun createSeparateYhteystietoListsFromEntityData(
-        hanke: Hanke,
-        hankeEntity: HankeEntity
-    ) {
-
-        hankeEntity.listOfHankeYhteystieto.forEach { hankeYhteystietoEntity ->
-            val hankeYhteystieto =
-                createHankeYhteystietoDomainObjectFromEntity(hankeYhteystietoEntity)
-
-            when (hankeYhteystietoEntity.contactType) {
-                OMISTAJA -> hanke.omistajat.add(hankeYhteystieto)
-                TOTEUTTAJA -> hanke.toteuttajat.add(hankeYhteystieto)
-                RAKENNUTTAJA -> hanke.rakennuttajat.add(hankeYhteystieto)
-                MUU -> hanke.muut.add(hankeYhteystieto)
-            }
-        }
-    }
-
-    private fun createHankeYhteystietoDomainObjectFromEntity(
-        hankeYhteystietoEntity: HankeYhteystietoEntity
-    ): HankeYhteystieto {
-        var createdAt: ZonedDateTime? = null
-
-        if (hankeYhteystietoEntity.createdAt != null)
-            createdAt = ZonedDateTime.of(hankeYhteystietoEntity.createdAt, TZ_UTC)
-
-        var modifiedAt: ZonedDateTime? = null
-        if (hankeYhteystietoEntity.modifiedAt != null)
-            modifiedAt = ZonedDateTime.of(hankeYhteystietoEntity.modifiedAt, TZ_UTC)
-
-        return with(hankeYhteystietoEntity) {
-            HankeYhteystieto(
-                id = id,
-                nimi = nimi,
-                email = email,
-                puhelinnumero = puhelinnumero,
-                organisaatioNimi = organisaatioNimi,
-                osasto = osasto,
-                createdBy = createdByUserId,
-                modifiedBy = modifiedByUserId,
-                createdAt = createdAt,
-                modifiedAt = modifiedAt,
-                alikontaktit = yhteyshenkilot,
-                rooli = rooli,
-                tyyppi = tyyppi,
-            )
-        }
-    }
+    /** Map by area geometry id to area geometry data. */
+    private fun geometryMapFrom(hanke: HankeEntity): Map<Int, Geometriat?> =
+        hanke.listOfHankeAlueet
+            .mapNotNull { it.geometriat }
+            .associateBy({ it }, { geometriatService.getGeometriat(it) })
 
     // --------------- Helpers for data transfer towards database ------------
 
@@ -593,7 +487,7 @@ open class HankeServiceImpl(
         source.tarinaHaitta?.let { result.tarinaHaitta = source.tarinaHaitta }
         source.geometriat?.let {
             it.id = result.geometriat ?: it.id
-            it.resetFeatureProperties(hanke)
+            it.resetFeatureProperties(hanke.hankeTunnus)
             val saved = geometriatService.saveGeometriat(it)
             result.geometriat = saved?.id
         }

@@ -30,6 +30,7 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -78,6 +79,7 @@ class ApplicationServiceTest {
     private val emailSenderService: EmailSenderService = mockk()
     private val hankeKayttajaService: HankeKayttajaService = mockk(relaxUnitFun = true)
     private val attachmentService: ApplicationAttachmentService = mockk()
+    private val hankeLoggingService: HankeLoggingService = mockk(relaxUnitFun = true)
 
     private val applicationService: ApplicationService =
         ApplicationService(
@@ -92,6 +94,7 @@ class ApplicationServiceTest {
             geometriatDao,
             permissionService,
             hankeRepository,
+            hankeLoggingService,
         )
 
     @BeforeEach

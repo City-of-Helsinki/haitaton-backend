@@ -47,7 +47,7 @@ class GdprService(private val applicationService: ApplicationService) {
         applicationsToDelete.forEach {
             // Application service will check the status of every application again.
             // This is not optimal, but this is so rarely used, we can live with it.
-            applicationService.delete(it.id!!, userId)
+            applicationService.deleteWithOrphanGeneratedHankeRemoval(it.id!!, userId)
         }
     }
 }

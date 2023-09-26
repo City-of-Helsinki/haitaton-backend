@@ -1,32 +1,71 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.ContactType
+import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.HankeYhteystietoEntity
 import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
+import java.time.ZonedDateTime
 
 object HankeYhteystietoFactory {
 
     /** Create a test yhteystieto with values in all fields. */
-    fun create(id: Int? = 1): HankeYhteystieto {
+    fun create(
+        id: Int? = 1,
+        nimi: String = "Teppo Testihenkilö",
+        email: String = teppoEmail,
+        puhelinnumero: String = "04012345678",
+        createdAt: ZonedDateTime? = getCurrentTimeUTC(),
+        modifiedAt: ZonedDateTime? = getCurrentTimeUTC(),
+    ): HankeYhteystieto {
         return HankeYhteystieto(
             id = id,
-            nimi = "Teppo Testihenkilö",
-            email = AlluDataFactory.teppoEmail,
-            puhelinnumero = "04012345678",
+            nimi = nimi,
+            email = email,
+            puhelinnumero = puhelinnumero,
             organisaatioNimi = "Organisaatio",
             osasto = "Osasto",
             createdBy = "test7358",
-            createdAt = getCurrentTimeUTC(),
+            createdAt = createdAt,
             modifiedBy = "test7358",
-            modifiedAt = getCurrentTimeUTC(),
+            modifiedAt = modifiedAt,
             rooli = "Isännöitsijä",
             tyyppi = YRITYS,
             alikontaktit =
                 listOf(Yhteyshenkilo("Ali", "Kontakti", "ali.kontakti@meili.com", "050-4567890"))
         )
     }
+
+    fun createEntity(
+        id: Int? = 1,
+        contactType: ContactType,
+        hanke: HankeEntity
+    ): HankeYhteystietoEntity =
+        with(create(id = id)) {
+            HankeYhteystietoEntity(
+                id = id,
+                contactType = contactType,
+                nimi = "$nimi $contactType",
+                email = "$contactType.$email",
+                puhelinnumero = puhelinnumero,
+                organisaatioNimi = organisaatioNimi,
+                osasto = osasto,
+                rooli = rooli,
+                yhteyshenkilot = alikontaktit,
+                dataLocked = false,
+                dataLockInfo = "info",
+                createdByUserId = createdBy,
+                createdAt = createdAt?.toLocalDateTime(),
+                modifiedByUserId = modifiedBy,
+                modifiedAt = modifiedAt?.toLocalDateTime(),
+                tyyppi = tyyppi,
+                hanke = hanke,
+            )
+        }
 
     /**
      * Create a new Yhteystieto with values differentiated by the given integer. The audit and id

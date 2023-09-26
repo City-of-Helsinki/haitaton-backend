@@ -19,6 +19,8 @@ private val businessIdMultipliers = listOf(7, 9, 10, 5, 8, 4, 2)
  */
 fun getCurrentTimeUTC(): ZonedDateTime = ZonedDateTime.now(TZ_UTC).truncatedTo(ChronoUnit.MICROS)
 
+fun LocalDateTime.zonedDateTime(): ZonedDateTime = ZonedDateTime.of(this, TZ_UTC)
+
 /**
  * Returns the current time in UTC, without time zone info (i.e. LocalTime instance).
  *
