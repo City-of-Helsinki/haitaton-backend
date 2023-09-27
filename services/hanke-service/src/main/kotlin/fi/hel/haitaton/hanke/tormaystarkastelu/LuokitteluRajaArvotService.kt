@@ -1,47 +1,31 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-data class RajaArvo(val luokittelu: Luokittelu, val minimumValue: Int)
+object LuokitteluRajaArvotService {
 
-interface LuokitteluRajaArvotService {
+    fun getHaittaAjanKestoLuokka(days: Int): Int =
+        when {
+            days >= 91 -> HaittaAjanKestoLuokittelu.YLI_3KK.value
+            days >= 14 -> HaittaAjanKestoLuokittelu.ALLE_3KK_YLI_2VK.value
+            days >= 0 -> HaittaAjanKestoLuokittelu.ALLE_2VK.value
+            else -> 0
+        }
 
-    fun getHaittaAjanKestoLuokka(days: Int): Int
-    fun getLiikennemaaraLuokka(volume: Int): Int
-    fun getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses: Int): Int
+    fun getLiikennemaaraLuokka(volume: Int) =
+        when {
+            volume >= 10000 -> LiikenneMaaraLuokittelu.YLI_10K
+            volume >= 5000 -> LiikenneMaaraLuokittelu._5K_10K
+            volume >= 1500 -> LiikenneMaaraLuokittelu._1500_5K
+            volume >= 500 -> LiikenneMaaraLuokittelu._500_1500
+            volume >= 1 -> LiikenneMaaraLuokittelu.ALLE_500
+            else -> LiikenneMaaraLuokittelu.EI_LIIKENNETTA
+        }.value
 
-}
-
-class LuokitteluRajaArvotServiceHardCoded : LuokitteluRajaArvotService {
-
-    private val rajaArvotHaittaAjanKesto = listOf(
-            RajaArvo(HaittaAjanKestoLuokittelu.YLI_3KK, 91),
-            RajaArvo(HaittaAjanKestoLuokittelu.ALLE_3KK_YLI_2VK, 14),
-            RajaArvo(HaittaAjanKestoLuokittelu.ALLE_2VK, 0)
-    )
-
-    private val rajaArvotLiikennemaara = listOf(
-            RajaArvo(LiikenneMaaraLuokittelu.YLI_10K,10000),
-            RajaArvo(LiikenneMaaraLuokittelu._5K_10K, 5000),
-            RajaArvo(LiikenneMaaraLuokittelu._1500_5K, 1500),
-            RajaArvo(LiikenneMaaraLuokittelu._500_1500, 500),
-            RajaArvo(LiikenneMaaraLuokittelu.ALLE_500, 1),
-            RajaArvo(LiikenneMaaraLuokittelu.EI_LIIKENNETTA, 0)
-    )
-
-    private val rajaArvotBussi = listOf(
-            RajaArvo(BussiLiikenneLuokittelu.KAMPPI_RAUTATIENTORI, 21),
-            RajaArvo(BussiLiikenneLuokittelu.RUNKOLINJA, 11),
-            RajaArvo(BussiLiikenneLuokittelu.RUNKOLINJAMAINEN, 5),
-            RajaArvo(BussiLiikenneLuokittelu.PERUS, 0),
-            RajaArvo(BussiLiikenneLuokittelu.EI_VAIKUTA, -1)
-    )
-
-    override fun getHaittaAjanKestoLuokka(days: Int) =
-            rajaArvotHaittaAjanKesto.find { it.minimumValue <= days }?.luokittelu?.value ?: 0
-
-    override fun getLiikennemaaraLuokka(volume: Int) =
-            rajaArvotLiikennemaara.find { it.minimumValue <= volume }?.luokittelu?.value ?: 0
-
-    override fun getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses: Int) =
-            rajaArvotBussi.find { it.minimumValue <= countOfRushHourBuses }?.luokittelu?.value ?: 0
-
+    fun getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses: Int) =
+        when {
+            countOfRushHourBuses >= 21 -> BussiLiikenneLuokittelu.KAMPPI_RAUTATIENTORI
+            countOfRushHourBuses >= 11 -> BussiLiikenneLuokittelu.RUNKOLINJA
+            countOfRushHourBuses >= 5 -> BussiLiikenneLuokittelu.RUNKOLINJAMAINEN
+            countOfRushHourBuses >= 0 -> BussiLiikenneLuokittelu.PERUS
+            else -> BussiLiikenneLuokittelu.EI_VAIKUTA
+        }.value
 }
