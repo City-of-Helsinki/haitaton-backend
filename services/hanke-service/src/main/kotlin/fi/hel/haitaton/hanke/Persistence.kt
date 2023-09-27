@@ -59,7 +59,6 @@ enum class TyomaaTyyppi {
     SAHKO,
     TIETOLIIKENNE,
     LIIKENNEVALO,
-    YKT,
     ULKOVALAISTUS,
     KAAPPITYO,
     KAUKOLAMPO,
