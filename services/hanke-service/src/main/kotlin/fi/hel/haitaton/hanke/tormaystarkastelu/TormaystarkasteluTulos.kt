@@ -12,6 +12,7 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import kotlin.math.max
 
 @Schema(description = "Collision review result")
 data class TormaystarkasteluTulos(
@@ -23,19 +24,32 @@ data class TormaystarkasteluTulos(
     @JsonView(ChangeLogView::class)
     val pyorailyIndeksi: Float,
     //
-    @field:Schema(description = "Public transport index result")
+    @field:Schema(description = "Bus transport index result")
     @JsonView(ChangeLogView::class)
-    val joukkoliikenneIndeksi: Float
+    val linjaautoIndeksi: Float,
+    //
+    @field:Schema(description = "Tram transport index result")
+    @JsonView(ChangeLogView::class)
+    val raitiovaunuIndeksi: Float,
 ) {
+    @get:JsonView(ChangeLogView::class)
+    @delegate:Schema(
+        description =
+            "Public transport index result, worst of linjaautoIndeksi and raitiovaunuIndeksi"
+    )
+    val joukkoliikenneIndeksi: Float by lazy { max(linjaautoIndeksi, raitiovaunuIndeksi) }
 
     @get:JsonView(ChangeLogView::class)
     val liikennehaittaIndeksi: LiikennehaittaIndeksiType by lazy {
-        when (maxOf(perusIndeksi, pyorailyIndeksi, joukkoliikenneIndeksi)) {
-            joukkoliikenneIndeksi ->
-                LiikennehaittaIndeksiType(joukkoliikenneIndeksi, IndeksiType.JOUKKOLIIKENNEINDEKSI)
-            perusIndeksi -> LiikennehaittaIndeksiType(perusIndeksi, IndeksiType.PERUSINDEKSI)
-            else -> LiikennehaittaIndeksiType(pyorailyIndeksi, IndeksiType.PYORAILYINDEKSI)
-        }
+        val max = maxOf(perusIndeksi, pyorailyIndeksi, linjaautoIndeksi, raitiovaunuIndeksi)
+        val type =
+            when (max) {
+                linjaautoIndeksi -> IndeksiType.LINJAAUTOINDEKSI
+                raitiovaunuIndeksi -> IndeksiType.RAITIOVAUNUINDEKSI
+                perusIndeksi -> IndeksiType.PERUSINDEKSI
+                else -> IndeksiType.PYORAILYINDEKSI
+            }
+        LiikennehaittaIndeksiType(max, type)
     }
 }
 
@@ -48,7 +62,8 @@ data class LiikennehaittaIndeksiType(
 enum class IndeksiType {
     PERUSINDEKSI,
     PYORAILYINDEKSI,
-    JOUKKOLIIKENNEINDEKSI
+    LINJAAUTOINDEKSI,
+    RAITIOVAUNUINDEKSI,
 }
 
 @Entity
@@ -57,34 +72,9 @@ class TormaystarkasteluTulosEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Int = 0,
     val perus: Float,
     val pyoraily: Float,
-    val joukkoliikenne: Float,
+    val linjaauto: Float,
+    val raitiovaunu: Float,
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "hankeid")
     val hanke: HankeEntity,
-) {
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is TormaystarkasteluTulosEntity) return false
-
-        // For persisted entities, checking id match is enough
-        if (id != other.id) return false
-
-        // For non-persisted, have to compare almost everything
-        if (hanke != other.hanke) return false
-        if (perus != other.perus) return false
-        if (pyoraily != other.pyoraily) return false
-        if (joukkoliikenne != other.joukkoliikenne) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = id.hashCode()
-        result = 31 * result + (hanke.hashCode())
-        result = 31 * result + (perus.hashCode())
-        result = 31 * result + (pyoraily.hashCode())
-        result = 31 * result + (joukkoliikenne.hashCode())
-        return result
-    }
-}
+)

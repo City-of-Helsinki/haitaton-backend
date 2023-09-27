@@ -151,7 +151,7 @@ enum class TormaystarkasteluKatuluokka(val value: Int, val katuluokka: String) {
 
     companion object {
         fun valueOfKatuluokka(katuluokka: String): TormaystarkasteluKatuluokka {
-            return values().first { it.katuluokka == katuluokka }
+            return entries.first { it.katuluokka == katuluokka }
         }
     }
 }
@@ -163,9 +163,16 @@ enum class TormaystarkasteluBussiRunkolinja(val runkolinja: String) {
 
     companion object {
         fun valueOfRunkolinja(runkolinja: String): TormaystarkasteluBussiRunkolinja? {
-            return values().find { it.runkolinja == runkolinja }
+            return entries.find { it.runkolinja == runkolinja }
         }
     }
+
+    fun toBussiLiikenneLuokittelu(): BussiLiikenneLuokittelu =
+        when (this) {
+            ON -> BussiLiikenneLuokittelu.RUNKOLINJA
+            LAHES -> BussiLiikenneLuokittelu.RUNKOLINJAMAINEN
+            EI -> BussiLiikenneLuokittelu.PERUS
+        }
 }
 
 enum class TormaystarkasteluRaitiotiekaistatyyppi(val value: Int, val kaistatyyppi: String) {
@@ -174,7 +181,7 @@ enum class TormaystarkasteluRaitiotiekaistatyyppi(val value: Int, val kaistatyyp
 
     companion object {
         fun valueOfKaistatyyppi(kaistatyyppi: String): TormaystarkasteluRaitiotiekaistatyyppi {
-            return values().first { it.kaistatyyppi == kaistatyyppi }
+            return entries.first { it.kaistatyyppi == kaistatyyppi }
         }
     }
 }
