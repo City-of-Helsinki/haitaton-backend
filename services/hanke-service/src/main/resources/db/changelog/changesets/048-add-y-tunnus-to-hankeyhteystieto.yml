@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 048-add-y-tunnus-to-hankeyhteystieto
+      author: Niko Pitkonen
+      changes:
+        - addColumn:
+            tableName: hankeyhteystieto
+            columns:
+              - column:
+                  name: y_tunnus
+                  type: varchar(9)
+                  constraints:
+                    nullable: true

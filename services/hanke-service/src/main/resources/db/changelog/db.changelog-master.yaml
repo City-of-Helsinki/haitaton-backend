@@ -123,3 +123,5 @@ databaseChangeLog:
       file: db/changelog/changesets/046-remove-sentat-from-tunniste.yml
   - include:
       file: db/changelog/changesets/047-reverse-tunniste-foreign-key-direction.sql
+  - include:
+      file: db/changelog/changesets/048-add-y-tunnus-to-hankeyhteystieto.yml

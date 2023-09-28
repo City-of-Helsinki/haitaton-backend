@@ -45,6 +45,9 @@ class HankeYhteystietoEntity(
     @Column(columnDefinition = "jsonb")
     var yhteyshenkilot: List<Yhteyshenkilo> = listOf(),
 
+    /** For contacts with tyyppi other than YKSITYISHENKILO. */
+    @JsonView(ChangeLogView::class) @Column(name = "y_tunnus") var ytunnus: String? = null,
+
     // Personal data processing restriction (or other needs to prevent changes)
     @JsonView(NotInChangeLogView::class) var dataLocked: Boolean? = false,
     @JsonView(NotInChangeLogView::class) var dataLockInfo: String? = null,
@@ -68,6 +71,7 @@ class HankeYhteystietoEntity(
             id = id,
             nimi = nimi,
             email = email,
+            ytunnus = ytunnus,
             alikontaktit = yhteyshenkilot,
             puhelinnumero = puhelinnumero,
             organisaatioNimi = organisaatioNimi,

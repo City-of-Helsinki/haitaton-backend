@@ -11,7 +11,6 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts as AlluCustomerWithContacts
 import fi.hel.haitaton.hanke.allu.PostalAddress as AlluPostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress as AlluStreetAddress
-import fi.hel.haitaton.hanke.domain.BusinessId
 import fi.hel.haitaton.hanke.domain.Perustaja
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -69,7 +68,7 @@ data class Customer(
     val country: String, // ISO 3166-1 alpha-2 country code
     val email: String?,
     val phone: String?,
-    val registryKey: BusinessId?, // y-tunnus
+    val registryKey: String?, // y-tunnus
     val ovt: String?, // e-invoice identifier (ovt-tunnus)
     val invoicingOperator: String?, // e-invoicing operator code
     val sapCustomerNumber: String?, // customer's sap number

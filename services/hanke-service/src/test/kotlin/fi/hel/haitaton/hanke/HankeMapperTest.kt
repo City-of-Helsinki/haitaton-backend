@@ -10,10 +10,12 @@ import fi.hel.haitaton.hanke.ContactType.OMISTAJA
 import fi.hel.haitaton.hanke.ContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.create
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.geometria.Geometriat
@@ -61,10 +63,12 @@ class HankeMapperTest {
 
     private fun expectedYhteystieto(hankeEntity: HankeEntity, type: ContactType, id: Int) =
         mutableListOf(
-            create(
+            HankeYhteystietoFactory.create(
                 id = id,
                 nimi = "$TEPPO_TESTI $type",
                 email = "$type.$teppoEmail",
+                tyyppi = YRITYS,
+                ytunnus = defaultYtunnus,
                 createdAt = hankeEntity.yhteystietoCreatedAt(type),
                 modifiedAt = hankeEntity.yhteystietoModifiedAt(type),
             )
