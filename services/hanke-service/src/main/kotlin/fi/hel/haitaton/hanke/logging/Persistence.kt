@@ -21,8 +21,8 @@ import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 import java.util.UUID
 import org.hibernate.annotations.Generated
-import org.hibernate.annotations.GenerationTime
 import org.hibernate.annotations.Type
+import org.hibernate.generator.EventType
 import org.springframework.data.jpa.repository.JpaRepository
 
 /**
@@ -52,7 +52,7 @@ data class AuditLogEntryEntity(
 
     /** This will be set by the database. */
     @Column(name = "created_at")
-    @Generated(GenerationTime.INSERT)
+    @Generated(event = [EventType.INSERT])
     val createdAt: OffsetDateTime? = null,
 )
 

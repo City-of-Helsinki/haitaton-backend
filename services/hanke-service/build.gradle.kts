@@ -49,7 +49,7 @@ spotless {
 
 plugins {
     val kotlinVersion = "1.9.10"
-    id("org.springframework.boot") version "3.0.11"
+    id("org.springframework.boot") version "3.1.4"
     id("io.spring.dependency-management") version "1.1.3"
     id("com.diffplug.spotless") version "6.21.0"
     kotlin("jvm") version kotlinVersion

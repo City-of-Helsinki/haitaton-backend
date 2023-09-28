@@ -26,12 +26,12 @@ object ApplicationHistoryFactory {
             events =
                 listOf(
                     createEvent(
-                        eventTime = ZonedDateTime.parse("2022-10-12T15:25:34.981654Z[UTC]"),
+                        eventTime = ZonedDateTime.parse("2022-10-12T15:25:34.981654Z"),
                         newStatus = ApplicationStatus.PENDING,
                         applicationIdentifier = applicationIdentifier,
                     ),
                     createEvent(
-                        eventTime = ZonedDateTime.parse("2023-01-09T14:37:09.135Z[UTC]"),
+                        eventTime = ZonedDateTime.parse("2023-01-09T14:37:09.135Z"),
                         newStatus = ApplicationStatus.PENDING_CLIENT,
                         applicationIdentifier = applicationIdentifier,
                     ),
