@@ -5,9 +5,7 @@ import assertk.assertions.isEqualTo
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 
-class LuokitteluRajaArvotServiceTest {
-
-    val service = LuokitteluRajaArvotService
+class RajaArvoLuokittelijaTest {
 
     @ParameterizedTest(name = "{0} days will give 'haitta-ajan kesto' classification of {1}")
     @CsvSource(
@@ -20,7 +18,7 @@ class LuokitteluRajaArvotServiceTest {
         "180,5",
     )
     fun haittaAjanKesto(days: Int, classificationValue: Int) {
-        val actual = service.getHaittaAjanKestoLuokka(days)
+        val actual = RajaArvoLuokittelija.getHaittaAjanKestoLuokka(days)
         assertThat(actual).isEqualTo(classificationValue)
     }
 
@@ -40,7 +38,7 @@ class LuokitteluRajaArvotServiceTest {
         "18000,5",
     )
     fun liikennemaara(volume: Int, classificationValue: Int) {
-        val actual = service.getLiikennemaaraLuokka(volume)
+        val actual = RajaArvoLuokittelija.getLiikennemaaraLuokka(volume)
         assertThat(actual).isEqualTo(classificationValue)
     }
 
@@ -58,7 +56,7 @@ class LuokitteluRajaArvotServiceTest {
         "100,5",
     )
     fun getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses: Int, classificationValue: Int) {
-        val actual = service.getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses)
+        val actual = RajaArvoLuokittelija.getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses)
         assertThat(actual).isEqualTo(classificationValue)
     }
 }

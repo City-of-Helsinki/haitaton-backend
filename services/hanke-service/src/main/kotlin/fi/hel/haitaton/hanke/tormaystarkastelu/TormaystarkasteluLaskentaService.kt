@@ -58,7 +58,7 @@ open class TormaystarkasteluLaskentaService(
     }
 
     fun haittaAjanKestoLuokittelu(haittaAjanKestoDays: Int) =
-        LuokitteluRajaArvotService.getHaittaAjanKestoLuokka(haittaAjanKestoDays)
+        RajaArvoLuokittelija.getHaittaAjanKestoLuokka(haittaAjanKestoDays)
 
     private fun katuluokkaLuokittelu(geometriat: List<Geometriat>): Int {
         if (tormaysService.anyIntersectsYleinenKatuosa(geometriat)) {
@@ -97,7 +97,7 @@ open class TormaystarkasteluLaskentaService(
                 TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
             }
         val maxVolume = tormaysService.maxLiikennemaara(geometriat, radius) ?: 0
-        return LuokitteluRajaArvotService.getLiikennemaaraLuokka(maxVolume)
+        return RajaArvoLuokittelija.getLiikennemaaraLuokka(maxVolume)
     }
 
     fun calculatePerusIndeksiFromLuokittelu(luokitteluByType: Map<LuokitteluType, Int>): Float =
@@ -129,7 +129,7 @@ open class TormaystarkasteluLaskentaService(
 
         val countOfRushHourBuses = bussesTormaystulos.sumOf { it.vuoromaaraRuuhkatunnissa }
         val valueByRajaArvo =
-            LuokitteluRajaArvotService.getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses)
+            RajaArvoLuokittelija.getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses)
 
         val valueByRunkolinja =
             when {

@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-object LuokitteluRajaArvotService {
+object RajaArvoLuokittelija {
 
     fun getHaittaAjanKestoLuokka(days: Int): Int =
         when {
