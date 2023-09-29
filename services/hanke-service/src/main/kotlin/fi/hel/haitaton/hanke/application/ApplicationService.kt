@@ -17,7 +17,10 @@ import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.configuration.Feature
+import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.ApplicationUserContact
+import fi.hel.haitaton.hanke.domain.subtractByEmail
 import fi.hel.haitaton.hanke.domain.typedContacts
 import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
@@ -59,6 +62,7 @@ open class ApplicationService(
     private val permissionService: PermissionService,
     private val hankeRepository: HankeRepository,
     private val hankeLoggingService: HankeLoggingService,
+    private val featureFlags: FeatureFlags,
 ) {
     @Transactional(readOnly = true)
     open fun getAllApplicationsForUser(userId: String): List<Application> {
@@ -128,15 +132,15 @@ open class ApplicationService(
         userId: String,
     ): Application {
         val application = getById(id)
-        val applicationBefore = application.toApplication()
+        val previous = application.toApplication()
         logger.info("Updating application id=$id, alluid=${application.alluid}")
 
-        if (applicationBefore.applicationData == newApplicationData) {
+        if (previous.applicationData == newApplicationData) {
             logger.info {
                 "Not updating unchanged application data. id=$id, " +
                     "alluid=${application.alluid}, identifier=${application.applicationIdentifier}"
             }
-            return applicationBefore
+            return previous
         }
 
         when (application.applicationData) {
@@ -166,23 +170,26 @@ open class ApplicationService(
             }
         }
 
-        if (!isStillPendingInAllu(application.alluid)) {
+        if (!isStillPending(application.alluid, application.alluStatus)) {
             throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
 
         // Don't change a draft to a non-draft or vice-versa with the update method.
-        application.applicationData =
-            newApplicationData.copy(pendingOnClient = application.applicationData.pendingOnClient)
+        val pending = application.applicationData.pendingOnClient
+        application.applicationData = newApplicationData.copy(pendingOnClient = pending)
+
+        val saved = applicationRepository.save(application)
 
         // Update the application in Allu, if it's been already uploaded
-        if (application.alluid != null) {
-            updateApplicationInAllu(application)
+        if (saved.alluid != null) {
+            updateApplicationInAllu(saved)
+            initAccessOnAlluUpdate(saved, previous.applicationData, userId, hanke)
         }
 
-        val updatedApplication = applicationRepository.save(application).toApplication()
-        logger.info("Updated application id=$id, alluid=${updatedApplication.alluid}")
-        applicationLoggingService.logUpdate(applicationBefore, updatedApplication, userId)
-        return updatedApplication
+        return saved.toApplication().also {
+            logger.info("Updated application id=${it.id}, alluid=${it.alluid}")
+            applicationLoggingService.logUpdate(previous, it, userId)
+        }
     }
 
     @Transactional
@@ -202,7 +209,7 @@ open class ApplicationService(
         }
 
         logger.info("Sending application id=$id, alluid=${application.alluid}")
-        if (!isStillPendingInAllu(application.alluid)) {
+        if (!isStillPending(application.alluid, application.alluStatus)) {
             throw ApplicationAlreadyProcessingException(application.id, application.alluid)
         }
 
@@ -227,7 +234,7 @@ open class ApplicationService(
         getApplicationInformationFromAllu(application.alluid!!)?.let { response ->
             application.applicationIdentifier = response.applicationId
             application.alluStatus = response.status
-            initAccessForApplication(application, hanke, userId)
+            initAccessOnInitialSend(application, hanke, userId)
         }
 
         logger.info("Sent application id=$id, alluid=${application.alluid}")
@@ -302,25 +309,33 @@ open class ApplicationService(
      * An application is being processed in Allu if status it is NOT pending anymore. Pending status
      * needs verification from Allu. A post-pending status can never go back to pending.
      */
-    open fun isStillPending(application: Application): Boolean =
-        when (application.alluStatus) {
+    open fun isStillPending(alluId: Int?, alluStatus: ApplicationStatus?): Boolean =
+        when (alluStatus) {
             null,
             PENDING,
-            PENDING_CLIENT -> isStillPendingInAllu(application.alluid)
+            PENDING_CLIENT -> isStillPendingInAllu(alluId)
             else -> false
         }
 
+    private fun isStillPendingInAllu(alluid: Int?): Boolean {
+        // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)
+        alluid ?: return true
+
+        val currentStatus = cableReportService.getApplicationInformation(alluid).status
+
+        return currentStatus in listOf(PENDING, PENDING_CLIENT)
+    }
+
     private fun cancelAndDelete(application: ApplicationEntity, userId: String) =
         with(application) {
-            val alluIdentity = alluid
-
-            if (alluIdentity == null) {
+            val alluId = alluid
+            if (alluId == null) {
                 logger.info { "Application not sent to Allu yet, simply deleting it. id=$id" }
             } else {
                 logger.info {
                     "Application is sent to Allu, trying to cancel it before deleting. id=$id alluid=$alluid"
                 }
-                cancelApplication(alluIdentity, id)
+                cancelApplication(id, alluId, alluStatus)
             }
 
             logger.info { "Deleting application, id=$id, alluid=$alluid userid=$userId" }
@@ -329,12 +344,63 @@ open class ApplicationService(
             logger.info { "Application deleted, id=$id, alluid=$alluid userid=$userId" }
         }
 
-    private fun initAccessForApplication(
+    /** Creates access for all application contacts, excluding the current user. */
+    private fun initAccessOnInitialSend(
         application: ApplicationEntity,
         hanke: HankeEntity,
-        currentUserId: String
+        currentUserId: String,
     ) {
-        val currentKayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id!!, currentUserId)
+        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
+            logger.info { "Feature ${Feature.USER_MANAGEMENT} disabled. No tokens created." }
+            return
+        }
+
+        val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id!!, currentUserId)
+        val contacts = application.applicationData.typedContacts(omit = kayttaja?.sahkoposti)
+
+        initAccess(
+            application = application,
+            hanke = hanke,
+            currentKayttaja = kayttaja,
+            currentUserId = currentUserId,
+            contacts = contacts
+        )
+    }
+
+    /** Creates access for new application contacts. Email address used for comparison. */
+    private fun initAccessOnAlluUpdate(
+        application: ApplicationEntity,
+        previousData: ApplicationData,
+        currentUserId: String,
+        hanke: HankeEntity
+    ) {
+        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
+            logger.info { "Feature ${Feature.USER_MANAGEMENT} disabled. No tokens created." }
+            return
+        }
+
+        val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id!!, currentUserId)
+
+        val previousContacts = previousData.typedContacts()
+        val updatedContacts = application.applicationData.typedContacts(omit = kayttaja?.sahkoposti)
+        val newContacts = updatedContacts.subtractByEmail(previousContacts)
+
+        initAccess(
+            application = application,
+            hanke = hanke,
+            currentKayttaja = kayttaja,
+            currentUserId = currentUserId,
+            contacts = newContacts
+        )
+    }
+
+    private fun initAccess(
+        application: ApplicationEntity,
+        hanke: HankeEntity,
+        currentKayttaja: HankeKayttajaEntity?,
+        currentUserId: String,
+        contacts: Set<ApplicationUserContact>,
+    ) {
         hankeKayttajaService.saveNewTokensFromApplication(
             application = application,
             hankeId = hanke.id!!,
@@ -344,7 +410,6 @@ open class ApplicationService(
             currentKayttaja = currentKayttaja
         )
 
-        val contacts = application.applicationData.typedContacts(omit = currentKayttaja?.sahkoposti)
         contacts.forEach {
             notifyOnApplication(
                 hanke.hankeTunnus!!,
@@ -383,26 +448,17 @@ open class ApplicationService(
         )
     }
 
-    private fun isStillPendingInAllu(alluid: Int?): Boolean {
-        // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)
-        alluid ?: return true
-
-        val currentStatus = cableReportService.getApplicationInformation(alluid).status
-
-        return currentStatus in listOf(PENDING, PENDING_CLIENT)
-    }
-
     /** Cancel an application that's been sent to Allu. */
-    private fun cancelApplication(alluid: Int, id: Long?) {
-        if (isStillPendingInAllu(alluid)) {
+    private fun cancelApplication(id: Long?, alluId: Int, alluStatus: ApplicationStatus?) {
+        if (isStillPending(alluId, alluStatus)) {
             logger.info {
-                "Application is still pending, trying to cancel it. id=$id alluid=${alluid}"
+                "Application is still pending, trying to cancel it. id=$id alluid=${alluId}"
             }
-            cableReportService.cancel(alluid)
-            cableReportService.sendSystemComment(alluid, ALLU_USER_CANCELLATION_MSG)
-            logger.info { "Application canceled, proceeding to delete it. id=$id alluid=${alluid}" }
+            cableReportService.cancel(alluId)
+            cableReportService.sendSystemComment(alluId, ALLU_USER_CANCELLATION_MSG)
+            logger.info { "Application canceled, proceeding to delete it. id=$id alluid=${alluId}" }
         } else {
-            throw ApplicationAlreadyProcessingException(id, alluid)
+            throw ApplicationAlreadyProcessingException(id, alluId)
         }
     }
 

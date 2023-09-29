@@ -15,7 +15,6 @@ import fi.hel.haitaton.hanke.email.HankeInvitationData
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
 import java.util.UUID
 import mu.KotlinLogging
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -31,11 +30,6 @@ class HankeKayttajaService(
     private val logService: HankeKayttajaLoggingService,
     private val emailSenderService: EmailSenderService,
 ) {
-
-    @Transactional(readOnly = true)
-    fun getKayttajaById(kayttajaId: UUID): HankeKayttaja? =
-        hankeKayttajaRepository.findByIdOrNull(kayttajaId)?.toDomain()
-
     @Transactional(readOnly = true)
     fun getKayttajatByHankeId(hankeId: Int): List<HankeKayttajaDto> =
         hankeKayttajaRepository.findByHankeId(hankeId).map { it.toDto() }

@@ -92,7 +92,7 @@ class HankeAttachmentService(
 
     private fun ensureRoomForAttachment(hankeId: Int) {
         if (attachmentAmountReached(hankeId)) {
-            logger.warn { "Application $hankeId has reached the allowed amount of attachments." }
+            logger.warn { "Hanke $hankeId has reached the allowed amount of attachments." }
             throw AttachmentInvalidException("Attachment amount limit reached")
         }
     }

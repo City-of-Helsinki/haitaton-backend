@@ -42,6 +42,7 @@ class AlluDataFactory(
                 "timo.työnsuorittaja@mail.com",
                 "anssi.asianhoitaja@mail.com",
                 "rane.rakennuttaja@mail.com",
+                "new.mail@foo.fi",
             )
 
         fun createPostalAddress(
