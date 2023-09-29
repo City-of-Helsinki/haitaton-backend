@@ -26,10 +26,6 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotService
-import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotServiceHardCoded
-import fi.hel.haitaton.hanke.tormaystarkastelu.PerusIndeksiPainotService
-import fi.hel.haitaton.hanke.tormaystarkastelu.PerusIndeksiPainotServiceHardCoded
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
@@ -149,24 +145,9 @@ class Configuration {
         TormaystarkasteluTormaysServicePG(jdbcOperations)
 
     @Bean
-    fun perusIndeksiPainotService(): PerusIndeksiPainotService =
-        PerusIndeksiPainotServiceHardCoded()
-
-    @Bean
-    fun luokitteluRajaArvotService(): LuokitteluRajaArvotService =
-        LuokitteluRajaArvotServiceHardCoded()
-
-    @Bean
     fun tormaystarkasteluLaskentaService(
-        luokitteluRajaArvotService: LuokitteluRajaArvotService,
-        perusIndeksiPainotService: PerusIndeksiPainotService,
         tormaystarkasteluDao: TormaystarkasteluTormaysService
-    ): TormaystarkasteluLaskentaService =
-        TormaystarkasteluLaskentaService(
-            luokitteluRajaArvotService,
-            perusIndeksiPainotService,
-            tormaystarkasteluDao
-        )
+    ): TormaystarkasteluLaskentaService = TormaystarkasteluLaskentaService(tormaystarkasteluDao)
 
     companion object {
         /** Create a web client that can download large files in memory. */
