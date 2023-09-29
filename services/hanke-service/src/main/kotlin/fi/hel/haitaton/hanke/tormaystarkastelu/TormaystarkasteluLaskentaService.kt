@@ -6,8 +6,6 @@ import fi.hel.haitaton.hanke.roundToOneDecimal
 import org.springframework.beans.factory.annotation.Autowired
 
 open class TormaystarkasteluLaskentaService(
-    @Autowired private val luokitteluRajaArvotService: LuokitteluRajaArvotService,
-    @Autowired private val perusIndeksiPainotService: PerusIndeksiPainotService,
     @Autowired private val tormaysService: TormaystarkasteluTormaysService
 ) {
 
@@ -60,7 +58,7 @@ open class TormaystarkasteluLaskentaService(
     }
 
     fun haittaAjanKestoLuokittelu(haittaAjanKestoDays: Int) =
-        luokitteluRajaArvotService.getHaittaAjanKestoLuokka(haittaAjanKestoDays)
+        RajaArvoLuokittelija.getHaittaAjanKestoLuokka(haittaAjanKestoDays)
 
     private fun katuluokkaLuokittelu(geometriat: List<Geometriat>): Int {
         if (tormaysService.anyIntersectsYleinenKatuosa(geometriat)) {
@@ -99,12 +97,11 @@ open class TormaystarkasteluLaskentaService(
                 TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
             }
         val maxVolume = tormaysService.maxLiikennemaara(geometriat, radius) ?: 0
-        return luokitteluRajaArvotService.getLiikennemaaraLuokka(maxVolume)
+        return RajaArvoLuokittelija.getLiikennemaaraLuokka(maxVolume)
     }
 
     fun calculatePerusIndeksiFromLuokittelu(luokitteluByType: Map<LuokitteluType, Int>): Float =
-        perusIndeksiPainotService
-            .getAll()
+        perusIndeksiPainot
             .map { (type, weight) -> luokitteluByType[type]!! * weight }
             .sum()
             .roundToOneDecimal()
@@ -132,7 +129,7 @@ open class TormaystarkasteluLaskentaService(
 
         val countOfRushHourBuses = bussesTormaystulos.sumOf { it.vuoromaaraRuuhkatunnissa }
         val valueByRajaArvo =
-            luokitteluRajaArvotService.getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses)
+            RajaArvoLuokittelija.getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses)
 
         val valueByRunkolinja =
             when {

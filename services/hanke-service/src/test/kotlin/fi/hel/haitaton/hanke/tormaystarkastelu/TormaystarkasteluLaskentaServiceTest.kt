@@ -25,12 +25,7 @@ import org.junit.jupiter.params.provider.CsvFileSource
 internal class TormaystarkasteluLaskentaServiceTest {
 
     private val tormaysService: TormaystarkasteluTormaysService = mockk()
-    private val laskentaService: TormaystarkasteluLaskentaService =
-        TormaystarkasteluLaskentaService(
-            LuokitteluRajaArvotServiceHardCoded(),
-            PerusIndeksiPainotServiceHardCoded(),
-            tormaysService
-        )
+    private val laskentaService = TormaystarkasteluLaskentaService(tormaysService)
 
     @ParameterizedTest(name = "Perusindeksi with default weights should be {0}")
     @CsvFileSource(resources = ["perusindeksi-test.csv"], numLinesToSkip = 1)
