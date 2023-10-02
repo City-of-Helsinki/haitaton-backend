@@ -7,12 +7,16 @@ import fi.hel.haitaton.hanke.MAXIMUM_HANKE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_TYOMAAKATUOSOITE_LENGTH
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
+import fi.hel.haitaton.hanke.isValidBusinessId
 import fi.hel.haitaton.hanke.validation.Validators.isBeforeOrEqual
 import fi.hel.haitaton.hanke.validation.Validators.notLongerThan
 import fi.hel.haitaton.hanke.validation.Validators.notNull
 import fi.hel.haitaton.hanke.validation.Validators.notNullOrBlank
 import fi.hel.haitaton.hanke.validation.Validators.validate
+import fi.hel.haitaton.hanke.validation.Validators.validateTrue
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
 
@@ -52,6 +56,10 @@ private fun Hanke.validate() =
         .whenNotNull(tyomaaKatuosoite) {
             it.notLongerThan(MAXIMUM_TYOMAAKATUOSOITE_LENGTH, "tyomaaKatuosoite")
         }
+        .andAllIn(omistajat, "omistajat", ::validateYhteystieto)
+        .andAllIn(toteuttajat, "toteuttajat", ::validateYhteystieto)
+        .andAllIn(rakennuttajat, "rakennuttajat", ::validateYhteystieto)
+        .andAllIn(muut, "muut", ::validateYhteystieto)
 
 private fun validateHankeAlue(hankealue: Hankealue, path: String) = hankealue.validate(path)
 
@@ -65,3 +73,11 @@ private fun Hankealue.validate(path: String) =
         .andWhen(haittaAlkuPvm != null && haittaLoppuPvm != null) {
             isBeforeOrEqual(haittaAlkuPvm!!, haittaLoppuPvm!!, "$path.haittaLoppuPvm")
         }
+
+private fun validateYhteystieto(yhteystieto: HankeYhteystieto, path: String): ValidationResult =
+    yhteystieto.validate(path)
+
+private fun HankeYhteystieto.validate(path: String): ValidationResult =
+    validate()
+        .whenNotNull(ytunnus) { validateTrue(it.isValidBusinessId(), "$path.ytunnus") }
+        .andWhen(tyyppi == YKSITYISHENKILO) { validateTrue(ytunnus == null, "$path.ytunnus") }

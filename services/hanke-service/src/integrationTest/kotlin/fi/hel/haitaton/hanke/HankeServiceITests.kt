@@ -37,6 +37,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaj
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.AuditLogEntryEntity
@@ -215,10 +216,6 @@ class HankeServiceITests : DatabaseTest() {
         val rakennuttaja: HankeYhteystieto = returnedHanke.rakennuttajat[0]
         val toteuttaja: HankeYhteystieto = returnedHanke.toteuttajat[0]
         val muu: HankeYhteystieto = returnedHanke.muut[0]
-        assertThat(omistaja).isNotNull
-        assertThat(rakennuttaja).isNotNull
-        assertThat(toteuttaja).isNotNull
-        assertThat(muu).isNotNull
         // Check yhteystieto tyyppi
         listOf(omistaja, rakennuttaja, toteuttaja, muu).forEach {
             assertThat(listOf(YRITYS, YKSITYISHENKILO, YHTEISO)).contains(it.tyyppi)
@@ -233,6 +230,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(muu.osasto).isNotEmpty
         assertThat(muu.rooli).isNotEmpty
         listOf(omistaja, rakennuttaja, toteuttaja, muu).forEach {
+            assertThat(it.ytunnus).isEqualTo(defaultYtunnus)
             verifyYhteyshenkilot(it.alikontaktit)
         }
         // Check that all fields got there and back (with just one of the Yhteystietos):
@@ -993,7 +991,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(application.applicationData.name)
             .isEqualTo(inputApplication.applicationData.name)
         val hanke = hankeRepository.findByHankeTunnus(application.hankeTunnus)!!
-        assertThat(hanke.generated).isTrue()
+        assertThat(hanke.generated).isTrue
         assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
         assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
         assertThat(hanke.nimi).isEqualTo(application.applicationData.name)
@@ -1609,6 +1607,7 @@ class HankeServiceITests : DatabaseTest() {
           "id":$id,
           "nimi":"etu$i suku$i",
           "email":"email$i",
+          "ytunnus": $defaultYtunnus,
           "puhelinnumero":"010$i$i$i$i$i$i$i",
           "organisaatioNimi":"org$i",
           "osasto":"osasto$i",

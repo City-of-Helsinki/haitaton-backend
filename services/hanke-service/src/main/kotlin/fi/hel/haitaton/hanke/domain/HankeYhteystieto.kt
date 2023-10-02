@@ -54,6 +54,10 @@ data class HankeYhteystieto(
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Contact type")
     var tyyppi: YhteystietoTyyppi? = null,
+    //
+    @JsonView(ChangeLogView::class)
+    @field:Schema(description = "Business id, for contacts with tyyppi other than YKSITYISHENKILO")
+    val ytunnus: String? = null,
 
     // Metadata
     @JsonView(NotInChangeLogView::class)

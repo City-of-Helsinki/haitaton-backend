@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.domain.BusinessId
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
@@ -31,7 +30,7 @@ fun getCurrentTimeUTCAsLocalTime(): LocalDateTime = getCurrentTimeUTC().toLocalD
 fun currentUserId(): String = SecurityContextHolder.getContext().authentication.name
 
 /**
- * Valid businessId (y-tunnus) requirements:
+ * Valid business id (y-tunnus) requirements:
  * 1. format NNNNNNN-T, where N = sequence number and T = check number.
  * 2. documentation of check mark calculation:
  * ```
@@ -40,8 +39,13 @@ fun currentUserId(): String = SecurityContextHolder.getContext().authentication.
  *
  * Only verifies that the id is of valid form. It does not guarantee that it actually exists.
  */
-fun BusinessId.isValidBusinessId(): Boolean {
-    logger.info { "Verifying businessId: $this" }
+fun String?.isValidBusinessId(): Boolean {
+    logger.info { "Verifying business id: $this" }
+
+    if (this == null) {
+        logger.warn { "Business id is null." }
+        return false
+    }
 
     val matchResult = businessIdRegex.find(this)
     if (matchResult == null) {
