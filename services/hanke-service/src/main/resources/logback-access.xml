@@ -13,7 +13,8 @@
                         "status-code" : "#asLong{%statusCode}" ,
                         "bytes-sent" : "#asLong{%bytesSent}",
                         "elapsed-time" : "#asLong{%elapsedTime}",
-                        "message" : "%requestURL"
+                        "message" : "%requestURL",
+                        "userId": "#nullNA{%reqAttribute{userId}}"
                         }
                     </pattern>
                 </pattern>
