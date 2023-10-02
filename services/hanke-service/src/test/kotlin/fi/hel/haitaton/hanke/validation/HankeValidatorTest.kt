@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.validation
 
 import assertk.assertThat
 import assertk.assertions.isFalse
+import assertk.assertions.isGreaterThanOrEqualTo
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.MAXIMUM_DATE
@@ -10,9 +11,13 @@ import fi.hel.haitaton.hanke.MAXIMUM_HANKE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_TYOMAAKATUOSOITE_LENGTH
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
+import fi.hel.haitaton.hanke.factory.modify
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
@@ -263,6 +268,52 @@ class HankeValidatorTest {
         verifyError(HankeError.HAI1032, "alueet[1].nimi")
         verifyError(HankeError.HAI1032, "alueet[2].haittaAlkuPvm")
         verifyError(HankeError.HAI1032, "alueet[3].haittaLoppuPvm")
+    }
+
+    @Test
+    fun `when ytunnus is present and valid should return ok`() {
+        val hanke = HankeFactory.create().withYhteystiedot()
+
+        val result = hankeValidator.isValid(hanke, context)
+
+        val ytunnusCount = hanke.extractYhteystiedot().mapNotNull { it.ytunnus }.count()
+        assertThat(ytunnusCount).isGreaterThanOrEqualTo(1)
+        assertThat(result).isTrue()
+    }
+
+    @Test
+    fun `when ytunnus is present and not valid should not return ok`() {
+        val hanke =
+            HankeFactory.create().withYhteystiedot().apply {
+                rakennuttajat = rakennuttajat.modify(ytunnus = "1580375-3")
+            }
+
+        assertThat(hankeValidator.isValid(hanke, context)).isFalse()
+        verifyError(HankeError.HAI1002, "rakennuttajat[0].ytunnus")
+    }
+
+    @Test
+    fun `when tyyppi is yksityishenkilo or null and ytunnus null should return ok`() {
+        val hanke =
+            HankeFactory.create().withYhteystiedot().apply {
+                omistajat = omistajat.modify(ytunnus = null, tyyppi = null)
+                rakennuttajat = rakennuttajat.modify(ytunnus = null, tyyppi = YKSITYISHENKILO)
+                toteuttajat = toteuttajat.modify(ytunnus = null, null)
+                muut = muut.modify(ytunnus = null, YKSITYISHENKILO)
+            }
+
+        assertThat(hankeValidator.isValid(hanke, context)).isTrue()
+    }
+
+    @Test
+    fun `when tyyppi is yksityishenkilo and ytunnus is not null should not return ok`() {
+        val hanke =
+            HankeFactory.create().withYhteystiedot().apply {
+                omistajat = omistajat.modify(ytunnus = defaultYtunnus, tyyppi = YKSITYISHENKILO)
+            }
+
+        assertThat(hankeValidator.isValid(hanke, context)).isFalse()
+        verifyError(HankeError.HAI1002, "omistajat[0].ytunnus")
     }
 
     private fun verifyError(error: HankeError, node: String) {

@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import java.time.ZonedDateTime
 
@@ -116,3 +117,8 @@ object HankeYhteystietoFactory {
 
     private fun dummyPhoneNumber(i: Int) = "010$i$i$i$i$i$i$i"
 }
+
+fun MutableList<HankeYhteystieto>.modify(
+    ytunnus: String? = defaultYtunnus,
+    tyyppi: YhteystietoTyyppi? = YRITYS
+) = map { it.copy(ytunnus = ytunnus, tyyppi = tyyppi) }.toMutableList()

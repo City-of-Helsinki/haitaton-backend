@@ -8,15 +8,12 @@ import assertk.assertions.isGreaterThanOrEqualTo
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
-import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
-import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
+import fi.hel.haitaton.hanke.factory.modify
 import fi.hel.haitaton.hanke.touch
 import fi.hel.haitaton.hanke.validation.HankePublicValidator.validateHankeHasMandatoryFields
 import java.util.stream.Stream
@@ -347,9 +344,4 @@ class HankePublicValidatorTest {
         assertFalse(result.isOk())
         assertThat(result.errorPaths()).containsExactly(path)
     }
-
-    private fun MutableList<HankeYhteystieto>.modify(
-        ytunnus: String? = defaultYtunnus,
-        tyyppi: YhteystietoTyyppi? = YRITYS
-    ) = map { it.copy(ytunnus = ytunnus, tyyppi = tyyppi) }.toMutableList()
 }
