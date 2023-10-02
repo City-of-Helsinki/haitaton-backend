@@ -655,6 +655,7 @@ open class HankeServiceImpl(
                     contactType = contactType,
                     nimi = hankeYht.nimi,
                     email = hankeYht.email,
+                    ytunnus = hankeYht.ytunnus,
                     puhelinnumero = hankeYht.puhelinnumero,
                     organisaatioNimi = hankeYht.organisaatioNimi,
                     osasto = hankeYht.osasto,
@@ -712,6 +713,7 @@ open class HankeServiceImpl(
                 // Update values in the persisted entity:
                 existingYT.nimi = hankeYht.nimi
                 existingYT.email = hankeYht.email
+                existingYT.ytunnus = hankeYht.ytunnus
                 existingYT.puhelinnumero = hankeYht.puhelinnumero
                 existingYT.yhteyshenkilot = hankeYht.alikontaktit
                 hankeYht.organisaatioNimi?.let {

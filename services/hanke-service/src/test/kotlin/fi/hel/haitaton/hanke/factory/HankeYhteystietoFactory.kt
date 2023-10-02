@@ -5,19 +5,26 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeYhteystietoEntity
 import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
+import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import java.time.ZonedDateTime
 
 object HankeYhteystietoFactory {
+
+    const val defaultYtunnus = "1817548-2"
 
     /** Create a test yhteystieto with values in all fields. */
     fun create(
         id: Int? = 1,
         nimi: String = "Teppo Testihenkilö",
         email: String = teppoEmail,
+        tyyppi: YhteystietoTyyppi = YRITYS,
+        ytunnus: String = defaultYtunnus,
         puhelinnumero: String = "04012345678",
         createdAt: ZonedDateTime? = getCurrentTimeUTC(),
         modifiedAt: ZonedDateTime? = getCurrentTimeUTC(),
@@ -26,6 +33,8 @@ object HankeYhteystietoFactory {
             id = id,
             nimi = nimi,
             email = email,
+            tyyppi = tyyppi,
+            ytunnus = if (tyyppi != YKSITYISHENKILO) ytunnus else null,
             puhelinnumero = puhelinnumero,
             organisaatioNimi = "Organisaatio",
             osasto = "Osasto",
@@ -34,7 +43,6 @@ object HankeYhteystietoFactory {
             modifiedBy = "test7358",
             modifiedAt = modifiedAt,
             rooli = "Isännöitsijä",
-            tyyppi = YRITYS,
             alikontaktit =
                 listOf(Yhteyshenkilo("Ali", "Kontakti", "ali.kontakti@meili.com", "050-4567890"))
         )
@@ -51,6 +59,8 @@ object HankeYhteystietoFactory {
                 contactType = contactType,
                 nimi = "$nimi $contactType",
                 email = "$contactType.$email",
+                tyyppi = tyyppi,
+                ytunnus = ytunnus,
                 puhelinnumero = puhelinnumero,
                 organisaatioNimi = organisaatioNimi,
                 osasto = osasto,
@@ -62,7 +72,6 @@ object HankeYhteystietoFactory {
                 createdAt = createdAt?.toLocalDateTime(),
                 modifiedByUserId = modifiedBy,
                 modifiedAt = modifiedAt?.toLocalDateTime(),
-                tyyppi = tyyppi,
                 hanke = hanke,
             )
         }
@@ -76,6 +85,7 @@ object HankeYhteystietoFactory {
             id = null,
             nimi = "etu$i suku$i",
             email = "email$i",
+            ytunnus = defaultYtunnus,
             puhelinnumero = "010$i$i$i$i$i$i$i",
             organisaatioNimi = "org$i",
             osasto = "osasto$i",
@@ -107,3 +117,8 @@ object HankeYhteystietoFactory {
 
     private fun dummyPhoneNumber(i: Int) = "010$i$i$i$i$i$i$i"
 }
+
+fun MutableList<HankeYhteystieto>.modify(
+    ytunnus: String? = defaultYtunnus,
+    tyyppi: YhteystietoTyyppi? = YRITYS
+) = map { it.copy(ytunnus = ytunnus, tyyppi = tyyppi) }.toMutableList()
