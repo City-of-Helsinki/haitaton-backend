@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.roundToOneDecimal
+import kotlin.math.max
 import org.springframework.beans.factory.annotation.Autowired
 
 open class TormaystarkasteluLaskentaService(
@@ -25,9 +26,12 @@ open class TormaystarkasteluLaskentaService(
         val raitiovaunuLuokittelu = raitiovaunuLuokittelu(hanke.alueidenGeometriat())
         val raitiovaunuIndeksi = if (raitiovaunuLuokittelu >= 3) 4.0f else 1.0f
 
-        val joukkoliikenneIndeksi = maxOf(bussiIndeksi, raitiovaunuIndeksi)
-
-        return TormaystarkasteluTulos(perusIndeksi, pyorailyIndeksi, joukkoliikenneIndeksi)
+        return TormaystarkasteluTulos(
+            perusIndeksi,
+            pyorailyIndeksi,
+            bussiIndeksi,
+            raitiovaunuIndeksi,
+        )
     }
 
     private fun hasAllRequiredInformation(hanke: Hanke): Boolean {
@@ -43,7 +47,7 @@ open class TormaystarkasteluLaskentaService(
         val luokittelu = mutableMapOf<LuokitteluType, Int>()
 
         luokittelu[LuokitteluType.HAITTA_AJAN_KESTO] =
-            haittaAjanKestoLuokittelu(hanke.haittaAjanKestoDays!!)
+            RajaArvoLuokittelija.getHaittaAjanKestoLuokka(hanke.haittaAjanKestoDays!!)
         luokittelu[LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN] =
             hanke.kaistaHaitat().maxOfOrNull { it.value }!!
         luokittelu[LuokitteluType.KAISTAJARJESTELYN_PITUUS] =
@@ -57,13 +61,10 @@ open class TormaystarkasteluLaskentaService(
         return calculatePerusIndeksiFromLuokittelu(luokittelu)
     }
 
-    fun haittaAjanKestoLuokittelu(haittaAjanKestoDays: Int) =
-        RajaArvoLuokittelija.getHaittaAjanKestoLuokka(haittaAjanKestoDays)
-
-    private fun katuluokkaLuokittelu(geometriat: List<Geometriat>): Int {
-        if (tormaysService.anyIntersectsYleinenKatuosa(geometriat)) {
+    internal fun katuluokkaLuokittelu(geometriat: List<Geometriat>): Int {
+        return if (tormaysService.anyIntersectsYleinenKatuosa(geometriat)) {
             // ON ylre_parts => street_classes?
-            return tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat)
+            tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat)
             // EI street_classes => ylre_classes?
             ?: tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriat)
                 // EI ylre_classes
@@ -75,20 +76,20 @@ open class TormaystarkasteluLaskentaService(
                 // EI ylre_classes
                 ?: return 0
             // ON ylre_classes => street_classes?
-            return tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat)
+            tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat)
             // JOS EI LÖYDY => Valitse ylre_classes
             ?: max
         }
     }
 
-    private fun liikennemaaraLuokittelu(
+    internal fun liikennemaaraLuokittelu(
         geometriat: List<Geometriat>,
         katuluokkaLuokittelu: Int
     ): Int {
         if (katuluokkaLuokittelu == 0) {
             return 0
         }
-        // type of street (=street class) decides which volume data we use for trafic (buffering of
+        // type of street (=street class) decides which volume data we use for traffic (buffering of
         // street width varies)
         val radius =
             if (katuluokkaLuokittelu >= 4) {
@@ -100,48 +101,40 @@ open class TormaystarkasteluLaskentaService(
         return RajaArvoLuokittelija.getLiikennemaaraLuokka(maxVolume)
     }
 
-    fun calculatePerusIndeksiFromLuokittelu(luokitteluByType: Map<LuokitteluType, Int>): Float =
+    internal fun calculatePerusIndeksiFromLuokittelu(
+        luokitteluByType: Map<LuokitteluType, Int>
+    ): Float =
         perusIndeksiPainot
             .map { (type, weight) -> luokitteluByType[type]!! * weight }
             .sum()
             .roundToOneDecimal()
 
-    private fun pyorailyLuokittelu(geometriat: List<Geometriat>): Int {
-        return when {
+    internal fun pyorailyLuokittelu(geometriat: List<Geometriat>): Int =
+        when {
             tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) ->
                 PyorailyTormaysLuokittelu.PRIORISOITU_REITTI
             tormaysService.anyIntersectsWithCyclewaysMain(geometriat) ->
                 PyorailyTormaysLuokittelu.PAAREITTI
             else -> PyorailyTormaysLuokittelu.EI_PYORAILUREITTI
         }.value
-    }
 
-    fun bussiLuokittelu(geometriat: List<Geometriat>): Int {
+    internal fun bussiLuokittelu(geometriat: List<Geometriat>): Int {
         if (tormaysService.anyIntersectsCriticalBusRoutes(geometriat)) {
             return BussiLiikenneLuokittelu.KAMPPI_RAUTATIENTORI.value
         }
 
-        val bussesTormaystulos = tormaysService.getIntersectingBusRoutes(geometriat)
+        val bussireitit = tormaysService.getIntersectingBusRoutes(geometriat)
 
-        if (bussesTormaystulos.isEmpty()) {
-            return BussiLiikenneLuokittelu.EI_VAIKUTA.value
-        }
+        val valueByRunkolinja =
+            bussireitit.maxOfOrNull { it.runkolinja.toBussiLiikenneLuokittelu().value }
+            // bussireitit is empty
+            ?: return BussiLiikenneLuokittelu.EI_VAIKUTA.value
 
-        val countOfRushHourBuses = bussesTormaystulos.sumOf { it.vuoromaaraRuuhkatunnissa }
+        val countOfRushHourBuses = bussireitit.sumOf { it.vuoromaaraRuuhkatunnissa }
         val valueByRajaArvo =
             RajaArvoLuokittelija.getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses)
 
-        val valueByRunkolinja =
-            when {
-                bussesTormaystulos.any { it.runkolinja == TormaystarkasteluBussiRunkolinja.ON } ->
-                    BussiLiikenneLuokittelu.RUNKOLINJA
-                bussesTormaystulos.any {
-                    it.runkolinja == TormaystarkasteluBussiRunkolinja.LAHES
-                } -> BussiLiikenneLuokittelu.RUNKOLINJAMAINEN
-                else -> BussiLiikenneLuokittelu.PERUS
-            }.value
-
-        return maxOf(valueByRajaArvo, valueByRunkolinja)
+        return max(valueByRajaArvo, valueByRunkolinja)
     }
 
     private fun raitiovaunuLuokittelu(geometriat: List<Geometriat>) =
