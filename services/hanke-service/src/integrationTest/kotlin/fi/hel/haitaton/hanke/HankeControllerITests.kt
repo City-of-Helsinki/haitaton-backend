@@ -6,11 +6,13 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.tormaystarkastelu.IndeksiType
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -106,6 +108,51 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.nimi").value("Hämeentien perusparannus ja katuvalot"))
                 .andExpect(jsonPath("$.status").value(HankeStatus.DRAFT.name))
+
+            verifySequence {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
+                hankeService.loadHanke(HANKE_TUNNUS)
+                disclosureLogService.saveDisclosureLogsForHanke(hanke, "test")
+            }
+        }
+
+        @Test
+        fun `Returns tormaystarkastelutulos with the hanke if it has been calculated`() {
+            val perus = 4.3f
+            val pyoraily = 2.1f
+            val linjaauto = 1.4f
+            val raitiovaunu = 3f
+            val hanke =
+                HankeFactory.create(hankeTunnus = HANKE_TUNNUS)
+                    .withTormaystarkasteluTulos(
+                        perusIndeksi = perus,
+                        pyorailyIndeksi = pyoraily,
+                        linjaautoIndeksi = linjaauto,
+                        raitiovaunuIndeksi = raitiovaunu
+                    )
+            every { hankeService.loadHanke(HANKE_TUNNUS) }.returns(hanke)
+            every {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
+            } returns true
+
+            get(url)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("tormaystarkasteluTulos.perusIndeksi").value(perus))
+                .andExpect(jsonPath("tormaystarkasteluTulos.pyorailyIndeksi").value(pyoraily))
+                .andExpect(jsonPath("tormaystarkasteluTulos.linjaautoIndeksi").value(linjaauto))
+                .andExpect(jsonPath("tormaystarkasteluTulos.raitiovaunuIndeksi").value(raitiovaunu))
+                .andExpect(
+                    // In this case, raitiovaunu > linjaauto
+                    jsonPath("tormaystarkasteluTulos.joukkoliikenneIndeksi").value(raitiovaunu)
+                )
+                // In this case, perusIndeksi has the highest value
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.liikennehaittaIndeksi.indeksi").value(perus)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.liikennehaittaIndeksi.tyyppi")
+                        .value(IndeksiType.PERUSINDEKSI.name)
+                )
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
@@ -429,7 +476,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
     @Nested
     inner class UpdateHanke {
-        private val hankeId = HankeFactory.defaultId
         private val url = "$BASE_URL/$HANKE_TUNNUS"
 
         @Test
@@ -535,7 +581,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
     @Nested
     inner class DeleteHanke {
-        private val hankeId = 56
         private val url = "$BASE_URL/$HANKE_TUNNUS"
 
         @Test
@@ -567,9 +612,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.DELETE.name)
             } throws HankeNotFoundException(HANKE_TUNNUS)
 
-            delete("$BASE_URL/$HANKE_TUNNUS")
-                .andExpect(status().isNotFound)
-                .andExpect(hankeError(HankeError.HAI1001))
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.DELETE.name)

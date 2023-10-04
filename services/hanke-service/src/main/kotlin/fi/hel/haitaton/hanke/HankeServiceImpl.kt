@@ -253,7 +253,8 @@ open class HankeServiceImpl(
                 TormaystarkasteluTulosEntity(
                     perus = it.perusIndeksi,
                     pyoraily = it.pyorailyIndeksi,
-                    joukkoliikenne = it.joukkoliikenneIndeksi,
+                    linjaauto = it.linjaautoIndeksi,
+                    raitiovaunu = it.raitiovaunuIndeksi,
                     hanke = target
                 )
             )
