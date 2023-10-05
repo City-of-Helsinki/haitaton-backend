@@ -132,15 +132,15 @@ open class ApplicationService(
         userId: String,
     ): Application {
         val application = getById(id)
-        val previous = application.toApplication()
+        val previousApplication = application.toApplication()
         logger.info("Updating application id=$id, alluid=${application.alluid}")
 
-        if (previous.applicationData == newApplicationData) {
+        if (previousApplication.applicationData == newApplicationData) {
             logger.info {
                 "Not updating unchanged application data. id=$id, " +
                     "alluid=${application.alluid}, identifier=${application.applicationIdentifier}"
             }
-            return previous
+            return previousApplication
         }
 
         when (application.applicationData) {
@@ -183,12 +183,12 @@ open class ApplicationService(
         // Update the application in Allu, if it's been already uploaded
         if (saved.alluid != null) {
             updateApplicationInAllu(saved)
-            provideAccessOnAlluUpdate(saved, previous.applicationData, userId, hanke)
+            provideAccessOnAlluUpdate(saved, previousApplication.applicationData, userId, hanke)
         }
 
         return saved.toApplication().also {
             logger.info("Updated application id=${it.id}, alluid=${it.alluid}")
-            applicationLoggingService.logUpdate(previous, it, userId)
+            applicationLoggingService.logUpdate(previousApplication, it, userId)
         }
     }
 
