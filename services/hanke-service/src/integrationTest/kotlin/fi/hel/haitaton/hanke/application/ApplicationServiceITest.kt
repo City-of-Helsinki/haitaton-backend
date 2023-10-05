@@ -630,9 +630,15 @@ class ApplicationServiceITest : DatabaseTest() {
 
             applicationService.updateApplicationData(application.id!!, updatedApplication, USERNAME)
 
-            assertThat(capturedNotifications).hasSize(3)
             assertThat(capturedNotifications)
                 .areValid(application.applicationType, application.hankeTunnus)
+            assertThat(capturedNotifications)
+                .extracting { it.recipientEmail }
+                .containsExactlyInAnyOrder(
+                    "new.mail@foo.fi",
+                    asianHoitajaCustomerContact.contacts[0].email,
+                    rakennuttajaCustomerContact.contacts[0].email
+                )
             verifySequence {
                 cableReportServiceAllu.getApplicationInformation(any())
                 cableReportServiceAllu.update(21, any())
