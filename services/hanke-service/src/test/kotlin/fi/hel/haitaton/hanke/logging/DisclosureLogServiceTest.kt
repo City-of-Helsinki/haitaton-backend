@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.logging
 
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
@@ -26,6 +27,7 @@ import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
@@ -76,17 +78,15 @@ internal class DisclosureLogServiceTest {
             |}"""
                 .trimMargin()
                 .replace("\n", "")
-        val expectedEntries =
-            listOf(
-                AuditLogEntryFactory.createReadEntry(
-                    userId = PROFIILI_AUDIT_LOG_USERID,
-                    userRole = UserRole.SERVICE,
-                    objectType = ObjectType.GDPR_RESPONSE,
-                    objectId = userId,
-                    objectBefore = expectedObject
-                )
+        val expectedEntry =
+            AuditLogEntryFactory.createReadEntry(
+                userId = PROFIILI_AUDIT_LOG_USERID,
+                userRole = UserRole.SERVICE,
+                objectType = ObjectType.GDPR_RESPONSE,
+                objectId = userId,
+                objectBefore = expectedObject
             )
-        verify { auditLogService.createAll(match(containsAll(expectedEntries))) }
+        verify { auditLogService.create(expectedEntry) }
     }
 
     @Test
@@ -365,6 +365,43 @@ internal class DisclosureLogServiceTest {
         disclosureLogService.saveDisclosureLogsForApplications(listOf(), userId)
 
         verify { auditLogService wasNot Called }
+    }
+
+    @Nested
+    inner class SaveDisclosureLogsForDecision {
+        @Test
+        fun `saves log with application details but decision type`() {
+            val application =
+                AlluDataFactory.createApplication(
+                    alluid = 2,
+                    alluStatus = ApplicationStatus.DECISION,
+                    applicationIdentifier = "JS2300050-2"
+                )
+            val expectedObject =
+                """
+                {
+                  "id": ${application.id},
+                  "alluid": ${application.alluid},
+                  "alluStatus": "${application.alluStatus}",
+                  "applicationIdentifier": "${application.applicationIdentifier}",
+                  "applicationType": "${application.applicationType}",
+                  "hankeTunnus": "${application.hankeTunnus}"
+                }"""
+                    .trimIndent()
+                    .replace("\n", "")
+                    .replace(" ", "")
+            val expectedLog =
+                AuditLogEntryFactory.createReadEntry(
+                    userId,
+                    objectType = ObjectType.DECISION,
+                    objectId = application.id!!,
+                    objectBefore = expectedObject
+                )
+
+            disclosureLogService.saveDisclosureLogsForDecision(application.toMetadata(), userId)
+
+            verify { auditLogService.create(expectedLog) }
+        }
     }
 
     private fun containsAll(

@@ -275,7 +275,11 @@ class ApplicationController(
     )
     @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'VIEW')")
     fun downloadDecision(@PathVariable(name = "id") id: Long): ResponseEntity<ByteArray> {
-        val (filename, pdfBytes) = applicationService.downloadDecision(id, currentUserId())
+        val userId = currentUserId()
+        val (filename, pdfBytes) = applicationService.downloadDecision(id, userId)
+        val application = applicationService.getApplicationById(id)
+        disclosureLogService.saveDisclosureLogsForDecision(application.toMetadata(), userId)
+
         val headers = HttpHeaders()
         headers.add("Content-Disposition", "inline; filename=$filename.pdf")
         return ResponseEntity.ok().headers(headers).contentType(APPLICATION_PDF).body(pdfBytes)

@@ -46,6 +46,7 @@ enum class ObjectType {
     APPLICATION,
     ALLU_CONTACT,
     ALLU_CUSTOMER,
+    DECISION,
     GDPR_RESPONSE,
     HANKE,
     HANKE_KAYTTAJA,
@@ -71,7 +72,6 @@ data class AuditLogEntry(
     val objectBefore: String? = null,
     val objectAfter: String? = null,
 ) {
-    // TODO: There will be a centralized place for object mappers. This should be moved there.
     fun toEntity(dateTime: OffsetDateTime, ipAddress: String?): AuditLogEntryEntity =
         AuditLogEntryEntity(
             message =
