@@ -620,17 +620,15 @@ class ApplicationServiceITest : DatabaseTest() {
             justRun {
                 emailSenderService.sendApplicationNotificationEmail(capture(capturedNotifications))
             }
-
-            applicationService.updateApplicationData(
-                application.id!!,
+            val updatedApplication =
                 cableReport.copy(
                     representativeWithContacts = asianHoitajaCustomerContact,
                     propertyDeveloperWithContacts = rakennuttajaCustomerContact,
                     contractorWithContacts =
                         suorittajaCustomerContact.changeContactEmails("new.mail@foo.fi")
-                ),
-                USERNAME
-            )
+                )
+
+            applicationService.updateApplicationData(application.id!!, updatedApplication, USERNAME)
 
             assertThat(capturedNotifications).hasSize(3)
             assertThat(capturedNotifications)
