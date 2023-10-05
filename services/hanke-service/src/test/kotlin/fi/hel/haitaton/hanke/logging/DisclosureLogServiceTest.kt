@@ -17,6 +17,7 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.gdpr.StringNode
+import fi.hel.haitaton.hanke.reformatJson
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -68,16 +69,14 @@ internal class DisclosureLogServiceTest {
 
         val expectedObject =
             """
-            |{"key":"user","children":
-              |[
-                |{"key":"id","value":"4f15afe1-51dc-4015-bb66-3a536295abea"},
-                |{"key":"nimi","value":"Teppo Testihenkilö"},
-                |{"key":"sahkoposti","value":"teppo@example.test"},
-                |{"key":"puhelin","value":"04012345678"}
-              |]
-            |}"""
-                .trimMargin()
-                .replace("\n", "")
+            {"key":"user","children":
+              [
+                {"key":"id","value":"4f15afe1-51dc-4015-bb66-3a536295abea"},
+                {"key":"nimi","value":"Teppo Testihenkilö"},
+                {"key":"sahkoposti","value":"teppo@example.test"},
+                {"key":"puhelin","value":"04012345678"}
+              ]
+            }""".reformatJson()
         val expectedEntry =
             AuditLogEntryFactory.createReadEntry(
                 userId = PROFIILI_AUDIT_LOG_USERID,
@@ -384,18 +383,14 @@ internal class DisclosureLogServiceTest {
                     hankeTunnus = hankeTunnus
                 )
             val expectedObject =
-                """
-                {
+                """{
                   "id": $applicationId,
                   "alluid": $alluId,
                   "alluStatus": "$alluStatus",
                   "applicationIdentifier": "$applicationIdentifier",
                   "applicationType": "CABLE_REPORT",
                   "hankeTunnus": "$hankeTunnus"
-                }"""
-                    .trimIndent()
-                    .replace("\n", "")
-                    .replace(" ", "")
+                }""".reformatJson()
             val expectedLog =
                 AuditLogEntryFactory.createReadEntry(
                     userId,
