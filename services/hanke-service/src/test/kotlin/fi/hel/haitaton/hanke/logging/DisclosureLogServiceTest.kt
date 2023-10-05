@@ -371,21 +371,27 @@ internal class DisclosureLogServiceTest {
     inner class SaveDisclosureLogsForDecision {
         @Test
         fun `saves log with application details but decision type`() {
+            val applicationId = 42L
+            val alluId = 2
+            val alluStatus = ApplicationStatus.DECISION
+            val applicationIdentifier = "JS2300050-2"
             val application =
                 AlluDataFactory.createApplication(
-                    alluid = 2,
-                    alluStatus = ApplicationStatus.DECISION,
-                    applicationIdentifier = "JS2300050-2"
+                    id = applicationId,
+                    alluid = alluId,
+                    alluStatus = alluStatus,
+                    applicationIdentifier = applicationIdentifier,
+                    hankeTunnus = hankeTunnus
                 )
             val expectedObject =
                 """
                 {
-                  "id": ${application.id},
-                  "alluid": ${application.alluid},
-                  "alluStatus": "${application.alluStatus}",
-                  "applicationIdentifier": "${application.applicationIdentifier}",
-                  "applicationType": "${application.applicationType}",
-                  "hankeTunnus": "${application.hankeTunnus}"
+                  "id": $applicationId,
+                  "alluid": $alluId,
+                  "alluStatus": "$alluStatus",
+                  "applicationIdentifier": "$applicationIdentifier",
+                  "applicationType": "CABLE_REPORT",
+                  "hankeTunnus": "$hankeTunnus"
                 }"""
                     .trimIndent()
                     .replace("\n", "")

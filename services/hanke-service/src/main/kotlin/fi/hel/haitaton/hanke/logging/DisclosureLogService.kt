@@ -49,7 +49,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     }
 
     /**
-     * Save disclosure logs for when a user downloads a decision.We don't know what information is
+     * Save disclosure logs for when a user downloads a decision. We don't know what information is
      * inside the PDF, but we can log the meta information about the decision (or application).
      *
      * Decisions contain private information, so their reads need to be logged.
