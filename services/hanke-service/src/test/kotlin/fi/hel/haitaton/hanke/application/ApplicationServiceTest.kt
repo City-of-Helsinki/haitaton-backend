@@ -43,9 +43,8 @@ import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
-import io.mockk.impl.annotations.InjectMockKs
-import io.mockk.impl.annotations.MockK
 import io.mockk.justRun
+import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifySequence
@@ -63,31 +62,44 @@ import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
-import org.springframework.test.context.junit.jupiter.SpringExtension
 
 private const val USERNAME = "test"
 private const val HANKE_TUNNUS = "HAI-1234"
 
-@ExtendWith(SpringExtension::class)
 class ApplicationServiceTest {
+    private val applicationRepository: ApplicationRepository = mockk()
+    private val hankeRepository: HankeRepository = mockk()
+    private val statusRepository: AlluStatusRepository = mockk()
+    private val geometriatDao: GeometriatDao = mockk()
 
-    @MockK private lateinit var applicationRepository: ApplicationRepository
-    @MockK private lateinit var hankeRepository: HankeRepository
-    @MockK private lateinit var statusRepository: AlluStatusRepository
-    @MockK private lateinit var geometriatDao: GeometriatDao
+    private val cableReportService: CableReportService = mockk()
+    private val permissionService: PermissionService = mockk()
+    private val emailSenderService: EmailSenderService = mockk()
+    private val attachmentService: ApplicationAttachmentService = mockk()
 
-    @MockK private lateinit var cableReportService: CableReportService
-    @MockK private lateinit var permissionService: PermissionService
-    @MockK private lateinit var emailSenderService: EmailSenderService
-    @MockK private lateinit var attachmentService: ApplicationAttachmentService
+    private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
+    private val loggingService: ApplicationLoggingService = mockk(relaxUnitFun = true)
+    private val hankeKayttajaService: HankeKayttajaService = mockk(relaxUnitFun = true)
+    private val hankeLoggingService: HankeLoggingService = mockk(relaxUnitFun = true)
 
-    @MockK(relaxUnitFun = true) private lateinit var disclosureLogService: DisclosureLogService
-    @MockK(relaxUnitFun = true) private lateinit var loggingService: ApplicationLoggingService
-    @MockK(relaxUnitFun = true) private lateinit var hankeKayttajaService: HankeKayttajaService
-    @MockK(relaxUnitFun = true) private lateinit var hankeLoggingService: HankeLoggingService
-    @MockK(relaxed = true) private lateinit var featureFlags: FeatureFlags
+    private val featureFlags: FeatureFlags = mockk(relaxed = true)
 
-    @InjectMockKs private lateinit var applicationService: ApplicationService
+    private val applicationService: ApplicationService =
+        ApplicationService(
+            applicationRepository,
+            statusRepository,
+            cableReportService,
+            disclosureLogService,
+            loggingService,
+            hankeKayttajaService,
+            emailSenderService,
+            attachmentService,
+            geometriatDao,
+            permissionService,
+            hankeRepository,
+            hankeLoggingService,
+            featureFlags
+        )
 
     companion object {
         private val applicationData: CableReportApplicationData =
