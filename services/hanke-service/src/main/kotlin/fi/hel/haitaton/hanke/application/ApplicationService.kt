@@ -183,7 +183,7 @@ open class ApplicationService(
         // Update the application in Allu, if it's been already uploaded
         if (saved.alluid != null) {
             updateApplicationInAllu(saved)
-            initAccessOnAlluUpdate(saved, previous.applicationData, userId, hanke)
+            provideAccessOnAlluUpdate(saved, previous.applicationData, userId, hanke)
         }
 
         return saved.toApplication().also {
@@ -358,7 +358,7 @@ open class ApplicationService(
         val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id!!, currentUserId)
         val contacts = application.applicationData.typedContacts(omit = kayttaja?.sahkoposti)
 
-        initAccess(
+        provideAccess(
             application = application,
             hanke = hanke,
             currentKayttaja = kayttaja,
@@ -368,7 +368,7 @@ open class ApplicationService(
     }
 
     /** Creates access for new application contacts. Email address used for comparison. */
-    private fun initAccessOnAlluUpdate(
+    private fun provideAccessOnAlluUpdate(
         application: ApplicationEntity,
         previousData: ApplicationData,
         currentUserId: String,
@@ -385,7 +385,7 @@ open class ApplicationService(
         val updatedContacts = application.applicationData.typedContacts(omit = kayttaja?.sahkoposti)
         val newContacts = updatedContacts.subtractByEmail(previousContacts)
 
-        initAccess(
+        provideAccess(
             application = application,
             hanke = hanke,
             currentKayttaja = kayttaja,
@@ -394,7 +394,7 @@ open class ApplicationService(
         )
     }
 
-    private fun initAccess(
+    private fun provideAccess(
         application: ApplicationEntity,
         hanke: HankeEntity,
         currentKayttaja: HankeKayttajaEntity?,
