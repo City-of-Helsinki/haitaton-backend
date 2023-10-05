@@ -602,7 +602,6 @@ class ApplicationServiceITest : DatabaseTest() {
         fun `when application is in Allu should initialize access for new contacts`() {
             val cableReport =
                 createCableReportApplicationData(
-                    areas = listOf(aleksanterinpatsas),
                     customerWithContacts = hakijaCustomerContact,
                     contractorWithContacts = suorittajaCustomerContact,
                 )
@@ -613,14 +612,13 @@ class ApplicationServiceITest : DatabaseTest() {
                 )
             fakeSendAllu(applicationRepository.findById(application.id!!).orElseThrow())
             val capturedNotifications = mutableListOf<ApplicationNotificationData>()
-            with(cableReportServiceAllu) {
-                justRun { update(21, any()) }
-                every { getApplicationInformation(any()) } returns createAlluApplicationResponse(21)
-                justRun { addAttachment(21, any()) }
-            }
-            with(emailSenderService) {
-                justRun { sendHankeInvitationEmail(any()) }
-                justRun { sendApplicationNotificationEmail(capture(capturedNotifications)) }
+            justRun { cableReportServiceAllu.update(21, any()) }
+            every { cableReportServiceAllu.getApplicationInformation(any()) } returns
+                createAlluApplicationResponse(21)
+            justRun { cableReportServiceAllu.addAttachment(21, any()) }
+            justRun { emailSenderService.sendHankeInvitationEmail(any()) }
+            justRun {
+                emailSenderService.sendApplicationNotificationEmail(capture(capturedNotifications))
             }
 
             applicationService.updateApplicationData(
@@ -638,16 +636,12 @@ class ApplicationServiceITest : DatabaseTest() {
             assertThat(capturedNotifications)
                 .areValid(application.applicationType, application.hankeTunnus)
             verifySequence {
-                with(cableReportServiceAllu) {
-                    getApplicationInformation(any())
-                    update(21, any())
-                    addAttachment(any(), any())
-                }
+                cableReportServiceAllu.getApplicationInformation(any())
+                cableReportServiceAllu.update(21, any())
+                cableReportServiceAllu.addAttachment(any(), any())
             }
-            with(emailSenderService) {
-                verify(exactly = 3) { sendHankeInvitationEmail(any()) }
-                verify(exactly = 3) { sendApplicationNotificationEmail(any()) }
-            }
+            verify(exactly = 3) { emailSenderService.sendHankeInvitationEmail(any()) }
+            verify(exactly = 3) { emailSenderService.sendApplicationNotificationEmail(any()) }
         }
 
         @Test
@@ -1122,15 +1116,12 @@ class ApplicationServiceITest : DatabaseTest() {
                     USERNAME,
                 )
             val capturedEmails = mutableListOf<ApplicationNotificationData>()
-            with(cableReportServiceAllu) {
-                every { create(any()) } returns 26
-                every { getApplicationInformation(any()) } returns createAlluApplicationResponse(26)
-                justRun { addAttachment(26, any()) }
-            }
-            with(emailSenderService) {
-                justRun { sendHankeInvitationEmail(any()) }
-                justRun { sendApplicationNotificationEmail(capture(capturedEmails)) }
-            }
+            every { cableReportServiceAllu.create(any()) } returns 26
+            every { cableReportServiceAllu.getApplicationInformation(any()) } returns
+                createAlluApplicationResponse(26)
+            justRun { cableReportServiceAllu.addAttachment(26, any()) }
+            justRun { emailSenderService.sendHankeInvitationEmail(any()) }
+            justRun { emailSenderService.sendApplicationNotificationEmail(capture(capturedEmails)) }
 
             applicationService.sendApplication(application.id!!, USERNAME)
 
@@ -1138,16 +1129,12 @@ class ApplicationServiceITest : DatabaseTest() {
             assertThat(capturedEmails)
                 .areValid(application.applicationType, application.hankeTunnus)
             verifySequence {
-                with(cableReportServiceAllu) {
-                    create(any())
-                    addAttachment(any(), any())
-                    getApplicationInformation(any())
-                }
+                cableReportServiceAllu.create(any())
+                cableReportServiceAllu.addAttachment(any(), any())
+                cableReportServiceAllu.getApplicationInformation(any())
             }
-            with(emailSenderService) {
-                verify(exactly = 3) { sendHankeInvitationEmail(any()) }
-                verify(exactly = 3) { sendApplicationNotificationEmail(any()) }
-            }
+            verify(exactly = 3) { emailSenderService.sendHankeInvitationEmail(any()) }
+            verify(exactly = 3) { emailSenderService.sendApplicationNotificationEmail(any()) }
         }
 
         @Test
