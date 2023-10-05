@@ -610,7 +610,7 @@ class ApplicationServiceITest : DatabaseTest() {
                     CableReportWithoutHanke(CABLE_REPORT, cableReport),
                     USERNAME,
                 )
-            fakeSendAllu(applicationRepository.findById(application.id!!).orElseThrow())
+            setAlluFields(applicationRepository.findById(application.id!!).orElseThrow())
             val capturedNotifications = mutableListOf<ApplicationNotificationData>()
             justRun { cableReportServiceAllu.update(21, any()) }
             every { cableReportServiceAllu.getApplicationInformation(any()) } returns
@@ -1815,7 +1815,7 @@ class ApplicationServiceITest : DatabaseTest() {
             applicationData = applicationData
         )
 
-    private fun fakeSendAllu(applicationEntity: ApplicationEntity) {
+    private fun setAlluFields(applicationEntity: ApplicationEntity) {
         applicationRepository.save(
             applicationEntity.copy(
                 alluid = 21,
