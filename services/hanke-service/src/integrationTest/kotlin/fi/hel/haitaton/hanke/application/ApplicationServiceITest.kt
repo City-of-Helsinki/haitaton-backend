@@ -612,7 +612,7 @@ class ApplicationServiceITest : DatabaseTest() {
                     USERNAME,
                 )
             mockSendAllu(applicationRepository.findById(application.id!!).orElseThrow())
-            val capturedEmails = mutableListOf<ApplicationNotificationData>()
+            val capturedNotifications = mutableListOf<ApplicationNotificationData>()
             with(cableReportServiceAllu) {
                 justRun { update(21, any()) }
                 every { getApplicationInformation(any()) } returns createAlluApplicationResponse(21)
@@ -620,7 +620,7 @@ class ApplicationServiceITest : DatabaseTest() {
             }
             with(emailSenderService) {
                 justRun { sendHankeInvitationEmail(any()) }
-                justRun { sendApplicationNotificationEmail(capture(capturedEmails)) }
+                justRun { sendApplicationNotificationEmail(capture(capturedNotifications)) }
             }
 
             applicationService.updateApplicationData(
@@ -634,8 +634,8 @@ class ApplicationServiceITest : DatabaseTest() {
                 USERNAME
             )
 
-            assertThat(capturedEmails).hasSize(3)
-            assertThat(capturedEmails)
+            assertThat(capturedNotifications).hasSize(3)
+            assertThat(capturedNotifications)
                 .areValid(application.applicationType, application.hankeTunnus)
             verifySequence {
                 with(cableReportServiceAllu) {
