@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import assertk.Assert
-import assertk.assertions.containsExactly
+import assertk.assertions.containsExactlyInAnyOrder
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -50,8 +50,8 @@ fun GreenMailExtension.firstReceivedMessage(): MimeMessage {
     return receivedMessages[0]
 }
 
-inline fun <reified T> Assert<List<T>>.hasSameElementsAs(elements: List<T>) =
-    containsExactly(*elements.toTypedArray<T>())
+inline fun <reified T> Assert<Collection<T>>.hasSameElementsAs(elements: List<T>) =
+    containsExactlyInAnyOrder(*elements.toTypedArray<T>())
 
 /**
  * "Uses" a variable without doing anything with it. Used to avoid "Parameter is never used"

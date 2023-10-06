@@ -37,17 +37,17 @@ object AuditLogEntryFactory {
             createReadEntry(objectId = it.id, objectBefore = it.toJsonString())
         }
 
-    fun createReadEntryForContact(contact: Contact): AuditLogEntry =
+    fun createReadEntryForContact(applicationId: Long, contact: Contact): AuditLogEntry =
         createReadEntry(
-            objectId = null,
-            objectType = ObjectType.ALLU_CONTACT,
+            objectId = applicationId,
+            objectType = ObjectType.APPLICATION_CONTACT,
             objectBefore = contact.toJsonString()
         )
 
-    fun createReadEntryForCustomer(customer: Customer): AuditLogEntry =
+    fun createReadEntryForCustomer(applicationId: Long, customer: Customer): AuditLogEntry =
         createReadEntry(
-            objectId = null,
-            objectType = ObjectType.ALLU_CUSTOMER,
+            objectId = applicationId,
+            objectType = ObjectType.APPLICATION_CUSTOMER,
             objectBefore = customer.toJsonString()
         )
 

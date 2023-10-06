@@ -38,13 +38,25 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
      * disclosure log entries for the customers and contacts in the application.
      */
     fun saveDisclosureLogsForAllu(
-        application: CableReportApplicationData,
+        applicationId: Long,
+        applicationData: CableReportApplicationData,
         status: Status,
         failureDescription: String? = null
     ) {
+        val dataWithId = Pair(applicationId, applicationData)
         val entries =
-            auditLogEntriesForCustomers(listOf(application), status, failureDescription) +
-                auditLogEntriesForContacts(listOf(application), status, failureDescription)
+            auditLogEntriesForCustomers(
+                listOf(dataWithId),
+                ObjectType.ALLU_CUSTOMER,
+                status,
+                failureDescription
+            ) +
+                auditLogEntriesForContacts(
+                    listOf(dataWithId),
+                    ObjectType.ALLU_CONTACT,
+                    status,
+                    failureDescription
+                )
         saveDisclosureLogs(ALLU_AUDIT_LOG_USERID, UserRole.SERVICE, entries)
     }
 
@@ -73,10 +85,10 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
      * the customers and contacts in the applications.
      */
     fun saveDisclosureLogsForApplications(applications: List<Application>, userId: String) {
-        val applicationData = applications.map { it.applicationData }
+        val dataWithIds = applications.map { Pair(it.id, it.applicationData) }
         val entries =
-            auditLogEntriesForCustomers(applicationData) +
-                auditLogEntriesForContacts(applicationData)
+            auditLogEntriesForCustomers(dataWithIds, ObjectType.APPLICATION_CUSTOMER) +
+                auditLogEntriesForContacts(dataWithIds, ObjectType.APPLICATION_CONTACT)
         saveDisclosureLogs(userId, UserRole.USER, entries)
     }
 
@@ -117,63 +129,67 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     }
 
     private fun auditLogEntriesForCustomers(
-        applications: List<ApplicationData>,
+        applications: List<Pair<Long?, ApplicationData>>,
+        objectType: ObjectType,
         status: Status = Status.SUCCESS,
         failureDescription: String? = null
-    ) =
+    ): List<AuditLogEntry> =
         applications
-            .flatMap { extractCustomers(it) }
+            .flatMap { (id, data) -> extractCustomers(id, data) }
             .toSet()
             // Ignore country, since all customers have a default country atm.
             // Also, just a country can't be considered personal information.
             // I.e. check that the customer has other info besides the country.
-            .filter { it.copy(country = "").hasInformation() }
+            .filter { (_, data) -> data.copy(country = "").hasInformation() }
             // Customers don't have IDs, since they're embedded in the applications. We could use
             // the application ID here, but that would require the log reader to have deep knowledge
             // of haitaton to make sense of the objectId field.
-            .map {
-                disclosureLogEntry(ObjectType.ALLU_CUSTOMER, null, it, status, failureDescription)
+            .map { (id, data) ->
+                disclosureLogEntry(objectType, id, data, status, failureDescription)
             }
 
     private fun auditLogEntriesForContacts(
-        applications: List<ApplicationData>,
+        applications: List<Pair<Long?, ApplicationData>>,
+        objectType: ObjectType,
         status: Status = Status.SUCCESS,
         failureDescription: String? = null,
     ) =
         applications
-            .flatMap { extractContacts(it) }
+            .flatMap { (id, data) -> extractContacts(id, data) }
             .toSet()
-            .filter { it.hasInformation() }
+            .filter { (_, data) -> data.hasInformation() }
             // Contacts don't have IDs, since they're embedded in the applications. We could use the
             // application ID here, but that would require the log reader to have deep knowledge of
             // haitaton to make sense of the objectId field.
-            .map {
-                disclosureLogEntry(ObjectType.ALLU_CONTACT, null, it, status, failureDescription)
+            .map { (id, data) ->
+                disclosureLogEntry(objectType, id, data, status, failureDescription)
             }
 
-    private fun extractContacts(application: ApplicationData): List<Contact> =
-        when (application) {
+    private fun extractContacts(
+        applicationId: Long?,
+        applicationData: ApplicationData,
+    ): List<Pair<Long?, Contact>> =
+        when (applicationData) {
             is CableReportApplicationData ->
-                listOfNotNull(
-                        application.customerWithContacts.contacts,
-                        application.contractorWithContacts.contacts,
-                        application.representativeWithContacts?.contacts,
-                        application.propertyDeveloperWithContacts?.contacts,
-                    )
+                applicationData
+                    .customersWithContacts()
+                    .map { it.contacts }
                     .flatten()
+                    .map { applicationId to it }
         }
 
-    private fun extractCustomers(application: ApplicationData): List<Customer> =
-        when (application) {
+    private fun extractCustomers(
+        applicationId: Long?,
+        applicationData: ApplicationData
+    ): List<Pair<Long?, Customer>> =
+        when (applicationData) {
             is CableReportApplicationData ->
-                listOfNotNull(
-                        application.customerWithContacts.customer,
-                        application.contractorWithContacts.customer,
-                        application.representativeWithContacts?.customer,
-                        application.propertyDeveloperWithContacts?.customer,
-                    )
+                applicationData
+                    .customersWithContacts()
+                    .map { it.customer }
                     // Only personal data needs to be logged, not other types of customers.
                     .filter { it.type == CustomerType.PERSON }
+                    .map { applicationId to it }
         }
 
     private fun auditLogEntriesForYhteystiedot(yhteystiedot: List<HankeYhteystieto>) =
