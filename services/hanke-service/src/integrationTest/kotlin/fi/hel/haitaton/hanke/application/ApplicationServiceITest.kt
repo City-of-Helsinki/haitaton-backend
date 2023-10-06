@@ -67,6 +67,7 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.defaultNimi
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
@@ -172,10 +173,12 @@ class ApplicationServiceITest : DatabaseTest() {
 
     fun createHankeEntity(
         hankeTunnus: String? = HANKE_TUNNUS,
+        hankeNimi: String = defaultNimi,
         generated: Boolean = false
-    ): HankeEntity {
-        return hankeRepository.save(HankeEntity(hankeTunnus = hankeTunnus, generated = generated))
-    }
+    ): HankeEntity =
+        hankeRepository.save(
+            HankeEntity(hankeTunnus = hankeTunnus, nimi = hankeNimi, generated = generated)
+        )
 
     @Nested
     inner class CreateApplication {
@@ -599,7 +602,7 @@ class ApplicationServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `when application is in Allu should initialize access for new contacts`() {
+        fun `when application is in Allu should provide access for new contacts`() {
             val cableReport =
                 createCableReportApplicationData(
                     customerWithContacts = hakijaCustomerContact,
@@ -646,6 +649,48 @@ class ApplicationServiceITest : DatabaseTest() {
             }
             verify(exactly = 3) { emailSenderService.sendHankeInvitationEmail(any()) }
             verify(exactly = 3) { emailSenderService.sendApplicationNotificationEmail(any()) }
+        }
+
+        @Test
+        fun `when no sender hanke user found should not send any emails`() {
+            val initialApplicationData =
+                createCableReportApplicationData(
+                    customerWithContacts = hakijaCustomerContact,
+                    contractorWithContacts = suorittajaCustomerContact,
+                )
+            val application =
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = createHankeEntity(hankeTunnus = HANKE_TUNNUS, generated = true),
+                    application =
+                        createApplication(
+                            alluid = 21,
+                            alluStatus = PENDING,
+                            applicationIdentifier = defaultApplicationIdentifier,
+                            applicationData = initialApplicationData
+                        )
+                )
+            justRun { cableReportServiceAllu.update(21, any()) }
+            justRun { cableReportServiceAllu.addAttachment(21, any()) }
+            every { cableReportServiceAllu.getApplicationInformation(any()) } returns
+                createAlluApplicationResponse(21)
+
+            val updatedApplication =
+                initialApplicationData.copy(
+                    representativeWithContacts = asianHoitajaCustomerContact,
+                    propertyDeveloperWithContacts = rakennuttajaCustomerContact,
+                    contractorWithContacts =
+                        suorittajaCustomerContact.changeContactEmails("new.mail@foo.fi")
+                )
+
+            applicationService.updateApplicationData(application.id!!, updatedApplication, USERNAME)
+
+            verifySequence {
+                cableReportServiceAllu.getApplicationInformation(any())
+                cableReportServiceAllu.update(21, any())
+                cableReportServiceAllu.addAttachment(any(), any())
+            }
+            verify { emailSenderService wasNot Called }
         }
 
         @Test
