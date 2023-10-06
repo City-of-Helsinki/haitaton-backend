@@ -125,7 +125,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
                     }
                   }
                 ]
-              }""".trimIndent()
+              }"""
 
             get()
                 .andExpect(MockMvcResultMatchers.status().`is`(500))
@@ -186,7 +186,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
                   }
                 ]
               }
-            """.trimIndent()
+            """
 
             get()
                 .andExpect(MockMvcResultMatchers.status().isOk)
@@ -320,7 +320,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
                     }
                   ]
                 }
-            """.trimIndent()
+            """
 
             delete(dryRun)
                 .andExpect(MockMvcResultMatchers.status().isForbidden)

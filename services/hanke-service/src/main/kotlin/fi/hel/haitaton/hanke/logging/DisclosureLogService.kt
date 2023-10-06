@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.logging
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationData
+import fi.hel.haitaton.hanke.application.ApplicationMetaData
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
@@ -29,7 +30,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
      */
     fun saveDisclosureLogsForProfiili(userId: String, gdprInfo: CollectionNode) {
         val entry = disclosureLogEntry(ObjectType.GDPR_RESPONSE, userId, gdprInfo)
-        saveDisclosureLogs(PROFIILI_AUDIT_LOG_USERID, UserRole.SERVICE, listOf(entry))
+        saveDisclosureLog(PROFIILI_AUDIT_LOG_USERID, UserRole.SERVICE, entry)
     }
 
     /**
@@ -45,6 +46,17 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             auditLogEntriesForCustomers(listOf(application), status, failureDescription) +
                 auditLogEntriesForContacts(listOf(application), status, failureDescription)
         saveDisclosureLogs(ALLU_AUDIT_LOG_USERID, UserRole.SERVICE, entries)
+    }
+
+    /**
+     * Save disclosure logs for when a user downloads a decision. We don't know what information is
+     * inside the PDF, but we can log the meta information about the decision (or application).
+     *
+     * Decisions contain private information, so their reads need to be logged.
+     */
+    fun saveDisclosureLogsForDecision(metaData: ApplicationMetaData, userId: String) {
+        val entry = disclosureLogEntry(ObjectType.DECISION, metaData.id, metaData)
+        saveDisclosureLog(userId, UserRole.USER, entry)
     }
 
     /**
@@ -183,6 +195,9 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             objectId = objectId?.toString(),
             objectBefore = objectBefore.toJsonString()
         )
+
+    private fun saveDisclosureLog(userId: String, userRole: UserRole, entry: AuditLogEntry) =
+        auditLogService.create(entry.copy(userId = userId, userRole = userRole))
 
     private fun saveDisclosureLogs(
         userId: String,

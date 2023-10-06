@@ -1618,11 +1618,11 @@ class HankeServiceITests : DatabaseTest() {
 
     private fun expectedYhteyshenkilot(i: Int) =
         """[{
-            | "etunimi": "yhteys-etu$i",
-            | "sukunimi": "yhteys-suku$i",
-            | "email": "yhteys-email$i",
-            | "puhelinnumero": "010$i$i$i$i$i$i$i"
-            | }]""".trimMargin()
+             "etunimi": "yhteys-etu$i",
+             "sukunimi": "yhteys-suku$i",
+             "email": "yhteys-email$i",
+             "puhelinnumero": "010$i$i$i$i$i$i$i"
+            }]"""
 
     /**
      * Fills a new Hanke domain object with test values and returns it. The audit and id/tunnus
