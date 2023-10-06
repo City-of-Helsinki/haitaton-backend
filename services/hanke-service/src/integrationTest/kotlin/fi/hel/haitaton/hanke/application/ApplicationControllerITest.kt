@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomerContacts
 import fi.hel.haitaton.hanke.getResourceAsBytes
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.toJsonString
@@ -61,6 +62,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     @Autowired private lateinit var applicationService: ApplicationService
     @Autowired private lateinit var hankeService: HankeService
     @Autowired private lateinit var authorizer: ApplicationAuthorizer
+    @Autowired private lateinit var disclosureLogService: DisclosureLogService
     @Autowired private lateinit var objectMapper: ObjectMapper
 
     private val id = 1234L
@@ -702,10 +704,13 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when decision exists should return bytes and correct headers`() {
+            val applicationIdentifier = "JS230001"
             val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
             every { authorizer.authorizeApplicationId(id, VIEW.name) } returns true
             every { applicationService.downloadDecision(id, USERNAME) } returns
-                Pair("JS230001", pdfBytes)
+                Pair(applicationIdentifier, pdfBytes)
+            every { applicationService.getApplicationById(id) } returns
+                AlluDataFactory.createApplication(applicationIdentifier = applicationIdentifier)
 
             get("$BASE_URL/$id/paatos", resultType = APPLICATION_PDF)
                 .andExpect(status().isOk)
@@ -715,6 +720,34 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             verifySequence {
                 authorizer.authorizeApplicationId(id, VIEW.name)
                 applicationService.downloadDecision(id, USERNAME)
+                applicationService.getApplicationById(id)
+            }
+        }
+
+        @Test
+        fun `when decision exists should write access to audit log`() {
+            val applicationIdentifier = "JS230001"
+            val application =
+                AlluDataFactory.createApplication(applicationIdentifier = applicationIdentifier)
+            val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
+            every { authorizer.authorizeApplicationId(id, VIEW.name) } returns true
+            every { applicationService.downloadDecision(id, USERNAME) } returns
+                Pair(applicationIdentifier, pdfBytes)
+            every { applicationService.getApplicationById(id) } returns application
+
+            get("$BASE_URL/$id/paatos", resultType = APPLICATION_PDF)
+                .andExpect(status().isOk)
+                .andExpect(header().string("Content-Disposition", "inline; filename=JS230001.pdf"))
+                .andExpect(content().bytes(pdfBytes))
+
+            verifySequence {
+                authorizer.authorizeApplicationId(id, VIEW.name)
+                applicationService.downloadDecision(id, USERNAME)
+                applicationService.getApplicationById(id)
+                disclosureLogService.saveDisclosureLogsForDecision(
+                    application.toMetadata(),
+                    USERNAME
+                )
             }
         }
 
