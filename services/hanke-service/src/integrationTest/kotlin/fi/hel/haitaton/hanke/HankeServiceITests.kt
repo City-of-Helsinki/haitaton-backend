@@ -1000,6 +1000,28 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
+    fun `generateHankeWithApplication sets hanke name according to limit and saves successfully`() {
+        val expectedName = "a".repeat(MAXIMUM_HANKE_NIMI_LENGTH)
+        val tooLongName = expectedName.plus("aaa")
+        val inputApplication =
+            AlluDataFactory.cableReportWithoutHanke()
+                .copy(
+                    applicationData =
+                        AlluDataFactory.createCableReportApplicationData(name = tooLongName)
+                )
+
+        val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
+
+        val hanke = hankeRepository.findByHankeTunnus(application.hankeTunnus)!!
+        assertThat(hanke.nimi).isEqualTo(expectedName)
+        assertThat(hanke.generated).isTrue
+        assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
+        assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
+        assertThat(hanke.perustaja?.nimi).isEqualTo("Teppo Testihenkilö")
+        assertThat(hanke.perustaja?.email).isEqualTo("teppo@example.test")
+    }
+
+    @Test
     fun `generateHankeWithApplication when exception rolls back`() {
         // Use an intersecting geometry so that ApplicationService will throw an exception
         val inputApplication =
