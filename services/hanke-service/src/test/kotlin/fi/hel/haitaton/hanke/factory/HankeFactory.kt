@@ -238,7 +238,7 @@ class HankeFactory(
             rakennuttajat: List<Int> = listOf(2),
             toteuttajat: List<Int> = listOf(3),
             muut: List<Int> = listOf(4),
-            mutator: (HankeYhteystieto) -> Unit = {},
+            mutator: HankeYhteystieto.() -> Unit = {},
         ): Hanke {
             this.omistajat.addAll(HankeYhteystietoFactory.createDifferentiated(omistajat, mutator))
             this.rakennuttajat.addAll(
@@ -263,7 +263,7 @@ class HankeFactory(
          */
         fun Hanke.withGeneratedOmistajat(
             ids: List<Int>,
-            mutator: (HankeYhteystieto) -> Unit = {}
+            mutator: HankeYhteystieto.() -> Unit = {}
         ): Hanke {
             omistajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
             return this
@@ -279,7 +279,7 @@ class HankeFactory(
          */
         fun Hanke.withGeneratedOmistajat(
             vararg ids: Int,
-            mutator: (HankeYhteystieto) -> Unit = {}
+            mutator: HankeYhteystieto.() -> Unit = {}
         ): Hanke = withGeneratedOmistajat(ids.toList(), mutator)
 
         /**
@@ -290,7 +290,7 @@ class HankeFactory(
          * HankeFactory.create().withGeneratedOmistaja(1)
          * ```
          */
-        fun Hanke.withGeneratedOmistaja(id: Int, mutator: (HankeYhteystieto) -> Unit = {}): Hanke =
+        fun Hanke.withGeneratedOmistaja(id: Int, mutator: HankeYhteystieto.() -> Unit = {}): Hanke =
             withGeneratedOmistajat(listOf(id), mutator)
 
         /**
@@ -305,7 +305,7 @@ class HankeFactory(
          */
         fun Hanke.withGeneratedRakennuttajat(
             ids: List<Int>,
-            mutator: (HankeYhteystieto) -> Unit = {}
+            mutator: HankeYhteystieto.() -> Unit = {}
         ): Hanke {
             rakennuttajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
             return this
@@ -321,7 +321,7 @@ class HankeFactory(
          */
         fun Hanke.withGeneratedRakennuttajat(
             vararg ids: Int,
-            mutator: (HankeYhteystieto) -> Unit = {}
+            mutator: HankeYhteystieto.() -> Unit = {}
         ): Hanke = withGeneratedRakennuttajat(ids.toList(), mutator)
 
         /**
@@ -334,7 +334,7 @@ class HankeFactory(
          */
         fun Hanke.withGeneratedRakennuttaja(
             id: Int,
-            mutator: (HankeYhteystieto) -> Unit = {}
+            mutator: HankeYhteystieto.() -> Unit = {}
         ): Hanke = withGeneratedRakennuttajat(listOf(id), mutator)
 
         /**
@@ -349,7 +349,7 @@ class HankeFactory(
          */
         fun Hanke.withGeneratedToteuttajat(
             ids: List<Int>,
-            mutator: (HankeYhteystieto) -> Unit = {}
+            mutator: HankeYhteystieto.() -> Unit = {}
         ): Hanke {
             toteuttajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
             return this
@@ -365,7 +365,7 @@ class HankeFactory(
          */
         fun Hanke.withGeneratedToteuttajat(
             vararg ids: Int,
-            mutator: (HankeYhteystieto) -> Unit = {}
+            mutator: HankeYhteystieto.() -> Unit = {}
         ): Hanke = withGeneratedToteuttajat(ids.toList(), mutator)
 
         /**
@@ -378,7 +378,7 @@ class HankeFactory(
          */
         fun Hanke.withGeneratedToteuttaja(
             id: Int,
-            mutator: (HankeYhteystieto) -> Unit = {}
+            mutator: HankeYhteystieto.() -> Unit = {}
         ): Hanke = withGeneratedToteuttajat(listOf(id), mutator)
 
         private fun tormaysTarkastelu(

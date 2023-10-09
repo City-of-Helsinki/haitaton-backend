@@ -19,7 +19,7 @@ object AuditLogEntryFactory {
         operation: Operation = Operation.READ,
         status: Status = Status.SUCCESS,
         objectType: ObjectType = ObjectType.YHTEYSTIETO,
-        objectId: Any? = 1,
+        objectId: Any = 1,
         objectBefore: String? = null,
     ) =
         AuditLogEntry(
@@ -28,13 +28,13 @@ object AuditLogEntryFactory {
             operation = operation,
             status = status,
             objectType = objectType,
-            objectId = objectId?.toString(),
+            objectId = objectId.toString(),
             objectBefore = objectBefore,
         )
 
     fun createReadEntriesForHanke(hanke: Hanke): List<AuditLogEntry> =
         hanke.extractYhteystiedot().map {
-            createReadEntry(objectId = it.id, objectBefore = it.toJsonString())
+            createReadEntry(objectId = it.id!!, objectBefore = it.toJsonString())
         }
 
     fun createReadEntryForContact(applicationId: Long, contact: Contact): AuditLogEntry =

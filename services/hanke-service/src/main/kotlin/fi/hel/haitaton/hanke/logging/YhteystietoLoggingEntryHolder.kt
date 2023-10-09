@@ -73,7 +73,7 @@ class YhteystietoLoggingEntryHolder {
         newEntity: HankeYhteystietoEntity?,
         userId: String
     ) {
-        // Note, use oldEntity delete and update and newEntity for create-operation.
+        // Note, use oldEntity for delete and update and newEntity for create-operation.
         val yhteystietoId = oldEntity?.id ?: newEntity?.id
 
         val auditLogEntry =
@@ -84,7 +84,7 @@ class YhteystietoLoggingEntryHolder {
                 status = if (failed) Status.FAILED else Status.SUCCESS,
                 failureDescription = failureDescription,
                 objectType = ObjectType.YHTEYSTIETO,
-                objectId = yhteystietoId?.toString(),
+                objectId = yhteystietoId!!.toString(),
                 objectBefore = oldEntity?.toChangeLogJsonString(),
                 objectAfter = newEntity?.toChangeLogJsonString(),
             )

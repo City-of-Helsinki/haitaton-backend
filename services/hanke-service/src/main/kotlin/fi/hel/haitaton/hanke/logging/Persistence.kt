@@ -81,7 +81,7 @@ data class AuditLogActor(
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class AuditLogTarget(
-    val id: String?,
+    val id: String,
     val type: ObjectType,
     @JsonProperty("object_before") val objectBefore: String?,
     @JsonProperty("object_after") val objectAfter: String?,
