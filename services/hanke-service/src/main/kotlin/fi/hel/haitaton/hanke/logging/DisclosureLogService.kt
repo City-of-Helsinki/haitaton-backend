@@ -1,7 +1,9 @@
 package fi.hel.haitaton.hanke.logging
 
+import com.fasterxml.jackson.annotation.JsonUnwrapped
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Application
+import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationMetaData
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
@@ -165,24 +167,26 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             .flatMap { auditLogEntriesForContacts(it.id!!, it.applicationData, objectType) }
             .toSet()
 
-    private fun extractContacts(applicationData: ApplicationData): List<Contact> =
+    private fun extractContacts(applicationData: ApplicationData): List<ContactWithRole> =
         when (applicationData) {
             is CableReportApplicationData ->
                 applicationData
-                    .customersWithContacts()
-                    .flatMap { it.contacts }
-                    .filter { it.hasInformation() }
+                    .customersByRole()
+                    .flatMap { (role, customer) ->
+                        customer.contacts.map { ContactWithRole(role, it) }
+                    }
+                    .filter { it.contact.hasInformation() }
         }
 
-    private fun extractCustomers(applicationData: ApplicationData): List<Customer> =
+    private fun extractCustomers(applicationData: ApplicationData): List<CustomerWithRole> =
         when (applicationData) {
             is CableReportApplicationData ->
                 applicationData
-                    .customersWithContacts()
-                    .map { it.customer }
+                    .customersByRole()
+                    .map { (role, customer) -> CustomerWithRole(role, customer.customer) }
                     // Only personal data needs to be logged, not other types of customers.
-                    .filter { it.type == CustomerType.PERSON }
-                    .filter { it.hasPersonalInformation() }
+                    .filter { it.customer.type == CustomerType.PERSON }
+                    .filter { it.customer.hasPersonalInformation() }
         }
 
     private fun auditLogEntriesForYhteystiedot(yhteystiedot: List<HankeYhteystieto>) =
@@ -222,3 +226,13 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         auditLogService.createAll(entities)
     }
 }
+
+data class CustomerWithRole(
+    val role: ApplicationContactType,
+    @JsonUnwrapped val customer: Customer,
+)
+
+data class ContactWithRole(
+    val role: ApplicationContactType,
+    @JsonUnwrapped val contact: Contact,
+)

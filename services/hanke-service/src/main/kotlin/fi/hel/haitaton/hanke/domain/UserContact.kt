@@ -1,10 +1,6 @@
 package fi.hel.haitaton.hanke.domain
 
 import fi.hel.haitaton.hanke.application.ApplicationContactType
-import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
@@ -48,12 +44,8 @@ data class ApplicationUserContact(
 fun ApplicationData.typedContacts(omit: String? = null): Set<ApplicationUserContact> =
     when (this) {
         is CableReportApplicationData ->
-            listOfNotNull(
-                    customerWithContacts.typedAs(HAKIJA),
-                    contractorWithContacts.typedAs(TYON_SUORITTAJA),
-                    representativeWithContacts?.typedAs(ASIANHOITAJA),
-                    propertyDeveloperWithContacts?.typedAs(RAKENNUTTAJA)
-                )
+            customersByRole()
+                .map { (role, customer) -> customer.typedAs(role) }
                 .flatten()
                 .remove(omit)
                 .toSet()
