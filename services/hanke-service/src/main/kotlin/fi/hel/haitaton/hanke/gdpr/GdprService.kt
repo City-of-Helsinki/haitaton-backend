@@ -25,7 +25,7 @@ class GdprService(private val applicationService: ApplicationService) {
 
         val (pendingApplications, activeApplications) =
             applicationService.getAllApplicationsCreatedByUser(userId).partition {
-                applicationService.isStillPending(it)
+                applicationService.isStillPending(it.alluid, it.alluStatus)
             }
 
         if (activeApplications.isNotEmpty()) {

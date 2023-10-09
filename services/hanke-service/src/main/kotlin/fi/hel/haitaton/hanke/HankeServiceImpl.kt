@@ -230,7 +230,7 @@ open class HankeServiceImpl(
     private fun anyHakemusProcessingInAllu(hakemukset: List<Application>): Boolean =
         hakemukset.any {
             logger.info { "Hakemus ${it.id} has alluStatus ${it.alluStatus}" }
-            !applicationService.isStillPending(it)
+            !applicationService.isStillPending(it.alluid, it.alluStatus)
         }
 
     private fun initAccessForCreatedHanke(hanke: Hanke, perustaja: Perustaja?, userId: String) {
