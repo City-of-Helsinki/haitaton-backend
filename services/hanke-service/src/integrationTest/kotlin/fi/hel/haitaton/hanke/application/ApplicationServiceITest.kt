@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.application
 
+import assertk.Assert
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
@@ -66,6 +67,7 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.defaultNimi
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
@@ -171,10 +173,12 @@ class ApplicationServiceITest : DatabaseTest() {
 
     fun createHankeEntity(
         hankeTunnus: String? = HANKE_TUNNUS,
+        hankeNimi: String = defaultNimi,
         generated: Boolean = false
-    ): HankeEntity {
-        return hankeRepository.save(HankeEntity(hankeTunnus = hankeTunnus, generated = generated))
-    }
+    ): HankeEntity =
+        hankeRepository.save(
+            HankeEntity(hankeTunnus = hankeTunnus, nimi = hankeNimi, generated = generated)
+        )
 
     @Nested
     inner class CreateApplication {
@@ -595,6 +599,98 @@ class ApplicationServiceITest : DatabaseTest() {
                 cableReportServiceAllu.update(21, expectedAlluRequest)
                 cableReportServiceAllu.addAttachment(21, any())
             }
+        }
+
+        @Test
+        fun `when application is in Allu should provide access for new contacts`() {
+            val cableReport =
+                createCableReportApplicationData(
+                    customerWithContacts = hakijaCustomerContact,
+                    contractorWithContacts = suorittajaCustomerContact,
+                )
+            val application =
+                hankeService.generateHankeWithApplication(
+                    CableReportWithoutHanke(CABLE_REPORT, cableReport),
+                    USERNAME,
+                )
+            setAlluFields(applicationRepository.findById(application.id!!).orElseThrow())
+            val capturedNotifications = mutableListOf<ApplicationNotificationData>()
+            justRun { cableReportServiceAllu.update(21, any()) }
+            every { cableReportServiceAllu.getApplicationInformation(any()) } returns
+                createAlluApplicationResponse(21)
+            justRun { cableReportServiceAllu.addAttachment(21, any()) }
+            justRun { emailSenderService.sendHankeInvitationEmail(any()) }
+            justRun {
+                emailSenderService.sendApplicationNotificationEmail(capture(capturedNotifications))
+            }
+            val updatedApplication =
+                cableReport.copy(
+                    representativeWithContacts = asianHoitajaCustomerContact,
+                    propertyDeveloperWithContacts = rakennuttajaCustomerContact,
+                    contractorWithContacts =
+                        suorittajaCustomerContact.changeContactEmails("new.mail@foo.fi")
+                )
+
+            applicationService.updateApplicationData(application.id!!, updatedApplication, USERNAME)
+
+            assertThat(capturedNotifications)
+                .areValid(application.applicationType, application.hankeTunnus)
+            assertThat(capturedNotifications)
+                .extracting { it.recipientEmail }
+                .containsExactlyInAnyOrder(
+                    "new.mail@foo.fi",
+                    asianHoitajaCustomerContact.contacts[0].email,
+                    rakennuttajaCustomerContact.contacts[0].email
+                )
+            verifySequence {
+                cableReportServiceAllu.getApplicationInformation(any())
+                cableReportServiceAllu.update(21, any())
+                cableReportServiceAllu.addAttachment(any(), any())
+            }
+            verify(exactly = 3) { emailSenderService.sendHankeInvitationEmail(any()) }
+            verify(exactly = 3) { emailSenderService.sendApplicationNotificationEmail(any()) }
+        }
+
+        @Test
+        fun `when no sender hanke user found should not send any emails`() {
+            val initialApplicationData =
+                createCableReportApplicationData(
+                    customerWithContacts = hakijaCustomerContact,
+                    contractorWithContacts = suorittajaCustomerContact,
+                )
+            val application =
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = createHankeEntity(hankeTunnus = HANKE_TUNNUS, generated = true),
+                    application =
+                        createApplication(
+                            alluid = 21,
+                            alluStatus = PENDING,
+                            applicationIdentifier = defaultApplicationIdentifier,
+                            applicationData = initialApplicationData
+                        )
+                )
+            justRun { cableReportServiceAllu.update(21, any()) }
+            justRun { cableReportServiceAllu.addAttachment(21, any()) }
+            every { cableReportServiceAllu.getApplicationInformation(any()) } returns
+                createAlluApplicationResponse(21)
+
+            val updatedApplication =
+                initialApplicationData.copy(
+                    representativeWithContacts = asianHoitajaCustomerContact,
+                    propertyDeveloperWithContacts = rakennuttajaCustomerContact,
+                    contractorWithContacts =
+                        suorittajaCustomerContact.changeContactEmails("new.mail@foo.fi")
+                )
+
+            applicationService.updateApplicationData(application.id!!, updatedApplication, USERNAME)
+
+            verifySequence {
+                cableReportServiceAllu.getApplicationInformation(any())
+                cableReportServiceAllu.update(21, any())
+                cableReportServiceAllu.addAttachment(any(), any())
+            }
+            verify { emailSenderService wasNot Called }
         }
 
         @Test
@@ -1069,39 +1165,25 @@ class ApplicationServiceITest : DatabaseTest() {
                     USERNAME,
                 )
             val capturedEmails = mutableListOf<ApplicationNotificationData>()
-            with(cableReportServiceAllu) {
-                every { create(any()) } returns 26
-                every { getApplicationInformation(any()) } returns createAlluApplicationResponse(26)
-                justRun { addAttachment(26, any()) }
-            }
-            with(emailSenderService) {
-                justRun { sendHankeInvitationEmail(any()) }
-                justRun { sendApplicationNotificationEmail(capture(capturedEmails)) }
-            }
+            every { cableReportServiceAllu.create(any()) } returns 26
+            every { cableReportServiceAllu.getApplicationInformation(any()) } returns
+                createAlluApplicationResponse(26)
+            justRun { cableReportServiceAllu.addAttachment(26, any()) }
+            justRun { emailSenderService.sendHankeInvitationEmail(any()) }
+            justRun { emailSenderService.sendApplicationNotificationEmail(capture(capturedEmails)) }
 
             applicationService.sendApplication(application.id!!, USERNAME)
 
             assertThat(capturedEmails).hasSize(3) // 4 contacts, but one is the sender
-            assertThat(capturedEmails).each { inv ->
-                inv.transform { it.senderEmail }.isEqualTo(hakijaApplicationContact.email)
-                inv.transform { it.senderName }.isEqualTo(hakijaApplicationContact.name)
-                inv.transform { it.applicationIdentifier }.isEqualTo(defaultApplicationIdentifier)
-                inv.transform { it.applicationType }.isEqualTo(application.applicationType)
-                inv.transform { it.roleType }.isIn(ASIANHOITAJA, RAKENNUTTAJA, TYON_SUORITTAJA)
-                inv.transform { it.recipientEmail }.isIn(*expectedRecipients)
-                inv.transform { it.hankeTunnus }.isEqualTo(application.hankeTunnus)
-            }
+            assertThat(capturedEmails)
+                .areValid(application.applicationType, application.hankeTunnus)
             verifySequence {
-                with(cableReportServiceAllu) {
-                    create(any())
-                    addAttachment(any(), any())
-                    getApplicationInformation(any())
-                }
+                cableReportServiceAllu.create(any())
+                cableReportServiceAllu.addAttachment(any(), any())
+                cableReportServiceAllu.getApplicationInformation(any())
             }
-            with(emailSenderService) {
-                verify(exactly = 3) { sendHankeInvitationEmail(any()) }
-                verify(exactly = 3) { sendApplicationNotificationEmail(any()) }
-            }
+            verify(exactly = 3) { emailSenderService.sendHankeInvitationEmail(any()) }
+            verify(exactly = 3) { emailSenderService.sendApplicationNotificationEmail(any()) }
         }
 
         @Test
@@ -1698,7 +1780,9 @@ class ApplicationServiceITest : DatabaseTest() {
             every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
                 createAlluApplicationResponse(status = status)
 
-            assertTrue(applicationService.isStillPending(application))
+            assertTrue(
+                applicationService.isStillPending(application.alluid, application.alluStatus)
+            )
 
             verify { cableReportServiceAllu.getApplicationInformation(alluId) }
         }
@@ -1712,7 +1796,9 @@ class ApplicationServiceITest : DatabaseTest() {
             every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
                 createAlluApplicationResponse(status = HANDLING)
 
-            assertFalse(applicationService.isStillPending(application))
+            assertFalse(
+                applicationService.isStillPending(application.alluid, application.alluStatus)
+            )
 
             verify { cableReportServiceAllu.getApplicationInformation(alluId) }
         }
@@ -1726,10 +1812,25 @@ class ApplicationServiceITest : DatabaseTest() {
         fun `when status is not pending should return false`(status: ApplicationStatus) {
             val application = createApplication(alluid = alluId, alluStatus = status)
 
-            assertFalse(applicationService.isStillPending(application))
+            assertFalse(
+                applicationService.isStillPending(application.alluid, application.alluStatus)
+            )
 
             verify { cableReportServiceAllu wasNot Called }
         }
+    }
+
+    private fun Assert<List<ApplicationNotificationData>>.areValid(
+        type: ApplicationType,
+        hankeTunnus: String?
+    ) = each { data ->
+        data.transform { it.senderEmail }.isEqualTo(hakijaApplicationContact.email)
+        data.transform { it.senderName }.isEqualTo(hakijaApplicationContact.name)
+        data.transform { it.applicationIdentifier }.isEqualTo(defaultApplicationIdentifier)
+        data.transform { it.applicationType }.isEqualTo(type)
+        data.transform { it.roleType }.isIn(TYON_SUORITTAJA, ASIANHOITAJA, RAKENNUTTAJA)
+        data.transform { it.recipientEmail }.isIn(*expectedRecipients)
+        data.transform { it.hankeTunnus }.isEqualTo(hankeTunnus)
     }
 
     private fun initializedHanke(): HankeEntity =
@@ -1754,8 +1855,24 @@ class ApplicationServiceITest : DatabaseTest() {
     private fun mockApplicationWithArea(
         applicationData: ApplicationData =
             createCableReportApplicationData(areas = listOf(aleksanterinpatsas)),
-        alluId: Int? = null
-    ): Application = createApplication(alluid = alluId, applicationData = applicationData)
+        alluId: Int? = null,
+        applicationIdentifier: String? = null,
+    ): Application =
+        createApplication(
+            alluid = alluId,
+            applicationIdentifier = applicationIdentifier,
+            applicationData = applicationData
+        )
+
+    private fun setAlluFields(applicationEntity: ApplicationEntity) {
+        applicationRepository.save(
+            applicationEntity.copy(
+                alluid = 21,
+                alluStatus = PENDING,
+                applicationIdentifier = defaultApplicationIdentifier
+            )
+        )
+    }
 
     private fun customerWithContactsJson(orderer: Boolean) =
         """
@@ -1822,4 +1939,7 @@ class ApplicationServiceITest : DatabaseTest() {
               }
             }
         """
+
+    private fun CustomerWithContacts.changeContactEmails(newEmail: String?) =
+        copy(contacts = contacts.map { it.copy(email = newEmail) })
 }
