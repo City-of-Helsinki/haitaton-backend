@@ -62,9 +62,6 @@ class HankeKayttajaService(
         currentUserId: String,
         currentKayttaja: HankeKayttajaEntity? = null,
     ) {
-        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
-            return
-        }
         logger.info {
             "Creating users and user tokens for application ${application.id}, alluid=${application.alluid}}"
         }
