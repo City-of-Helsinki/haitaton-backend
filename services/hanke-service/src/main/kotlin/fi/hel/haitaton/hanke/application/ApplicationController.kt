@@ -278,7 +278,7 @@ class ApplicationController(
         val userId = currentUserId()
         val (filename, pdfBytes) = applicationService.downloadDecision(id, userId)
         val application = applicationService.getApplicationById(id)
-        disclosureLogService.saveDisclosureLogsForDecision(application.toMetadata(), userId)
+        disclosureLogService.saveDisclosureLogsForCableReport(application.toMetadata(), userId)
 
         val headers = HttpHeaders()
         headers.add("Content-Disposition", "inline; filename=$filename.pdf")
