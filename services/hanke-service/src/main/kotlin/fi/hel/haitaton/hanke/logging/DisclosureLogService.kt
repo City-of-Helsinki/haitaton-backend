@@ -140,12 +140,11 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             // Ignore country, since all customers have a default country atm.
             // Also, just a country can't be considered personal information.
             // I.e. check that the customer has other info besides the country.
-            .filter { (_, data) -> data.copy(country = "").hasInformation() }
-            // Customers don't have IDs, since they're embedded in the applications. We could use
-            // the application ID here, but that would require the log reader to have deep knowledge
-            // of haitaton to make sense of the objectId field.
-            .map { (id, data) ->
-                disclosureLogEntry(objectType, id, data, status, failureDescription)
+            .filter { (_, customer) -> customer.copy(country = "").hasInformation() }
+            // Customers are embedded in the application JSON and don't have IDs, so use the
+            // application ID instead.
+            .map { (id, customer) ->
+                disclosureLogEntry(objectType, id, customer, status, failureDescription)
             }
 
     private fun auditLogEntriesForContacts(
@@ -157,12 +156,11 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         applications
             .flatMap { (id, data) -> extractContacts(id, data) }
             .toSet()
-            .filter { (_, data) -> data.hasInformation() }
-            // Contacts don't have IDs, since they're embedded in the applications. We could use the
-            // application ID here, but that would require the log reader to have deep knowledge of
-            // haitaton to make sense of the objectId field.
-            .map { (id, data) ->
-                disclosureLogEntry(objectType, id, data, status, failureDescription)
+            .filter { (_, contact) -> contact.hasInformation() }
+            // Contacts are embedded in the application JSON and don't have IDs, so use the
+            // application ID instead.
+            .map { (id, contact) ->
+                disclosureLogEntry(objectType, id, contact, status, failureDescription)
             }
 
     private fun extractContacts(
