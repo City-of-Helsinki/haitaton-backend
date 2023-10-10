@@ -848,13 +848,15 @@ open class HankeServiceImpl(
             perustaja = perustajaFrom(cableReport.applicationData),
         )
 
-    private fun limitHankeName(input: String): String {
-        val limit = MAXIMUM_HANKE_NIMI_LENGTH
-        if (input.length > limit) {
-            logger.info { "Hanke name too long, limited to first $limit characters." }
+    private fun limitHankeName(name: String): String =
+        if (name.length > MAXIMUM_HANKE_NIMI_LENGTH) {
+            logger.info {
+                "Hanke name too long, limited to first $MAXIMUM_HANKE_NIMI_LENGTH characters."
+            }
+            name.take(MAXIMUM_HANKE_NIMI_LENGTH)
+        } else {
+            name
         }
-        return input.take(limit)
-    }
 
     private fun perustajaFrom(cableReport: CableReportApplicationData): Perustaja {
         val orderer: Contact =
