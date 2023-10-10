@@ -73,19 +73,20 @@ data class Customer(
     val invoicingOperator: String?, // e-invoicing operator code
     val sapCustomerNumber: String?, // customer's sap number
 ) {
-    /** Check if this customer is blank, i.e. it doesn't contain any actual customer information. */
-    @JsonIgnore
-    fun isBlank() =
-        name.isBlank() &&
-            country.isBlank() &&
+    /**
+     * Check if this customer contains any actual personal information.
+     *
+     * Country alone isn't considered personal information when it's dissociated from other
+     * information, so it's not checked here.
+     */
+    fun hasPersonalInformation() =
+        !(name.isBlank() &&
             email.isNullOrBlank() &&
             phone.isNullOrBlank() &&
             registryKey.isNullOrBlank() &&
             ovt.isNullOrBlank() &&
             invoicingOperator.isNullOrBlank() &&
-            sapCustomerNumber.isNullOrBlank()
-
-    fun hasInformation() = !isBlank()
+            sapCustomerNumber.isNullOrBlank())
 
     fun toAlluData(path: String): AlluCustomer =
         AlluCustomer(

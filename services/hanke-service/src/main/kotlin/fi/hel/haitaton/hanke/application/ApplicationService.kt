@@ -603,7 +603,7 @@ open class ApplicationService(
 
         when (val data = entity.applicationData) {
             is CableReportApplicationData ->
-                updateCableReportInAllu(alluId, entity.hankeTunnus(), data)
+                updateCableReportInAllu(entity.id!!, alluId, entity.hankeTunnus(), data)
         }
 
         return alluId
@@ -614,11 +614,11 @@ open class ApplicationService(
         ensureValidForSend(entity.applicationData)
         val alluId =
             when (val data = entity.applicationData) {
-                is CableReportApplicationData -> createCableReportToAllu(entity.hankeTunnus(), data)
+                is CableReportApplicationData ->
+                    createCableReportToAllu(entity.id!!, entity.hankeTunnus(), data)
             }
-
         try {
-            attachmentService.sendInitialAttachments(alluId, entity.id!!)
+            attachmentService.sendInitialAttachments(alluId, entity.id)
         } catch (e: Exception) {
             logger.error(e) {
                 "Error while sending the initial attachments. Canceling the application. " +
@@ -633,17 +633,21 @@ open class ApplicationService(
     }
 
     private fun createCableReportToAllu(
+        applicationId: Long,
         hankeTunnus: String,
         cableReport: CableReportApplicationData
     ): Int {
         val alluData = cableReport.toAlluData(hankeTunnus)
 
         return withFormDataPdfUploading(cableReport) {
-            withDisclosureLogging(cableReport) { cableReportService.create(alluData) }
+            withDisclosureLogging(applicationId, cableReport) {
+                cableReportService.create(alluData)
+            }
         }
     }
 
     private fun updateCableReportInAllu(
+        applicationId: Long,
         alluId: Int,
         hankeTunnus: String,
         cableReport: CableReportApplicationData
@@ -651,7 +655,9 @@ open class ApplicationService(
         val alluData = cableReport.toAlluData(hankeTunnus)
 
         withFormDataPdfUploading(cableReport) {
-            withDisclosureLogging(cableReport) { cableReportService.update(alluId, alluData) }
+            withDisclosureLogging(applicationId, cableReport) {
+                cableReportService.update(alluId, alluData)
+            }
             alluId
         }
     }
@@ -711,12 +717,14 @@ open class ApplicationService(
      * failures, since personal data was not yet disclosed.
      */
     private fun <T> withDisclosureLogging(
+        applicationId: Long,
         cableReportApplicationData: CableReportApplicationData,
         f: () -> T,
     ): T {
         try {
             val result = f()
             disclosureLogService.saveDisclosureLogsForAllu(
+                applicationId,
                 cableReportApplicationData,
                 Status.SUCCESS
             )
@@ -729,6 +737,7 @@ open class ApplicationService(
             // application to Allu. Allu might have read it and rejected it, so we should log this
             // as a disclosure event.
             disclosureLogService.saveDisclosureLogsForAllu(
+                applicationId,
                 cableReportApplicationData,
                 Status.FAILED,
                 ALLU_APPLICATION_ERROR_MSG

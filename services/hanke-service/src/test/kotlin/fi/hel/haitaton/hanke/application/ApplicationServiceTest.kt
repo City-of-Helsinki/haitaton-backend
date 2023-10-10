@@ -241,7 +241,7 @@ class ApplicationServiceTest {
                 )
                 geometriatDao.calculateArea(any())
                 cableReportService.update(42, any())
-                disclosureLogService.saveDisclosureLogsForAllu(updatedData, Status.SUCCESS)
+                disclosureLogService.saveDisclosureLogsForAllu(3, updatedData, Status.SUCCESS)
                 cableReportService.addAttachment(42, any())
                 hankeKayttajaService.getKayttajaByUserId(1, USERNAME)
                 hankeKayttajaService.saveNewTokensFromApplication(
@@ -285,7 +285,7 @@ class ApplicationServiceTest {
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
                 cableReportService.update(42, any())
-                disclosureLogService.saveDisclosureLogsForAllu(any(), any())
+                disclosureLogService.saveDisclosureLogsForAllu(3, any(), any())
                 cableReportService.addAttachment(42, any())
                 loggingService.logUpdate(any(), any(), USERNAME)
             }
@@ -351,7 +351,11 @@ class ApplicationServiceTest {
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
                 cableReportService.create(any())
-                disclosureLogService.saveDisclosureLogsForAllu(expectedApplication, Status.SUCCESS)
+                disclosureLogService.saveDisclosureLogsForAllu(
+                    3,
+                    expectedApplication,
+                    Status.SUCCESS
+                )
                 cableReportService.addAttachment(42, any())
                 attachmentService.sendInitialAttachments(42, any())
                 cableReportService.getApplicationInformation(42)
@@ -390,6 +394,7 @@ class ApplicationServiceTest {
                 geometriatDao.calculateArea(any())
                 cableReportService.create(any())
                 disclosureLogService.saveDisclosureLogsForAllu(
+                    3,
                     expectedApplication,
                     Status.FAILED,
                     ALLU_APPLICATION_ERROR_MSG
@@ -461,6 +466,7 @@ class ApplicationServiceTest {
                 geometriatDao.calculateArea(any())
                 cableReportService.create(expectedAlluData)
                 disclosureLogService.saveDisclosureLogsForAllu(
+                    3,
                     expectedApplicationData,
                     Status.SUCCESS
                 )
@@ -531,7 +537,7 @@ class ApplicationServiceTest {
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
                 cableReportService.create(any())
-                disclosureLogService.saveDisclosureLogsForAllu(any(), any())
+                disclosureLogService.saveDisclosureLogsForAllu(3, any(), any())
                 cableReportService.addAttachment(42, any())
                 cableReportService.getApplicationInformation(42)
                 applicationRepository.save(any())
