@@ -3,7 +3,7 @@
         <mj-raw>
             <div style="display: flex; align-items: center;">
                 <div style="padding-left: 24px; padding-top: 16px">
-                    <img src="{{baseUrl}}/helsinki.png" alt="Helsingin logo" width="131" height="60" />
+                    <img src="{{baseUrl}}/helsinki.png" alt="Helsingin logo" width="131" height="65" />
                 </div>
                 <div style="padding-left: 16px; padding-top: 12px; font-family: Arial; font-size: 24px;">
                     Haitaton
