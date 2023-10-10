@@ -1002,7 +1002,7 @@ class HankeServiceITests : DatabaseTest() {
     @Test
     fun `generateHankeWithApplication sets hanke name according to limit and saves successfully`() {
         val expectedName = "a".repeat(MAXIMUM_HANKE_NIMI_LENGTH)
-        val tooLongName = expectedName.plus("aaa")
+        val tooLongName = expectedName + "bbb"
         val inputApplication =
             AlluDataFactory.cableReportWithoutHanke()
                 .copy(
