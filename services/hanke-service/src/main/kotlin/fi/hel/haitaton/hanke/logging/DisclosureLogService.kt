@@ -135,15 +135,12 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         failureDescription: String? = null
     ): List<AuditLogEntry> =
         applications
-            .flatMap { (id, data) -> extractCustomers(id, data) }
+            .map { (id, data) -> id to extractCustomers(data) }
+            .flatMap { (id, customers) -> customers.map { id to it } }
             .toSet()
-            // Ignore country, since all customers have a default country atm.
-            // Also, just a country can't be considered personal information.
-            // I.e. check that the customer has other info besides the country.
-            .filter { (_, customer) -> customer.copy(country = "").hasInformation() }
-            // Customers are embedded in the application JSON and don't have IDs, so use the
-            // application ID instead.
             .map { (id, customer) ->
+                // Customers are embedded in the application JSON and don't have IDs, so use the
+                // application ID instead.
                 disclosureLogEntry(objectType, id, customer, status, failureDescription)
             }
 
@@ -154,32 +151,25 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         failureDescription: String? = null,
     ) =
         applications
-            .flatMap { (id, data) -> extractContacts(id, data) }
+            .map { (id, data) -> id to extractContacts(data) }
+            .flatMap { (id, contacts) -> contacts.map { id to it } }
             .toSet()
-            .filter { (_, contact) -> contact.hasInformation() }
-            // Contacts are embedded in the application JSON and don't have IDs, so use the
-            // application ID instead.
             .map { (id, contact) ->
+                // Contacts are embedded in the application JSON and don't have IDs, so use the
+                // application ID instead.
                 disclosureLogEntry(objectType, id, contact, status, failureDescription)
             }
 
-    private fun extractContacts(
-        applicationId: Long?,
-        applicationData: ApplicationData,
-    ): List<Pair<Long?, Contact>> =
+    private fun extractContacts(applicationData: ApplicationData): List<Contact> =
         when (applicationData) {
             is CableReportApplicationData ->
                 applicationData
                     .customersWithContacts()
-                    .map { it.contacts }
-                    .flatten()
-                    .map { applicationId to it }
+                    .flatMap { it.contacts }
+                    .filter { it.hasInformation() }
         }
 
-    private fun extractCustomers(
-        applicationId: Long?,
-        applicationData: ApplicationData
-    ): List<Pair<Long?, Customer>> =
+    private fun extractCustomers(applicationData: ApplicationData): List<Customer> =
         when (applicationData) {
             is CableReportApplicationData ->
                 applicationData
@@ -187,7 +177,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
                     .map { it.customer }
                     // Only personal data needs to be logged, not other types of customers.
                     .filter { it.type == CustomerType.PERSON }
-                    .map { applicationId to it }
+                    .filter { it.hasPersonalInformation() }
         }
 
     private fun auditLogEntriesForYhteystiedot(yhteystiedot: List<HankeYhteystieto>) =
