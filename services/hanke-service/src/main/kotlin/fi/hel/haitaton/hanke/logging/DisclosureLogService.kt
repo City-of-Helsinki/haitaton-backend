@@ -43,16 +43,17 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         status: Status,
         failureDescription: String? = null
     ) {
-        val dataWithId = Pair(applicationId, applicationData)
         val entries =
             auditLogEntriesForCustomers(
-                listOf(dataWithId),
+                applicationId,
+                applicationData,
                 ObjectType.ALLU_CUSTOMER,
                 status,
                 failureDescription
             ) +
                 auditLogEntriesForContacts(
-                    listOf(dataWithId),
+                    applicationId,
+                    applicationData,
                     ObjectType.ALLU_CONTACT,
                     status,
                     failureDescription
@@ -85,10 +86,8 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
      * the customers and contacts in the applications.
      */
     fun saveDisclosureLogsForApplications(applications: List<Application>, userId: String) {
-        val dataWithIds = applications.map { Pair(it.id, it.applicationData) }
         val entries =
-            auditLogEntriesForCustomers(dataWithIds, ObjectType.APPLICATION_CUSTOMER) +
-                auditLogEntriesForContacts(dataWithIds, ObjectType.APPLICATION_CONTACT)
+            auditLogEntriesForCustomers(applications) + auditLogEntriesForContacts(applications)
         saveDisclosureLogs(userId, UserRole.USER, entries)
     }
 
@@ -129,36 +128,42 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     }
 
     private fun auditLogEntriesForCustomers(
-        applications: List<Pair<Long?, ApplicationData>>,
+        applicationId: Long,
+        applicationData: ApplicationData,
         objectType: ObjectType,
         status: Status = Status.SUCCESS,
         failureDescription: String? = null
     ): List<AuditLogEntry> =
+        extractCustomers(applicationData).toSet().map { customer ->
+            disclosureLogEntry(objectType, applicationId, customer, status, failureDescription)
+        }
+
+    private fun auditLogEntriesForCustomers(
+        applications: List<Application>,
+        objectType: ObjectType = ObjectType.APPLICATION_CUSTOMER,
+    ): Set<AuditLogEntry> =
         applications
-            .map { (id, data) -> id to extractCustomers(data) }
-            .flatMap { (id, customers) -> customers.map { id to it } }
+            .flatMap { auditLogEntriesForCustomers(it.id!!, it.applicationData, objectType) }
             .toSet()
-            .map { (id, customer) ->
-                // Customers are embedded in the application JSON and don't have IDs, so use the
-                // application ID instead.
-                disclosureLogEntry(objectType, id, customer, status, failureDescription)
-            }
 
     private fun auditLogEntriesForContacts(
-        applications: List<Pair<Long?, ApplicationData>>,
+        applicationId: Long,
+        applicationData: ApplicationData,
         objectType: ObjectType,
         status: Status = Status.SUCCESS,
         failureDescription: String? = null,
-    ) =
+    ): List<AuditLogEntry> =
+        extractContacts(applicationData).toSet().map { contact ->
+            disclosureLogEntry(objectType, applicationId, contact, status, failureDescription)
+        }
+
+    private fun auditLogEntriesForContacts(
+        applications: List<Application>,
+        objectType: ObjectType = ObjectType.APPLICATION_CONTACT,
+    ): Set<AuditLogEntry> =
         applications
-            .map { (id, data) -> id to extractContacts(data) }
-            .flatMap { (id, contacts) -> contacts.map { id to it } }
+            .flatMap { auditLogEntriesForContacts(it.id!!, it.applicationData, objectType) }
             .toSet()
-            .map { (id, contact) ->
-                // Contacts are embedded in the application JSON and don't have IDs, so use the
-                // application ID instead.
-                disclosureLogEntry(objectType, id, contact, status, failureDescription)
-            }
 
     private fun extractContacts(applicationData: ApplicationData): List<Contact> =
         when (applicationData) {
@@ -181,12 +186,12 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         }
 
     private fun auditLogEntriesForYhteystiedot(yhteystiedot: List<HankeYhteystieto>) =
-        yhteystiedot.toSet().map { disclosureLogEntry(ObjectType.YHTEYSTIETO, it.id, it) }
+        yhteystiedot.toSet().map { disclosureLogEntry(ObjectType.YHTEYSTIETO, it.id!!, it) }
 
     /** Userid and event time will be null, they will be added later. */
     private fun disclosureLogEntry(
         objectType: ObjectType,
-        objectId: Any?,
+        objectId: Any,
         objectBefore: Any,
         status: Status = Status.SUCCESS,
         failureDescription: String? = null,
@@ -196,7 +201,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             status = status,
             failureDescription = failureDescription,
             objectType = objectType,
-            objectId = objectId?.toString(),
+            objectId = objectId.toString(),
             objectBefore = objectBefore.toJsonString()
         )
 
@@ -206,7 +211,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     private fun saveDisclosureLogs(
         userId: String,
         userRole: UserRole,
-        entries: List<AuditLogEntry>
+        entries: Collection<AuditLogEntry>
     ) {
         if (entries.isEmpty()) {
             return

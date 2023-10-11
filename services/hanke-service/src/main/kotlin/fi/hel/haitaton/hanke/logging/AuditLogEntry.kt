@@ -69,7 +69,7 @@ data class AuditLogEntry(
     val failureDescription: String? = null,
     val userId: String? = null,
     val userRole: UserRole = UserRole.USER,
-    val objectId: String? = null,
+    val objectId: String,
     val objectType: ObjectType,
     val objectBefore: String? = null,
     val objectAfter: String? = null,
