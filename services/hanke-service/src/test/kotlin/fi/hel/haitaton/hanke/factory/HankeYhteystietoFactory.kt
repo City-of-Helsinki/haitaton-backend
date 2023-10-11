@@ -82,7 +82,7 @@ object HankeYhteystietoFactory {
      */
     fun createDifferentiated(i: Int): HankeYhteystieto {
         return HankeYhteystieto(
-            id = null,
+            id = i,
             nimi = "etu$i suku$i",
             email = "email$i",
             ytunnus = defaultYtunnus,
@@ -111,7 +111,7 @@ object HankeYhteystietoFactory {
      */
     fun createDifferentiated(
         intValues: List<Int>,
-        mutator: (HankeYhteystieto) -> Unit = {}
+        mutator: HankeYhteystieto.() -> Unit = {}
     ): MutableList<HankeYhteystieto> =
         intValues.map { createDifferentiated(it).apply(mutator) }.toMutableList()
 
