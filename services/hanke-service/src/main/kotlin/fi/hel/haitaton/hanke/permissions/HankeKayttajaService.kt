@@ -95,7 +95,6 @@ class HankeKayttajaService(
 
         val hankeId = hanke.id ?: throw HankeArgumentException("Hanke without id")
         val hankeTunnus = hanke.hankeTunnus ?: throw HankeArgumentException("Hanke without tunnus")
-        val hankeNimi = hanke.nimi
 
         val contacts =
             hanke
@@ -105,7 +104,7 @@ class HankeKayttajaService(
 
         val inviter = getKayttajaByUserId(hankeId, userId)
         filterNewContacts(hankeId, contacts).forEach { contact ->
-            createTunnisteAndKayttaja(hankeId, hankeTunnus, hankeNimi, inviter, contact, userId)
+            createTunnisteAndKayttaja(hankeId, hankeTunnus, hanke.nimi, inviter, contact, userId)
         }
     }
 
