@@ -422,12 +422,12 @@ internal class DisclosureLogServiceTest {
             val expectedLog =
                 AuditLogEntryFactory.createReadEntry(
                     userId,
-                    objectType = ObjectType.DECISION,
+                    objectType = ObjectType.CABLE_REPORT,
                     objectId = application.id!!,
                     objectBefore = expectedObject
                 )
 
-            disclosureLogService.saveDisclosureLogsForDecision(application.toMetadata(), userId)
+            disclosureLogService.saveDisclosureLogsForCableReport(application.toMetadata(), userId)
 
             verify { auditLogService.create(expectedLog) }
         }

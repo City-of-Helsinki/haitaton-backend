@@ -62,13 +62,14 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     }
 
     /**
-     * Save disclosure logs for when a user downloads a decision. We don't know what information is
-     * inside the PDF, but we can log the meta information about the decision (or application).
+     * Save disclosure logs for when a user downloads a cable report. We don't know what information
+     * is inside the PDF, but we can log the meta information about the cable report (or
+     * application).
      *
-     * Decisions contain private information, so their reads need to be logged.
+     * Cable reports contain private information, so their reads need to be logged.
      */
-    fun saveDisclosureLogsForDecision(metaData: ApplicationMetaData, userId: String) {
-        val entry = disclosureLogEntry(ObjectType.DECISION, metaData.id, metaData)
+    fun saveDisclosureLogsForCableReport(metaData: ApplicationMetaData, userId: String) {
+        val entry = disclosureLogEntry(ObjectType.CABLE_REPORT, metaData.id, metaData)
         saveDisclosureLog(userId, UserRole.USER, entry)
     }
 

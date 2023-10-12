@@ -744,7 +744,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                 authorizer.authorizeApplicationId(id, VIEW.name)
                 applicationService.downloadDecision(id, USERNAME)
                 applicationService.getApplicationById(id)
-                disclosureLogService.saveDisclosureLogsForDecision(
+                disclosureLogService.saveDisclosureLogsForCableReport(
                     application.toMetadata(),
                     USERNAME
                 )
