@@ -45,8 +45,7 @@ fun ApplicationData.typedContacts(omit: String? = null): Set<ApplicationUserCont
     when (this) {
         is CableReportApplicationData ->
             customersByRole()
-                .map { (role, customer) -> customer.typedAs(role) }
-                .flatten()
+                .flatMap { (role, customer) -> customer.contactsTypedAs(role) }
                 .remove(omit)
                 .toSet()
     }
@@ -62,7 +61,7 @@ fun Set<ApplicationUserContact>.subtractByEmail(
 private fun List<ApplicationUserContact>.remove(email: String?) =
     if (email == null) this else filter { it.email != email }
 
-private fun CustomerWithContacts.typedAs(
+private fun CustomerWithContacts.contactsTypedAs(
     type: ApplicationContactType
 ): List<ApplicationUserContact> =
     contacts.mapNotNull { ApplicationUserContact.from(it.fullName(), it.email, type) }
