@@ -1533,7 +1533,7 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     private fun initHankeWithHakemus(alluId: Int): HankeEntity {
-        val hanke = hankeRepository.save(HankeEntity(hankeTunnus = "HAI23-1"))
+        val hanke = hankeFactory.saveMinimal(hankeTunnus = "HAI23-1")
         val application =
             applicationRepository.save(
                 AlluDataFactory.createApplicationEntity(

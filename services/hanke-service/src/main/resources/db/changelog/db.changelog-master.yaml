@@ -127,3 +127,5 @@ databaseChangeLog:
       file: db/changelog/changesets/048-add-y-tunnus-to-hankeyhteystieto.yml
   - include:
       file: db/changelog/changesets/049-add-bus-and-tram-indexes.sql
+  - include:
+      file: db/changelog/changesets/050-make-nimi-mandatory-in-hanke.yml

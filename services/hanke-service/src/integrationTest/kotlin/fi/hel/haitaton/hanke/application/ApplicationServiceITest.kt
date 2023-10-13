@@ -43,7 +43,6 @@ import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.ApplicationType.CABLE_REPORT
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
-import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
@@ -67,7 +66,6 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.defaultNimi
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
@@ -147,6 +145,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
     @Autowired private lateinit var attachmentFactory: AttachmentFactory
+    @Autowired private lateinit var hankeFactory: HankeFactory
 
     companion object {
         @JvmField
@@ -167,25 +166,12 @@ class ApplicationServiceITest : DatabaseTest() {
         confirmVerified(cableReportServiceAllu)
     }
 
-    fun createHanke(): Hanke {
-        return hankeService.createHanke(HankeFactory.create())
-    }
-
-    fun createHankeEntity(
-        hankeTunnus: String? = HANKE_TUNNUS,
-        hankeNimi: String = defaultNimi,
-        generated: Boolean = false
-    ): HankeEntity =
-        hankeRepository.save(
-            HankeEntity(hankeTunnus = hankeTunnus, nimi = hankeNimi, generated = generated)
-        )
-
     @Nested
     inner class CreateApplication {
         @Test
         fun `when valid input should create and audit log entry`() {
             TestUtils.addMockedRequestIp()
-            val hanke = createHanke()
+            val hanke = hankeFactory.save()
 
             val application =
                 applicationService.create(
@@ -336,7 +322,7 @@ class ApplicationServiceITest : DatabaseTest() {
         @Test
         fun `when valid input should audit log`() {
             TestUtils.addMockedRequestIp()
-            val hanke = createHanke()
+            val hanke = hankeFactory.save()
             val application =
                 applicationService.create(
                     createApplication(
@@ -425,7 +411,7 @@ class ApplicationServiceITest : DatabaseTest() {
         @Test
         fun `when application has not changed should not create an audit log entry`() {
             TestUtils.addMockedRequestIp()
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
             assertThat(auditLogRepository.findAll()).isEmpty()
@@ -445,7 +431,7 @@ class ApplicationServiceITest : DatabaseTest() {
         fun `when missing data should throw on send`() {
             TestUtils.addMockedRequestIp()
             val alluId = 21
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             val applicationData: CableReportApplicationData = dataWithoutAreas
             val application = createApplication(alluid = alluId, applicationData = applicationData)
             val savedApplication =
@@ -477,7 +463,7 @@ class ApplicationServiceITest : DatabaseTest() {
         @Test
         fun `when application has not changed should not send application to Allu`() {
             TestUtils.addMockedRequestIp()
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 2 }
             assertThat(auditLogRepository.findAll()).isEmpty()
@@ -661,7 +647,7 @@ class ApplicationServiceITest : DatabaseTest() {
             val application =
                 alluDataFactory.saveApplicationEntity(
                     USERNAME,
-                    hanke = createHankeEntity(hankeTunnus = HANKE_TUNNUS, generated = true),
+                    hanke = hankeFactory.saveMinimal(hankeTunnus = HANKE_TUNNUS, generated = true),
                     application =
                         createApplication(
                             alluid = 21,
@@ -902,7 +888,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when invalid geometry in areas should throw`() {
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 21 }
             val cableReportApplicationData =
@@ -965,8 +951,8 @@ class ApplicationServiceITest : DatabaseTest() {
         fun `when applications exist should return users applications`() {
             assertThat(applicationRepository.findAll()).isEmpty()
             val otherUser = "otherUser"
-            val hanke = createHankeEntity(hankeTunnus = HANKE_TUNNUS)
-            val hanke2 = createHankeEntity(hankeTunnus = "HAI-1236")
+            val hanke = hankeFactory.saveMinimal(hankeTunnus = HANKE_TUNNUS)
+            val hanke2 = hankeFactory.saveMinimal(hankeTunnus = "HAI-1236")
             permissionService.create(hanke.id!!, USERNAME, HAKEMUSASIOINTI)
             permissionService.create(hanke2.id!!, "otherUser", HAKEMUSASIOINTI)
             alluDataFactory.saveApplicationEntities(3, USERNAME, hanke = hanke) { _, application ->
@@ -991,9 +977,9 @@ class ApplicationServiceITest : DatabaseTest() {
         @Test
         fun `when applications in different projects should returns applications`() {
             assertThat(applicationRepository.findAll()).isEmpty()
-            val hanke = createHankeEntity(hankeTunnus = HANKE_TUNNUS)
-            val hanke2 = createHankeEntity(hankeTunnus = "HAI-1236")
-            val hanke3 = createHankeEntity(hankeTunnus = "HAI-1237")
+            val hanke = hankeFactory.saveMinimal(hankeTunnus = HANKE_TUNNUS)
+            val hanke2 = hankeFactory.saveMinimal(hankeTunnus = "HAI-1236")
+            val hanke3 = hankeFactory.saveMinimal(hankeTunnus = "HAI-1237")
             permissionService.create(hanke.id!!, USERNAME, HAKEMUSASIOINTI)
             permissionService.create(hanke2.id!!, USERNAME, HAKEMUSASIOINTI)
             val application1 =
@@ -1024,7 +1010,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when application exists should return it`() {
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             val applications = alluDataFactory.saveApplicationEntities(3, USERNAME, hanke = hanke)
             val selectedId = applications[1].id!!
             assertThat(applicationRepository.findAll()).hasSize(3)
@@ -1403,7 +1389,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when application not in Allu should delete application`() {
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
             assertThat(applicationRepository.findAll()).hasSize(1)
@@ -1417,7 +1403,7 @@ class ApplicationServiceITest : DatabaseTest() {
         @Test
         fun `when deleted should audit log for deleted application`() {
             TestUtils.addMockedRequestIp()
-            val hanke = createHanke()
+            val hanke = hankeFactory.save()
             val application =
                 applicationService.create(
                     createApplication(
@@ -1461,7 +1447,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when pending application in Allu should cancel before delete`() {
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 73 }
             assertThat(applicationRepository.findAll()).hasSize(1)
@@ -1482,7 +1468,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when past pending application in Allu should throw`() {
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = 73 }
             assertThat(applicationRepository.findAll()).hasSize(1)
@@ -1502,7 +1488,7 @@ class ApplicationServiceITest : DatabaseTest() {
     inner class DeleteWithOrphanGeneratedHankeRemoval {
         @Test
         fun `when deleted application is the only one of generated hanke should delete hanke also`() {
-            val hanke = createHankeEntity(generated = true)
+            val hanke = hankeFactory.saveMinimal(generated = true)
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
             assertThat(applicationRepository.findAll()).hasSize(1)
@@ -1520,7 +1506,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when hanke not generated should not delete hanke`() {
-            val hanke = createHankeEntity(generated = false)
+            val hanke = hankeFactory.saveMinimal(generated = false)
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
             assertThat(applicationRepository.findAll()).hasSize(1)
@@ -1536,7 +1522,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when generated hanke has other applications should not delete hanke`() {
-            val hanke = createHankeEntity(generated = true)
+            val hanke = hankeFactory.saveMinimal(generated = true)
             val application1 =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
             val application2 = alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke)
@@ -1571,7 +1557,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when no alluid should throw`() {
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = null }
 
@@ -1584,7 +1570,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when no decision in Allu should throw`() {
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
                     it.alluid = alluId
@@ -1601,7 +1587,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when decision exists should return it`() {
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
                     it.alluid = alluId
@@ -1618,7 +1604,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when application has no identifier should use default file name`() {
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
                     it.alluid = alluId
@@ -1657,7 +1643,7 @@ class ApplicationServiceITest : DatabaseTest() {
         fun `updates the application statuses in the correct order`() {
             assertThat(applicationRepository.findAll()).isEmpty()
             assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = alluid }
             val firstEventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
             val history =
@@ -1683,7 +1669,7 @@ class ApplicationServiceITest : DatabaseTest() {
         fun `ignores missing application`() {
             assertThat(applicationRepository.findAll()).isEmpty()
             assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) { it.alluid = alluid }
             alluDataFactory.saveApplicationEntity(USERNAME, hanke = hanke) {
                 it.alluid = alluid + 2
@@ -1709,7 +1695,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `sends email to the orderer when application gets a decision`() {
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             applicationRepository.save(
                 createApplicationEntity(
                         alluid = alluid,
@@ -1753,7 +1739,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `Returns applications created by the user`() {
-            val hanke = createHankeEntity()
+            val hanke = hankeFactory.saveMinimal()
             alluDataFactory.saveApplicationEntities(6, USERNAME, hanke) { i, application ->
                 if (i % 2 == 0) application.userId = "Other User"
             }

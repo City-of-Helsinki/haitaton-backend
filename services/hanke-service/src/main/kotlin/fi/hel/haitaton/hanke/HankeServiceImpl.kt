@@ -109,7 +109,7 @@ open class HankeServiceImpl(
     private fun createHankeInternal(hanke: Hanke, perustaja: Perustaja?): Hanke {
         val userId = currentUserId()
 
-        val entity = HankeEntity()
+        val entity = HankeEntity(nimi = hanke.nimi)
         val loggingEntryHolder = prepareLogging(entity)
 
         // Create a new hanketunnus for it and save it:
@@ -453,7 +453,7 @@ open class HankeServiceImpl(
      */
     private fun copyNonNullHankeFieldsToEntity(hanke: Hanke, entity: HankeEntity) {
         hanke.onYKTHanke?.let { entity.onYKTHanke = hanke.onYKTHanke }
-        hanke.nimi?.let { entity.nimi = hanke.nimi }
+        entity.nimi = hanke.nimi
         hanke.kuvaus?.let { entity.kuvaus = hanke.kuvaus }
         entity.generated = hanke.generated
         hanke.vaihe?.let { entity.vaihe = hanke.vaihe }

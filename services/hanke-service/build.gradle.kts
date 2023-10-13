@@ -136,6 +136,7 @@ tasks {
         testClassesDirs = sourceSets["integrationTest"].output.classesDirs
         classpath = sourceSets["integrationTest"].runtimeClasspath
         shouldRunAfter("test")
+        shouldRunAfter("spotlessCheck")
         outputs.upToDateWhen { false }
         testLogging {
             events("skipped", "failed")
@@ -162,3 +163,5 @@ tasks.register("installGitHook", Copy::class) {
 }
 
 tasks.named("build") { dependsOn(tasks.named("installGitHook")) }
+
+tasks.named("check") { dependsOn(tasks.named("integrationTest")) }

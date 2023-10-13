@@ -122,7 +122,7 @@ enum class Haitta13 {
 class HankeEntity(
     @Enumerated(EnumType.STRING) var status: HankeStatus = HankeStatus.DRAFT,
     var hankeTunnus: String? = null,
-    var nimi: String? = null,
+    var nimi: String,
     var kuvaus: String? = null,
     @Enumerated(EnumType.STRING) var vaihe: Vaihe? = null,
     @Enumerated(EnumType.STRING) var suunnitteluVaihe: SuunnitteluVaihe? = null,
