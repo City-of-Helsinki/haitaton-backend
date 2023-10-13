@@ -154,9 +154,9 @@ class HankeServiceITests : DatabaseTest() {
         fun `returns hanke if hanke exists`() {
             val hanke = hankeFactory.save()
 
-            val response = hankeService.loadHankeById(hanke.id!!)
+            val response = hankeService.loadHankeById(hanke.id)
 
-            assertk.assertThat(response).isNotNull().prop(Hanke::id).isEqualTo(hanke.id!!)
+            assertk.assertThat(response).isNotNull().prop(Hanke::id).isEqualTo(hanke.id)
         }
     }
 
@@ -181,12 +181,10 @@ class HankeServiceITests : DatabaseTest() {
 
         // Verify privileges
         PermissionCode.entries.forEach {
-            assertThat(permissionService.hasPermission(returnedHanke.id!!, USER_NAME, it)).isTrue()
+            assertThat(permissionService.hasPermission(returnedHanke.id, USER_NAME, it)).isTrue()
         }
-        // Check the return object in general:
-        assertThat(returnedHanke).isNotNull
-        assertThat(returnedHanke).isNotSameAs(request)
-        assertThat(returnedHanke.id).isNotNull
+        // Check the ID is reassigned by the DB:
+        assertThat(returnedHanke.id).isNotEqualTo(0)
         // Check the fields:
         // Note, "pvm" values should have become truncated to begin of the day
         val expectedDateAlku = // nextyear.2.20 00:00:00Z
@@ -285,11 +283,6 @@ class HankeServiceITests : DatabaseTest() {
         // Call create and get the return object:
         val returnedHanke = hankeService.createHanke(request)
 
-        // Check the return object in general:
-        assertThat(returnedHanke).isNotNull
-        assertThat(returnedHanke).isNotSameAs(request)
-        assertThat(returnedHanke.id).isNotNull
-
         // Check status:
         assertThat(returnedHanke.status).isEqualTo(HankeStatus.DRAFT)
 
@@ -301,9 +294,7 @@ class HankeServiceITests : DatabaseTest() {
         val returnedHanke2 = hankeService.updateHanke(returnedHanke)
 
         // Check the return object in general:
-        assertThat(returnedHanke2).isNotNull
         assertThat(returnedHanke2).isNotSameAs(returnedHanke)
-        assertThat(returnedHanke2.id).isNotNull
 
         // Check that status changed now with full data available:
         assertThat(returnedHanke2.status).isEqualTo(HankeStatus.PUBLIC)
@@ -393,13 +384,9 @@ class HankeServiceITests : DatabaseTest() {
         // Also tests how update affects audit fields.
 
         // Setup Hanke with one Yhteystieto:
-        val hanke = HankeFactory.createRequest().withGeneratedOmistaja(1).build()
+        val request = HankeFactory.createRequest().withGeneratedOmistaja(1).build()
 
-        // Call create, get the return object, and make some general checks:
-        val returnedHanke = hankeService.createHanke(hanke)
-        assertThat(returnedHanke).isNotNull
-        assertThat(returnedHanke).isNotSameAs(hanke)
-        assertThat(returnedHanke.id).isNotNull
+        val returnedHanke = hankeService.createHanke(request)
         // Check and record the Yhteystieto's id
         assertThat(returnedHanke.omistajat).hasSize(1)
         assertThat(returnedHanke.omistajat[0].id).isNotNull
@@ -414,10 +401,7 @@ class HankeServiceITests : DatabaseTest() {
 
         // Call update, get the returned object, make some general checks:
         val returnedHanke2 = hankeService.updateHanke(returnedHanke)
-        assertThat(returnedHanke2).isNotNull
-        assertThat(returnedHanke2).isNotSameAs(hanke)
         assertThat(returnedHanke2).isNotSameAs(returnedHanke)
-        assertThat(returnedHanke2.id).isNotNull
 
         // A small side-check here for audit and version fields handling on update:
         assertThat(returnedHanke2.version).isEqualTo(1)
@@ -449,10 +433,9 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke has the same 3 Yhteystietos:
-        assertThat(returnedHanke3.omistajat).hasSize(2)
+        assertThat(returnedHanke3!!.omistajat).hasSize(2)
         assertThat(returnedHanke3.rakennuttajat).hasSize(1)
         assertThat(returnedHanke3.omistajat[0].id).isEqualTo(ytid)
         assertThat(returnedHanke3.omistajat[0].nimi).isEqualTo(NAME_1)
@@ -477,10 +460,7 @@ class HankeServiceITests : DatabaseTest() {
         // Setup Hanke with two Yhteystietos in the same group:
         val request = HankeFactory.createRequest().withGeneratedOmistajat(1, 2).build()
 
-        // Call create, get the return object, and make some general checks:
         val returnedHanke = hankeService.createHanke(request)
-        assertThat(returnedHanke).isNotNull
-        assertThat(returnedHanke.id).isNotNull
         // Check and record the Yhteystieto ids, and to-be-changed field's value
         assertThat(returnedHanke.omistajat).hasSize(2)
         assertThat(returnedHanke.omistajat[0].id).isNotNull
@@ -497,9 +477,7 @@ class HankeServiceITests : DatabaseTest() {
 
         // Call update, get the returned object, make some general checks:
         val returnedHanke2 = hankeService.updateHanke(returnedHanke)
-        assertThat(returnedHanke2).isNotNull
         assertThat(returnedHanke2).isNotSameAs(returnedHanke)
-        assertThat(returnedHanke2.id).isNotNull
 
         // Check that both entries kept their ids, and the only change is where expected
         assertThat(returnedHanke2.omistajat).hasSize(2)
@@ -514,10 +492,9 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke has the same 2 Yhteystietos:
-        assertThat(returnedHanke3.omistajat).hasSize(2)
+        assertThat(returnedHanke3!!.omistajat).hasSize(2)
         assertThat(returnedHanke3.omistajat[0].id).isEqualTo(ytid1)
         assertThat(returnedHanke3.omistajat[1].id).isEqualTo(ytid2)
         assertThat(returnedHanke3.omistajat[0].nimi).isEqualTo(NAME_1)
@@ -541,9 +518,6 @@ class HankeServiceITests : DatabaseTest() {
 
         // Call create, get the return object, and make some general checks:
         val returnedHanke = hankeService.createHanke(request)
-        assertThat(returnedHanke).isNotNull
-        assertThat(returnedHanke).isNotSameAs(request)
-        assertThat(returnedHanke.id).isNotNull
         // Check and record the Yhteystieto ids:
         assertThat(returnedHanke.omistajat).hasSize(2)
         assertThat(returnedHanke.omistajat[0].id).isNotNull
@@ -559,10 +533,7 @@ class HankeServiceITests : DatabaseTest() {
 
         // Call update, get the returned object, make some general checks:
         val returnedHanke2 = hankeService.updateHanke(returnedHanke)
-        assertThat(returnedHanke2).isNotNull
-        assertThat(returnedHanke2).isNotSameAs(request)
         assertThat(returnedHanke2).isNotSameAs(returnedHanke)
-        assertThat(returnedHanke2.id).isNotNull
 
         // Check that one yhteystieto got removed, the first one remaining, and its fields not
         // affected:
@@ -576,10 +547,9 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke has the same Yhteystieto:
-        assertThat(returnedHanke3.omistajat).hasSize(1)
+        assertThat(returnedHanke3!!.omistajat).hasSize(1)
         assertThat(returnedHanke3.omistajat[0].id).isEqualTo(ytid1)
         assertThat(returnedHanke3.omistajat[0].nimi).isEqualTo(NAME_1)
     }
@@ -593,10 +563,8 @@ class HankeServiceITests : DatabaseTest() {
                 .withGeneratedRakennuttaja(1)
                 .build()
 
-        // Call create, get the return object, and make some general checks:
         val returnedHanke = hankeService.createHanke(request)
-        assertThat(returnedHanke).isNotNull
-        assertThat(returnedHanke.id).isNotNull
+
         // Check and record the Yhteystieto ids, and that the ids are different:
         assertThat(returnedHanke.omistajat).hasSize(1)
         assertThat(returnedHanke.omistajat[0].id).isNotNull
@@ -615,13 +583,10 @@ class HankeServiceITests : DatabaseTest() {
 
         // Call update, get the returned object, make some general checks:
         val returnedHanke2 = hankeService.updateHanke(returnedHanke)
-        assertThat(returnedHanke2).isNotNull
         assertThat(returnedHanke2).isNotSameAs(returnedHanke)
-        assertThat(returnedHanke2.id).isNotNull
 
         // Check that rakennuttaja-yhteystieto got removed, the first one remaining, and its fields
-        // not
-        // affected:
+        // not affected:
         assertThat(returnedHanke2.rakennuttajat).hasSize(0)
         assertThat(returnedHanke2.omistajat).hasSize(1)
         assertThat(returnedHanke2.omistajat[0].id).isEqualTo(ytid1)
@@ -633,10 +598,9 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke has the same 2 Yhteystietos:
-        assertThat(returnedHanke3.rakennuttajat).hasSize(0)
+        assertThat(returnedHanke3!!.rakennuttajat).hasSize(0)
         assertThat(returnedHanke3.omistajat).hasSize(1)
         assertThat(returnedHanke3.omistajat[0].id).isEqualTo(ytid1)
         assertThat(returnedHanke3.omistajat[0].nimi).isEqualTo(NAME_1)
@@ -652,11 +616,8 @@ class HankeServiceITests : DatabaseTest() {
         // Setup Hanke with one Yhteystieto:
         val request = HankeFactory.createRequest().withGeneratedOmistaja(1).build()
 
-        // Call create, get the return object, and make some general checks:
         val returnedHanke = hankeService.createHanke(request)
-        assertThat(returnedHanke).isNotNull
-        assertThat(returnedHanke).isNotSameAs(request)
-        assertThat(returnedHanke.id).isNotNull
+
         // Check and record the Yhteystieto's id
         assertThat(returnedHanke.omistajat).hasSize(1)
         assertThat(returnedHanke.omistajat[0].id).isNotNull
@@ -669,10 +630,7 @@ class HankeServiceITests : DatabaseTest() {
         val returnedHanke2 = hankeService.updateHanke(returnedHanke)
 
         // General checks (because using another API action)
-        assertThat(returnedHanke2).isNotNull
         assertThat(returnedHanke2).isNotSameAs(returnedHanke)
-        assertThat(returnedHanke2.id).isNotNull
-        assertThat(returnedHanke2.hankeTunnus).isNotNull
         // Check that the returned hanke only has one entry, with a new id
         assertThat(returnedHanke2.omistajat).hasSize(1)
         assertThat(returnedHanke2.omistajat[0].id).isNotNull
@@ -685,10 +643,9 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
         assertThat(returnedHanke3).isNotSameAs(returnedHanke2)
-        assertThat(returnedHanke3!!.id).isNotNull
 
         // Check that the returned hanke only has one entry, with that new id
-        assertThat(returnedHanke3.omistajat).hasSize(1)
+        assertThat(returnedHanke3!!.omistajat).hasSize(1)
         assertThat(returnedHanke3.omistajat[0].id).isNotNull
         assertThat(returnedHanke3.omistajat[0].id).isEqualTo(ytid2)
     }
@@ -700,10 +657,8 @@ class HankeServiceITests : DatabaseTest() {
         // Setup Hanke with two Yhteystietos in the same group:
         val request = HankeFactory.createRequest().withGeneratedOmistajat(1, 2).build()
 
-        // Call create, get the return object, and make some general checks:
         val createdHanke = hankeService.createHanke(request)
-        assertThat(createdHanke).isNotNull
-        assertThat(createdHanke.id).isNotNull
+
         // Check and record the Yhteystieto ids, and to-be-changed field's value
         assertThat(createdHanke.omistajat).hasSize(2)
         assertThat(createdHanke.omistajat[0].id).isNotNull
@@ -831,7 +786,7 @@ class HankeServiceITests : DatabaseTest() {
         // (must be done via entities):
         // Fetching the yhteystieto is a bit clumsy since we don't have separate a
         // YhteystietoRepository.
-        var hankeEntity = hankeRepository.findById(hanke.id!!).get()
+        var hankeEntity = hankeRepository.findById(hanke.id).get()
         var yhteystietos = hankeEntity.listOfHankeYhteystieto
         var rakennuttajaEntity =
             yhteystietos.filter { it.contactType == ContactType.RAKENNUTTAJA }[0]
@@ -906,7 +861,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(rakennuttajat[0].nimi).isEqualTo(NAME_2)
 
         // Unset the processing restriction flag:
-        hankeEntity = hankeRepository.findById(hanke.id!!).get()
+        hankeEntity = hankeRepository.findById(hanke.id).get()
         yhteystietos = hankeEntity.listOfHankeYhteystieto
         rakennuttajaEntity = yhteystietos.filter { it.contactType == ContactType.RAKENNUTTAJA }[0]
         rakennuttajaEntity.dataLocked = false
@@ -1153,7 +1108,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals("testUser", event.actor.userId)
         assertEquals(UserRole.USER, event.actor.role)
         assertEquals(TestUtils.mockedIp, event.actor.ipAddress)
-        assertEquals(hanke.id?.toString(), event.target.id)
+        assertEquals(hanke.id.toString(), event.target.id)
         assertEquals(ObjectType.HANKE, event.target.type)
         assertNull(event.target.objectAfter)
         val expectedObject =
@@ -1301,7 +1256,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(USER_NAME, event.actor.userId)
         assertEquals(UserRole.USER, event.actor.role)
         assertEquals(TestUtils.mockedIp, event.actor.ipAddress)
-        assertEquals(hanke.id?.toString(), event.target.id)
+        assertEquals(hanke.id.toString(), event.target.id)
         assertEquals(ObjectType.HANKE, event.target.type)
         assertNull(event.target.objectBefore)
         val expectedObject =
@@ -1339,7 +1294,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(USER_NAME, event.actor.userId)
         assertEquals(UserRole.USER, event.actor.role)
         assertEquals(TestUtils.mockedIp, event.actor.ipAddress)
-        assertEquals(hanke.id?.toString(), event.target.id)
+        assertEquals(hanke.id.toString(), event.target.id)
         assertEquals(ObjectType.HANKE, event.target.type)
         assertNull(event.target.objectBefore)
         val expectedObject = expectedHankeLogObject(hanke, alkuPvm = null, loppuPvm = null)
@@ -1384,7 +1339,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals("test7358", event.actor.userId)
         assertEquals(UserRole.USER, event.actor.role)
         assertEquals(TestUtils.mockedIp, event.actor.ipAddress)
-        assertEquals(hanke.id?.toString(), event.target.id)
+        assertEquals(hanke.id.toString(), event.target.id)
         assertEquals(ObjectType.HANKE, event.target.type)
         val expectedObjectBefore = expectedHankeLogObject(hanke, alkuPvm = null, loppuPvm = null)
         JSONAssert.assertEquals(
@@ -1431,7 +1386,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(1, hankeLogs.size)
         val event = hankeLogs[0].message.auditEvent
         assertEquals(Operation.UPDATE, event.operation)
-        assertEquals(hanke.id?.toString(), event.target.id)
+        assertEquals(hanke.id.toString(), event.target.id)
         assertEquals(ObjectType.HANKE, event.target.type)
         val expectedObjectBefore =
             expectedHankeLogObject(hanke, hanke.alueet[0], tormaystarkasteluTulos = true)
@@ -1442,7 +1397,7 @@ class HankeServiceITests : DatabaseTest() {
         )
         val templateData =
             TemplateData(
-                updatedHanke.id!!,
+                updatedHanke.id,
                 updatedHanke.hankeTunnus,
                 updatedHanke.alueet[0].id,
                 updatedHanke.alueet[0].geometriat?.id,
@@ -1581,7 +1536,7 @@ class HankeServiceITests : DatabaseTest() {
     ): String {
         val templateData =
             TemplateData(
-                hanke.id!!,
+                hanke.id,
                 hanke.hankeTunnus,
                 alue?.id,
                 alue?.geometriat?.id,

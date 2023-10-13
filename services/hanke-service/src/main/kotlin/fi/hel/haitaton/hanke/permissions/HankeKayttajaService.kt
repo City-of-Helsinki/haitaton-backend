@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.permissions
 
-import fi.hel.haitaton.hanke.HankeArgumentException
 import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.application.ApplicationEntity
@@ -93,18 +92,16 @@ class HankeKayttajaService(
             "Creating users and user tokens for hanke ${hanke.id}, hankeTunnus=${hanke.hankeTunnus}}"
         }
 
-        val hankeId = hanke.id ?: throw HankeArgumentException("Hanke without id")
-
         val contacts =
             hanke
                 .extractYhteystiedot()
                 .flatMap { it.alikontaktit }
                 .mapNotNull { HankeUserContact.from(it.fullName(), it.email) }
 
-        val inviter = getKayttajaByUserId(hankeId, userId)
-        filterNewContacts(hankeId, contacts).forEach { contact ->
+        val inviter = getKayttajaByUserId(hanke.id, userId)
+        filterNewContacts(hanke.id, contacts).forEach { contact ->
             createTunnisteAndKayttaja(
-                hankeId,
+                hanke.id,
                 hanke.hankeTunnus,
                 hanke.nimi,
                 inviter,

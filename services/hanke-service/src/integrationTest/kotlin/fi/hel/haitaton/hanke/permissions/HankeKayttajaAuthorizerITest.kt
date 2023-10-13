@@ -46,7 +46,7 @@ class HankeKayttajaAuthorizerITest(
 
         @Test
         fun `throws exception if user doesn't have any permission for the hanke`() {
-            val hankeId = hankeFactory.saveMinimal().id!!
+            val hankeId = hankeFactory.saveMinimal().id
             val kayttajaId = hankeKayttajaFactory.saveUser(hankeId).id
 
             assertFailure { authorizer.authorizeKayttajaId(kayttajaId, PermissionCode.VIEW.name) }
@@ -58,7 +58,7 @@ class HankeKayttajaAuthorizerITest(
 
         @Test
         fun `throws exception if user doesn't have the required permission for the hanke`() {
-            val hankeId = hankeFactory.saveMinimal().id!!
+            val hankeId = hankeFactory.saveMinimal().id
             val kayttajaId = hankeKayttajaFactory.saveUserAndPermission(hankeId).id
             permissionService.create(hankeId, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
@@ -71,7 +71,7 @@ class HankeKayttajaAuthorizerITest(
 
         @Test
         fun `return true if user has the required permission for the hanke`() {
-            val hankeId = hankeFactory.saveMinimal().id!!
+            val hankeId = hankeFactory.saveMinimal().id
             val kayttajaId = hankeKayttajaFactory.saveUserAndPermission(hankeId).id
             permissionService.create(hankeId, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
 

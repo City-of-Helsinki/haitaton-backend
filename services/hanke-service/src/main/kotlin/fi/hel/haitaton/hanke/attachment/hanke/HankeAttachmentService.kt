@@ -55,7 +55,7 @@ class HankeAttachmentService(
         val filename = AttachmentValidator.validFilename(attachment.originalFilename)
         val hanke =
             findHanke(hankeTunnus).also { hanke ->
-                ensureRoomForAttachment(hanke.id!!)
+                ensureRoomForAttachment(hanke.id)
                 scanAttachment(filename, attachment.bytes)
             }
 

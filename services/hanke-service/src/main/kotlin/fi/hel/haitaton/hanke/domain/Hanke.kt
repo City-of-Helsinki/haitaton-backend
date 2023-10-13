@@ -18,7 +18,7 @@ import java.time.ZonedDateTime
 data class Hanke(
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Id, set by the service")
-    override var id: Int?,
+    override val id: Int,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(
