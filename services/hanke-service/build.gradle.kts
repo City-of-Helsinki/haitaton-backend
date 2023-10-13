@@ -78,7 +78,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.6")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.5.3")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.6.0")
     implementation("commons-io:commons-io:2.14.0")
     implementation("com.github.librepdf:openpdf:1.3.30")
     implementation("net.pwall.mustache:kotlin-mustache:0.11")
