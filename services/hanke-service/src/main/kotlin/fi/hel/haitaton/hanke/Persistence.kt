@@ -121,7 +121,7 @@ enum class Haitta13 {
 @Table(name = "hanke")
 class HankeEntity(
     @Enumerated(EnumType.STRING) var status: HankeStatus = HankeStatus.DRAFT,
-    var hankeTunnus: String? = null,
+    val hankeTunnus: String,
     var nimi: String,
     var kuvaus: String? = null,
     @Enumerated(EnumType.STRING) var vaihe: Vaihe? = null,
@@ -225,7 +225,7 @@ class HankeEntity(
 
     override fun hashCode(): Int {
         var result = status.hashCode()
-        result = 31 * result + (hankeTunnus?.hashCode() ?: 0)
+        result = 31 * result + hankeTunnus.hashCode()
         result = 31 * result + (id ?: 0)
         return result
     }

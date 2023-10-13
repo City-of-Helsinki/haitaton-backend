@@ -135,11 +135,10 @@ open class HankeServiceImpl(
         request: CreateHankeRequest,
         currentUserId: String
     ): HankeEntity {
-        val entity = HankeEntity(nimi = request.nimi)
-
         // Create a new hanketunnus:
         val hanketunnus = hanketunnusService.newHanketunnus()
-        entity.hankeTunnus = hanketunnus
+
+        val entity = HankeEntity(hankeTunnus = hanketunnus, nimi = request.nimi)
 
         // Set audit fields
         entity.version = 0
@@ -175,20 +174,17 @@ open class HankeServiceImpl(
     ): Application {
         logger.info { "Generating Hanke from CableReport." }
         val hanke = generateHankeFrom(cableReport)
-        val tunnus = hanke.hankeTunnus ?: throw HankeArgumentException("Hanke must have tunnus")
-        return applicationService.create(cableReport.toNewApplication(tunnus), userId)
+        return applicationService.create(cableReport.toNewApplication(hanke.hankeTunnus), userId)
     }
 
     @Transactional
     override fun updateHanke(hanke: Hanke): Hanke {
-        if (hanke.hankeTunnus == null) error("Somehow got here with hanke without hanke-tunnus")
-
         val userId = currentUserId()
 
         // Both checks that the hanke already exists, and get its old fields to transfer data into
         val entity =
-            hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)
-                ?: throw HankeNotFoundException(hanke.hankeTunnus!!)
+            hankeRepository.findByHankeTunnus(hanke.hankeTunnus)
+                ?: throw HankeNotFoundException(hanke.hankeTunnus)
 
         val hankeBeforeUpdate = createHankeDomainObjectFromEntity(entity)
 
@@ -478,7 +474,7 @@ open class HankeServiceImpl(
 
         // Merge hankealueet
         mergeDataInto(hanke.alueet, entity.listOfHankeAlueet) { source, target ->
-            copyNonNullHankealueFieldsToEntity(entity.hankeTunnus!!, source, target)
+            copyNonNullHankealueFieldsToEntity(entity.hankeTunnus, source, target)
         }
 
         entity.listOfHankeAlueet.forEach { it.hanke = entity }

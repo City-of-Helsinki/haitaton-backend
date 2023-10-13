@@ -267,7 +267,7 @@ class HankeServiceITests : DatabaseTest() {
 
         val hanke = hankeService.createHanke(request)
 
-        val hankeEntity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)!!
+        val hankeEntity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus)!!
         assertThat(hankeEntity.perustaja).isNull()
         assertThat(hankeKayttajaRepository.findAll()).isEmpty()
         assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
@@ -326,7 +326,7 @@ class HankeServiceITests : DatabaseTest() {
     fun `getHankeApplications return applications`() {
         val hanke = initHankeWithHakemus(123)
 
-        val result = hankeService.getHankeApplications(hanke.hankeTunnus!!)
+        val result = hankeService.getHankeApplications(hanke.hankeTunnus)
 
         val expectedHakemus = applicationRepository.findAll().first().toDomainObject()
         assertThat(result).hasSameElementsAs(listOf(expectedHakemus))
@@ -347,7 +347,7 @@ class HankeServiceITests : DatabaseTest() {
     fun `getHankeApplications when no hakemukset returns an empty list`() {
         val hankeInitial = hankeFactory.save()
 
-        val result = hankeService.getHankeApplications(hankeInitial.hankeTunnus!!)
+        val result = hankeService.getHankeApplications(hankeInitial.hankeTunnus)
 
         assertThat(result).isEmpty()
     }
@@ -444,7 +444,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke2.rakennuttajat[0].id).isNotEqualTo(returnedHanke2.omistajat[1].id)
 
         // Use loadHanke and check it returns the same data:
-        val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus!!)
+        val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus)
         // General checks (because using another API action)
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
@@ -509,7 +509,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke2.omistajat[1].nimi).isEqualTo(NAME_SOMETHING)
 
         // Use loadHanke and check it returns the same data:
-        val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus!!)
+        val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus)
         // General checks (because using another API action)
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
@@ -571,7 +571,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke2.omistajat[0].nimi).isEqualTo(NAME_1)
 
         // Use loadHanke and check it returns the same data:
-        val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus!!)
+        val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus)
         // General checks (because using another API action)
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
@@ -628,7 +628,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke2.omistajat[0].nimi).isEqualTo(NAME_1)
 
         // Use loadHanke and check it returns the same data:
-        val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus!!)
+        val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus)
         // General checks (because using another API action)
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
@@ -680,7 +680,7 @@ class HankeServiceITests : DatabaseTest() {
         val ytid2 = returnedHanke2.omistajat[0].id
 
         // Use loadHanke and check it also returns only one entry
-        val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus!!)
+        val returnedHanke3 = hankeService.loadHanke(returnedHanke2.hankeTunnus)
         // General checks (because using another API action)
         assertThat(returnedHanke3).isNotNull
         assertThat(returnedHanke3).isNotSameAs(returnedHanke)
@@ -843,7 +843,7 @@ class HankeServiceITests : DatabaseTest() {
         hankeRepository.save(hankeEntity)
 
         // Try to update the yhteystieto. It should fail and add a new log entry.
-        val hankeWithLockedYT = hankeService.loadHanke(hanke.hankeTunnus!!)
+        val hankeWithLockedYT = hankeService.loadHanke(hanke.hankeTunnus)
         hankeWithLockedYT!!.rakennuttajat[0].nimi = "Muhaha-Evil-Change"
 
         assertThatExceptionOfType(HankeYhteystietoProcessingRestrictedException::class.java)
@@ -900,7 +900,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(auditLogEvents[2].target.objectAfter).isNull()
 
         // Check that both yhteystietos still exist and the values have not gotten changed.
-        val returnedHankeAfterBlockedActions = hankeService.loadHanke(hanke.hankeTunnus!!)
+        val returnedHankeAfterBlockedActions = hankeService.loadHanke(hanke.hankeTunnus)
         val rakennuttajat = returnedHankeAfterBlockedActions!!.rakennuttajat
         assertThat(rakennuttajat).hasSize(1)
         assertThat(rakennuttajat[0].nimi).isEqualTo(NAME_2)
@@ -913,7 +913,7 @@ class HankeServiceITests : DatabaseTest() {
         hankeRepository.save(hankeEntity)
 
         // Updating the yhteystieto should now work:
-        val hankeWithUnlockedYT = hankeService.loadHanke(hanke.hankeTunnus!!)
+        val hankeWithUnlockedYT = hankeService.loadHanke(hanke.hankeTunnus)
         hankeWithUnlockedYT!!.rakennuttajat[0].nimi = "Hopefully-Not-Evil-Change"
         val finalHanke = hankeService.updateHanke(hankeWithUnlockedYT)
 
@@ -1124,7 +1124,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(alue.polyHaitta).isEqualTo(Haitta13.KOLME)
         assertThat(alue.tarinaHaitta).isEqualTo(Haitta13.KOLME)
         assertThat(alue.geometriat).isNotNull
-        val hankeFromDb = hankeService.loadHanke(hanke.hankeTunnus!!)
+        val hankeFromDb = hankeService.loadHanke(hanke.hankeTunnus)
         assertThat(hankeFromDb?.alueet).hasSize(1)
         assertThat(hankealueCount()).isEqualTo(1)
         assertThat(geometriatCount()).isEqualTo(1)
@@ -1137,7 +1137,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(0, auditLogRepository.count())
         TestUtils.addMockedRequestIp()
 
-        hankeService.deleteHanke(hanke.hankeTunnus!!, "testUser")
+        hankeService.deleteHanke(hanke.hankeTunnus, "testUser")
 
         val hankeLogs = auditLogRepository.findByType(ObjectType.HANKE)
         assertEquals(1, hankeLogs.size)
@@ -1176,7 +1176,7 @@ class HankeServiceITests : DatabaseTest() {
         assertEquals(0, auditLogRepository.count())
         TestUtils.addMockedRequestIp()
 
-        hankeService.deleteHanke(hanke.hankeTunnus!!, "testUser")
+        hankeService.deleteHanke(hanke.hankeTunnus, "testUser")
 
         val logs = auditLogRepository.findByType(ObjectType.YHTEYSTIETO)
         assertEquals(4, logs.size)
@@ -1228,7 +1228,7 @@ class HankeServiceITests : DatabaseTest() {
     fun `deleteHanke hanke when no hakemus should delete hanke`() {
         val hanke = hankeFactory.save()
 
-        hankeService.deleteHanke(hanke.hankeTunnus!!, USER_NAME)
+        hankeService.deleteHanke(hanke.hankeTunnus, USER_NAME)
 
         assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNull()
     }
@@ -1242,7 +1242,7 @@ class HankeServiceITests : DatabaseTest() {
         justRun { cableReportService.cancel(hakemusAlluId) }
         every { cableReportService.sendSystemComment(hakemusAlluId, any()) } returns 1324
 
-        hankeService.deleteHanke(hanke.hankeTunnus!!, USER_NAME)
+        hankeService.deleteHanke(hanke.hankeTunnus, USER_NAME)
 
         assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNull()
         verifySequence {
@@ -1261,7 +1261,7 @@ class HankeServiceITests : DatabaseTest() {
             AlluDataFactory.createAlluApplicationResponse(status = ApplicationStatus.HANDLING)
 
         assertThrows<HankeAlluConflictException> {
-            hankeService.deleteHanke(hanke.hankeTunnus!!, USER_NAME)
+            hankeService.deleteHanke(hanke.hankeTunnus, USER_NAME)
         }
 
         assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNotNull
@@ -1270,7 +1270,7 @@ class HankeServiceITests : DatabaseTest() {
 
     @Test
     fun `deleteHanke when hanke has users should remove users and tokens`() {
-        val hanketunnus = hankeFactory.createRequest().withYhteystiedot().save().hankeTunnus!!
+        val hanketunnus = hankeFactory.createRequest().withYhteystiedot().save().hankeTunnus
         assertk.assertThat(hankeKayttajaRepository.findAll()).hasSize(4)
         assertk.assertThat(kayttajaTunnisteRepository.findAll()).hasSize(4)
 
@@ -1443,7 +1443,7 @@ class HankeServiceITests : DatabaseTest() {
         val templateData =
             TemplateData(
                 updatedHanke.id!!,
-                updatedHanke.hankeTunnus!!,
+                updatedHanke.hankeTunnus,
                 updatedHanke.alueet[0].id,
                 updatedHanke.alueet[0].geometriat?.id,
                 hankeVersion = 1,
@@ -1536,7 +1536,7 @@ class HankeServiceITests : DatabaseTest() {
                 applicationIdentifier,
                 applicationType,
                 applicationData,
-                hanke.hankeTunnus ?: ""
+                hanke.hankeTunnus,
             )
         }
 
@@ -1582,7 +1582,7 @@ class HankeServiceITests : DatabaseTest() {
         val templateData =
             TemplateData(
                 hanke.id!!,
-                hanke.hankeTunnus!!,
+                hanke.hankeTunnus,
                 alue?.id,
                 alue?.geometriat?.id,
                 geometriaVersion,

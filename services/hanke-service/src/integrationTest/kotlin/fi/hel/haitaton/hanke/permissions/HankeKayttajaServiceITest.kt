@@ -45,7 +45,6 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.defaultNimi
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
@@ -302,7 +301,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             hankeKayttajaService.saveNewTokensFromApplication(
                 application,
                 hanke.id!!,
-                hanke.hankeTunnus!!,
+                hanke.hankeTunnus,
                 hanke.nimi,
                 USERNAME,
                 HankeKayttajaFactory.createEntity()
@@ -340,7 +339,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             hankeKayttajaService.saveNewTokensFromApplication(
                 application,
                 hanke.id!!,
-                hanke.hankeTunnus!!,
+                hanke.hankeTunnus,
                 hanke.nimi,
                 USERNAME
             )
@@ -378,7 +377,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             hankeKayttajaService.saveNewTokensFromApplication(
                 application,
                 hanke.id!!,
-                hanke.hankeTunnus!!,
+                hanke.hankeTunnus,
                 hanke.nimi,
                 USERNAME,
                 currentKayttaja = null
@@ -413,7 +412,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             hankeKayttajaService.saveNewTokensFromApplication(
                 applicationEntity,
                 hanke.id!!,
-                hanke.hankeTunnus!!,
+                hanke.hankeTunnus,
                 hanke.nimi,
                 USERNAME,
                 inviter
@@ -463,7 +462,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             hankeKayttajaService.saveNewTokensFromApplication(
                 application,
                 hanke.id!!,
-                hanke.hankeTunnus!!,
+                hanke.hankeTunnus,
                 hanke.nimi,
                 USERNAME
             )
@@ -509,7 +508,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             hankeKayttajaService.saveNewTokensFromApplication(
                 application,
                 hanke.id!!,
-                hanke.hankeTunnus!!,
+                hanke.hankeTunnus,
                 hanke.nimi,
                 USERNAME
             )
@@ -557,7 +556,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             hankeKayttajaService.saveNewTokensFromApplication(
                 application,
                 hanke.id!!,
-                hanke.hankeTunnus!!,
+                hanke.hankeTunnus,
                 hanke.nimi,
                 USERNAME
             )
@@ -597,7 +596,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             hankeKayttajaService.saveNewTokensFromApplication(
                 application,
                 hanke.id!!,
-                hanke.hankeTunnus!!,
+                hanke.hankeTunnus,
                 hanke.nimi,
                 USERNAME
             )
@@ -707,7 +706,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 inv.transform { it.inviterEmail }.isEqualTo(teppoEmail)
                 inv.transform { it.recipientEmail }
                     .isIn("yhteys-email1", "yhteys-email2", "yhteys-email3", "yhteys-email4")
-                inv.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus!!)
+                inv.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
                 inv.transform { it.hankeNimi }.isEqualTo(defaultApplicationName)
                 inv.transform { it.invitationToken }.isNotEmpty()
             }

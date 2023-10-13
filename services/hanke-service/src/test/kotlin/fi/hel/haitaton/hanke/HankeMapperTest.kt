@@ -86,13 +86,13 @@ class HankeMapperTest {
             ?.modifiedAt
             ?.let { ZonedDateTime.of(it, TZ_UTC) }
 
-    private fun expectedAlueet(hankeId: Int?, hankeTunnus: String?) =
+    private fun expectedAlueet(hankeId: Int?, hankeTunnus: String) =
         listOf(
             HankealueFactory.create(
                 hankeId = hankeId,
                 haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate().atStartOfDay(TZ_UTC),
                 haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate().atStartOfDay(TZ_UTC),
-                geometriat = geometry.apply { resetFeatureProperties(hankeTunnus!!) },
+                geometriat = geometry.apply { resetFeatureProperties(hankeTunnus) },
             )
         )
 }

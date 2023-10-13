@@ -168,10 +168,10 @@ When Hanke is created:
             ]
     )
     @PreAuthorize("@featureService.isEnabled('HANKE_EDITING')")
-    fun createHanke(@ValidHanke @RequestBody hanke: CreateHankeRequest): Hanke {
+    fun createHanke(@ValidHanke @RequestBody request: CreateHankeRequest): Hanke {
         logger.info { "Creating Hanke..." }
 
-        val createdHanke = hankeService.createHanke(hanke)
+        val createdHanke = hankeService.createHanke(request)
 
         disclosureLogService.saveDisclosureLogsForHanke(createdHanke, currentUserId())
         logger.info { "Created Hanke ${createdHanke.hankeTunnus}." }

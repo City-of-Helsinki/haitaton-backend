@@ -67,7 +67,7 @@ class HankeAttachmentEntity(
             id = id!!,
             fileName = fileName,
             createdAt = createdAt,
-            hankeTunnus = hanke.hankeTunnus!!,
+            hankeTunnus = hanke.hankeTunnus,
             createdByUserId = createdByUserId,
         )
     }
