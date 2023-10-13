@@ -89,7 +89,7 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
     return PublicHanke(
         hanke.id!!,
         hanke.hankeTunnus!!,
-        hanke.nimi!!,
+        hanke.nimi,
         hanke.kuvaus!!,
         hanke.alkuPvm!!,
         hanke.loppuPvm!!,

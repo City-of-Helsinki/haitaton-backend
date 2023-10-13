@@ -64,7 +64,7 @@ import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
 
 private const val USERNAME = "test"
-private const val HANKE_TUNNUS = "HAI-1234"
+private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
 
 class ApplicationServiceTest {
     private val applicationRepository: ApplicationRepository = mockk()
@@ -160,7 +160,7 @@ class ApplicationServiceTest {
         @Test
         fun `when valid data should create`() {
             val application = application()
-            val hanke = hankeEntity()
+            val hanke = HankeFactory.createMinimalEntity(id = 1)
             every { applicationRepository.save(any()) } answers
                 {
                     firstArg<ApplicationEntity>().copy(id = 1)
@@ -212,14 +212,15 @@ class ApplicationServiceTest {
     inner class UpdateApplication {
         @Test
         fun `when update Allu data should save disclosure logs`() {
-            val hanke = hankeEntity()
+            val hanke = HankeFactory.createMinimalEntity(id = 1)
             val applicationEntity = applicationEntity(alluId = 42, hanke = hanke)
             val sender = HankeKayttajaFactory.createEntity()
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { applicationRepository.save(applicationEntity) } returns applicationEntity
             justRun { cableReportService.update(42, any()) }
             justRun { cableReportService.addAttachment(42, any()) }
-            every { cableReportService.getApplicationInformation(42) } returns alluResponse()
+            every { cableReportService.getApplicationInformation(42) } returns
+                AlluDataFactory.createAlluApplicationResponse()
             every { geometriatDao.validateGeometriat(any()) } returns null
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
             every { geometriatDao.calculateCombinedArea(any()) } returns 100f
@@ -258,12 +259,13 @@ class ApplicationServiceTest {
 
         @Test
         fun `when user management disabled should not create tokens`() {
-            val hanke = hankeEntity(generated = true)
+            val hanke = HankeFactory.createMinimalEntity(generated = true)
             val applicationEntity = applicationEntity(alluId = 42, hanke = hanke)
             val dataupdate = applicationData.copy(name = "New name")
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.validateGeometriat(any()) } returns null
-            every { cableReportService.getApplicationInformation(42) } returns alluResponse()
+            every { cableReportService.getApplicationInformation(42) } returns
+                AlluDataFactory.createAlluApplicationResponse()
             every { applicationRepository.save(applicationEntity) } returns applicationEntity
             every { geometriatDao.calculateCombinedArea(any()) } returns 100f
             every { geometriatDao.calculateArea(any()) } returns 100f
@@ -297,7 +299,8 @@ class ApplicationServiceTest {
 
         @Test
         fun `when invalid geometry updateApplicationData should throw`() {
-            val applicationEntity = applicationEntity(alluId = 42, hanke = hankeEntity())
+            val applicationEntity =
+                applicationEntity(alluId = 42, hanke = HankeFactory.createMinimalEntity())
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.validateGeometriat(any()) } returns
                 GeometriatDao.InvalidDetail(
@@ -327,14 +330,15 @@ class ApplicationServiceTest {
     inner class SendApplication {
         @Test
         fun `when successful should save disclosure logs`() {
-            val hankeEntity = hankeEntity()
+            val hankeEntity = HankeFactory.createMinimalEntity(id = 1)
             val applicationEntity = applicationEntity(hanke = hankeEntity)
             val sender = HankeKayttajaFactory.createEntity()
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { applicationRepository.save(any()) } answers { firstArg() }
             every { cableReportService.create(any()) } returns 42
             justRun { cableReportService.addAttachment(42, any()) }
-            every { cableReportService.getApplicationInformation(42) } returns alluResponse()
+            every { cableReportService.getApplicationInformation(42) } returns
+                AlluDataFactory.createAlluApplicationResponse()
             every { geometriatDao.calculateCombinedArea(any()) } returns 100f
             every { geometriatDao.calculateArea(any()) } returns 100f
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
@@ -364,7 +368,7 @@ class ApplicationServiceTest {
                     applicationEntity,
                     hankeEntity.id!!,
                     hankeEntity.hankeTunnus!!,
-                    hankeEntity.nimi!!,
+                    hankeEntity.nimi,
                     USERNAME,
                     sender
                 )
@@ -376,7 +380,7 @@ class ApplicationServiceTest {
 
         @Test
         fun `when sending fails should save disclosure logs for attempt`() {
-            val hankeEntity = hankeEntity()
+            val hankeEntity = HankeFactory.createMinimalEntity(id = 1)
             val applicationEntity = applicationEntity(hanke = hankeEntity)
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.calculateCombinedArea(any()) } returns 100f
@@ -405,7 +409,7 @@ class ApplicationServiceTest {
 
         @Test
         fun `when login error should not save disclosure logs`() {
-            val hankeEntity = hankeEntity()
+            val hankeEntity = HankeFactory.createMinimalEntity()
             val applicationEntity = applicationEntity(hanke = hankeEntity)
             assertThat(applicationEntity.applicationData.areas).isNotNull().isNotEmpty()
             every { applicationRepository.findOneById(3) } returns applicationEntity
@@ -432,7 +436,7 @@ class ApplicationServiceTest {
             rockExcavation: Boolean,
             expectedSuffix: String
         ) {
-            val hankeEntity = hankeEntity()
+            val hankeEntity = HankeFactory.createMinimalEntity(id = 1)
             val applicationEntity =
                 applicationEntity(
                     data = applicationData.copy(rockExcavation = rockExcavation),
@@ -446,7 +450,8 @@ class ApplicationServiceTest {
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
             every { cableReportService.create(any()) } returns 852
             justRun { cableReportService.addAttachment(852, any()) }
-            every { cableReportService.getApplicationInformation(852) } returns alluResponse(852)
+            every { cableReportService.getApplicationInformation(852) } returns
+                AlluDataFactory.createAlluApplicationResponse(852)
             justRun { attachmentService.sendInitialAttachments(852, any()) }
             every { hankeKayttajaService.getKayttajaByUserId(1, USERNAME) } returns sender
             justRun { emailSenderService.sendApplicationNotificationEmail(any()) }
@@ -477,7 +482,7 @@ class ApplicationServiceTest {
                     any(),
                     hankeEntity.id!!,
                     hankeEntity.hankeTunnus!!,
-                    hankeEntity.nimi!!,
+                    hankeEntity.nimi,
                     USERNAME,
                     sender
                 )
@@ -493,7 +498,7 @@ class ApplicationServiceTest {
             applicationData: ApplicationData,
             path: String,
         ) {
-            val hankeEntity = hankeEntity()
+            val hankeEntity = HankeFactory.createMinimalEntity(id = 1)
             val applicationEntity = applicationEntity(data = applicationData, hanke = hankeEntity)
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
@@ -518,13 +523,14 @@ class ApplicationServiceTest {
 
         @Test
         fun `when user management disabled should not create tokens`() {
-            val hankeEntity = hankeEntity(generated = true)
+            val hankeEntity = HankeFactory.createMinimalEntity(generated = true)
             val applicationEntity = applicationEntity(hanke = hankeEntity)
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { applicationRepository.save(applicationEntity) } returns applicationEntity
             every { geometriatDao.calculateCombinedArea(any()) } returns 100f
             every { geometriatDao.calculateArea(any()) } returns 100f
-            every { cableReportService.getApplicationInformation(42) } returns alluResponse()
+            every { cableReportService.getApplicationInformation(42) } returns
+                AlluDataFactory.createAlluApplicationResponse()
             every { cableReportService.create(any()) } returns 42
             justRun { cableReportService.addAttachment(42, any()) }
             every { featureFlags.isDisabled(Feature.USER_MANAGEMENT) } returns true
@@ -646,7 +652,8 @@ class ApplicationServiceTest {
         @Test
         fun `logs error if hanketunnus is null`(output: CapturedOutput) {
             every { applicationRepository.getOneByAlluid(42) } returns
-                applicationEntityWithCustomer().withHanke(HankeEntity(id = 1, hankeTunnus = null))
+                applicationEntityWithCustomer()
+                    .withHanke(HankeFactory.createMinimalEntity(id = 1, hankeTunnus = null))
             every { applicationRepository.save(any()) } answers { firstArg() }
             every { statusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
             every { statusRepository.save(any()) } answers { firstArg() }
@@ -697,7 +704,7 @@ class ApplicationServiceTest {
                     alluid = alluid,
                     applicationIdentifier = identifier,
                     userId = "user",
-                    hanke = HankeEntity(id = 1, hankeTunnus = hankeTunnus),
+                    hanke = HankeFactory.createMinimalEntity(id = 1, hankeTunnus = hankeTunnus),
                 )
                 .withCustomer(AlluDataFactory.createCompanyCustomerWithOrderer())
 
@@ -733,18 +740,4 @@ class ApplicationServiceTest {
             applicationData = data,
             hanke = hanke,
         )
-
-    private fun hankeEntity(
-        id: Int? = 1,
-        nimi: String? = HankeFactory.defaultNimi,
-        generated: Boolean = false
-    ) =
-        HankeEntity(
-            id = id,
-            hankeTunnus = HANKE_TUNNUS,
-            nimi = nimi,
-            generated = generated,
-        )
-
-    private fun alluResponse(id: Int = 42) = AlluDataFactory.createAlluApplicationResponse(id = id)
 }

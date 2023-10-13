@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 050-make-nimi-mandatory-in-hanke
+      author: Topias Heinonen
+      changes:
+        - addNotNullConstraint:
+            tableName: hanke
+            columnName: nimi
