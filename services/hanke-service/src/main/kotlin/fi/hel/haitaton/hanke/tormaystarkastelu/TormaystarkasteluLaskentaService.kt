@@ -1,6 +1,12 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.alkuPvm
+import fi.hel.haitaton.hanke.domain.geometriat
+import fi.hel.haitaton.hanke.domain.haittaAjanKestoDays
+import fi.hel.haitaton.hanke.domain.kaistaHaitat
+import fi.hel.haitaton.hanke.domain.kaistaPituusHaitat
+import fi.hel.haitaton.hanke.domain.loppuPvm
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.roundToOneDecimal
 import kotlin.math.max
@@ -10,20 +16,20 @@ open class TormaystarkasteluLaskentaService(
     @Autowired private val tormaysService: TormaystarkasteluTormaysService
 ) {
 
-    fun calculateTormaystarkastelu(hanke: Hanke): TormaystarkasteluTulos? {
-        if (!hasAllRequiredInformation(hanke)) {
+    fun calculateTormaystarkastelu(alueet: List<Hankealue>): TormaystarkasteluTulos? {
+        if (!hasAllRequiredInformation(alueet)) {
             return null
         }
 
-        val perusIndeksi = calculatePerusIndeksi(hanke)
+        val perusIndeksi = calculatePerusIndeksi(alueet)
 
-        val pyorailyLuokittelu = pyorailyLuokittelu(hanke.alueidenGeometriat())
+        val pyorailyLuokittelu = pyorailyLuokittelu(alueet.geometriat())
         val pyorailyIndeksi = if (pyorailyLuokittelu >= 4) 3.0f else 1.0f
 
-        val bussiLuokittelu = bussiLuokittelu(hanke.alueidenGeometriat())
+        val bussiLuokittelu = bussiLuokittelu(alueet.geometriat())
         val bussiIndeksi = if (bussiLuokittelu >= 3) 4.0f else 1.0f
 
-        val raitiovaunuLuokittelu = raitiovaunuLuokittelu(hanke.alueidenGeometriat())
+        val raitiovaunuLuokittelu = raitiovaunuLuokittelu(alueet.geometriat())
         val raitiovaunuIndeksi = if (raitiovaunuLuokittelu >= 3) 4.0f else 1.0f
 
         return TormaystarkasteluTulos(
@@ -34,29 +40,28 @@ open class TormaystarkasteluLaskentaService(
         )
     }
 
-    private fun hasAllRequiredInformation(hanke: Hanke): Boolean {
-        return (hanke.hankeTunnus != null &&
-            hanke.alkuPvm != null &&
-            hanke.loppuPvm != null &&
-            hanke.kaistaHaitat().isNotEmpty() &&
-            hanke.kaistaPituusHaitat().isNotEmpty() &&
-            hanke.alueidenGeometriat().isNotEmpty())
+    private fun hasAllRequiredInformation(alueet: List<Hankealue>): Boolean {
+        return (alueet.alkuPvm() != null &&
+            alueet.loppuPvm() != null &&
+            alueet.kaistaHaitat().isNotEmpty() &&
+            alueet.kaistaPituusHaitat().isNotEmpty() &&
+            alueet.geometriat().isNotEmpty())
     }
 
-    private fun calculatePerusIndeksi(hanke: Hanke): Float {
+    private fun calculatePerusIndeksi(alueet: List<Hankealue>): Float {
         val luokittelu = mutableMapOf<LuokitteluType, Int>()
 
         luokittelu[LuokitteluType.HAITTA_AJAN_KESTO] =
-            RajaArvoLuokittelija.getHaittaAjanKestoLuokka(hanke.haittaAjanKestoDays!!)
+            RajaArvoLuokittelija.getHaittaAjanKestoLuokka(alueet.haittaAjanKestoDays()!!)
         luokittelu[LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN] =
-            hanke.kaistaHaitat().maxOfOrNull { it.value }!!
+            alueet.kaistaHaitat().maxOfOrNull { it.value }!!
         luokittelu[LuokitteluType.KAISTAJARJESTELYN_PITUUS] =
-            hanke.kaistaPituusHaitat().maxOfOrNull { it.value }!!
+            alueet.kaistaPituusHaitat().maxOfOrNull { it.value }!!
 
-        val katuluokkaLuokittelu = katuluokkaLuokittelu(hanke.alueidenGeometriat())
+        val katuluokkaLuokittelu = katuluokkaLuokittelu(alueet.geometriat())
         luokittelu[LuokitteluType.KATULUOKKA] = katuluokkaLuokittelu
         luokittelu[LuokitteluType.LIIKENNEMAARA] =
-            liikennemaaraLuokittelu(hanke.alueidenGeometriat(), katuluokkaLuokittelu)
+            liikennemaaraLuokittelu(alueet.geometriat(), katuluokkaLuokittelu)
 
         return calculatePerusIndeksiFromLuokittelu(luokittelu)
     }

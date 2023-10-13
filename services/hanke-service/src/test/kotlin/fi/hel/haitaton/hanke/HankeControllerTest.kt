@@ -3,9 +3,11 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
+import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
+import fi.hel.haitaton.hanke.domain.geometriat
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -155,8 +157,8 @@ class HankeControllerTest {
 
         assertThat(hankeList[0].nimi).isEqualTo("Mannerheimintien remontti remonttinen")
         assertThat(hankeList[1].nimi).isEqualTo("Hämeenlinnanväylän uudistus")
-        assertThat(hankeList[0].alueidenGeometriat()).isEmpty()
-        assertThat(hankeList[1].alueidenGeometriat()).isEmpty()
+        assertThat(hankeList[0].alueet.geometriat()).isEmpty()
+        assertThat(hankeList[1].alueet.geometriat()).isEmpty()
         verify { disclosureLogService.saveDisclosureLogsForHankkeet(any(), eq(username)) }
     }
 
@@ -241,57 +243,41 @@ class HankeControllerTest {
     // sending of sub types
     @Test
     fun `test that create with listOfOmistaja can be sent to controller and is responded with 200`() {
-        val hanke =
-            Hanke(
-                id = null,
-                hankeTunnus = null,
+        val request =
+            CreateHankeRequest(
                 nimi = "hankkeen nimi",
                 kuvaus = HankeFactory.defaultKuvaus,
                 onYKTHanke = false,
                 vaihe = Vaihe.OHJELMOINTI,
                 suunnitteluVaihe = null,
-                version = 1,
-                createdBy = "Tiina",
-                createdAt = getCurrentTimeUTC(),
-                modifiedBy = null,
-                modifiedAt = null,
-                status = HankeStatus.DRAFT,
+                omistajat =
+                    arrayListOf(
+                        HankeYhteystieto(
+                            id = null,
+                            nimi = "Pekka Pekkanen",
+                            email = "pekka@pekka.fi",
+                            puhelinnumero = "3212312",
+                            organisaatioNimi = "Kaivuri ja mies",
+                            osasto = null,
+                            rooli = null,
+                            tyyppi = YKSITYISHENKILO,
+                            alikontaktit =
+                                listOf(
+                                    Yhteyshenkilo(
+                                        "Ali",
+                                        "Kontakti",
+                                        "ali.kontakti@meili.com",
+                                        "050-3789354"
+                                    )
+                                ),
+                        )
+                    )
             )
+        val mockedHanke = HankeFactory.create(id = 12, hankeTunnus = "JOKU12", nimi = request.nimi)
+        mockedHanke.omistajat = mutableListOf(request.omistajat!![0].copy(id = 1))
+        every { hankeService.createHanke(request) }.returns(mockedHanke)
 
-        hanke.omistajat =
-            arrayListOf(
-                HankeYhteystieto(
-                    id = null,
-                    nimi = "Pekka Pekkanen",
-                    email = "pekka@pekka.fi",
-                    puhelinnumero = "3212312",
-                    organisaatioNimi = "Kaivuri ja mies",
-                    osasto = null,
-                    rooli = null,
-                    tyyppi = YKSITYISHENKILO,
-                    alikontaktit =
-                        listOf(
-                            Yhteyshenkilo(
-                                "Ali",
-                                "Kontakti",
-                                "ali.kontakti@meili.com",
-                                "050-3789354"
-                            )
-                        ),
-                )
-            )
-
-        val mockedHanke = hanke.copy()
-        mockedHanke.omistajat = mutableListOf(hanke.omistajat[0])
-        mockedHanke.id = 12
-        mockedHanke.hankeTunnus = "JOKU12"
-        mockedHanke.omistajat[0].id = 1
-
-        // mock HankeService response
-        every { hankeService.createHanke(hanke) }.returns(mockedHanke)
-
-        // Actual call
-        val response: Hanke = hankeController.createHanke(hanke)
+        val response: Hanke = hankeController.createHanke(request)
 
         assertThat(response).isNotNull
         assertThat(response.id).isEqualTo(12)

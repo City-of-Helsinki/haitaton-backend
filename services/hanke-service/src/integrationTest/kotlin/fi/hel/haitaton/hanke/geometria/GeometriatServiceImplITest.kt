@@ -10,7 +10,9 @@ import fi.hel.haitaton.hanke.DATABASE_TIMESTAMP_FORMAT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.domain.geometriat
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import org.geojson.Point
 import org.junit.jupiter.api.Test
@@ -35,6 +37,8 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
 
     @Autowired private lateinit var jdbcTemplate: JdbcTemplate
 
+    @Autowired private lateinit var hankeFactory: HankeFactory
+
     @Test
     fun `save and load and update`() {
         val geometriat =
@@ -47,21 +51,22 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
         // Using hankeService to create the dummy hanke into database causes
         // tunnus and id to be whatever the service thinks is right, so
         // they must be picked from the created hanke-instance.
-        val hankeId = 1
-        val hankeInit = HankeFactory.create(id = hankeId)
-        hankeInit.alueet.add(HankealueFactory.createMinimal(geometriat = geometriat))
-        val hanke = hankeService.createHanke(hankeInit)
-        val hankeTunnus = hanke.hankeTunnus!!
+        val hankeTunnus =
+            hankeFactory
+                .createRequest()
+                .withHankealue(HankealueFactory.createMinimal(geometriat = geometriat))
+                .save()
+                .hankeTunnus!!
 
         // NOTE: the local Hanke instance has not been updated by the above call. Need to reload
         // the hanke to check that the flag changed to true:
         val updatedHanke = hankeService.loadHanke(hankeTunnus)
         assertThat(updatedHanke).isNotNull()
-        assertThat(updatedHanke!!.alueidenGeometriat()).isNotEmpty()
+        assertThat(updatedHanke!!.alueet.geometriat()).isNotEmpty()
 
         // loading geometries
         var loadedGeometriat =
-            geometriatService.getGeometriat(updatedHanke.alueidenGeometriat()[0].id!!)
+            geometriatService.getGeometriat(updatedHanke.alueet.geometriat()[0].id!!)
         assertThat(loadedGeometriat).isNotNull()
 
         val createdAt = loadedGeometriat!!.createdAt!!

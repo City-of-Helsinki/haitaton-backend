@@ -3,15 +3,12 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
-import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
-import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.Hankealue
-import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.domain.geometriat
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30
@@ -421,9 +418,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
 
     @Test
     fun `calculateTormaystarkastelu happy case`() {
-        val hanke = setupHappyCase()
+        val alueet = setupHappyCase()
 
-        val tulos = laskentaService.calculateTormaystarkastelu(hanke)
+        val tulos = laskentaService.calculateTormaystarkastelu(alueet)
 
         assertThat(tulos).isNotNull()
         assertThat(tulos!!.liikennehaittaIndeksi).isNotNull()
@@ -431,56 +428,46 @@ internal class TormaystarkasteluLaskentaServiceTest {
         assertThat(tulos.liikennehaittaIndeksi.indeksi).isEqualTo(4.0f)
 
         verifyAll {
-            tormaysService.anyIntersectsYleinenKatuosa(hanke.alueidenGeometriat())
-            tormaysService.maxIntersectingLiikenteellinenKatuluokka(hanke.alueidenGeometriat())
-            tormaysService.maxLiikennemaara(hanke.alueidenGeometriat(), RADIUS_30)
-            tormaysService.anyIntersectsWithCyclewaysPriority(hanke.alueidenGeometriat())
-            tormaysService.anyIntersectsWithCyclewaysMain(hanke.alueidenGeometriat())
-            tormaysService.anyIntersectsCriticalBusRoutes(hanke.alueidenGeometriat())
-            tormaysService.maxIntersectingTramByLaneType(hanke.alueidenGeometriat())
+            tormaysService.anyIntersectsYleinenKatuosa(alueet.geometriat())
+            tormaysService.maxIntersectingLiikenteellinenKatuluokka(alueet.geometriat())
+            tormaysService.maxLiikennemaara(alueet.geometriat(), RADIUS_30)
+            tormaysService.anyIntersectsWithCyclewaysPriority(alueet.geometriat())
+            tormaysService.anyIntersectsWithCyclewaysMain(alueet.geometriat())
+            tormaysService.anyIntersectsCriticalBusRoutes(alueet.geometriat())
+            tormaysService.maxIntersectingTramByLaneType(alueet.geometriat())
         }
     }
 
-    private fun setupHappyCase(): Hanke {
+    private fun setupHappyCase(): List<Hankealue> {
         val geometriat =
             "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
                 Geometriat::class.java
             )
 
         val alkuPvm = ZonedDateTime.of(2021, 3, 4, 0, 0, 0, 0, TZ_UTC)
-        val hanke =
-            HankeFactory.create(
-                nimi = "hanke",
-                vaihe = Vaihe.OHJELMOINTI,
-                hankeStatus = HankeStatus.DRAFT
+        val alueet =
+            listOf(
+                Hankealue(
+                    geometriat = geometriat,
+                    haittaAlkuPvm = alkuPvm,
+                    haittaLoppuPvm = alkuPvm.plusDays(7),
+                    kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.YKSI,
+                    kaistaPituusHaitta = KaistajarjestelynPituus.YKSI
+                )
             )
-        hanke.alueet.add(
-            Hankealue(
-                geometriat = geometriat,
-                haittaAlkuPvm = alkuPvm,
-                haittaLoppuPvm = alkuPvm.plusDays(7),
-                kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.YKSI,
-                kaistaPituusHaitta = KaistajarjestelynPituus.YKSI
-            )
-        )
 
-        every { tormaysService.anyIntersectsYleinenKatuosa(hanke.alueidenGeometriat()) } returns
-            true
+        every { tormaysService.anyIntersectsYleinenKatuosa(alueet.geometriat()) } returns true
         every {
-            tormaysService.maxIntersectingLiikenteellinenKatuluokka(hanke.alueidenGeometriat())
+            tormaysService.maxIntersectingLiikenteellinenKatuluokka(alueet.geometriat())
         } returns TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value
-        every { tormaysService.maxLiikennemaara(hanke.alueidenGeometriat(), RADIUS_30) } returns
-            1000
-        every {
-            tormaysService.anyIntersectsWithCyclewaysPriority(hanke.alueidenGeometriat())
-        } returns false
-        every { tormaysService.anyIntersectsWithCyclewaysMain(hanke.alueidenGeometriat()) } returns
-            true
-        every { tormaysService.maxIntersectingTramByLaneType(hanke.alueidenGeometriat()) } returns
+        every { tormaysService.maxLiikennemaara(alueet.geometriat(), RADIUS_30) } returns 1000
+        every { tormaysService.anyIntersectsWithCyclewaysPriority(alueet.geometriat()) } returns
+            false
+        every { tormaysService.anyIntersectsWithCyclewaysMain(alueet.geometriat()) } returns true
+        every { tormaysService.maxIntersectingTramByLaneType(alueet.geometriat()) } returns
             TormaystarkasteluRaitiotiekaistatyyppi.JAETTU.value
-        every { tormaysService.anyIntersectsCriticalBusRoutes(hanke.alueidenGeometriat()) } returns
-            true
+        every { tormaysService.anyIntersectsCriticalBusRoutes(alueet.geometriat()) } returns true
 
-        return hanke
+        return alueet
     }
 }

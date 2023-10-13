@@ -87,6 +87,7 @@ class ValidationResult
 private constructor(private val errorPaths: MutableList<String> = mutableListOf()) {
 
     fun errorPaths(): List<String> = errorPaths
+
     fun isOk() = errorPaths.isEmpty()
 
     fun and(f: () -> ValidationResult): ValidationResult {
@@ -117,5 +118,14 @@ private constructor(private val errorPaths: MutableList<String> = mutableListOf(
         fun success() = ValidationResult()
 
         fun failure(errorPath: String) = ValidationResult(mutableListOf(errorPath))
+
+        fun <T> whenNotNull(value: T?, f: (T) -> ValidationResult): ValidationResult =
+            success().whenNotNull(value, f)
+
+        fun <T> allIn(
+            values: Collection<T>,
+            path: String,
+            f: (T, String) -> ValidationResult,
+        ): ValidationResult = success().andAllIn(values, path, f)
     }
 }

@@ -123,9 +123,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Returns users from correct hanke only`() {
-            val hankeToFind =
-                hankeFactory.save(HankeFactory.create().withYhteystiedot { id = null })
-            hankeFactory.save(HankeFactory.create().withYhteystiedot { id = null })
+            val hankeToFind = hankeFactory.createRequest().withYhteystiedot().save()
+            hankeFactory.createRequest().withYhteystiedot().save()
 
             val result: List<HankeKayttajaDto> =
                 hankeKayttajaService.getKayttajatByHankeId(hankeToFind.id!!)
@@ -135,8 +134,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Returns data matching to the saved entity`() {
-            val hanke =
-                hankeFactory.save(HankeFactory.create().withGeneratedOmistaja(1) { id = null })
+            val hanke = hankeFactory.createRequest().withGeneratedOmistaja(1).save()
 
             val result: List<HankeKayttajaDto> =
                 hankeKayttajaService.getKayttajatByHankeId(hanke.id!!)
