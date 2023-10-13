@@ -80,9 +80,9 @@ object HankeYhteystietoFactory {
      * Create a new Yhteystieto with values differentiated by the given integer. The audit and id
      * fields are left null.
      */
-    fun createDifferentiated(i: Int): HankeYhteystieto {
+    fun createDifferentiated(i: Int, id: Int? = i): HankeYhteystieto {
         return HankeYhteystieto(
-            id = i,
+            id = id,
             nimi = "etu$i suku$i",
             email = "email$i",
             ytunnus = defaultYtunnus,

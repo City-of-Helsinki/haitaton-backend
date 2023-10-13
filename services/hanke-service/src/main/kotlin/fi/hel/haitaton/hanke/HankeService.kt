@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
+import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 
 interface HankeService {
@@ -12,7 +13,7 @@ interface HankeService {
 
     fun getHankeApplications(hankeTunnus: String): List<Application>
 
-    fun createHanke(hanke: Hanke): Hanke
+    fun createHanke(request: CreateHankeRequest): Hanke
 
     fun generateHankeWithApplication(
         cableReport: CableReportWithoutHanke,

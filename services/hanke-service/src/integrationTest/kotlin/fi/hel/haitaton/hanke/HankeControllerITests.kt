@@ -7,7 +7,6 @@ import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -366,22 +365,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 hankeService.createHanke(any())
                 disclosureLogService.saveDisclosureLogsForHanke(createdHanke, USERNAME)
-            }
-        }
-
-        @Test
-        fun `Sanitize hanke input and return 200`() {
-            val hanke = HankeFactory.create().withYhteystiedot().apply { generated = true }
-            val expectedServiceArgument =
-                HankeFactory.create(id = null).withYhteystiedot().apply { generated = false }
-            every { hankeService.createHanke(expectedServiceArgument) } returns
-                expectedServiceArgument
-
-            post(url, hanke).andExpect(status().isOk)
-
-            verifySequence {
-                hankeService.createHanke(expectedServiceArgument)
-                disclosureLogService.saveDisclosureLogsForHanke(any(), any())
             }
         }
 

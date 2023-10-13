@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihi
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
+import java.time.temporal.ChronoUnit
 
 /** NOTE Remember to update PublicHankealue after changes */
 @JsonView(ChangeLogView::class)
@@ -45,3 +46,24 @@ data class Hankealue(
     //
     @field:Schema(description = "Area name") var nimi: String? = null,
 ) : HasId<Int>
+
+fun List<Hankealue>.alkuPvm(): ZonedDateTime? = mapNotNull { it.haittaAlkuPvm }.minOfOrNull { it }
+
+fun List<Hankealue>.loppuPvm(): ZonedDateTime? = mapNotNull { it.haittaLoppuPvm }.maxOfOrNull { it }
+
+fun List<Hankealue>.kaistaHaitat(): Set<TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin> {
+    return mapNotNull { it.kaistaHaitta }.toSet()
+}
+
+fun List<Hankealue>.kaistaPituusHaitat(): Set<KaistajarjestelynPituus> {
+    return mapNotNull { it.kaistaPituusHaitta }.toSet()
+}
+
+fun List<Hankealue>.geometriat(): List<Geometriat> = mapNotNull { it.geometriat }
+
+fun List<Hankealue>.haittaAjanKestoDays(): Int? =
+    if (alkuPvm() != null && loppuPvm() != null) {
+        ChronoUnit.DAYS.between(alkuPvm(), loppuPvm()).toInt() + 1
+    } else {
+        null
+    }

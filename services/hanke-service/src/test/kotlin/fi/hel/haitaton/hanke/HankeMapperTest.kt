@@ -92,7 +92,7 @@ class HankeMapperTest {
                 hankeId = hankeId,
                 haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate().atStartOfDay(TZ_UTC),
                 haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate().atStartOfDay(TZ_UTC),
-                geometriat = geometry.apply { resetFeatureProperties(hankeTunnus) },
+                geometriat = geometry.apply { resetFeatureProperties(hankeTunnus!!) },
             )
         )
 }

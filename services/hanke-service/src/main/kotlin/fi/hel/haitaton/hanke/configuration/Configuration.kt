@@ -120,7 +120,6 @@ class Configuration {
         auditLogService: AuditLogService,
         hankeLoggingService: HankeLoggingService,
         applicationService: ApplicationService,
-        permissionService: PermissionService,
         hankeKayttajaService: HankeKayttajaService,
     ): HankeService =
         HankeServiceImpl(

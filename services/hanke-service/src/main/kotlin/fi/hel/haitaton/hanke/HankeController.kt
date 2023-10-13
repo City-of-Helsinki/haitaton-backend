@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
+import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -167,20 +168,13 @@ When Hanke is created:
             ]
     )
     @PreAuthorize("@featureService.isEnabled('HANKE_EDITING')")
-    fun createHanke(@ValidHanke @RequestBody hanke: Hanke?): Hanke {
-        if (hanke == null) {
-            throw HankeArgumentException("No hanke given when creating hanke")
-        }
-
-        hanke.id = null
-        hanke.generated = false
-
-        val userId = currentUserId()
-        logger.info { "Creating Hanke for user $userId: ${hanke.toLogString()} " }
+    fun createHanke(@ValidHanke @RequestBody hanke: CreateHankeRequest): Hanke {
+        logger.info { "Creating Hanke..." }
 
         val createdHanke = hankeService.createHanke(hanke)
 
-        disclosureLogService.saveDisclosureLogsForHanke(createdHanke, userId)
+        disclosureLogService.saveDisclosureLogsForHanke(createdHanke, currentUserId())
+        logger.info { "Created Hanke ${createdHanke.hankeTunnus}." }
         return createdHanke
     }
 
