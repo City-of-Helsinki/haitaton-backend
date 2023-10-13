@@ -1,10 +1,6 @@
 package fi.hel.haitaton.hanke.domain
 
 import fi.hel.haitaton.hanke.application.ApplicationContactType
-import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
@@ -48,13 +44,8 @@ data class ApplicationUserContact(
 fun ApplicationData.typedContacts(omit: String? = null): Set<ApplicationUserContact> =
     when (this) {
         is CableReportApplicationData ->
-            listOfNotNull(
-                    customerWithContacts.typedAs(HAKIJA),
-                    contractorWithContacts.typedAs(TYON_SUORITTAJA),
-                    representativeWithContacts?.typedAs(ASIANHOITAJA),
-                    propertyDeveloperWithContacts?.typedAs(RAKENNUTTAJA)
-                )
-                .flatten()
+            customersByRole()
+                .flatMap { (role, customer) -> customer.contactsTypedAs(role) }
                 .remove(omit)
                 .toSet()
     }
@@ -70,7 +61,7 @@ fun Set<ApplicationUserContact>.subtractByEmail(
 private fun List<ApplicationUserContact>.remove(email: String?) =
     if (email == null) this else filter { it.email != email }
 
-private fun CustomerWithContacts.typedAs(
+private fun CustomerWithContacts.contactsTypedAs(
     type: ApplicationContactType
 ): List<ApplicationUserContact> =
     contacts.mapNotNull { ApplicationUserContact.from(it.fullName(), it.email, type) }
