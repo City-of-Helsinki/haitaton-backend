@@ -84,6 +84,14 @@ data class CableReportApplicationData(
             representativeWithContacts
         )
 
+    fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContacts>> =
+        listOfNotNull(
+            ApplicationContactType.HAKIJA to customerWithContacts,
+            ApplicationContactType.TYON_SUORITTAJA to contractorWithContacts,
+            representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
+            propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
+        )
+
     fun findOrderer(): Contact? =
         customersWithContacts().flatMap { it.contacts }.find { it.orderer }
 }

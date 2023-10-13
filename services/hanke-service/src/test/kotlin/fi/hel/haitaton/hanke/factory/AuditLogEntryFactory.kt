@@ -1,9 +1,12 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.AuditLogEntry
+import fi.hel.haitaton.hanke.logging.ContactWithRole
+import fi.hel.haitaton.hanke.logging.CustomerWithRole
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
@@ -37,18 +40,26 @@ object AuditLogEntryFactory {
             createReadEntry(objectId = it.id!!, objectBefore = it.toJsonString())
         }
 
-    fun createReadEntryForContact(applicationId: Long, contact: Contact): AuditLogEntry =
+    fun createReadEntryForContact(
+        applicationId: Long,
+        contact: Contact,
+        role: ApplicationContactType = ApplicationContactType.HAKIJA,
+    ): AuditLogEntry =
         createReadEntry(
             objectId = applicationId,
             objectType = ObjectType.APPLICATION_CONTACT,
-            objectBefore = contact.toJsonString()
+            objectBefore = ContactWithRole(role, contact).toJsonString()
         )
 
-    fun createReadEntryForCustomer(applicationId: Long, customer: Customer): AuditLogEntry =
+    fun createReadEntryForCustomer(
+        applicationId: Long,
+        customer: Customer,
+        role: ApplicationContactType = ApplicationContactType.HAKIJA,
+    ): AuditLogEntry =
         createReadEntry(
             objectId = applicationId,
             objectType = ObjectType.APPLICATION_CUSTOMER,
-            objectBefore = customer.toJsonString()
+            objectBefore = CustomerWithRole(role, customer).toJsonString()
         )
 
     fun createReadEntryForHankeKayttajat(kayttajat: List<HankeKayttajaDto>): List<AuditLogEntry> =

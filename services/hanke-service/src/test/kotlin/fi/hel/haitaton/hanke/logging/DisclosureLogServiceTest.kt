@@ -1,9 +1,12 @@
 package fi.hel.haitaton.hanke.logging
 
 import assertk.assertThat
+import assertk.assertions.containsAll
 import assertk.assertions.containsExactlyInAnyOrder
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
+import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
+import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
@@ -20,6 +23,7 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.gdpr.StringNode
+import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.reformatJson
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
@@ -259,17 +263,15 @@ internal class DisclosureLogServiceTest {
     }
 
     @Test
-    fun `saveDisclosureLogsForApplication with identical person customers logs only once`() {
+    fun `saveDisclosureLogsForApplication with identical person customers logs every instance`() {
         val customerWithoutContacts =
-            CustomerWithContacts(AlluDataFactory.createPersonCustomer(), listOf())
-        val contractorWithoutContacts =
             CustomerWithContacts(AlluDataFactory.createPersonCustomer(), listOf())
         val application =
             AlluDataFactory.createApplication(
                 applicationData =
                     AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
-                        contractorWithContacts = contractorWithoutContacts
+                        contractorWithContacts = customerWithoutContacts,
                     ),
                 hankeTunnus = hankeTunnus,
             )
@@ -278,13 +280,15 @@ internal class DisclosureLogServiceTest {
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
-        assertThat(capturedLogs.captured)
-            .containsExactlyInAnyOrder(
+        val expectedLogs =
+            listOf(HAKIJA, TYON_SUORITTAJA).map {
                 AuditLogEntryFactory.createReadEntryForCustomer(
                     application.id!!,
-                    customerWithoutContacts.customer
+                    customerWithoutContacts.customer,
+                    it
                 )
-            )
+            }
+        assertThat(capturedLogs.captured).hasSameElementsAs(expectedLogs)
         verify(exactly = 1) { auditLogService.createAll(any()) }
     }
 
@@ -300,14 +304,21 @@ internal class DisclosureLogServiceTest {
                 applicationData = cableReportApplication,
                 hankeTunnus = hankeTunnus
             )
-        val expectedLogs =
-            listOf(firstContact, secondContact).map {
-                AuditLogEntryFactory.createReadEntryForContact(applicationId, it)
-            }
+        val capturedLogs = slot<Collection<AuditLogEntry>>()
+        every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
-        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
+        assertThat(capturedLogs.captured)
+            .containsAll(
+                AuditLogEntryFactory.createReadEntryForContact(applicationId, firstContact, HAKIJA),
+                AuditLogEntryFactory.createReadEntryForContact(
+                    applicationId,
+                    secondContact,
+                    TYON_SUORITTAJA
+                ),
+            )
+        verify(exactly = 1) { auditLogService.createAll(any()) }
     }
 
     @ParameterizedTest(name = "{displayName}({arguments})")
@@ -318,8 +329,9 @@ internal class DisclosureLogServiceTest {
         val firstContact = cableReportApplication.customerWithContacts.contacts[0]
         val secondContact = cableReportApplication.contractorWithContacts.contacts[0]
         val expectedLogs =
-            listOf(firstContact, secondContact).map {
-                AuditLogEntryFactory.createReadEntryForContact(applicationId, it)
+            listOf(HAKIJA to firstContact, TYON_SUORITTAJA to secondContact).map { (role, contact)
+                ->
+                AuditLogEntryFactory.createReadEntryForContact(applicationId, contact, role)
                     .copy(
                         objectType = ObjectType.ALLU_CONTACT,
                         status = expectedStatus,
@@ -327,6 +339,8 @@ internal class DisclosureLogServiceTest {
                         userRole = UserRole.SERVICE,
                     )
             }
+        val capturedLogs = slot<Collection<AuditLogEntry>>()
+        every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
         disclosureLogService.saveDisclosureLogsForAllu(
             applicationId,
@@ -334,7 +348,8 @@ internal class DisclosureLogServiceTest {
             expectedStatus
         )
 
-        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
+        assertThat(capturedLogs.captured).hasSameElementsAs(expectedLogs)
+        verify(exactly = 1) { auditLogService.createAll(any()) }
     }
 
     @Test
@@ -369,20 +384,23 @@ internal class DisclosureLogServiceTest {
 
         assertThat(capturedLogs.captured)
             .containsExactlyInAnyOrder(
-                AuditLogEntryFactory.createReadEntryForContact(1, contacts[0]),
-                AuditLogEntryFactory.createReadEntryForContact(1, contacts[1]),
-                AuditLogEntryFactory.createReadEntryForContact(1, contacts[2]),
-                AuditLogEntryFactory.createReadEntryForContact(1, contacts[3]),
-                // The first contact is in both applications
-                AuditLogEntryFactory.createReadEntryForContact(2, contacts[0]),
-                AuditLogEntryFactory.createReadEntryForContact(2, contacts[4]),
-                AuditLogEntryFactory.createReadEntryForContact(2, contacts[5]),
-                AuditLogEntryFactory.createReadEntryForContact(2, contacts[6]),
-                AuditLogEntryFactory.createReadEntryForContact(2, contacts[7]),
-                AuditLogEntryFactory.createReadEntryForCustomer(1, customers[0]),
-                AuditLogEntryFactory.createReadEntryForCustomer(1, customers[1]),
-                AuditLogEntryFactory.createReadEntryForCustomer(2, customers[2]),
-                AuditLogEntryFactory.createReadEntryForCustomer(2, customers[3]),
+                AuditLogEntryFactory.createReadEntryForCustomer(1, customers[0], HAKIJA),
+                // The first contact is added twice for the first customer, but identical entries
+                // are logged only once
+                AuditLogEntryFactory.createReadEntryForContact(1, contacts[0], HAKIJA),
+                AuditLogEntryFactory.createReadEntryForContact(1, contacts[1], HAKIJA),
+                AuditLogEntryFactory.createReadEntryForCustomer(1, customers[1], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForContact(1, contacts[0], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForContact(1, contacts[2], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForContact(1, contacts[3], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForCustomer(2, customers[2], HAKIJA),
+                AuditLogEntryFactory.createReadEntryForContact(2, contacts[0], HAKIJA),
+                AuditLogEntryFactory.createReadEntryForContact(2, contacts[4], HAKIJA),
+                AuditLogEntryFactory.createReadEntryForContact(2, contacts[5], HAKIJA),
+                AuditLogEntryFactory.createReadEntryForCustomer(2, customers[3], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForContact(2, contacts[0], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForContact(2, contacts[6], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForContact(2, contacts[7], TYON_SUORITTAJA),
             )
         verify(exactly = 1) { auditLogService.createAll(any()) }
     }
