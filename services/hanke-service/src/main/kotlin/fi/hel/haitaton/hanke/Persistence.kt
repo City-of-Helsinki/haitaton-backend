@@ -260,16 +260,23 @@ class IdCounter(
 )
 
 interface IdCounterRepository : JpaRepository<IdCounter, CounterType> {
-    /*
-    Basic principals:
-    - if current year is the same as before (in column 'year') return incrementing value
-    - if current year is not the same as before return 1
-    This SQL clause has some PostgreSQL specific thingies:
-    'WITH' clause describes a 'variable' table used inside query in two places
-    'FOR UPDATE' in nested SELECT clause makes sure that no other process can update the row during this whole UPDATE clause
-    'RETURNING' in the end is for UPDATE clase to return not just the number of affected rows but also the column data of those rows (a single row in our case)
-    With these specialities we can assure that concurrent calls for this method will never return duplicate values.
-    Notice also that the method returns a list even though there is always only max. 1 item in it because counterType is PK.
+    /**
+     * Basic principals:
+     * - if current year is the same as before (in column 'year') return incrementing value
+     * - if current year is not the same as before return 1
+     *
+     * This SQL clause has some PostgreSQL specific thingies:
+     * - 'WITH' clause describes a 'variable' table used inside query in two places
+     * - 'FOR UPDATE' in nested SELECT clause makes sure that no other process can update the row
+     * during this whole UPDATE clause
+     * - 'RETURNING' in the end is for UPDATE clase to return not just the number of affected rows
+     * but also the column data of those rows (a single row in our case)
+     *
+     * With these specialities we can assure that concurrent calls for this method will never return
+     * duplicate values.
+     *
+     * Notice also that the method returns a list even though there is always only max. 1 item in it
+     * because counterType is PK.
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(

@@ -591,7 +591,7 @@ open class ApplicationService(
 
         when (val data = entity.applicationData) {
             is CableReportApplicationData ->
-                updateCableReportInAllu(entity.id!!, alluId, entity.hankeTunnus(), data)
+                updateCableReportInAllu(entity.id!!, alluId, entity.hanke.hankeTunnus, data)
         }
 
         return alluId
@@ -603,7 +603,7 @@ open class ApplicationService(
         val alluId =
             when (val data = entity.applicationData) {
                 is CableReportApplicationData ->
-                    createCableReportToAllu(entity.id!!, entity.hankeTunnus(), data)
+                    createCableReportToAllu(entity.id!!, entity.hanke.hankeTunnus, data)
             }
         try {
             attachmentService.sendInitialAttachments(alluId, entity.id)
