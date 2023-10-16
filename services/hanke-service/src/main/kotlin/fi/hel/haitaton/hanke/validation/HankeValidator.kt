@@ -5,7 +5,6 @@ import fi.hel.haitaton.hanke.MAXIMUM_DATE
 import fi.hel.haitaton.hanke.MAXIMUM_HANKE_ALUE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_HANKE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_TYOMAAKATUOSOITE_LENGTH
-import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.BaseHanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
@@ -14,9 +13,8 @@ import fi.hel.haitaton.hanke.isValidBusinessId
 import fi.hel.haitaton.hanke.validation.ValidationResult.Companion.allIn
 import fi.hel.haitaton.hanke.validation.ValidationResult.Companion.whenNotNull
 import fi.hel.haitaton.hanke.validation.Validators.isBeforeOrEqual
+import fi.hel.haitaton.hanke.validation.Validators.notBlank
 import fi.hel.haitaton.hanke.validation.Validators.notLongerThan
-import fi.hel.haitaton.hanke.validation.Validators.notNull
-import fi.hel.haitaton.hanke.validation.Validators.notNullOrBlank
 import fi.hel.haitaton.hanke.validation.Validators.validate
 import fi.hel.haitaton.hanke.validation.Validators.validateTrue
 import jakarta.validation.ConstraintValidator
@@ -51,10 +49,8 @@ private fun ConstraintValidatorContext.addViolation(error: HankeError, node: Str
 
 /** Doesn't check hanke alue, because they use a different error code. */
 private fun BaseHanke.validate() =
-    validate { notNullOrBlank(nimi, "nimi") }
-        .whenNotNull(nimi) { it.notLongerThan(MAXIMUM_HANKE_NIMI_LENGTH, "nimi") }
-        .and { notNull(vaihe, "vaihe") }
-        .andWhen(vaihe == Vaihe.SUUNNITTELU) { notNull(suunnitteluVaihe, "suunnitteluVaihe") }
+    validate { notBlank(nimi, "nimi") }
+        .and { nimi.notLongerThan(MAXIMUM_HANKE_NIMI_LENGTH, "nimi") }
         .whenNotNull(tyomaaKatuosoite) {
             it.notLongerThan(MAXIMUM_TYOMAAKATUOSOITE_LENGTH, "tyomaaKatuosoite")
         }
@@ -67,9 +63,7 @@ private fun validateHankeAlue(hankealue: Hankealue, path: String) = hankealue.va
 
 private fun Hankealue.validate(path: String) =
     whenNotNull(nimi) { it.notLongerThan(MAXIMUM_HANKE_ALUE_NIMI_LENGTH, "$path.nimi") }
-        .and { notNull(haittaAlkuPvm, "$path.haittaAlkuPvm") }
         .whenNotNull(haittaAlkuPvm) { isBeforeOrEqual(it, MAXIMUM_DATE, "$path.haittaAlkuPvm") }
-        .and { notNull(haittaLoppuPvm, "$path.haittaLoppuPvm") }
         .whenNotNull(haittaLoppuPvm) { isBeforeOrEqual(it, MAXIMUM_DATE, "$path.haittaLoppuPvm") }
         .andWhen(haittaAlkuPvm != null && haittaLoppuPvm != null) {
             isBeforeOrEqual(haittaAlkuPvm!!, haittaLoppuPvm!!, "$path.haittaLoppuPvm")

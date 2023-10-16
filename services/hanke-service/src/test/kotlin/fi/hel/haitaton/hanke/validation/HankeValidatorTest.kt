@@ -9,11 +9,12 @@ import fi.hel.haitaton.hanke.MAXIMUM_DATE
 import fi.hel.haitaton.hanke.MAXIMUM_HANKE_ALUE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_HANKE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_TYOMAAKATUOSOITE_LENGTH
-import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.defaultNimi
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
@@ -37,6 +38,10 @@ class HankeValidatorTest {
     private var context: ConstraintValidatorContext = mockk(relaxUnitFun = true)
     private var violationBuilder: ConstraintViolationBuilder = mockk(relaxUnitFun = true)
     private var nodeBuilder: NodeBuilderCustomizableContext = mockk(relaxUnitFun = true)
+
+    private val maxHankeName = "A".repeat(MAXIMUM_HANKE_NIMI_LENGTH)
+    private val maxTyomaaOsoite = "B".repeat(MAXIMUM_TYOMAAKATUOSOITE_LENGTH)
+    private val maxHankealueName = "C".repeat(MAXIMUM_HANKE_ALUE_NIMI_LENGTH)
 
     @BeforeEach
     fun setUp() {
@@ -71,6 +76,13 @@ class HankeValidatorTest {
     }
 
     @Test
+    fun `succeeds for minimal draft hanke request`() {
+        val hankeRequest = CreateHankeRequest(nimi = defaultNimi)
+
+        assertThat(hankeValidator.isValid(hankeRequest, context)).isTrue()
+    }
+
+    @Test
     fun `fails if nimi is empty`() {
         val hanke = HankeFactory.create(nimi = "")
 
@@ -80,15 +92,15 @@ class HankeValidatorTest {
     }
 
     @Test
-    fun `succeeds if nimi is almost too long`() {
-        val hanke = HankeFactory.create(nimi = "F".repeat(MAXIMUM_HANKE_NIMI_LENGTH))
+    fun `succeeds if nimi is of max length`() {
+        val hanke = HankeFactory.create(nimi = maxHankeName)
 
         assertThat(hankeValidator.isValid(hanke, context)).isTrue()
     }
 
     @Test
     fun `fails if nimi is too long`() {
-        val hanke = HankeFactory.create(nimi = "F".repeat(MAXIMUM_HANKE_NIMI_LENGTH + 1))
+        val hanke = HankeFactory.create(nimi = maxHankeName + "X")
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
@@ -96,30 +108,8 @@ class HankeValidatorTest {
     }
 
     @Test
-    fun `fails if vaihe is null`() {
-        val hanke = HankeFactory.create(vaihe = null)
-
-        assertThat(hankeValidator.isValid(hanke, context)).isFalse()
-
-        verifyError(HankeError.HAI1002, "vaihe")
-    }
-
-    @Test
-    fun `fails if vaihe is suunnittelu and suunnitteluVaihe is null`() {
+    fun `succeeds even if vaihe is suunnittelu and suunnitteluVaihe is null`() {
         val hanke = HankeFactory.create(vaihe = Vaihe.SUUNNITTELU, suunnitteluVaihe = null)
-
-        assertThat(hankeValidator.isValid(hanke, context)).isFalse()
-
-        verifyError(HankeError.HAI1002, "suunnitteluVaihe")
-    }
-
-    @Test
-    fun `succeeds if vaihe is suunnittelu and suunnitteluVaihe is defined`() {
-        val hanke =
-            HankeFactory.create(
-                vaihe = Vaihe.SUUNNITTELU,
-                suunnitteluVaihe = SuunnitteluVaihe.YLEIS_TAI_HANKE
-            )
 
         assertThat(hankeValidator.isValid(hanke, context)).isTrue()
     }
@@ -133,20 +123,14 @@ class HankeValidatorTest {
 
     @Test
     fun `succeeds if tyomaaKatuosoite is almost too long`() {
-        val hanke =
-            HankeFactory.create().apply {
-                tyomaaKatuosoite = "F".repeat(MAXIMUM_TYOMAAKATUOSOITE_LENGTH)
-            }
+        val hanke = HankeFactory.create().apply { tyomaaKatuosoite = maxTyomaaOsoite }
 
         assertThat(hankeValidator.isValid(hanke, context)).isTrue()
     }
 
     @Test
     fun `fails if tyomaaKatuosoite is too long`() {
-        val hanke =
-            HankeFactory.create().apply {
-                tyomaaKatuosoite = "F".repeat(MAXIMUM_TYOMAAKATUOSOITE_LENGTH + 1)
-            }
+        val hanke = HankeFactory.create().apply { tyomaaKatuosoite = maxTyomaaOsoite + "X" }
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
@@ -169,17 +153,14 @@ class HankeValidatorTest {
 
     @Test
     fun `succeeds if hanke alue nimi is almost too long`() {
-        val hanke =
-            HankeFactory.create().withHankealue(nimi = "F".repeat(MAXIMUM_HANKE_ALUE_NIMI_LENGTH))
+        val hanke = HankeFactory.create().withHankealue(nimi = maxHankealueName)
 
         assertThat(hankeValidator.isValid(hanke, context)).isTrue()
     }
 
     @Test
     fun `fails if hanke alue nimi is null`() {
-        val hanke =
-            HankeFactory.create()
-                .withHankealue(nimi = "F".repeat(MAXIMUM_HANKE_ALUE_NIMI_LENGTH + 1))
+        val hanke = HankeFactory.create().withHankealue(nimi = maxHankealueName + "X")
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
@@ -193,24 +174,6 @@ class HankeValidatorTest {
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
         verifyError(HankeError.HAI1032, "alueet[0].haittaAlkuPvm")
-        verifyError(HankeError.HAI1032, "alueet[0].haittaLoppuPvm")
-    }
-
-    @Test
-    fun `fails if haitta alku pvm is null`() {
-        val hanke = HankeFactory.create().withHankealue(haittaAlkuPvm = null)
-
-        assertThat(hankeValidator.isValid(hanke, context)).isFalse()
-
-        verifyError(HankeError.HAI1032, "alueet[0].haittaAlkuPvm")
-    }
-
-    @Test
-    fun `fails if haitta loppu pvm is null`() {
-        val hanke = HankeFactory.create().withHankealue(haittaLoppuPvm = null)
-
-        assertThat(hankeValidator.isValid(hanke, context)).isFalse()
-
         verifyError(HankeError.HAI1032, "alueet[0].haittaLoppuPvm")
     }
 
@@ -243,22 +206,17 @@ class HankeValidatorTest {
     }
 
     @Test
-    fun `with several failing alue and a failing hanke, adds all error nodes`() {
+    fun `with several failures, adds all error nodes`() {
         val hanke =
             HankeFactory.create(nimi = "")
-                .withHankealue(haittaLoppuPvm = null, haittaAlkuPvm = null)
-                .withHankealue(nimi = "F".repeat(101))
-                .withHankealue(haittaAlkuPvm = null)
-                .withHankealue(haittaLoppuPvm = DateFactory.getStartDatetime().minusMinutes(1))
+                .withHankealue(nimi = maxHankealueName + "X")
+                .withHankealue(haittaLoppuPvm = MAXIMUM_DATE.plusDays(1))
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
         verifyError(HankeError.HAI1002, "nimi")
-        verifyError(HankeError.HAI1032, "alueet[0].haittaLoppuPvm")
-        verifyError(HankeError.HAI1032, "alueet[0].haittaAlkuPvm")
-        verifyError(HankeError.HAI1032, "alueet[1].nimi")
-        verifyError(HankeError.HAI1032, "alueet[2].haittaAlkuPvm")
-        verifyError(HankeError.HAI1032, "alueet[3].haittaLoppuPvm")
+        verifyError(HankeError.HAI1032, "alueet[0].nimi")
+        verifyError(HankeError.HAI1032, "alueet[1].haittaLoppuPvm")
     }
 
     @Test
