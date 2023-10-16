@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 
 data class CreateHankeRequestBuilder(
@@ -16,12 +17,14 @@ data class CreateHankeRequestBuilder(
 
     fun withRequest(f: CreateHankeRequest.() -> CreateHankeRequest) = copy(request = request.f())
 
-    fun withYhteystiedot(): CreateHankeRequestBuilder = withRequest {
+    fun withYhteystiedot(
+        mutator: HankeYhteystieto.() -> Unit = { id = null }
+    ): CreateHankeRequestBuilder = withRequest {
         copy(
-            omistajat = listOf(HankeYhteystietoFactory.createDifferentiated(1, id = null)),
-            rakennuttajat = listOf(HankeYhteystietoFactory.createDifferentiated(2, id = null)),
-            toteuttajat = listOf(HankeYhteystietoFactory.createDifferentiated(3, id = null)),
-            muut = listOf(HankeYhteystietoFactory.createDifferentiated(4, id = null)),
+            omistajat = listOf(HankeYhteystietoFactory.createDifferentiated(1).apply(mutator)),
+            rakennuttajat = listOf(HankeYhteystietoFactory.createDifferentiated(2).apply(mutator)),
+            toteuttajat = listOf(HankeYhteystietoFactory.createDifferentiated(3).apply(mutator)),
+            muut = listOf(HankeYhteystietoFactory.createDifferentiated(4).apply(mutator)),
         )
     }
 

@@ -404,7 +404,7 @@ open class ApplicationService(
         hankeKayttajaService.saveNewTokensFromApplication(
             application = application,
             hankeId = hanke.id!!,
-            hankeTunnus = hanke.hankeTunnus!!,
+            hankeTunnus = hanke.hankeTunnus,
             hankeNimi = hanke.nimi,
             currentUserId = currentUserId,
             currentKayttaja = currentKayttaja
@@ -412,7 +412,7 @@ open class ApplicationService(
 
         contacts.forEach {
             notifyOnApplication(
-                hanke.hankeTunnus!!,
+                hanke.hankeTunnus,
                 application.applicationIdentifier!!,
                 application.applicationType,
                 currentKayttaja,
@@ -537,18 +537,6 @@ open class ApplicationService(
         }
         logger.info { "Sending application ready emails to ${receivers.size} receivers" }
 
-        // Check even things that should never be null, because NPE here would cause the
-        // scheduled check to repeat the error every minute indefinitely, without giving
-        // other applications a chance to get their statuses checked.
-        val hankeTunnus = application.hanke.hankeTunnus
-        if (hankeTunnus == null) {
-            logger.error {
-                "Can't send decision ready emails, because hankeTunnus is null. " +
-                    "applicationId=${application.id}, applicationIdentifier=$applicationIdentifier"
-            }
-            return
-        }
-
         receivers.forEach {
             sendDecisionReadyEmail(it.email, applicationIdentifier, application.id)
         }
@@ -603,7 +591,7 @@ open class ApplicationService(
 
         when (val data = entity.applicationData) {
             is CableReportApplicationData ->
-                updateCableReportInAllu(entity.id!!, alluId, entity.hankeTunnus(), data)
+                updateCableReportInAllu(entity.id!!, alluId, entity.hanke.hankeTunnus, data)
         }
 
         return alluId
@@ -615,7 +603,7 @@ open class ApplicationService(
         val alluId =
             when (val data = entity.applicationData) {
                 is CableReportApplicationData ->
-                    createCableReportToAllu(entity.id!!, entity.hankeTunnus(), data)
+                    createCableReportToAllu(entity.id!!, entity.hanke.hankeTunnus, data)
             }
         try {
             attachmentService.sendInitialAttachments(alluId, entity.id)

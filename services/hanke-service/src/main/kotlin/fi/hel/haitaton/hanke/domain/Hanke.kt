@@ -25,7 +25,7 @@ data class Hanke(
         description = "Hanke identity for external purposes, set by the service",
         example = "HAI24-123"
     )
-    var hankeTunnus: String?,
+    val hankeTunnus: String,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Yhteinen kunnallistekninen työmaa")

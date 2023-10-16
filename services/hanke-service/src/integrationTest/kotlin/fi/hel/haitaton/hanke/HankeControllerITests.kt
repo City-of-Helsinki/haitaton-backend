@@ -1,12 +1,16 @@
 package fi.hel.haitaton.hanke
 
+import assertk.assertThat
+import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
+import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -17,6 +21,7 @@ import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
+import io.mockk.slot
 import io.mockk.verifySequence
 import java.time.temporal.ChronoUnit
 import org.geojson.FeatureCollection
@@ -330,7 +335,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         @Test
         @WithAnonymousUser
         fun `Without authenticated user return unauthorized (401)`() {
-            post(url, HankeFactory.create(id = null, hankeTunnus = null))
+            post(url, HankeFactory.createRequest().build())
                 .andExpect(SecurityMockMvcResultMatchers.unauthenticated())
                 .andExpect(status().isUnauthorized)
                 .andExpect(hankeError(HankeError.HAI0001))
@@ -338,17 +343,10 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
         @Test
         fun `Add Hanke and return it with newly created hankeTunnus`() {
-            val hankeToBeCreated =
-                HankeFactory.create(
-                    id = null,
-                    hankeTunnus = null,
-                    version = null,
-                    createdAt = null,
-                    createdBy = null,
-                )
+            val hankeToBeCreated = HankeFactory.createRequest().build()
             val hankeId = 1
             val createdHanke =
-                hankeToBeCreated.copy(
+                HankeFactory.create(
                     id = hankeId,
                     hankeTunnus = HANKE_TUNNUS,
                     version = 0,
@@ -369,91 +367,39 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         }
 
         @Test
-        fun `Add Hanke and HankeYhteystiedot and return it with newly created hankeTunnus (POST)`() {
-            val hankeToBeMocked =
-                HankeFactory.create(hankeTunnus = null, version = null, createdBy = USERNAME)
-                    .withGeneratedOmistaja(1)
-            val expectedHanke =
-                hankeToBeMocked.apply {
-                    hankeTunnus = HANKE_TUNNUS
-                    id = 12
-                    omistajat[0].id = 3
-                }
-            every { hankeService.createHanke(any()) }.returns(expectedHanke)
-            val expectedContent = expectedHanke.toJsonString()
+        fun `Accepts all Hanke fields, but ignores ones it doesn't need`() {
+            val hanke = HankeFactory.create().withYhteystiedot { id = 49 }.withHankealue()
+            val serviceParameter = slot<CreateHankeRequest>()
+            every { hankeService.createHanke(capture(serviceParameter)) }.returns(hanke)
 
-            post(url, hankeToBeMocked)
-                .andExpect(status().isOk)
-                .andExpect(content().json(expectedContent))
-                .andExpect(jsonPath("$.hankeTunnus").value(HANKE_TUNNUS))
+            post(url, hanke).andExpect(status().isOk)
 
+            val expectedParameter =
+                HankeFactory.createRequest()
+                    // There's no separate DTO for Hankealue, so they might contain IDs and audit
+                    // fields. These are ignored in the service, however.
+                    .withHankealue(hanke.alueet[0])
+                    // There's no separate DTO for HankeYhteystieto, so they might contain IDs and
+                    // audit fields. These are ignored in the service, however.
+                    .withYhteystiedot { id = 49 }
+                    .build()
+            assertThat(serviceParameter.captured).isEqualTo(expectedParameter)
             verifySequence {
                 hankeService.createHanke(any())
-                disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME)
+                disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME)
             }
         }
 
         @Test
         fun `exception in Hanke creation causes a 500 Internal Server Error response with specific HankeError`() {
-            val hanke = HankeFactory.create(id = null, hankeTunnus = null)
+            val request = HankeFactory.createRequest().build()
             every { hankeService.createHanke(any()) } throws RuntimeException("Some error")
 
-            post(url, hanke)
+            post(url, request)
                 .andExpect(status().isInternalServerError)
                 .andExpect(hankeError(HankeError.HAI0002))
 
             verifySequence { hankeService.createHanke(any()) }
-        }
-
-        @Test
-        fun `test dates and times do not change on a roundtrip, except for rounding to midnight`() {
-            val datetimeAlku = DateFactory.getStartDatetime()
-            val datetimeLoppu = DateFactory.getEndDatetime()
-            val hankeToBeMocked =
-                HankeFactory.create(
-                    null,
-                    hankeTunnus = null,
-                    createdBy = USERNAME,
-                    createdAt = getCurrentTimeUTC()
-                )
-            val alue = Hankealue()
-            alue.haittaAlkuPvm = datetimeAlku
-            alue.haittaLoppuPvm = datetimeLoppu
-            hankeToBeMocked.alueet.add(alue)
-            // Prepare the expected result/return
-            // Note, "pvm" values should have become truncated to begin of the day
-            val expectedDateAlku = datetimeAlku.truncatedTo(ChronoUnit.DAYS)
-            val expectedDateLoppu = datetimeLoppu.truncatedTo(ChronoUnit.DAYS)
-            val expectedHanke =
-                hankeToBeMocked.apply {
-                    hankeTunnus = HANKE_TUNNUS
-                    id = 12
-                }
-            expectedHanke.alueet[0].haittaAlkuPvm = expectedDateAlku
-            expectedHanke.alueet[0].haittaLoppuPvm = expectedDateLoppu
-            val expectedContent = expectedHanke.toJsonString()
-            // JSON string versions without quotes:
-            val expectedDateAlkuJson =
-                expectedDateAlku.toJsonString().substringAfter('"').substringBeforeLast('"')
-            val expectedDateLoppuJson =
-                expectedDateLoppu.toJsonString().substringAfter('"').substringBeforeLast('"')
-            // faking the service call
-            every { hankeService.createHanke(any()) }.returns(expectedHanke)
-
-            // Call it and check results
-            post(url, hankeToBeMocked)
-                .andExpect(status().isOk)
-                .andExpect(content().json(expectedContent))
-                // These might be redundant, but at least it is clear what we're checking here:
-                .andExpect(jsonPath("$.alkuPvm").value(expectedDateAlkuJson))
-                .andExpect(jsonPath("$.loppuPvm").value(expectedDateLoppuJson))
-                .andExpect(jsonPath("$.alueet[0].haittaAlkuPvm").value(expectedDateAlkuJson))
-                .andExpect(jsonPath("$.alueet[0].haittaLoppuPvm").value(expectedDateLoppuJson))
-
-            verifySequence {
-                hankeService.createHanke(any())
-                disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME)
-            }
         }
     }
 

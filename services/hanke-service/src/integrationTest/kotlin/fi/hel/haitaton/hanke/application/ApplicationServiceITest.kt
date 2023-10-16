@@ -177,7 +177,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 applicationService.create(
                     createApplication(
                         id = null,
-                        hankeTunnus = hanke.hankeTunnus!!,
+                        hankeTunnus = hanke.hankeTunnus,
                         applicationData = dataWithoutAreas
                     ),
                     USERNAME
@@ -224,7 +224,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 createApplication(
                     id = givenId,
                     applicationData = cableReportApplicationData,
-                    hankeTunnus = hanke.hankeTunnus!!,
+                    hankeTunnus = hanke.hankeTunnus,
                 )
             assertTrue(cableReportApplicationData.pendingOnClient)
 
@@ -261,7 +261,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 createApplication(
                     id = givenId,
                     applicationData = cableReportApplicationData,
-                    hankeTunnus = hanke.hankeTunnus!!,
+                    hankeTunnus = hanke.hankeTunnus,
                 )
 
             val response = applicationService.create(newApplication, USERNAME)
@@ -300,7 +300,7 @@ class ApplicationServiceITest : DatabaseTest() {
             val newApplication =
                 createApplication(
                     id = null,
-                    hankeTunnus = hanke.hankeTunnus!!,
+                    hankeTunnus = hanke.hankeTunnus,
                     applicationData = cableReportApplicationData
                 )
 
@@ -327,7 +327,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 applicationService.create(
                     createApplication(
                         id = null,
-                        hankeTunnus = hanke.hankeTunnus!!,
+                        hankeTunnus = hanke.hankeTunnus,
                         applicationData = dataWithoutAreas
                     ),
                     USERNAME
@@ -1408,7 +1408,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 applicationService.create(
                     createApplication(
                         id = null,
-                        hankeTunnus = hanke.hankeTunnus!!,
+                        hankeTunnus = hanke.hankeTunnus,
                         applicationData = dataWithoutAreas
                     ),
                     USERNAME
@@ -1516,7 +1516,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
             assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
             assertThat(applicationRepository.findAll()).isEmpty()
-            assertThat(hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)).isNotNull()
+            assertThat(hankeRepository.findByHankeTunnus(hanke.hankeTunnus)).isNotNull()
             verify { cableReportServiceAllu wasNot Called }
         }
 
@@ -1537,7 +1537,7 @@ class ApplicationServiceITest : DatabaseTest() {
             assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
             assertThat(applicationRepository.findAll()).hasSize(1)
             assertThat(applicationRepository.findById(application2.id!!)).isPresent()
-            assertThat(hankeRepository.findByHankeTunnus(hanke.hankeTunnus!!)).isNotNull()
+            assertThat(hankeRepository.findByHankeTunnus(hanke.hankeTunnus)).isNotNull()
             verify { cableReportServiceAllu wasNot Called }
         }
     }

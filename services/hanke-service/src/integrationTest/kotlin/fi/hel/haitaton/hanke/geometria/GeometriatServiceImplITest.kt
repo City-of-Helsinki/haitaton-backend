@@ -56,7 +56,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
                 .createRequest()
                 .withHankealue(HankealueFactory.createMinimal(geometriat = geometriat))
                 .save()
-                .hankeTunnus!!
+                .hankeTunnus
 
         // NOTE: the local Hanke instance has not been updated by the above call. Need to reload
         // the hanke to check that the flag changed to true:

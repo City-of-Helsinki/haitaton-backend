@@ -132,7 +132,7 @@ class HankeFactory(
          */
         fun create(
             id: Int? = defaultId,
-            hankeTunnus: String? = defaultHankeTunnus,
+            hankeTunnus: String = defaultHankeTunnus,
             nimi: String = defaultNimi,
             vaihe: Vaihe? = Vaihe.OHJELMOINTI,
             suunnitteluVaihe: SuunnitteluVaihe? = null,
@@ -159,7 +159,7 @@ class HankeFactory(
 
         fun createMinimalEntity(
             id: Int? = defaultId,
-            hankeTunnus: String? = defaultHankeTunnus,
+            hankeTunnus: String = defaultHankeTunnus,
             nimi: String = defaultNimi,
             generated: Boolean = false,
         ) = HankeEntity(id = id, hankeTunnus = hankeTunnus, nimi = nimi, generated = generated)
