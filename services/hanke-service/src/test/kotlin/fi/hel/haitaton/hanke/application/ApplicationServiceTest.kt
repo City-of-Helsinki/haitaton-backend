@@ -25,7 +25,6 @@ import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withHanke
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
@@ -367,7 +366,7 @@ class ApplicationServiceTest {
                 hankeKayttajaService.saveNewTokensFromApplication(
                     applicationEntity,
                     hankeEntity.id!!,
-                    hankeEntity.hankeTunnus!!,
+                    hankeEntity.hankeTunnus,
                     hankeEntity.nimi,
                     USERNAME,
                     sender
@@ -481,7 +480,7 @@ class ApplicationServiceTest {
                 hankeKayttajaService.saveNewTokensFromApplication(
                     any(),
                     hankeEntity.id!!,
-                    hankeEntity.hankeTunnus!!,
+                    hankeEntity.hankeTunnus,
                     hankeEntity.nimi,
                     USERNAME,
                     sender
@@ -640,28 +639,6 @@ class ApplicationServiceTest {
 
             assertThat(output)
                 .contains("No receivers found for decision ready email, not sending any.")
-            verifySequence {
-                applicationRepository.getOneByAlluid(42)
-                applicationRepository.save(any())
-                statusRepository.getReferenceById(1)
-                statusRepository.save(any())
-            }
-            verify { emailSenderService wasNot Called }
-        }
-
-        @Test
-        fun `logs error if hanketunnus is null`(output: CapturedOutput) {
-            every { applicationRepository.getOneByAlluid(42) } returns
-                applicationEntityWithCustomer()
-                    .withHanke(HankeFactory.createMinimalEntity(id = 1, hankeTunnus = null))
-            every { applicationRepository.save(any()) } answers { firstArg() }
-            every { statusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
-            every { statusRepository.save(any()) } answers { firstArg() }
-
-            applicationService.handleApplicationUpdates(historiesWithDecision(), updateTime)
-
-            assertThat(output)
-                .contains("Can't send decision ready emails, because hankeTunnus is null.")
             verifySequence {
                 applicationRepository.getOneByAlluid(42)
                 applicationRepository.save(any())

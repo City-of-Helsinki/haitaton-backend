@@ -221,7 +221,7 @@ Responds with information about the activated user and the hanke associated with
             )
 
         val hanke = hankeService.loadHankeById(kayttaja.hankeId)!!
-        return TunnistautuminenResponse(kayttaja.id, hanke.hankeTunnus!!, hanke.nimi)
+        return TunnistautuminenResponse(kayttaja.id, hanke.hankeTunnus, hanke.nimi)
     }
 
     @PostMapping("/kayttajat/{kayttajaId}/kutsu")

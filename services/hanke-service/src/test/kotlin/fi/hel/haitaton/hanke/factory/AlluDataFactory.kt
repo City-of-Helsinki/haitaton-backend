@@ -305,11 +305,6 @@ class AlluDataFactory(
                 hanke = hanke,
             )
 
-        fun ApplicationEntity.withHanke(hanke: HankeEntity): ApplicationEntity {
-            this.hanke = hanke
-            return this
-        }
-
         fun createAlluApplicationResponse(
             id: Int = 42,
             status: ApplicationStatus = ApplicationStatus.PENDING

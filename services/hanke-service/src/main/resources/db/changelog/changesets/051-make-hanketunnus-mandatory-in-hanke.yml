@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 051-make-hanketunnus-mandatory-in-hanke
+      author: Topias Heinonen
+      changes:
+        - addNotNullConstraint:
+            tableName: hanke
+            columnName: hanketunnus

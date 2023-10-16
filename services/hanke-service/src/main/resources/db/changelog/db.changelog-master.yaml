@@ -129,3 +129,5 @@ databaseChangeLog:
       file: db/changelog/changesets/049-add-bus-and-tram-indexes.sql
   - include:
       file: db/changelog/changesets/050-make-nimi-mandatory-in-hanke.yml
+  - include:
+      file: db/changelog/changesets/051-make-hanketunnus-mandatory-in-hanke.yml
