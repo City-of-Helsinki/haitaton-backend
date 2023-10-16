@@ -6,7 +6,7 @@ import fi.hel.haitaton.hanke.HankealueEntity
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import java.time.ZonedDateTime
 
@@ -26,8 +26,8 @@ object HankealueFactory {
         polyHaitta: Haitta13? = Haitta13.KAKSI,
         tarinaHaitta: Haitta13? = Haitta13.KOLME,
         nimi: String? = null,
-    ): Hankealue {
-        return Hankealue(
+    ): SavedHankealue {
+        return SavedHankealue(
             id,
             hankeId,
             haittaAlkuPvm,
@@ -54,8 +54,8 @@ object HankealueFactory {
         polyHaitta: Haitta13? = null,
         tarinaHaitta: Haitta13? = null,
         nimi: String? = null,
-    ): Hankealue {
-        return Hankealue(
+    ): SavedHankealue {
+        return SavedHankealue(
             id,
             hankeId,
             haittaAlkuPvm,

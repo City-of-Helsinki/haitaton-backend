@@ -132,7 +132,7 @@ data class Hanke(
         description =
             "Hanke areas data. At least one alue is required for the hanke to be published."
     )
-    override var alueet = mutableListOf<Hankealue>()
+    override var alueet = mutableListOf<SavedHankealue>()
 
     @JsonView(NotInChangeLogView::class)
     @field:Schema(description = "Permission codes of the project.")
