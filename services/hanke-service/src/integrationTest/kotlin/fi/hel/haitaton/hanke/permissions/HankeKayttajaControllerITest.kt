@@ -166,7 +166,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             val testData = HankeKayttajaFactory.generateHankeKayttajat()
             every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
             every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hanke.identifier()
-            every { hankeKayttajaService.getKayttajatByHankeId(hanke.id!!) } returns testData
+            every { hankeKayttajaService.getKayttajatByHankeId(hanke.id) } returns testData
 
             val response: HankeKayttajaResponse =
                 getHankeKayttajat().andExpect(status().isOk).andReturnBody()
@@ -181,7 +181,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             assertThat(response.kayttajat).hasSameElementsAs(testData)
             verifyOrder {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name)
-                hankeKayttajaService.getKayttajatByHankeId(hanke.id!!)
+                hankeKayttajaService.getKayttajatByHankeId(hanke.id)
                 disclosureLogService.saveDisclosureLogsForHankeKayttajat(
                     response.kayttajat,
                     USERNAME

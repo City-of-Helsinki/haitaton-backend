@@ -96,7 +96,7 @@ open class ApplicationService(
 
         if (!hanke.generated) {
             application.applicationData.areas?.let { areas ->
-                checkApplicationAreasInsideHankealue(hanke.id!!, areas) { applicationArea ->
+                checkApplicationAreasInsideHankealue(hanke.id, areas) { applicationArea ->
                     "Application geometry doesn't match any hankealue when creating a new application for user $userId, " +
                         "hankeId = ${hanke.id}, application geometry = ${applicationArea.geometry.toJsonString()}"
                 }
@@ -159,12 +159,11 @@ open class ApplicationService(
         }
 
         val hanke = application.hanke
-        val hankeId = hanke.id!!
         if (!hanke.generated) {
             newApplicationData.areas?.let { areas ->
-                checkApplicationAreasInsideHankealue(hankeId, areas) { applicationArea ->
+                checkApplicationAreasInsideHankealue(hanke.id, areas) { applicationArea ->
                     "Application geometry doesn't match any hankealue when updating application for user $userId, " +
-                        "hankeId = $hankeId, applicationId = ${application.id}, " +
+                        "hankeId = ${hanke.id}, applicationId = ${application.id}, " +
                         "application geometry = ${applicationArea.geometry.toJsonString()}"
                 }
             }
@@ -197,12 +196,11 @@ open class ApplicationService(
         val application = getById(id)
 
         val hanke = application.hanke
-        val hankeId = hanke.id!!
         if (!hanke.generated) {
             application.applicationData.areas?.let { areas ->
-                checkApplicationAreasInsideHankealue(hankeId, areas) { applicationArea ->
+                checkApplicationAreasInsideHankealue(hanke.id, areas) { applicationArea ->
                     "Application geometry doesn't match any hankealue when sending application for user $userId, " +
-                        "hankeId = $hankeId, applicationId = ${application.id}, " +
+                        "hankeId = ${hanke.id}, applicationId = ${application.id}, " +
                         "application geometry = ${applicationArea.geometry.toJsonString()}"
                 }
             }
@@ -355,7 +353,7 @@ open class ApplicationService(
             return
         }
 
-        val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id!!, currentUserId)
+        val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, currentUserId)
         val contacts = application.applicationData.typedContacts(omit = kayttaja?.sahkoposti)
 
         provideAccess(
@@ -379,7 +377,7 @@ open class ApplicationService(
             return
         }
 
-        val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id!!, currentUserId)
+        val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, currentUserId)
 
         val previousContacts = previousData.typedContacts()
         val updatedContacts = application.applicationData.typedContacts(omit = kayttaja?.sahkoposti)
@@ -403,7 +401,7 @@ open class ApplicationService(
     ) {
         hankeKayttajaService.saveNewTokensFromApplication(
             application = application,
-            hankeId = hanke.id!!,
+            hankeId = hanke.id,
             hankeTunnus = hanke.hankeTunnus,
             hankeNimi = hanke.nimi,
             currentUserId = currentUserId,

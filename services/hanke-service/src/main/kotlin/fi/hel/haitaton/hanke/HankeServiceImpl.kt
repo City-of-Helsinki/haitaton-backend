@@ -235,7 +235,7 @@ open class HankeServiceImpl(
             hakemus.id?.let { id -> applicationService.delete(id, userId) }
         }
 
-        hankeRepository.deleteById(hanke.id!!)
+        hankeRepository.deleteById(hanke.id)
         hankeLoggingService.logDelete(hanke, userId)
     }
 
@@ -246,7 +246,7 @@ open class HankeServiceImpl(
         }
 
     private fun initAccessForCreatedHanke(hanke: Hanke, perustaja: Perustaja?, userId: String) {
-        val hankeId = hanke.id!!
+        val hankeId = hanke.id
         hankeKayttajaService.addHankeFounder(hankeId, perustaja, userId)
         hankeKayttajaService.saveNewTokensFromHanke(hanke, userId)
     }
@@ -707,7 +707,7 @@ open class HankeServiceImpl(
             //   been removed in the database)
             // - the incoming ids are for different hanke (i.e. incorrect data in the incoming
             //   request)
-            throw HankeYhteystietoNotFoundException(hankeEntity.id!!, incomingId)
+            throw HankeYhteystietoNotFoundException(hankeEntity.id, incomingId)
         }
 
         if (validYhteystieto) {

@@ -140,7 +140,7 @@ class HankeEntity(
     // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
     // can be a performance problem if there is a need to do bulk inserts.
     // Using SEQUENCE would allow getting multiple ids more efficiently.
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Int? = null,
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Int = 0,
 
     // related
     // orphanRemoval is needed for even explicit child-object removal. JPA weirdness...
@@ -226,7 +226,7 @@ class HankeEntity(
     override fun hashCode(): Int {
         var result = status.hashCode()
         result = 31 * result + hankeTunnus.hashCode()
-        result = 31 * result + (id ?: 0)
+        result = 31 * result + id
         return result
     }
 }

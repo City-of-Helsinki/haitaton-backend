@@ -66,7 +66,6 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.getResourceAsBytes
@@ -917,7 +916,7 @@ class ApplicationServiceITest : DatabaseTest() {
         @Test
         fun `when application area outside hankealue should throw`() {
             val hanke = hankeFactory.createRequest().withHankealue().save()
-            val hankeEntity = hankeRepository.getReferenceById(hanke.id!!)
+            val hankeEntity = hankeRepository.getReferenceById(hanke.id)
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hankeEntity) {
                     it.alluid = 21
@@ -953,8 +952,8 @@ class ApplicationServiceITest : DatabaseTest() {
             val otherUser = "otherUser"
             val hanke = hankeFactory.saveMinimal(hankeTunnus = HANKE_TUNNUS)
             val hanke2 = hankeFactory.saveMinimal(hankeTunnus = "HAI-1236")
-            permissionService.create(hanke.id!!, USERNAME, HAKEMUSASIOINTI)
-            permissionService.create(hanke2.id!!, "otherUser", HAKEMUSASIOINTI)
+            permissionService.create(hanke.id, USERNAME, HAKEMUSASIOINTI)
+            permissionService.create(hanke2.id, "otherUser", HAKEMUSASIOINTI)
             alluDataFactory.saveApplicationEntities(3, USERNAME, hanke = hanke) { _, application ->
                 application.userId = USERNAME
                 application.applicationData =
@@ -980,8 +979,8 @@ class ApplicationServiceITest : DatabaseTest() {
             val hanke = hankeFactory.saveMinimal(hankeTunnus = HANKE_TUNNUS)
             val hanke2 = hankeFactory.saveMinimal(hankeTunnus = "HAI-1236")
             val hanke3 = hankeFactory.saveMinimal(hankeTunnus = "HAI-1237")
-            permissionService.create(hanke.id!!, USERNAME, HAKEMUSASIOINTI)
-            permissionService.create(hanke2.id!!, USERNAME, HAKEMUSASIOINTI)
+            permissionService.create(hanke.id, USERNAME, HAKEMUSASIOINTI)
+            permissionService.create(hanke2.id, USERNAME, HAKEMUSASIOINTI)
             val application1 =
                 alluDataFactory.saveApplicationEntity(username = USERNAME, hanke = hanke)
             val application2 =
@@ -1255,7 +1254,7 @@ class ApplicationServiceITest : DatabaseTest() {
         @Test
         fun `Throws an exception when application area is outside hankealue`() {
             val hanke = hankeFactory.createRequest().withHankealue().save()
-            val hankeEntity = hankeRepository.getReferenceById(hanke.id!!)
+            val hankeEntity = hankeRepository.getReferenceById(hanke.id)
             val application =
                 alluDataFactory.saveApplicationEntity(USERNAME, hanke = hankeEntity) {
                     it.applicationData =

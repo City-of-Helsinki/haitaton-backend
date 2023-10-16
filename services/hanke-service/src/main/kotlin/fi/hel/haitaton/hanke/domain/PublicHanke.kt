@@ -87,7 +87,7 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
     val alueet = hanke.alueet.map { hankealueToPublic(it) }
 
     return PublicHanke(
-        hanke.id!!,
+        hanke.id,
         hanke.hankeTunnus,
         hanke.nimi,
         hanke.kuvaus!!,
