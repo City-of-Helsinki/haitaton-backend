@@ -379,9 +379,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     // There's no separate DTO for Hankealue, so they might contain IDs and audit
                     // fields. These are ignored in the service, however.
                     .withHankealue(hanke.alueet[0])
-                    // There's no separate DTO for HankeYhteystieto, so they might contain IDs and
-                    // audit fields. These are ignored in the service, however.
-                    .withYhteystiedot { id = 49 }
+                    .withYhteystiedot()
                     .build()
             assertThat(serviceParameter.captured).isEqualTo(expectedParameter)
             verifySequence {

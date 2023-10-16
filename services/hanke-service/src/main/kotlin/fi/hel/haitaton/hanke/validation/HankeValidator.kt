@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.validation
 
+import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.MAXIMUM_DATE
 import fi.hel.haitaton.hanke.MAXIMUM_HANKE_ALUE_NIMI_LENGTH
@@ -58,10 +59,7 @@ private fun BaseHanke.validate() =
         .whenNotNull(tyomaaKatuosoite) {
             it.notLongerThan(MAXIMUM_TYOMAAKATUOSOITE_LENGTH, "tyomaaKatuosoite")
         }
-        .whenNotNull(omistajat) { allIn(it, "omistajat", ::validateYhteystieto) }
-        .whenNotNull(toteuttajat) { allIn(it, "toteuttajat", ::validateYhteystieto) }
-        .whenNotNull(rakennuttajat) { allIn(it, "rakennuttajat", ::validateYhteystieto) }
-        .whenNotNull(muut) { allIn(it, "muut", ::validateYhteystieto) }
+        .and { validateYhteystiedot(yhteystiedotByType()) }
 
 private fun validateHankeAlue(hankealue: Hankealue, path: String) = hankealue.validate(path)
 
@@ -74,6 +72,20 @@ private fun Hankealue.validate(path: String) =
         .andWhen(haittaAlkuPvm != null && haittaLoppuPvm != null) {
             isBeforeOrEqual(haittaAlkuPvm!!, haittaLoppuPvm!!, "$path.haittaLoppuPvm")
         }
+
+private fun validateYhteystiedot(
+    yhteystiedot: Map<ContactType, List<HankeYhteystieto>>
+): ValidationResult =
+    whenNotNull(yhteystiedot[ContactType.OMISTAJA]) {
+            allIn(it, "omistajat", ::validateYhteystieto)
+        }
+        .whenNotNull(yhteystiedot[ContactType.TOTEUTTAJA]) {
+            allIn(it, "toteuttajat", ::validateYhteystieto)
+        }
+        .whenNotNull(yhteystiedot[ContactType.RAKENNUTTAJA]) {
+            allIn(it, "rakennuttajat", ::validateYhteystieto)
+        }
+        .whenNotNull(yhteystiedot[ContactType.MUU]) { allIn(it, "muut", ::validateYhteystieto) }
 
 private fun validateYhteystieto(yhteystieto: HankeYhteystieto, path: String): ValidationResult =
     yhteystieto.validate(path)

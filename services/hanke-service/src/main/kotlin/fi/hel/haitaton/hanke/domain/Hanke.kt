@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.domain
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
+import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
@@ -76,24 +77,24 @@ data class Hanke(
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Indicates whether the Hanke data is generated, set by the service")
     var generated: Boolean = false,
-) : HasId<Int>, BaseHanke {
+) : HasId<Int>, BaseHanke, HasYhteystiedot {
 
     // --------------- Yhteystiedot -----------------
     @JsonView(NotInChangeLogView::class)
     @field:Schema(description = "Project owners, contact information")
-    override var omistajat = mutableListOf<HankeYhteystieto>()
+    var omistajat = mutableListOf<HankeYhteystieto>()
 
     @JsonView(NotInChangeLogView::class)
     @field:Schema(description = "Property developers, contact information")
-    override var rakennuttajat = mutableListOf<HankeYhteystieto>()
+    var rakennuttajat = mutableListOf<HankeYhteystieto>()
 
     @JsonView(NotInChangeLogView::class)
     @field:Schema(description = "Executor of the work")
-    override var toteuttajat = mutableListOf<HankeYhteystieto>()
+    var toteuttajat = mutableListOf<HankeYhteystieto>()
 
     @JsonView(NotInChangeLogView::class)
     @field:Schema(description = "Other contacts")
-    override var muut = mutableListOf<HankeYhteystieto>()
+    var muut = mutableListOf<HankeYhteystieto>()
 
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
     @JsonView(ChangeLogView::class)
@@ -133,4 +134,15 @@ data class Hanke(
     fun toLogString(): String {
         return toString()
     }
+
+    override fun extractYhteystiedot(): List<HankeYhteystieto> =
+        listOfNotNull(omistajat, rakennuttajat, toteuttajat, muut).flatten()
+
+    override fun yhteystiedotByType(): Map<ContactType, List<HankeYhteystieto>> =
+        mapOf(
+            ContactType.OMISTAJA to omistajat,
+            ContactType.RAKENNUTTAJA to rakennuttajat,
+            ContactType.TOTEUTTAJA to toteuttajat,
+            ContactType.MUU to muut,
+        )
 }
