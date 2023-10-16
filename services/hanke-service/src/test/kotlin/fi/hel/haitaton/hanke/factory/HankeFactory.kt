@@ -69,7 +69,7 @@ class HankeFactory(
         suunnitteluVaihe: SuunnitteluVaihe? = null,
     ): HankeEntity {
         val hanke = save(nimi, vaihe, suunnitteluVaihe)
-        return hankeRepository.getReferenceById(hanke.id!!)
+        return hankeRepository.getReferenceById(hanke.id)
     }
 
     fun saveMinimal(
@@ -131,7 +131,7 @@ class HankeFactory(
          * ```
          */
         fun create(
-            id: Int? = defaultId,
+            id: Int = defaultId,
             hankeTunnus: String = defaultHankeTunnus,
             nimi: String = defaultNimi,
             vaihe: Vaihe? = Vaihe.OHJELMOINTI,
@@ -158,7 +158,7 @@ class HankeFactory(
             )
 
         fun createMinimalEntity(
-            id: Int? = defaultId,
+            id: Int = defaultId,
             hankeTunnus: String = defaultHankeTunnus,
             nimi: String = defaultNimi,
             generated: Boolean = false,

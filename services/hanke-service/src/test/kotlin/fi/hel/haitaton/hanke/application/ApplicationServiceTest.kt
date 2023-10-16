@@ -365,7 +365,7 @@ class ApplicationServiceTest {
                 hankeKayttajaService.getKayttajaByUserId(1, USERNAME)
                 hankeKayttajaService.saveNewTokensFromApplication(
                     applicationEntity,
-                    hankeEntity.id!!,
+                    hankeEntity.id,
                     hankeEntity.hankeTunnus,
                     hankeEntity.nimi,
                     USERNAME,
@@ -479,7 +479,7 @@ class ApplicationServiceTest {
                 hankeKayttajaService.getKayttajaByUserId(1, USERNAME)
                 hankeKayttajaService.saveNewTokensFromApplication(
                     any(),
-                    hankeEntity.id!!,
+                    hankeEntity.id,
                     hankeEntity.hankeTunnus,
                     hankeEntity.nimi,
                     USERNAME,

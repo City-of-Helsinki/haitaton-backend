@@ -199,7 +199,7 @@ class HankeControllerTest {
     fun `test that the updateHanke will throw if mismatch in hanke tunnus payload vs path`() {
         val hankeUpdate = HankeFactory.create()
         val existingHanke = HankeFactory.create(hankeTunnus = "wrong")
-        every { permissionService.hasPermission(existingHanke.id!!, username, PermissionCode.EDIT) }
+        every { permissionService.hasPermission(existingHanke.id, username, PermissionCode.EDIT) }
             .returns(true)
         every { hankeAuthorizer.authorizeHankeTunnus("wrong", PermissionCode.EDIT) } returns true
 
