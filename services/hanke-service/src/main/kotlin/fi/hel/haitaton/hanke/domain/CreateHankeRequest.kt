@@ -25,7 +25,8 @@ data class CreateHankeRequest(
     )
     override val vaihe: Vaihe? = null,
     @field:Schema(
-        description = "Current planning stage, must be defined if vaihe = SUUNNITTELU",
+        description =
+            "Current planning stage, required for publishing used if vaihe is SUUNNITTELU.",
     )
     override val suunnitteluVaihe: SuunnitteluVaihe? = null,
     @field:Schema(

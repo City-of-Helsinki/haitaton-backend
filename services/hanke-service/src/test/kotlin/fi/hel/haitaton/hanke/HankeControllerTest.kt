@@ -289,33 +289,4 @@ class HankeControllerTest {
         assertThat(response.omistajat[0].nimi).isEqualTo("Pekka Pekkanen")
         verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
     }
-
-    @Test
-    fun `test that the updateHanke will give validation errors from null enum values`() {
-        val partialHanke =
-            Hanke(
-                id = 0,
-                hankeTunnus = "id123",
-                nimi = "",
-                kuvaus = "",
-                onYKTHanke = false,
-                vaihe = null,
-                suunnitteluVaihe = null,
-                version = 1,
-                createdBy = "",
-                createdAt = null,
-                modifiedBy = null,
-                modifiedAt = null,
-                status = null,
-            )
-        // mock HankeService response
-        every { hankeService.updateHanke(partialHanke) }.returns(partialHanke)
-
-        // Actual call
-        assertThatExceptionOfType(ConstraintViolationException::class.java)
-            .isThrownBy { hankeController.updateHanke(partialHanke, "id123") }
-            .withMessageContaining("updateHanke.hanke.vaihe: " + HankeError.HAI1002.toString())
-
-        verify { disclosureLogService wasNot Called }
-    }
 }
