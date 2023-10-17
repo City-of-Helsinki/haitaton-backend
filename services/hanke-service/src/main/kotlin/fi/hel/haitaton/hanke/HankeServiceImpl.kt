@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.domain.HasYhteystiedot
 import fi.hel.haitaton.hanke.domain.Perustaja
+import fi.hel.haitaton.hanke.domain.Yhteystieto
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogService
@@ -594,7 +595,7 @@ open class HankeServiceImpl(
     }
 
     private fun processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-        listOfHankeYhteystiedot: List<HankeYhteystieto>,
+        listOfHankeYhteystiedot: List<Yhteystieto>,
         hankeEntity: HankeEntity,
         contactType: ContactType,
         userid: String,
@@ -649,7 +650,7 @@ open class HankeServiceImpl(
     }
 
     private fun processCreateYhteystieto(
-        hankeYht: HankeYhteystieto,
+        hankeYht: Yhteystieto,
         validYhteystieto: Boolean,
         contactType: ContactType,
         userid: String,
@@ -689,7 +690,7 @@ open class HankeServiceImpl(
     }
 
     private fun processUpdateYhteystieto(
-        hankeYht: HankeYhteystieto,
+        hankeYht: Yhteystieto,
         existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
         someFieldsSet: Boolean,
         validYhteystieto: Boolean,
@@ -765,7 +766,7 @@ open class HankeServiceImpl(
     }
 
     private fun areEqualIncomingVsExistingYhteystietos(
-        incoming: HankeYhteystieto,
+        incoming: Yhteystieto,
         existing: HankeYhteystietoEntity
     ): Boolean {
         if (incoming.nimi != existing.nimi) return false

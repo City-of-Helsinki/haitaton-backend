@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.NewYhteystieto
 
 data class CreateHankeRequestBuilder(
     private val hankeService: HankeService?,
@@ -56,7 +57,21 @@ data class CreateHankeRequestBuilder(
 }
 
 fun HankeYhteystieto.toCreateRequest() =
-    CreateHankeRequest.Yhteystieto(
+    NewYhteystieto(
+        nimi,
+        email,
+        alikontaktit,
+        puhelinnumero,
+        organisaatioNimi,
+        osasto,
+        rooli,
+        tyyppi,
+        ytunnus
+    )
+
+fun NewYhteystieto.toHankeYhteystieto() =
+    HankeYhteystieto(
+        id,
         nimi,
         email,
         alikontaktit,

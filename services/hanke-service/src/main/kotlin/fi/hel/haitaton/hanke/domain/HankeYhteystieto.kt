@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.domain
 
-import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.NotInChangeLogView
@@ -23,41 +22,41 @@ data class HankeYhteystieto(
     // Mandatory info (person or juridical person):
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Contact name. Full name if an actual person.")
-    var nimi: String,
+    override var nimi: String,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Contact email address")
-    var email: String,
+    override var email: String,
 
     // Optional subcontacts (person)
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Sub-contacts, i.e. contacts of this contact")
-    var alikontaktit: List<Yhteyshenkilo> = emptyList(),
+    override var alikontaktit: List<Yhteyshenkilo> = emptyList(),
 
     // Optional
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Phone number")
-    var puhelinnumero: String?,
+    override var puhelinnumero: String?,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Organisation name")
-    var organisaatioNimi: String?,
+    override var organisaatioNimi: String?,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Contact department")
-    var osasto: String?,
+    override var osasto: String?,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Role of the contact")
-    var rooli: String?,
+    override var rooli: String?,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Contact type")
-    var tyyppi: YhteystietoTyyppi? = null,
+    override var tyyppi: YhteystietoTyyppi? = null,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Business id, for contacts with tyyppi other than YKSITYISHENKILO")
-    val ytunnus: String? = null,
+    override val ytunnus: String? = null,
 
     // Metadata
     @JsonView(NotInChangeLogView::class)
@@ -75,25 +74,4 @@ data class HankeYhteystieto(
     @JsonView(NotInChangeLogView::class)
     @field:Schema(description = "Timestamp of last modification, set by the service")
     var modifiedAt: ZonedDateTime? = null
-) : HasId<Int> {
-
-    /**
-     * Returns true if at least one Yhteystieto-field is non-null, non-empty and
-     * non-whitespace-only.
-     */
-    @JsonIgnore
-    fun isAnyFieldSet(): Boolean {
-        return isAnyMandatoryFieldSet() ||
-            !organisaatioNimi.isNullOrBlank() ||
-            !osasto.isNullOrBlank()
-    }
-
-    /**
-     * Returns true if at least one mandatory Yhteystieto-field is non-null, non-empty and
-     * non-whitespace-only.
-     */
-    @JsonIgnore
-    fun isAnyMandatoryFieldSet(): Boolean {
-        return nimi.isNotBlank() || email.isNotBlank()
-    }
-}
+) : HasId<Int>, Yhteystieto

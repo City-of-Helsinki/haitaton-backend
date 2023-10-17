@@ -8,8 +8,8 @@ import fi.hel.haitaton.hanke.MAXIMUM_HANKE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_TYOMAAKATUOSOITE_LENGTH
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.BaseHanke
-import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.Yhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.isValidBusinessId
 import fi.hel.haitaton.hanke.validation.ValidationResult.Companion.allIn
@@ -74,7 +74,7 @@ private fun Hankealue.validate(path: String) =
         }
 
 private fun validateYhteystiedot(
-    yhteystiedot: Map<ContactType, List<HankeYhteystieto>>
+    yhteystiedot: Map<ContactType, List<Yhteystieto>>
 ): ValidationResult =
     whenNotNull(yhteystiedot[ContactType.OMISTAJA]) {
             allIn(it, "omistajat", ::validateYhteystieto)
@@ -87,9 +87,9 @@ private fun validateYhteystiedot(
         }
         .whenNotNull(yhteystiedot[ContactType.MUU]) { allIn(it, "muut", ::validateYhteystieto) }
 
-private fun validateYhteystieto(yhteystieto: HankeYhteystieto, path: String): ValidationResult =
+private fun validateYhteystieto(yhteystieto: Yhteystieto, path: String): ValidationResult =
     yhteystieto.validate(path)
 
-private fun HankeYhteystieto.validate(path: String): ValidationResult =
+private fun Yhteystieto.validate(path: String): ValidationResult =
     whenNotNull(ytunnus) { validateTrue(it.isValidBusinessId(), "$path.ytunnus") }
         .andWhen(tyyppi == YKSITYISHENKILO) { validateTrue(ytunnus == null, "$path.ytunnus") }

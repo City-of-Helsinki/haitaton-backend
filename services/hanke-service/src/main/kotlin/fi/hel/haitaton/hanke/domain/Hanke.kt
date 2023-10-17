@@ -82,19 +82,19 @@ data class Hanke(
     // --------------- Yhteystiedot -----------------
     @JsonView(NotInChangeLogView::class)
     @field:Schema(description = "Project owners, contact information")
-    var omistajat = mutableListOf<HankeYhteystieto>()
+    override var omistajat = mutableListOf<HankeYhteystieto>()
 
     @JsonView(NotInChangeLogView::class)
     @field:Schema(description = "Property developers, contact information")
-    var rakennuttajat = mutableListOf<HankeYhteystieto>()
+    override var rakennuttajat = mutableListOf<HankeYhteystieto>()
 
     @JsonView(NotInChangeLogView::class)
     @field:Schema(description = "Executor of the work")
-    var toteuttajat = mutableListOf<HankeYhteystieto>()
+    override var toteuttajat = mutableListOf<HankeYhteystieto>()
 
     @JsonView(NotInChangeLogView::class)
     @field:Schema(description = "Other contacts")
-    var muut = mutableListOf<HankeYhteystieto>()
+    override var muut = mutableListOf<HankeYhteystieto>()
 
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
     @JsonView(ChangeLogView::class)

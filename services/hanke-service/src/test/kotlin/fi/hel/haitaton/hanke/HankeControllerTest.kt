@@ -5,9 +5,11 @@ import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.NewYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.geometriat
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.toHankeYhteystieto
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -251,7 +253,7 @@ class HankeControllerTest {
                 suunnitteluVaihe = null,
                 omistajat =
                     arrayListOf(
-                        CreateHankeRequest.Yhteystieto(
+                        NewYhteystieto(
                             nimi = "Pekka Pekkanen",
                             email = "pekka@pekka.fi",
                             puhelinnumero = "3212312",
