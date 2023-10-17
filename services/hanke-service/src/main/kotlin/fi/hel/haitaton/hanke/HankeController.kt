@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -53,7 +53,7 @@ class HankeController(
                 ApiResponse(
                     description = "Success",
                     responseCode = "200",
-                    content = [Content(schema = Schema(implementation = Hanke::class))]
+                    content = [Content(schema = Schema(implementation = SavedHanke::class))]
                 ),
                 ApiResponse(
                     description = "Hanke by requested hankeTunnus not found",
@@ -63,7 +63,7 @@ class HankeController(
             ]
     )
     @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
-    fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String): Hanke {
+    fun getHankeByTunnus(@PathVariable(name = "hankeTunnus") hankeTunnus: String): SavedHanke {
         val hanke = hankeService.loadHanke(hankeTunnus)!!
         disclosureLogService.saveDisclosureLogsForHanke(hanke, currentUserId())
         return hanke
@@ -85,7 +85,7 @@ class HankeController(
                     content =
                         [
                             Content(
-                                array = ArraySchema(schema = Schema(implementation = Hanke::class))
+                                array = ArraySchema(schema = Schema(implementation = SavedHanke::class))
                             )
                         ]
                 )
@@ -102,7 +102,7 @@ class HankeController(
         )
         @RequestParam
         geometry: Boolean = false
-    ): List<Hanke> {
+    ): List<SavedHanke> {
         val userid = currentUserId()
 
         val hankeIds = permissionService.getAllowedHankeIds(userid, PermissionCode.VIEW)
@@ -158,7 +158,7 @@ When Hanke is created:
                 ApiResponse(
                     description = "Success",
                     responseCode = "200",
-                    content = [Content(schema = Schema(implementation = Hanke::class))]
+                    content = [Content(schema = Schema(implementation = SavedHanke::class))]
                 ),
                 ApiResponse(
                     description = "The request body was invalid",
@@ -168,7 +168,7 @@ When Hanke is created:
             ]
     )
     @PreAuthorize("@featureService.isEnabled('HANKE_EDITING')")
-    fun createHanke(@ValidHanke @RequestBody request: CreateHankeRequest): Hanke {
+    fun createHanke(@ValidHanke @RequestBody request: CreateHankeRequest): SavedHanke {
         logger.info { "Creating Hanke..." }
 
         val createdHanke = hankeService.createHanke(request)
@@ -196,7 +196,7 @@ On update following will happen automatically:
                 ApiResponse(
                     description = "Success",
                     responseCode = "200",
-                    content = [Content(schema = Schema(implementation = Hanke::class))]
+                    content = [Content(schema = Schema(implementation = SavedHanke::class))]
                 ),
                 ApiResponse(
                     description = "The request body was invalid",
@@ -215,9 +215,9 @@ On update following will happen automatically:
             "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'EDIT')"
     )
     fun updateHanke(
-        @ValidHanke @RequestBody hanke: Hanke,
+        @ValidHanke @RequestBody hanke: SavedHanke,
         @PathVariable hankeTunnus: String
-    ): Hanke {
+    ): SavedHanke {
         logger.info { "Updating Hanke: ${hanke.toLogString()}" }
         validateUpdatable(hanke, hankeTunnus)
 
@@ -274,7 +274,7 @@ On update following will happen automatically:
         return ex.toHankeError(HankeError.HAI1002)
     }
 
-    private fun validateUpdatable(hankeUpdate: Hanke, hankeTunnusFromPath: String) {
+    private fun validateUpdatable(hankeUpdate: SavedHanke, hankeTunnusFromPath: String) {
         if (hankeUpdate.hankeTunnus != hankeTunnusFromPath) {
             throw HankeArgumentException(
                 "Hanketunnus mismatch. (In payload=${hankeUpdate.hankeTunnus}, In path=$hankeTunnusFromPath)"

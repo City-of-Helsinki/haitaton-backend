@@ -4,7 +4,7 @@ import fi.hel.haitaton.hanke.ContactType.MUU
 import fi.hel.haitaton.hanke.ContactType.OMISTAJA
 import fi.hel.haitaton.hanke.ContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
@@ -18,9 +18,9 @@ object HankeMapper {
      * @param entity Source hanke entity.
      * @param geometriaData Since hanke only has an id reference on the actual geometries.
      */
-    fun domainFrom(entity: HankeEntity, geometriaData: Map<Int, Geometriat?>): Hanke =
+    fun domainFrom(entity: HankeEntity, geometriaData: Map<Int, Geometriat?>): SavedHanke =
         with(entity) {
-                Hanke(
+                SavedHanke(
                     id = id,
                     hankeTunnus = hankeTunnus,
                     onYKTHanke = onYKTHanke,

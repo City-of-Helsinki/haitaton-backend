@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.HankeIdentifier
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 
 object HankeIdentifierFactory {
     fun create(
@@ -13,4 +13,4 @@ object HankeIdentifierFactory {
 data class TestHankeIdentifier(override val id: Int, override val hankeTunnus: String) :
     HankeIdentifier
 
-fun Hanke.identifier(): HankeIdentifier = TestHankeIdentifier(id, hankeTunnus)
+fun SavedHanke.identifier(): HankeIdentifier = TestHankeIdentifier(id, hankeTunnus)

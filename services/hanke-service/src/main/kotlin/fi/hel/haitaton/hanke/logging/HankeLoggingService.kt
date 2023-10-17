@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.logging
 
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -15,7 +15,7 @@ class HankeLoggingService(private val auditLogService: AuditLogService) {
      * deleted with the hanke, and they are not handled anywhere else.
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    fun logDelete(hanke: Hanke, userId: String) {
+    fun logDelete(hanke: SavedHanke, userId: String) {
         val auditLogEntry = AuditLogService.deleteEntry(userId, ObjectType.HANKE, hanke)
         val yhteystietoEntries =
             hanke.extractYhteystiedot().map {
@@ -33,7 +33,7 @@ class HankeLoggingService(private val auditLogService: AuditLogService) {
      * controller, so they are logged there.
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    fun logCreate(hanke: Hanke, userId: String) {
+    fun logCreate(hanke: SavedHanke, userId: String) {
         auditLogService.create(AuditLogService.createEntry(userId, ObjectType.HANKE, hanke))
     }
 
@@ -50,7 +50,7 @@ class HankeLoggingService(private val auditLogService: AuditLogService) {
      * controller, so they are logged there.
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    fun logUpdate(hankeBefore: Hanke, hankeAfter: Hanke, userId: String) {
+    fun logUpdate(hankeBefore: SavedHanke, hankeAfter: SavedHanke, userId: String) {
         AuditLogService.updateEntry(userId, ObjectType.HANKE, hankeBefore, hankeAfter)?.let {
             auditLogService.create(it)
         }

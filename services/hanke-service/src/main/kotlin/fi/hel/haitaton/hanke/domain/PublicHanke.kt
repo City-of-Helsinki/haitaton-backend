@@ -80,7 +80,7 @@ fun hankealueToPublic(alue: Hankealue): PublicHankealue {
     )
 }
 
-fun hankeToPublic(hanke: Hanke): PublicHanke {
+fun hankeToPublic(hanke: SavedHanke): PublicHanke {
     val omistajat =
         hanke.omistajat.filter { it.organisaatioNimi != null }.map { hankeYhteystietoToPublic(it) }
 

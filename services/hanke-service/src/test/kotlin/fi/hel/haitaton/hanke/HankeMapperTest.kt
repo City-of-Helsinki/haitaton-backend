@@ -9,7 +9,7 @@ import fi.hel.haitaton.hanke.ContactType.MUU
 import fi.hel.haitaton.hanke.ContactType.OMISTAJA
 import fi.hel.haitaton.hanke.ContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
 import fi.hel.haitaton.hanke.factory.DateFactory
@@ -36,28 +36,28 @@ class HankeMapperTest {
         val result = HankeMapper.domainFrom(entity, mapOf(MOCK_ID to geometry))
 
         assertThat(result).all {
-            prop(Hanke::id).isEqualTo(entity.id)
-            prop(Hanke::hankeTunnus).isEqualTo(entity.hankeTunnus)
-            prop(Hanke::onYKTHanke).isEqualTo(entity.onYKTHanke)
-            prop(Hanke::nimi).isEqualTo(entity.nimi)
-            prop(Hanke::kuvaus).isEqualTo(entity.kuvaus)
-            prop(Hanke::vaihe).isEqualTo(entity.vaihe)
-            prop(Hanke::suunnitteluVaihe).isEqualTo(entity.suunnitteluVaihe)
-            prop(Hanke::version).isEqualTo(entity.version)
-            prop(Hanke::createdAt).isEqualTo(DateFactory.getStartDatetime())
-            prop(Hanke::createdBy).isEqualTo(entity.createdByUserId)
-            prop(Hanke::modifiedAt).isEqualTo(DateFactory.getEndDatetime())
-            prop(Hanke::modifiedBy).isEqualTo(entity.modifiedByUserId)
-            prop(Hanke::status).isEqualTo(entity.status)
-            prop(Hanke::generated).isEqualTo(entity.generated)
-            prop(Hanke::omistajat).isEqualTo(expectedYhteystieto(entity, OMISTAJA, 1))
-            prop(Hanke::toteuttajat).isEqualTo(expectedYhteystieto(entity, TOTEUTTAJA, 2))
-            prop(Hanke::rakennuttajat).isEqualTo(expectedYhteystieto(entity, RAKENNUTTAJA, 3))
-            prop(Hanke::muut).isEqualTo(expectedYhteystieto(entity, MUU, 4))
-            prop(Hanke::tyomaaKatuosoite).isEqualTo(entity.tyomaaKatuosoite)
-            prop(Hanke::tyomaaTyyppi).isEqualTo(entity.tyomaaTyyppi)
-            prop(Hanke::alueet).isEqualTo(expectedAlueet(entity.id, entity.hankeTunnus))
-            prop(Hanke::permissions).isNull()
+            prop(SavedHanke::id).isEqualTo(entity.id)
+            prop(SavedHanke::hankeTunnus).isEqualTo(entity.hankeTunnus)
+            prop(SavedHanke::onYKTHanke).isEqualTo(entity.onYKTHanke)
+            prop(SavedHanke::nimi).isEqualTo(entity.nimi)
+            prop(SavedHanke::kuvaus).isEqualTo(entity.kuvaus)
+            prop(SavedHanke::vaihe).isEqualTo(entity.vaihe)
+            prop(SavedHanke::suunnitteluVaihe).isEqualTo(entity.suunnitteluVaihe)
+            prop(SavedHanke::version).isEqualTo(entity.version)
+            prop(SavedHanke::createdAt).isEqualTo(DateFactory.getStartDatetime())
+            prop(SavedHanke::createdBy).isEqualTo(entity.createdByUserId)
+            prop(SavedHanke::modifiedAt).isEqualTo(DateFactory.getEndDatetime())
+            prop(SavedHanke::modifiedBy).isEqualTo(entity.modifiedByUserId)
+            prop(SavedHanke::status).isEqualTo(entity.status)
+            prop(SavedHanke::generated).isEqualTo(entity.generated)
+            prop(SavedHanke::omistajat).isEqualTo(expectedYhteystieto(entity, OMISTAJA, 1))
+            prop(SavedHanke::toteuttajat).isEqualTo(expectedYhteystieto(entity, TOTEUTTAJA, 2))
+            prop(SavedHanke::rakennuttajat).isEqualTo(expectedYhteystieto(entity, RAKENNUTTAJA, 3))
+            prop(SavedHanke::muut).isEqualTo(expectedYhteystieto(entity, MUU, 4))
+            prop(SavedHanke::tyomaaKatuosoite).isEqualTo(entity.tyomaaKatuosoite)
+            prop(SavedHanke::tyomaaTyyppi).isEqualTo(entity.tyomaaTyyppi)
+            prop(SavedHanke::alueet).isEqualTo(expectedAlueet(entity.id, entity.hankeTunnus))
+            prop(SavedHanke::permissions).isNull()
         }
     }
 

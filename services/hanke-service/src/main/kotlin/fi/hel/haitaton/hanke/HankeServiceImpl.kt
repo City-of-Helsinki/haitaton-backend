@@ -6,7 +6,7 @@ import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasId
@@ -94,7 +94,7 @@ open class HankeServiceImpl(
         }
 
     @Transactional(readOnly = true)
-    override fun loadHankeById(id: Int): Hanke? =
+    override fun loadHankeById(id: Int): SavedHanke? =
         hankeRepository.findByIdOrNull(id)?.let { createHankeDomainObjectFromEntity(it) }
 
     @Transactional(readOnly = true)
@@ -102,14 +102,14 @@ open class HankeServiceImpl(
         hankeRepository.findAllById(ids).map { createHankeDomainObjectFromEntity(it) }
 
     @Transactional
-    override fun createHanke(request: CreateHankeRequest): Hanke =
+    override fun createHanke(request: CreateHankeRequest): SavedHanke =
         createHankeInternal(request = request, perustaja = null, generated = false)
 
     private fun createHankeInternal(
         request: CreateHankeRequest,
         perustaja: Perustaja?,
         generated: Boolean
-    ): Hanke {
+    ): SavedHanke {
         val userId = currentUserId()
 
         val entity: HankeEntity = createEntityFromCreateRequest(request, userId)
@@ -179,7 +179,7 @@ open class HankeServiceImpl(
     }
 
     @Transactional
-    override fun updateHanke(hanke: Hanke): Hanke {
+    override fun updateHanke(hanke: SavedHanke): SavedHanke {
         val userId = currentUserId()
 
         // Both checks that the hanke already exists, and get its old fields to transfer data into
@@ -246,7 +246,7 @@ open class HankeServiceImpl(
             !applicationService.isStillPending(it.alluid, it.alluStatus)
         }
 
-    private fun initAccessForCreatedHanke(hanke: Hanke, perustaja: Perustaja?, userId: String) {
+    private fun initAccessForCreatedHanke(hanke: SavedHanke, perustaja: Perustaja?, userId: String) {
         val hankeId = hanke.id
         hankeKayttajaService.addHankeFounder(hankeId, perustaja, userId)
         hankeKayttajaService.saveNewTokensFromHanke(hanke, userId)
@@ -308,7 +308,7 @@ open class HankeServiceImpl(
         }
     }
 
-    private fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke =
+    private fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): SavedHanke =
         HankeMapper.domainFrom(hankeEntity, geometryMapFrom(hankeEntity))
 
     /** Map by area geometry id to area geometry data. */
@@ -333,7 +333,7 @@ open class HankeServiceImpl(
      * entry info could be misleading for other uses.
      */
     private fun checkAndHandleDataProcessingRestrictions(
-        incomingHanke: Hanke,
+        incomingHanke: SavedHanke,
         persistedEntity: HankeEntity,
         existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
         userid: String
@@ -463,7 +463,7 @@ open class HankeServiceImpl(
      * modifiedByUserId, modifiedAt, version are not set here, as they are to be set internally, and
      * depends on which operation is being done.
      */
-    private fun copyNonNullHankeFieldsToEntity(hanke: Hanke, entity: HankeEntity) {
+    private fun copyNonNullHankeFieldsToEntity(hanke: SavedHanke, entity: HankeEntity) {
         hanke.onYKTHanke?.let { entity.onYKTHanke = hanke.onYKTHanke }
         entity.nimi = hanke.nimi
         hanke.kuvaus?.let { entity.kuvaus = hanke.kuvaus }
@@ -833,7 +833,7 @@ open class HankeServiceImpl(
      * - Hanke name is same as application name (limited to first 100 characters).
      * - Perustaja generated from application data orderer.
      */
-    private fun generateHankeFrom(cableReport: CableReportWithoutHanke): Hanke =
+    private fun generateHankeFrom(cableReport: CableReportWithoutHanke): SavedHanke =
         createHankeInternal(
             CreateHankeRequest(nimi = limitHankeName(cableReport.applicationData.name)),
             perustaja = perustajaFrom(cableReport.applicationData),

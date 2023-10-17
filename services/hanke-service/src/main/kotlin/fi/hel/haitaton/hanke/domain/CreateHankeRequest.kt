@@ -15,12 +15,12 @@ data class CreateHankeRequest(
     @field:Schema(
         description = "Shared Public Utility Site (Yhteinen kunnallistekninen työmaa). Optional.",
     )
-    val onYKTHanke: Boolean? = null,
+    override val onYKTHanke: Boolean? = null,
     @field:Schema(
         description =
             "Description of the project and the work done during it. Required for the project to be published.",
     )
-    val kuvaus: String? = null,
+    override val kuvaus: String? = null,
     @field:Schema(
         description = "Current stage of the project. Required for the hanke to be published.",
     )
@@ -61,7 +61,7 @@ data class CreateHankeRequest(
             "Hanke areas data. At least one alue is required for the hanke to be published.",
     )
     override val alueet: List<Hankealue>? = null,
-) : BaseHanke
+) : Hanke
 
 data class NewYhteystieto(
     @field:Schema(

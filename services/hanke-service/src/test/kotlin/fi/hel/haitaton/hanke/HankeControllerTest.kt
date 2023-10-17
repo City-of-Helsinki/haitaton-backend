@@ -4,7 +4,7 @@ import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 import fi.hel.haitaton.hanke.domain.NewYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.geometriat
@@ -88,7 +88,7 @@ class HankeControllerTest {
             .returns(true)
         every { hankeService.loadHanke(mockedHankeTunnus) }
             .returns(
-                Hanke(
+                SavedHanke(
                     hankeId,
                     mockedHankeTunnus,
                     true,
@@ -119,7 +119,7 @@ class HankeControllerTest {
     fun `test when called without parameters then getHankeList returns ok and two items without geometry`() {
         val listOfHanke =
             listOf(
-                Hanke(
+                SavedHanke(
                     1234,
                     mockedHankeTunnus,
                     true,
@@ -134,7 +134,7 @@ class HankeControllerTest {
                     null,
                     HankeStatus.DRAFT
                 ),
-                Hanke(
+                SavedHanke(
                     50,
                     "HAME50",
                     true,
@@ -167,7 +167,7 @@ class HankeControllerTest {
     fun `test that the updateHanke can be called with hanke data and response will be 200`() {
         val hanketunnus = "id123"
         val partialHanke =
-            Hanke(
+            SavedHanke(
                 id = 123,
                 hankeTunnus = hanketunnus,
                 nimi = "hankkeen nimi",
@@ -189,7 +189,7 @@ class HankeControllerTest {
         every { permissionService.hasPermission(123, username, PermissionCode.EDIT) }.returns(true)
 
         // Actual call
-        val response: Hanke = hankeController.updateHanke(partialHanke, hanketunnus)
+        val response: SavedHanke = hankeController.updateHanke(partialHanke, hanketunnus)
 
         assertThat(response).isNotNull
         assertThat(response.nimi).isEqualTo("hankkeen nimi")
@@ -214,7 +214,7 @@ class HankeControllerTest {
     @Test
     fun `test that the updateHanke will give validation errors from invalid hanke data for name`() {
         val partialHanke =
-            Hanke(
+            SavedHanke(
                 id = 0,
                 hankeTunnus = "id123",
                 nimi = "",
@@ -278,7 +278,7 @@ class HankeControllerTest {
             mutableListOf(request.omistajat!![0].toHankeYhteystieto().copy(id = 1))
         every { hankeService.createHanke(request) }.returns(mockedHanke)
 
-        val response: Hanke = hankeController.createHanke(request)
+        val response: SavedHanke = hankeController.createHanke(request)
 
         assertThat(response).isNotNull
         assertThat(response.id).isEqualTo(12)
@@ -294,7 +294,7 @@ class HankeControllerTest {
     @Test
     fun `test that the updateHanke will give validation errors from null enum values`() {
         val partialHanke =
-            Hanke(
+            SavedHanke(
                 id = 0,
                 hankeTunnus = "id123",
                 nimi = "",

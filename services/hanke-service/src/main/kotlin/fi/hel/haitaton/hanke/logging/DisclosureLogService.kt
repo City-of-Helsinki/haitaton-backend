@@ -9,7 +9,7 @@ import fi.hel.haitaton.hanke.application.ApplicationMetaData
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
@@ -98,7 +98,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
      * Save disclosure logs for when a user accesses a hanke. Write disclosure log entries for the
      * contacts in the hanke.
      */
-    fun saveDisclosureLogsForHanke(hanke: Hanke, userId: String) {
+    fun saveDisclosureLogsForHanke(hanke: SavedHanke, userId: String) {
         saveDisclosureLogs(
             userId,
             UserRole.USER,
@@ -110,7 +110,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
      * Save disclosure logs for when a user accesses hankkeet. Write disclosure log entries for the
      * contacts in the hankkeet.
      */
-    fun saveDisclosureLogsForHankkeet(hankkeet: List<Hanke>, userId: String) {
+    fun saveDisclosureLogsForHankkeet(hankkeet: List<SavedHanke>, userId: String) {
         saveDisclosureLogs(
             userId,
             UserRole.USER,

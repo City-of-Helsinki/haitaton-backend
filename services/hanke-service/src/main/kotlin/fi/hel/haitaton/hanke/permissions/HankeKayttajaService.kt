@@ -5,7 +5,7 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 import fi.hel.haitaton.hanke.domain.HankeUserContact
 import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.domain.UserContact
@@ -84,7 +84,7 @@ class HankeKayttajaService(
     }
 
     @Transactional
-    fun saveNewTokensFromHanke(hanke: Hanke, userId: String) {
+    fun saveNewTokensFromHanke(hanke: SavedHanke, userId: String) {
         if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
             return
         }

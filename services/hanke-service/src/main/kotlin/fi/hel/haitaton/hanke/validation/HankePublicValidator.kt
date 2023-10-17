@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke.validation
 
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
@@ -24,7 +24,7 @@ import fi.hel.haitaton.hanke.validation.Validators.validateTrue
  */
 object HankePublicValidator {
 
-    fun validateHankeHasMandatoryFields(hanke: Hanke): ValidationResult {
+    fun validateHankeHasMandatoryFields(hanke: SavedHanke): ValidationResult {
         return validate { notNullOrBlank(hanke.nimi, "nimi") }
             .and { notNullOrBlank(hanke.kuvaus, "kuvaus") }
             .and { notNullOrBlank(hanke.tyomaaKatuosoite, "tyomaaKatuosoite") }

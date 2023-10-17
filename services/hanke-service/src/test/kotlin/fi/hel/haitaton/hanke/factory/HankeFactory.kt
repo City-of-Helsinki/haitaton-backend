@@ -17,7 +17,7 @@ import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Vaihe.SUUNNITTELU
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.factory.AttachmentFactory.Companion.hankeAttachmentEntity
@@ -87,7 +87,7 @@ class HankeFactory(
         cableReportWithoutHanke: CableReportWithoutHanke =
             AlluDataFactory.cableReportWithoutHanke(),
         userId: String
-    ): Hanke {
+    ): SavedHanke {
         val application = hankeService.generateHankeWithApplication(cableReportWithoutHanke, userId)
         return hankeService.loadHanke(application.hankeTunnus)!!
     }
@@ -140,8 +140,8 @@ class HankeFactory(
             createdBy: String? = defaultUser,
             createdAt: ZonedDateTime? = DateFactory.getStartDatetime(),
             hankeStatus: HankeStatus = DRAFT,
-        ): Hanke =
-            Hanke(
+        ): SavedHanke =
+            SavedHanke(
                 id,
                 hankeTunnus,
                 true,
@@ -229,11 +229,11 @@ class HankeFactory(
          * HankeFactory.create().withHankealue()
          * ```
          */
-        fun Hanke.withHankealue(
+        fun SavedHanke.withHankealue(
             nimi: String? = null,
             haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
             haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
-        ): Hanke {
+        ): SavedHanke {
             this.tyomaaKatuosoite = "Testikatu 1"
             this.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
             this.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
@@ -249,12 +249,12 @@ class HankeFactory(
             return this
         }
 
-        fun Hanke.withTormaystarkasteluTulos(
+        fun SavedHanke.withTormaystarkasteluTulos(
             perusIndeksi: Float = 1f,
             pyorailyIndeksi: Float = 1f,
             linjaautoIndeksi: Float = 1f,
             raitiovaunuIndeksi: Float = 1f,
-        ): Hanke {
+        ): SavedHanke {
             this.tormaystarkasteluTulos =
                 TormaystarkasteluTulos(
                     perusIndeksi,
@@ -289,13 +289,13 @@ class HankeFactory(
          * Using the withGeneratedX methods is probably cleaner than overriding the parameters of
          * this method.
          */
-        fun Hanke.withYhteystiedot(
+        fun SavedHanke.withYhteystiedot(
             omistajat: List<Int> = listOf(1),
             rakennuttajat: List<Int> = listOf(2),
             toteuttajat: List<Int> = listOf(3),
             muut: List<Int> = listOf(4),
             mutator: HankeYhteystieto.() -> Unit = {},
-        ): Hanke {
+        ): SavedHanke {
             this.omistajat.addAll(HankeYhteystietoFactory.createDifferentiated(omistajat, mutator))
             this.rakennuttajat.addAll(
                 HankeYhteystietoFactory.createDifferentiated(rakennuttajat, mutator)
@@ -317,36 +317,36 @@ class HankeFactory(
          * HankeFactory.create().withGeneratedOmistajat(listOf(1,2))
          * ```
          */
-        fun Hanke.withGeneratedOmistajat(
+        fun SavedHanke.withGeneratedOmistajat(
             ids: List<Int>,
             mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke {
+        ): SavedHanke {
             omistajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
             return this
         }
 
         /**
-         * Same as [Hanke.withGeneratedOmistajat] but using varargs instead of a list.
+         * Same as [SavedHanke.withGeneratedOmistajat] but using varargs instead of a list.
          *
          * Example:
          * ```
          * HankeFactory.create().withGeneratedOmistajat(1,2)
          * ```
          */
-        fun Hanke.withGeneratedOmistajat(
+        fun SavedHanke.withGeneratedOmistajat(
             vararg ids: Int,
             mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke = withGeneratedOmistajat(ids.toList(), mutator)
+        ): SavedHanke = withGeneratedOmistajat(ids.toList(), mutator)
 
         /**
-         * Same as [Hanke.withGeneratedOmistajat] but adds a single omistaja.
+         * Same as [SavedHanke.withGeneratedOmistajat] but adds a single omistaja.
          *
          * Example:
          * ```
          * HankeFactory.create().withGeneratedOmistaja(1)
          * ```
          */
-        fun Hanke.withGeneratedOmistaja(id: Int, mutator: HankeYhteystieto.() -> Unit = {}): Hanke =
+        fun SavedHanke.withGeneratedOmistaja(id: Int, mutator: HankeYhteystieto.() -> Unit = {}): SavedHanke =
             withGeneratedOmistajat(listOf(id), mutator)
 
         /**
@@ -359,39 +359,39 @@ class HankeFactory(
          * HankeFactory.create().withGeneratedRakennuttajat(listOf(1,2))
          * ```
          */
-        fun Hanke.withGeneratedRakennuttajat(
+        fun SavedHanke.withGeneratedRakennuttajat(
             ids: List<Int>,
             mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke {
+        ): SavedHanke {
             rakennuttajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
             return this
         }
 
         /**
-         * Same as [Hanke.withGeneratedRakennuttajat] but using varargs instead of a list.
+         * Same as [SavedHanke.withGeneratedRakennuttajat] but using varargs instead of a list.
          *
          * Example:
          * ```
          * HankeFactory.create().withGeneratedRakennuttajat(1,2)
          * ```
          */
-        fun Hanke.withGeneratedRakennuttajat(
+        fun SavedHanke.withGeneratedRakennuttajat(
             vararg ids: Int,
             mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke = withGeneratedRakennuttajat(ids.toList(), mutator)
+        ): SavedHanke = withGeneratedRakennuttajat(ids.toList(), mutator)
 
         /**
-         * Same as [Hanke.withGeneratedRakennuttajat] but adds a single rakennuttaja.
+         * Same as [SavedHanke.withGeneratedRakennuttajat] but adds a single rakennuttaja.
          *
          * Example:
          * ```
          * HankeFactory.create().withGeneratedRakennuttaja(1)
          * ```
          */
-        fun Hanke.withGeneratedRakennuttaja(
+        fun SavedHanke.withGeneratedRakennuttaja(
             id: Int,
             mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke = withGeneratedRakennuttajat(listOf(id), mutator)
+        ): SavedHanke = withGeneratedRakennuttajat(listOf(id), mutator)
 
         /**
          * Add a number of toteuttaja to a hanke. Generates the yhteystiedot with
@@ -403,39 +403,39 @@ class HankeFactory(
          * HankeFactory.create().withGeneratedToteuttajat(listOf(1,2))
          * ```
          */
-        fun Hanke.withGeneratedToteuttajat(
+        fun SavedHanke.withGeneratedToteuttajat(
             ids: List<Int>,
             mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke {
+        ): SavedHanke {
             toteuttajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
             return this
         }
 
         /**
-         * Same as [Hanke.withGeneratedToteuttajat] but using varargs instead of a list.
+         * Same as [SavedHanke.withGeneratedToteuttajat] but using varargs instead of a list.
          *
          * Example:
          * ```
          * HankeFactory.create().withGeneratedToteuttajat(1,2)
          * ```
          */
-        fun Hanke.withGeneratedToteuttajat(
+        fun SavedHanke.withGeneratedToteuttajat(
             vararg ids: Int,
             mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke = withGeneratedToteuttajat(ids.toList(), mutator)
+        ): SavedHanke = withGeneratedToteuttajat(ids.toList(), mutator)
 
         /**
-         * Same as [Hanke.withGeneratedToteuttajat] but adds a single toteuttaja.
+         * Same as [SavedHanke.withGeneratedToteuttajat] but adds a single toteuttaja.
          *
          * Example:
          * ```
          * HankeFactory.create().withGeneratedToteuttaja(1)
          * ```
          */
-        fun Hanke.withGeneratedToteuttaja(
+        fun SavedHanke.withGeneratedToteuttaja(
             id: Int,
             mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke = withGeneratedToteuttajat(listOf(id), mutator)
+        ): SavedHanke = withGeneratedToteuttajat(listOf(id), mutator)
 
         private fun tormaysTarkastelu(
             id: Int = 1,

@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.NewYhteystieto
@@ -12,7 +12,7 @@ data class CreateHankeRequestBuilder(
     private val hankeService: HankeService?,
     private val request: CreateHankeRequest,
 ) {
-    fun save(): Hanke = hankeService!!.createHanke(request)
+    fun save(): SavedHanke = hankeService!!.createHanke(request)
 
     fun build(): CreateHankeRequest = request
 

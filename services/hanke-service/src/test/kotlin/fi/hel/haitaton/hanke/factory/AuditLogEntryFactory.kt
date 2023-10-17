@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 import fi.hel.haitaton.hanke.logging.AuditLogEntry
 import fi.hel.haitaton.hanke.logging.ContactWithRole
 import fi.hel.haitaton.hanke.logging.CustomerWithRole
@@ -35,7 +35,7 @@ object AuditLogEntryFactory {
             objectBefore = objectBefore,
         )
 
-    fun createReadEntriesForHanke(hanke: Hanke): List<AuditLogEntry> =
+    fun createReadEntriesForHanke(hanke: SavedHanke): List<AuditLogEntry> =
         hanke.extractYhteystiedot().map {
             createReadEntry(objectId = it.id!!, objectBefore = it.toJsonString())
         }

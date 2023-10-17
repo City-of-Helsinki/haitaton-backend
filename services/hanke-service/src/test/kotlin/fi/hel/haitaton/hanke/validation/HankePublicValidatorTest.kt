@@ -7,7 +7,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isGreaterThanOrEqualTo
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.SavedHanke
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
@@ -334,7 +334,7 @@ class HankePublicValidatorTest {
     fun `when hanke missing a mandatory field should return not ok and failed path`(
         path: String,
         case: String,
-        hanke: Hanke
+        hanke: SavedHanke
     ) {
         case.touch()
 
