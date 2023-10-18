@@ -5,10 +5,11 @@ import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.NewYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.geometriat
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.toHankeYhteystieto
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -252,8 +253,7 @@ class HankeControllerTest {
                 suunnitteluVaihe = null,
                 omistajat =
                     arrayListOf(
-                        HankeYhteystieto(
-                            id = null,
+                        NewYhteystieto(
                             nimi = "Pekka Pekkanen",
                             email = "pekka@pekka.fi",
                             puhelinnumero = "3212312",
@@ -274,7 +274,8 @@ class HankeControllerTest {
                     )
             )
         val mockedHanke = HankeFactory.create(id = 12, hankeTunnus = "JOKU12", nimi = request.nimi)
-        mockedHanke.omistajat = mutableListOf(request.omistajat!![0].copy(id = 1))
+        mockedHanke.omistajat =
+            mutableListOf(request.omistajat!![0].toHankeYhteystieto().copy(id = 1))
         every { hankeService.createHanke(request) }.returns(mockedHanke)
 
         val response: Hanke = hankeController.createHanke(request)

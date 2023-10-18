@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.domain
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.Yhteyshenkilo
 import io.swagger.v3.oas.annotations.media.Schema
 
 data class CreateHankeRequest(
@@ -33,20 +34,20 @@ data class CreateHankeRequest(
         description =
             "Project owners, contact information. At least one is required for the hanke to be published.",
     )
-    override val omistajat: List<HankeYhteystieto>? = null,
+    override val omistajat: List<NewYhteystieto>? = null,
     @field:Schema(
         description =
             "Property developers, contact information. Not required for the hanke to be published.",
     )
-    override val rakennuttajat: List<HankeYhteystieto>? = null,
+    override val rakennuttajat: List<NewYhteystieto>? = null,
     @field:Schema(
         description = "Executor of the work. Not required for the hanke to be published.",
     )
-    override val toteuttajat: List<HankeYhteystieto>? = null,
+    override val toteuttajat: List<NewYhteystieto>? = null,
     @field:Schema(
         description = "Other contacts. Not required for the hanke to be published.",
     )
-    override val muut: List<HankeYhteystieto>? = null,
+    override val muut: List<NewYhteystieto>? = null,
     @field:Schema(
         description = "Work site street address. Required for the hanke to be published.",
         maxLength = 2000,
@@ -62,3 +63,44 @@ data class CreateHankeRequest(
     )
     override val alueet: List<Hankealue>? = null,
 ) : BaseHanke
+
+data class NewYhteystieto(
+    @field:Schema(
+        description = "Contact name. Full name if an actual person.",
+    )
+    override val nimi: String,
+    @field:Schema(
+        description = "Contact email address",
+    )
+    override val email: String,
+    @field:Schema(
+        description = "Sub-contacts, i.e. contacts of this contact",
+    )
+    override val alikontaktit: List<Yhteyshenkilo> = emptyList(),
+    @field:Schema(
+        description = "Phone number",
+    )
+    override val puhelinnumero: String?,
+    @field:Schema(
+        description = "Organisation name",
+    )
+    override val organisaatioNimi: String?,
+    @field:Schema(
+        description = "Contact department",
+    )
+    override val osasto: String?,
+    @field:Schema(
+        description = "Role of the contact",
+    )
+    override val rooli: String?,
+    @field:Schema(
+        description = "Contact type",
+    )
+    override val tyyppi: YhteystietoTyyppi? = null,
+    @field:Schema(
+        description = "Business id, for contacts with tyyppi other than YKSITYISHENKILO",
+    )
+    override val ytunnus: String? = null,
+) : Yhteystieto {
+    override val id by lazy { null }
+}
