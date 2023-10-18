@@ -48,10 +48,20 @@ interface Yhteystieto : HasId<Int> {
     /**
      * Returns true if at least one Yhteystieto-field is non-null, non-empty and
      * non-whitespace-only.
+     *
+     * Id and tyyppi are not considered concrete information by themselves, so they are ignored
+     * here.
+     *
+     * Contact people are handled separately, so they are not included.
      */
     @JsonIgnore
     fun isAnyFieldSet(): Boolean =
-        isAnyMandatoryFieldSet() || !organisaatioNimi.isNullOrBlank() || !osasto.isNullOrBlank()
+        isAnyMandatoryFieldSet() ||
+            !puhelinnumero.isNullOrBlank() ||
+            !organisaatioNimi.isNullOrBlank() ||
+            !osasto.isNullOrBlank() ||
+            !rooli.isNullOrBlank() ||
+            !ytunnus.isNullOrBlank()
 
     /**
      * Returns true if at least one mandatory Yhteystieto-field is non-null, non-empty and
