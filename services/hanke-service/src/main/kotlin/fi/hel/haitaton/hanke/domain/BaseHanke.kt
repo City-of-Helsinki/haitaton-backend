@@ -23,15 +23,14 @@ interface HasYhteystiedot {
     fun extractYhteystiedot(): List<Yhteystieto> =
         listOfNotNull(omistajat, rakennuttajat, toteuttajat, muut).flatten()
 
-    fun yhteystiedotByType(): Map<ContactType, List<Yhteystieto>> {
-        return mapOf(
+    fun yhteystiedotByType(): Map<ContactType, List<Yhteystieto>> =
+        mapOf(
                 ContactType.OMISTAJA to omistajat,
                 ContactType.RAKENNUTTAJA to rakennuttajat,
                 ContactType.TOTEUTTAJA to toteuttajat,
                 ContactType.MUU to muut,
             )
             .mapValues { (_, yhteystiedot) -> yhteystiedot ?: listOf() }
-    }
 }
 
 interface Yhteystieto : HasId<Int> {
