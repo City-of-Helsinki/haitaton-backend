@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.domain
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
-import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.SuunnitteluVaihe
@@ -137,12 +136,4 @@ data class Hanke(
 
     override fun extractYhteystiedot(): List<HankeYhteystieto> =
         listOfNotNull(omistajat, rakennuttajat, toteuttajat, muut).flatten()
-
-    override fun yhteystiedotByType(): Map<ContactType, List<HankeYhteystieto>> =
-        mapOf(
-            ContactType.OMISTAJA to omistajat,
-            ContactType.RAKENNUTTAJA to rakennuttajat,
-            ContactType.TOTEUTTAJA to toteuttajat,
-            ContactType.MUU to muut,
-        )
 }

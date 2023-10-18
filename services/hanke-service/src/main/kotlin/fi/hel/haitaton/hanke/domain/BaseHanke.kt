@@ -51,18 +51,12 @@ interface Yhteystieto : HasId<Int> {
      * non-whitespace-only.
      */
     @JsonIgnore
-    fun isAnyFieldSet(): Boolean {
-        return isAnyMandatoryFieldSet() ||
-            !organisaatioNimi.isNullOrBlank() ||
-            !osasto.isNullOrBlank()
-    }
+    fun isAnyFieldSet(): Boolean =
+        isAnyMandatoryFieldSet() || !organisaatioNimi.isNullOrBlank() || !osasto.isNullOrBlank()
 
     /**
      * Returns true if at least one mandatory Yhteystieto-field is non-null, non-empty and
      * non-whitespace-only.
      */
-    @JsonIgnore
-    fun isAnyMandatoryFieldSet(): Boolean {
-        return nimi.isNotBlank() || email.isNotBlank()
-    }
+    @JsonIgnore fun isAnyMandatoryFieldSet(): Boolean = nimi.isNotBlank() || email.isNotBlank()
 }
