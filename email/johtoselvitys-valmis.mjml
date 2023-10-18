@@ -6,9 +6,7 @@
         <mj-include path="common/header-content.mjml"/>
         <mj-section>
             <mj-column>
-                <mj-text mj-class="header-txt">Haitaton: Johtoselvitys
-                    {{applicationIdentifier}}
-                </mj-text>
+                <mj-text mj-class="header-txt">Johtoselvitys {{applicationIdentifier}}</mj-text>
                 <mj-text mj-class="basic-txt">
                     Hakemanne johtoselvitys {{applicationIdentifier}} on käsitelty. Lataa selvitys Haitattomasta <a
                         href="{{baseUrl}}/fi/hakemus/{{applicationId}}">{{baseUrl}}/fi/hakemus/{{applicationId}}

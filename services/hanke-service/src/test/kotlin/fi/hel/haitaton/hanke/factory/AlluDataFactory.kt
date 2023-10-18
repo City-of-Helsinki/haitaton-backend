@@ -7,7 +7,6 @@ import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationArea
-import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
@@ -20,7 +19,7 @@ import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.domain.ApplicationUserContact
+import fi.hel.haitaton.hanke.domain.UserContact
 import java.time.ZonedDateTime
 import org.geojson.Polygon
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
@@ -336,36 +335,16 @@ class AlluDataFactory(
                 description = description,
             )
 
-        val hakijaApplicationContact =
-            ApplicationUserContact(
-                "Henri Hakija",
-                "henri.hakija@mail.com",
-                ApplicationContactType.HAKIJA
-            )
+        val hakijaContact = UserContact("Henri Hakija", "henri.hakija@mail.com")
 
-        val rakennuttajaApplicationContact =
-            ApplicationUserContact(
-                "Rane Rakennuttaja",
-                "rane.rakennuttaja@mail.com",
-                ApplicationContactType.RAKENNUTTAJA
-            )
+        val rakennuttajaContact = UserContact("Rane Rakennuttaja", "rane.rakennuttaja@mail.com")
 
-        val asianhoitajaApplicationContact =
-            ApplicationUserContact(
-                "Anssi Asianhoitaja",
-                "anssi.asianhoitaja@mail.com",
-                ApplicationContactType.ASIANHOITAJA
-            )
+        val asianhoitajaContact = UserContact("Anssi Asianhoitaja", "anssi.asianhoitaja@mail.com")
 
-        val suorittajaApplicationContact =
-            ApplicationUserContact(
-                "Timo Työnsuorittaja",
-                "timo.työnsuorittaja@mail.com",
-                ApplicationContactType.TYON_SUORITTAJA
-            )
+        val suorittajaContact = UserContact("Timo Työnsuorittaja", "timo.työnsuorittaja@mail.com")
 
         val hakijaCustomerContact: CustomerWithContacts =
-            with(hakijaApplicationContact) {
+            with(hakijaContact) {
                 val (firstName, lastName) = name.split(" ")
                 createCompanyCustomer()
                     .withContacts(
@@ -379,7 +358,7 @@ class AlluDataFactory(
             }
 
         val suorittajaCustomerContact: CustomerWithContacts =
-            with(suorittajaApplicationContact) {
+            with(suorittajaContact) {
                 val (firstName, lastName) = name.split(" ")
                 createCompanyCustomer()
                     .withContacts(
@@ -393,7 +372,7 @@ class AlluDataFactory(
             }
 
         val asianHoitajaCustomerContact: CustomerWithContacts =
-            with(asianhoitajaApplicationContact) {
+            with(asianhoitajaContact) {
                 val (firstName, lastName) = name.split(" ")
                 createCompanyCustomer()
                     .withContacts(
@@ -407,7 +386,7 @@ class AlluDataFactory(
             }
 
         val rakennuttajaCustomerContact: CustomerWithContacts =
-            with(rakennuttajaApplicationContact) {
+            with(rakennuttajaContact) {
                 val (firstName, lastName) = name.split(" ")
                 createCompanyCustomer()
                     .withContacts(

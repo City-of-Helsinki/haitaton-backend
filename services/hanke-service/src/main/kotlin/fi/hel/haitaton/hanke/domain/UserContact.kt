@@ -1,67 +1,30 @@
 package fi.hel.haitaton.hanke.domain
 
-import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
 
-sealed interface UserContact {
-    val name: String
-    val email: String
-}
-
-data class HankeUserContact(override val name: String, override val email: String) : UserContact {
+data class UserContact(val name: String, val email: String) {
     companion object {
-        fun from(name: String?, email: String?): HankeUserContact? =
+        fun from(name: String?, email: String?): UserContact? =
             when {
                 name.isNullOrBlank() || email.isNullOrBlank() -> null
-                else -> HankeUserContact(name, email)
-            }
-    }
-}
-
-data class ApplicationUserContact(
-    override val name: String,
-    override val email: String,
-    val type: ApplicationContactType
-) : UserContact {
-    companion object {
-        fun from(
-            name: String?,
-            email: String?,
-            type: ApplicationContactType
-        ): ApplicationUserContact? =
-            when {
-                name.isNullOrBlank() || email.isNullOrBlank() -> null
-                else -> ApplicationUserContact(name, email, type)
+                else -> UserContact(name, email)
             }
     }
 }
 
 /**
- * Map application contacts to [ApplicationUserContact] set containing information on contact type.
+ * An extension function to get email addresses from customer contact persons. Returns a set of
+ * emails that:
+ * - are not null, empty or blank.
+ * - do not match the optional [omit] argument.
  */
-fun ApplicationData.typedContacts(omit: String? = null): Set<ApplicationUserContact> =
+fun ApplicationData.contactPersonEmails(omit: String? = null): Set<String> =
     when (this) {
         is CableReportApplicationData ->
-            customersByRole()
-                .flatMap { (role, customer) -> customer.contactsTypedAs(role) }
-                .remove(omit)
-                .toSet()
+            customersWithContacts().flatMap { it.contactPersonEmails(omit) }.toSet()
     }
 
-/** Filter contacts whose email does not exist in the other set. */
-fun Set<ApplicationUserContact>.subtractByEmail(
-    other: Set<ApplicationUserContact>
-): Set<ApplicationUserContact> {
-    val otherEmails = other.map { it.email }
-    return filterNot { contact -> contact.email in otherEmails }.toSet()
-}
-
-private fun List<ApplicationUserContact>.remove(email: String?) =
-    if (email == null) this else filter { it.email != email }
-
-private fun CustomerWithContacts.contactsTypedAs(
-    type: ApplicationContactType
-): List<ApplicationUserContact> =
-    contacts.mapNotNull { ApplicationUserContact.from(it.fullName(), it.email, type) }
+private fun CustomerWithContacts.contactPersonEmails(omit: String?) =
+    contacts.mapNotNull { if (it.email.isNullOrBlank() || it.email == omit) null else it.email }
