@@ -84,7 +84,7 @@ data class Hanke(
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Indicates if Hanke data is generated, set by the service.")
     var generated: Boolean = false,
-) : HasId<Int>, BaseHanke {
+) : HasId<Int>, BaseHanke, HasYhteystiedot {
 
     // --------------- Yhteystiedot -----------------
     @JsonView(NotInChangeLogView::class)
@@ -153,4 +153,7 @@ data class Hanke(
     fun toLogString(): String {
         return toString()
     }
+
+    override fun extractYhteystiedot(): List<HankeYhteystieto> =
+        listOfNotNull(omistajat, rakennuttajat, toteuttajat, muut).flatten()
 }

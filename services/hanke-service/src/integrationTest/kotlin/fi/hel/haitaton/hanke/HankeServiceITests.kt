@@ -525,11 +525,7 @@ class HankeServiceITests : DatabaseTest() {
         val ytid1 = returnedHanke.omistajat[0].id!!
 
         // Clear all main fields (note, not id!) in the second yhteystieto:
-        returnedHanke.omistajat[1].nimi = ""
-        returnedHanke.omistajat[1].email = ""
-        returnedHanke.omistajat[1].puhelinnumero = ""
-        returnedHanke.omistajat[1].organisaatioNimi = ""
-        returnedHanke.omistajat[1].osasto = ""
+        returnedHanke.omistajat[1] = clearYhteystieto(returnedHanke.omistajat[1])
 
         // Call update, get the returned object, make some general checks:
         val returnedHanke2 = hankeService.updateHanke(returnedHanke)
@@ -574,12 +570,8 @@ class HankeServiceITests : DatabaseTest() {
         val ytid2 = returnedHanke.rakennuttajat[0].id!!
         assertThat(ytid1).isNotEqualTo(ytid2)
 
-        // Remove the rakennuttaja-yhteystieto:
-        returnedHanke.rakennuttajat[0].nimi = ""
-        returnedHanke.rakennuttajat[0].email = ""
-        returnedHanke.rakennuttajat[0].puhelinnumero = ""
-        returnedHanke.rakennuttajat[0].organisaatioNimi = ""
-        returnedHanke.rakennuttajat[0].osasto = ""
+        // Remove information from the rakennuttaja-yhteystieto:
+        returnedHanke.rakennuttajat[0] = clearYhteystieto(returnedHanke.rakennuttajat[0])
 
         // Call update, get the returned object, make some general checks:
         val returnedHanke2 = hankeService.updateHanke(returnedHanke)
@@ -733,13 +725,7 @@ class HankeServiceITests : DatabaseTest() {
 
         // Delete the other yhteystieto. This should create one update in log, with null
         // objectAfter.
-        hankeAfterUpdate.omistajat[1].apply {
-            nimi = ""
-            puhelinnumero = ""
-            email = ""
-            organisaatioNimi = ""
-            osasto = ""
-        }
+        hankeAfterUpdate.omistajat[1] = clearYhteystieto(hankeAfterUpdate.omistajat[1])
         // Call update, get the returned object:
         val hankeAfterDelete = hankeService.updateHanke(hankeAfterUpdate)
         // Check that first yhteystieto remains, second one got removed:
@@ -825,13 +811,7 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(auditLogEvents[1].target.objectAfter).contains("Muhaha-Evil-Change")
 
         // Try to delete the yhteystieto. It should fail and add a new log entry.
-        hankeWithLockedYT.rakennuttajat[0].apply {
-            nimi = ""
-            puhelinnumero = ""
-            email = ""
-            organisaatioNimi = ""
-            osasto = ""
-        }
+        hankeWithLockedYT.rakennuttajat[0] = clearYhteystieto(hankeWithLockedYT.rakennuttajat[0])
         assertThatExceptionOfType(HankeYhteystietoProcessingRestrictedException::class.java)
             .isThrownBy { hankeService.updateHanke(hankeWithLockedYT) }
         // There should be one more entry in the audit log.
@@ -1582,6 +1562,25 @@ class HankeServiceITests : DatabaseTest() {
              "email": "yhteys-email$i",
              "puhelinnumero": "010$i$i$i$i$i$i$i"
             }]"""
+
+    /**
+     * Clear all information fields from the yhteystieto. Returns a copy.
+     *
+     * The fields are set to empty strings instead of nulls, since nulls are interpreted as "no
+     * change" in update operations.
+     *
+     * Follows [fi.hel.haitaton.hanke.domain.Yhteystieto.isAnyFieldSet] in which fields are emptied.
+     */
+    private fun clearYhteystieto(yhteystieto: HankeYhteystieto) =
+        yhteystieto.copy(
+            nimi = "",
+            email = "",
+            puhelinnumero = "",
+            organisaatioNimi = "",
+            osasto = "",
+            rooli = "",
+            ytunnus = "",
+        )
 
     /**
      * Find all audit logs for a specific object type. Getting all and filtering would obviously not
