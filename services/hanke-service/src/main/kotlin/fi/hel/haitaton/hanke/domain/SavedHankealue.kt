@@ -74,7 +74,9 @@ fun List<Hankealue>.kaistaPituusHaitat(): Set<KaistajarjestelynPituus> {
     return mapNotNull { it.kaistaPituusHaitta }.toSet()
 }
 
-fun List<Hankealue>.geometriat(): List<Geometriat> = mapNotNull { it.geometriat }
+fun List<SavedHankealue>.geometriat(): List<Geometriat> = mapNotNull { it.geometriat }
+
+fun List<SavedHankealue>.geometriaIds(): Set<Int> = mapNotNull { it.geometriat?.id }.toSet()
 
 fun List<Hankealue>.haittaAjanKestoDays(): Int? =
     if (alkuPvm() != null && loppuPvm() != null) {

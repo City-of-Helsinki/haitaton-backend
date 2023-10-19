@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.geometria.Geometriat
 import java.util.Collections
 import org.springframework.jdbc.core.JdbcOperations
 
@@ -8,33 +7,30 @@ import org.springframework.jdbc.core.JdbcOperations
 class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperations) :
     TormaystarkasteluTormaysService {
 
-    override fun anyIntersectsYleinenKatuosa(geometriat: List<Geometriat>) =
-        anyIntersectsWith(geometriatToIdSets(geometriat), "tormays_ylre_parts_polys")
+    override fun anyIntersectsYleinenKatuosa(geometriaIds: Set<Int>) =
+        anyIntersectsWith(geometriaIds, "tormays_ylre_parts_polys")
 
-    override fun maxIntersectingYleinenkatualueKatuluokka(geometriat: List<Geometriat>) =
-        getDistinctValuesIntersectingRows(
-                geometriatToIdSets(geometriat),
-                "tormays_ylre_classes_polys",
-                "ylre_class"
-            )
+    override fun maxIntersectingYleinenkatualueKatuluokka(geometriaIds: Set<Int>) =
+        getDistinctValuesIntersectingRows(geometriaIds, "tormays_ylre_classes_polys", "ylre_class")
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
-    override fun maxIntersectingLiikenteellinenKatuluokka(geometriat: List<Geometriat>) =
+    override fun maxIntersectingLiikenteellinenKatuluokka(geometriaIds: Set<Int>) =
         getDistinctValuesIntersectingRows(
-                geometriatToIdSets(geometriat),
+                geometriaIds,
                 "tormays_street_classes_polys",
                 "street_class"
             )
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
-    override fun anyIntersectsWithKantakaupunki(geometriat: List<Geometriat>) =
-        anyIntersectsWith(geometriatToIdSets(geometriat), "tormays_central_business_area_polys")
+    override fun anyIntersectsWithKantakaupunki(geometriaIds: Set<Int>) =
+        anyIntersectsWith(geometriaIds, "tormays_central_business_area_polys")
 
     override fun maxLiikennemaara(
-        geometriat: List<Geometriat>,
+        geometriaIds: Set<Int>,
         etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
     ): Int? {
-        val placeholders = Collections.nCopies(geometriat.size, "?").joinToString(", ")
+        if (geometriaIds.isEmpty()) return null
+        val placeholders = Collections.nCopies(geometriaIds.size, "?").joinToString(", ")
         val tableName = "tormays_volumes${etaisyys.radius}_polys"
         with(jdbcOperations) {
             return queryForObject(
@@ -45,19 +41,20 @@ class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperatio
             AND ST_Intersects($tableName.geom, hankegeometria.geometria)
             """.trimIndent(),
                     Integer::class.java,
-                    *geometriatToIdSets(geometriat).toTypedArray()
+                    *geometriaIds.toTypedArray()
                 )
                 ?.toInt()
         }
     }
 
-    override fun anyIntersectsCriticalBusRoutes(geometriat: List<Geometriat>) =
-        anyIntersectsWith(geometriatToIdSets(geometriat), "tormays_critical_area_polys")
+    override fun anyIntersectsCriticalBusRoutes(geometriaIds: Set<Int>) =
+        anyIntersectsWith(geometriaIds, "tormays_critical_area_polys")
 
     override fun getIntersectingBusRoutes(
-        geometriat: List<Geometriat>
+        geometriaIds: Set<Int>
     ): Set<TormaystarkasteluBussireitti> {
-        val placeholders = Collections.nCopies(geometriat.size, "?").joinToString(", ")
+        if (geometriaIds.isEmpty()) return setOf()
+        val placeholders = Collections.nCopies(geometriaIds.size, "?").joinToString(", ")
         with(jdbcOperations) {
             // TODO: DISTINCT ON (route_id, direction_id) at the database level
             return query(
@@ -81,32 +78,30 @@ class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperatio
                             TormaystarkasteluBussiRunkolinja.valueOfRunkolinja(rs.getString(5))!!
                         )
                     },
-                    *geometriatToIdSets(geometriat).toTypedArray()
+                    *geometriaIds.toTypedArray()
                 )
                 .toHashSet()
         }
     }
 
-    override fun maxIntersectingTramByLaneType(geometriat: List<Geometriat>) =
-        getDistinctValuesIntersectingRows(
-                geometriatToIdSets(geometriat),
-                "tormays_trams_polys",
-                "lane"
-            )
-            .maxOfOrNull { TormaystarkasteluRaitiotiekaistatyyppi.valueOfKaistatyyppi(it).value }
+    override fun maxIntersectingTramByLaneType(geometriaIds: Set<Int>) =
+        getDistinctValuesIntersectingRows(geometriaIds, "tormays_trams_polys", "lane").maxOfOrNull {
+            TormaystarkasteluRaitiotiekaistatyyppi.valueOfKaistatyyppi(it).value
+        }
 
-    override fun anyIntersectsWithCyclewaysPriority(geometriat: List<Geometriat>) =
-        anyIntersectsWith(geometriatToIdSets(geometriat), "tormays_cycleways_priority_polys")
+    override fun anyIntersectsWithCyclewaysPriority(geometriaIds: Set<Int>) =
+        anyIntersectsWith(geometriaIds, "tormays_cycleways_priority_polys")
 
-    override fun anyIntersectsWithCyclewaysMain(geometriat: List<Geometriat>) =
-        anyIntersectsWith(geometriatToIdSets(geometriat), "tormays_cycleways_main_polys")
+    override fun anyIntersectsWithCyclewaysMain(geometriaIds: Set<Int>) =
+        anyIntersectsWith(geometriaIds, "tormays_cycleways_main_polys")
 
     private fun getDistinctValuesIntersectingRows(
-        geometriat: Set<Int>,
+        geometriaIds: Set<Int>,
         table: String,
         column: String
     ): List<String> {
-        val placeholders = Collections.nCopies(geometriat.size, "?").joinToString(", ")
+        if (geometriaIds.isEmpty()) return listOf()
+        val placeholders = Collections.nCopies(geometriaIds.size, "?").joinToString(", ")
         with(jdbcOperations) {
             return query(
                 """
@@ -116,12 +111,13 @@ class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperatio
             AND ST_Intersects($table.geom, hankegeometria.geometria)
             """.trimIndent(),
                 { rs, _ -> rs.getString(1) },
-                *geometriat.toTypedArray()
+                *geometriaIds.toTypedArray()
             )
         }
     }
 
     private fun anyIntersectsWith(geometriat: Set<Int>, table: String): Boolean {
+        if (geometriat.isEmpty()) return false
         val placeholders = Collections.nCopies(geometriat.size, "?").joinToString(", ")
         return jdbcOperations.queryForObject(
             """
@@ -133,10 +129,6 @@ class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperatio
             Int::class.java,
             *geometriat.toTypedArray()
         )!! > 0
-    }
-
-    private fun geometriatToIdSets(geometriat: List<Geometriat>): Set<Int> {
-        return geometriat.map { it.id }.filterNotNull().toSet()
     }
 }
 

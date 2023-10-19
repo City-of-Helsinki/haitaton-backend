@@ -1,18 +1,20 @@
 package fi.hel.haitaton.hanke.geometria
 
-import assertk.assertAll
+import assertk.all
 import assertk.assertThat
-import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
+import assertk.assertions.isNotSameAs
 import assertk.assertions.isNull
+import assertk.assertions.prop
 import fi.hel.haitaton.hanke.asJsonResource
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.runs
 import io.mockk.verify
+import io.mockk.verifySequence
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 import org.springframework.security.core.Authentication
@@ -46,51 +48,54 @@ internal class GeometriatServiceImplTest {
     fun `save Geometriat OK - with old version`() {
         val geometriaId = 42
         val geometriat = loadGeometriat()
-        geometriat.id = geometriaId
+        geometriat.id = null
         geometriat.version = null
         geometriat.createdAt = null
         geometriat.modifiedAt = null
-        val oldGeometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                Geometriat::class.java
-            )
+        val oldGeometriat = loadGeometriat()
         oldGeometriat.id = geometriaId
         oldGeometriat.version = 0
 
         every { geometriatDao.retrieveGeometriat(geometriaId) } returns oldGeometriat
         every { geometriatDao.updateGeometriat(any()) } just runs
 
-        val savedHankeGeometria = service.saveGeometriat(geometriat)
+        val savedHankeGeometria = service.saveGeometriat(geometriat, geometriaId)
 
-        verify { geometriatDao.retrieveGeometriat(geometriaId) }
-        verify { geometriatDao.updateGeometriat(any()) }
-        verify(exactly = 0) { geometriatDao.createGeometriat(any()) }
-        assertAll {
-            assertThat(savedHankeGeometria.version).isEqualTo(1)
-            assertThat(savedHankeGeometria.createdAt).isNotNull()
-            assertThat(savedHankeGeometria.modifiedAt).isNotNull()
-            assertThat(savedHankeGeometria.featureCollection).isNotNull()
+        verifySequence {
+            geometriatDao.retrieveGeometriat(geometriaId)
+            geometriatDao.updateGeometriat(any())
+        }
+        assertThat(savedHankeGeometria).isNotNull().all {
+            prop(Geometriat::version).isEqualTo(1)
+            prop(Geometriat::createdAt).isNotNull()
+            prop(Geometriat::modifiedAt).isNotNull()
+            prop(Geometriat::featureCollection).isNotNull()
+            isNotSameAs(geometriat)
         }
     }
 
     @Test
     fun `save Geometriat OK - without old version`() {
         val geometriat = loadGeometriat()
+        geometriat.id = 666
         geometriat.version = null
         geometriat.createdAt = null
         geometriat.modifiedAt = null
+        every { geometriatDao.createGeometriat(any()) } answers
+            {
+                firstArg<Geometriat>().apply { id = 42 }
+            }
 
-        every { geometriatDao.createGeometriat(any()) } returns geometriat
+        val savedHankeGeometria = service.saveGeometriat(geometriat, null)
 
-        val savedHankeGeometria = service.saveGeometriat(geometriat)
-
-        verify(inverse = true) { geometriatDao.retrieveGeometriat(any()) }
-        verify { geometriatDao.createGeometriat(any()) }
-        assertAll {
-            assertThat(savedHankeGeometria.version).isEqualTo(0)
-            assertThat(savedHankeGeometria.createdAt).isNotNull()
-            assertThat(savedHankeGeometria.modifiedAt).isNull()
-            assertThat(savedHankeGeometria.featureCollection).isNotNull()
+        verifySequence { geometriatDao.createGeometriat(any()) }
+        assertThat(savedHankeGeometria).isNotNull().all {
+            prop(Geometriat::id).isEqualTo(42)
+            prop(Geometriat::version).isEqualTo(0)
+            prop(Geometriat::createdAt).isNotNull()
+            prop(Geometriat::modifiedAt).isNull()
+            prop(Geometriat::featureCollection).isNotNull()
+            isNotSameAs(geometriat)
         }
     }
 
@@ -107,17 +112,13 @@ internal class GeometriatServiceImplTest {
         every { geometriatDao.retrieveGeometriat(geometriatId) } returns oldGeometriat
         every { geometriatDao.deleteGeometriat(any()) } just runs
 
-        val savedHankeGeometria = service.saveGeometriat(geometriat)
+        val savedHankeGeometria = service.saveGeometriat(geometriat, geometriatId)
 
-        verify { geometriatDao.retrieveGeometriat(geometriatId) }
-        verify { geometriatDao.deleteGeometriat(any()) }
-        assertAll {
-            assertThat(savedHankeGeometria.version).isEqualTo(1)
-            assertThat(savedHankeGeometria.createdAt).isNotNull()
-            assertThat(savedHankeGeometria.modifiedAt).isNotNull()
-            assertThat(savedHankeGeometria.featureCollection).isNotNull()
-            assertThat(savedHankeGeometria.featureCollection!!.features).isEmpty()
+        verifySequence {
+            geometriatDao.retrieveGeometriat(geometriatId)
+            geometriatDao.deleteGeometriat(oldGeometriat)
         }
+        assertThat(savedHankeGeometria).isNull()
     }
 
     @Test
@@ -136,18 +137,20 @@ internal class GeometriatServiceImplTest {
         every { geometriatDao.retrieveGeometriat(geometriatId) } returns oldGeometriat
         every { geometriatDao.updateGeometriat(any()) } just runs
 
-        val savedHankeGeometria = service.saveGeometriat(geometriat)
+        val savedHankeGeometria = service.saveGeometriat(geometriat, geometriatId)
 
         verify { geometriatDao.retrieveGeometriat(geometriatId) }
         verify { geometriatDao.updateGeometriat(any()) }
         verify(exactly = 0) { geometriatDao.deleteGeometriat(any()) }
         verify(exactly = 0) { geometriatDao.createGeometriat(any()) }
-        assertAll {
-            assertThat(savedHankeGeometria.version).isEqualTo(2)
-            assertThat(savedHankeGeometria.createdAt).isNotNull()
-            assertThat(savedHankeGeometria.modifiedAt).isNotNull()
-            assertThat(savedHankeGeometria.featureCollection).isNotNull()
-            assertThat(savedHankeGeometria.featureCollection!!.features).isNotEmpty()
+        assertThat(savedHankeGeometria).isNotNull().all {
+            prop(Geometriat::version).isEqualTo(2)
+            prop(Geometriat::createdAt).isNotNull()
+            prop(Geometriat::modifiedAt).isNotNull()
+            prop(Geometriat::featureCollection).isNotNull().all {
+                transform("features") { it.features }.isNotEmpty()
+            }
+            isNotSameAs(geometriat)
         }
     }
 }

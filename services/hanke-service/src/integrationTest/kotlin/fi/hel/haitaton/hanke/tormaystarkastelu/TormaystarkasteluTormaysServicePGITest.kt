@@ -24,12 +24,12 @@ internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
 
     @Autowired private lateinit var tormaysService: TormaystarkasteluTormaysService
 
-    private fun createHankeGeometria(): Geometriat {
+    private fun createHankeGeometria(): Set<Int> {
         val geometriat =
             "/fi/hel/haitaton/hanke/tormaystarkastelu/hankeGeometriat.json".asJsonResource(
                 Geometriat::class.java
             )
-        return geometriatDao.createGeometriat(geometriat)
+        return setOf(geometriatDao.createGeometriat(geometriat).id!!)
     }
 
     /**
@@ -38,15 +38,15 @@ internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
      */
     @Test
     fun yleisetKatuosat() {
-        val geometriat = createHankeGeometria()
-        assertThat(tormaysService.anyIntersectsYleinenKatuosa(arrayListOf(geometriat))).isTrue()
+        val geometriaIds = createHankeGeometria()
+        assertThat(tormaysService.anyIntersectsYleinenKatuosa(geometriaIds)).isTrue()
     }
 
     /** Test manually what general street classes (ylre_classes) Hanke geometries are located on */
     @Test
     fun yleisetKatuluokat() {
-        val geometriat = createHankeGeometria()
-        assertThat(tormaysService.maxIntersectingYleinenkatualueKatuluokka(arrayListOf(geometriat)))
+        val geometriaIds = createHankeGeometria()
+        assertThat(tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriaIds))
             .isEqualTo(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value)
     }
 
@@ -54,7 +54,7 @@ internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
     @Test
     fun katuluokat() {
         val geometriat = createHankeGeometria()
-        assertThat(tormaysService.maxIntersectingLiikenteellinenKatuluokka(arrayListOf(geometriat)))
+        assertThat(tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat))
             .isEqualTo(TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value)
     }
 
@@ -64,8 +64,8 @@ internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
      */
     @Test
     fun kantakaupunki() {
-        val geometriat = createHankeGeometria()
-        assertThat(tormaysService.anyIntersectsWithKantakaupunki(arrayListOf(geometriat))).isTrue()
+        val geometriaIds = createHankeGeometria()
+        assertThat(tormaysService.anyIntersectsWithKantakaupunki(geometriaIds)).isTrue()
     }
 
     /**
@@ -73,10 +73,10 @@ internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
      */
     @Test
     fun liikennemaarat15() {
-        val geometriat = createHankeGeometria()
+        val geometriaIds = createHankeGeometria()
         assertThat(
                 tormaysService.maxLiikennemaara(
-                    arrayListOf(geometriat),
+                    geometriaIds,
                     TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
                 )
             )
@@ -88,10 +88,10 @@ internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
      */
     @Test
     fun liikennemaarat30() {
-        val geometriat = createHankeGeometria()
+        val geometriaIds = createHankeGeometria()
         assertThat(
                 tormaysService.maxLiikennemaara(
-                    arrayListOf(geometriat),
+                    geometriaIds,
                     TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30
                 )
             )
@@ -101,15 +101,15 @@ internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
     /** Test manually what Hanke geometries are located on critical area for buses */
     @Test
     fun bussiliikenteenKannaltaKriittinenAlue() {
-        val geometriat = createHankeGeometria()
-        assertThat(tormaysService.anyIntersectsCriticalBusRoutes(arrayListOf(geometriat))).isFalse()
+        val geometriaIds = createHankeGeometria()
+        assertThat(tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds)).isFalse()
     }
 
     /** Test manually what bus routes each Hanke geometry is located on */
     @Test
     fun bussit() {
-        val geometriat = createHankeGeometria()
-        val bussit = tormaysService.getIntersectingBusRoutes(arrayListOf(geometriat))
+        val geometriaIds = createHankeGeometria()
+        val bussit = tormaysService.getIntersectingBusRoutes(geometriaIds)
         assertThat(bussit.size).isEqualTo(3)
         assertThat(bussit.map { it.reittiId }).containsOnly("1016", "1023N")
     }
@@ -117,17 +117,16 @@ internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
     /** Test manually what tram lane types each Hanke geometry is located on */
     @Test
     fun raitiotiet() {
-        val geometriat = createHankeGeometria()
-        assertThat(tormaysService.maxIntersectingTramByLaneType(arrayListOf(geometriat)))
+        val geometriaIds = createHankeGeometria()
+        assertThat(tormaysService.maxIntersectingTramByLaneType(geometriaIds))
             .isEqualTo(TormaystarkasteluRaitiotiekaistatyyppi.JAETTU.value)
     }
 
     /** Test manually what kind of cycleways Hanke geometries are located on */
     @Test
     fun pyorailyreitit() {
-        val geometriat = createHankeGeometria()
-        assertThat(tormaysService.anyIntersectsWithCyclewaysPriority(arrayListOf(geometriat)))
-            .isTrue()
-        assertThat(tormaysService.anyIntersectsWithCyclewaysMain(arrayListOf(geometriat))).isTrue()
+        val geometriaIds = createHankeGeometria()
+        assertThat(tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds)).isTrue()
+        assertThat(tormaysService.anyIntersectsWithCyclewaysMain(geometriaIds)).isTrue()
     }
 }

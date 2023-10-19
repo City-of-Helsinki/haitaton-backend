@@ -1,8 +1,12 @@
 package fi.hel.haitaton.hanke.geometria
 
+import fi.hel.haitaton.hanke.domain.HasFeatures
+
 interface GeometriatService {
     /** Insert/Update geometries. */
-    fun saveGeometriat(geometriat: Geometriat): Geometriat?
+    fun saveGeometriat(geometriat: HasFeatures, existingId: Int?): Geometriat?
+
+    fun createGeometria(geometriat: HasFeatures): Geometriat
 
     /** Loads single geometry object. */
     fun getGeometriat(geometriatId: Int): Geometriat?

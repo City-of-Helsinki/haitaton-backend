@@ -12,7 +12,6 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.domain.geometriat
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import org.geojson.Point
 import org.junit.jupiter.api.Test
@@ -88,7 +87,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
         loadedGeometriat.featureCollection!!
             .features
             .add(loadedGeometriat.featureCollection!!.features[0])
-        geometriatService.saveGeometriat(loadedGeometriat)
+        geometriatService.saveGeometriat(loadedGeometriat, loadedGeometriat.id)
 
         // load
         loadedGeometriat = geometriatService.getGeometriat(loadedGeometriat.id!!)
@@ -135,7 +134,9 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
         geometriat.modifiedAt = null
         geometriat.featureCollection?.crs?.properties = null
 
-        assertThrows<GeometriaValidationException> { geometriatService.saveGeometriat(geometriat) }
+        assertThrows<GeometriaValidationException> {
+            geometriatService.saveGeometriat(geometriat, null)
+        }
     }
 
     @Test
@@ -150,7 +151,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
         geometriat.featureCollection?.crs?.properties?.set("name", "urn:ogc:def:crs:EPSG::0000")
 
         assertThrows<UnsupportedCoordinateSystemException> {
-            geometriatService.saveGeometriat(geometriat)
+            geometriatService.saveGeometriat(geometriat, null)
         }
     }
 
