@@ -190,7 +190,7 @@ open class HankeServiceImpl(
         result.tarinaHaitta = source.tarinaHaitta
         source.geometriat?.let {
             it.resetFeatureProperties(hanketunnus)
-            val saved = geometriatService.createGeometria(it)
+            val saved = geometriatService.createGeometriat(it)
             result.geometriat = saved.id
         }
         source.nimi?.let { result.nimi = source.nimi }

@@ -23,13 +23,13 @@ open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) :
         return when {
             oldGeometriat == null && !hasFeatures ->
                 throw IllegalArgumentException("New Geometriat does not contain any Features")
-            oldGeometriat != null && !hasFeatures -> deleteGeometria(oldGeometriat)
-            oldGeometriat == null -> createGeometria(geometriat)
-            else -> updateGeometria(oldGeometriat, geometriat.featureCollection!!)
+            oldGeometriat != null && !hasFeatures -> deleteGeometriat(oldGeometriat)
+            oldGeometriat == null -> createGeometriat(geometriat)
+            else -> updateGeometriat(oldGeometriat, geometriat.featureCollection!!)
         }
     }
 
-    override fun createGeometria(geometriat: HasFeatures): Geometriat {
+    override fun createGeometriat(geometriat: HasFeatures): Geometriat {
         val created =
             Geometriat(
                     featureCollection = geometriat.featureCollection,
@@ -45,13 +45,13 @@ open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) :
         return created
     }
 
-    private fun deleteGeometria(geometriat: Geometriat): Geometriat? {
+    private fun deleteGeometriat(geometriat: Geometriat): Geometriat? {
         hankeGeometriaDao.deleteGeometriat(geometriat)
         logger.info { "Deleted geometries ${geometriat.id}" }
         return null
     }
 
-    private fun updateGeometria(
+    private fun updateGeometriat(
         geometriat: Geometriat,
         newFeatures: FeatureCollection
     ): Geometriat {

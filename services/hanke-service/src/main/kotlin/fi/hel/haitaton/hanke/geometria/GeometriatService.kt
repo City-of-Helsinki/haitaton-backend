@@ -6,7 +6,7 @@ interface GeometriatService {
     /** Insert/Update geometries. */
     fun saveGeometriat(geometriat: HasFeatures, existingId: Int?): Geometriat?
 
-    fun createGeometria(geometriat: HasFeatures): Geometriat
+    fun createGeometriat(geometriat: HasFeatures): Geometriat
 
     /** Loads single geometry object. */
     fun getGeometriat(geometriatId: Int): Geometriat?
