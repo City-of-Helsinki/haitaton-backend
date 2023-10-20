@@ -50,6 +50,26 @@ class HankeKayttajaService(
         return hankeKayttaja
     }
 
+    @Transactional(readOnly = true)
+    fun whoAmIByHankeId(userId: String): Map<Int, WhoAmIDto> {
+        val permissions: Map<Int, PermissionEntity> =
+            permissionService.permissionsByHanke(userId = userId)
+
+        if (permissions.isEmpty()) {
+            logger.info { "User $userId has no permissions on any hanke." }
+            return emptyMap()
+        }
+
+        val hankeKayttajaIds: Map<Int, UUID> =
+            hankeKayttajaRepository
+                .findByPermissionIdIn(permissions.map { (_, permission) -> permission.id }.toSet())
+                .associateBy({ it.hankeId }, { it.id })
+
+        return permissions.entries.associate { (hankeId, permission) ->
+            hankeId to WhoAmIDto(hankeKayttajaIds[hankeId], permission.kayttooikeustasoEntity)
+        }
+    }
+
     @Transactional
     fun saveNewTokensFromApplication(
         application: ApplicationEntity,

@@ -6,9 +6,11 @@ import assertk.assertions.first
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNotEqualTo
 import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
@@ -50,68 +52,115 @@ class PermissionServiceITest : DatabaseTest() {
     @Autowired lateinit var hankeFactory: HankeFactory
     @Autowired lateinit var auditLogRepository: AuditLogRepository
 
-    @Test
-    fun `getAllowedHankeIds without permissions returns empty list`() {
-        val response = permissionService.getAllowedHankeIds(username, PermissionCode.EDIT)
+    @Nested
+    inner class AllowedHankeIds {
+        @Test
+        fun `getAllowedHankeIds without permissions returns empty list`() {
+            val response = permissionService.getAllowedHankeIds(username, PermissionCode.EDIT)
 
-        assertEquals(listOf<Int>(), response)
-    }
-
-    @Test
-    fun `getAllowedHankeIds with permissions returns list of IDs`() {
-        val hankkeet = hankeFactory.saveSeveralMinimal(3)
-        hankkeet
-            .map { it.id }
-            .forEach {
-                permissionService.create(
-                    userId = username,
-                    hankeId = it,
-                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
-                )
-            }
-
-        val response = permissionService.getAllowedHankeIds(username, PermissionCode.EDIT)
-
-        assertEquals(hankkeet.map { it.id }, response)
-    }
-
-    @Test
-    fun `getAllowedHankeIds return ids with correct permissions`() {
-        val kaikkiOikeudet = Kayttooikeustaso.KAIKKI_OIKEUDET
-        val hankemuokkaus = Kayttooikeustaso.HANKEMUOKKAUS
-        val hakemusasiointi = Kayttooikeustaso.HAKEMUSASIOINTI
-        val katseluoikeus = Kayttooikeustaso.KATSELUOIKEUS
-        val hankkeet = hankeFactory.saveSeveralMinimal(4)
-        listOf(kaikkiOikeudet, hankemuokkaus, hakemusasiointi, katseluoikeus).zip(hankkeet) {
-            kayttooikeustaso,
-            hanke ->
-            permissionService.create(hanke.id, username, kayttooikeustaso)
+            assertEquals(listOf<Int>(), response)
         }
 
-        val response = permissionService.getAllowedHankeIds(username, PermissionCode.EDIT)
+        @Test
+        fun `getAllowedHankeIds with permissions returns list of IDs`() {
+            val hankkeet = hankeFactory.saveSeveralMinimal(3)
+            hankkeet
+                .map { it.id }
+                .forEach {
+                    permissionService.create(
+                        userId = username,
+                        hankeId = it,
+                        kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
+                    )
+                }
 
-        assertEquals(listOf(hankkeet[0].id, hankkeet[1].id), response)
+            val response = permissionService.getAllowedHankeIds(username, PermissionCode.EDIT)
+
+            assertEquals(hankkeet.map { it.id }, response)
+        }
+
+        @Test
+        fun `getAllowedHankeIds return ids with correct permissions`() {
+            val kaikkiOikeudet = Kayttooikeustaso.KAIKKI_OIKEUDET
+            val hankemuokkaus = Kayttooikeustaso.HANKEMUOKKAUS
+            val hakemusasiointi = Kayttooikeustaso.HAKEMUSASIOINTI
+            val katseluoikeus = Kayttooikeustaso.KATSELUOIKEUS
+            val hankkeet = hankeFactory.saveSeveralMinimal(4)
+            listOf(kaikkiOikeudet, hankemuokkaus, hakemusasiointi, katseluoikeus).zip(hankkeet) {
+                kayttooikeustaso,
+                hanke ->
+                permissionService.create(hanke.id, username, kayttooikeustaso)
+            }
+
+            val response = permissionService.getAllowedHankeIds(username, PermissionCode.EDIT)
+
+            assertEquals(listOf(hankkeet[0].id, hankkeet[1].id), response)
+        }
     }
 
-    @Test
-    fun `hasPermission returns false without permissions`() {
-        assertFalse(permissionService.hasPermission(2, username, PermissionCode.EDIT))
+    @Nested
+    inner class PermissionsByHanke {
+        private val canView = Kayttooikeustaso.KATSELUOIKEUS
+        private val allRights = Kayttooikeustaso.KAIKKI_OIKEUDET
+
+        @Test
+        fun `should return empty if no permissions`() {
+            val result = permissionService.permissionsByHanke(CURRENT_USER)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `should find all users permissions`() {
+            val firstHanke = hankeFactory.saveMinimal().permit()
+            val secondHanke = hankeFactory.saveMinimal().permit(privilege = canView)
+            hankeFactory.saveMinimal().permit(username) // other user
+
+            val result = permissionService.permissionsByHanke(CURRENT_USER)
+
+            assertThat(result).hasSize(2)
+            assertThat(result[firstHanke.id]!!).all {
+                prop(PermissionEntity::id).isNotEqualTo(0)
+                prop(PermissionEntity::hankeId).isEqualTo(firstHanke.id)
+                prop(PermissionEntity::userId).isEqualTo(CURRENT_USER)
+                prop(PermissionEntity::kayttooikeustaso).isEqualTo(allRights)
+            }
+            assertThat(result[secondHanke.id]!!).all {
+                prop(PermissionEntity::id).isNotEqualTo(0)
+                prop(PermissionEntity::hankeId).isEqualTo(secondHanke.id)
+                prop(PermissionEntity::userId).isEqualTo(CURRENT_USER)
+                prop(PermissionEntity::kayttooikeustaso).isEqualTo(canView)
+            }
+        }
+
+        private fun HankeEntity.permit(
+            userId: String = CURRENT_USER,
+            privilege: Kayttooikeustaso = allRights,
+        ) = also { permissionService.create(id, userId, privilege) }
     }
 
-    @Test
-    fun `hasPermission with correct permission`() {
-        val hankeId = hankeFactory.saveMinimal().id
-        permissionService.create(hankeId, username, Kayttooikeustaso.KAIKKI_OIKEUDET)
+    @Nested
+    inner class HasPermission {
+        @Test
+        fun `hasPermission returns false without permissions`() {
+            assertFalse(permissionService.hasPermission(2, username, PermissionCode.EDIT))
+        }
 
-        assertTrue(permissionService.hasPermission(hankeId, username, PermissionCode.EDIT))
-    }
+        @Test
+        fun `hasPermission with correct permission`() {
+            val hankeId = hankeFactory.saveMinimal().id
+            permissionService.create(hankeId, username, Kayttooikeustaso.KAIKKI_OIKEUDET)
 
-    @Test
-    fun `hasPermission with insufficient permissions`() {
-        val hankeId = hankeFactory.saveMinimal().id
-        permissionService.create(hankeId, username, Kayttooikeustaso.HAKEMUSASIOINTI)
+            assertTrue(permissionService.hasPermission(hankeId, username, PermissionCode.EDIT))
+        }
 
-        assertFalse(permissionService.hasPermission(hankeId, username, PermissionCode.EDIT))
+        @Test
+        fun `hasPermission with insufficient permissions`() {
+            val hankeId = hankeFactory.saveMinimal().id
+            permissionService.create(hankeId, username, Kayttooikeustaso.HAKEMUSASIOINTI)
+
+            assertFalse(permissionService.hasPermission(hankeId, username, PermissionCode.EDIT))
+        }
     }
 
     @Nested

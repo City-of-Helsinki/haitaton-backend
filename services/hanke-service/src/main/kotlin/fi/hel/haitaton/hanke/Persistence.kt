@@ -226,6 +226,8 @@ class HankeEntity(
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findOneByHankeTunnus(hankeTunnus: String): HankeIdentifier?
 
+    fun findByIdIn(id: Set<Int>): List<HankeIdentifier>
+
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
 
     override fun findAll(): List<HankeEntity>

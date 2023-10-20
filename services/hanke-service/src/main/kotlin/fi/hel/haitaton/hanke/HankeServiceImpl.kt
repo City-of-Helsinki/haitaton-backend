@@ -77,6 +77,15 @@ open class HankeServiceImpl(
         hankeRepository.findOneByHankeTunnus(hankeTunnus)
 
     @Transactional(readOnly = true)
+    override fun findIdentifiers(hankeIds: Set<Int>): Map<Int, String> =
+        if (hankeIds.isEmpty()) {
+            logger.info { "No hankeIds provided, returning empty identifiers." }
+            emptyMap()
+        } else {
+            hankeRepository.findByIdIn(hankeIds).associate { it.id to it.hankeTunnus }
+        }
+
+    @Transactional(readOnly = true)
     override fun getHankeApplications(hankeTunnus: String): List<Application> =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let { entity ->
             entity.hakemukset.map { hakemus -> hakemus.toApplication() }

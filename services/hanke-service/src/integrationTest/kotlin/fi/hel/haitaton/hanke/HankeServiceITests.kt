@@ -64,6 +64,7 @@ import net.pwall.mustache.Template
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.assertj.core.api.Assertions.byLessThan
+import org.assertj.core.api.Assertions.entry
 import org.geojson.Feature
 import org.geojson.LngLatAlt
 import org.geojson.Polygon
@@ -140,6 +141,41 @@ class HankeServiceITests : DatabaseTest() {
                 prop(HankeIdentifier::hankeTunnus).isEqualTo(hankeTunnus)
                 prop(HankeIdentifier::id).isNotNull().isEqualTo(hanke.id)
             }
+        }
+    }
+
+    @Nested
+    inner class FindIdentifiers {
+        @Test
+        fun `Should return empty if no hanke found`() {
+            val hanke = hankeFactory.saveMinimal()
+            val nonExistantIds = (1..3).map { hanke.id + it }.toSet()
+
+            val result = hankeService.findIdentifiers(nonExistantIds)
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `Should return empty if argument is empty`() {
+            val result = hankeService.findIdentifiers(emptySet())
+
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `Should return identifiers by hanke id when projects are found`() {
+            val firstHanke = hankeFactory.saveMinimal()
+            val secondHanke = hankeFactory.saveMinimal()
+            hankeFactory.saveMinimal() // should not be found
+
+            val result = hankeService.findIdentifiers(setOf(firstHanke.id, secondHanke.id))
+
+            assertThat(result)
+                .containsOnly(
+                    entry(firstHanke.id, firstHanke.hankeTunnus),
+                    entry(secondHanke.id, secondHanke.hankeTunnus),
+                )
         }
     }
 
