@@ -44,12 +44,10 @@ sealed interface ApplicationData {
      */
     fun contactPersonEmails(omit: String? = null): Set<String> =
         customersWithContacts()
-            .flatMap { customer ->
-                customer.contacts.mapNotNull {
-                    if (it.email.isNullOrBlank() || it.email == omit) null else it.email
-                }
-            }
-            .toSet()
+            .flatMap { it.contacts }
+            .mapNotNull { contact -> contact.email.takeUnless { it.isNullOrBlank() } }
+            .toMutableSet()
+            .apply { omit?.let { remove(it) } }
 }
 
 @JsonView(ChangeLogView::class)
