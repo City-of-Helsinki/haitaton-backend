@@ -54,7 +54,6 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createCompanyCust
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationIdentifier
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationName
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.expectedRecipients
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.rakennuttajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaCustomerContact
@@ -63,6 +62,7 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.UserContactFactory.hakijaContact
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.getResourceAsBytes

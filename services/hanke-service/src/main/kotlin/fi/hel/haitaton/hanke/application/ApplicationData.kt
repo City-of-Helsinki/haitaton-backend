@@ -96,6 +96,20 @@ data class CableReportApplicationData(
         customersWithContacts().flatMap { it.contacts }.find { it.orderer }
 }
 
+/**
+ * An extension function to get email addresses from customer contact persons. Returns a set of
+ * emails that:
+ * - are not null, empty or blank.
+ * - do not match the optional [omit] argument.
+ */
+fun ApplicationData.contactPersonEmails(omit: String? = null): Set<String> =
+    when (this) {
+        is CableReportApplicationData ->
+            customersWithContacts().flatMap { it.contactPersonEmails(omit) }.toSet()
+    }
+
+fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }
+
 class AlluDataException(path: String, error: AlluDataError) :
     RuntimeException("Application data failed validation at $path: $error")
 
@@ -106,5 +120,3 @@ enum class AlluDataError(private val errorDescription: String) {
 
     override fun toString(): String = errorDescription
 }
-
-fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }

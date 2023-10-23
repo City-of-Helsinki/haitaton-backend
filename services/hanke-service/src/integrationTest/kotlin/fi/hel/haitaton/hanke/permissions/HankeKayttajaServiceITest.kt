@@ -36,7 +36,6 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationIdentifier
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationName
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.expectedRecipients
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.rakennuttajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaCustomerContact
@@ -49,6 +48,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
+import fi.hel.haitaton.hanke.factory.UserContactFactory.hakijaContact
 import fi.hel.haitaton.hanke.factory.identifier
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
 import fi.hel.haitaton.hanke.logging.AuditLogRepository

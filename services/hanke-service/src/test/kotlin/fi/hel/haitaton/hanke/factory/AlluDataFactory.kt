@@ -19,7 +19,10 @@ import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.domain.UserContact
+import fi.hel.haitaton.hanke.factory.UserContactFactory.asianhoitajaContact
+import fi.hel.haitaton.hanke.factory.UserContactFactory.hakijaContact
+import fi.hel.haitaton.hanke.factory.UserContactFactory.rakennuttajaContact
+import fi.hel.haitaton.hanke.factory.UserContactFactory.suorittajaContact
 import java.time.ZonedDateTime
 import org.geojson.Polygon
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
@@ -334,14 +337,6 @@ class AlluDataFactory(
                 name = name,
                 description = description,
             )
-
-        val hakijaContact = UserContact("Henri Hakija", "henri.hakija@mail.com")
-
-        val rakennuttajaContact = UserContact("Rane Rakennuttaja", "rane.rakennuttaja@mail.com")
-
-        val asianhoitajaContact = UserContact("Anssi Asianhoitaja", "anssi.asianhoitaja@mail.com")
-
-        val suorittajaContact = UserContact("Timo Työnsuorittaja", "timo.työnsuorittaja@mail.com")
 
         val hakijaCustomerContact: CustomerWithContacts =
             with(hakijaContact) {
