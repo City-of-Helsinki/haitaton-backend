@@ -10,8 +10,6 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.HankeStatus.DRAFT
 import fi.hel.haitaton.hanke.HanketunnusService
-import fi.hel.haitaton.hanke.SuunnitteluVaihe
-import fi.hel.haitaton.hanke.SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Vaihe.SUUNNITTELU
@@ -43,7 +41,6 @@ class HankeFactory(
     fun save(
         nimi: String = defaultNimi,
         vaihe: Vaihe? = Vaihe.OHJELMOINTI,
-        suunnitteluVaihe: SuunnitteluVaihe? = null,
         tyomaaKatuosoite: String? = null,
         tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
     ) =
@@ -51,7 +48,6 @@ class HankeFactory(
             CreateHankeRequest(
                 nimi = nimi,
                 vaihe = vaihe,
-                suunnitteluVaihe = suunnitteluVaihe,
                 tyomaaKatuosoite = tyomaaKatuosoite,
                 tyomaaTyyppi = tyomaaTyyppi,
             )
@@ -66,9 +62,8 @@ class HankeFactory(
     fun saveEntity(
         nimi: String = defaultNimi,
         vaihe: Vaihe? = Vaihe.OHJELMOINTI,
-        suunnitteluVaihe: SuunnitteluVaihe? = null,
     ): HankeEntity {
-        val hanke = save(nimi, vaihe, suunnitteluVaihe)
+        val hanke = save(nimi, vaihe)
         return hankeRepository.getReferenceById(hanke.id)
     }
 
@@ -97,7 +92,6 @@ class HankeFactory(
         onYKTHanke: Boolean? = true,
         kuvaus: String? = defaultKuvaus,
         vaihe: Vaihe? = Vaihe.OHJELMOINTI,
-        suunnitteluVaihe: SuunnitteluVaihe? = null,
         tyomaaKatuosoite: String? = null,
         tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
     ) =
@@ -106,7 +100,6 @@ class HankeFactory(
                 onYKTHanke,
                 kuvaus,
                 vaihe,
-                suunnitteluVaihe,
                 tyomaaKatuosoite,
                 tyomaaTyyppi,
             )
@@ -135,7 +128,6 @@ class HankeFactory(
             hankeTunnus: String = defaultHankeTunnus,
             nimi: String = defaultNimi,
             vaihe: Vaihe? = Vaihe.OHJELMOINTI,
-            suunnitteluVaihe: SuunnitteluVaihe? = null,
             version: Int? = 1,
             createdBy: String? = defaultUser,
             createdAt: ZonedDateTime? = DateFactory.getStartDatetime(),
@@ -148,7 +140,6 @@ class HankeFactory(
                 nimi,
                 defaultKuvaus,
                 vaihe,
-                suunnitteluVaihe,
                 version,
                 createdBy,
                 createdAt,
@@ -172,7 +163,6 @@ class HankeFactory(
                     nimi = defaultNimi,
                     kuvaus = defaultKuvaus,
                     vaihe = SUUNNITTELU,
-                    suunnitteluVaihe = RAKENNUS_TAI_TOTEUTUS,
                     onYKTHanke = true,
                     version = 0,
                     createdByUserId = defaultUser,
@@ -204,7 +194,6 @@ class HankeFactory(
             onYKTHanke: Boolean? = true,
             kuvaus: String? = defaultKuvaus,
             vaihe: Vaihe? = Vaihe.OHJELMOINTI,
-            suunnitteluVaihe: SuunnitteluVaihe? = null,
             tyomaaKatuosoite: String? = null,
             tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
         ): CreateHankeRequestBuilder =
@@ -215,7 +204,6 @@ class HankeFactory(
                     onYKTHanke = onYKTHanke,
                     kuvaus = kuvaus,
                     vaihe = vaihe,
-                    suunnitteluVaihe = suunnitteluVaihe,
                     tyomaaKatuosoite = tyomaaKatuosoite,
                     tyomaaTyyppi = tyomaaTyyppi
                 )

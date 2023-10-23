@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.domain
 
-import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
@@ -25,11 +24,6 @@ data class CreateHankeRequest(
         description = "Current stage of the project. Required for the hanke to be published.",
     )
     override val vaihe: Vaihe? = null,
-    @field:Schema(
-        description =
-            "Current planning stage, required for publishing used if vaihe is SUUNNITTELU.",
-    )
-    override val suunnitteluVaihe: SuunnitteluVaihe? = null,
     @field:Schema(
         description =
             "Project owners, contact information. At least one is required for the hanke to be published.",

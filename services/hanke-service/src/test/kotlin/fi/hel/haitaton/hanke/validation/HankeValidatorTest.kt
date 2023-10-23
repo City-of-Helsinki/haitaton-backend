@@ -9,7 +9,6 @@ import fi.hel.haitaton.hanke.MAXIMUM_DATE
 import fi.hel.haitaton.hanke.MAXIMUM_HANKE_ALUE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_HANKE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_TYOMAAKATUOSOITE_LENGTH
-import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.factory.DateFactory
@@ -105,13 +104,6 @@ class HankeValidatorTest {
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
         verifyError(HankeError.HAI1002, "nimi")
-    }
-
-    @Test
-    fun `succeeds even if vaihe is suunnittelu and suunnitteluVaihe is null`() {
-        val hanke = HankeFactory.create(vaihe = Vaihe.SUUNNITTELU, suunnitteluVaihe = null)
-
-        assertThat(hankeValidator.isValid(hanke, context)).isTrue()
     }
 
     @Test

@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: 052-remove-suunnitteluvaihe-from-hanke
+      author: Teemu Hiltunen
+      comment: Drop suunnitteluvaihe from hanke since it is no longer needed.
+      changes:
+        - dropColumn:
+            tableName: hanke
+            columnName: suunnitteluvaihe

@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.domain
 
 import fi.hel.haitaton.hanke.Haitta13
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
-import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
@@ -56,7 +55,6 @@ data class PublicHanke(
     val alkuPvm: ZonedDateTime,
     val loppuPvm: ZonedDateTime,
     val vaihe: Vaihe,
-    val suunnitteluVaihe: SuunnitteluVaihe?,
     val tyomaaTyyppi: MutableSet<TyomaaTyyppi>,
     val liikennehaittaindeksi: LiikennehaittaIndeksiType,
     val tormaystarkasteluTulos: TormaystarkasteluTulos,
@@ -94,7 +92,6 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
         hanke.alkuPvm!!,
         hanke.loppuPvm!!,
         hanke.vaihe!!,
-        hanke.suunnitteluVaihe,
         hanke.tyomaaTyyppi,
         hanke.getLiikennehaittaindeksi()!!,
         hanke.tormaystarkasteluTulos!!,

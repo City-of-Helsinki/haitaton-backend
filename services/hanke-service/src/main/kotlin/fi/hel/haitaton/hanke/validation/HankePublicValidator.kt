@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.validation
 
-import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
@@ -29,9 +28,6 @@ object HankePublicValidator {
             .and { notNullOrBlank(hanke.kuvaus, "kuvaus") }
             .and { notNullOrBlank(hanke.tyomaaKatuosoite, "tyomaaKatuosoite") }
             .and { notNull(hanke.vaihe, "vaihe") }
-            .andWhen(hanke.vaihe == Vaihe.SUUNNITTELU) {
-                notNull(hanke.suunnitteluVaihe, "suunnitteluVaihe")
-            }
             .and { notEmpty(hanke.alueet, "alueet") }
             .andAllIn(hanke.alueet, "alueet", ::validateAlue)
             .and { notEmpty(hanke.omistajat, "omistajat") }

@@ -5,7 +5,6 @@ import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.isEqualTo
 import assertk.assertions.isGreaterThanOrEqualTo
-import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
@@ -56,14 +55,6 @@ class HankePublicValidatorTest {
                     completeHanke().apply { tyomaaKatuosoite = BLANK }
                 ),
                 Arguments.of("vaihe", "missing", completeHanke().apply { vaihe = null }),
-                Arguments.of(
-                    "suunnitteluVaihe",
-                    "missing",
-                    completeHanke().apply {
-                        vaihe = Vaihe.SUUNNITTELU
-                        suunnitteluVaihe = null
-                    }
-                ),
                 Arguments.of("alueet", "empty", completeHanke().apply { alueet = mutableListOf() }),
                 Arguments.of(
                     "alueet[0].haittaAlkuPvm",

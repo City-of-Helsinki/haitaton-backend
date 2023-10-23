@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.NotInChangeLogView
-import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -49,13 +48,6 @@ data class Hanke(
         description = "Current stage of the project. Required for the hanke to be published."
     )
     override var vaihe: Vaihe?,
-    //
-    @JsonView(ChangeLogView::class)
-    @field:Schema(
-        description =
-            "Hanke current planning stage, required for publishing if vaihe is SUUNNITTELU."
-    )
-    override var suunnitteluVaihe: SuunnitteluVaihe?,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Version, set by the service.")

@@ -95,7 +95,6 @@ class HankeControllerTest {
                     "Mannerheimintien remontti remonttinen",
                     HankeFactory.defaultKuvaus,
                     Vaihe.OHJELMOINTI,
-                    null,
                     1,
                     "Risto",
                     getCurrentTimeUTC(),
@@ -126,7 +125,6 @@ class HankeControllerTest {
                     "Mannerheimintien remontti remonttinen",
                     HankeFactory.defaultKuvaus,
                     Vaihe.OHJELMOINTI,
-                    null,
                     1,
                     "Risto",
                     getCurrentTimeUTC(),
@@ -141,7 +139,6 @@ class HankeControllerTest {
                     "Hämeenlinnanväylän uudistus",
                     HankeFactory.defaultKuvaus,
                     Vaihe.SUUNNITTELU,
-                    SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
                     1,
                     "Paavo",
                     getCurrentTimeUTC(),
@@ -174,7 +171,6 @@ class HankeControllerTest {
                 kuvaus = HankeFactory.defaultKuvaus,
                 onYKTHanke = false,
                 vaihe = Vaihe.SUUNNITTELU,
-                suunnitteluVaihe = SuunnitteluVaihe.KATUSUUNNITTELU_TAI_ALUEVARAUS,
                 version = 1,
                 createdBy = "Tiina",
                 createdAt = getCurrentTimeUTC(),
@@ -221,7 +217,6 @@ class HankeControllerTest {
                 kuvaus = "",
                 onYKTHanke = false,
                 vaihe = Vaihe.OHJELMOINTI,
-                suunnitteluVaihe = null,
                 version = 1,
                 createdBy = "",
                 createdAt = null,
@@ -250,7 +245,6 @@ class HankeControllerTest {
                 kuvaus = HankeFactory.defaultKuvaus,
                 onYKTHanke = false,
                 vaihe = Vaihe.OHJELMOINTI,
-                suunnitteluVaihe = null,
                 omistajat =
                     arrayListOf(
                         NewYhteystieto(

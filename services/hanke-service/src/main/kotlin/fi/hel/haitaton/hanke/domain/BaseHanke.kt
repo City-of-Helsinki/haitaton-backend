@@ -2,14 +2,12 @@ package fi.hel.haitaton.hanke.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import fi.hel.haitaton.hanke.ContactType
-import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
 
 interface BaseHanke : HasYhteystiedot {
     val nimi: String
     val vaihe: Vaihe?
-    val suunnitteluVaihe: SuunnitteluVaihe?
     val alueet: List<Hankealue>?
     val tyomaaKatuosoite: String?
 }
