@@ -64,7 +64,7 @@ data class PublicHanke(
     val alueet: List<PublicHankealue>,
 )
 
-fun hankealueToPublic(alue: Hankealue): PublicHankealue {
+fun hankealueToPublic(alue: SavedHankealue): PublicHankealue {
     return PublicHankealue(
         alue.id,
         alue.hankeId,

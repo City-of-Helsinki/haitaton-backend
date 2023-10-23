@@ -24,7 +24,7 @@ internal class HankeTest {
     fun haittaAjanKesto(expectedNumberOfDays: Int, startDate: LocalDate, endDate: LocalDate) {
         val hanke = HankeFactory.create(id = 1, hankeTunnus = "HAI21-1")
         hanke.alueet.add(
-            Hankealue(
+            SavedHankealue(
                 haittaAlkuPvm = startDate.atStartOfDay(TZ_UTC),
                 haittaLoppuPvm = endDate.atStartOfDay(TZ_UTC)
             )

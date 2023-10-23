@@ -4,7 +4,7 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
-import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -220,9 +220,15 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             // faking the service call with two returned Hanke
             val hankeIds = listOf(123, 444)
             val alue1 =
-                Hankealue(hankeId = hankeIds[0], geometriat = Geometriat(1, FeatureCollection()))
+                SavedHankealue(
+                    hankeId = hankeIds[0],
+                    geometriat = Geometriat(1, FeatureCollection())
+                )
             val alue2 =
-                Hankealue(hankeId = hankeIds[1], geometriat = Geometriat(2, FeatureCollection()))
+                SavedHankealue(
+                    hankeId = hankeIds[1],
+                    geometriat = Geometriat(2, FeatureCollection())
+                )
             val hanke1 = HankeFactory.create(id = hankeIds[0], hankeTunnus = HANKE_TUNNUS)
             val hanke2 = HankeFactory.create(id = hankeIds[1], hankeTunnus = "hanketunnus2")
             hanke1.alueet = mutableListOf(alue1)
@@ -459,7 +465,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             hankeToBeUpdated.tyomaaKatuosoite = "Testikatu 1"
             hankeToBeUpdated.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
             hankeToBeUpdated.tyomaaTyyppi.add(TyomaaTyyppi.KAASUJOHTO)
-            val alue = Hankealue()
+            val alue = SavedHankealue()
             alue.haittaAlkuPvm = DateFactory.getStartDatetime()
             alue.haittaLoppuPvm = DateFactory.getEndDatetime()
             alue.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
