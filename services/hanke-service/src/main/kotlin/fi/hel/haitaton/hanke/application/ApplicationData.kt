@@ -36,6 +36,20 @@ sealed interface ApplicationData {
     fun copy(pendingOnClient: Boolean): ApplicationData
     fun toAlluData(hankeTunnus: String): AlluApplicationData
     fun customersWithContacts(): List<CustomerWithContacts>
+
+    /**
+     * Returns a set of email addresses from customer contact persons that:
+     * - are not null, empty or blank.
+     * - do not match the optional [omit] argument.
+     */
+    fun contactPersonEmails(omit: String? = null): Set<String> =
+        customersWithContacts()
+            .flatMap { customer ->
+                customer.contacts.mapNotNull {
+                    if (it.email.isNullOrBlank() || it.email == omit) null else it.email
+                }
+            }
+            .toSet()
 }
 
 @JsonView(ChangeLogView::class)
@@ -95,18 +109,6 @@ data class CableReportApplicationData(
     fun findOrderer(): Contact? =
         customersWithContacts().flatMap { it.contacts }.find { it.orderer }
 }
-
-/**
- * An extension function to get email addresses from customer contact persons. Returns a set of
- * emails that:
- * - are not null, empty or blank.
- * - do not match the optional [omit] argument.
- */
-fun ApplicationData.contactPersonEmails(omit: String? = null): Set<String> =
-    when (this) {
-        is CableReportApplicationData ->
-            customersWithContacts().flatMap { it.contactPersonEmails(omit) }.toSet()
-    }
 
 fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }
 

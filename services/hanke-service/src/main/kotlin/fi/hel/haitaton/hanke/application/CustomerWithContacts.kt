@@ -21,13 +21,6 @@ data class CustomerWithContacts(val customer: Customer, val contacts: List<Conta
             contacts.map { it.toAlluData() }
         )
     }
-
-    /**
-     * Get list of contact emails that are not blank. Optional [omit] can be used to leave out a
-     * specific email.
-     */
-    fun contactPersonEmails(omit: String?): List<String> =
-        contacts.mapNotNull { if (it.email.isNullOrBlank() || it.email == omit) null else it.email }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
