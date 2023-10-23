@@ -2,8 +2,13 @@ package fi.hel.haitaton.hanke.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import fi.hel.haitaton.hanke.ContactType
+import fi.hel.haitaton.hanke.Haitta13
+import fi.hel.haitaton.hanke.KaistajarjestelynPituus
+import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
+import fi.hel.haitaton.hanke.geometria.Geometriat
+import java.time.ZonedDateTime
 
 interface BaseHanke : HasYhteystiedot {
     val nimi: String
@@ -66,4 +71,16 @@ interface Yhteystieto : HasId<Int> {
      * non-whitespace-only.
      */
     @JsonIgnore fun isAnyMandatoryFieldSet(): Boolean = nimi.isNotBlank() || email.isNotBlank()
+}
+
+interface Hankealue {
+    val haittaAlkuPvm: ZonedDateTime?
+    val haittaLoppuPvm: ZonedDateTime?
+    val geometriat: Geometriat?
+    val kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin?
+    val kaistaPituusHaitta: KaistajarjestelynPituus?
+    val meluHaitta: Haitta13?
+    val polyHaitta: Haitta13?
+    val tarinaHaitta: Haitta13?
+    val nimi: String?
 }

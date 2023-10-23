@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.NewHankealue
 import fi.hel.haitaton.hanke.domain.NewYhteystieto
 
 data class CreateHankeRequestBuilder(
@@ -46,15 +47,27 @@ data class CreateHankeRequestBuilder(
         )
     }
 
-    fun withHankealue(alue: Hankealue = HankealueFactory.create(id = null, hankeId = null)) =
-        withRequest {
-            copy(
-                alueet = (this.alueet ?: listOf()) + alue,
-                tyomaaKatuosoite = "Testikatu 1",
-                tyomaaTyyppi = setOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
-            )
-        }
+    fun withHankealue(alue: Hankealue = HankealueFactory.create()) = withRequest {
+        copy(
+            alueet = (this.alueet ?: listOf()) + alue.toCreateRequest(),
+            tyomaaKatuosoite = "Testikatu 1",
+            tyomaaTyyppi = setOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
+        )
+    }
 }
+
+fun Hankealue.toCreateRequest() =
+    NewHankealue(
+        haittaAlkuPvm,
+        haittaLoppuPvm,
+        geometriat,
+        kaistaHaitta,
+        kaistaPituusHaitta,
+        meluHaitta,
+        polyHaitta,
+        tarinaHaitta,
+        nimi
+    )
 
 fun HankeYhteystieto.toCreateRequest() =
     NewYhteystieto(

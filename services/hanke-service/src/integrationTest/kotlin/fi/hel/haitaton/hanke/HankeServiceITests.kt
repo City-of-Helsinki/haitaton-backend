@@ -23,7 +23,7 @@ import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
@@ -1503,7 +1503,7 @@ class HankeServiceITests : DatabaseTest() {
 
     private fun expectedHankeLogObject(
         hanke: Hanke,
-        alue: Hankealue? = null,
+        alue: SavedHankealue? = null,
         geometriaVersion: Int = 0,
         hankeVersion: Int = 0,
         tormaystarkasteluTulos: Boolean = false,

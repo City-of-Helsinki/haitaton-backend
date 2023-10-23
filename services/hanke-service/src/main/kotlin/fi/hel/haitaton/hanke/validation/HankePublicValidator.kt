@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.validation
 import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
@@ -37,7 +37,7 @@ object HankePublicValidator {
             .andAllIn(hanke.muut, "muut", ::validateYhteystieto)
     }
 
-    private fun validateAlue(alue: Hankealue, path: String): ValidationResult =
+    private fun validateAlue(alue: SavedHankealue, path: String): ValidationResult =
         validate { notNull(alue.haittaAlkuPvm, "$path.haittaAlkuPvm") }
             .and { notNull(alue.haittaLoppuPvm, "$path.haittaLoppuPvm") }
             .and { notNull(alue.meluHaitta, "$path.meluHaitta") }

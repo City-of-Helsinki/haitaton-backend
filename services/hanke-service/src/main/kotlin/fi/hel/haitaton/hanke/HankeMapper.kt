@@ -6,7 +6,7 @@ import fi.hel.haitaton.hanke.ContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 
@@ -55,12 +55,12 @@ object HankeMapper {
         hankeTunnus: String?,
         alueet: MutableList<HankealueEntity>,
         geometriaData: Map<Int, Geometriat?>
-    ): MutableList<Hankealue> =
+    ): MutableList<SavedHankealue> =
         alueet.map { alue(hankeTunnus, it, geometriaData[it.geometriat]) }.toMutableList()
 
     private fun alue(hankeTunnus: String?, entity: HankealueEntity, geometriat: Geometriat?) =
         with(entity) {
-            Hankealue(
+            SavedHankealue(
                 id = id,
                 hankeId = hanke?.id,
                 haittaAlkuPvm = haittaAlkuPvm?.atStartOfDay(TZ_UTC),
