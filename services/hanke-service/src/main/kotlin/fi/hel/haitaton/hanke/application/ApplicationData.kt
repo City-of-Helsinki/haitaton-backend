@@ -44,8 +44,9 @@ sealed interface ApplicationData {
      */
     fun contactPersonEmails(omit: String? = null): Set<String> =
         customersWithContacts()
-            .flatMap { it.contacts }
-            .mapNotNull { contact -> contact.email.takeUnless { it.isNullOrBlank() } }
+            .flatMap { customer -> customer.contacts }
+            .mapNotNull { it.email }
+            .filter { it.isNotBlank() }
             .toMutableSet()
             .apply { omit?.let { remove(it) } }
 }
