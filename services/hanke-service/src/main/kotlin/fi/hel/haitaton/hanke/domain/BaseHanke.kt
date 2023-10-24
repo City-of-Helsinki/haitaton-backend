@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.Haitta13
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
-import fi.hel.haitaton.hanke.SuunnitteluVaihe
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
@@ -14,7 +13,6 @@ import java.time.ZonedDateTime
 interface BaseHanke : HasYhteystiedot {
     val nimi: String
     val vaihe: Vaihe?
-    val suunnitteluVaihe: SuunnitteluVaihe?
     val alueet: List<Hankealue>?
     val tyomaaKatuosoite: String?
 }
