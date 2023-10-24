@@ -37,9 +37,6 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus.HANDLING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
-import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.ApplicationType.CABLE_REPORT
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
@@ -57,7 +54,6 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createCompanyCust
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationIdentifier
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationName
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.expectedRecipients
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaApplicationContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.rakennuttajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaCustomerContact
@@ -66,6 +62,7 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.UserContactFactory.hakijaContact
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.getResourceAsBytes
@@ -1722,7 +1719,7 @@ class ApplicationServiceITest : DatabaseTest() {
             assertThat(email.allRecipients[0].toString()).isEqualTo(teppoEmail)
             assertThat(email.subject)
                 .isEqualTo(
-                    "Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier"
+                    "Haitaton: Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier"
                 )
         }
     }
@@ -1809,11 +1806,10 @@ class ApplicationServiceITest : DatabaseTest() {
         type: ApplicationType,
         hankeTunnus: String?
     ) = each { data ->
-        data.transform { it.senderEmail }.isEqualTo(hakijaApplicationContact.email)
-        data.transform { it.senderName }.isEqualTo(hakijaApplicationContact.name)
+        data.transform { it.senderEmail }.isEqualTo(hakijaContact.email)
+        data.transform { it.senderName }.isEqualTo(hakijaContact.name)
         data.transform { it.applicationIdentifier }.isEqualTo(defaultApplicationIdentifier)
         data.transform { it.applicationType }.isEqualTo(type)
-        data.transform { it.roleType }.isIn(TYON_SUORITTAJA, ASIANHOITAJA, RAKENNUTTAJA)
         data.transform { it.recipientEmail }.isIn(*expectedRecipients)
         data.transform { it.hankeTunnus }.isEqualTo(hankeTunnus)
     }

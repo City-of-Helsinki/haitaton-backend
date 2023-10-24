@@ -11,7 +11,6 @@ import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.DatabaseTest
-import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import jakarta.mail.internet.MimeMessage
@@ -83,7 +82,7 @@ class EmailSenderServiceITest : DatabaseTest() {
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
                 .isEqualTo(
-                    "Johtoselvitys JS2300001 / Ledningsutredning JS2300001 / Cable report JS2300001"
+                    "Haitaton: Johtoselvitys JS2300001 / Ledningsutredning JS2300001 / Cable report JS2300001"
                 )
         }
 
@@ -141,7 +140,7 @@ class EmailSenderServiceITest : DatabaseTest() {
             emailSenderService.sendHankeInvitationEmail(hankeInvitation())
 
             val email = greenMail.firstReceivedMessage()
-            assertThat(email.subject).isEqualTo("Sinut on lisätty hankkeelle HAI24-1")
+            assertThat(email.subject).isEqualTo("Haitaton: Sinut on lisätty hankkeelle HAI24-1")
         }
 
         @Test
@@ -193,7 +192,7 @@ class EmailSenderServiceITest : DatabaseTest() {
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
-                .isEqualTo("Sinut on lisätty hakemukselle ${data.applicationIdentifier}")
+                .isEqualTo("Haitaton: Sinut on lisätty hakemukselle ${data.applicationIdentifier}")
         }
 
         @Test
@@ -208,15 +207,12 @@ class EmailSenderServiceITest : DatabaseTest() {
                 contains("${data.senderName} (${data.senderEmail}) on")
                 contains("tehnyt johtoselvityshakemuksen (${data.applicationIdentifier})")
                 contains("hankkeella ${data.hankeTunnus}")
-                contains("rooliin ${data.roleType.value}.")
                 contains("Tarkastele hakemusta Haitattomassa: http://localhost:3001")
             }
             assertThat(htmlBody).all {
                 val htmlEscapedName = "Matti Meik&auml;l&auml;inen"
-                val htmlEscapedRole = "ty&ouml;n suorittaja"
                 contains("$htmlEscapedName (${data.senderEmail})")
                 contains("johtoselvityshakemuksen (${data.applicationIdentifier})")
-                contains("rooliin $htmlEscapedRole")
                 contains("""<a href="http://localhost:3001">""")
             }
         }
@@ -267,6 +263,5 @@ class EmailSenderServiceITest : DatabaseTest() {
             applicationType = ApplicationType.CABLE_REPORT,
             applicationIdentifier = APPLICATION_IDENTIFIER,
             hankeTunnus = "HAI24-1",
-            roleType = ApplicationContactType.TYON_SUORITTAJA,
         )
 }
