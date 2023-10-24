@@ -56,7 +56,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHanke.nimi).isEqualTo("nimi")
         assertThat(loadedHanke.kuvaus).isEqualTo("kuvaus")
         assertThat(loadedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
-        assertThat(loadedHanke.suunnitteluVaihe).isEqualTo(SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS)
         assertThat(loadedHanke.tyomaaKatuosoite).isEqualTo("katu 1")
         assertThat(loadedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         assertThat(loadedHanke.kaistaHaitta)
@@ -161,7 +160,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
             nimi = "nimi",
             kuvaus = "kuvaus",
             vaihe = Vaihe.SUUNNITTELU,
-            suunnitteluVaihe = SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS,
             onYKTHanke = true,
             version = 1,
             createdByUserId = null,

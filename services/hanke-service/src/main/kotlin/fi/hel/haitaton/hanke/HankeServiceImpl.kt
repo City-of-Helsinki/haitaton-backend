@@ -151,7 +151,6 @@ open class HankeServiceImpl(
         entity.onYKTHanke = request.onYKTHanke
         entity.kuvaus = request.kuvaus
         entity.vaihe = request.vaihe
-        entity.suunnitteluVaihe = request.suunnitteluVaihe
         entity.tyomaaKatuosoite = request.tyomaaKatuosoite
         entity.tyomaaTyyppi = (request.tyomaaTyyppi ?: setOf()).toMutableSet()
 
@@ -469,7 +468,6 @@ open class HankeServiceImpl(
         hanke.kuvaus?.let { entity.kuvaus = hanke.kuvaus }
         entity.generated = hanke.generated
         hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
-        hanke.suunnitteluVaihe?.let { entity.suunnitteluVaihe = hanke.suunnitteluVaihe }
         hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
         entity.tyomaaTyyppi = hanke.tyomaaTyyppi
 

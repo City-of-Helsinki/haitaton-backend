@@ -45,13 +45,6 @@ enum class Vaihe {
     RAKENTAMINEN
 }
 
-enum class SuunnitteluVaihe {
-    YLEIS_TAI_HANKE,
-    KATUSUUNNITTELU_TAI_ALUEVARAUS,
-    RAKENNUS_TAI_TOTEUTUS,
-    TYOMAAN_TAI_HANKKEEN_AIKAINEN
-}
-
 enum class TyomaaTyyppi {
     VESI,
     VIEMARI,
@@ -125,7 +118,6 @@ class HankeEntity(
     var nimi: String,
     var kuvaus: String? = null,
     @Enumerated(EnumType.STRING) var vaihe: Vaihe? = null,
-    @Enumerated(EnumType.STRING) var suunnitteluVaihe: SuunnitteluVaihe? = null,
     var onYKTHanke: Boolean? = false,
     var version: Int? = 0,
     // NOTE: creatorUserId must be non-null for valid data, but to allow creating instances with

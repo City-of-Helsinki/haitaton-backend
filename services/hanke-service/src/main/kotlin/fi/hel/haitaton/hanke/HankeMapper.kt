@@ -27,7 +27,6 @@ object HankeMapper {
                     nimi = nimi,
                     kuvaus = kuvaus,
                     vaihe = vaihe,
-                    suunnitteluVaihe = suunnitteluVaihe,
                     version = version,
                     createdBy = createdByUserId,
                     createdAt = createdAt?.zonedDateTime(),

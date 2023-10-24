@@ -163,10 +163,7 @@ class HankeServiceITests : DatabaseTest() {
     @Test
     fun `create Hanke with full data set succeeds and returns a new domain object with the correct values`() {
         val request: CreateHankeRequest =
-            HankeFactory.createRequest(
-                    vaihe = Vaihe.SUUNNITTELU,
-                    suunnitteluVaihe = SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS
-                )
+            HankeFactory.createRequest(vaihe = Vaihe.SUUNNITTELU)
                 .withYhteystiedot()
                 .withHankealue()
                 .build()
@@ -197,7 +194,6 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(returnedHanke.alkuPvm).isEqualTo(expectedDateAlku)
         assertThat(returnedHanke.loppuPvm).isEqualTo(expectedDateLoppu)
         assertThat(returnedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
-        assertThat(returnedHanke.suunnitteluVaihe).isEqualTo(SuunnitteluVaihe.RAKENNUS_TAI_TOTEUTUS)
         assertThat(returnedHanke.tyomaaKatuosoite).isEqualTo("Testikatu 1")
         assertThat(returnedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         assertThat(returnedHanke.alueet[0].kaistaHaitta)

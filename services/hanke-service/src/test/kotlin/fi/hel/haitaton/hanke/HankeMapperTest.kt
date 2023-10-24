@@ -42,7 +42,6 @@ class HankeMapperTest {
             prop(Hanke::nimi).isEqualTo(entity.nimi)
             prop(Hanke::kuvaus).isEqualTo(entity.kuvaus)
             prop(Hanke::vaihe).isEqualTo(entity.vaihe)
-            prop(Hanke::suunnitteluVaihe).isEqualTo(entity.suunnitteluVaihe)
             prop(Hanke::version).isEqualTo(entity.version)
             prop(Hanke::createdAt).isEqualTo(DateFactory.getStartDatetime())
             prop(Hanke::createdBy).isEqualTo(entity.createdByUserId)
