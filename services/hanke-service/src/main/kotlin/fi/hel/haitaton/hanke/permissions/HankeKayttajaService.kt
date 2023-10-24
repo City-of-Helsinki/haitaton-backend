@@ -6,9 +6,7 @@ import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeUserContact
 import fi.hel.haitaton.hanke.domain.Perustaja
-import fi.hel.haitaton.hanke.domain.UserContact
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.HankeInvitationData
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
@@ -69,7 +67,7 @@ class HankeKayttajaService(
             application.applicationData
                 .customersWithContacts()
                 .flatMap { it.contacts }
-                .mapNotNull { HankeUserContact.from(it.fullName(), it.email) }
+                .mapNotNull { UserContact.from(it.fullName(), it.email) }
 
         filterNewContacts(hankeId, contacts).forEach { contact ->
             createTunnisteAndKayttaja(
@@ -96,7 +94,7 @@ class HankeKayttajaService(
             hanke
                 .extractYhteystiedot()
                 .flatMap { it.alikontaktit }
-                .mapNotNull { HankeUserContact.from(it.fullName(), it.email) }
+                .mapNotNull { UserContact.from(it.fullName(), it.email) }
 
         val inviter = getKayttajaByUserId(hanke.id, userId)
         filterNewContacts(hanke.id, contacts).forEach { contact ->

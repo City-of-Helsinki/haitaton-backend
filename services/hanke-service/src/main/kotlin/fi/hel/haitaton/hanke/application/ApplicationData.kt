@@ -10,11 +10,11 @@ import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import java.time.ZonedDateTime
 
-enum class ApplicationContactType(val value: String) {
-    HAKIJA("hakija"),
-    TYON_SUORITTAJA("työn suorittaja"),
-    RAKENNUTTAJA("rakennuttaja"),
-    ASIANHOITAJA("asianhoitaja"),
+enum class ApplicationContactType {
+    HAKIJA,
+    TYON_SUORITTAJA,
+    RAKENNUTTAJA,
+    ASIANHOITAJA,
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -36,6 +36,19 @@ sealed interface ApplicationData {
     fun copy(pendingOnClient: Boolean): ApplicationData
     fun toAlluData(hankeTunnus: String): AlluApplicationData
     fun customersWithContacts(): List<CustomerWithContacts>
+
+    /**
+     * Returns a set of email addresses from customer contact persons that:
+     * - are not null, empty or blank.
+     * - do not match the optional [omit] argument.
+     */
+    fun contactPersonEmails(omit: String? = null): Set<String> =
+        customersWithContacts()
+            .flatMap { customer -> customer.contacts }
+            .mapNotNull { it.email }
+            .filter { it.isNotBlank() }
+            .toMutableSet()
+            .apply { omit?.let { remove(it) } }
 }
 
 @JsonView(ChangeLogView::class)
@@ -96,6 +109,8 @@ data class CableReportApplicationData(
         customersWithContacts().flatMap { it.contacts }.find { it.orderer }
 }
 
+fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }
+
 class AlluDataException(path: String, error: AlluDataError) :
     RuntimeException("Application data failed validation at $path: $error")
 
@@ -106,5 +121,3 @@ enum class AlluDataError(private val errorDescription: String) {
 
     override fun toString(): String = errorDescription
 }
-
-fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }

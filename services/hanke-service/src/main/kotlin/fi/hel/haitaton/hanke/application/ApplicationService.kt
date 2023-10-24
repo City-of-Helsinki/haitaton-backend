@@ -19,9 +19,6 @@ import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
-import fi.hel.haitaton.hanke.domain.ApplicationUserContact
-import fi.hel.haitaton.hanke.domain.subtractByEmail
-import fi.hel.haitaton.hanke.domain.typedContacts
 import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -354,14 +351,15 @@ open class ApplicationService(
         }
 
         val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, currentUserId)
-        val contacts = application.applicationData.typedContacts(omit = kayttaja?.sahkoposti)
+        val contactEmails =
+            application.applicationData.contactPersonEmails(omit = kayttaja?.sahkoposti)
 
         provideAccess(
             application = application,
             hanke = hanke,
             currentKayttaja = kayttaja,
             currentUserId = currentUserId,
-            contacts = contacts
+            emailRecipients = contactEmails
         )
     }
 
@@ -379,16 +377,16 @@ open class ApplicationService(
 
         val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, currentUserId)
 
-        val previousContacts = previousData.typedContacts()
-        val updatedContacts = application.applicationData.typedContacts(omit = kayttaja?.sahkoposti)
-        val newContacts = updatedContacts.subtractByEmail(previousContacts)
+        val previous = previousData.contactPersonEmails()
+        val updated = application.applicationData.contactPersonEmails(omit = kayttaja?.sahkoposti)
+        val newEmails = updated.subtract(previous)
 
         provideAccess(
             application = application,
             hanke = hanke,
             currentKayttaja = kayttaja,
             currentUserId = currentUserId,
-            contacts = newContacts
+            emailRecipients = newEmails
         )
     }
 
@@ -397,7 +395,7 @@ open class ApplicationService(
         hanke: HankeEntity,
         currentKayttaja: HankeKayttajaEntity?,
         currentUserId: String,
-        contacts: Set<ApplicationUserContact>,
+        emailRecipients: Set<String>,
     ) {
         hankeKayttajaService.saveNewTokensFromApplication(
             application = application,
@@ -408,13 +406,13 @@ open class ApplicationService(
             currentKayttaja = currentKayttaja
         )
 
-        contacts.forEach {
+        emailRecipients.forEach { email ->
             notifyOnApplication(
                 hanke.hankeTunnus,
                 application.applicationIdentifier!!,
                 application.applicationType,
                 currentKayttaja,
-                it,
+                email,
             )
         }
     }
@@ -424,7 +422,7 @@ open class ApplicationService(
         applicationIdentifier: String,
         applicationType: ApplicationType,
         currentKayttaja: HankeKayttajaEntity?,
-        recipient: ApplicationUserContact
+        recipientEmail: String,
     ) {
         logger.info { "Sending Application notification." }
 
@@ -437,11 +435,10 @@ open class ApplicationService(
             ApplicationNotificationData(
                 senderName = currentKayttaja.nimi,
                 senderEmail = currentKayttaja.sahkoposti,
-                recipientEmail = recipient.email,
+                recipientEmail = recipientEmail,
                 hankeTunnus = hankeTunnus,
                 applicationIdentifier = applicationIdentifier,
                 applicationType = applicationType,
-                roleType = recipient.type,
             )
         )
     }

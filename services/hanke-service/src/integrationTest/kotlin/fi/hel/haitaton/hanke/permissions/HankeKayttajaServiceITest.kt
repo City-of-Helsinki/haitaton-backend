@@ -36,7 +36,6 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationIdentifier
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationName
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.expectedRecipients
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaApplicationContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.rakennuttajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaCustomerContact
@@ -49,6 +48,7 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
+import fi.hel.haitaton.hanke.factory.UserContactFactory.hakijaContact
 import fi.hel.haitaton.hanke.factory.identifier
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -405,7 +405,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val capturedEmails = mutableListOf<HankeInvitationData>()
             justRun { emailSenderService.sendHankeInvitationEmail(capture(capturedEmails)) }
             val inviter =
-                with(hakijaApplicationContact) {
+                with(hakijaContact) {
                     HankeKayttajaFactory.createEntity(nimi = name, sahkoposti = email)
                 }
 
@@ -419,8 +419,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             )
 
             assertThat(capturedEmails).each { inv ->
-                inv.transform { it.inviterEmail }.isEqualTo(hakijaApplicationContact.email)
-                inv.transform { it.inviterName }.isEqualTo(hakijaApplicationContact.name)
+                inv.transform { it.inviterEmail }.isEqualTo(hakijaContact.email)
+                inv.transform { it.inviterName }.isEqualTo(hakijaContact.name)
                 inv.transform { it.invitationToken }.isNotEmpty()
                 inv.transform { it.recipientEmail }.isIn(*expectedRecipients)
                 inv.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
