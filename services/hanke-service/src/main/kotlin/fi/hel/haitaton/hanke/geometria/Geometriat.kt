@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.geometria
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.NotInChangeLogView
-import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HasId
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
@@ -39,15 +38,15 @@ data class Geometriat(
     @JsonView(NotInChangeLogView::class)
     var modifiedAt: ZonedDateTime? = null
 ) : HasId<Int> {
-    fun withFeatureCollection(featureCollection: FeatureCollection): Geometriat {
-        this.featureCollection = featureCollection
+    fun withFeatureCollection(input: FeatureCollection): Geometriat {
+        this.featureCollection = input
         return this
     }
 
-    fun resetFeatureProperties(hanke: Hanke) {
-        this.featureCollection?.let { featureCollection ->
-            featureCollection.features.forEach { feature ->
-                feature.properties = mutableMapOf<String, Any?>("hankeTunnus" to hanke.hankeTunnus)
+    fun resetFeatureProperties(hankeTunnus: String?) {
+        featureCollection?.let { collection ->
+            collection.features.forEach { feature ->
+                feature.properties = mutableMapOf<String, Any?>("hankeTunnus" to hankeTunnus)
             }
         }
     }

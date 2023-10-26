@@ -1,17 +1,14 @@
 package fi.hel.haitaton.hanke.permissions
 
-import fi.hel.haitaton.hanke.HankeArgumentException
 import fi.hel.haitaton.hanke.HankeIdentifier
+import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeUserContact
 import fi.hel.haitaton.hanke.domain.Perustaja
-import fi.hel.haitaton.hanke.domain.UserContact
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.HankeInvitationData
-import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
 import java.util.UUID
 import mu.KotlinLogging
@@ -24,12 +21,12 @@ private val logger = KotlinLogging.logger {}
 class HankeKayttajaService(
     private val hankeKayttajaRepository: HankeKayttajaRepository,
     private val kayttajaTunnisteRepository: KayttajaTunnisteRepository,
+    private val hankeRepository: HankeRepository,
     private val permissionService: PermissionService,
     private val featureFlags: FeatureFlags,
     private val logService: HankeKayttajaLoggingService,
     private val emailSenderService: EmailSenderService,
 ) {
-
     @Transactional(readOnly = true)
     fun getKayttajatByHankeId(hankeId: Int): List<HankeKayttajaDto> =
         hankeKayttajaRepository.findByHankeId(hankeId).map { it.toDto() }
@@ -62,9 +59,6 @@ class HankeKayttajaService(
         currentUserId: String,
         currentKayttaja: HankeKayttajaEntity? = null,
     ) {
-        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
-            return
-        }
         logger.info {
             "Creating users and user tokens for application ${application.id}, alluid=${application.alluid}}"
         }
@@ -73,7 +67,7 @@ class HankeKayttajaService(
             application.applicationData
                 .customersWithContacts()
                 .flatMap { it.contacts }
-                .mapNotNull { HankeUserContact.from(it.fullName(), it.email) }
+                .mapNotNull { UserContact.from(it.fullName(), it.email) }
 
         filterNewContacts(hankeId, contacts).forEach { contact ->
             createTunnisteAndKayttaja(
@@ -96,19 +90,22 @@ class HankeKayttajaService(
             "Creating users and user tokens for hanke ${hanke.id}, hankeTunnus=${hanke.hankeTunnus}}"
         }
 
-        val hankeId = hanke.id ?: throw HankeArgumentException("Hanke without id")
-        val hankeTunnus = hanke.hankeTunnus ?: throw HankeArgumentException("Hanke without tunnus")
-        val hankeNimi = hanke.nimi ?: throw HankeArgumentException("Hanke without name")
-
         val contacts =
             hanke
                 .extractYhteystiedot()
                 .flatMap { it.alikontaktit }
-                .mapNotNull { HankeUserContact.from(it.fullName(), it.email) }
+                .mapNotNull { UserContact.from(it.fullName(), it.email) }
 
-        val inviter = getKayttajaByUserId(hankeId, userId)
-        filterNewContacts(hankeId, contacts).forEach { contact ->
-            createTunnisteAndKayttaja(hankeId, hankeTunnus, hankeNimi, inviter, contact, userId)
+        val inviter = getKayttajaByUserId(hanke.id, userId)
+        filterNewContacts(hanke.id, contacts).forEach { contact ->
+            createTunnisteAndKayttaja(
+                hanke.id,
+                hanke.hankeTunnus,
+                hanke.nimi,
+                inviter,
+                contact,
+                userId
+            )
         }
     }
 
@@ -164,15 +161,13 @@ class HankeKayttajaService(
     }
 
     @Transactional
-    fun createPermissionFromToken(userId: String, tunniste: String) {
+    fun createPermissionFromToken(userId: String, tunniste: String): HankeKayttaja {
         logger.info { "Trying to activate token $tunniste for user $userId" }
         val tunnisteEntity =
             kayttajaTunnisteRepository.findByTunniste(tunniste)
                 ?: throw TunnisteNotFoundException(userId, tunniste)
 
-        val kayttaja =
-            tunnisteEntity.hankeKayttaja
-                ?: throw OrphanedTunnisteException(userId, tunnisteEntity.id)
+        val kayttaja = tunnisteEntity.hankeKayttaja
 
         permissionService.findPermission(kayttaja.hankeId, userId)?.let { permission ->
             throw UserAlreadyHasPermissionException(userId, kayttaja.id, permission.id)
@@ -192,6 +187,25 @@ class HankeKayttajaService(
 
         kayttaja.kayttajaTunniste = null
         kayttajaTunnisteRepository.delete(tunnisteEntity)
+        logService.logDelete(tunnisteEntity.toDomain(), userId)
+
+        return kayttaja.toDomain()
+    }
+
+    @Transactional
+    fun resendInvitation(kayttajaId: UUID, currentUserId: String) {
+        // Re-get the kayttaja under the transaction
+        val kayttaja = hankeKayttajaRepository.getReferenceById(kayttajaId)
+        kayttaja.permission?.let {
+            throw UserAlreadyHasPermissionException(currentUserId, kayttaja.id, it.id)
+        }
+        val inviter =
+            getKayttajaByUserId(kayttaja.hankeId, currentUserId)
+                ?: throw CurrentUserWithoutKayttajaException(currentUserId)
+
+        recreateTunniste(kayttaja, currentUserId)
+        val hanke = hankeRepository.getReferenceById(kayttaja.hankeId)
+        sendHankeInvitation(hanke.hankeTunnus, hanke.nimi, inviter, kayttaja)
     }
 
     /** Check that every user an update was requested for was found as a user of the hanke. */
@@ -276,15 +290,15 @@ class HankeKayttajaService(
         contact: UserContact,
         currentUserId: String
     ) {
-        val kayttajaTunnisteEntity = createTunniste(hankeId, currentUserId)
         val newHankeUser =
             createUser(
                 currentUser = currentUserId,
                 hankeId = hankeId,
                 nimi = contact.name,
                 sahkoposti = contact.email,
-                tunniste = kayttajaTunnisteEntity,
             )
+        val kayttajaTunnisteEntity = createTunniste(newHankeUser, currentUserId)
+        newHankeUser.kayttajaTunniste = kayttajaTunnisteEntity
         sendHankeInvitation(hankeTunnus, hankeNimi, currentKayttaja, newHankeUser)
     }
 
@@ -331,15 +345,29 @@ class HankeKayttajaService(
     }
 
     private fun createTunniste(
-        hankeId: Int,
+        hankeKayttaja: HankeKayttajaEntity,
         currentUserId: String,
     ): KayttajaTunnisteEntity {
-        logger.info { "Creating a new user token, hankeId=$hankeId" }
-        val token = KayttajaTunnisteEntity.create(sentAt = getCurrentTimeUTC().toOffsetDateTime())
+        logger.info {
+            "Creating a new user token, " +
+                "hankeKayttajaId=${hankeKayttaja.id}, hankeId=${hankeKayttaja.hankeId}"
+        }
+        val token = KayttajaTunnisteEntity.create(hankeKayttaja)
         val kayttajaTunnisteEntity = kayttajaTunnisteRepository.save(token)
         logger.info { "Saved the new user token, id=${kayttajaTunnisteEntity.id}" }
         logService.logCreate(kayttajaTunnisteEntity.toDomain(), currentUserId)
         return kayttajaTunnisteEntity
+    }
+
+    private fun recreateTunniste(hankeKayttaja: HankeKayttajaEntity, currentUserId: String) {
+        hankeKayttaja.kayttajaTunniste?.let { tunniste ->
+            logger.info { "Deleting old tunniste ${tunniste.id}" }
+            kayttajaTunnisteRepository.delete(tunniste)
+            // Flush to avoid unique key collision on hanke_kayttaja_id
+            kayttajaTunnisteRepository.flush()
+            logService.logDelete(tunniste.toDomain(), currentUserId)
+        }
+        hankeKayttaja.kayttajaTunniste = createTunniste(hankeKayttaja, currentUserId)
     }
 
     private fun createUser(
@@ -384,6 +412,9 @@ class HankeKayttajaService(
             .map { it.sahkoposti }
 }
 
+class HankeKayttajaNotFoundException(kayttajaId: UUID) :
+    RuntimeException("HankeKayttaja was not found with ID: $kayttajaId")
+
 class ChangingOwnPermissionException(userId: String) :
     RuntimeException("User tried to change their own permissions, userId=$userId")
 
@@ -413,11 +444,6 @@ class HankeKayttajatNotFoundException(
 class TunnisteNotFoundException(userId: String, tunniste: String) :
     RuntimeException("A matching token was not found, userId=$userId, tunniste=$tunniste")
 
-class OrphanedTunnisteException(userId: String, tunnisteId: UUID) :
-    RuntimeException(
-        "A token didn't have a matching user, userId=$userId, kayttajaTunnisteId=$tunnisteId"
-    )
-
 class UserAlreadyHasPermissionException(userId: String, kayttajaId: UUID, permissionId: Int) :
     RuntimeException(
         "The user already has an active permission, userId=$userId, hankeKayttajaId=$kayttajaId, permissionsId=$permissionId"
@@ -434,3 +460,6 @@ class PermissionAlreadyExistsException(
             "the current user is $currentUserId, the user on the permission is $permissionUserId, " +
             "hankeKayttajaId=$hankeKayttajaId, permissionId=$permissionId"
     )
+
+class CurrentUserWithoutKayttajaException(currentUserId: String) :
+    RuntimeException("The current user doesn't have a hankeKayttaja. userId=$currentUserId")

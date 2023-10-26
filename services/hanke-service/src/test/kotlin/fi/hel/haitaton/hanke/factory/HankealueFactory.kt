@@ -1,10 +1,12 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.Haitta13
+import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.HankealueEntity
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import java.time.ZonedDateTime
 
@@ -24,8 +26,8 @@ object HankealueFactory {
         polyHaitta: Haitta13? = Haitta13.KAKSI,
         tarinaHaitta: Haitta13? = Haitta13.KOLME,
         nimi: String? = null,
-    ): Hankealue {
-        return Hankealue(
+    ): SavedHankealue {
+        return SavedHankealue(
             id,
             hankeId,
             haittaAlkuPvm,
@@ -52,8 +54,8 @@ object HankealueFactory {
         polyHaitta: Haitta13? = null,
         tarinaHaitta: Haitta13? = null,
         nimi: String? = null,
-    ): Hankealue {
-        return Hankealue(
+    ): SavedHankealue {
+        return SavedHankealue(
             id,
             hankeId,
             haittaAlkuPvm,
@@ -66,5 +68,22 @@ object HankealueFactory {
             tarinaHaitta,
             nimi,
         )
+    }
+
+    fun createHankeAlueEntity(mockId: Int? = 1, hankeEntity: HankeEntity): HankealueEntity {
+        val alue = create(id = mockId).apply { geometriat?.id = mockId }
+        return HankealueEntity().apply {
+            id = alue.id
+            hanke = hankeEntity
+            geometriat = alue.geometriat?.id
+            haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate()
+            haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate()
+            kaistaHaitta = alue.kaistaHaitta
+            kaistaPituusHaitta = alue.kaistaPituusHaitta
+            meluHaitta = alue.meluHaitta
+            polyHaitta = alue.polyHaitta
+            tarinaHaitta = alue.tarinaHaitta
+            nimi = alue.nimi
+        }
     }
 }

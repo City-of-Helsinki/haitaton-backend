@@ -55,7 +55,7 @@ class HankeAttachmentService(
         val filename = AttachmentValidator.validFilename(attachment.originalFilename)
         val hanke =
             findHanke(hankeTunnus).also { hanke ->
-                ensureRoomForAttachment(hanke.id!!)
+                ensureRoomForAttachment(hanke.id)
                 scanAttachment(filename, attachment.bytes)
             }
 
@@ -92,7 +92,7 @@ class HankeAttachmentService(
 
     private fun ensureRoomForAttachment(hankeId: Int) {
         if (attachmentAmountReached(hankeId)) {
-            logger.warn { "Application $hankeId has reached the allowed amount of attachments." }
+            logger.warn { "Hanke $hankeId has reached the allowed amount of attachments." }
             throw AttachmentInvalidException("Attachment amount limit reached")
         }
     }

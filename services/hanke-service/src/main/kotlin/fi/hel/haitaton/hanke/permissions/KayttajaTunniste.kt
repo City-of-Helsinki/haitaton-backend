@@ -9,6 +9,7 @@ import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.security.SecureRandom
@@ -23,7 +24,6 @@ data class KayttajaTunniste(
     override val id: UUID,
     val tunniste: String,
     val createdAt: OffsetDateTime,
-    val sentAt: OffsetDateTime?,
     var kayttooikeustaso: Kayttooikeustaso,
     val hankeKayttajaId: UUID?
 ) : HasId<UUID>
@@ -34,26 +34,25 @@ class KayttajaTunnisteEntity(
     @Id val id: UUID = UUID.randomUUID(),
     val tunniste: String,
     @Column(name = "created_at") val createdAt: OffsetDateTime,
-    @Column(name = "sent_at") val sentAt: OffsetDateTime?,
     @Enumerated(EnumType.STRING) var kayttooikeustaso: Kayttooikeustaso,
-    @OneToOne(mappedBy = "kayttajaTunniste") val hankeKayttaja: HankeKayttajaEntity?
+    @OneToOne
+    @JoinColumn(name = "hanke_kayttaja_id", updatable = false, nullable = false, unique = true)
+    val hankeKayttaja: HankeKayttajaEntity,
 ) {
 
-    fun toDomain() =
-        KayttajaTunniste(id, tunniste, createdAt, sentAt, kayttooikeustaso, hankeKayttaja?.id)
+    fun toDomain() = KayttajaTunniste(id, tunniste, createdAt, kayttooikeustaso, hankeKayttaja.id)
 
     companion object {
         private const val tokenLength: Int = 24
         private val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
         private val secureRandom: SecureRandom = SecureRandom()
 
-        fun create(sentAt: OffsetDateTime? = null) =
+        fun create(hankeKayttaja: HankeKayttajaEntity) =
             KayttajaTunnisteEntity(
                 tunniste = randomToken(),
                 createdAt = getCurrentTimeUTC().toOffsetDateTime(),
-                sentAt = sentAt,
                 kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
-                hankeKayttaja = null
+                hankeKayttaja = hankeKayttaja
             )
 
         private fun randomToken(): String =

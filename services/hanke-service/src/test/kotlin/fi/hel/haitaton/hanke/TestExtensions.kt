@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import assertk.Assert
-import assertk.assertions.containsExactly
+import assertk.assertions.containsExactlyInAnyOrder
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -28,6 +28,12 @@ fun String.getResourceAsBytes(): ByteArray = this.getResource().readBytes()
 inline fun <reified T> String.parseJson(): T = OBJECT_MAPPER.readValue(this)
 
 /**
+ * Deserialize the string to a JSON node and then serialize it back to a string, effectively
+ * normalizing its formatting.
+ */
+fun String.reformatJson(): String = OBJECT_MAPPER.readTree(this).toJsonString()
+
+/**
  * Find all audit logs for a specific object type. Getting all and filtering would obviously not be
  * acceptable in production, but in tests we usually have a very limited number of entities at any
  * one test.
@@ -44,8 +50,8 @@ fun GreenMailExtension.firstReceivedMessage(): MimeMessage {
     return receivedMessages[0]
 }
 
-inline fun <reified T> Assert<List<T>>.hasSameElementsAs(elements: List<T>) =
-    containsExactly(*elements.toTypedArray<T>())
+inline fun <reified T> Assert<Collection<T>>.hasSameElementsAs(elements: List<T>) =
+    containsExactlyInAnyOrder(*elements.toTypedArray<T>())
 
 /**
  * "Uses" a variable without doing anything with it. Used to avoid "Parameter is never used"
