@@ -7,14 +7,15 @@
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">
-                    Haitaton: Sinut on lisätty hankkeelle {{hankeTunnus}}
+                    Sinut on lisätty hankkeelle {{hankeTunnus}}
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     {{inviterName}} ({{inviterEmail}}) lisäsi sinut hankkeelle <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
                     Tunnistaudu Haitattomaan alla olevan linkin kautta.
                 </mj-text>
                 <mj-text mj-class="basic-txt">
-                    <a href="{{baseUrl}}/{{invitationToken}}">Haitattomaan</a>
+                    <a href="{{baseUrl}}/fi/kutsu?id={{invitationToken}}">{{baseUrl}}/fi/kutsu?id={{invitationToken}}
+                    </a>
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     Löydät hankkeesi Haitattoman etusivun Omat hankkeet -osion alta hankkeen nimellä.

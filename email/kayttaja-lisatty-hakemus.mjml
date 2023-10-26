@@ -7,13 +7,13 @@
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">
-                    Haitaton: Sinut on lisätty hakemukselle {{applicationIdentifier}}
+                    Sinut on lisätty hakemukselle {{applicationIdentifier}}
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     {{senderName}} ({{senderEmail}}) on tehnyt {{applicationType}} ({{applicationIdentifier}})
                     hankkeella
-                    {{hankeTunnus}}, ja lähettänyt sen käsittelyyn. Sinut on määritetty hakemuksella rooliin
-                    {{recipientRole}}. Tarkastele hakemusta Haitattomassa
+                    {{hankeTunnus}}, ja lähettänyt sen käsittelyyn. Sinut on lisätty kyseiselle hakemukselle. Tarkastele
+                    hakemusta Haitattomassa:
                     <a href="{{baseUrl}}">{{baseUrl}}</a>
                 </mj-text>
                 <mj-text mj-class="basic-txt">

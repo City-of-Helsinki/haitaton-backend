@@ -1,10 +1,10 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.domain.BusinessId
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.NullSource
 import org.junit.jupiter.params.provider.ValueSource
 
 class UtilsKtTest {
@@ -27,7 +27,7 @@ class UtilsKtTest {
                     "6545312-3"
                 ]
         )
-        fun `isValid when valid businessId returns true`(businessId: BusinessId) {
+        fun `isValid when valid businessId returns true`(businessId: String) {
             assertTrue(businessId.isValidBusinessId())
         }
 
@@ -45,7 +45,8 @@ class UtilsKtTest {
                     "8238445-A"
                 ]
         )
-        fun `isValid when not valid businessId returns false`(businessId: BusinessId) {
+        @NullSource
+        fun `isValid when not valid businessId returns false`(businessId: String?) {
             assertFalse(businessId.isValidBusinessId())
         }
     }

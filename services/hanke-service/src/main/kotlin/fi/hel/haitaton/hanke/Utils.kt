@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.domain.BusinessId
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
@@ -19,6 +18,8 @@ private val businessIdMultipliers = listOf(7, 9, 10, 5, 8, 4, 2)
  */
 fun getCurrentTimeUTC(): ZonedDateTime = ZonedDateTime.now(TZ_UTC).truncatedTo(ChronoUnit.MICROS)
 
+fun LocalDateTime.zonedDateTime(): ZonedDateTime = ZonedDateTime.of(this, TZ_UTC)
+
 /**
  * Returns the current time in UTC, without time zone info (i.e. LocalTime instance).
  *
@@ -29,7 +30,7 @@ fun getCurrentTimeUTCAsLocalTime(): LocalDateTime = getCurrentTimeUTC().toLocalD
 fun currentUserId(): String = SecurityContextHolder.getContext().authentication.name
 
 /**
- * Valid businessId (y-tunnus) requirements:
+ * Valid business id (y-tunnus) requirements:
  * 1. format NNNNNNN-T, where N = sequence number and T = check number.
  * 2. documentation of check mark calculation:
  * ```
@@ -38,8 +39,13 @@ fun currentUserId(): String = SecurityContextHolder.getContext().authentication.
  *
  * Only verifies that the id is of valid form. It does not guarantee that it actually exists.
  */
-fun BusinessId.isValidBusinessId(): Boolean {
-    logger.info { "Verifying businessId: $this" }
+fun String?.isValidBusinessId(): Boolean {
+    logger.info { "Verifying business id: $this" }
+
+    if (this == null) {
+        logger.warn { "Business id is null." }
+        return false
+    }
 
     val matchResult = businessIdRegex.find(this)
     if (matchResult == null) {

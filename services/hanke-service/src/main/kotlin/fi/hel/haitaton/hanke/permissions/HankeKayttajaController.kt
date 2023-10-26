@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
@@ -175,7 +176,6 @@ have those same permissions.
     }
 
     @PostMapping("/kayttajat")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(
         summary = "Identify a user",
         description =
@@ -185,6 +185,8 @@ that's the same as the token given in the request. Activates the permission to
 the hanke the token was created for.
 
 Removes the token after a successful identification.
+
+Responds with information about the activated user and the hanke associated with it.
 """
     )
     @ApiResponses(
@@ -192,7 +194,7 @@ Removes the token after a successful identification.
             [
                 ApiResponse(
                     description = "User identified, permission to hanke given",
-                    responseCode = "204",
+                    responseCode = "200",
                 ),
                 ApiResponse(
                     description = "Token not found or outdated",
@@ -211,11 +213,65 @@ Removes the token after a successful identification.
                 ),
             ]
     )
-    fun identifyUser(@RequestBody tunnistautuminen: Tunnistautuminen) {
-        hankeKayttajaService.createPermissionFromToken(currentUserId(), tunnistautuminen.tunniste)
+    fun identifyUser(@RequestBody tunnistautuminen: Tunnistautuminen): TunnistautuminenResponse {
+        val kayttaja =
+            hankeKayttajaService.createPermissionFromToken(
+                currentUserId(),
+                tunnistautuminen.tunniste
+            )
+
+        val hanke = hankeService.loadHankeById(kayttaja.hankeId)!!
+        return TunnistautuminenResponse(kayttaja.id, hanke.hankeTunnus, hanke.nimi)
+    }
+
+    @PostMapping("/kayttajat/{kayttajaId}/kutsu")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(
+        summary = "Resend an invitation email",
+        description =
+            """
+Resend the invitation email the user was sent when they were first added to the
+hanke as a contact person.
+
+Regenerates the invitation token and link. This means that the link in the
+original email will not work anymore. It also means that the period of validity
+of the token and link will be reset.
+"""
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Invitation email resent",
+                    responseCode = "204",
+                ),
+                ApiResponse(
+                    description = "User not found",
+                    responseCode = "404",
+                ),
+                ApiResponse(
+                    description =
+                        "User has already been activated or the current user doesn't have name and email registered.",
+                    responseCode = "409",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+            ]
+    )
+    @PreAuthorize(
+        "@featureService.isEnabled('USER_MANAGEMENT') && " +
+            "@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'RESEND_INVITATION')"
+    )
+    fun resendInvitations(@PathVariable kayttajaId: UUID) {
+        hankeKayttajaService.resendInvitation(kayttajaId, currentUserId())
     }
 
     data class Tunnistautuminen(val tunniste: String)
+
+    data class TunnistautuminenResponse(
+        val kayttajaId: UUID,
+        val hankeTunnus: String,
+        val hankeNimi: String,
+    )
 
     @ExceptionHandler(MissingAdminPermissionException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
@@ -268,14 +324,6 @@ Removes the token after a successful identification.
     }
 
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    @Hidden
-    fun orphanedTunnisteException(ex: OrphanedTunnisteException): HankeError {
-        logger.error(ex) { ex.message }
-        return HankeError.HAI4001
-    }
-
-    @ExceptionHandler
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden
     fun userAlreadyHasPermissionException(ex: UserAlreadyHasPermissionException): HankeError {
@@ -287,6 +335,22 @@ Removes the token after a successful identification.
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden
     fun permissionAlreadyExistsException(ex: PermissionAlreadyExistsException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4003
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
+    fun hankeKayttajaNotFoundException(ex: HankeKayttajaNotFoundException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4001
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun currentUserWithoutKayttajaException(ex: CurrentUserWithoutKayttajaException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI4003
     }

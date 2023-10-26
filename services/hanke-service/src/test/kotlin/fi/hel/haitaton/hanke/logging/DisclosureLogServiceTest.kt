@@ -1,10 +1,17 @@
 package fi.hel.haitaton.hanke.logging
 
+import assertk.assertThat
+import assertk.assertions.containsAll
+import assertk.assertions.containsExactlyInAnyOrder
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
+import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
+import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withApplicationData
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -16,16 +23,20 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.gdpr.StringNode
+import fi.hel.haitaton.hanke.hasSameElementsAs
+import fi.hel.haitaton.hanke.reformatJson
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
@@ -66,27 +77,23 @@ internal class DisclosureLogServiceTest {
 
         val expectedObject =
             """
-            |{"key":"user","children":
-              |[
-                |{"key":"id","value":"4f15afe1-51dc-4015-bb66-3a536295abea"},
-                |{"key":"nimi","value":"Teppo Testihenkilö"},
-                |{"key":"sahkoposti","value":"teppo@example.test"},
-                |{"key":"puhelin","value":"04012345678"}
-              |]
-            |}"""
-                .trimMargin()
-                .replace("\n", "")
-        val expectedEntries =
-            listOf(
-                AuditLogEntryFactory.createReadEntry(
-                    userId = PROFIILI_AUDIT_LOG_USERID,
-                    userRole = UserRole.SERVICE,
-                    objectType = ObjectType.GDPR_RESPONSE,
-                    objectId = userId,
-                    objectBefore = expectedObject
-                )
+            {"key":"user","children":
+              [
+                {"key":"id","value":"4f15afe1-51dc-4015-bb66-3a536295abea"},
+                {"key":"nimi","value":"Teppo Testihenkilö"},
+                {"key":"sahkoposti","value":"teppo@example.test"},
+                {"key":"puhelin","value":"04012345678"}
+              ]
+            }""".reformatJson()
+        val expectedEntry =
+            AuditLogEntryFactory.createReadEntry(
+                userId = PROFIILI_AUDIT_LOG_USERID,
+                userRole = UserRole.SERVICE,
+                objectType = ObjectType.GDPR_RESPONSE,
+                objectId = userId,
+                objectBefore = expectedObject
             )
-        verify { auditLogService.createAll(match(containsAll(expectedEntries))) }
+        verify { auditLogService.create(expectedEntry) }
     }
 
     @Test
@@ -256,69 +263,93 @@ internal class DisclosureLogServiceTest {
     }
 
     @Test
-    fun `saveDisclosureLogsForApplication with identical person customers logs only once`() {
+    fun `saveDisclosureLogsForApplication with identical person customers logs every instance`() {
         val customerWithoutContacts =
-            CustomerWithContacts(AlluDataFactory.createPersonCustomer(), listOf())
-        val contractorWithoutContacts =
             CustomerWithContacts(AlluDataFactory.createPersonCustomer(), listOf())
         val application =
             AlluDataFactory.createApplication(
                 applicationData =
                     AlluDataFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
-                        contractorWithContacts = contractorWithoutContacts
+                        contractorWithContacts = customerWithoutContacts,
                     ),
                 hankeTunnus = hankeTunnus,
             )
-        val expectedLogs =
-            listOf(
-                AuditLogEntryFactory.createReadEntryForCustomer(customerWithoutContacts.customer)
-            )
+        val capturedLogs = slot<Collection<AuditLogEntry>>()
+        every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
-        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
+        val expectedLogs =
+            listOf(HAKIJA, TYON_SUORITTAJA).map {
+                AuditLogEntryFactory.createReadEntryForCustomer(
+                    application.id!!,
+                    customerWithoutContacts.customer,
+                    it
+                )
+            }
+        assertThat(capturedLogs.captured).hasSameElementsAs(expectedLogs)
+        verify(exactly = 1) { auditLogService.createAll(any()) }
     }
 
     @Test
     fun `saveDisclosureLogsForApplication with contacts logs contacts`() {
+        val applicationId = 41L
         val cableReportApplication = AlluDataFactory.createCableReportApplicationData()
         val firstContact = cableReportApplication.customerWithContacts.contacts[0]
         val secondContact = cableReportApplication.contractorWithContacts.contacts[0]
-        val expectedLogs =
-            listOf(firstContact, secondContact).map {
-                AuditLogEntryFactory.createReadEntryForContact(it)
-            }
         val application =
             AlluDataFactory.createApplication(
+                id = applicationId,
                 applicationData = cableReportApplication,
                 hankeTunnus = hankeTunnus
             )
+        val capturedLogs = slot<Collection<AuditLogEntry>>()
+        every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
-        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
+        assertThat(capturedLogs.captured)
+            .containsAll(
+                AuditLogEntryFactory.createReadEntryForContact(applicationId, firstContact, HAKIJA),
+                AuditLogEntryFactory.createReadEntryForContact(
+                    applicationId,
+                    secondContact,
+                    TYON_SUORITTAJA
+                ),
+            )
+        verify(exactly = 1) { auditLogService.createAll(any()) }
     }
 
     @ParameterizedTest(name = "{displayName}({arguments})")
     @EnumSource(Status::class)
     fun `saveDisclosureLogsForAllu saves logs with the given status`(expectedStatus: Status) {
+        val applicationId = 41L
         val cableReportApplication = AlluDataFactory.createCableReportApplicationData()
         val firstContact = cableReportApplication.customerWithContacts.contacts[0]
         val secondContact = cableReportApplication.contractorWithContacts.contacts[0]
         val expectedLogs =
-            listOf(firstContact, secondContact).map {
-                AuditLogEntryFactory.createReadEntryForContact(it)
+            listOf(HAKIJA to firstContact, TYON_SUORITTAJA to secondContact).map { (role, contact)
+                ->
+                AuditLogEntryFactory.createReadEntryForContact(applicationId, contact, role)
                     .copy(
+                        objectType = ObjectType.ALLU_CONTACT,
                         status = expectedStatus,
                         userId = ALLU_AUDIT_LOG_USERID,
                         userRole = UserRole.SERVICE,
                     )
             }
+        val capturedLogs = slot<Collection<AuditLogEntry>>()
+        every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
-        disclosureLogService.saveDisclosureLogsForAllu(cableReportApplication, expectedStatus)
+        disclosureLogService.saveDisclosureLogsForAllu(
+            applicationId,
+            cableReportApplication,
+            expectedStatus
+        )
 
-        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
+        assertThat(capturedLogs.captured).hasSameElementsAs(expectedLogs)
+        verify(exactly = 1) { auditLogService.createAll(any()) }
     }
 
     @Test
@@ -326,38 +357,52 @@ internal class DisclosureLogServiceTest {
         val contacts =
             (1..8).map { AlluDataFactory.createContact(firstName = "Contact", lastName = "$it") }
         val customers = (1..4).map { AlluDataFactory.createPersonCustomer(name = "Customer $it") }
-        val expectedLogs =
-            (contacts.map { AuditLogEntryFactory.createReadEntryForContact(it) } +
-                customers.map { AuditLogEntryFactory.createReadEntryForCustomer(it) })
-        assertEquals(12, expectedLogs.size)
         val customersWithContacts =
-            (0..3).map { i ->
+            customers.withIndex().map { (i, customer) ->
                 CustomerWithContacts(
-                    customers[i],
-                    listOf(contacts[i], contacts[i + 4], contacts[0])
+                    customer,
+                    listOf(contacts[2 * i], contacts[2 * i + 1], contacts[0])
                 )
             }
         val applications =
             listOf(
-                    AlluDataFactory.createCableReportApplicationData(
+                AlluDataFactory.createApplication(id = 1, hankeTunnus = hankeTunnus)
+                    .withApplicationData(
                         customerWithContacts = customersWithContacts[0],
                         contractorWithContacts = customersWithContacts[1],
                     ),
-                    AlluDataFactory.createCableReportApplicationData(
+                AlluDataFactory.createApplication(id = 2, hankeTunnus = hankeTunnus)
+                    .withApplicationData(
                         customerWithContacts = customersWithContacts[2],
                         contractorWithContacts = customersWithContacts[3],
                     )
-                )
-                .map {
-                    AlluDataFactory.createApplication(
-                        applicationData = it,
-                        hankeTunnus = hankeTunnus
-                    )
-                }
+            )
+        val capturedLogs = slot<Collection<AuditLogEntry>>()
+        every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
 
         disclosureLogService.saveDisclosureLogsForApplications(applications, userId)
 
-        verify { auditLogService.createAll(match(containsAll(expectedLogs))) }
+        assertThat(capturedLogs.captured)
+            .containsExactlyInAnyOrder(
+                AuditLogEntryFactory.createReadEntryForCustomer(1, customers[0], HAKIJA),
+                // The first contact is added twice for the first customer, but identical entries
+                // are logged only once
+                AuditLogEntryFactory.createReadEntryForContact(1, contacts[0], HAKIJA),
+                AuditLogEntryFactory.createReadEntryForContact(1, contacts[1], HAKIJA),
+                AuditLogEntryFactory.createReadEntryForCustomer(1, customers[1], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForContact(1, contacts[0], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForContact(1, contacts[2], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForContact(1, contacts[3], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForCustomer(2, customers[2], HAKIJA),
+                AuditLogEntryFactory.createReadEntryForContact(2, contacts[0], HAKIJA),
+                AuditLogEntryFactory.createReadEntryForContact(2, contacts[4], HAKIJA),
+                AuditLogEntryFactory.createReadEntryForContact(2, contacts[5], HAKIJA),
+                AuditLogEntryFactory.createReadEntryForCustomer(2, customers[3], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForContact(2, contacts[0], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForContact(2, contacts[6], TYON_SUORITTAJA),
+                AuditLogEntryFactory.createReadEntryForContact(2, contacts[7], TYON_SUORITTAJA),
+            )
+        verify(exactly = 1) { auditLogService.createAll(any()) }
     }
 
     @Test
@@ -365,6 +410,45 @@ internal class DisclosureLogServiceTest {
         disclosureLogService.saveDisclosureLogsForApplications(listOf(), userId)
 
         verify { auditLogService wasNot Called }
+    }
+
+    @Nested
+    inner class SaveDisclosureLogsForDecision {
+        @Test
+        fun `saves log with application details but decision type`() {
+            val applicationId = 42L
+            val alluId = 2
+            val alluStatus = ApplicationStatus.DECISION
+            val applicationIdentifier = "JS2300050-2"
+            val application =
+                AlluDataFactory.createApplication(
+                    id = applicationId,
+                    alluid = alluId,
+                    alluStatus = alluStatus,
+                    applicationIdentifier = applicationIdentifier,
+                    hankeTunnus = hankeTunnus
+                )
+            val expectedObject =
+                """{
+                  "id": $applicationId,
+                  "alluid": $alluId,
+                  "alluStatus": "$alluStatus",
+                  "applicationIdentifier": "$applicationIdentifier",
+                  "applicationType": "CABLE_REPORT",
+                  "hankeTunnus": "$hankeTunnus"
+                }""".reformatJson()
+            val expectedLog =
+                AuditLogEntryFactory.createReadEntry(
+                    userId,
+                    objectType = ObjectType.CABLE_REPORT,
+                    objectId = application.id!!,
+                    objectBefore = expectedObject
+                )
+
+            disclosureLogService.saveDisclosureLogsForCableReport(application.toMetadata(), userId)
+
+            verify { auditLogService.create(expectedLog) }
+        }
     }
 
     private fun containsAll(

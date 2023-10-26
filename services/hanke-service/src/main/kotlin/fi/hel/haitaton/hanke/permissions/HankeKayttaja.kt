@@ -36,9 +36,7 @@ class HankeKayttajaEntity(
     @OneToOne
     @JoinColumn(name = "permission_id", updatable = true, nullable = true)
     var permission: PermissionEntity?,
-    @OneToOne
-    @JoinColumn(name = "tunniste_id", updatable = true, nullable = true)
-    var kayttajaTunniste: KayttajaTunnisteEntity?,
+    @OneToOne(mappedBy = "hankeKayttaja") var kayttajaTunniste: KayttajaTunnisteEntity?,
 ) {
     fun toDto(): HankeKayttajaDto =
         HankeKayttajaDto(

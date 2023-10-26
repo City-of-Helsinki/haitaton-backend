@@ -13,4 +13,4 @@ object HankeIdentifierFactory {
 data class TestHankeIdentifier(override val id: Int, override val hankeTunnus: String) :
     HankeIdentifier
 
-fun Hanke.identifier(): HankeIdentifier = TestHankeIdentifier(id!!, hankeTunnus!!)
+fun Hanke.identifier(): HankeIdentifier = TestHankeIdentifier(id, hankeTunnus)

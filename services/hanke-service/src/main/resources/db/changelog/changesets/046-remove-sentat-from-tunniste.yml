@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: 046-remove-sentat-from-tunniste
+      author: Topias Heinonen
+      comment: Drop sentAt from kayttaja_tunniste since the tokens are recreated whenever they're sent.
+      changes:
+        - dropColumn:
+            tableName: kayttaja_tunniste
+            columnName: sent_at

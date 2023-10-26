@@ -6,7 +6,7 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "6.29.0"
+val sentryVersion = "6.32.0"
 
 ext["spring-security.version"] = "6.0.4"
 
@@ -49,9 +49,9 @@ spotless {
 
 plugins {
     val kotlinVersion = "1.9.10"
-    id("org.springframework.boot") version "3.0.10"
+    id("org.springframework.boot") version "3.1.4"
     id("io.spring.dependency-management") version "1.1.3"
-    id("com.diffplug.spotless") version "6.21.0"
+    id("com.diffplug.spotless") version "6.22.0"
     kotlin("jvm") version kotlinVersion
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
     kotlin("plugin.spring") version kotlinVersion
@@ -77,9 +77,9 @@ dependencies {
     implementation("de.grundid.opendatalab:geojson-jackson:1.14")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
-    implementation("com.github.blagerweij:liquibase-sessionlock:1.6.5")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.5.3")
-    implementation("commons-io:commons-io:2.13.0")
+    implementation("com.github.blagerweij:liquibase-sessionlock:1.6.6")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.6.0")
+    implementation("commons-io:commons-io:2.14.0")
     implementation("com.github.librepdf:openpdf:1.3.30")
     implementation("net.pwall.mustache:kotlin-mustache:0.11")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
@@ -90,14 +90,14 @@ dependencies {
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.junit.vintage", module = "junit-vintage-engine")
     }
-    testImplementation("io.mockk:mockk:1.13.7")
+    testImplementation("io.mockk:mockk:1.13.8")
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.27.0")
     testImplementation("com.squareup.okhttp3:mockwebserver")
     testImplementation("com.icegreen:greenmail-junit5:2.0.0")
 
     // Testcontainers
-    implementation(platform("org.testcontainers:testcontainers-bom:1.19.0"))
+    implementation(platform("org.testcontainers:testcontainers-bom:1.19.1"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
 
@@ -136,6 +136,7 @@ tasks {
         testClassesDirs = sourceSets["integrationTest"].output.classesDirs
         classpath = sourceSets["integrationTest"].runtimeClasspath
         shouldRunAfter("test")
+        shouldRunAfter("spotlessCheck")
         outputs.upToDateWhen { false }
         testLogging {
             events("skipped", "failed")
@@ -162,3 +163,5 @@ tasks.register("installGitHook", Copy::class) {
 }
 
 tasks.named("build") { dependsOn(tasks.named("installGitHook")) }
+
+tasks.named("check") { dependsOn(tasks.named("integrationTest")) }

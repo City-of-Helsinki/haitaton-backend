@@ -1,10 +1,13 @@
 package fi.hel.haitaton.hanke.validation
 
-import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.SavedHankealue
+import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
+import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
+import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
+import fi.hel.haitaton.hanke.isValidBusinessId
 import fi.hel.haitaton.hanke.validation.Validators.firstOf
 import fi.hel.haitaton.hanke.validation.Validators.notBlank
 import fi.hel.haitaton.hanke.validation.Validators.notEmpty
@@ -12,6 +15,7 @@ import fi.hel.haitaton.hanke.validation.Validators.notNull
 import fi.hel.haitaton.hanke.validation.Validators.notNullOrBlank
 import fi.hel.haitaton.hanke.validation.Validators.notNullOrEmpty
 import fi.hel.haitaton.hanke.validation.Validators.validate
+import fi.hel.haitaton.hanke.validation.Validators.validateTrue
 
 /**
  * Validator for checking whether a hanke can be public. A hanke is considered public if all
@@ -24,9 +28,6 @@ object HankePublicValidator {
             .and { notNullOrBlank(hanke.kuvaus, "kuvaus") }
             .and { notNullOrBlank(hanke.tyomaaKatuosoite, "tyomaaKatuosoite") }
             .and { notNull(hanke.vaihe, "vaihe") }
-            .andWhen(hanke.vaihe == Vaihe.SUUNNITTELU) {
-                notNull(hanke.suunnitteluVaihe, "suunnitteluVaihe")
-            }
             .and { notEmpty(hanke.alueet, "alueet") }
             .andAllIn(hanke.alueet, "alueet", ::validateAlue)
             .and { notEmpty(hanke.omistajat, "omistajat") }
@@ -36,7 +37,7 @@ object HankePublicValidator {
             .andAllIn(hanke.muut, "muut", ::validateYhteystieto)
     }
 
-    private fun validateAlue(alue: Hankealue, path: String): ValidationResult =
+    private fun validateAlue(alue: SavedHankealue, path: String): ValidationResult =
         validate { notNull(alue.haittaAlkuPvm, "$path.haittaAlkuPvm") }
             .and { notNull(alue.haittaLoppuPvm, "$path.haittaLoppuPvm") }
             .and { notNull(alue.meluHaitta, "$path.meluHaitta") }
@@ -61,6 +62,12 @@ object HankePublicValidator {
     private fun validateYhteystieto(yhteystieto: HankeYhteystieto, path: String): ValidationResult =
         validate { notBlank(yhteystieto.nimi, "$path.nimi") }
             .and { notBlank(yhteystieto.email, "$path.email") }
+            .andWhen(yhteystieto.tyyppi in listOf(YRITYS, YHTEISO)) {
+                validateTrue(yhteystieto.ytunnus.isValidBusinessId(), "$path.ytunnus")
+            }
+            .andWhen(yhteystieto.tyyppi == YKSITYISHENKILO) {
+                validateTrue(yhteystieto.ytunnus == null, "$path.ytunnus")
+            }
             .andAllIn(yhteystieto.alikontaktit, "alikontaktit", ::validateAlikontakti)
 
     private fun validateAlikontakti(yhteyshenkilo: Yhteyshenkilo, path: String): ValidationResult =

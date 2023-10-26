@@ -45,13 +45,6 @@ enum class Vaihe {
     RAKENTAMINEN
 }
 
-enum class SuunnitteluVaihe {
-    YLEIS_TAI_HANKE,
-    KATUSUUNNITTELU_TAI_ALUEVARAUS,
-    RAKENNUS_TAI_TOTEUTUS,
-    TYOMAAN_TAI_HANKKEEN_AIKAINEN
-}
-
 enum class TyomaaTyyppi {
     VESI,
     VIEMARI,
@@ -59,7 +52,6 @@ enum class TyomaaTyyppi {
     SAHKO,
     TIETOLIIKENNE,
     LIIKENNEVALO,
-    YKT,
     ULKOVALAISTUS,
     KAAPPITYO,
     KAUKOLAMPO,
@@ -122,11 +114,10 @@ enum class Haitta13 {
 @Table(name = "hanke")
 class HankeEntity(
     @Enumerated(EnumType.STRING) var status: HankeStatus = HankeStatus.DRAFT,
-    var hankeTunnus: String? = null,
-    var nimi: String? = null,
+    val hankeTunnus: String,
+    var nimi: String,
     var kuvaus: String? = null,
     @Enumerated(EnumType.STRING) var vaihe: Vaihe? = null,
-    @Enumerated(EnumType.STRING) var suunnitteluVaihe: SuunnitteluVaihe? = null,
     var onYKTHanke: Boolean? = false,
     var version: Int? = 0,
     // NOTE: creatorUserId must be non-null for valid data, but to allow creating instances with
@@ -141,7 +132,7 @@ class HankeEntity(
     // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
     // can be a performance problem if there is a need to do bulk inserts.
     // Using SEQUENCE would allow getting multiple ids more efficiently.
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Int? = null,
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Int = 0,
 
     // related
     // orphanRemoval is needed for even explicit child-object removal. JPA weirdness...
@@ -226,8 +217,8 @@ class HankeEntity(
 
     override fun hashCode(): Int {
         var result = status.hashCode()
-        result = 31 * result + (hankeTunnus?.hashCode() ?: 0)
-        result = 31 * result + (id ?: 0)
+        result = 31 * result + hankeTunnus.hashCode()
+        result = 31 * result + id
         return result
     }
 }
@@ -261,16 +252,23 @@ class IdCounter(
 )
 
 interface IdCounterRepository : JpaRepository<IdCounter, CounterType> {
-    /*
-    Basic principals:
-    - if current year is the same as before (in column 'year') return incrementing value
-    - if current year is not the same as before return 1
-    This SQL clause has some PostgreSQL specific thingies:
-    'WITH' clause describes a 'variable' table used inside query in two places
-    'FOR UPDATE' in nested SELECT clause makes sure that no other process can update the row during this whole UPDATE clause
-    'RETURNING' in the end is for UPDATE clase to return not just the number of affected rows but also the column data of those rows (a single row in our case)
-    With these specialities we can assure that concurrent calls for this method will never return duplicate values.
-    Notice also that the method returns a list even though there is always only max. 1 item in it because counterType is PK.
+    /**
+     * Basic principals:
+     * - if current year is the same as before (in column 'year') return incrementing value
+     * - if current year is not the same as before return 1
+     *
+     * This SQL clause has some PostgreSQL specific thingies:
+     * - 'WITH' clause describes a 'variable' table used inside query in two places
+     * - 'FOR UPDATE' in nested SELECT clause makes sure that no other process can update the row
+     * during this whole UPDATE clause
+     * - 'RETURNING' in the end is for UPDATE clase to return not just the number of affected rows
+     * but also the column data of those rows (a single row in our case)
+     *
+     * With these specialities we can assure that concurrent calls for this method will never return
+     * duplicate values.
+     *
+     * Notice also that the method returns a list even though there is always only max. 1 item in it
+     * because counterType is PK.
      */
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(

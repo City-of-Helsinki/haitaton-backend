@@ -61,7 +61,7 @@ class PermissionServiceITest : DatabaseTest() {
     fun `getAllowedHankeIds with permissions returns list of IDs`() {
         val hankkeet = hankeFactory.saveSeveralMinimal(3)
         hankkeet
-            .map { it.id!! }
+            .map { it.id }
             .forEach {
                 permissionService.create(
                     userId = username,
@@ -85,7 +85,7 @@ class PermissionServiceITest : DatabaseTest() {
         listOf(kaikkiOikeudet, hankemuokkaus, hakemusasiointi, katseluoikeus).zip(hankkeet) {
             kayttooikeustaso,
             hanke ->
-            permissionService.create(hanke.id!!, username, kayttooikeustaso)
+            permissionService.create(hanke.id, username, kayttooikeustaso)
         }
 
         val response = permissionService.getAllowedHankeIds(username, PermissionCode.EDIT)
@@ -100,7 +100,7 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Test
     fun `hasPermission with correct permission`() {
-        val hankeId = hankeFactory.saveMinimal().id!!
+        val hankeId = hankeFactory.saveMinimal().id
         permissionService.create(hankeId, username, Kayttooikeustaso.KAIKKI_OIKEUDET)
 
         assertTrue(permissionService.hasPermission(hankeId, username, PermissionCode.EDIT))
@@ -108,7 +108,7 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Test
     fun `hasPermission with insufficient permissions`() {
-        val hankeId = hankeFactory.saveMinimal().id!!
+        val hankeId = hankeFactory.saveMinimal().id
         permissionService.create(hankeId, username, Kayttooikeustaso.HAKEMUSASIOINTI)
 
         assertFalse(permissionService.hasPermission(hankeId, username, PermissionCode.EDIT))
@@ -119,7 +119,7 @@ class PermissionServiceITest : DatabaseTest() {
 
         @Test
         fun `Creates a new permission`() {
-            val hankeId = hankeFactory.saveMinimal().id!!
+            val hankeId = hankeFactory.saveMinimal().id
 
             val result = permissionService.create(hankeId, username, Kayttooikeustaso.KATSELUOIKEUS)
 
@@ -135,7 +135,7 @@ class PermissionServiceITest : DatabaseTest() {
 
         @Test
         fun `Writes to audit log`() {
-            val hankeId = hankeFactory.saveMinimal().id!!
+            val hankeId = hankeFactory.saveMinimal().id
             assertThat(auditLogRepository.findAll()).isEmpty()
 
             val permission =
@@ -168,7 +168,7 @@ class PermissionServiceITest : DatabaseTest() {
 
         @Test
         fun `updateKayttooikeustaso updates an existing permission`() {
-            val hankeId = hankeFactory.saveMinimal().id!!
+            val hankeId = hankeFactory.saveMinimal().id
             val permission =
                 permissionService.create(hankeId, username, Kayttooikeustaso.KATSELUOIKEUS)
 
@@ -190,7 +190,7 @@ class PermissionServiceITest : DatabaseTest() {
 
         @Test
         fun `updateKayttooikeustaso writes to audit log`() {
-            val hankeId = hankeFactory.saveMinimal().id!!
+            val hankeId = hankeFactory.saveMinimal().id
             val permission =
                 permissionService.create(hankeId, username, Kayttooikeustaso.KATSELUOIKEUS)
             auditLogRepository.deleteAll()

@@ -1,71 +1,75 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.alkuPvm
+import fi.hel.haitaton.hanke.domain.geometriat
+import fi.hel.haitaton.hanke.domain.haittaAjanKestoDays
+import fi.hel.haitaton.hanke.domain.kaistaHaitat
+import fi.hel.haitaton.hanke.domain.kaistaPituusHaitat
+import fi.hel.haitaton.hanke.domain.loppuPvm
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.roundToOneDecimal
+import kotlin.math.max
 import org.springframework.beans.factory.annotation.Autowired
 
 open class TormaystarkasteluLaskentaService(
-    @Autowired private val luokitteluRajaArvotService: LuokitteluRajaArvotService,
-    @Autowired private val perusIndeksiPainotService: PerusIndeksiPainotService,
     @Autowired private val tormaysService: TormaystarkasteluTormaysService
 ) {
 
-    fun calculateTormaystarkastelu(hanke: Hanke): TormaystarkasteluTulos? {
-        if (!hasAllRequiredInformation(hanke)) {
+    fun calculateTormaystarkastelu(alueet: List<Hankealue>): TormaystarkasteluTulos? {
+        if (!hasAllRequiredInformation(alueet)) {
             return null
         }
 
-        val perusIndeksi = calculatePerusIndeksi(hanke)
+        val perusIndeksi = calculatePerusIndeksi(alueet)
 
-        val pyorailyLuokittelu = pyorailyLuokittelu(hanke.alueidenGeometriat())
+        val pyorailyLuokittelu = pyorailyLuokittelu(alueet.geometriat())
         val pyorailyIndeksi = if (pyorailyLuokittelu >= 4) 3.0f else 1.0f
 
-        val bussiLuokittelu = bussiLuokittelu(hanke.alueidenGeometriat())
+        val bussiLuokittelu = bussiLuokittelu(alueet.geometriat())
         val bussiIndeksi = if (bussiLuokittelu >= 3) 4.0f else 1.0f
 
-        val raitiovaunuLuokittelu = raitiovaunuLuokittelu(hanke.alueidenGeometriat())
+        val raitiovaunuLuokittelu = raitiovaunuLuokittelu(alueet.geometriat())
         val raitiovaunuIndeksi = if (raitiovaunuLuokittelu >= 3) 4.0f else 1.0f
 
-        val joukkoliikenneIndeksi = maxOf(bussiIndeksi, raitiovaunuIndeksi)
-
-        return TormaystarkasteluTulos(perusIndeksi, pyorailyIndeksi, joukkoliikenneIndeksi)
+        return TormaystarkasteluTulos(
+            perusIndeksi,
+            pyorailyIndeksi,
+            bussiIndeksi,
+            raitiovaunuIndeksi,
+        )
     }
 
-    private fun hasAllRequiredInformation(hanke: Hanke): Boolean {
-        return (hanke.hankeTunnus != null &&
-            hanke.alkuPvm != null &&
-            hanke.loppuPvm != null &&
-            hanke.kaistaHaitat().isNotEmpty() &&
-            hanke.kaistaPituusHaitat().isNotEmpty() &&
-            hanke.alueidenGeometriat().isNotEmpty())
+    private fun hasAllRequiredInformation(alueet: List<Hankealue>): Boolean {
+        return (alueet.alkuPvm() != null &&
+            alueet.loppuPvm() != null &&
+            alueet.kaistaHaitat().isNotEmpty() &&
+            alueet.kaistaPituusHaitat().isNotEmpty() &&
+            alueet.geometriat().isNotEmpty())
     }
 
-    private fun calculatePerusIndeksi(hanke: Hanke): Float {
+    private fun calculatePerusIndeksi(alueet: List<Hankealue>): Float {
         val luokittelu = mutableMapOf<LuokitteluType, Int>()
 
         luokittelu[LuokitteluType.HAITTA_AJAN_KESTO] =
-            haittaAjanKestoLuokittelu(hanke.haittaAjanKestoDays!!)
+            RajaArvoLuokittelija.getHaittaAjanKestoLuokka(alueet.haittaAjanKestoDays()!!)
         luokittelu[LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN] =
-            hanke.kaistaHaitat().maxOfOrNull { it.value }!!
+            alueet.kaistaHaitat().maxOfOrNull { it.value }!!
         luokittelu[LuokitteluType.KAISTAJARJESTELYN_PITUUS] =
-            hanke.kaistaPituusHaitat().maxOfOrNull { it.value }!!
+            alueet.kaistaPituusHaitat().maxOfOrNull { it.value }!!
 
-        val katuluokkaLuokittelu = katuluokkaLuokittelu(hanke.alueidenGeometriat())
+        val katuluokkaLuokittelu = katuluokkaLuokittelu(alueet.geometriat())
         luokittelu[LuokitteluType.KATULUOKKA] = katuluokkaLuokittelu
         luokittelu[LuokitteluType.LIIKENNEMAARA] =
-            liikennemaaraLuokittelu(hanke.alueidenGeometriat(), katuluokkaLuokittelu)
+            liikennemaaraLuokittelu(alueet.geometriat(), katuluokkaLuokittelu)
 
         return calculatePerusIndeksiFromLuokittelu(luokittelu)
     }
 
-    fun haittaAjanKestoLuokittelu(haittaAjanKestoDays: Int) =
-        luokitteluRajaArvotService.getHaittaAjanKestoLuokka(haittaAjanKestoDays)
-
-    private fun katuluokkaLuokittelu(geometriat: List<Geometriat>): Int {
-        if (tormaysService.anyIntersectsYleinenKatuosa(geometriat)) {
+    internal fun katuluokkaLuokittelu(geometriat: List<Geometriat>): Int {
+        return if (tormaysService.anyIntersectsYleinenKatuosa(geometriat)) {
             // ON ylre_parts => street_classes?
-            return tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat)
+            tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat)
             // EI street_classes => ylre_classes?
             ?: tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriat)
                 // EI ylre_classes
@@ -77,20 +81,20 @@ open class TormaystarkasteluLaskentaService(
                 // EI ylre_classes
                 ?: return 0
             // ON ylre_classes => street_classes?
-            return tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat)
+            tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat)
             // JOS EI LÖYDY => Valitse ylre_classes
             ?: max
         }
     }
 
-    private fun liikennemaaraLuokittelu(
+    internal fun liikennemaaraLuokittelu(
         geometriat: List<Geometriat>,
         katuluokkaLuokittelu: Int
     ): Int {
         if (katuluokkaLuokittelu == 0) {
             return 0
         }
-        // type of street (=street class) decides which volume data we use for trafic (buffering of
+        // type of street (=street class) decides which volume data we use for traffic (buffering of
         // street width varies)
         val radius =
             if (katuluokkaLuokittelu >= 4) {
@@ -99,52 +103,43 @@ open class TormaystarkasteluLaskentaService(
                 TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
             }
         val maxVolume = tormaysService.maxLiikennemaara(geometriat, radius) ?: 0
-        return luokitteluRajaArvotService.getLiikennemaaraLuokka(maxVolume)
+        return RajaArvoLuokittelija.getLiikennemaaraLuokka(maxVolume)
     }
 
-    fun calculatePerusIndeksiFromLuokittelu(luokitteluByType: Map<LuokitteluType, Int>): Float =
-        perusIndeksiPainotService
-            .getAll()
+    internal fun calculatePerusIndeksiFromLuokittelu(
+        luokitteluByType: Map<LuokitteluType, Int>
+    ): Float =
+        perusIndeksiPainot
             .map { (type, weight) -> luokitteluByType[type]!! * weight }
             .sum()
             .roundToOneDecimal()
 
-    private fun pyorailyLuokittelu(geometriat: List<Geometriat>): Int {
-        return when {
+    internal fun pyorailyLuokittelu(geometriat: List<Geometriat>): Int =
+        when {
             tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) ->
                 PyorailyTormaysLuokittelu.PRIORISOITU_REITTI
             tormaysService.anyIntersectsWithCyclewaysMain(geometriat) ->
                 PyorailyTormaysLuokittelu.PAAREITTI
             else -> PyorailyTormaysLuokittelu.EI_PYORAILUREITTI
         }.value
-    }
 
-    fun bussiLuokittelu(geometriat: List<Geometriat>): Int {
+    internal fun bussiLuokittelu(geometriat: List<Geometriat>): Int {
         if (tormaysService.anyIntersectsCriticalBusRoutes(geometriat)) {
             return BussiLiikenneLuokittelu.KAMPPI_RAUTATIENTORI.value
         }
 
-        val bussesTormaystulos = tormaysService.getIntersectingBusRoutes(geometriat)
-
-        if (bussesTormaystulos.isEmpty()) {
-            return BussiLiikenneLuokittelu.EI_VAIKUTA.value
-        }
-
-        val countOfRushHourBuses = bussesTormaystulos.sumOf { it.vuoromaaraRuuhkatunnissa }
-        val valueByRajaArvo =
-            luokitteluRajaArvotService.getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses)
+        val bussireitit = tormaysService.getIntersectingBusRoutes(geometriat)
 
         val valueByRunkolinja =
-            when {
-                bussesTormaystulos.any { it.runkolinja == TormaystarkasteluBussiRunkolinja.ON } ->
-                    BussiLiikenneLuokittelu.RUNKOLINJA
-                bussesTormaystulos.any {
-                    it.runkolinja == TormaystarkasteluBussiRunkolinja.LAHES
-                } -> BussiLiikenneLuokittelu.RUNKOLINJAMAINEN
-                else -> BussiLiikenneLuokittelu.PERUS
-            }.value
+            bussireitit.maxOfOrNull { it.runkolinja.toBussiLiikenneLuokittelu().value }
+            // bussireitit is empty
+            ?: return BussiLiikenneLuokittelu.EI_VAIKUTA.value
 
-        return maxOf(valueByRajaArvo, valueByRunkolinja)
+        val countOfRushHourBuses = bussireitit.sumOf { it.vuoromaaraRuuhkatunnissa }
+        val valueByRajaArvo =
+            RajaArvoLuokittelija.getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses)
+
+        return max(valueByRajaArvo, valueByRunkolinja)
     }
 
     private fun raitiovaunuLuokittelu(geometriat: List<Geometriat>) =

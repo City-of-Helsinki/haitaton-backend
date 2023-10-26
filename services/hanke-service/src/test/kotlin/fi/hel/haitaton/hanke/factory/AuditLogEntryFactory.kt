@@ -1,9 +1,12 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.AuditLogEntry
+import fi.hel.haitaton.hanke.logging.ContactWithRole
+import fi.hel.haitaton.hanke.logging.CustomerWithRole
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
@@ -19,7 +22,7 @@ object AuditLogEntryFactory {
         operation: Operation = Operation.READ,
         status: Status = Status.SUCCESS,
         objectType: ObjectType = ObjectType.YHTEYSTIETO,
-        objectId: Any? = 1,
+        objectId: Any = 1,
         objectBefore: String? = null,
     ) =
         AuditLogEntry(
@@ -28,27 +31,35 @@ object AuditLogEntryFactory {
             operation = operation,
             status = status,
             objectType = objectType,
-            objectId = objectId?.toString(),
+            objectId = objectId.toString(),
             objectBefore = objectBefore,
         )
 
     fun createReadEntriesForHanke(hanke: Hanke): List<AuditLogEntry> =
         hanke.extractYhteystiedot().map {
-            createReadEntry(objectId = it.id, objectBefore = it.toJsonString())
+            createReadEntry(objectId = it.id!!, objectBefore = it.toJsonString())
         }
 
-    fun createReadEntryForContact(contact: Contact): AuditLogEntry =
+    fun createReadEntryForContact(
+        applicationId: Long,
+        contact: Contact,
+        role: ApplicationContactType = ApplicationContactType.HAKIJA,
+    ): AuditLogEntry =
         createReadEntry(
-            objectId = null,
-            objectType = ObjectType.ALLU_CONTACT,
-            objectBefore = contact.toJsonString()
+            objectId = applicationId,
+            objectType = ObjectType.APPLICATION_CONTACT,
+            objectBefore = ContactWithRole(role, contact).toJsonString()
         )
 
-    fun createReadEntryForCustomer(customer: Customer): AuditLogEntry =
+    fun createReadEntryForCustomer(
+        applicationId: Long,
+        customer: Customer,
+        role: ApplicationContactType = ApplicationContactType.HAKIJA,
+    ): AuditLogEntry =
         createReadEntry(
-            objectId = null,
-            objectType = ObjectType.ALLU_CUSTOMER,
-            objectBefore = customer.toJsonString()
+            objectId = applicationId,
+            objectType = ObjectType.APPLICATION_CUSTOMER,
+            objectBefore = CustomerWithRole(role, customer).toJsonString()
         )
 
     fun createReadEntryForHankeKayttajat(kayttajat: List<HankeKayttajaDto>): List<AuditLogEntry> =

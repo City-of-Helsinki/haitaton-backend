@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
-import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 
@@ -17,10 +17,16 @@ val OBJECT_MAPPER =
         this.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
     }
 
-val TZ_UTC: ZoneId = ZoneId.of("UTC")
+val TZ_UTC: ZoneOffset = ZoneOffset.UTC
 
 val DATABASE_TIMESTAMP_FORMAT: DateTimeFormatter =
     DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+
+/** Hanke names are limited to 100 characters in the DB. */
+const val MAXIMUM_HANKE_NIMI_LENGTH = 100
+
+/** Hanke alue names are limited to 100 characters in the DB. */
+const val MAXIMUM_HANKE_ALUE_NIMI_LENGTH = 100
 
 // Note: database definition has no limit, so this is sort of important; must be quite long,
 // but not excessive (considering database size etc.)

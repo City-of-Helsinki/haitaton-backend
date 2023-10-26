@@ -26,10 +26,6 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotService
-import fi.hel.haitaton.hanke.tormaystarkastelu.LuokitteluRajaArvotServiceHardCoded
-import fi.hel.haitaton.hanke.tormaystarkastelu.PerusIndeksiPainotService
-import fi.hel.haitaton.hanke.tormaystarkastelu.PerusIndeksiPainotServiceHardCoded
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
@@ -92,6 +88,8 @@ class Configuration {
         geometriatDao: GeometriatDao,
         permissionService: PermissionService,
         hankeRepository: HankeRepository,
+        hankeLoggingService: HankeLoggingService,
+        featureFlags: FeatureFlags,
     ): ApplicationService =
         ApplicationService(
             applicationRepository,
@@ -105,6 +103,8 @@ class Configuration {
             geometriatDao,
             permissionService,
             hankeRepository,
+            hankeLoggingService,
+            featureFlags,
         )
 
     @Bean
@@ -120,7 +120,6 @@ class Configuration {
         auditLogService: AuditLogService,
         hankeLoggingService: HankeLoggingService,
         applicationService: ApplicationService,
-        permissionService: PermissionService,
         hankeKayttajaService: HankeKayttajaService,
     ): HankeService =
         HankeServiceImpl(
@@ -147,24 +146,9 @@ class Configuration {
         TormaystarkasteluTormaysServicePG(jdbcOperations)
 
     @Bean
-    fun perusIndeksiPainotService(): PerusIndeksiPainotService =
-        PerusIndeksiPainotServiceHardCoded()
-
-    @Bean
-    fun luokitteluRajaArvotService(): LuokitteluRajaArvotService =
-        LuokitteluRajaArvotServiceHardCoded()
-
-    @Bean
     fun tormaystarkasteluLaskentaService(
-        luokitteluRajaArvotService: LuokitteluRajaArvotService,
-        perusIndeksiPainotService: PerusIndeksiPainotService,
         tormaystarkasteluDao: TormaystarkasteluTormaysService
-    ): TormaystarkasteluLaskentaService =
-        TormaystarkasteluLaskentaService(
-            luokitteluRajaArvotService,
-            perusIndeksiPainotService,
-            tormaystarkasteluDao
-        )
+    ): TormaystarkasteluLaskentaService = TormaystarkasteluLaskentaService(tormaystarkasteluDao)
 
     companion object {
         /** Create a web client that can download large files in memory. */

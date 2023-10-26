@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.allu
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
-import fi.hel.haitaton.hanke.domain.BusinessId
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CustomerWithContacts(val customer: Customer, val contacts: List<Contact>)
@@ -24,7 +23,7 @@ data class Customer(
     val country: String, // ISO 3166-1 alpha-2 country code
     val email: String?,
     val phone: String?,
-    val registryKey: BusinessId?, // y-tunnus
+    val registryKey: String?, // y-tunnus
     val ovt: String?, // e-invoice identifier (ovt-tunnus)
     val invoicingOperator: String?, // e-invoicing operator code
     val sapCustomerNumber: String? // customer's sap number

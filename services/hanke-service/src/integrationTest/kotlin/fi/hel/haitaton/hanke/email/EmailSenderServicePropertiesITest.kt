@@ -7,7 +7,6 @@ import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.DatabaseTest
-import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.ApplicationType.CABLE_REPORT
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import org.junit.jupiter.api.Test
@@ -66,7 +65,6 @@ class EmailSenderServicePropertiesITest : DatabaseTest() {
                 applicationType = CABLE_REPORT,
                 applicationIdentifier = "JS002",
                 hankeTunnus = "HAI24-1",
-                roleType = TYON_SUORITTAJA,
             )
         )
 
