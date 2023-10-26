@@ -7,13 +7,13 @@
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">
-                    Sinut on lisätty hakemukselle {{applicationIdentifier}}
+                    Sinut on lisätty hakemukselle {{applicationIdentifier}} / Du har lagts till i ansökan
+                    {{applicationIdentifier}} / You have been added to application {{applicationIdentifier}}
                 </mj-text>
                 <mj-text mj-class="basic-txt">
-                    {{senderName}} ({{senderEmail}}) on tehnyt {{applicationType}} ({{applicationIdentifier}})
-                    hankkeella
-                    {{hankeTunnus}}, ja lähettänyt sen käsittelyyn. Sinut on lisätty kyseiselle hakemukselle. Tarkastele
-                    hakemusta Haitattomassa:
+                    {{senderName}} ({{senderEmail}}) on tehnyt {{applicationType.fi}} ({{applicationIdentifier}})
+                    hankkeella {{hankeTunnus}}, ja lähettänyt sen käsittelyyn. Sinut on lisätty kyseiselle hakemukselle.
+                    Tarkastele hakemusta Haitattomassa:
                     <a href="{{baseUrl}}">{{baseUrl}}</a>
                 </mj-text>
                 <mj-text mj-class="basic-txt">
@@ -21,23 +21,33 @@
                     hankkeen.
                     Avaa listanäkymässä hankkeen tiedot ja valitse "Näytä hankkeen hakemukset".
                 </mj-text>
+                <mj-include path="common/signature-fi.mjml"/>
+                <br/>
+
                 <mj-text mj-class="basic-txt">
-                    Haitaton on Helsingin kaupungin asiointijärjestelmä yleisille alueille sijoittuvien hankkeiden
-                    edistämiseen ja haittojen hallintaan.
+                    {{senderName}} ({{senderEmail}}) har gjort en ansökan om {{applicationType.sv}}
+                    ({{applicationIdentifier}}) i projektet {{hankeTunnus}} och skickat in den för behandling.
+                    Du har rollen i ansökan. Kontrollera ansökan i Haitaton:
+                    <a href="{{baseUrl}}">{{baseUrl}}</a>
                 </mj-text>
                 <mj-text mj-class="basic-txt">
-                    Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.
+                    Du hittar din ansökan genom att gå från startsidan till Egna projekt och välja rätt projekt.
+                    Öppna projektets uppgifter i listvyn och välj ”Visa projektets ansökningar”.
+                </mj-text>
+                <mj-include path="common/signature-sv.mjml"/>
+                <br/>
+
+                <mj-text mj-class="basic-txt">
+                    {{senderName}} ({{senderEmail}}) has created {{applicationType.en}} ({{applicationIdentifier}}) for
+                    project {{hankeTunnus}} and submitted it for processing. In the application, you have been
+                    designated as a role. View the application in the Haitaton system:
+                    <a href="{{baseUrl}}">{{baseUrl}}</a>
                 </mj-text>
                 <mj-text mj-class="basic-txt">
-                    Ystävällisin terveisin,
-                    <br/>
-                    <br/>
-                    Helsingin kaupungin kaupunkiympäristön toimiala
-                    <br/>
-                    Haitaton-asiointi
-                    <br/>
-                    haitaton@hel.fi
+                    You can find your application by selecting ‘Own projects’ on the front page and then selecting the project in question.
+                    Open the project information in the list view and select ‘Show project applications’.
                 </mj-text>
+                <mj-include path="common/signature-en.mjml"/>
             </mj-column>
         </mj-section>
         <mj-include path="common/footer-content.mjml"/>

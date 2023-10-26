@@ -78,13 +78,13 @@
                             <tr>
                                 <td align="left" style="font-size:0px;padding:16px 24px 16px 24px;word-break:break-word;">
                                     <div style="font-family:Arial;font-size:36px;line-height:43px;text-align:left;color:#000000;">
-                                        Sinut on lis&auml;tty hakemukselle {{applicationIdentifier}}
+                                        Sinut on lis&auml;tty hakemukselle {{applicationIdentifier}} / Du har lagts till i ans&ouml;kan {{applicationIdentifier}} / You have been added to application {{applicationIdentifier}}
                                     </div></td>
                             </tr>
                             <tr>
                                 <td align="left" style="font-size:0px;padding:16px 24px 16px 24px;word-break:break-word;">
                                     <div style="font-family:Arial;font-size:16px;line-height:24px;text-align:left;color:#000000;">
-                                        {{senderName}} ({{senderEmail}}) on tehnyt {{applicationType}} ({{applicationIdentifier}}) hankkeella {{hankeTunnus}}, ja l&auml;hett&auml;nyt sen k&auml;sittelyyn. Sinut on lis&auml;tty kyseiselle hakemukselle. Tarkastele hakemusta Haitattomassa: <a href="{{baseUrl}}">{{baseUrl}}</a>
+                                        {{senderName}} ({{senderEmail}}) on tehnyt {{applicationType.fi}} ({{applicationIdentifier}}) hankkeella {{hankeTunnus}}, ja l&auml;hett&auml;nyt sen k&auml;sittelyyn. Sinut on lis&auml;tty kyseiselle hakemukselle. Tarkastele hakemusta Haitattomassa: <a href="{{baseUrl}}">{{baseUrl}}</a>
                                     </div></td>
                             </tr>
                             <tr>
@@ -106,9 +106,90 @@
                                     </div></td>
                             </tr>
                             <tr>
+                                <td align="left" style="font-size:0px;padding:16px 24px 32px 24px;word-break:break-word;">
+                                    <div style="font-family:Arial;font-size:16px;line-height:24px;text-align:left;color:#000000;">
+                                        Yst&auml;v&auml;llisin terveisin,
+                                        <br>
+                                        <br>
+                                        Helsingin kaupungin kaupunkiymp&auml;rist&ouml;n toimiala
+                                        <br>
+                                        Haitaton-asiointi
+                                        <br>
+                                        haitaton@hel.fi
+                                    </div></td>
+                            </tr>
+                            <tr>
                                 <td align="left" style="font-size:0px;padding:16px 24px 16px 24px;word-break:break-word;">
                                     <div style="font-family:Arial;font-size:16px;line-height:24px;text-align:left;color:#000000;">
-                                        Yst&auml;v&auml;llisin terveisin, <br> <br> Helsingin kaupungin kaupunkiymp&auml;rist&ouml;n toimiala <br> Haitaton-asiointi <br> haitaton@hel.fi
+                                        {{senderName}} ({{senderEmail}}) har gjort en ans&ouml;kan om {{applicationType.sv}} ({{applicationIdentifier}}) i projektet {{hankeTunnus}} och skickat in den f&ouml;r behandling. Du har rollen i ans&ouml;kan. Kontrollera ans&ouml;kan i Haitaton: <a href="{{baseUrl}}">{{baseUrl}}</a>
+                                    </div></td>
+                            </tr>
+                            <tr>
+                                <td align="left" style="font-size:0px;padding:16px 24px 16px 24px;word-break:break-word;">
+                                    <div style="font-family:Arial;font-size:16px;line-height:24px;text-align:left;color:#000000;">
+                                        Du hittar din ans&ouml;kan genom att g&aring; fr&aring;n startsidan till Egna projekt och v&auml;lja r&auml;tt projekt. &Ouml;ppna projektets uppgifter i listvyn och v&auml;lj &#x201d;Visa projektets ans&ouml;kningar&#x201d;.
+                                    </div></td>
+                            </tr>
+                            <tr>
+                                <td align="left" style="font-size:0px;padding:16px 24px 16px 24px;word-break:break-word;">
+                                    <div style="font-family:Arial;font-size:16px;line-height:24px;text-align:left;color:#000000;">
+                                        Haitaton &auml;r Helsingfors stads hanteringssystem f&ouml;r att fr&auml;mja projekt i allm&auml;nna omr&aring;den och att hantera ol&auml;genheter
+                                    </div></td>
+                            </tr>
+                            <tr>
+                                <td align="left" style="font-size:0px;padding:16px 24px 16px 24px;word-break:break-word;">
+                                    <div style="font-family:Arial;font-size:16px;line-height:24px;text-align:left;color:#000000;">
+                                        Det h&auml;r &auml;r ett automatiskt e-postmeddelande &#x2013; svara inte p&aring; det.
+                                    </div></td>
+                            </tr>
+                            <tr>
+                                <td align="left" style="font-size:0px;padding:16px 24px 32px 24px;word-break:break-word;">
+                                    <div style="font-family:Arial;font-size:16px;line-height:24px;text-align:left;color:#000000;">
+                                        Med v&auml;nlig h&auml;lsning,
+                                        <br>
+                                        <br>
+                                        Helsingfors stads stadsmilj&ouml;sektor
+                                        <br>
+                                        Haitaton-&auml;renden
+                                        <br>
+                                        haitaton@hel.fi
+                                    </div></td>
+                            </tr>
+                            <tr>
+                                <td align="left" style="font-size:0px;padding:16px 24px 16px 24px;word-break:break-word;">
+                                    <div style="font-family:Arial;font-size:16px;line-height:24px;text-align:left;color:#000000;">
+                                        {{senderName}} ({{senderEmail}}) has created {{applicationType.en}} ({{applicationIdentifier}}) for project {{hankeTunnus}} and submitted it for processing. In the application, you have been designated as a role. View the application in the Haitaton system: <a href="{{baseUrl}}">{{baseUrl}}</a>
+                                    </div></td>
+                            </tr>
+                            <tr>
+                                <td align="left" style="font-size:0px;padding:16px 24px 16px 24px;word-break:break-word;">
+                                    <div style="font-family:Arial;font-size:16px;line-height:24px;text-align:left;color:#000000;">
+                                        You can find your application by selecting &#x2018;Own projects&#x2019; on the front page and then selecting the project in question. Open the project information in the list view and select &#x2018;Show project applications&#x2019;.
+                                    </div></td>
+                            </tr>
+                            <tr>
+                                <td align="left" style="font-size:0px;padding:16px 24px 16px 24px;word-break:break-word;">
+                                    <div style="font-family:Arial;font-size:16px;line-height:24px;text-align:left;color:#000000;">
+                                        Haitaton is the City of Helsinki&#x2019;s service system intended for advancing projects taking place in public areas and managing the disturbances caused by them.
+                                    </div></td>
+                            </tr>
+                            <tr>
+                                <td align="left" style="font-size:0px;padding:16px 24px 16px 24px;word-break:break-word;">
+                                    <div style="font-family:Arial;font-size:16px;line-height:24px;text-align:left;color:#000000;">
+                                        This email was generated automatically &#x2013; please do not reply to this message.
+                                    </div></td>
+                            </tr>
+                            <tr>
+                                <td align="left" style="font-size:0px;padding:16px 24px 32px 24px;word-break:break-word;">
+                                    <div style="font-family:Arial;font-size:16px;line-height:24px;text-align:left;color:#000000;">
+                                        Kind regards,
+                                        <br>
+                                        <br>
+                                        City of Helsinki Urban Environment Division
+                                        <br>
+                                        Haitaton services
+                                        <br>
+                                        haitaton@hel.fi
                                     </div></td>
                             </tr>
                             </tbody>
