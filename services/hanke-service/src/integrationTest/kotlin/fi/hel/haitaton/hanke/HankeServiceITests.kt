@@ -30,6 +30,7 @@ import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withArea
 import fi.hel.haitaton.hanke.factory.DateFactory
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.defaultKuvaus
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
@@ -37,7 +38,6 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedRakennu
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
 import fi.hel.haitaton.hanke.factory.HankealueFactory
-import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.AuditLogEntryEntity
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
@@ -1290,10 +1290,7 @@ class HankeServiceITests : DatabaseTest() {
                     tyomaaTyyppi = mutableSetOf(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU),
                 )
                 .save()
-        val geometria: Geometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
-                .asJsonResource<Geometriat>()
-                .apply { id = 67 }
+        val geometria = GeometriaFactory.create().apply { id = 67 }
         hanke.alueet.add(HankealueFactory.create(id = null, geometriat = geometria))
         auditLogRepository.deleteAll()
         assertEquals(0, auditLogRepository.count())

@@ -6,11 +6,9 @@ import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
-import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.geometriaIds
-import fi.hel.haitaton.hanke.domain.geometriat
-import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30
 import io.mockk.checkUnnecessaryStub
@@ -441,16 +439,12 @@ internal class TormaystarkasteluLaskentaServiceTest {
     }
 
     private fun setupHappyCase(): List<SavedHankealue> {
-        val geometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                Geometriat::class.java
-            )
 
         val alkuPvm = ZonedDateTime.of(2021, 3, 4, 0, 0, 0, 0, TZ_UTC)
         val alueet =
             listOf(
                 SavedHankealue(
-                    geometriat = geometriat,
+                    geometriat = GeometriaFactory.create(),
                     haittaAlkuPvm = alkuPvm,
                     haittaLoppuPvm = alkuPvm.plusDays(7),
                     kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.YKSI,

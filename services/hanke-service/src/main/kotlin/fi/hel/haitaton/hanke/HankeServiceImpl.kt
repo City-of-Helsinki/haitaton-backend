@@ -15,7 +15,6 @@ import fi.hel.haitaton.hanke.domain.NewHankealue
 import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.domain.Yhteystieto
 import fi.hel.haitaton.hanke.domain.geometriaIds
-import fi.hel.haitaton.hanke.domain.resetFeatureProperties
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogService

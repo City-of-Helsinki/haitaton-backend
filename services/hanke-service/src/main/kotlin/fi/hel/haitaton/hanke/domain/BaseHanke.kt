@@ -89,16 +89,16 @@ fun List<Hankealue>.geometriat(): List<HasFeatures> = mapNotNull { it.geometriat
 
 interface HasFeatures {
     val featureCollection: FeatureCollection?
-}
 
-fun HasFeatures.resetFeatureProperties(hankeTunnus: String?) {
-    featureCollection?.let { collection ->
-        collection.features.forEach { feature ->
-            feature.properties = mutableMapOf<String, Any?>("hankeTunnus" to hankeTunnus)
+    fun resetFeatureProperties(hankeTunnus: String?) {
+        featureCollection?.let { collection ->
+            collection.features.forEach { feature ->
+                feature.properties = mutableMapOf<String, Any?>("hankeTunnus" to hankeTunnus)
+            }
         }
     }
-}
 
-fun HasFeatures.hasFeatures(): Boolean {
-    return !featureCollection?.features.isNullOrEmpty()
+    fun hasFeatures(): Boolean {
+        return !featureCollection?.features.isNullOrEmpty()
+    }
 }

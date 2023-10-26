@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.geometria
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.domain.HasFeatures
-import fi.hel.haitaton.hanke.domain.hasFeatures
 import java.time.ZonedDateTime
 import mu.KotlinLogging
 import org.geojson.FeatureCollection
@@ -18,12 +17,12 @@ open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) :
         GeometriatValidator.expectValid(geometriat)
 
         val oldGeometriat = existingId?.let { hankeGeometriaDao.retrieveGeometriat(existingId) }
-        val hasFeatures = geometriat.hasFeatures()
+        val updateHasFeatures = geometriat.hasFeatures()
 
         return when {
-            oldGeometriat == null && !hasFeatures ->
+            oldGeometriat == null && !updateHasFeatures ->
                 throw IllegalArgumentException("New Geometriat does not contain any Features")
-            oldGeometriat != null && !hasFeatures -> deleteGeometriat(oldGeometriat)
+            oldGeometriat != null && !updateHasFeatures -> deleteGeometriat(oldGeometriat)
             oldGeometriat == null -> createGeometriat(geometriat)
             else -> updateGeometriat(oldGeometriat, geometriat.featureCollection!!)
         }
@@ -55,11 +54,7 @@ open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) :
         geometriat: Geometriat,
         newFeatures: FeatureCollection
     ): Geometriat {
-        if (geometriat.version == null) {
-            error("There is an old Geometriat ${geometriat.id} but it has no 'version'")
-        } else {
-            geometriat.version = geometriat.version!! + 1
-        }
+        geometriat.version = geometriat.version + 1
         geometriat.modifiedByUserId = currentUserId()
         geometriat.modifiedAt = ZonedDateTime.now(TZ_UTC)
         geometriat.featureCollection = newFeatures

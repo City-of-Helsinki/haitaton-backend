@@ -15,8 +15,8 @@ import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DATABASE_TIMESTAMP_FORMAT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.domain.geometriat
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecentZDT
@@ -48,8 +48,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
 
     @Test
     fun `save and load and update`() {
-        val geometriat: Geometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource()
+        val geometriat: Geometriat = GeometriaFactory.create()
         val username = SecurityContextHolder.getContext().authentication.name
 
         // For FK constraints we need a Hanke in database
@@ -131,11 +130,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
 
     @Test
     fun `save Geometria with missing properties`() {
-        val geometriat: Geometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource()
-        geometriat.version = null
-        geometriat.createdAt = null
-        geometriat.modifiedAt = null
+        val geometriat = GeometriaFactory.createNew()
         geometriat.featureCollection?.crs?.properties = null
 
         assertThrows<GeometriaValidationException> {
@@ -145,11 +140,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
 
     @Test
     fun `save Geometria with invalid coordinate system`() {
-        val geometriat: Geometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource()
-        geometriat.version = null
-        geometriat.createdAt = null
-        geometriat.modifiedAt = null
+        val geometriat = GeometriaFactory.createNew()
         geometriat.featureCollection?.crs?.properties?.set("name", "urn:ogc:def:crs:EPSG::0000")
 
         assertThrows<UnsupportedCoordinateSystemException> {
@@ -161,16 +152,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
     inner class CreateGeometria {
         @Test
         fun `sets metadata correctly`() {
-            val geometriat =
-                "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
-                    .asJsonResource(Geometriat::class.java)
-                    .apply {
-                        createdAt = null
-                        createdByUserId = null
-                        modifiedAt = null
-                        modifiedByUserId = null
-                        version = null
-                    }
+            val geometriat = GeometriaFactory.createNew()
 
             val result = geometriatService.createGeometriat(geometriat)
 
@@ -190,8 +172,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
 
         @Test
         fun `saves geometries correctly`() {
-            val geometriat: Geometriat =
-                "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource()
+            val geometriat: Geometriat = GeometriaFactory.create()
 
             val result = geometriatService.createGeometriat(geometriat)
 

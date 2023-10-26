@@ -10,6 +10,7 @@ import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import java.time.ZonedDateTime
 import org.geojson.Point
 import org.geojson.Polygon
@@ -34,8 +35,7 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
 
     @Test
     fun `CRUD testing`() {
-        val hankeGeometriat: Geometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource()
+        val hankeGeometriat = GeometriaFactory.create()
         hankeGeometriat.createdByUserId = "1111"
         hankeGeometriat.modifiedByUserId = "2222"
 

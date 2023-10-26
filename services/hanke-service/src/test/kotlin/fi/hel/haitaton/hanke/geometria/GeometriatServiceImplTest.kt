@@ -9,6 +9,7 @@ import assertk.assertions.isNotSameAs
 import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecentZDT
 import io.mockk.every
 import io.mockk.just
@@ -32,19 +33,11 @@ internal class GeometriatServiceImplTest {
 
     private val service = GeometriatServiceImpl(geometriatDao)
 
-    private fun loadGeometriat(): Geometriat {
-        return "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource()
-    }
-
     @Test
     fun `save Geometriat OK - with old version`() {
         val geometriaId = 42
-        val geometriat = loadGeometriat()
-        geometriat.id = null
-        geometriat.version = null
-        geometriat.createdAt = null
-        geometriat.modifiedAt = null
-        val oldGeometriat = loadGeometriat()
+        val geometriat = GeometriaFactory.createNew()
+        val oldGeometriat = GeometriaFactory.create()
         oldGeometriat.id = geometriaId
         oldGeometriat.version = 0
 
@@ -69,11 +62,7 @@ internal class GeometriatServiceImplTest {
 
     @Test
     fun `save Geometriat OK - without old version`() {
-        val geometriat = loadGeometriat()
-        geometriat.id = 666
-        geometriat.version = null
-        geometriat.createdAt = null
-        geometriat.modifiedAt = null
+        val geometriat = GeometriaFactory.createNew()
         every { geometriatDao.createGeometriat(any()) } answers
             {
                 firstArg<Geometriat>().apply { id = 42 }
@@ -99,7 +88,7 @@ internal class GeometriatServiceImplTest {
         val geometriat: Geometriat =
             "/fi/hel/haitaton/hanke/geometria/hankeGeometriat-delete.json".asJsonResource()
         geometriat.id = geometriatId
-        val oldGeometriat = loadGeometriat()
+        val oldGeometriat = GeometriaFactory.create()
         oldGeometriat.version = 0
         oldGeometriat.id = geometriatId
 
@@ -118,13 +107,8 @@ internal class GeometriatServiceImplTest {
     @Test
     fun `save Geometriat OK - with an empty old version (after delete)`() {
         val geometriatId = 1
-        val geometriat = loadGeometriat()
-        geometriat.id = geometriatId
-        geometriat.version = null
-        geometriat.createdAt = null
-        geometriat.createdByUserId = null
-        geometriat.modifiedAt = null
-        val oldGeometriat = loadGeometriat()
+        val geometriat = GeometriaFactory.createNew()
+        val oldGeometriat = GeometriaFactory.create()
         oldGeometriat.id = geometriatId
         oldGeometriat.version = 1
         oldGeometriat.createdByUserId = "Another user"
@@ -156,7 +140,7 @@ internal class GeometriatServiceImplTest {
     inner class CreateGeometria {
         @Test
         fun `sets metadata correctly`() {
-            val geometriat = loadGeometriat()
+            val geometriat = GeometriaFactory.create()
             every { geometriatDao.createGeometriat(any()) } answers
                 {
                     firstArg<Geometriat>().apply { id = 42 }
@@ -176,7 +160,7 @@ internal class GeometriatServiceImplTest {
 
         @Test
         fun `adds features from parameters`() {
-            val geometriat = loadGeometriat()
+            val geometriat = GeometriaFactory.create()
             every { geometriatDao.createGeometriat(any()) } answers
                 {
                     firstArg<Geometriat>().apply { id = 42 }
