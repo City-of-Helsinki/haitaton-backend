@@ -11,8 +11,10 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.domain.HasYhteystiedot
+import fi.hel.haitaton.hanke.domain.NewHankealue
 import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.domain.Yhteystieto
+import fi.hel.haitaton.hanke.domain.geometriaIds
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogService
@@ -120,7 +122,11 @@ open class HankeServiceImpl(
         val loggingEntryHolder = prepareLogging(entity)
         copyYhteystietosToEntity(request, entity, userId, loggingEntryHolder, mutableMapOf())
 
-        calculateTormaystarkastelu(request.alueet ?: listOf(), entity)
+        calculateTormaystarkastelu(
+            request.alueet ?: listOf(),
+            entity.listOfHankeAlueet.mapNotNull { it.geometriat }.toSet(),
+            entity
+        )
         entity.status = decideNewHankeStatus(entity)
 
         val savedHankeEntity = hankeRepository.save(entity)
@@ -156,12 +162,39 @@ open class HankeServiceImpl(
 
         // Create hankealueet
         request.alueet?.forEach {
-            val alueEntity = copyNonNullHankealueFieldsToEntity(hanketunnus, it, null)
+            val alueEntity = createAlueFromCreateRequest(entity.hankeTunnus, it)
             alueEntity.hanke = entity
             entity.listOfHankeAlueet.add(alueEntity)
         }
 
         return entity
+    }
+
+    private fun createAlueFromCreateRequest(
+        hanketunnus: String,
+        source: NewHankealue
+    ): HankealueEntity {
+        val result = HankealueEntity()
+
+        // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
+        // be simply dropped here.
+        // Note, .toLocalDate() does not do any time zone conversion.
+        result.haittaLoppuPvm = source.haittaLoppuPvm?.toLocalDate()
+        result.haittaAlkuPvm = source.haittaAlkuPvm?.toLocalDate()
+
+        result.kaistaHaitta = source.kaistaHaitta
+        result.kaistaPituusHaitta = source.kaistaPituusHaitta
+        result.meluHaitta = source.meluHaitta
+        result.polyHaitta = source.polyHaitta
+        result.tarinaHaitta = source.tarinaHaitta
+        source.geometriat?.let {
+            it.resetFeatureProperties(hanketunnus)
+            val saved = geometriatService.createGeometriat(it)
+            result.geometriat = saved.id
+        }
+        source.nimi?.let { result.nimi = source.nimi }
+
+        return result
     }
 
     /**
@@ -204,7 +237,7 @@ open class HankeServiceImpl(
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
         entity.generated = false
 
-        calculateTormaystarkastelu(hanke.alueet, entity)
+        calculateTormaystarkastelu(hanke.alueet, hanke.alueet.geometriaIds(), entity)
         entity.status = decideNewHankeStatus(entity)
 
         // Save changes:
@@ -251,15 +284,12 @@ open class HankeServiceImpl(
         hankeKayttajaService.saveNewTokensFromHanke(hanke, userId)
     }
 
-    // TODO: functions to remove and invalidate Hanke's tormaystarkastelu-data
-    //   At least invalidation can be done purely working on the particular
-    //   tormaystarkasteluTulosEntity and -Repository.
-    //   See TormaystarkasteluRepositoryITests for a way to remove.
-
-    // ======================================================================
-
-    private fun calculateTormaystarkastelu(source: List<Hankealue>, target: HankeEntity) {
-        tormaystarkasteluService.calculateTormaystarkastelu(source)?.let {
+    private fun calculateTormaystarkastelu(
+        alueet: List<Hankealue>,
+        geometriaIds: Set<Int>,
+        target: HankeEntity
+    ) {
+        tormaystarkasteluService.calculateTormaystarkastelu(alueet, geometriaIds)?.let {
             target.tormaystarkasteluTulokset.clear()
             target.tormaystarkasteluTulokset.add(
                 TormaystarkasteluTulosEntity(
@@ -498,9 +528,8 @@ open class HankeServiceImpl(
         source.polyHaitta?.let { result.polyHaitta = source.polyHaitta }
         source.tarinaHaitta?.let { result.tarinaHaitta = source.tarinaHaitta }
         source.geometriat?.let {
-            it.id = result.geometriat ?: it.id
             it.resetFeatureProperties(hankeTunnus)
-            val saved = geometriatService.saveGeometriat(it)
+            val saved = geometriatService.saveGeometriat(it, result.geometriat)
             result.geometriat = saved?.id
         }
         source.nimi?.let { result.nimi = source.nimi }

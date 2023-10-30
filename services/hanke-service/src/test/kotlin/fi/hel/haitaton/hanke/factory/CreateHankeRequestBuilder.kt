@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.NewGeometriat
 import fi.hel.haitaton.hanke.domain.NewHankealue
 import fi.hel.haitaton.hanke.domain.NewYhteystieto
 
@@ -60,7 +61,7 @@ fun Hankealue.toCreateRequest() =
     NewHankealue(
         haittaAlkuPvm,
         haittaLoppuPvm,
-        geometriat,
+        geometriat?.let { NewGeometriat(it.featureCollection) },
         kaistaHaitta,
         kaistaPituusHaitta,
         meluHaitta,

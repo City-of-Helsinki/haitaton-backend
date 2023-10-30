@@ -222,12 +222,12 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             val alue1 =
                 SavedHankealue(
                     hankeId = hankeIds[0],
-                    geometriat = Geometriat(1, FeatureCollection())
+                    geometriat = Geometriat(1, FeatureCollection(), version = 1)
                 )
             val alue2 =
                 SavedHankealue(
                     hankeId = hankeIds[1],
-                    geometriat = Geometriat(2, FeatureCollection())
+                    geometriat = Geometriat(2, FeatureCollection(), version = 1)
                 )
             val hanke1 = HankeFactory.create(id = hankeIds[0], hankeTunnus = HANKE_TUNNUS)
             val hanke2 = HankeFactory.create(id = hankeIds[1], hankeTunnus = "hanketunnus2")

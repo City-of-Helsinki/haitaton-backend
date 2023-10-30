@@ -1,20 +1,27 @@
 package fi.hel.haitaton.hanke.geometria
 
+import assertk.all
 import assertk.assertAll
 import assertk.assertThat
+import assertk.assertions.each
+import assertk.assertions.hasClass
+import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
+import assertk.assertions.isNotSameAs
 import assertk.assertions.isNull
+import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DATABASE_TIMESTAMP_FORMAT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.domain.geometriat
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankealueFactory
+import fi.hel.haitaton.hanke.test.Asserts.isRecentZDT
 import org.geojson.Point
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
@@ -41,10 +48,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
 
     @Test
     fun `save and load and update`() {
-        val geometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                Geometriat::class.java
-            )
+        val geometriat: Geometriat = GeometriaFactory.create()
         val username = SecurityContextHolder.getContext().authentication.name
 
         // For FK constraints we need a Hanke in database
@@ -88,7 +92,7 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
         loadedGeometriat.featureCollection!!
             .features
             .add(loadedGeometriat.featureCollection!!.features[0])
-        geometriatService.saveGeometriat(loadedGeometriat)
+        geometriatService.saveGeometriat(loadedGeometriat, loadedGeometriat.id)
 
         // load
         loadedGeometriat = geometriatService.getGeometriat(loadedGeometriat.id!!)
@@ -126,33 +130,70 @@ internal class GeometriatServiceImplITest : DatabaseTest() {
 
     @Test
     fun `save Geometria with missing properties`() {
-        val geometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                Geometriat::class.java
-            )
-        geometriat.version = null
-        geometriat.createdAt = null
-        geometriat.modifiedAt = null
+        val geometriat = GeometriaFactory.createNew()
         geometriat.featureCollection?.crs?.properties = null
 
-        assertThrows<GeometriaValidationException> { geometriatService.saveGeometriat(geometriat) }
+        assertThrows<GeometriaValidationException> {
+            geometriatService.saveGeometriat(geometriat, null)
+        }
     }
 
     @Test
     fun `save Geometria with invalid coordinate system`() {
-        val geometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                Geometriat::class.java
-            )
-        geometriat.version = null
-        geometriat.createdAt = null
-        geometriat.modifiedAt = null
+        val geometriat = GeometriaFactory.createNew()
         geometriat.featureCollection?.crs?.properties?.set("name", "urn:ogc:def:crs:EPSG::0000")
 
         assertThrows<UnsupportedCoordinateSystemException> {
-            geometriatService.saveGeometriat(geometriat)
+            geometriatService.saveGeometriat(geometriat, null)
         }
     }
+
+    @Nested
+    inner class CreateGeometria {
+        @Test
+        fun `sets metadata correctly`() {
+            val geometriat = GeometriaFactory.createNew()
+
+            val result = geometriatService.createGeometriat(geometriat)
+
+            val savedGeometriat = geometriatService.getGeometriat(result.id!!)
+            assertThat(savedGeometriat).isNotNull().all {
+                prop(Geometriat::version).isEqualTo(0)
+                prop(Geometriat::createdAt).isRecentZDT()
+                prop(Geometriat::createdByUserId).isEqualTo("test")
+                prop(Geometriat::modifiedAt).isNull()
+                prop(Geometriat::modifiedByUserId).isNull()
+                prop(Geometriat::featureCollection).isNotNull().all {
+                    transform("features") { it.features }.isNotEmpty()
+                }
+                isNotSameAs(geometriat)
+            }
+        }
+
+        @Test
+        fun `saves geometries correctly`() {
+            val geometriat: Geometriat = GeometriaFactory.create()
+
+            val result = geometriatService.createGeometriat(geometriat)
+
+            val savedGeometriat = geometriatService.getGeometriat(result.id!!)
+            assertThat(savedGeometriat).isNotNull().all {
+                isNotSameAs(geometriat)
+                transform("points") { getPoints(it) }
+                    .all {
+                        hasSize(2)
+                        each {
+                            it.hasClass(Point::class)
+                            it.prop(Point::getCoordinates)
+                                .isEqualTo(getPoints(geometriat)[0].coordinates)
+                        }
+                    }
+            }
+        }
+    }
+
+    private fun getPoints(geometriat: Geometriat): List<Point> =
+        geometriat.featureCollection!!.features.map { it.geometry as Point }
 
     private fun getGeometriaCount(): Int? =
         jdbcTemplate.queryForObject("SELECT COUNT(*) FROM geometriat") { rs, _ -> rs.getInt(1) }
