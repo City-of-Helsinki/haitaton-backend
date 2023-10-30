@@ -894,61 +894,82 @@ class HankeServiceITests : DatabaseTest() {
         assertThat(alue.geometriat).isNotNull
     }
 
-    @Test
-    fun `generateHankeWithApplication generates hanke based on application`() {
-        val inputApplication = AlluDataFactory.cableReportWithoutHanke()
+    @Nested
+    inner class GenerateHankeWithApplication {
 
-        val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
+        @Test
+        fun `generates hanke based on application`() {
+            val inputApplication = AlluDataFactory.cableReportWithoutHanke()
 
-        assertThat(application.applicationData.name)
-            .isEqualTo(inputApplication.applicationData.name)
-        val hanke = hankeRepository.findByHankeTunnus(application.hankeTunnus)!!
-        assertThat(hanke.generated).isTrue
-        assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
-        assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
-        assertThat(hanke.nimi).isEqualTo(application.applicationData.name)
-        assertThat(hanke.perustaja?.nimi).isEqualTo("Teppo Testihenkilö")
-        assertThat(hanke.perustaja?.email).isEqualTo("teppo@example.test")
-    }
+            val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
 
-    @Test
-    fun `generateHankeWithApplication sets hanke name according to limit and saves successfully`() {
-        val expectedName = "a".repeat(MAXIMUM_HANKE_NIMI_LENGTH)
-        val tooLongName = expectedName + "bbb"
-        val inputApplication =
-            AlluDataFactory.cableReportWithoutHanke()
-                .copy(
-                    applicationData =
-                        AlluDataFactory.createCableReportApplicationData(name = tooLongName)
-                )
-
-        val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
-
-        val hanke = hankeRepository.findByHankeTunnus(application.hankeTunnus)!!
-        assertThat(hanke.nimi).isEqualTo(expectedName)
-        assertThat(hanke.generated).isTrue
-        assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
-        assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
-        assertThat(hanke.perustaja?.nimi).isEqualTo("Teppo Testihenkilö")
-        assertThat(hanke.perustaja?.email).isEqualTo("teppo@example.test")
-    }
-
-    @Test
-    fun `generateHankeWithApplication when exception rolls back`() {
-        // Use an intersecting geometry so that ApplicationService will throw an exception
-        val inputApplication =
-            AlluDataFactory.cableReportWithoutHanke {
-                withArea(
-                    "area",
-                    "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json".asJsonResource()
-                )
-            }
-
-        assertThrows<ApplicationGeometryException> {
-            hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
+            assertThat(application.applicationData.name)
+                .isEqualTo(inputApplication.applicationData.name)
+            val hanke = hankeRepository.findByHankeTunnus(application.hankeTunnus)!!
+            assertThat(hanke.generated).isTrue
+            assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
+            assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
+            assertThat(hanke.nimi).isEqualTo(application.applicationData.name)
+            assertThat(hanke.perustaja?.nimi).isEqualTo("Teppo Testihenkilö")
+            assertThat(hanke.perustaja?.email).isEqualTo("teppo@example.test")
         }
 
-        assertThat(hankeRepository.findAll()).isEmpty()
+        @Test
+        fun `sets hanke name according to limit and saves successfully`() {
+            val expectedName = "a".repeat(MAXIMUM_HANKE_NIMI_LENGTH)
+            val tooLongName = expectedName + "bbb"
+            val inputApplication =
+                AlluDataFactory.cableReportWithoutHanke()
+                    .copy(
+                        applicationData =
+                            AlluDataFactory.createCableReportApplicationData(name = tooLongName)
+                    )
+
+            val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
+
+            val hanke = hankeRepository.findByHankeTunnus(application.hankeTunnus)!!
+            assertThat(hanke.nimi).isEqualTo(expectedName)
+            assertThat(hanke.generated).isTrue
+            assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
+            assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
+            assertThat(hanke.perustaja?.nimi).isEqualTo("Teppo Testihenkilö")
+            assertThat(hanke.perustaja?.email).isEqualTo("teppo@example.test")
+        }
+
+        @Test
+        fun `creates hankealueet from the application areas`() {
+            val inputApplication = AlluDataFactory.cableReportWithoutHanke()
+            assertThat(inputApplication.applicationData.areas).isNotNull.isNotEmpty
+
+            val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
+
+            val hanke = hankeService.loadHanke(application.hankeTunnus)!!
+            hanke.alueet.forEach { hankealue ->
+                val features = hankealue.geometriat?.featureCollection?.features
+                assertThat(features).isNotNull.hasSize(1)
+                val polygon = features!![0].geometry as Polygon
+                assertThat(polygon.coordinates)
+                    .isEqualTo(inputApplication.applicationData.areas!![0].geometry.coordinates)
+            }
+        }
+
+        @Test
+        fun `rolls back when application service throws an exception`() {
+            // Use an intersecting geometry so that ApplicationService will throw an exception
+            val inputApplication =
+                AlluDataFactory.cableReportWithoutHanke {
+                    withArea(
+                        "area",
+                        "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json".asJsonResource()
+                    )
+                }
+
+            assertThrows<ApplicationGeometryException> {
+                hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
+            }
+
+            assertThat(hankeRepository.findAll()).isEmpty()
+        }
     }
 
     @Test

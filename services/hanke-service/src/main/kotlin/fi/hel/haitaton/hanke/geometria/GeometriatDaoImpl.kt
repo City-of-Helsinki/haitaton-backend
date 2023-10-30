@@ -73,7 +73,7 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
                     id = ?
             """.trimIndent()
             ) { ps ->
-                ps.setInt(1, geometriat.version!!)
+                ps.setInt(1, geometriat.version)
                 if (geometriat.modifiedByUserId != null) {
                     ps.setString(2, geometriat.modifiedByUserId!!)
                 } else {
@@ -128,7 +128,7 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
                     RETURNING id
                     """.trimIndent(),
                     { rs, _ -> rs.getInt(1) },
-                    geometriat.version ?: 0,
+                    geometriat.version,
                     geometriat.createdByUserId,
                     if (geometriat.createdAt != null) {
                         Timestamp(geometriat.createdAt!!.toInstant().toEpochMilli())
