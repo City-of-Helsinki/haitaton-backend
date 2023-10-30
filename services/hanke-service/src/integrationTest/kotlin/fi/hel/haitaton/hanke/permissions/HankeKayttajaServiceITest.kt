@@ -23,7 +23,6 @@ import assertk.assertions.messageContains
 import assertk.assertions.prop
 import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.DatabaseTest
-import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
@@ -51,7 +50,6 @@ import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.factory.UserContactFactory.hakijaContact
 import fi.hel.haitaton.hanke.factory.identifier
-import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
@@ -205,57 +203,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
             assertThat(result).isNull()
         }
-    }
-
-    @Nested
-    inner class WhoAmIByHanke {
-        private val canView = Kayttooikeustaso.KATSELUOIKEUS
-        private val allRights = Kayttooikeustaso.KAIKKI_OIKEUDET
-
-        @Test
-        fun `Should return empty map when user does not have any permissions`() {
-            assertThat(hankeKayttajaService.whoAmIByHankeId("unknown")).isEmpty()
-        }
-
-        @Test
-        fun `Should return permission info when the relations permission and kayttaja exists`() {
-            val first = hankeFactory.saveGenerated(userId = USERNAME) // creates kayttaja
-            val second = hankeFactory.saveMinimal().permit(privilege = canView) // no kayttaja
-            hankeFactory.saveMinimal().permit("other") // won't be found
-
-            val result = hankeKayttajaService.whoAmIByHankeId(USERNAME)
-
-            assertThat(result).hasSize(2)
-            assertThat(result[first.id]).isNotNull().all {
-                prop(WhoAmIDto::hankeKayttajaId).isNotNull()
-                prop(WhoAmIDto::kayttooikeustaso).isEqualTo(allRights)
-                prop(WhoAmIDto::kayttooikeudet).hasSameElementsAs(PermissionCode.entries)
-            }
-            assertThat(result[second.id]).isNotNull().all {
-                prop(WhoAmIDto::hankeKayttajaId).isNull()
-                prop(WhoAmIDto::kayttooikeustaso).isEqualTo(canView)
-                prop(WhoAmIDto::kayttooikeudet).containsExactly(PermissionCode.VIEW)
-            }
-        }
-
-        @Test
-        fun `Even if no hanke kayttaja should still return permission`() {
-            val hanke = hankeFactory.saveMinimal().permit(privilege = canView)
-
-            val result = hankeKayttajaService.whoAmIByHankeId(USERNAME)
-
-            assertThat(result).hasSize(1)
-            assertThat(result[hanke.id]).isNotNull().all {
-                prop(WhoAmIDto::hankeKayttajaId).isNull()
-                prop(WhoAmIDto::kayttooikeustaso).isEqualTo(canView)
-                prop(WhoAmIDto::kayttooikeudet).containsExactly(PermissionCode.VIEW)
-            }
-        }
-
-        private fun HankeEntity.permit(
-            userId: String = USERNAME,
-            privilege: Kayttooikeustaso = allRights,
-        ) = also { permissionService.create(id, userId, privilege) }
     }
 
     @Nested

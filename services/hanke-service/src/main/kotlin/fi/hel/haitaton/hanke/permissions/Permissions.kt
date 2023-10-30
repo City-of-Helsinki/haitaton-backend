@@ -11,9 +11,19 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import java.util.*
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
+
+interface HasPermissionCodes {
+    val permissionCode: Long
+
+    val permissionCodes: List<PermissionCode>
+        get() = PermissionCode.entries.filter(::hasPermission)
+
+    fun hasPermission(permission: PermissionCode): Boolean = permissionCode and permission.code > 0
+}
 
 /** The codes are just bitmasks. Their value or order has no meaning. */
 enum class PermissionCode(val code: Long) {
@@ -46,6 +56,26 @@ interface PermissionRepository : JpaRepository<PermissionEntity, Int> {
             "and mod(kayttooikeustaso.permissionCode / :permissionBit , 2) = 1"
     )
     fun findAllByUserIdAndPermission(userId: String, permissionBit: Long): List<PermissionEntity>
+
+    /**
+     * Combine HankeTunnus, HankeKayttaja and Kayttooikeustaso -information to a single custom
+     * object. HankeKayttaja can be null.
+     */
+    @Query(
+        """
+        SELECT NEW fi.hel.haitaton.hanke.permissions.HankePermission(
+            h.hankeTunnus,
+            hk.id,
+            pe.kayttooikeustasoEntity.kayttooikeustaso,
+            pe.kayttooikeustasoEntity.permissionCode
+        )
+        FROM PermissionEntity pe
+        INNER JOIN HankeEntity h ON pe.hankeId = h.id
+        LEFT JOIN HankeKayttajaEntity hk ON hk.permission.id = pe.id
+        WHERE pe.userId = :userId
+    """
+    )
+    fun findHankePermissionsByUserId(userId: String): List<HankePermission>
 }
 
 @Entity
@@ -74,3 +104,13 @@ data class Permission(
     val hankeId: Int,
     var kayttooikeustaso: Kayttooikeustaso,
 ) : HasId<Int>
+
+data class HankePermission(
+    val hankeTunnus: String,
+    val hankeKayttajaId: UUID?,
+    val kayttooikeustaso: Kayttooikeustaso,
+    override val permissionCode: Long,
+) : HasPermissionCodes {
+    fun toWhoamiResponse(): WhoamiResponse =
+        WhoamiResponse(hankeKayttajaId, kayttooikeustaso, permissionCodes)
+}

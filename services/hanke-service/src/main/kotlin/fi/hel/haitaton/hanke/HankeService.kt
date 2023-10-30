@@ -11,8 +11,6 @@ interface HankeService {
 
     fun findIdentifier(hankeTunnus: String): HankeIdentifier?
 
-    fun findIdentifiers(hankeIds: Set<Int>): Map<Int, String>
-
     fun getHankeApplications(hankeTunnus: String): List<Application>
 
     fun createHanke(request: CreateHankeRequest): Hanke

@@ -2,17 +2,19 @@ package fi.hel.haitaton.hanke.permissions
 
 import assertk.all
 import assertk.assertThat
+import assertk.assertions.containsExactly
 import assertk.assertions.first
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
-import assertk.assertions.isNotEqualTo
+import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
@@ -55,14 +57,14 @@ class PermissionServiceITest : DatabaseTest() {
     @Nested
     inner class AllowedHankeIds {
         @Test
-        fun `getAllowedHankeIds without permissions returns empty list`() {
+        fun `Without permissions returns empty list`() {
             val response = permissionService.getAllowedHankeIds(username, PermissionCode.EDIT)
 
             assertEquals(listOf<Int>(), response)
         }
 
         @Test
-        fun `getAllowedHankeIds with permissions returns list of IDs`() {
+        fun `With permissions returns list of IDs`() {
             val hankkeet = hankeFactory.saveSeveralMinimal(3)
             hankkeet
                 .map { it.id }
@@ -80,7 +82,7 @@ class PermissionServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `getAllowedHankeIds return ids with correct permissions`() {
+        fun `Returns ids with correct permissions`() {
             val kaikkiOikeudet = Kayttooikeustaso.KAIKKI_OIKEUDET
             val hankemuokkaus = Kayttooikeustaso.HANKEMUOKKAUS
             val hakemusasiointi = Kayttooikeustaso.HAKEMUSASIOINTI
@@ -104,32 +106,32 @@ class PermissionServiceITest : DatabaseTest() {
         private val allRights = Kayttooikeustaso.KAIKKI_OIKEUDET
 
         @Test
-        fun `should return empty if no permissions`() {
+        fun `Should return empty if no permissions`() {
             val result = permissionService.permissionsByHanke(CURRENT_USER)
 
             assertThat(result).isEmpty()
         }
 
         @Test
-        fun `should find all users permissions`() {
-            val firstHanke = hankeFactory.saveMinimal().permit()
+        fun `Should find all users permissions`() {
+            val firstHanke = hankeFactory.saveGenerated(userId = CURRENT_USER)
             val secondHanke = hankeFactory.saveMinimal().permit(privilege = canView)
-            hankeFactory.saveMinimal().permit(username) // other user
+            hankeFactory.saveMinimal().permit(username) // someone else
 
             val result = permissionService.permissionsByHanke(CURRENT_USER)
 
             assertThat(result).hasSize(2)
-            assertThat(result[firstHanke.id]!!).all {
-                prop(PermissionEntity::id).isNotEqualTo(0)
-                prop(PermissionEntity::hankeId).isEqualTo(firstHanke.id)
-                prop(PermissionEntity::userId).isEqualTo(CURRENT_USER)
-                prop(PermissionEntity::kayttooikeustaso).isEqualTo(allRights)
+            assertThat(result.find { it.hankeTunnus == firstHanke.hankeTunnus }).isNotNull().all {
+                prop(HankePermission::hankeKayttajaId).isNotNull()
+                prop(HankePermission::kayttooikeustaso).isEqualTo(allRights)
+                prop(HankePermission::permissionCode).isEqualTo(1152921504606846975)
+                prop(HankePermission::permissionCodes).hasSameElementsAs(PermissionCode.entries)
             }
-            assertThat(result[secondHanke.id]!!).all {
-                prop(PermissionEntity::id).isNotEqualTo(0)
-                prop(PermissionEntity::hankeId).isEqualTo(secondHanke.id)
-                prop(PermissionEntity::userId).isEqualTo(CURRENT_USER)
-                prop(PermissionEntity::kayttooikeustaso).isEqualTo(canView)
+            assertThat(result.find { it.hankeTunnus == secondHanke.hankeTunnus }).isNotNull().all {
+                prop(HankePermission::hankeKayttajaId).isNull()
+                prop(HankePermission::kayttooikeustaso).isEqualTo(canView)
+                prop(HankePermission::permissionCode).isEqualTo(1)
+                prop(HankePermission::permissionCodes).containsExactly(PermissionCode.VIEW)
             }
         }
 

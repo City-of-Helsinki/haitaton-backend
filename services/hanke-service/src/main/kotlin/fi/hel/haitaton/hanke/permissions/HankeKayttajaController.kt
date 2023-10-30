@@ -43,7 +43,7 @@ class HankeKayttajaController(
                 ApiResponse(
                     description = "Your permissions",
                     responseCode = "200",
-                    content = [Content(schema = Schema(implementation = WhoAmIDto::class))]
+                    content = [Content(schema = Schema(implementation = WhoamiResponse::class))]
                 ),
                 ApiResponse(
                     description = "Hanke not found",
@@ -53,14 +53,14 @@ class HankeKayttajaController(
             ]
     )
     @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
-    fun whoami(@PathVariable hankeTunnus: String): WhoAmIDto {
+    fun whoami(@PathVariable hankeTunnus: String): WhoamiResponse {
         val userId = currentUserId()
 
         val hankeIdentifier = hankeService.findIdentifier(hankeTunnus)!!
         val permission = permissionService.findPermission(hankeIdentifier.id, userId)!!
 
         val hankeKayttaja = hankeKayttajaService.getKayttajaByUserId(hankeIdentifier.id, userId)
-        return WhoAmIDto(hankeKayttaja?.id, permission.kayttooikeustasoEntity)
+        return WhoamiResponse(hankeKayttaja?.id, permission.kayttooikeustasoEntity)
     }
 
     @GetMapping("hankkeet/my-permissions")
@@ -74,23 +74,14 @@ class HankeKayttajaController(
                 ApiResponse(
                     description = "Permissions grouped by hankeTunnus.",
                     responseCode = "200",
-                ),
-                ApiResponse(description = "Access denied.", responseCode = "401")
+                )
             ]
     )
-    fun whoAmIByHanke(): Map<String, WhoAmIDto> {
-        val whoAmIAtHanke: Map<Int, WhoAmIDto> =
-            hankeKayttajaService.whoAmIByHankeId(userId = currentUserId())
-        val hankeIds = whoAmIAtHanke.keys
+    fun whoAmIByHanke(): Map<String, WhoamiResponse> {
+        val permissions: List<HankePermission> =
+            permissionService.permissionsByHanke(userId = currentUserId())
 
-        if (hankeIds.isEmpty()) return emptyMap()
-
-        return hankeService
-            .findIdentifiers(hankeIds)
-            .mapNotNull { (hankeId, hankeTunnus) ->
-                whoAmIAtHanke[hankeId]?.let { hankeTunnus to it }
-            }
-            .toMap()
+        return permissions.associate { it.hankeTunnus to it.toWhoamiResponse() }
     }
 
     @GetMapping("/hankkeet/{hankeTunnus}/kayttajat")
