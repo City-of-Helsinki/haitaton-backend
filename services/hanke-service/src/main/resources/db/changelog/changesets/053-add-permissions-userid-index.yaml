@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 053-add-permissions-userid-index
+      author: Niko Pitkonen
+      comment: Index to improve search performance based on userid
+      changes:
+        - createIndex:
+            tableName: permissions
+            indexName: permissions_userid_idx
+            unique: false
+            columns:
+              - column:
+                  name: userid

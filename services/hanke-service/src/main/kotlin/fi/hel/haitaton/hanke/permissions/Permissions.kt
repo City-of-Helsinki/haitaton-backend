@@ -57,10 +57,6 @@ interface PermissionRepository : JpaRepository<PermissionEntity, Int> {
     )
     fun findAllByUserIdAndPermission(userId: String, permissionBit: Long): List<PermissionEntity>
 
-    /**
-     * Combine HankeTunnus, HankeKayttaja and Kayttooikeustaso -information to a single custom
-     * object. HankeKayttaja can be null.
-     */
     @Query(
         """
         SELECT NEW fi.hel.haitaton.hanke.permissions.HankePermission(
@@ -105,6 +101,7 @@ data class Permission(
     var kayttooikeustaso: Kayttooikeustaso,
 ) : HasId<Int>
 
+/** Class to combine related HankeKayttaja, Kayttooikeustaso and PermissionCodes to a Hanke. */
 data class HankePermission(
     val hankeTunnus: String,
     val hankeKayttajaId: UUID?,
