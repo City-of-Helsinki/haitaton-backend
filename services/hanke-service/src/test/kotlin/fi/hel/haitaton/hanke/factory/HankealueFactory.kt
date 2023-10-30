@@ -5,7 +5,6 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankealueEntity
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
-import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import java.time.ZonedDateTime
@@ -17,8 +16,7 @@ object HankealueFactory {
         hankeId: Int? = 2,
         haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
         haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
-        geometriat: Geometriat? =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(),
+        geometriat: Geometriat? = GeometriaFactory.create(),
         kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? =
             TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI,
         kaistaPituusHaitta: KaistajarjestelynPituus? = KaistajarjestelynPituus.NELJA,

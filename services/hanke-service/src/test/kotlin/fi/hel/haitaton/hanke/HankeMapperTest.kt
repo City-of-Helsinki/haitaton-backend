@@ -13,12 +13,12 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
 import fi.hel.haitaton.hanke.factory.DateFactory
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
-import fi.hel.haitaton.hanke.geometria.Geometriat
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.Test
 
@@ -26,14 +26,11 @@ private const val MOCK_ID = 1
 
 class HankeMapperTest {
 
-    val geometry: Geometriat =
-        "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource()
-
     @Test
     fun `when entity contains all fields should map domain object correspondingly`() {
         val entity = HankeFactory.createEntity()
 
-        val result = HankeMapper.domainFrom(entity, mapOf(MOCK_ID to geometry))
+        val result = HankeMapper.domainFrom(entity, mapOf(MOCK_ID to GeometriaFactory.create()))
 
         assertThat(result).all {
             prop(Hanke::id).isEqualTo(entity.id)
@@ -91,7 +88,8 @@ class HankeMapperTest {
                 hankeId = hankeId,
                 haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate().atStartOfDay(TZ_UTC),
                 haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate().atStartOfDay(TZ_UTC),
-                geometriat = geometry.apply { resetFeatureProperties(hankeTunnus) },
+                geometriat =
+                    GeometriaFactory.create().apply { resetFeatureProperties(hankeTunnus) },
             )
         )
 }

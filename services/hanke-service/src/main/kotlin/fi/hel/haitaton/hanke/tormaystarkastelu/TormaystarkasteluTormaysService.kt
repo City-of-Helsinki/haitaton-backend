@@ -1,35 +1,33 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.geometria.Geometriat
-
 interface TormaystarkasteluTormaysService {
 
     // yleinen katuosa, ylre_parts
-    fun anyIntersectsYleinenKatuosa(geometriat: List<Geometriat>): Boolean
+    fun anyIntersectsYleinenKatuosa(geometriaIds: Set<Int>): Boolean
 
     // yleinen katualue, ylre_classes
-    fun maxIntersectingYleinenkatualueKatuluokka(geometriat: List<Geometriat>): Int?
+    fun maxIntersectingYleinenkatualueKatuluokka(geometriaIds: Set<Int>): Int?
 
     // liikenteellinen katuluokka, street_classes
-    fun maxIntersectingLiikenteellinenKatuluokka(geometriat: List<Geometriat>): Int?
+    fun maxIntersectingLiikenteellinenKatuluokka(geometriaIds: Set<Int>): Int?
 
     // kantakaupunki, central_business_area
-    fun anyIntersectsWithKantakaupunki(geometriat: List<Geometriat>): Boolean
+    fun anyIntersectsWithKantakaupunki(geometriaIds: Set<Int>): Boolean
 
     fun maxLiikennemaara(
-        geometriat: List<Geometriat>,
+        geometriaIds: Set<Int>,
         etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
     ): Int?
 
-    fun anyIntersectsCriticalBusRoutes(geometriat: List<Geometriat>): Boolean
+    fun anyIntersectsCriticalBusRoutes(geometriaIds: Set<Int>): Boolean
 
-    fun getIntersectingBusRoutes(geometriat: List<Geometriat>): Set<TormaystarkasteluBussireitti>
+    fun getIntersectingBusRoutes(geometriaIds: Set<Int>): Set<TormaystarkasteluBussireitti>
 
-    fun maxIntersectingTramByLaneType(geometriat: List<Geometriat>): Int?
+    fun maxIntersectingTramByLaneType(geometriaIds: Set<Int>): Int?
 
-    fun anyIntersectsWithCyclewaysPriority(geometriat: List<Geometriat>): Boolean
+    fun anyIntersectsWithCyclewaysPriority(geometriaIds: Set<Int>): Boolean
 
-    fun anyIntersectsWithCyclewaysMain(geometriat: List<Geometriat>): Boolean
+    fun anyIntersectsWithCyclewaysMain(geometriaIds: Set<Int>): Boolean
 }
 
 /** There are two(2) separate traffic counts - one for radius of 15m and other for 30m */

@@ -6,10 +6,9 @@ import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
-import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.domain.SavedHankealue
-import fi.hel.haitaton.hanke.domain.geometriat
-import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.domain.geometriaIds
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30
 import io.mockk.checkUnnecessaryStub
@@ -73,7 +72,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
     @Nested
     inner class KatuluokkaLuokittelu {
         // The parameter is only used to call mocks
-        val geometriat = listOf<Geometriat>()
+        val geometriat = setOf<Int>()
 
         @Nested
         inner class WithYlreParts {
@@ -216,7 +215,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
     @Nested
     inner class LiikennemaaraLuokittelu {
         // The parameter is only used to call mocks
-        val geometriat = listOf<Geometriat>()
+        val geometriat = setOf<Int>()
 
         @Test
         fun `returns 0 when street class is 0`() {
@@ -286,7 +285,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
     @Nested
     inner class PyorailyLuokittelu {
         // The parameter is only used to call mocks
-        val geometriat = listOf<Geometriat>()
+        val geometriat = setOf<Int>()
 
         @Test
         fun `returns 5 when intersect with priority route`() {
@@ -330,7 +329,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
     @Nested
     inner class BussiLuokittelu {
         // The parameter is only used to call mocks
-        val geometriat = listOf<Geometriat>()
+        val geometriat = setOf<Int>()
 
         @Test
         fun `returns 5 when intersects with critical bus routes`() {
@@ -419,8 +418,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
     @Test
     fun `calculateTormaystarkastelu happy case`() {
         val alueet = setupHappyCase()
+        val geometriaIds = alueet.geometriaIds()
 
-        val tulos = laskentaService.calculateTormaystarkastelu(alueet)
+        val tulos = laskentaService.calculateTormaystarkastelu(alueet, geometriaIds)
 
         assertThat(tulos).isNotNull()
         assertThat(tulos!!.liikennehaittaIndeksi).isNotNull()
@@ -428,45 +428,40 @@ internal class TormaystarkasteluLaskentaServiceTest {
         assertThat(tulos.liikennehaittaIndeksi.indeksi).isEqualTo(4.0f)
 
         verifyAll {
-            tormaysService.anyIntersectsYleinenKatuosa(alueet.geometriat())
-            tormaysService.maxIntersectingLiikenteellinenKatuluokka(alueet.geometriat())
-            tormaysService.maxLiikennemaara(alueet.geometriat(), RADIUS_30)
-            tormaysService.anyIntersectsWithCyclewaysPriority(alueet.geometriat())
-            tormaysService.anyIntersectsWithCyclewaysMain(alueet.geometriat())
-            tormaysService.anyIntersectsCriticalBusRoutes(alueet.geometriat())
-            tormaysService.maxIntersectingTramByLaneType(alueet.geometriat())
+            tormaysService.anyIntersectsYleinenKatuosa(geometriaIds)
+            tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds)
+            tormaysService.maxLiikennemaara(geometriaIds, RADIUS_30)
+            tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds)
+            tormaysService.anyIntersectsWithCyclewaysMain(geometriaIds)
+            tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds)
+            tormaysService.maxIntersectingTramByLaneType(geometriaIds)
         }
     }
 
     private fun setupHappyCase(): List<SavedHankealue> {
-        val geometriat =
-            "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource(
-                Geometriat::class.java
-            )
 
         val alkuPvm = ZonedDateTime.of(2021, 3, 4, 0, 0, 0, 0, TZ_UTC)
         val alueet =
             listOf(
                 SavedHankealue(
-                    geometriat = geometriat,
+                    geometriat = GeometriaFactory.create(),
                     haittaAlkuPvm = alkuPvm,
                     haittaLoppuPvm = alkuPvm.plusDays(7),
                     kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.YKSI,
                     kaistaPituusHaitta = KaistajarjestelynPituus.YKSI
                 )
             )
+        val geometriaIds = alueet.geometriaIds()
 
-        every { tormaysService.anyIntersectsYleinenKatuosa(alueet.geometriat()) } returns true
-        every {
-            tormaysService.maxIntersectingLiikenteellinenKatuluokka(alueet.geometriat())
-        } returns TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value
-        every { tormaysService.maxLiikennemaara(alueet.geometriat(), RADIUS_30) } returns 1000
-        every { tormaysService.anyIntersectsWithCyclewaysPriority(alueet.geometriat()) } returns
-            false
-        every { tormaysService.anyIntersectsWithCyclewaysMain(alueet.geometriat()) } returns true
-        every { tormaysService.maxIntersectingTramByLaneType(alueet.geometriat()) } returns
+        every { tormaysService.anyIntersectsYleinenKatuosa(geometriaIds) } returns true
+        every { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds) } returns
+            TormaystarkasteluKatuluokka.ALUEELLINEN_KOKOOJAKATU.value
+        every { tormaysService.maxLiikennemaara(geometriaIds, RADIUS_30) } returns 1000
+        every { tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds) } returns false
+        every { tormaysService.anyIntersectsWithCyclewaysMain(geometriaIds) } returns true
+        every { tormaysService.maxIntersectingTramByLaneType(geometriaIds) } returns
             TormaystarkasteluRaitiotiekaistatyyppi.JAETTU.value
-        every { tormaysService.anyIntersectsCriticalBusRoutes(alueet.geometriat()) } returns true
+        every { tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds) } returns true
 
         return alueet
     }
