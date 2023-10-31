@@ -27,7 +27,7 @@ data class PublicGeometriat(
 fun geometriatToPublic(geometriat: Geometriat) =
     PublicGeometriat(
         geometriat.id!!,
-        geometriat.version!!,
+        geometriat.version,
         geometriat.createdAt!!,
         geometriat.modifiedAt,
         geometriat.featureCollection
