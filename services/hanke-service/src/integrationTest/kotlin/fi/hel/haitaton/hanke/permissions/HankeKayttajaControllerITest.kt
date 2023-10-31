@@ -38,7 +38,6 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import io.mockk.verifySequence
 import java.util.UUID
-import java.util.UUID.randomUUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -165,7 +164,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         private val url = "/hankkeet/my-permissions"
 
         private val tunnus1 = "HAI23-1"
-        private val kayttaja1 = randomUUID()
+        private val kayttaja1 = UUID.randomUUID()
 
         private val tunnus2 = "HAI23-2"
 
@@ -175,13 +174,13 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                     hankeTunnus = tunnus1,
                     hankeKayttajaId = kayttaja1,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
-                    permissionCode = 1152921504606846975,
+                    permissionCode = PermissionCode.entries.sumOf { it.code },
                 ),
                 HankePermission(
                     hankeTunnus = tunnus2,
                     hankeKayttajaId = null,
                     kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
-                    permissionCode = 1,
+                    permissionCode = VIEW.code,
                 )
             )
 
