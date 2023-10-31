@@ -134,4 +134,4 @@ databaseChangeLog:
   - include:
       file: db/changelog/changesets/052-remove-suunnitteluvaihe-from-hanke.yml
   - include:
-      file: db/changelog/changesets/053-add-permissions-userid-index.yaml
+      file: db/changelog/changesets/053-add-indices-for-hanke-permission-query.yml
