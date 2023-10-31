@@ -1,0 +1,157 @@
+package fi.hel.haitaton.hanke
+
+import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.HasId
+import fi.hel.haitaton.hanke.domain.NewGeometriat
+import fi.hel.haitaton.hanke.domain.NewHankealue
+import fi.hel.haitaton.hanke.domain.SavedHankealue
+import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.geometria.GeometriatService
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
+import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
+import org.geojson.Feature
+import org.geojson.FeatureCollection
+import org.springframework.stereotype.Service
+
+/*
+ * Helper for mapping and sorting data to existing collections.
+ *
+ * Example usage:
+ * mergeDataInto(hanke.alueet, entity.listOfHankeAlueet) { source, target ->
+ *    copyNonNullHankealueFieldsToEntity(hanke, source, target)
+ * }
+ * - Transforms data from hanke.alueet into entity.listOfHankeAlueet
+ * - Does the transformation with the last lambda
+ *
+ * Source list is not modified. Target container is sorted by order of source container.
+ *
+ * converter takes additional parameter for existing Target object in case it exists in target collection.
+ *
+ */
+private fun <Source : HasId<Int>, Target : HasId<Int>> mergeDataInto(
+    source: List<Source>,
+    target: MutableList<Target>,
+    converterFn: (Source, Target?) -> Target
+) {
+    // Existing data is collected for mapping
+    val (targetIdentified, targetRest) = target.partition { it.id != null }
+    val targetMap = targetIdentified.associateBy { it.id!! }
+
+    // Target is overwritten with merged and new data from source
+    target.clear()
+    target.addAll(source.map { converterFn(it, targetMap[it.id]) })
+    target.addAll(targetRest)
+}
+
+@Service
+class HankealueService(
+    private val geometriatService: GeometriatService,
+    private val tormaystarkasteluService: TormaystarkasteluLaskentaService
+) {
+
+    fun mergeAlueetToHanke(incoming: List<SavedHankealue>, existingHanke: HankeEntity) {
+        mergeDataInto(incoming, existingHanke.alueet) { source, target ->
+            copyNonNullHankealueFieldsToEntity(existingHanke.hankeTunnus, source, target)
+        }
+        existingHanke.alueet.forEach { it.hanke = existingHanke }
+    }
+
+    /** Map by area geometry id to area geometry data. */
+    fun geometryMapFrom(alueet: List<HankealueEntity>): Map<Int, Geometriat?> =
+        alueet
+            .mapNotNull { it.geometriat }
+            .associateBy({ it }, { geometriatService.getGeometriat(it) })
+
+    fun copyNonNullHankealueFieldsToEntity(
+        hankeTunnus: String,
+        source: Hankealue,
+        target: HankealueEntity?
+    ): HankealueEntity {
+        val result = target ?: HankealueEntity()
+
+        // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
+        // be simply dropped here.
+        // Note, .toLocalDate() does not do any time zone conversion.
+        source.haittaLoppuPvm?.let { result.haittaLoppuPvm = source.haittaLoppuPvm?.toLocalDate() }
+        source.haittaAlkuPvm?.let { result.haittaAlkuPvm = source.haittaAlkuPvm?.toLocalDate() }
+
+        source.kaistaHaitta?.let { result.kaistaHaitta = source.kaistaHaitta }
+        source.kaistaPituusHaitta?.let { result.kaistaPituusHaitta = source.kaistaPituusHaitta }
+        source.meluHaitta?.let { result.meluHaitta = source.meluHaitta }
+        source.polyHaitta?.let { result.polyHaitta = source.polyHaitta }
+        source.tarinaHaitta?.let { result.tarinaHaitta = source.tarinaHaitta }
+        source.geometriat?.let {
+            it.resetFeatureProperties(hankeTunnus)
+            val saved = geometriatService.saveGeometriat(it, result.geometriat)
+            result.geometriat = saved?.id
+        }
+        source.nimi?.let { result.nimi = source.nimi }
+
+        return result
+    }
+
+    fun createAlueetFromCreateRequest(
+        alueet: List<NewHankealue>,
+        entity: HankeEntity
+    ): MutableList<HankealueEntity> =
+        alueet
+            .map { createAlueFromCreateRequest(entity.hankeTunnus, it).apply { hanke = entity } }
+            .toMutableList()
+
+    fun createAlueFromCreateRequest(hanketunnus: String, source: NewHankealue): HankealueEntity {
+        val result = HankealueEntity()
+
+        // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
+        // be simply dropped here.
+        // Note, .toLocalDate() does not do any time zone conversion.
+        result.haittaLoppuPvm = source.haittaLoppuPvm?.toLocalDate()
+        result.haittaAlkuPvm = source.haittaAlkuPvm?.toLocalDate()
+
+        result.kaistaHaitta = source.kaistaHaitta
+        result.kaistaPituusHaitta = source.kaistaPituusHaitta
+        result.meluHaitta = source.meluHaitta
+        result.polyHaitta = source.polyHaitta
+        result.tarinaHaitta = source.tarinaHaitta
+        source.geometriat?.let {
+            it.resetFeatureProperties(hanketunnus)
+            val saved = geometriatService.createGeometriat(it)
+            result.geometriat = saved.id
+        }
+        source.nimi?.let { result.nimi = source.nimi }
+
+        return result
+    }
+
+    fun calculateTormaystarkastelu(
+        alueet: List<Hankealue>,
+        geometriaIds: Set<Int>,
+        hanke: HankeEntity,
+    ): TormaystarkasteluTulosEntity? =
+        tormaystarkasteluService.calculateTormaystarkastelu(alueet, geometriaIds)?.let {
+            TormaystarkasteluTulosEntity(
+                perus = it.perusIndeksi,
+                pyoraily = it.pyorailyIndeksi,
+                linjaauto = it.linjaautoIndeksi,
+                raitiovaunu = it.raitiovaunuIndeksi,
+                hanke = hanke
+            )
+        }
+
+    companion object {
+        fun createHankealueetFromCableReport(
+            cableReportData: CableReportApplicationData
+        ): List<NewHankealue> =
+            (cableReportData.areas ?: listOf())
+                .map { Feature().apply { geometry = it.geometry } }
+                .map { FeatureCollection().add(it) }
+                .map { NewGeometriat(it) }
+                .map {
+                    NewHankealue(
+                        geometriat = it,
+                        haittaAlkuPvm = cableReportData.startTime,
+                        haittaLoppuPvm = cableReportData.endTime,
+                    )
+                }
+    }
+}

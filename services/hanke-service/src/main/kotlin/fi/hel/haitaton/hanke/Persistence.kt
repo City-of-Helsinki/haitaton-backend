@@ -149,7 +149,7 @@ class HankeEntity(
         cascade = [CascadeType.ALL],
         orphanRemoval = true
     )
-    var listOfHankeAlueet: MutableList<HankealueEntity> = mutableListOf(),
+    var alueet: MutableList<HankealueEntity> = mutableListOf(),
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hanke",
