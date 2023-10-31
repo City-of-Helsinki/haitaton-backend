@@ -102,9 +102,6 @@ class PermissionServiceITest : DatabaseTest() {
 
     @Nested
     inner class PermissionsByHanke {
-        private val canView = Kayttooikeustaso.KATSELUOIKEUS
-        private val allRights = Kayttooikeustaso.KAIKKI_OIKEUDET
-
         @Test
         fun `Should return empty if no permissions`() {
             val result = permissionService.permissionsByHanke(CURRENT_USER)
@@ -115,7 +112,8 @@ class PermissionServiceITest : DatabaseTest() {
         @Test
         fun `Should find all users permissions`() {
             val firstHanke = hankeFactory.saveGenerated(userId = CURRENT_USER)
-            val secondHanke = hankeFactory.saveMinimal().permit(privilege = canView)
+            val secondHanke =
+                hankeFactory.saveMinimal().permit(privilege = Kayttooikeustaso.KATSELUOIKEUS)
             hankeFactory.saveMinimal().permit(username) // someone else
 
             val result = permissionService.permissionsByHanke(CURRENT_USER)
@@ -123,13 +121,13 @@ class PermissionServiceITest : DatabaseTest() {
             assertThat(result).hasSize(2)
             assertThat(result.find { it.hankeTunnus == firstHanke.hankeTunnus }).isNotNull().all {
                 prop(HankePermission::hankeKayttajaId).isNotNull()
-                prop(HankePermission::kayttooikeustaso).isEqualTo(allRights)
+                prop(HankePermission::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
                 prop(HankePermission::permissionCode).isEqualTo(1152921504606846975)
                 prop(HankePermission::permissionCodes).hasSameElementsAs(PermissionCode.entries)
             }
             assertThat(result.find { it.hankeTunnus == secondHanke.hankeTunnus }).isNotNull().all {
                 prop(HankePermission::hankeKayttajaId).isNull()
-                prop(HankePermission::kayttooikeustaso).isEqualTo(canView)
+                prop(HankePermission::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
                 prop(HankePermission::permissionCode).isEqualTo(1)
                 prop(HankePermission::permissionCodes).containsExactly(PermissionCode.VIEW)
             }
@@ -137,7 +135,7 @@ class PermissionServiceITest : DatabaseTest() {
 
         private fun HankeEntity.permit(
             userId: String = CURRENT_USER,
-            privilege: Kayttooikeustaso = allRights,
+            privilege: Kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
         ) = also { permissionService.create(id, userId, privilege) }
     }
 

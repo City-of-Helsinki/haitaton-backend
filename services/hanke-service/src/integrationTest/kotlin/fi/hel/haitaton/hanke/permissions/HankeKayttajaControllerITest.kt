@@ -164,7 +164,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         private val url = "/hankkeet/my-permissions"
 
         private val tunnus1 = "HAI23-1"
-        private val kayttaja1 = UUID.randomUUID()
+        private val kayttaja1 = UUID.fromString("93473a95-1520-428c-b203-5d770fef78aa")
 
         private val tunnus2 = "HAI23-2"
 
