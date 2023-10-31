@@ -939,14 +939,14 @@ class HankeServiceITests : DatabaseTest() {
         @Test
         fun `creates hankealueet from the application areas`() {
             val inputApplication = AlluDataFactory.cableReportWithoutHanke()
-            assertThat(inputApplication.applicationData.areas).isNotNull.isNotEmpty
+            assertThat(inputApplication.applicationData.areas).isNotEmpty
 
             val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
 
             val hanke = hankeService.loadHanke(application.hankeTunnus)!!
             hanke.alueet.forEach { hankealue ->
                 val features = hankealue.geometriat?.featureCollection?.features
-                assertThat(features).isNotNull.hasSize(1)
+                assertThat(features).hasSize(1)
                 val polygon = features!![0].geometry as Polygon
                 assertThat(polygon.coordinates)
                     .isEqualTo(inputApplication.applicationData.areas!![0].geometry.coordinates)

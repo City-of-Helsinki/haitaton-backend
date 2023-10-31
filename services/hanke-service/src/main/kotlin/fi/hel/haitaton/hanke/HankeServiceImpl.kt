@@ -862,6 +862,7 @@ open class HankeServiceImpl(
      * - Generated flag true.
      * - Hanke name is same as application name (limited to first 100 characters).
      * - Perustaja generated from application data orderer.
+     * - Hankealueet are created from the application areas.
      */
     private fun generateHankeFrom(cableReport: CableReportWithoutHanke): Hanke {
         val hankealueet =
