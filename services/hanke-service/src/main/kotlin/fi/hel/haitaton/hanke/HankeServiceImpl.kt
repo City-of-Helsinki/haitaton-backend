@@ -11,6 +11,7 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.domain.HasYhteystiedot
+import fi.hel.haitaton.hanke.domain.NewGeometriat
 import fi.hel.haitaton.hanke.domain.NewHankealue
 import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.domain.Yhteystieto
@@ -26,6 +27,8 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import fi.hel.haitaton.hanke.validation.HankePublicValidator
 import mu.KotlinLogging
+import org.geojson.Feature
+import org.geojson.FeatureCollection
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.transaction.annotation.Transactional
 
@@ -859,13 +862,31 @@ open class HankeServiceImpl(
      * - Generated flag true.
      * - Hanke name is same as application name (limited to first 100 characters).
      * - Perustaja generated from application data orderer.
+     * - Hankealueet are created from the application areas.
      */
-    private fun generateHankeFrom(cableReport: CableReportWithoutHanke): Hanke =
-        createHankeInternal(
-            CreateHankeRequest(nimi = limitHankeName(cableReport.applicationData.name)),
+    private fun generateHankeFrom(cableReport: CableReportWithoutHanke): Hanke {
+        val hankealueet =
+            cableReport.applicationData.areas
+                ?.map { Feature().apply { geometry = it.geometry } }
+                ?.map { FeatureCollection().add(it) }
+                ?.map { NewGeometriat(it) }
+                ?.map {
+                    NewHankealue(
+                        geometriat = it,
+                        haittaAlkuPvm = cableReport.applicationData.startTime,
+                        haittaLoppuPvm = cableReport.applicationData.endTime,
+                    )
+                }
+
+        return createHankeInternal(
+            CreateHankeRequest(
+                nimi = limitHankeName(cableReport.applicationData.name),
+                alueet = hankealueet,
+            ),
             perustaja = perustajaFrom(cableReport.applicationData),
             generated = true,
         )
+    }
 
     private fun limitHankeName(name: String): String =
         if (name.length > MAXIMUM_HANKE_NIMI_LENGTH) {

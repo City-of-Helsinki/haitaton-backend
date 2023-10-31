@@ -62,7 +62,7 @@ internal class GeometriatDaoImplITest : DatabaseTest() {
         geometriat.featureCollection!!
             .features
             .add(geometriat.featureCollection!!.features[0]) // add one more geometry
-        geometriat.version = geometriat.version!! + 1
+        geometriat.version += 1
         geometriat.modifiedAt = ZonedDateTime.now()
         geometriatDao.updateGeometriat(geometriat)
         loadedGeometriat = geometriatDao.retrieveGeometriat(geometriaId)
