@@ -133,3 +133,5 @@ databaseChangeLog:
       file: db/changelog/changesets/051-make-hanketunnus-mandatory-in-hanke.yml
   - include:
       file: db/changelog/changesets/052-remove-suunnitteluvaihe-from-hanke.yml
+  - include:
+      file: db/changelog/changesets/053-add-indices-for-hanke-permission-query.yml

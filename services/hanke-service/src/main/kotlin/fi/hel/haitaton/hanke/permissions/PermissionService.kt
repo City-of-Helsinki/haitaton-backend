@@ -21,6 +21,10 @@ class PermissionService(
             it.hankeId
         }
 
+    @Transactional(readOnly = true)
+    fun permissionsByHanke(userId: String): List<HankePermission> =
+        permissionRepository.findHankePermissionsByUserId(userId)
+
     fun hasPermission(hankeId: Int, userId: String, permission: PermissionCode): Boolean =
         permissionRepository.findOneByHankeIdAndUserId(hankeId, userId)?.hasPermission(permission)
             ?: false

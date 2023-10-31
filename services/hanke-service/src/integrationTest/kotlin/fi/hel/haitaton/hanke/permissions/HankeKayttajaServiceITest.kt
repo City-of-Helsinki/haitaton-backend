@@ -153,7 +153,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Nested
     inner class GetKayttajaByUserId {
-
         @Test
         fun `When user exists should return current hanke user`() {
             val hanke = hankeFactory.saveGenerated(userId = USERNAME)
@@ -161,13 +160,15 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val result: HankeKayttajaEntity? =
                 hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)
 
-            assertThat(result).isNotNull()
-            with(result!!) {
-                assertThat(id).isNotNull()
-                assertThat(sahkoposti).isEqualTo(teppoEmail)
-                assertThat(nimi).isEqualTo(TEPPO_TESTI)
-                assertThat(permission?.kayttooikeustaso).isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
-                assertThat(permission).isNotNull()
+            assertThat(result).isNotNull().all {
+                prop(HankeKayttajaEntity::id).isNotNull()
+                prop(HankeKayttajaEntity::sahkoposti).isEqualTo(teppoEmail)
+                prop(HankeKayttajaEntity::nimi).isEqualTo(TEPPO_TESTI)
+                prop(HankeKayttajaEntity::permission).isNotNull().all {
+                    prop(PermissionEntity::kayttooikeustaso)
+                        .isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
+                }
+                prop(HankeKayttajaEntity::kayttajaTunniste).isNull() // no token for creator
             }
         }
 
