@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 053-add-indices-for-hanke-permission-query
+      author: Niko Pitkonen
+      comment: Indices to improve search performance
+      changes:
+        - createIndex:
+            tableName: permissions
+            indexName: permissions_userid_idx
+            unique: false
+            columns:
+              - column:
+                  name: userid
+        - createIndex:
+            tableName: hanke_kayttaja
+            indexName: hanke_kayttaja_permission_id_idx
+            unique: true
+            columns:
+              - column:
+                  name: permission_id

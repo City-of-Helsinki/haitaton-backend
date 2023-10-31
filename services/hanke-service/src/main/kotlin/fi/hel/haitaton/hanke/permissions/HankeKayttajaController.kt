@@ -63,6 +63,27 @@ class HankeKayttajaController(
         return WhoamiResponse(hankeKayttaja?.id, permission.kayttooikeustasoEntity)
     }
 
+    @GetMapping("hankkeet/my-permissions")
+    @Operation(
+        summary = "Get your permissions for your own projects",
+        description = "Returns a map of current users Hanke identifiers and respective permissions."
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Permissions grouped by hankeTunnus.",
+                    responseCode = "200",
+                )
+            ]
+    )
+    fun whoAmIByHanke(): Map<String, WhoamiResponse> {
+        val permissions: List<HankePermission> =
+            permissionService.permissionsByHanke(userId = currentUserId())
+
+        return permissions.associate { it.hankeTunnus to it.toWhoamiResponse() }
+    }
+
     @GetMapping("/hankkeet/{hankeTunnus}/kayttajat")
     @Operation(
         summary = "Get Hanke users",
