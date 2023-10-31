@@ -161,7 +161,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
 
     @Nested
     inner class WhoAmIByHanke {
-        private val url = "/hankkeet/my-permissions"
+        private val url = "/my-permissions"
 
         private val tunnus1 = "HAI23-1"
         private val kayttaja1 = UUID.fromString("93473a95-1520-428c-b203-5d770fef78aa")
