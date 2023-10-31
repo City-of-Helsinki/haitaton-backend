@@ -866,8 +866,7 @@ open class HankeServiceImpl(
     private fun generateHankeFrom(cableReport: CableReportWithoutHanke): Hanke {
         val hankealueet =
             cableReport.applicationData.areas
-                ?.map { it.geometry }
-                ?.map { Feature().apply { geometry = it } }
+                ?.map { Feature().apply { geometry = it.geometry } }
                 ?.map { FeatureCollection().add(it) }
                 ?.map { NewGeometriat(it) }
                 ?.map {
