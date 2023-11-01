@@ -43,8 +43,7 @@ open class HankeServiceImpl(
     override fun getHankeApplications(hankeTunnus: String): List<Application> =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let { entity ->
             entity.hakemukset.map { hakemus -> hakemus.toApplication() }
-        }
-            ?: throw HankeNotFoundException(hankeTunnus)
+        } ?: throw HankeNotFoundException(hankeTunnus)
 
     @Transactional(readOnly = true)
     override fun loadHanke(hankeTunnus: String) =

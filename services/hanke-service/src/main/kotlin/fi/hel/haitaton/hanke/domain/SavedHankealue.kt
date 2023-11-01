@@ -60,7 +60,7 @@ data class SavedHankealue(
         description = "Area name",
     )
     override var nimi: String? = null,
-) : HasId<Int>, Hankealue
+) : HasId<Int?>, Hankealue
 
 fun List<Hankealue>.alkuPvm(): ZonedDateTime? = mapNotNull { it.haittaAlkuPvm }.minOfOrNull { it }
 

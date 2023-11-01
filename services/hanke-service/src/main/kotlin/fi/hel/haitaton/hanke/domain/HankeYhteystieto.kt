@@ -74,4 +74,4 @@ data class HankeYhteystieto(
     @JsonView(NotInChangeLogView::class)
     @field:Schema(description = "Timestamp of last modification, set by the service")
     var modifiedAt: ZonedDateTime? = null
-) : HasId<Int>, Yhteystieto
+) : HasId<Int?>, Yhteystieto

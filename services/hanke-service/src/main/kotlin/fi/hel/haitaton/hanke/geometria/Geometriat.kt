@@ -38,7 +38,7 @@ data class Geometriat(
     @field:Schema(description = "Timestamp of last modification, set by the service")
     @JsonView(NotInChangeLogView::class)
     var modifiedAt: ZonedDateTime? = null
-) : HasId<Int>, HasFeatures {
+) : HasId<Int?>, HasFeatures {
     fun withFeatureCollection(input: FeatureCollection): Geometriat {
         this.featureCollection = input
         return this

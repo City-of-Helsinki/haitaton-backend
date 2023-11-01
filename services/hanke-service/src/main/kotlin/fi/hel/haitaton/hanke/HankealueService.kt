@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.domain.Hankealue
-import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.domain.NewGeometriat
 import fi.hel.haitaton.hanke.domain.NewHankealue
 import fi.hel.haitaton.hanke.domain.SavedHankealue
@@ -13,36 +12,6 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import org.geojson.Feature
 import org.geojson.FeatureCollection
 import org.springframework.stereotype.Service
-
-/*
- * Helper for mapping and sorting data to existing collections.
- *
- * Example usage:
- * mergeDataInto(hanke.alueet, entity.listOfHankeAlueet) { source, target ->
- *    copyNonNullHankealueFieldsToEntity(hanke, source, target)
- * }
- * - Transforms data from hanke.alueet into entity.listOfHankeAlueet
- * - Does the transformation with the last lambda
- *
- * Source list is not modified. Target container is sorted by order of source container.
- *
- * converter takes additional parameter for existing Target object in case it exists in target collection.
- *
- */
-private fun <Source : HasId<Int>, Target : HasId<Int>> mergeDataInto(
-    source: List<Source>,
-    target: MutableList<Target>,
-    converterFn: (Source, Target?) -> Target
-) {
-    // Existing data is collected for mapping
-    val (targetIdentified, targetRest) = target.partition { it.id != null }
-    val targetMap = targetIdentified.associateBy { it.id!! }
-
-    // Target is overwritten with merged and new data from source
-    target.clear()
-    target.addAll(source.map { converterFn(it, targetMap[it.id]) })
-    target.addAll(targetRest)
-}
 
 @Service
 class HankealueService(

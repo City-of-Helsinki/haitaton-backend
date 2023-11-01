@@ -14,7 +14,7 @@ import java.time.LocalDate
 @Entity
 @Table(name = "hankealue")
 class HankealueEntity : HasId<Int> {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) override var id: Int? = null
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) override var id: Int = 0
 
     @ManyToOne(fetch = FetchType.EAGER) @JoinColumn(name = "hankeid") var hanke: HankeEntity? = null
 
@@ -53,7 +53,7 @@ class HankealueEntity : HasId<Int> {
     }
 
     override fun hashCode(): Int {
-        var result = id ?: 0
+        var result = id
         result = 31 * result + (hanke?.hashCode() ?: 0)
         result = 31 * result + (haittaAlkuPvm?.hashCode() ?: 0)
         result = 31 * result + (haittaLoppuPvm?.hashCode() ?: 0)
