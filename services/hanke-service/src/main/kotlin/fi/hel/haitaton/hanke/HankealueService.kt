@@ -42,20 +42,20 @@ class HankealueService(
         // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
         // be simply dropped here.
         // Note, .toLocalDate() does not do any time zone conversion.
-        source.haittaLoppuPvm?.let { result.haittaLoppuPvm = source.haittaLoppuPvm?.toLocalDate() }
-        source.haittaAlkuPvm?.let { result.haittaAlkuPvm = source.haittaAlkuPvm?.toLocalDate() }
+        source.haittaLoppuPvm?.let { result.haittaLoppuPvm = it.toLocalDate() }
+        source.haittaAlkuPvm?.let { result.haittaAlkuPvm = it.toLocalDate() }
 
-        source.kaistaHaitta?.let { result.kaistaHaitta = source.kaistaHaitta }
-        source.kaistaPituusHaitta?.let { result.kaistaPituusHaitta = source.kaistaPituusHaitta }
-        source.meluHaitta?.let { result.meluHaitta = source.meluHaitta }
-        source.polyHaitta?.let { result.polyHaitta = source.polyHaitta }
-        source.tarinaHaitta?.let { result.tarinaHaitta = source.tarinaHaitta }
+        source.kaistaHaitta?.let { result.kaistaHaitta = it }
+        source.kaistaPituusHaitta?.let { result.kaistaPituusHaitta = it }
+        source.meluHaitta?.let { result.meluHaitta = it }
+        source.polyHaitta?.let { result.polyHaitta = it }
+        source.tarinaHaitta?.let { result.tarinaHaitta = it }
         source.geometriat?.let {
             it.resetFeatureProperties(hankeTunnus)
             val saved = geometriatService.saveGeometriat(it, result.geometriat)
             result.geometriat = saved?.id
         }
-        source.nimi?.let { result.nimi = source.nimi }
+        source.nimi?.let { result.nimi = it }
 
         return result
     }
