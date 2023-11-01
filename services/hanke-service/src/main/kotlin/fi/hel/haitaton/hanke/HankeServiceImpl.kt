@@ -122,9 +122,9 @@ open class HankeServiceImpl(
         entity.tyomaaKatuosoite = request.tyomaaKatuosoite
         entity.tyomaaTyyppi = (request.tyomaaTyyppi ?: setOf()).toMutableSet()
 
-        entity.alueet =
-            request.alueet?.let { hankealueService.createAlueetFromCreateRequest(it, entity) }
-                ?: mutableListOf()
+        request.alueet?.let {
+            entity.alueet.addAll(hankealueService.createAlueetFromCreateRequest(it, entity))
+        }
 
         return entity
     }
