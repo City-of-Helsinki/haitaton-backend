@@ -66,7 +66,10 @@ class HankealueService(
     ): List<HankealueEntity> =
         alueet.map { createAlueFromCreateRequest(entity.hankeTunnus, it).apply { hanke = entity } }
 
-    private fun createAlueFromCreateRequest(hanketunnus: String, source: NewHankealue): HankealueEntity {
+    private fun createAlueFromCreateRequest(
+        hanketunnus: String,
+        source: NewHankealue,
+    ): HankealueEntity {
         val result = HankealueEntity()
 
         // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
