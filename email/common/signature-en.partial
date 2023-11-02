@@ -5,10 +5,10 @@
 <mj-text mj-class="basic-txt">
     This email was generated automatically – please do not reply to this message.
 </mj-text>
-<mj-text mj-class="signature">
+<mj-text mj-class="basic-txt">
     Kind regards,
-    <br/>
-    <br/>
+</mj-text>
+<mj-text mj-class="signature">
     City of Helsinki Urban Environment Division
     <br/>
     Haitaton services

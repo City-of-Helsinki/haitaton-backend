@@ -43,6 +43,8 @@ class EmailSenderServiceTest {
     private val mailSender: JavaMailSender = spyk()
     private val emailSenderService = EmailSenderService(mailSender, emailConfig, featureFlags)
 
+    private val encodedInviter = StringEscapeUtils.escapeHtml4(INVITER_NAME)
+
     @BeforeEach
     fun clean() {
         clearAllMocks()
@@ -94,7 +96,7 @@ class EmailSenderServiceTest {
                         "/ You have been added to project HAI24-1"
                 )
             assertThat(htmlBody)
-                .containsEscaped(
+                .contains(
                     "Sinut on lisätty hankkeelle HAI24-1 " +
                         "/ Du har lagts till i projektet HAI24-1 " +
                         "/ You have been added to project HAI24-1"
@@ -125,11 +127,11 @@ class EmailSenderServiceTest {
                     containsLine("haitaton@hel.fi")
                 }
                 assertThat(htmlBody).all {
-                    containsEscaped("Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.")
-                    containsEscaped("Ystävällisin terveisin,")
-                    containsEscaped("Helsingin kaupungin kaupunkiympäristön toimiala")
-                    containsEscaped("Haitaton-asiointi")
-                    containsEscaped("haitaton@hel.fi")
+                    contains("Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.")
+                    contains("Ystävällisin terveisin,")
+                    contains("Helsingin kaupungin kaupunkiympäristön toimiala")
+                    contains("Haitaton-asiointi")
+                    contains("haitaton@hel.fi")
                 }
             }
 
@@ -141,7 +143,7 @@ class EmailSenderServiceTest {
                     contains("$INVITER_NAME ($INVITER_EMAIL) lisäsi sinut hankkeelle")
                 }
                 assertThat(htmlBody).all {
-                    containsEscaped("$INVITER_NAME ($INVITER_EMAIL) lisäsi sinut hankkeelle")
+                    contains("$encodedInviter ($INVITER_EMAIL) lisäsi sinut hankkeelle")
                 }
             }
 
@@ -182,13 +184,11 @@ class EmailSenderServiceTest {
                     containsLine("haitaton@hel.fi")
                 }
                 assertThat(htmlBody).all {
-                    containsEscaped(
-                        "Det här är ett automatiskt e-postmeddelande – svara inte på det."
-                    )
-                    containsEscaped("Med vänlig hälsning,")
-                    containsEscaped("Helsingfors stads stadsmiljösektor")
-                    containsEscaped("Haitaton-ärenden")
-                    containsEscaped("haitaton@hel.fi")
+                    contains("Det här är ett automatiskt e-postmeddelande – svara inte på det.")
+                    contains("Med vänlig hälsning,")
+                    contains("Helsingfors stads stadsmiljösektor")
+                    contains("Haitaton-ärenden")
+                    contains("haitaton@hel.fi")
                 }
             }
 
@@ -200,7 +200,7 @@ class EmailSenderServiceTest {
                     contains("$INVITER_NAME ($INVITER_EMAIL) lade till dig i projektet")
                 }
                 assertThat(htmlBody).all {
-                    containsEscaped("$INVITER_NAME ($INVITER_EMAIL) lade till dig i projektet")
+                    contains("$encodedInviter ($INVITER_EMAIL) lade till dig i projektet")
                 }
             }
 
@@ -243,13 +243,13 @@ class EmailSenderServiceTest {
                     containsLine("haitaton@hel.fi")
                 }
                 assertThat(htmlBody).all {
-                    containsEscaped(
+                    contains(
                         "This email was generated automatically – please do not reply to this message."
                     )
-                    containsEscaped("Kind regards,")
-                    containsEscaped("City of Helsinki Urban Environment Division")
-                    containsEscaped("Haitaton services")
-                    containsEscaped("haitaton@hel.fi")
+                    contains("Kind regards,")
+                    contains("City of Helsinki Urban Environment Division")
+                    contains("Haitaton services")
+                    contains("haitaton@hel.fi")
                 }
             }
 
@@ -261,7 +261,7 @@ class EmailSenderServiceTest {
                     contains("$INVITER_NAME ($INVITER_EMAIL) has added you to the project")
                 }
                 assertThat(htmlBody).all {
-                    containsEscaped("$INVITER_NAME ($INVITER_EMAIL) has added you to the project")
+                    contains("$encodedInviter ($INVITER_EMAIL) has added you to the project")
                 }
             }
 
@@ -273,7 +273,7 @@ class EmailSenderServiceTest {
                     contains("to the project ‘$HANKE_NIMI’ ($HANKE_TUNNUS).")
                 }
                 assertThat(htmlBody).all {
-                    contains("to the project <b>&#x2018;$HANKE_NIMI&#x2019; ($HANKE_TUNNUS)</b>.")
+                    contains("to the project <b>‘$HANKE_NIMI’ ($HANKE_TUNNUS)</b>.")
                 }
             }
         }
@@ -323,7 +323,7 @@ class EmailSenderServiceTest {
                         "/ You have been added to application $APPLICATION_IDENTIFIER"
                 )
             assertThat(htmlBody)
-                .containsEscaped(
+                .contains(
                     "Sinut on lisätty hakemukselle $APPLICATION_IDENTIFIER " +
                         "/ Du har lagts till i ansökan $APPLICATION_IDENTIFIER " +
                         "/ You have been added to application $APPLICATION_IDENTIFIER"
@@ -337,7 +337,7 @@ class EmailSenderServiceTest {
                 val (textBody, htmlBody) = sendAndCapture().bodies()
 
                 assertThat(textBody).contains("$INVITER_NAME ($INVITER_EMAIL) on tehnyt ")
-                assertThat(htmlBody).containsEscaped("$INVITER_NAME ($INVITER_EMAIL) on tehnyt ")
+                assertThat(htmlBody).contains("$encodedInviter ($INVITER_EMAIL) on tehnyt ")
             }
 
             @Test
@@ -349,7 +349,7 @@ class EmailSenderServiceTest {
                         "on tehnyt johtoselvityshakemuksen ($APPLICATION_IDENTIFIER) hankkeella"
                     )
                 assertThat(htmlBody)
-                    .containsEscaped(
+                    .contains(
                         "on tehnyt johtoselvityshakemuksen ($APPLICATION_IDENTIFIER) hankkeella"
                     )
             }
@@ -361,7 +361,7 @@ class EmailSenderServiceTest {
                 assertThat(textBody)
                     .contains("hankkeella $HANKE_TUNNUS, ja lähettänyt sen käsittelyyn.")
                 assertThat(htmlBody)
-                    .containsEscaped("hankkeella $HANKE_TUNNUS, ja lähettänyt sen käsittelyyn.")
+                    .contains("hankkeella $HANKE_TUNNUS, ja lähettänyt sen käsittelyyn.")
             }
 
             @Test
@@ -388,11 +388,11 @@ class EmailSenderServiceTest {
                     containsLine("haitaton@hel.fi")
                 }
                 assertThat(htmlBody).all {
-                    containsEscaped("Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.")
-                    containsEscaped("Ystävällisin terveisin,")
-                    containsEscaped("Helsingin kaupungin kaupunkiympäristön toimiala")
-                    containsEscaped("Haitaton-asiointi")
-                    containsEscaped("haitaton@hel.fi")
+                    contains("Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.")
+                    contains("Ystävällisin terveisin,")
+                    contains("Helsingin kaupungin kaupunkiympäristön toimiala")
+                    contains("Haitaton-asiointi")
+                    contains("haitaton@hel.fi")
                 }
             }
         }
@@ -405,7 +405,7 @@ class EmailSenderServiceTest {
 
                 assertThat(textBody).contains("$INVITER_NAME ($INVITER_EMAIL) har gjort en ansökan")
                 assertThat(htmlBody)
-                    .containsEscaped("$INVITER_NAME ($INVITER_EMAIL) har gjort en ansökan")
+                    .contains("$encodedInviter ($INVITER_EMAIL) har gjort en ansökan")
             }
 
             @Test
@@ -417,7 +417,7 @@ class EmailSenderServiceTest {
                         "har gjort en ansökan om ledningsutredning ($APPLICATION_IDENTIFIER) i projektet"
                     )
                 assertThat(htmlBody)
-                    .containsEscaped(
+                    .contains(
                         "har gjort en ansökan om ledningsutredning ($APPLICATION_IDENTIFIER) i projektet"
                     )
             }
@@ -429,7 +429,7 @@ class EmailSenderServiceTest {
                 assertThat(textBody)
                     .contains("i projektet $HANKE_TUNNUS och skickat in den för behandling.")
                 assertThat(htmlBody)
-                    .containsEscaped("i projektet $HANKE_TUNNUS och skickat in den för behandling.")
+                    .contains("i projektet $HANKE_TUNNUS och skickat in den för behandling.")
             }
 
             @Test
@@ -440,7 +440,7 @@ class EmailSenderServiceTest {
                     .contains("Kontrollera ansökan i Haitaton: https://haitaton.hel.fi")
                 assertThat(htmlBody)
                     .contains(
-                        """Kontrollera ans&ouml;kan i Haitaton: <a href="https://haitaton.hel.fi">https://haitaton.hel.fi</a>"""
+                        """Kontrollera ansökan i Haitaton: <a href="https://haitaton.hel.fi">https://haitaton.hel.fi</a>"""
                     )
             }
 
@@ -456,13 +456,11 @@ class EmailSenderServiceTest {
                     containsLine("haitaton@hel.fi")
                 }
                 assertThat(htmlBody).all {
-                    containsEscaped(
-                        "Det här är ett automatiskt e-postmeddelande – svara inte på det."
-                    )
-                    containsEscaped("Med vänlig hälsning,")
-                    containsEscaped("Helsingfors stads stadsmiljösektor")
-                    containsEscaped("Haitaton-ärenden")
-                    containsEscaped("haitaton@hel.fi")
+                    contains("Det här är ett automatiskt e-postmeddelande – svara inte på det.")
+                    contains("Med vänlig hälsning,")
+                    contains("Helsingfors stads stadsmiljösektor")
+                    contains("Haitaton-ärenden")
+                    contains("haitaton@hel.fi")
                 }
             }
         }
@@ -474,7 +472,7 @@ class EmailSenderServiceTest {
                 val (textBody, htmlBody) = sendAndCapture().bodies()
 
                 assertThat(textBody).contains("$INVITER_NAME ($INVITER_EMAIL) has created")
-                assertThat(htmlBody).containsEscaped("$INVITER_NAME ($INVITER_EMAIL) has created")
+                assertThat(htmlBody).contains("$encodedInviter ($INVITER_EMAIL) has created")
             }
 
             @Test
@@ -486,7 +484,7 @@ class EmailSenderServiceTest {
                         "has created a cable report application ($APPLICATION_IDENTIFIER) for project"
                     )
                 assertThat(htmlBody)
-                    .containsEscaped(
+                    .contains(
                         "has created a cable report application ($APPLICATION_IDENTIFIER) for project"
                     )
             }
@@ -498,7 +496,7 @@ class EmailSenderServiceTest {
                 assertThat(textBody)
                     .contains("for project $HANKE_TUNNUS and submitted it for processing.")
                 assertThat(htmlBody)
-                    .containsEscaped("for project $HANKE_TUNNUS and submitted it for processing.")
+                    .contains("for project $HANKE_TUNNUS and submitted it for processing.")
             }
 
             @Test
@@ -529,13 +527,13 @@ class EmailSenderServiceTest {
                     containsLine("haitaton@hel.fi")
                 }
                 assertThat(htmlBody).all {
-                    containsEscaped(
+                    contains(
                         "This email was generated automatically – please do not reply to this message."
                     )
-                    containsEscaped("Kind regards,")
-                    containsEscaped("City of Helsinki Urban Environment Division")
-                    containsEscaped("Haitaton services")
-                    containsEscaped("haitaton@hel.fi")
+                    contains("Kind regards,")
+                    contains("City of Helsinki Urban Environment Division")
+                    contains("Haitaton services")
+                    contains("haitaton@hel.fi")
                 }
             }
         }
@@ -566,6 +564,3 @@ fun MimeMessage.bodies(): Pair<String, String> {
 }
 
 fun Assert<String>.containsLine(expected: String) = contains("\n$expected\n")
-
-fun Assert<String>.containsEscaped(expected: String) =
-    contains(StringEscapeUtils.escapeHtml4(expected).replace("&ndash;", "&#x2013;"))

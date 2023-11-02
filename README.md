@@ -172,8 +172,17 @@ Creation of new emails is done with [mjml.io](https://mjml.io/). Either IntelliJ
 needed. Mjml templates are located in email/. The output email content (html) is in
 hanke-service/resources/email/template.
 
-Once the Mjml template is done, it is converted to html. For example in Visual Studio, type >MJML:Copy HTML. The html
-output is the actual email content.
+MJML templates are automatically compiled to HTML during build. This is done using a Gradle plugin
+that outputs the compiled HTML files under the build directory. A custom task (`copyEmailTemplates`)
+is used to copy the compiled HTML files over to the resources-directory.
+
+The Gradle plugin is only looking at changes in the `.mjml` files, so it doesn't do the automatic
+recompiling if there are only changes to the `.partial` -files. In these cases it's necessary to
+force a new compile with `--rerun-tasks`. This can be done either as a part of the general build or
+as a separate step:
+```shell
+./gradlew copyEmailTemplates --rerun-tasks
+```
 
 ## File scan
 

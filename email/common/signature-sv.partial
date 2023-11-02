@@ -5,10 +5,10 @@
 <mj-text mj-class="basic-txt">
     Det här är ett automatiskt e-postmeddelande – svara inte på det.
 </mj-text>
-<mj-text mj-class="signature">
+<mj-text mj-class="basic-txt">
     Med vänlig hälsning,
-    <br/>
-    <br/>
+</mj-text>
+<mj-text mj-class="signature">
     Helsingfors stads stadsmiljösektor
     <br/>
     Haitaton-ärenden

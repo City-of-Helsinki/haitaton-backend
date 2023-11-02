@@ -1,6 +1,0 @@
-<mj-attributes>
-    <mj-class name="header-txt" font-size="36px" padding="16px 24px 16px 24px" line-height="43px"/>
-    <mj-class name="basic-txt" font-size="16px" padding="16px 24px 16px 24px" line-height="24px"/>
-    <mj-class name="signature" font-size="16px" padding="16px 24px 32px 24px" line-height="24px"/>
-    <mj-all font-family="Arial"/>
-</mj-attributes>

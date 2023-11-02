@@ -1,9 +1,9 @@
 <mjml>
     <mj-head>
-        <mj-include path="common/attributes.mjml"/>
+        <mj-include path="common/attributes.partial"/>
     </mj-head>
     <mj-body>
-        <mj-include path="common/header-content.mjml"/>
+        <mj-include path="common/header-content.partial"/>
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">
@@ -21,8 +21,9 @@
                     hankkeen.
                     Avaa listanäkymässä hankkeen tiedot ja valitse "Näytä hankkeen hakemukset".
                 </mj-text>
-                <mj-include path="common/signature-fi.mjml"/>
-                <br/>
+                <mj-include path="common/signature-fi.partial"/>
+
+                <mj-divider mj-class="language-separator" />
 
                 <mj-text mj-class="basic-txt">
                     {{senderName}} ({{senderEmail}}) har gjort en ansökan om {{applicationType.sv}}
@@ -34,8 +35,9 @@
                     Du hittar din ansökan genom att gå från startsidan till Egna projekt och välja rätt projekt.
                     Öppna projektets uppgifter i listvyn och välj ”Visa projektets ansökningar”.
                 </mj-text>
-                <mj-include path="common/signature-sv.mjml"/>
-                <br/>
+                <mj-include path="common/signature-sv.partial"/>
+
+                <mj-divider mj-class="language-separator" />
 
                 <mj-text mj-class="basic-txt">
                     {{senderName}} ({{senderEmail}}) has created {{applicationType.en}} ({{applicationIdentifier}}) for
@@ -47,9 +49,9 @@
                     You can find your application by selecting ‘Own projects’ on the front page and then selecting the project in question.
                     Open the project information in the list view and select ‘Show project applications’.
                 </mj-text>
-                <mj-include path="common/signature-en.mjml"/>
+                <mj-include path="common/signature-en.partial"/>
             </mj-column>
         </mj-section>
-        <mj-include path="common/footer-content.mjml"/>
+        <mj-include path="common/footer-content.partial"/>
     </mj-body>
 </mjml>
