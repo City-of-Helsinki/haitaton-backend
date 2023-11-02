@@ -1,9 +1,8 @@
 package fi.hel.haitaton.hanke.email
 
-import assertk.Assert
-import assertk.all
 import assertk.assertThat
 import assertk.assertions.contains
+import assertk.assertions.containsMatch
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.startsWith
@@ -89,193 +88,105 @@ class EmailSenderServiceTest {
         fun `has a header line in the body`() {
             val (textBody, htmlBody) = sendAndCapture().bodies()
 
-            assertThat(textBody)
-                .contains(
-                    "Sinut on lisätty hankkeelle HAI24-1 " +
-                        "/ Du har lagts till i projektet HAI24-1 " +
-                        "/ You have been added to project HAI24-1"
+            val expectedHeader =
+                "Sinut on lisätty hankkeelle HAI24-1 " +
+                    "/ Du har lagts till i projektet HAI24-1 " +
+                    "/ You have been added to project HAI24-1"
+            assertThat(textBody).contains(expectedHeader)
+            assertThat(htmlBody).contains(expectedHeader)
+        }
+
+        @Nested
+        open inner class BodyInFinnish {
+            open val invitationUrl = "https://haitaton.hel.fi/fi/kutsu?id=$invitationToken"
+
+            open val signatureLines =
+                listOf(
+                    "Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.",
+                    "Ystävällisin terveisin,",
+                    "Helsingin kaupungin kaupunkiympäristön toimiala",
+                    "Haitaton-asiointi",
+                    "haitaton@hel.fi",
                 )
-            assertThat(htmlBody)
-                .contains(
-                    "Sinut on lisätty hankkeelle HAI24-1 " +
-                        "/ Du har lagts till i projektet HAI24-1 " +
-                        "/ You have been added to project HAI24-1"
+
+            open fun inviterInformation(name: String, email: String) =
+                "$name ($email) lisäsi sinut hankkeelle"
+
+            open val hankeInformation = "hankkeelle <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>."
+
+            @Test
+            fun `contains the invitation url`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(invitationUrl)
+                assertThat(htmlBody)
+                    .containsMatch(
+                        """\Q<a href="$invitationUrl">\E\s*\Q$invitationUrl\E\s*</a>""".toRegex()
+                    )
+            }
+
+            @Test
+            fun `contains the signature`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(signatureLines)
+                assertThat(htmlBody).contains(signatureLines)
+            }
+
+            @Test
+            open fun `contains the inviter information`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(inviterInformation(INVITER_NAME, INVITER_EMAIL))
+                assertThat(htmlBody).contains(inviterInformation(encodedInviter, INVITER_EMAIL))
+            }
+
+            @Test
+            open fun `contains the hanke information`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody)
+                    .contains(hankeInformation.replace("<b>", "").replace("</b>", ""))
+                assertThat(htmlBody).contains(hankeInformation)
+            }
+        }
+
+        @Nested
+        inner class BodyInSwedish : BodyInFinnish() {
+            override val invitationUrl = "https://haitaton.hel.fi/sv/inbjudan?id=$invitationToken"
+
+            override val signatureLines =
+                listOf(
+                    "Det här är ett automatiskt e-postmeddelande – svara inte på det.",
+                    "Med vänlig hälsning,",
+                    "Helsingfors stads stadsmiljösektor",
+                    "Haitaton-ärenden",
+                    "haitaton@hel.fi",
                 )
+
+            override fun inviterInformation(name: String, email: String) =
+                "$name ($email) lade till dig i projektet"
+
+            override val hankeInformation = "i projektet <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>."
         }
 
         @Nested
-        inner class BodyInFinnish {
-            @Test
-            fun `contains the invitation url`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
+        inner class BodyInEnglish : BodyInFinnish() {
+            override val invitationUrl = "https://haitaton.hel.fi/en/invitation?id=$invitationToken"
 
-                assertThat(textBody)
-                    .contains("https://haitaton.hel.fi/fi/kutsu?id=$invitationToken")
-                assertThat(htmlBody)
-                    .contains("""<a href="https://haitaton.hel.fi/fi/kutsu?id=$invitationToken">""")
-            }
+            override val signatureLines =
+                listOf(
+                    "This email was generated automatically – please do not reply to this message.",
+                    "Kind regards,",
+                    "Haitaton services",
+                    "City of Helsinki Urban Environment Division",
+                    "haitaton@hel.fi",
+                )
 
-            @Test
-            fun `contains the signature`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
+            override fun inviterInformation(name: String, email: String) =
+                "$name ($email) has added you to the project"
 
-                assertThat(textBody).all {
-                    containsLine("Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.")
-                    containsLine("Ystävällisin terveisin,")
-                    containsLine("Helsingin kaupungin kaupunkiympäristön toimiala")
-                    containsLine("Haitaton-asiointi")
-                    containsLine("haitaton@hel.fi")
-                }
-                assertThat(htmlBody).all {
-                    contains("Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.")
-                    contains("Ystävällisin terveisin,")
-                    contains("Helsingin kaupungin kaupunkiympäristön toimiala")
-                    contains("Haitaton-asiointi")
-                    contains("haitaton@hel.fi")
-                }
-            }
-
-            @Test
-            fun `contains the inviter information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody).all {
-                    contains("$INVITER_NAME ($INVITER_EMAIL) lisäsi sinut hankkeelle")
-                }
-                assertThat(htmlBody).all {
-                    contains("$encodedInviter ($INVITER_EMAIL) lisäsi sinut hankkeelle")
-                }
-            }
-
-            @Test
-            fun `contains the hanke information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody).all { contains("hankkeelle $HANKE_NIMI ($HANKE_TUNNUS).") }
-                assertThat(htmlBody).all {
-                    contains("hankkeelle <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>.")
-                }
-            }
-        }
-
-        @Nested
-        inner class InSwedish {
-            @Test
-            fun `contains the invitation url`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody)
-                    .contains("https://haitaton.hel.fi/sv/inbjudan?id=$invitationToken")
-                assertThat(htmlBody)
-                    .contains(
-                        """<a href="https://haitaton.hel.fi/sv/inbjudan?id=$invitationToken">"""
-                    )
-            }
-
-            @Test
-            fun `contains the signature`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody).all {
-                    containsLine("Det här är ett automatiskt e-postmeddelande – svara inte på det.")
-                    containsLine("Med vänlig hälsning,")
-                    containsLine("Helsingfors stads stadsmiljösektor")
-                    containsLine("Haitaton-ärenden")
-                    containsLine("haitaton@hel.fi")
-                }
-                assertThat(htmlBody).all {
-                    contains("Det här är ett automatiskt e-postmeddelande – svara inte på det.")
-                    contains("Med vänlig hälsning,")
-                    contains("Helsingfors stads stadsmiljösektor")
-                    contains("Haitaton-ärenden")
-                    contains("haitaton@hel.fi")
-                }
-            }
-
-            @Test
-            fun `contains the inviter information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody).all {
-                    contains("$INVITER_NAME ($INVITER_EMAIL) lade till dig i projektet")
-                }
-                assertThat(htmlBody).all {
-                    contains("$encodedInviter ($INVITER_EMAIL) lade till dig i projektet")
-                }
-            }
-
-            @Test
-            fun `contains the hanke information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody).all { contains("i projektet $HANKE_NIMI ($HANKE_TUNNUS).") }
-                assertThat(htmlBody).all {
-                    contains("i projektet <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>.")
-                }
-            }
-        }
-
-        @Nested
-        inner class InEnglish {
-            @Test
-            fun `contains the invitation url`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody)
-                    .contains("https://haitaton.hel.fi/en/invitation?id=$invitationToken")
-                assertThat(htmlBody)
-                    .contains(
-                        """<a href="https://haitaton.hel.fi/en/invitation?id=$invitationToken">"""
-                    )
-            }
-
-            @Test
-            fun `contains the signature`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody).all {
-                    containsLine(
-                        "This email was generated automatically – please do not reply to this message."
-                    )
-                    containsLine("Kind regards,")
-                    containsLine("City of Helsinki Urban Environment Division")
-                    containsLine("Haitaton services")
-                    containsLine("haitaton@hel.fi")
-                }
-                assertThat(htmlBody).all {
-                    contains(
-                        "This email was generated automatically – please do not reply to this message."
-                    )
-                    contains("Kind regards,")
-                    contains("City of Helsinki Urban Environment Division")
-                    contains("Haitaton services")
-                    contains("haitaton@hel.fi")
-                }
-            }
-
-            @Test
-            fun `contains the inviter information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody).all {
-                    contains("$INVITER_NAME ($INVITER_EMAIL) has added you to the project")
-                }
-                assertThat(htmlBody).all {
-                    contains("$encodedInviter ($INVITER_EMAIL) has added you to the project")
-                }
-            }
-
-            @Test
-            fun `contains the hanke information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody).all {
-                    contains("to the project ‘$HANKE_NIMI’ ($HANKE_TUNNUS).")
-                }
-                assertThat(htmlBody).all {
-                    contains("to the project <b>‘$HANKE_NIMI’ ($HANKE_TUNNUS)</b>.")
-                }
-            }
+            override val hankeInformation = "to the project <b>‘$HANKE_NIMI’ ($HANKE_TUNNUS)</b>."
         }
     }
 
@@ -316,226 +227,122 @@ class EmailSenderServiceTest {
         fun `has a header line in the body`() {
             val (textBody, htmlBody) = sendAndCapture().bodies()
 
-            assertThat(textBody)
-                .contains(
-                    "Sinut on lisätty hakemukselle $APPLICATION_IDENTIFIER " +
-                        "/ Du har lagts till i ansökan $APPLICATION_IDENTIFIER " +
-                        "/ You have been added to application $APPLICATION_IDENTIFIER"
+            val expectedBody =
+                "Sinut on lisätty hakemukselle $APPLICATION_IDENTIFIER " +
+                    "/ Du har lagts till i ansökan $APPLICATION_IDENTIFIER " +
+                    "/ You have been added to application $APPLICATION_IDENTIFIER"
+            assertThat(textBody).contains(expectedBody)
+            assertThat(htmlBody).contains(expectedBody)
+        }
+
+        @Nested
+        open inner class BodyInFinnish {
+            open fun inviterInformation(name: String, email: String) = "$name ($email) on tehnyt "
+
+            open val applicationInformation =
+                "on tehnyt johtoselvityshakemuksen ($APPLICATION_IDENTIFIER) hankkeella"
+
+            open val hankeInformation = "hankkeella $HANKE_TUNNUS, ja lähettänyt sen käsittelyyn."
+
+            open val linkPrefix = "Tarkastele hakemusta Haitattomassa:"
+
+            open val signatureLines =
+                listOf(
+                    "Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.",
+                    "Ystävällisin terveisin,",
+                    "Helsingin kaupungin kaupunkiympäristön toimiala",
+                    "Haitaton-asiointi",
+                    "haitaton@hel.fi",
                 )
-            assertThat(htmlBody)
-                .contains(
-                    "Sinut on lisätty hakemukselle $APPLICATION_IDENTIFIER " +
-                        "/ Du har lagts till i ansökan $APPLICATION_IDENTIFIER " +
-                        "/ You have been added to application $APPLICATION_IDENTIFIER"
+
+            @Test
+            fun `contains sender information`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(inviterInformation(INVITER_NAME, INVITER_EMAIL))
+                assertThat(htmlBody).contains(inviterInformation(encodedInviter, INVITER_EMAIL))
+            }
+
+            @Test
+            open fun `contains application information`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(applicationInformation)
+                assertThat(htmlBody).contains(applicationInformation)
+            }
+
+            @Test
+            open fun `contains hanke information`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(hankeInformation)
+                assertThat(htmlBody).contains(hankeInformation)
+            }
+
+            @Test
+            open fun `contains a link to haitaton`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains("$linkPrefix https://haitaton.hel.fi")
+                assertThat(htmlBody)
+                    .contains(
+                        """$linkPrefix <a href="https://haitaton.hel.fi">https://haitaton.hel.fi</a>"""
+                    )
+            }
+
+            @Test
+            open fun `contains the signature`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(signatureLines)
+                assertThat(htmlBody).contains(signatureLines)
+            }
+        }
+
+        @Nested
+        inner class BodyInSwedish : BodyInFinnish() {
+            override fun inviterInformation(name: String, email: String) =
+                "$name ($email) har gjort en ansökan"
+
+            override val applicationInformation =
+                "har gjort en ansökan om ledningsutredning ($APPLICATION_IDENTIFIER) i projektet"
+
+            override val hankeInformation =
+                "i projektet $HANKE_TUNNUS och skickat in den för behandling."
+
+            override val linkPrefix = "Kontrollera ansökan i Haitaton:"
+
+            override val signatureLines =
+                listOf(
+                    "Det här är ett automatiskt e-postmeddelande – svara inte på det.",
+                    "Med vänlig hälsning,",
+                    "Helsingfors stads stadsmiljösektor",
+                    "Haitaton-ärenden",
+                    "haitaton@hel.fi",
                 )
         }
 
         @Nested
-        inner class BodyInFinnish {
-            @Test
-            fun `contains sender information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
+        inner class BodyInEnglish : BodyInFinnish() {
+            override fun inviterInformation(name: String, email: String) =
+                "$name ($email) has created"
 
-                assertThat(textBody).contains("$INVITER_NAME ($INVITER_EMAIL) on tehnyt ")
-                assertThat(htmlBody).contains("$encodedInviter ($INVITER_EMAIL) on tehnyt ")
-            }
+            override val applicationInformation =
+                "has created a cable report application ($APPLICATION_IDENTIFIER) for project"
 
-            @Test
-            fun `contains application information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
+            override val hankeInformation =
+                "for project $HANKE_TUNNUS and submitted it for processing."
 
-                assertThat(textBody)
-                    .contains(
-                        "on tehnyt johtoselvityshakemuksen ($APPLICATION_IDENTIFIER) hankkeella"
-                    )
-                assertThat(htmlBody)
-                    .contains(
-                        "on tehnyt johtoselvityshakemuksen ($APPLICATION_IDENTIFIER) hankkeella"
-                    )
-            }
+            override val linkPrefix = "View the application in the Haitaton system:"
 
-            @Test
-            fun `contains hanke information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody)
-                    .contains("hankkeella $HANKE_TUNNUS, ja lähettänyt sen käsittelyyn.")
-                assertThat(htmlBody)
-                    .contains("hankkeella $HANKE_TUNNUS, ja lähettänyt sen käsittelyyn.")
-            }
-
-            @Test
-            fun `contains a link to haitaton`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody)
-                    .contains("Tarkastele hakemusta Haitattomassa: https://haitaton.hel.fi")
-                assertThat(htmlBody)
-                    .contains(
-                        """Tarkastele hakemusta Haitattomassa: <a href="https://haitaton.hel.fi">https://haitaton.hel.fi</a>"""
-                    )
-            }
-
-            @Test
-            fun `contains the signature`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody).all {
-                    containsLine("Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.")
-                    containsLine("Ystävällisin terveisin,")
-                    containsLine("Helsingin kaupungin kaupunkiympäristön toimiala")
-                    containsLine("Haitaton-asiointi")
-                    containsLine("haitaton@hel.fi")
-                }
-                assertThat(htmlBody).all {
-                    contains("Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.")
-                    contains("Ystävällisin terveisin,")
-                    contains("Helsingin kaupungin kaupunkiympäristön toimiala")
-                    contains("Haitaton-asiointi")
-                    contains("haitaton@hel.fi")
-                }
-            }
-        }
-
-        @Nested
-        inner class BodyInSwedish {
-            @Test
-            fun `contains sender information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody).contains("$INVITER_NAME ($INVITER_EMAIL) har gjort en ansökan")
-                assertThat(htmlBody)
-                    .contains("$encodedInviter ($INVITER_EMAIL) har gjort en ansökan")
-            }
-
-            @Test
-            fun `contains application information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody)
-                    .contains(
-                        "har gjort en ansökan om ledningsutredning ($APPLICATION_IDENTIFIER) i projektet"
-                    )
-                assertThat(htmlBody)
-                    .contains(
-                        "har gjort en ansökan om ledningsutredning ($APPLICATION_IDENTIFIER) i projektet"
-                    )
-            }
-
-            @Test
-            fun `contains hanke information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody)
-                    .contains("i projektet $HANKE_TUNNUS och skickat in den för behandling.")
-                assertThat(htmlBody)
-                    .contains("i projektet $HANKE_TUNNUS och skickat in den för behandling.")
-            }
-
-            @Test
-            fun `contains a link to haitaton`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody)
-                    .contains("Kontrollera ansökan i Haitaton: https://haitaton.hel.fi")
-                assertThat(htmlBody)
-                    .contains(
-                        """Kontrollera ansökan i Haitaton: <a href="https://haitaton.hel.fi">https://haitaton.hel.fi</a>"""
-                    )
-            }
-
-            @Test
-            fun `contains the signature`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody).all {
-                    containsLine("Det här är ett automatiskt e-postmeddelande – svara inte på det.")
-                    containsLine("Med vänlig hälsning,")
-                    containsLine("Helsingfors stads stadsmiljösektor")
-                    containsLine("Haitaton-ärenden")
-                    containsLine("haitaton@hel.fi")
-                }
-                assertThat(htmlBody).all {
-                    contains("Det här är ett automatiskt e-postmeddelande – svara inte på det.")
-                    contains("Med vänlig hälsning,")
-                    contains("Helsingfors stads stadsmiljösektor")
-                    contains("Haitaton-ärenden")
-                    contains("haitaton@hel.fi")
-                }
-            }
-        }
-
-        @Nested
-        inner class BodyInEnglish {
-            @Test
-            fun `contains sender information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody).contains("$INVITER_NAME ($INVITER_EMAIL) has created")
-                assertThat(htmlBody).contains("$encodedInviter ($INVITER_EMAIL) has created")
-            }
-
-            @Test
-            fun `contains application information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody)
-                    .contains(
-                        "has created a cable report application ($APPLICATION_IDENTIFIER) for project"
-                    )
-                assertThat(htmlBody)
-                    .contains(
-                        "has created a cable report application ($APPLICATION_IDENTIFIER) for project"
-                    )
-            }
-
-            @Test
-            fun `contains hanke information`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody)
-                    .contains("for project $HANKE_TUNNUS and submitted it for processing.")
-                assertThat(htmlBody)
-                    .contains("for project $HANKE_TUNNUS and submitted it for processing.")
-            }
-
-            @Test
-            fun `contains a link to haitaton`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody)
-                    .contains(
-                        "View the application in the Haitaton system: https://haitaton.hel.fi"
-                    )
-                assertThat(htmlBody)
-                    .contains(
-                        """View the application in the Haitaton system: <a href="https://haitaton.hel.fi">https://haitaton.hel.fi</a>"""
-                    )
-            }
-
-            @Test
-            fun `contains the signature`() {
-                val (textBody, htmlBody) = sendAndCapture().bodies()
-
-                assertThat(textBody).all {
-                    containsLine(
-                        "This email was generated automatically – please do not reply to this message."
-                    )
-                    containsLine("Kind regards,")
-                    containsLine("City of Helsinki Urban Environment Division")
-                    containsLine("Haitaton services")
-                    containsLine("haitaton@hel.fi")
-                }
-                assertThat(htmlBody).all {
-                    contains(
-                        "This email was generated automatically – please do not reply to this message."
-                    )
-                    contains("Kind regards,")
-                    contains("City of Helsinki Urban Environment Division")
-                    contains("Haitaton services")
-                    contains("haitaton@hel.fi")
-                }
-            }
+            override val signatureLines =
+                listOf(
+                    "This email was generated automatically – please do not reply to this message.",
+                    "Kind regards,",
+                    "Haitaton services",
+                    "City of Helsinki Urban Environment Division",
+                    "haitaton@hel.fi",
+                )
         }
     }
 }
@@ -562,5 +369,3 @@ fun MimeMessage.bodies(): Pair<String, String> {
         .map { it.content.toString() }
         .let { Pair(it[0], it[1]) }
 }
-
-fun Assert<String>.containsLine(expected: String) = contains("\n$expected\n")
