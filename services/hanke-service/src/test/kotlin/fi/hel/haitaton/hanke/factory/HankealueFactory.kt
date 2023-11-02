@@ -23,7 +23,7 @@ object HankealueFactory {
         meluHaitta: Haitta13? = Haitta13.YKSI,
         polyHaitta: Haitta13? = Haitta13.KAKSI,
         tarinaHaitta: Haitta13? = Haitta13.KOLME,
-        nimi: String? = null,
+        nimi: String? = "Hankealue 1",
     ): SavedHankealue {
         return SavedHankealue(
             id,
@@ -51,7 +51,7 @@ object HankealueFactory {
         meluHaitta: Haitta13? = null,
         polyHaitta: Haitta13? = null,
         tarinaHaitta: Haitta13? = null,
-        nimi: String? = null,
+        nimi: String? = "Hankealue 1",
     ): SavedHankealue {
         return SavedHankealue(
             id,

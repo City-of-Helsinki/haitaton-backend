@@ -218,7 +218,7 @@ class HankeFactory(
          * ```
          */
         fun Hanke.withHankealue(
-            nimi: String? = null,
+            nimi: String? = "Hankealue 1",
             haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
             haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
         ): Hanke {

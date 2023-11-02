@@ -1015,7 +1015,7 @@ class HankeServiceITests : DatabaseTest() {
     fun `updateHanke new hankealue name updates name and keeps data intact`() {
         val createdHanke = hankeFactory.createRequest().withHankealue().save()
         val hankealue = createdHanke.alueet[0]
-        assertNull(hankealue.nimi)
+        assertThat(hankealue.nimi).isEqualTo("Hankealue 1")
         val modifiedHanke =
             createdHanke.copy().apply {
                 // manually set mutable collections due to a shallow copy.
@@ -1402,6 +1402,7 @@ class HankeServiceITests : DatabaseTest() {
                 hankeVersion = 1,
                 geometriaVersion = 1,
                 tormaystarkasteluTulos = true,
+                alueNimi = "Hankealue 1",
                 alkuPvm = updatedHanke.alkuPvm?.format(DateTimeFormatter.ISO_INSTANT),
                 loppuPvm = updatedHanke.loppuPvm?.format(DateTimeFormatter.ISO_INSTANT)
             )

@@ -151,7 +151,7 @@ class HankeValidatorTest {
     }
 
     @Test
-    fun `fails if hanke alue nimi is null`() {
+    fun `fails if hanke alue nimi is too long`() {
         val hanke = HankeFactory.create().withHankealue(nimi = maxHankealueName + "X")
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()

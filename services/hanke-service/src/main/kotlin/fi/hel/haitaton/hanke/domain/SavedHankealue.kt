@@ -57,7 +57,7 @@ data class SavedHankealue(
     )
     override var tarinaHaitta: Haitta13? = null,
     @field:Schema(
-        description = "Area name",
+        description = "Area name, must not be null or empty",
     )
     override var nimi: String? = null,
 ) : HasId<Int?>, Hankealue

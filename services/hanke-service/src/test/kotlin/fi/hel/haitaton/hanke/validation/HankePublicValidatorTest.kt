@@ -116,6 +116,16 @@ class HankePublicValidatorTest {
                     }
                 ),
                 Arguments.of(
+                    "alueet[0].nimi",
+                    "missing",
+                    completeHanke().apply { alueet[0].nimi = null }
+                ),
+                Arguments.of(
+                    "alueet[0].nimi",
+                    "empty",
+                    completeHanke().apply { alueet[0].nimi = "" }
+                ),
+                Arguments.of(
                     "omistajat",
                     "empty",
                     completeHanke().apply { omistajat = mutableListOf() }
@@ -306,6 +316,7 @@ class HankePublicValidatorTest {
                     }
 
                     alueet[0].geometriat!!.featureCollection!!.features = null
+                    alueet[0].nimi = null
                     kuvaus = null
                 }
             )
@@ -316,6 +327,7 @@ class HankePublicValidatorTest {
                 "toteuttajat[0].nimi",
                 "toteuttajat[0].email",
                 "alueet[0].geometriat.featureCollection.features",
+                "alueet[0].nimi",
                 "kuvaus",
             )
     }
