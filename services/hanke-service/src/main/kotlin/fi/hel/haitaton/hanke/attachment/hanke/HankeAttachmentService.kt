@@ -66,6 +66,7 @@ class HankeAttachmentService(
                 contentType = attachment.contentType!!,
                 createdAt = now(),
                 createdByUserId = currentUserId(),
+                blobLocation = null, // null until blobs are implemented
                 hanke = hanke,
             )
         val savedAttachment = attachmentRepository.save(entity)
