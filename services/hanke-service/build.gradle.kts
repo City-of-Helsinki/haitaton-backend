@@ -151,8 +151,6 @@ tasks {
         group = "other"
         description = "Installs shared git hooks"
         from(file("$buildDir/mjml/main/"))
-        // Exclude johtoselvitys-valmis until we get the go-ahead to use the new template on it.
-        exclude("johtoselvitys-valmis*")
         into(file("${sourceSets.main.get().resources.srcDirs.first()}/email/template"))
         rename { "$it.mustache" }
         dependsOn(compileMjml)
