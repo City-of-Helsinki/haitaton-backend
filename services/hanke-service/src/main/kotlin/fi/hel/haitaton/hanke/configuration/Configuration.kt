@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.configuration
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.HankeServiceImpl
+import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.HanketunnusService
 import fi.hel.haitaton.hanke.HanketunnusServiceImpl
 import fi.hel.haitaton.hanke.IdCounterRepository
@@ -114,8 +115,7 @@ class Configuration {
     @Bean
     fun hankeService(
         hankeRepository: HankeRepository,
-        tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
-        geometriatService: GeometriatService,
+        hankealueService: HankealueService,
         hanketunnusService: HanketunnusService,
         auditLogService: AuditLogService,
         hankeLoggingService: HankeLoggingService,
@@ -124,9 +124,8 @@ class Configuration {
     ): HankeService =
         HankeServiceImpl(
             hankeRepository,
-            tormaystarkasteluLaskentaService,
             hanketunnusService,
-            geometriatService,
+            hankealueService,
             auditLogService,
             hankeLoggingService,
             applicationService,

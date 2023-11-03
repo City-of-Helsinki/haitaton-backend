@@ -731,9 +731,9 @@ open class ApplicationService(
 
     /** Map by area geometry id to area geometry data. */
     private fun geometryMapFrom(hanke: HankeEntity) =
-        hanke.listOfHankeAlueet
+        hanke.alueet
             .mapNotNull { it.geometriat }
-            .associateBy({ it }, { geometriatDao.retrieveGeometriat(it) })
+            .associateWith { geometriatDao.retrieveGeometriat(it) }
 }
 
 class IncompatibleApplicationException(

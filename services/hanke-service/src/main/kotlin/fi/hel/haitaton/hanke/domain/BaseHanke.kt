@@ -36,7 +36,7 @@ interface HasYhteystiedot {
             .mapValues { (_, yhteystiedot) -> yhteystiedot ?: listOf() }
 }
 
-interface Yhteystieto : HasId<Int> {
+interface Yhteystieto : HasId<Int?> {
     override val id: Int?
     val nimi: String
     val email: String
