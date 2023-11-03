@@ -13,6 +13,8 @@ import org.geojson.Feature
 import org.geojson.FeatureCollection
 import org.springframework.stereotype.Service
 
+const val HANKEALUE_DEFAULT_NAME = "Hankealue"
+
 @Service
 class HankealueService(
     private val geometriatService: GeometriatService,
@@ -116,9 +118,10 @@ class HankealueService(
                 .map { Feature().apply { geometry = it.geometry } }
                 .map { FeatureCollection().add(it) }
                 .map { NewGeometriat(it) }
-                .map {
+                .mapIndexed { i, geometria ->
                     NewHankealue(
-                        geometriat = it,
+                        nimi = "$HANKEALUE_DEFAULT_NAME ${i + 1}",
+                        geometriat = geometria,
                         haittaAlkuPvm = cableReportData.startTime,
                         haittaLoppuPvm = cableReportData.endTime,
                     )
