@@ -9,66 +9,26 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
-import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.domain.HasYhteystiedot
-import fi.hel.haitaton.hanke.domain.NewGeometriat
-import fi.hel.haitaton.hanke.domain.NewHankealue
 import fi.hel.haitaton.hanke.domain.Perustaja
 import fi.hel.haitaton.hanke.domain.Yhteystieto
 import fi.hel.haitaton.hanke.domain.geometriaIds
-import fi.hel.haitaton.hanke.geometria.Geometriat
-import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import fi.hel.haitaton.hanke.validation.HankePublicValidator
 import mu.KotlinLogging
-import org.geojson.Feature
-import org.geojson.FeatureCollection
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
 
-/*
- * Helper for mapping and sorting data to existing collections.
- *
- * Example usage:
- * mergeDataInto(hanke.alueet, entity.listOfHankeAlueet) { source, target ->
- *    copyNonNullHankealueFieldsToEntity(hanke, source, target)
- * }
- * - Transforms data from hanke.alueet into entity.listOfHankeAlueet
- * - Does the transformation with the last lambda
- *
- * Source list is not modified. Target container is sorted by order of source container.
- *
- * converter takes additional parameter for existing Target object in case it exists in target collection.
- *
- */
-fun <Source : HasId<Int>, Target : HasId<Int>> mergeDataInto(
-    source: List<Source>,
-    target: MutableList<Target>,
-    converterFn: (Source, Target?) -> Target
-) {
-    // Existing data is collected for mapping
-    val (targetIdentified, targetRest) = target.partition { it.id != null }
-    val targetMap = targetIdentified.associateBy { it.id!! }
-
-    // Target is overwritten with merged and new data from source
-    target.clear()
-    target.addAll(source.map { converterFn(it, targetMap[it.id]) })
-    target.addAll(targetRest)
-}
-
 open class HankeServiceImpl(
     private val hankeRepository: HankeRepository,
-    private val tormaystarkasteluService: TormaystarkasteluLaskentaService,
     private val hanketunnusService: HanketunnusService,
-    private val geometriatService: GeometriatService,
+    private val hankealueService: HankealueService,
     private val auditLogService: AuditLogService,
     private val hankeLoggingService: HankeLoggingService,
     private val applicationService: ApplicationService,
@@ -83,8 +43,7 @@ open class HankeServiceImpl(
     override fun getHankeApplications(hankeTunnus: String): List<Application> =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let { entity ->
             entity.hakemukset.map { hakemus -> hakemus.toApplication() }
-        }
-            ?: throw HankeNotFoundException(hankeTunnus)
+        } ?: throw HankeNotFoundException(hankeTunnus)
 
     @Transactional(readOnly = true)
     override fun loadHanke(hankeTunnus: String) =
@@ -127,7 +86,7 @@ open class HankeServiceImpl(
 
         calculateTormaystarkastelu(
             request.alueet ?: listOf(),
-            entity.listOfHankeAlueet.mapNotNull { it.geometriat }.toSet(),
+            entity.alueet.mapNotNull { it.geometriat }.toSet(),
             entity
         )
         entity.status = decideNewHankeStatus(entity)
@@ -163,41 +122,11 @@ open class HankeServiceImpl(
         entity.tyomaaKatuosoite = request.tyomaaKatuosoite
         entity.tyomaaTyyppi = (request.tyomaaTyyppi ?: setOf()).toMutableSet()
 
-        // Create hankealueet
-        request.alueet?.forEach {
-            val alueEntity = createAlueFromCreateRequest(entity.hankeTunnus, it)
-            alueEntity.hanke = entity
-            entity.listOfHankeAlueet.add(alueEntity)
+        request.alueet?.let {
+            entity.alueet.addAll(hankealueService.createAlueetFromCreateRequest(it, entity))
         }
 
         return entity
-    }
-
-    private fun createAlueFromCreateRequest(
-        hanketunnus: String,
-        source: NewHankealue
-    ): HankealueEntity {
-        val result = HankealueEntity()
-
-        // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
-        // be simply dropped here.
-        // Note, .toLocalDate() does not do any time zone conversion.
-        result.haittaLoppuPvm = source.haittaLoppuPvm?.toLocalDate()
-        result.haittaAlkuPvm = source.haittaAlkuPvm?.toLocalDate()
-
-        result.kaistaHaitta = source.kaistaHaitta
-        result.kaistaPituusHaitta = source.kaistaPituusHaitta
-        result.meluHaitta = source.meluHaitta
-        result.polyHaitta = source.polyHaitta
-        result.tarinaHaitta = source.tarinaHaitta
-        source.geometriat?.let {
-            it.resetFeatureProperties(hanketunnus)
-            val saved = geometriatService.createGeometriat(it)
-            result.geometriat = saved.id
-        }
-        source.nimi?.let { result.nimi = source.nimi }
-
-        return result
     }
 
     /**
@@ -292,17 +221,9 @@ open class HankeServiceImpl(
         geometriaIds: Set<Int>,
         target: HankeEntity
     ) {
-        tormaystarkasteluService.calculateTormaystarkastelu(alueet, geometriaIds)?.let {
+        hankealueService.calculateTormaystarkastelu(alueet, geometriaIds, target)?.let {
             target.tormaystarkasteluTulokset.clear()
-            target.tormaystarkasteluTulokset.add(
-                TormaystarkasteluTulosEntity(
-                    perus = it.perusIndeksi,
-                    pyoraily = it.pyorailyIndeksi,
-                    linjaauto = it.linjaautoIndeksi,
-                    raitiovaunu = it.raitiovaunuIndeksi,
-                    hanke = target
-                )
-            )
+            target.tormaystarkasteluTulokset.add(it)
         }
     }
 
@@ -341,13 +262,7 @@ open class HankeServiceImpl(
     }
 
     private fun createHankeDomainObjectFromEntity(hankeEntity: HankeEntity): Hanke =
-        HankeMapper.domainFrom(hankeEntity, geometryMapFrom(hankeEntity))
-
-    /** Map by area geometry id to area geometry data. */
-    private fun geometryMapFrom(hanke: HankeEntity): Map<Int, Geometriat?> =
-        hanke.listOfHankeAlueet
-            .mapNotNull { it.geometriat }
-            .associateBy({ it }, { geometriatService.getGeometriat(it) })
+        HankeMapper.domainFrom(hankeEntity, hankealueService.geometryMapFrom(hankeEntity.alueet))
 
     // --------------- Helpers for data transfer towards database ------------
 
@@ -504,40 +419,7 @@ open class HankeServiceImpl(
         hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
         entity.tyomaaTyyppi = hanke.tyomaaTyyppi
 
-        // Merge hankealueet
-        mergeDataInto(hanke.alueet, entity.listOfHankeAlueet) { source, target ->
-            copyNonNullHankealueFieldsToEntity(entity.hankeTunnus, source, target)
-        }
-
-        entity.listOfHankeAlueet.forEach { it.hanke = entity }
-    }
-
-    private fun copyNonNullHankealueFieldsToEntity(
-        hankeTunnus: String,
-        source: Hankealue,
-        target: HankealueEntity?
-    ): HankealueEntity {
-        val result = target ?: HankealueEntity()
-
-        // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
-        // be simply dropped here.
-        // Note, .toLocalDate() does not do any time zone conversion.
-        source.haittaLoppuPvm?.let { result.haittaLoppuPvm = source.haittaLoppuPvm?.toLocalDate() }
-        source.haittaAlkuPvm?.let { result.haittaAlkuPvm = source.haittaAlkuPvm?.toLocalDate() }
-
-        source.kaistaHaitta?.let { result.kaistaHaitta = source.kaistaHaitta }
-        source.kaistaPituusHaitta?.let { result.kaistaPituusHaitta = source.kaistaPituusHaitta }
-        source.meluHaitta?.let { result.meluHaitta = source.meluHaitta }
-        source.polyHaitta?.let { result.polyHaitta = source.polyHaitta }
-        source.tarinaHaitta?.let { result.tarinaHaitta = source.tarinaHaitta }
-        source.geometriat?.let {
-            it.resetFeatureProperties(hankeTunnus)
-            val saved = geometriatService.saveGeometriat(it, result.geometriat)
-            result.geometriat = saved?.id
-        }
-        source.nimi?.let { result.nimi = source.nimi }
-
-        return result
+        hankealueService.mergeAlueetToHanke(hanke.alueet, entity)
     }
 
     /**
@@ -866,17 +748,7 @@ open class HankeServiceImpl(
      */
     private fun generateHankeFrom(cableReport: CableReportWithoutHanke): Hanke {
         val hankealueet =
-            cableReport.applicationData.areas
-                ?.map { Feature().apply { geometry = it.geometry } }
-                ?.map { FeatureCollection().add(it) }
-                ?.map { NewGeometriat(it) }
-                ?.map {
-                    NewHankealue(
-                        geometriat = it,
-                        haittaAlkuPvm = cableReport.applicationData.startTime,
-                        haittaLoppuPvm = cableReport.applicationData.endTime,
-                    )
-                }
+            HankealueService.createHankealueetFromCableReport(cableReport.applicationData)
 
         return createHankeInternal(
             CreateHankeRequest(

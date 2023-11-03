@@ -68,10 +68,10 @@ object HankealueFactory {
         )
     }
 
-    fun createHankeAlueEntity(mockId: Int? = 1, hankeEntity: HankeEntity): HankealueEntity {
+    fun createHankeAlueEntity(mockId: Int = 1, hankeEntity: HankeEntity): HankealueEntity {
         val alue = create(id = mockId).apply { geometriat?.id = mockId }
         return HankealueEntity().apply {
-            id = alue.id
+            id = alue.id!!
             hanke = hankeEntity
             geometriat = alue.geometriat?.id
             haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate()

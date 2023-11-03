@@ -180,7 +180,7 @@ class HankeFactory(
                             createEntity(id = 3, contactType = RAKENNUTTAJA, hanke = this),
                             createEntity(id = 4, contactType = MUU, hanke = this)
                         )
-                    listOfHankeAlueet =
+                    alueet =
                         mutableListOf(createHankeAlueEntity(mockId = mockId, hankeEntity = this))
                     liitteet =
                         mutableListOf(
