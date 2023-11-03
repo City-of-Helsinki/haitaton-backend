@@ -184,13 +184,14 @@ tasks.named("check") { dependsOn(tasks.named("integrationTest")) }
 tasks.named("processResources") { dependsOn(tasks.named("copyEmailTemplates")) }
 
 mjml {
+    // For explanations on the configuration values, see
+    // https://github.com/mjmlio/mjml/blob/master/packages/mjml-cli/README.md
     validationMode.set(ValidationMode.strict)
     minify.set(true)
     beautify.set(true)
 
+    // For minifier options, see https://github.com/kangax/html-minifier
     minifyOptions.set(
         """{"collapseWhitespace": false, "minifyCSS": true, "removeEmptyAttributes": true }"""
     )
-    juiceOptions.set("{\"preserveImportant\": true}")
-    juicePreserveTags.set("{\"myTag\": { \"start\": \"<#\", \"end\": \"</#\" }}")
 }
