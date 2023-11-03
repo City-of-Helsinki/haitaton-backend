@@ -1,3 +1,4 @@
+import io.freefair.gradle.plugins.mjml.ValidationMode
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.run.BootRun
@@ -59,6 +60,7 @@ plugins {
     kotlin("plugin.jpa") version kotlinVersion
     idea
     id("jacoco")
+    id("io.freefair.mjml.java") version "8.4"
 }
 
 dependencies {
@@ -145,6 +147,17 @@ tasks {
         }
     }
 
+    create("copyEmailTemplates", Copy::class) {
+        group = "other"
+        description = "Installs shared git hooks"
+        from(file("$buildDir/mjml/main/"))
+        // Exclude johtoselvitys-valmis until we get the go-ahead to use the new template on it.
+        exclude("johtoselvitys-valmis*")
+        into(file("${sourceSets.main.get().resources.srcDirs.first()}/email/template"))
+        rename { "$it.mustache" }
+        dependsOn(compileMjml)
+    }
+
     jacocoTestReport {
         mustRunAfter("test", "integrationTest")
         reports { xml.required.set(true) }
@@ -152,6 +165,8 @@ tasks {
             fileTree(buildDir).include("/jacoco/test.exec", "/jacoco/integrationTest.exec")
         )
     }
+
+    compileMjml { source(file("$rootDir/email")) }
 }
 
 tasks.register("installGitHook", Copy::class) {
@@ -165,3 +180,18 @@ tasks.register("installGitHook", Copy::class) {
 tasks.named("build") { dependsOn(tasks.named("installGitHook")) }
 
 tasks.named("check") { dependsOn(tasks.named("integrationTest")) }
+
+tasks.named("processResources") { dependsOn(tasks.named("copyEmailTemplates")) }
+
+mjml {
+    // For explanations on the configuration values, see
+    // https://github.com/mjmlio/mjml/blob/master/packages/mjml-cli/README.md
+    validationMode.set(ValidationMode.strict)
+    minify.set(true)
+    beautify.set(true)
+
+    // For minifier options, see https://github.com/kangax/html-minifier
+    minifyOptions.set(
+        """{"collapseWhitespace": false, "minifyCSS": true, "removeEmptyAttributes": true }"""
+    )
+}
