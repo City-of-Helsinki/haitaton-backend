@@ -1,9 +1,9 @@
 <mjml>
     <mj-head>
-        <mj-include path="common/attributes.mjml"/>
+        <mj-include path="common/attributes.partial"/>
     </mj-head>
     <mj-body>
-        <mj-include path="common/header-content.mjml"/>
+        <mj-include path="common/header-content.partial"/>
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">Johtoselvitys {{applicationIdentifier}}</mj-text>
@@ -102,6 +102,6 @@
                 </mj-text>
             </mj-column>
         </mj-section>
-        <mj-include path="common/footer-content.mjml"/>
+        <mj-include path="common/footer-content.partial"/>
     </mj-body>
 </mjml>
