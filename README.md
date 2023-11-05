@@ -47,6 +47,21 @@ Required directory structure:
 
 See docker-compose.yml for details.
 
+#### Azurite
+
+For emulating Azure Blob Storage, an Azurite (see https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite)
+instance is started with Docker Compose.
+
+Azurite needs to use HTTPS and for that there are a certificate and a key file.
+Certificate will expire on 2 February 2026 and needs to be renewed before that.
+The certificate and the key are generated using e.g. mkcert tool:
+```bash
+$ mkcert -install // if not already done
+$ mkcert 127.0.0.1
+```
+This creates files `127.0.0.1.pem` and `127.0.0.1-key.pem` which needs to be put in `/scripts/azurite-docker` directory.
+
+
 ### Swagger UI
 
 Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON). You

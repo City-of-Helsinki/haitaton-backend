@@ -60,6 +60,20 @@ services:
     environment:
       - ServerOptions__HostName=smtp4dev
 
+  azurite:
+    build:
+      context: ${BUILD_ROOT}/haitaton-backend/scripts/azurite-docker
+      dockerfile: Dockerfile
+    container_name: azurite
+    ports:
+      - '10000:10000'
+    volumes:
+      - ${AZURE_STORAGE_VOLUME}:/data
+    networks:
+      backbone:
+        aliases:
+          - azurite
+
   haitaton-hanke:
     build:
       context: ${BUILD_ROOT}/haitaton-backend
@@ -93,6 +107,7 @@ services:
     depends_on:
       - db
       - clamav-api
+      - azurite
     command: [ "./wait-for-it.sh", "-t", "30", "--strict", "db:5432", "--", "java", "-jar", "haitaton.jar" ]
     networks:
       backbone:
