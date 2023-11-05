@@ -62,9 +62,10 @@ services:
 
   azurite:
     build:
-      context: ${BUILD_ROOT}/haitaton-backend/scripts/azurite-docker
+      context: ${BUILD_ROOT}/haitaton-backend/scripts/docker-azurite
       dockerfile: Dockerfile
     container_name: azurite
+    restart: always
     ports:
       - '10000:10000'
     volumes:
