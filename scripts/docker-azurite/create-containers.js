@@ -29,5 +29,5 @@ async function main() {
 }
 
 main()
-    .then(() => console.log("Blob containers created."))
+    .then(() => console.log("Blob containers created (if not already existed)."))
     .catch((err) => console.log(`Error: ${err}`));

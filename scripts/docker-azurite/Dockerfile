@@ -5,10 +5,10 @@ FROM mcr.microsoft.com/azure-storage/azurite
 WORKDIR /usr/app
 
 # Install necessary libraries
-RUN npm install @azure/storage-blob https ssl-root-cas
+RUN npm install @azure/identity @azure/storage-blob
 
 # Copy all required files
-COPY ./create-containers.js ./start.sh ./wait-for.sh ./127.0.0.1.pem ./127.0.0.1-key.pem ./
+COPY ./create-containers.js ./start.sh ./wait-for.sh ./
 
 # Make sure the shell scripts are executable
 RUN chmod +x start.sh wait-for.sh
