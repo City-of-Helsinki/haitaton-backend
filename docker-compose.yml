@@ -69,7 +69,7 @@ services:
     ports:
       - '10000:10000'
     volumes:
-      - azure-data:/data
+      - azurite-data:/data
       - .:/workspace
     networks:
       backbone:
@@ -157,7 +157,7 @@ services:
       - haitaton-ui
 
 volumes:
-  azure-data:
+  azurite-data:
 
 networks:
   backbone:
