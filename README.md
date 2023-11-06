@@ -50,9 +50,12 @@ See docker-compose.yml for details.
 #### Azurite
 
 For emulating Azure Blob Storage, an Azurite (see https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite)
-instance is started with Docker Compose.
+instance is started with Docker Compose. Blob Containers are also created via Docker Compose:
+- `haitaton-hakemusliitteet-local`
+- `haitaton-hankeliitteet-local`
+- `haitaton-paatokset-local`
 
-Notice that Azurite uses the default well-known `AccountName` and `AccountKey`:
+Notice that Azurite uses the default well-known development `AccountName` and `AccountKey`:
 ```shell
 AccountName: devstoreaccount1
 AccountKey: Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
