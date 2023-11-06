@@ -52,10 +52,10 @@ See docker-compose.yml for details.
 For emulating Azure Blob Storage, an Azurite (see https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite)
 instance is started with Docker Compose.
 
-Notice that Azurite uses the default well-known AccountName and AccountKey:
+Notice that Azurite uses the default well-known `AccountName` and `AccountKey`:
 ```shell
-accountName: devstoreaccount1
-accountKey: Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+AccountName: devstoreaccount1
+AccountKey: Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
 ```
 
 Azurite is accessible via Microsoft Azure Storage Explorer (see https://azure.microsoft.com/en-us/products/storage/storage-explorer/)
@@ -66,7 +66,7 @@ $ az storage container list --connection-string "DefaultEndpointsProtocol=http;A
 ```
 
 Azurite is configured to produce debug logging in `azurite-debug.log`.
-Azurite uses Docker top-level volume for data.
+Azurite uses Docker top-level volume for data (see https://docs.docker.com/compose/compose-file/07-volumes/).
 
 ### Swagger UI
 
