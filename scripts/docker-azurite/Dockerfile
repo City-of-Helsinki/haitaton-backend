@@ -1,11 +1,11 @@
-# Use Azurite image as a parent image
-FROM mcr.microsoft.com/azure-storage/azurite
+# Do not use Azurite image as a parent image since
+FROM node:20
 
 # Set the working directory
 WORKDIR /usr/app
 
-# Install necessary libraries
-RUN npm install @azure/identity @azure/storage-blob
+# Install Azurite and necessary libraries
+RUN npm install --ignore-scripts -g azurite@3.27.0 && npm --ignore-scripts install @azure/storage-blob
 
 # Copy all required files
 COPY ./create-containers.js ./start.sh ./wait-for.sh ./
