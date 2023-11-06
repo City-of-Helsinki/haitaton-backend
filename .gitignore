@@ -36,3 +36,6 @@ out/
 
 ### Local environment variables ###
 .env
+
+### Azurite debug log ###
+azurite-debug.log

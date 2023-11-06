@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Start Azurite in the background
-azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --location /data --debug /data/debug.log &
+azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --location /data --debug /workspace/azurite-debug.log &
 
 # Wait for Azurite to be ready
 ./wait-for.sh localhost:10000 --timeout=60 -- echo "Azurite is up"

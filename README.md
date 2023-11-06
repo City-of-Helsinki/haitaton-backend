@@ -52,15 +52,21 @@ See docker-compose.yml for details.
 For emulating Azure Blob Storage, an Azurite (see https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite)
 instance is started with Docker Compose.
 
-Azurite needs to use HTTPS and for that there are a certificate and a key file.
-Certificate will expire on 2 February 2026 and needs to be renewed before that.
-The certificate and the key are generated using e.g. mkcert tool:
-```bash
-$ mkcert -install // if not already done
-$ mkcert 127.0.0.1
+Notice that Azurite uses the default well-known AccountName and AccountKey:
+```shell
+accountName: devstoreaccount1
+accountKey: Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
 ```
-This creates files `127.0.0.1.pem` and `127.0.0.1-key.pem` which needs to be put in `/scripts/azurite-docker` directory.
 
+Azurite is accessible via Microsoft Azure Storage Explorer (see https://azure.microsoft.com/en-us/products/storage/storage-explorer/)
+or Azure CLI (see https://learn.microsoft.com/en-us/cli/azure/).
+For example, to list all blob containers with Azure CLI:
+```shell
+$ az storage container list --connection-string "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+```
+
+Azurite is configured to produce debug logging in `azurite-debug.log`.
+Azurite uses Docker top-level volume for data.
 
 ### Swagger UI
 

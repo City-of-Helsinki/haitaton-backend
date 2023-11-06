@@ -1,14 +1,17 @@
-# Do not use Azurite image as a parent image since
-FROM node:20
+# Use Azurite image as a parent image
+FROM mcr.microsoft.com/azure-storage/azurite
+
+# Create azurite user and group
+RUN addgroup -S azurite && adduser -S azurite -G azurite
 
 # Set the working directory
 WORKDIR /usr/app
 
-# Install Azurite and necessary libraries
-RUN npm install --ignore-scripts -g azurite@3.27.0 && npm --ignore-scripts install @azure/storage-blob
+# Install necessary libraries
+RUN npm install --ignore-scripts @azure/identity @azure/storage-blob
 
 # Copy all required files
-COPY ./create-containers.js ./start.sh ./wait-for.sh ./
+COPY --chown=azurite:azurite ./create-containers.js ./start.sh ./wait-for.sh ./
 
 # Make sure the shell scripts are executable
 RUN chmod +x start.sh wait-for.sh

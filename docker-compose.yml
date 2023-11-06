@@ -69,7 +69,8 @@ services:
     ports:
       - '10000:10000'
     volumes:
-      - ${AZURE_STORAGE_VOLUME}:/data
+      - azure-data:/data
+      - .:/workspace
     networks:
       backbone:
         aliases:
@@ -154,6 +155,9 @@ services:
     links:
       - haitaton-hanke
       - haitaton-ui
+
+volumes:
+  azure-data:
 
 networks:
   backbone:
