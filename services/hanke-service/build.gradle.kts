@@ -195,3 +195,5 @@ mjml {
         """{"collapseWhitespace": false, "minifyCSS": true, "removeEmptyAttributes": true }"""
     )
 }
+
+node { download.set(true) }
