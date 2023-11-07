@@ -47,6 +47,30 @@ Required directory structure:
 
 See docker-compose.yml for details.
 
+#### Azurite
+
+For emulating Azure Blob Storage, an Azurite (see https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite)
+instance is started with Docker Compose. Blob Containers are also created via Docker Compose:
+- `haitaton-hakemusliitteet-local`
+- `haitaton-hankeliitteet-local`
+- `haitaton-paatokset-local`
+
+Notice that Azurite uses the default well-known development `AccountName` and `AccountKey`:
+```shell
+AccountName: devstoreaccount1
+AccountKey: Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+```
+
+Azurite is accessible via Microsoft Azure Storage Explorer (see https://azure.microsoft.com/en-us/products/storage/storage-explorer/)
+or Azure CLI (see https://learn.microsoft.com/en-us/cli/azure/).
+For example, to list all blob containers with Azure CLI:
+```shell
+$ az storage container list --connection-string "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+```
+
+Azurite is configured to produce debug logging in `azurite-debug.log`.
+Azurite uses Docker top-level volume for data (see https://docs.docker.com/compose/compose-file/07-volumes/).
+
 ### Swagger UI
 
 Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON). You
