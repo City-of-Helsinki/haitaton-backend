@@ -60,6 +60,30 @@ services:
     environment:
       - ServerOptions__HostName=smtp4dev
 
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: azurite
+    restart: always
+    command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --location /data --debug /workspace/azurite-debug.log
+    ports:
+      - '10000:10000'
+    volumes:
+      - azurite-data:/data
+      - .:/workspace
+    networks:
+      backbone:
+        aliases:
+          - azurite
+  azurite-setup:
+    image: mcr.microsoft.com/azure-cli
+    depends_on:
+      - azurite
+    command: /tmp/setup.sh
+    volumes:
+      - ${BUILD_ROOT}/haitaton-backend/scripts/docker-azurite:/tmp/.
+    networks:
+      - backbone
+
   haitaton-hanke:
     build:
       context: ${BUILD_ROOT}/haitaton-backend
@@ -93,6 +117,7 @@ services:
     depends_on:
       - db
       - clamav-api
+      - azurite-setup
     command: [ "./wait-for-it.sh", "-t", "30", "--strict", "db:5432", "--", "java", "-jar", "haitaton.jar" ]
     networks:
       backbone:
@@ -138,6 +163,9 @@ services:
     links:
       - haitaton-hanke
       - haitaton-ui
+
+volumes:
+  azurite-data:
 
 networks:
   backbone:
