@@ -15,8 +15,6 @@ import java.util.UUID
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.stereotype.Component
 
-private const val FILE_NAME = "file.pdf"
-
 private val dummyData = "ABC".toByteArray()
 private val defaultAttachmentId = UUID.fromString("5cba3a76-28ad-42aa-b7e6-b5c1775be81a")
 
@@ -35,6 +33,7 @@ class AttachmentFactory(
     }
 
     companion object {
+        const val FILE_NAME = "file.pdf"
 
         fun applicationAttachmentEntity(
             id: UUID = defaultAttachmentId,
@@ -56,10 +55,11 @@ class AttachmentFactory(
             )
 
         fun hankeAttachmentEntity(
-            id: UUID = defaultAttachmentId,
+            id: UUID? = defaultAttachmentId,
             fileName: String = FILE_NAME,
+            blobLocation: String? = null,
             contentType: String = APPLICATION_PDF_VALUE,
-            createdByUser: String = currentUserId(),
+            createdByUser: String = "currentUserId",
             createdAt: OffsetDateTime = OffsetDateTime.now(),
             hanke: HankeEntity,
         ): HankeAttachmentEntity =
@@ -70,6 +70,7 @@ class AttachmentFactory(
                 createdByUserId = createdByUser,
                 createdAt = createdAt,
                 hanke = hanke,
+                blobLocation = blobLocation,
             )
 
         fun hankeAttachmentMetadata(
