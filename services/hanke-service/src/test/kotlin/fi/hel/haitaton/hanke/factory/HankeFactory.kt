@@ -1,11 +1,18 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.*
 import fi.hel.haitaton.hanke.ContactType.MUU
 import fi.hel.haitaton.hanke.ContactType.OMISTAJA
 import fi.hel.haitaton.hanke.ContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
+import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
+import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.HankeStatus.DRAFT
+import fi.hel.haitaton.hanke.HanketunnusService
+import fi.hel.haitaton.hanke.TyomaaTyyppi
+import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Vaihe.SUUNNITTELU
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest

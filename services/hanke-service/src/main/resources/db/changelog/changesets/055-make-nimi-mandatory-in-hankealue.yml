@@ -6,4 +6,4 @@ databaseChangeLog:
         - addNotNullConstraint:
             tableName: hankealue
             columnName: nimi
-            defaultNullValue: "Hankealue 1"
+            defaultNullValue: ""

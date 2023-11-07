@@ -1,6 +1,11 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.*
+import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
+import fi.hel.haitaton.hanke.Haitta13
+import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.HankealueEntity
+import fi.hel.haitaton.hanke.KaistajarjestelynPituus
+import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import java.time.ZonedDateTime
@@ -66,18 +71,18 @@ object HankealueFactory {
 
     fun createHankeAlueEntity(mockId: Int = 1, hankeEntity: HankeEntity): HankealueEntity {
         val alue = create(id = mockId).apply { geometriat?.id = mockId }
-        return HankealueEntity().apply {
-            id = alue.id!!
-            hanke = hankeEntity
-            geometriat = alue.geometriat?.id
-            haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate()
-            haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate()
-            kaistaHaitta = alue.kaistaHaitta
-            kaistaPituusHaitta = alue.kaistaPituusHaitta
-            meluHaitta = alue.meluHaitta
-            polyHaitta = alue.polyHaitta
-            tarinaHaitta = alue.tarinaHaitta
+        return HankealueEntity(
+            id = alue.id!!,
+            hanke = hankeEntity,
+            geometriat = alue.geometriat?.id,
+            haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate(),
+            haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate(),
+            kaistaHaitta = alue.kaistaHaitta,
+            kaistaPituusHaitta = alue.kaistaPituusHaitta,
+            meluHaitta = alue.meluHaitta,
+            polyHaitta = alue.polyHaitta,
+            tarinaHaitta = alue.tarinaHaitta,
             nimi = alue.nimi
-        }
+        )
     }
 }

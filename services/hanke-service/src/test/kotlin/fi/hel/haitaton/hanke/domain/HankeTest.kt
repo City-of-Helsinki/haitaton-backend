@@ -2,7 +2,11 @@ package fi.hel.haitaton.hanke.domain
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import fi.hel.haitaton.hanke.*
+import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
+import fi.hel.haitaton.hanke.Haitta13
+import fi.hel.haitaton.hanke.KaistajarjestelynPituus
+import fi.hel.haitaton.hanke.TZ_UTC
+import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue

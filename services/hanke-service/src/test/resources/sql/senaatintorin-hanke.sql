@@ -60,4 +60,4 @@ VALUES (23,
         0,
         15,
         5,
-        'Hankealue 1');
+        'Senaatintori');

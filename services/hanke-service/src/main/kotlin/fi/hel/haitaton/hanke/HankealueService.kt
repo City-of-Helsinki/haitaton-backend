@@ -37,7 +37,7 @@ class HankealueService(
         source: Hankealue,
         target: HankealueEntity?
     ): HankealueEntity {
-        val result = target ?: HankealueEntity()
+        val result = target ?: HankealueEntity(nimi = source.nimi)
 
         // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
         // be simply dropped here.
@@ -70,7 +70,7 @@ class HankealueService(
         hanketunnus: String,
         source: NewHankealue,
     ): HankealueEntity {
-        val result = HankealueEntity()
+        val result = HankealueEntity(nimi = source.nimi)
 
         // Assuming the incoming date, while being zoned date and time, is in UTC and time value can
         // be simply dropped here.
@@ -88,7 +88,6 @@ class HankealueService(
             val saved = geometriatService.createGeometriat(it)
             result.geometriat = saved.id
         }
-        result.nimi = source.nimi
 
         return result
     }
