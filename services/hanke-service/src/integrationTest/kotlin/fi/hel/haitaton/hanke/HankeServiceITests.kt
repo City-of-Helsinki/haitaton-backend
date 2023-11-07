@@ -1402,7 +1402,7 @@ class HankeServiceITests : DatabaseTest() {
                 hankeVersion = 1,
                 geometriaVersion = 1,
                 tormaystarkasteluTulos = true,
-                alueNimi = "Hankealue 1",
+                alueNimi = "$HANKEALUE_DEFAULT_NAME 1",
                 alkuPvm = updatedHanke.alkuPvm?.format(DateTimeFormatter.ISO_INSTANT),
                 loppuPvm = updatedHanke.loppuPvm?.format(DateTimeFormatter.ISO_INSTANT)
             )

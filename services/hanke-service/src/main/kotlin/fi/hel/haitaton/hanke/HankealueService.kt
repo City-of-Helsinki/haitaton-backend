@@ -55,7 +55,7 @@ class HankealueService(
             val saved = geometriatService.saveGeometriat(it, result.geometriat)
             result.geometriat = saved?.id
         }
-        source.nimi?.let { result.nimi = it }
+        result.nimi = source.nimi
 
         return result
     }
@@ -88,7 +88,7 @@ class HankealueService(
             val saved = geometriatService.createGeometriat(it)
             result.geometriat = saved.id
         }
-        source.nimi?.let { result.nimi = source.nimi }
+        result.nimi = source.nimi
 
         return result
     }
@@ -109,8 +109,6 @@ class HankealueService(
         }
 
     companion object {
-        private const val HANKEALUE_DEFAULT_NAME = "Hankealue"
-
         fun createHankealueetFromCableReport(
             cableReportData: CableReportApplicationData
         ): List<NewHankealue> =

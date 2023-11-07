@@ -137,10 +137,12 @@ class HankeValidatorTest {
     }
 
     @Test
-    fun `succeeds if hanke alue nimi is null`() {
-        val hanke = HankeFactory.create().withHankealue(nimi = null)
+    fun `fails if hanke alue nimi is empty`() {
+        val hanke = HankeFactory.create().withHankealue(nimi = "")
 
-        assertThat(hankeValidator.isValid(hanke, context)).isTrue()
+        assertThat(hankeValidator.isValid(hanke, context)).isFalse()
+
+        verifyError(HankeError.HAI1032, "alueet[0].nimi")
     }
 
     @Test

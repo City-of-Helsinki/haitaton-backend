@@ -117,11 +117,6 @@ class HankePublicValidatorTest {
                 ),
                 Arguments.of(
                     "alueet[0].nimi",
-                    "missing",
-                    completeHanke().apply { alueet[0].nimi = null }
-                ),
-                Arguments.of(
-                    "alueet[0].nimi",
                     "empty",
                     completeHanke().apply { alueet[0].nimi = "" }
                 ),
@@ -316,7 +311,7 @@ class HankePublicValidatorTest {
                     }
 
                     alueet[0].geometriat!!.featureCollection!!.features = null
-                    alueet[0].nimi = null
+                    alueet[0].nimi = ""
                     kuvaus = null
                 }
             )

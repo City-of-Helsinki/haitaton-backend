@@ -59,7 +59,7 @@ data class SavedHankealue(
     @field:Schema(
         description = "Area name, must not be null or empty",
     )
-    override var nimi: String? = null,
+    override var nimi: String,
 ) : HasId<Int?>, Hankealue
 
 fun List<Hankealue>.alkuPvm(): ZonedDateTime? = mapNotNull { it.haittaAlkuPvm }.minOfOrNull { it }

@@ -82,7 +82,7 @@ interface Hankealue {
     val meluHaitta: Haitta13?
     val polyHaitta: Haitta13?
     val tarinaHaitta: Haitta13?
-    val nimi: String?
+    val nimi: String
 }
 
 fun List<Hankealue>.geometriat(): List<HasFeatures> = mapNotNull { it.geometriat }
