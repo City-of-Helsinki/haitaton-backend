@@ -58,8 +58,7 @@ class HankeAttachmentEntity(
     contentType: String,
     createdByUserId: String,
     createdAt: OffsetDateTime,
-
-    /** Hanke in which this attachment belongs to. */
+    @Column(name = "blob_location") var blobLocation: String?,
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "hanke_id") var hanke: HankeEntity,
 ) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt) {
     fun toMetadata(): HankeAttachmentMetadata {
