@@ -109,6 +109,8 @@ class HankealueService(
         }
 
     companion object {
+        private const val HANKEALUE_DEFAULT_NAME = "Hankealue"
+
         fun createHankealueetFromCableReport(
             cableReportData: CableReportApplicationData
         ): List<NewHankealue> =
@@ -116,9 +118,10 @@ class HankealueService(
                 .map { Feature().apply { geometry = it.geometry } }
                 .map { FeatureCollection().add(it) }
                 .map { NewGeometriat(it) }
-                .map {
+                .mapIndexed { i, geometria ->
                     NewHankealue(
-                        geometriat = it,
+                        nimi = "$HANKEALUE_DEFAULT_NAME ${i + 1}",
+                        geometriat = geometria,
                         haittaAlkuPvm = cableReportData.startTime,
                         haittaLoppuPvm = cableReportData.endTime,
                     )
