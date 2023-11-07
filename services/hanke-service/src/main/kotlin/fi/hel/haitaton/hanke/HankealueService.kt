@@ -13,8 +13,6 @@ import org.geojson.Feature
 import org.geojson.FeatureCollection
 import org.springframework.stereotype.Service
 
-const val HANKEALUE_DEFAULT_NAME = "Hankealue"
-
 @Service
 class HankealueService(
     private val geometriatService: GeometriatService,
@@ -111,6 +109,8 @@ class HankealueService(
         }
 
     companion object {
+        private const val HANKEALUE_DEFAULT_NAME = "Hankealue"
+
         fun createHankealueetFromCableReport(
             cableReportData: CableReportApplicationData
         ): List<NewHankealue> =
