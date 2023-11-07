@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeMapper.domainFrom
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
@@ -60,6 +61,7 @@ open class ApplicationService(
     private val hankeRepository: HankeRepository,
     private val hankeLoggingService: HankeLoggingService,
     private val featureFlags: FeatureFlags,
+    private val hankealueService: HankealueService,
 ) {
     @Transactional(readOnly = true)
     open fun getAllApplicationsForUser(userId: String): List<Application> {
@@ -155,6 +157,10 @@ open class ApplicationService(
             "Invalid geometry received when updating application for user $userId, id=${application.id}, alluid=${application.alluid}, reason = ${validationError.reason}, location = ${validationError.location}"
         }
 
+        if (!isStillPending(application.alluid, application.alluStatus)) {
+            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
+        }
+
         val hanke = application.hanke
         if (!hanke.generated) {
             newApplicationData.areas?.let { areas ->
@@ -164,10 +170,8 @@ open class ApplicationService(
                         "application geometry = ${applicationArea.geometry.toJsonString()}"
                 }
             }
-        }
-
-        if (!isStillPending(application.alluid, application.alluStatus)) {
-            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
+        } else {
+            updateHankealueetFromApplicationData(hanke, newApplicationData)
         }
 
         // Don't change a draft to a non-draft or vice-versa with the update method.
@@ -478,6 +482,15 @@ open class ApplicationService(
             if (!geometriatDao.isInsideHankeAlueet(hankeId, area.geometry))
                 throw ApplicationGeometryNotInsideHankeException(customMessageOnFailure(area))
         }
+    }
+
+    private fun updateHankealueetFromApplicationData(
+        hanke: HankeEntity,
+        newApplicationData: CableReportApplicationData,
+    ) {
+        val hankealueet = HankealueService.createHankealueetFromCableReport(newApplicationData)
+        hanke.alueet.clear()
+        hanke.alueet.addAll(hankealueService.createAlueetFromCreateRequest(hankealueet, hanke))
     }
 
     private fun handleApplicationUpdate(applicationHistory: ApplicationHistory) {

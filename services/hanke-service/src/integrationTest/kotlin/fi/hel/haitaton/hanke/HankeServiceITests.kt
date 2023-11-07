@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import assertk.all
 import assertk.assertFailure
 import assertk.assertions.each
+import assertk.assertions.first
 import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
@@ -48,6 +49,7 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaRepository
 import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.test.Asserts.hasSingleGeometryWithCoordinates
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
@@ -938,18 +940,19 @@ class HankeServiceITests : DatabaseTest() {
 
         @Test
         fun `creates hankealueet from the application areas`() {
-            val inputApplication = AlluDataFactory.cableReportWithoutHanke()
-            assertThat(inputApplication.applicationData.areas).isNotEmpty
+            val inputApplication =
+                AlluDataFactory.cableReportWithoutHanke(
+                    AlluDataFactory.createCableReportApplicationData(areas = null)
+                        .withArea(name = "Area", geometry = GeometriaFactory.secondPolygon)
+                )
 
             val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
 
             val hanke = hankeService.loadHanke(application.hankeTunnus)!!
-            hanke.alueet.forEach { hankealue ->
-                val features = hankealue.geometriat?.featureCollection?.features
-                assertThat(features).hasSize(1)
-                val polygon = features!![0].geometry as Polygon
-                assertThat(polygon.coordinates)
-                    .isEqualTo(inputApplication.applicationData.areas!![0].geometry.coordinates)
+            assertThat(hanke.alueet).hasSize(1)
+            assertk.assertThat(hanke.alueet).first().all {
+                prop(SavedHankealue::nimi).isEqualTo("Hankealue 1")
+                hasSingleGeometryWithCoordinates(GeometriaFactory.secondPolygon)
             }
         }
 
@@ -960,7 +963,8 @@ class HankeServiceITests : DatabaseTest() {
                 AlluDataFactory.cableReportWithoutHanke {
                     withArea(
                         "area",
-                        "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json".asJsonResource()
+                        "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json"
+                            .asJsonResource()
                     )
                 }
 
@@ -1516,7 +1520,8 @@ class HankeServiceITests : DatabaseTest() {
 
     val expectedHankeWithPolygon =
         Template.parse(
-            "/fi/hel/haitaton/hanke/logging/expectedHankeWithPolygon.json.mustache".getResourceAsText()
+            "/fi/hel/haitaton/hanke/logging/expectedHankeWithPolygon.json.mustache"
+                .getResourceAsText()
         )
 
     private fun expectedHankeLogObject(
@@ -1543,7 +1548,8 @@ class HankeServiceITests : DatabaseTest() {
                 loppuPvm,
             )
         return Template.parse(
-                "/fi/hel/haitaton/hanke/logging/expectedHankeWithPoints.json.mustache".getResourceAsText()
+                "/fi/hel/haitaton/hanke/logging/expectedHankeWithPoints.json.mustache"
+                    .getResourceAsText()
             )
             .processToString(templateData)
     }

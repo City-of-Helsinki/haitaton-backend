@@ -91,6 +91,7 @@ class Configuration {
         hankeRepository: HankeRepository,
         hankeLoggingService: HankeLoggingService,
         featureFlags: FeatureFlags,
+        hankealueService: HankealueService,
     ): ApplicationService =
         ApplicationService(
             applicationRepository,
@@ -106,6 +107,7 @@ class Configuration {
             hankeRepository,
             hankeLoggingService,
             featureFlags,
+            hankealueService,
         )
 
     @Bean
