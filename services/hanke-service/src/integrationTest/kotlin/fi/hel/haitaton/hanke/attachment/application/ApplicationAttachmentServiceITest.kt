@@ -62,16 +62,12 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.TestPropertySource
-import org.testcontainers.junit.jupiter.Testcontainers
 
 private const val ALLU_ID = 42
 
-@Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
-@TestPropertySource(locations = ["classpath:application-test.properties"])
 class ApplicationAttachmentServiceITest : DatabaseTest() {
     @MockkBean private lateinit var cableReportService: CableReportService
     @Autowired private lateinit var applicationAttachmentService: ApplicationAttachmentService

@@ -36,14 +36,10 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.TestPropertySource
-import org.testcontainers.junit.jupiter.Testcontainers
 
-@Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
-@TestPropertySource(locations = ["classpath:application-test.properties"])
 class HankeAttachmentServiceITests : DatabaseTest() {
     @Autowired private lateinit var hankeAttachmentService: HankeAttachmentService
     @Autowired private lateinit var hankeAttachmentRepository: HankeAttachmentRepository

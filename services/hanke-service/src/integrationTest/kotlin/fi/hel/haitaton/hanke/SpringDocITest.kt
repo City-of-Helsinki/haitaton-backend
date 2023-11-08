@@ -10,10 +10,8 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import org.testcontainers.junit.jupiter.Testcontainers
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
+@SpringBootTest
 @ActiveProfiles("test")
 @AutoConfigureMockMvc
 class SpringdocITest(@Autowired override val mockMvc: MockMvc) : ControllerTest, DatabaseTest() {
@@ -24,6 +22,7 @@ class SpringdocITest(@Autowired override val mockMvc: MockMvc) : ControllerTest,
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("Swagger UI")))
     }
+
     @Test
     fun `Should load OpenAPI docs`() {
         get("/v3/api-docs")

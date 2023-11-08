@@ -5,6 +5,7 @@ import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlMergeMode
 import org.testcontainers.junit.jupiter.Container
+import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.MountableFile
 
 /**
@@ -19,10 +20,11 @@ import org.testcontainers.utility.MountableFile
  */
 @Sql("/clear-db.sql")
 @SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
+@Testcontainers
 abstract class DatabaseTest {
     companion object {
         @Container
-        private val container: HaitatonPostgreSQLContainer =
+        private val postgresContainer: HaitatonPostgreSQLContainer =
             HaitatonPostgreSQLContainer()
                 .withPassword("test")
                 .withUsername("test")
@@ -36,12 +38,12 @@ abstract class DatabaseTest {
         @JvmStatic
         @DynamicPropertySource
         fun postgresqlProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.datasource.url", container::getJdbcUrl)
-            registry.add("spring.datasource.username", container::getUsername)
-            registry.add("spring.datasource.password", container::getPassword)
-            registry.add("spring.liquibase.url", container::getJdbcUrl)
-            registry.add("spring.liquibase.user", container::getUsername)
-            registry.add("spring.liquibase.password", container::getPassword)
+            registry.add("spring.datasource.url", postgresContainer::getJdbcUrl)
+            registry.add("spring.datasource.username", postgresContainer::getUsername)
+            registry.add("spring.datasource.password", postgresContainer::getPassword)
+            registry.add("spring.liquibase.url", postgresContainer::getJdbcUrl)
+            registry.add("spring.liquibase.user", postgresContainer::getUsername)
+            registry.add("spring.liquibase.password", postgresContainer::getPassword)
         }
     }
 }
