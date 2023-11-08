@@ -37,6 +37,7 @@ springBoot { buildInfo() }
 tasks.getByName<BootRun>("bootRun") {
     environment("HAITATON_SWAGGER_PATH_PREFIX", "/v3")
     environment("HAITATON_EMAIL_ENABLED", "true")
+    environment("HAITATON_BLOB_CONNECTION_STRING", "UseDevelopmentStorage=true;")
 }
 
 spotless {
@@ -112,6 +113,10 @@ dependencies {
     // Sentry
     implementation("io.sentry:sentry-spring-boot-starter-jakarta:$sentryVersion")
     implementation("io.sentry:sentry-logback:$sentryVersion")
+
+    // Azure
+    implementation(platform("com.azure:azure-sdk-bom:1.2.18"))
+    implementation("com.azure:azure-storage-blob")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 }
