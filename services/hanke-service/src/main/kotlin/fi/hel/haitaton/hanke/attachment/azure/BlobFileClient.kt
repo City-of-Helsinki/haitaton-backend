@@ -10,9 +10,12 @@ import com.azure.storage.blob.options.BlobParallelUploadOptions
 import fi.hel.haitaton.hanke.attachment.common.DownloadNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.DownloadResponse
 import fi.hel.haitaton.hanke.attachment.common.FileClient
+import mu.KotlinLogging
 import org.springframework.context.annotation.Profile
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
+
+private val logger = KotlinLogging.logger {}
 
 @Component
 @Profile("!test")
@@ -57,6 +60,7 @@ class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Container
             )
         } catch (e: BlobStorageException) {
             if (e.errorCode == BlobErrorCode.BLOB_NOT_FOUND) {
+                logger.error { "Blob not found, container=$container path=$path" }
                 throw DownloadNotFoundException(path, container)
             } else {
                 throw e

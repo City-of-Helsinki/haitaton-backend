@@ -36,14 +36,12 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.TestPropertySource
 import org.testcontainers.junit.jupiter.Testcontainers
 
 @Testcontainers
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
-@TestPropertySource(locations = ["classpath:application-test.properties"])
 class HankeAttachmentServiceITests : DatabaseTest() {
     @Autowired private lateinit var hankeAttachmentService: HankeAttachmentService
     @Autowired private lateinit var hankeAttachmentRepository: HankeAttachmentRepository
@@ -145,7 +143,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
         assertThat(attachmentInDb.fileName).isEqualTo(FILE_NAME_PDF)
         assertThat(attachmentInDb.createdAt).isNotNull()
 
-        val savedContent = attachmentContentService.findHankeContent(attachmentInDb.id!!)
+        val savedContent = attachmentContentService.findHankeContent(attachmentInDb)
         assertThat(savedContent).containsExactly(*defaultData)
     }
 
