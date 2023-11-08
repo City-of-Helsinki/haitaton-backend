@@ -14,6 +14,7 @@ import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.APPLICATION_ID
+import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.andExpectError
@@ -21,7 +22,6 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.dummyData
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
@@ -109,12 +109,12 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
 
         every { authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name) } returns true
         every { applicationAttachmentService.getContent(APPLICATION_ID, attachmentId) } returns
-            AttachmentContent(FILE_NAME_PDF, APPLICATION_PDF_VALUE, dummyData)
+            AttachmentContent(FILE_NAME_PDF, APPLICATION_PDF_VALUE, DUMMY_DATA)
 
         getAttachmentContent(attachmentId = attachmentId)
             .andExpect(status().isOk)
             .andExpect(header().string(CONTENT_DISPOSITION, "attachment; filename=$FILE_NAME_PDF"))
-            .andExpect(content().bytes(dummyData))
+            .andExpect(content().bytes(DUMMY_DATA))
 
         verifyOrder {
             authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name)
