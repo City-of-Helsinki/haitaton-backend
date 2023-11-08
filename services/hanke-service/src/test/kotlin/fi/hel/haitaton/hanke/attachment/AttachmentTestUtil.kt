@@ -19,18 +19,17 @@ const val USERNAME = "username"
 const val FILE_NAME_PDF = "file.pdf"
 const val FILE_PARAM = "liite"
 const val HANKE_TUNNUS = "HAI-1234"
-const val HANKE_ID = 123
 const val APPLICATION_ID = 1L
-const val CONTENT_TYPE = "Content-Type"
+const val CONTENT_TYPE_HEADER = "Content-Type"
 
-val dummyData = "ABC".toByteArray()
-val defaultData = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
+val DUMMY_DATA = "ABC".toByteArray()
+val DEFAULT_DATA = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
 
 fun testFile(
     fileParam: String = FILE_PARAM,
     fileName: String = FILE_NAME_PDF,
     contentType: String? = APPLICATION_PDF_VALUE,
-    data: ByteArray = defaultData,
+    data: ByteArray = DEFAULT_DATA,
 ) = MockMultipartFile(fileParam, fileName, contentType, data)
 
 fun ResultActions.andExpectError(error: HankeError): ResultActions =
@@ -39,7 +38,7 @@ fun ResultActions.andExpectError(error: HankeError): ResultActions =
 fun response(data: String): MockResponse =
     MockResponse()
         .setBody(data)
-        .addHeader(CONTENT_TYPE, APPLICATION_JSON_VALUE)
+        .addHeader(CONTENT_TYPE_HEADER, APPLICATION_JSON_VALUE)
         .setResponseCode(200)
 
 fun body(success: Boolean = true, results: List<FileResult>): String =
