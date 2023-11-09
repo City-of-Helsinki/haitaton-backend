@@ -44,7 +44,7 @@ data class PublicHankealue(
     var meluHaitta: Haitta13? = null,
     var polyHaitta: Haitta13? = null,
     var tarinaHaitta: Haitta13? = null,
-    var nimi: String? = null,
+    var nimi: String,
 )
 
 data class PublicHanke(

@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: 055-make-nimi-mandatory-in-hankealue
+      author: Teemu Hiltunen
+      changes:
+        - addNotNullConstraint:
+            tableName: hankealue
+            columnName: nimi
+            defaultNullValue: ""

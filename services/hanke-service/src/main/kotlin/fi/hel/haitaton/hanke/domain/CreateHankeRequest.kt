@@ -140,9 +140,9 @@ data class NewHankealue(
     )
     override val tarinaHaitta: Haitta13? = null,
     @field:Schema(
-        description = "Area name",
+        description = "Area name, must not be null or empty",
     )
-    override val nimi: String? = null,
+    override val nimi: String,
 ) : Hankealue
 
 data class NewGeometriat(

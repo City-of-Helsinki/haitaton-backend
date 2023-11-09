@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
@@ -448,7 +449,8 @@ internal class TormaystarkasteluLaskentaServiceTest {
                     haittaAlkuPvm = alkuPvm,
                     haittaLoppuPvm = alkuPvm.plusDays(7),
                     kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.YKSI,
-                    kaistaPituusHaitta = KaistajarjestelynPituus.YKSI
+                    kaistaPituusHaitta = KaistajarjestelynPituus.YKSI,
+                    nimi = "$HANKEALUE_DEFAULT_NAME 1"
                 )
             )
         val geometriaIds = alueet.geometriaIds()

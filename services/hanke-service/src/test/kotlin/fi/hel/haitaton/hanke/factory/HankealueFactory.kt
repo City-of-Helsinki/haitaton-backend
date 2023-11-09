@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
 import fi.hel.haitaton.hanke.Haitta13
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankealueEntity
@@ -23,7 +24,7 @@ object HankealueFactory {
         meluHaitta: Haitta13? = Haitta13.YKSI,
         polyHaitta: Haitta13? = Haitta13.KAKSI,
         tarinaHaitta: Haitta13? = Haitta13.KOLME,
-        nimi: String? = null,
+        nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
     ): SavedHankealue {
         return SavedHankealue(
             id,
@@ -51,7 +52,7 @@ object HankealueFactory {
         meluHaitta: Haitta13? = null,
         polyHaitta: Haitta13? = null,
         tarinaHaitta: Haitta13? = null,
-        nimi: String? = null,
+        nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
     ): SavedHankealue {
         return SavedHankealue(
             id,
@@ -70,18 +71,18 @@ object HankealueFactory {
 
     fun createHankeAlueEntity(mockId: Int = 1, hankeEntity: HankeEntity): HankealueEntity {
         val alue = create(id = mockId).apply { geometriat?.id = mockId }
-        return HankealueEntity().apply {
-            id = alue.id!!
-            hanke = hankeEntity
-            geometriat = alue.geometriat?.id
-            haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate()
-            haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate()
-            kaistaHaitta = alue.kaistaHaitta
-            kaistaPituusHaitta = alue.kaistaPituusHaitta
-            meluHaitta = alue.meluHaitta
-            polyHaitta = alue.polyHaitta
-            tarinaHaitta = alue.tarinaHaitta
+        return HankealueEntity(
+            id = alue.id!!,
+            hanke = hankeEntity,
+            geometriat = alue.geometriat?.id,
+            haittaAlkuPvm = DateFactory.getStartDatetime().toLocalDate(),
+            haittaLoppuPvm = DateFactory.getEndDatetime().toLocalDate(),
+            kaistaHaitta = alue.kaistaHaitta,
+            kaistaPituusHaitta = alue.kaistaPituusHaitta,
+            meluHaitta = alue.meluHaitta,
+            polyHaitta = alue.polyHaitta,
+            tarinaHaitta = alue.tarinaHaitta,
             nimi = alue.nimi
-        }
+        )
     }
 }

@@ -76,6 +76,7 @@ services:
           - azurite
   azurite-setup:
     image: mcr.microsoft.com/azure-cli
+    container_name: azurite-setup
     depends_on:
       - azurite
     command: /tmp/setup.sh

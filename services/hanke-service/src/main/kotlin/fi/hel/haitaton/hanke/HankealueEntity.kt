@@ -13,24 +13,24 @@ import java.time.LocalDate
 
 @Entity
 @Table(name = "hankealue")
-class HankealueEntity : HasId<Int> {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) override var id: Int = 0
-
-    @ManyToOne(fetch = FetchType.EAGER) @JoinColumn(name = "hankeid") var hanke: HankeEntity? = null
+class HankealueEntity(
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) override var id: Int = 0,
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "hankeid")
+    var hanke: HankeEntity? = null,
 
     // NOTE: This should be changed to an entity
     // Refers to HankeGeometria.
-    var geometriat: Int? = null
-
-    var haittaAlkuPvm: LocalDate? = null
-    var haittaLoppuPvm: LocalDate? = null
-
-    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null
-    var kaistaPituusHaitta: KaistajarjestelynPituus? = null
-    var meluHaitta: Haitta13? = null
-    var polyHaitta: Haitta13? = null
-    var tarinaHaitta: Haitta13? = null
-    var nimi: String? = null
+    var geometriat: Int? = null,
+    var haittaAlkuPvm: LocalDate? = null,
+    var haittaLoppuPvm: LocalDate? = null,
+    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
+    var kaistaPituusHaitta: KaistajarjestelynPituus? = null,
+    var meluHaitta: Haitta13? = null,
+    var polyHaitta: Haitta13? = null,
+    var tarinaHaitta: Haitta13? = null,
+    var nimi: String
+) : HasId<Int> {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -62,7 +62,7 @@ class HankealueEntity : HasId<Int> {
         result = 31 * result + (meluHaitta?.hashCode() ?: 0)
         result = 31 * result + (polyHaitta?.hashCode() ?: 0)
         result = 31 * result + (tarinaHaitta?.hashCode() ?: 0)
-        result = 31 * result + (nimi?.hashCode() ?: 0)
+        result = 31 * result + nimi.hashCode()
         return result
     }
 }
