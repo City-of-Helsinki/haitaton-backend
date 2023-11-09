@@ -137,3 +137,5 @@ databaseChangeLog:
       file: db/changelog/changesets/053-add-indices-for-hanke-permission-query.yml
   - include:
       file: db/changelog/changesets/054-add-hanke-attachment-blob-location.yml
+  - include:
+      file: db/changelog/changesets/055-make-nimi-mandatory-in-hankealue.yml

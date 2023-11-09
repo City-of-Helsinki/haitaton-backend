@@ -58,6 +58,7 @@ object HankePublicValidator {
                     ),
                 )
             }
+            .and { notNullOrBlank(alue.nimi, "$path.nimi") }
 
     private fun validateYhteystieto(yhteystieto: HankeYhteystieto, path: String): ValidationResult =
         validate { notBlank(yhteystieto.nimi, "$path.nimi") }

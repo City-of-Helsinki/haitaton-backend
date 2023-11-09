@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.ContactType.MUU
 import fi.hel.haitaton.hanke.ContactType.OMISTAJA
 import fi.hel.haitaton.hanke.ContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
+import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
@@ -218,7 +219,7 @@ class HankeFactory(
          * ```
          */
         fun Hanke.withHankealue(
-            nimi: String? = null,
+            nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
             haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
             haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
         ): Hanke {
