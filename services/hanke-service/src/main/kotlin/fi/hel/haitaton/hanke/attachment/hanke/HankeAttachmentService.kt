@@ -18,6 +18,7 @@ import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime.now
 import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
@@ -37,8 +38,9 @@ class HankeAttachmentService(
         findHanke(hankeTunnus).liitteet.map { it.toMetadata() }
 
     @Transactional(readOnly = true)
-    fun getContent(hankeTunnus: String, attachmentId: UUID): AttachmentContent {
-        val attachment = findHanke(hankeTunnus).liitteet.findBy(attachmentId)
+    fun getContent(attachmentId: UUID): AttachmentContent {
+        val attachment = findAttachment(attachmentId)
+
         val content = attachmentContentService.findHankeContent(attachment)
         return AttachmentContent(attachment.fileName, attachment.contentType, content)
     }
@@ -76,18 +78,18 @@ class HankeAttachmentService(
     }
 
     @Transactional
-    fun deleteAttachment(hankeTunnus: String, attachmentId: UUID) {
-        val hanke = findHanke(hankeTunnus)
-        val attachmentToDelete = hanke.liitteet.findBy(attachmentId)
-        hanke.liitteet.remove(attachmentToDelete)
+    fun deleteAttachment(attachmentId: UUID) {
+        val attachmentToDelete = findAttachment(attachmentId)
+        attachmentToDelete.hanke.liitteet.remove(attachmentToDelete)
         logger.info { "Deleted hanke attachment ${attachmentToDelete.id}" }
     }
 
+    private fun findAttachment(attachmentId: UUID) =
+        attachmentRepository.findByIdOrNull(attachmentId)
+            ?: throw AttachmentNotFoundException(attachmentId)
+
     private fun findHanke(hankeTunnus: String) =
         hankeRepository.findByHankeTunnus(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
-
-    private fun List<HankeAttachmentEntity>.findBy(attachmentId: UUID): HankeAttachmentEntity =
-        find { it.id == attachmentId } ?: throw AttachmentNotFoundException(attachmentId)
 
     private fun ensureRoomForAttachment(hankeId: Int) {
         if (attachmentAmountReached(hankeId)) {

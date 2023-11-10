@@ -16,7 +16,6 @@ import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
@@ -93,40 +92,19 @@ class HankeAttachmentServiceITests : DatabaseTest(), HankeAttachmentFactory {
         inner class FromDb {
             @Test
             fun `returns the attachment content, filename and content type`() {
-                val hanke = hankeFactory.saveEntity()
-                val attachment = saveAttachment(hanke = hanke).withDbContent()
+                val attachment = saveAttachment().withDbContent()
 
-                val result = hankeAttachmentService.getContent(hanke.hankeTunnus, attachment.id!!)
+                val result = hankeAttachmentService.getContent(attachment.id!!)
 
                 assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
                 assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
                 assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
-            }
-
-            @Test
-            fun `throws exception when attachment is not in the requested hanke`() {
-                val firstHanke = hankeFactory.saveEntity()
-                val secondHanke = hankeFactory.saveEntity()
-                saveAttachment(hanke = firstHanke).withDbContent()
-                val secondAttachment = saveAttachment(hanke = secondHanke).withDbContent()
-
-                val exception =
-                    assertThrows<AttachmentNotFoundException> {
-                        hankeAttachmentService.getContent(
-                            firstHanke.hankeTunnus,
-                            secondAttachment.id!!
-                        )
-                    }
-
-                assertThat(exception.message)
-                    .isEqualTo("Attachment not found, id=${secondAttachment.id}")
             }
         }
 
         @Nested
         inner class FromCloud {
             private val path = "in/cloud"
-            private val path2 = "in/cloud2"
 
             @BeforeEach
             fun clear() {
@@ -135,34 +113,14 @@ class HankeAttachmentServiceITests : DatabaseTest(), HankeAttachmentFactory {
 
             @Test
             fun `returns the attachment content, filename and content type`() {
-                val hanke = hankeFactory.saveEntity()
-                val attachment = saveAttachment(hanke = hanke).withCloudContent(path)
+                val attachment = saveAttachment().withCloudContent(path)
 
-                val result = hankeAttachmentService.getContent(hanke.hankeTunnus, attachment.id!!)
+                val result = hankeAttachmentService.getContent(attachment.id!!)
 
                 assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
                 assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
                 assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
                 assertThat(mockClamAv.requestCount).isEqualTo(0)
-            }
-
-            @Test
-            fun `throws exception when attachment is not in the requested hanke`() {
-                val firstHanke = hankeFactory.saveEntity()
-                val secondHanke = hankeFactory.saveEntity()
-                saveAttachment(hanke = firstHanke).withCloudContent(path)
-                val secondAttachment = saveAttachment(hanke = secondHanke).withCloudContent(path2)
-
-                val exception =
-                    assertThrows<AttachmentNotFoundException> {
-                        hankeAttachmentService.getContent(
-                            firstHanke.hankeTunnus,
-                            secondAttachment.id!!
-                        )
-                    }
-
-                assertThat(exception.message)
-                    .isEqualTo("Attachment not found, id=${secondAttachment.id}")
             }
         }
     }
@@ -278,7 +236,7 @@ class HankeAttachmentServiceITests : DatabaseTest(), HankeAttachmentFactory {
         val attachmentId = attachment.id
         assertThat(hankeAttachmentRepository.findById(attachmentId)).isPresent()
 
-        hankeAttachmentService.deleteAttachment(hanke.hankeTunnus, attachmentId)
+        hankeAttachmentService.deleteAttachment(attachmentId)
 
         val remainingAttachment = hankeAttachmentRepository.findById(attachmentId)
         assertThat(remainingAttachment).isEmpty()
