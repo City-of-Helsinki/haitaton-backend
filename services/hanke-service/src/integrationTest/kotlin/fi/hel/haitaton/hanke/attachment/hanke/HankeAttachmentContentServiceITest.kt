@@ -1,4 +1,4 @@
-package fi.hel.haitaton.hanke.attachment.common
+package fi.hel.haitaton.hanke.attachment.hanke
 
 import assertk.all
 import assertk.assertFailure
@@ -8,6 +8,10 @@ import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.attachment.USERNAME
+import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import java.util.UUID
@@ -22,9 +26,9 @@ import org.springframework.test.context.ActiveProfiles
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
-class AttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactory {
+class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactory {
 
-    @Autowired private lateinit var attachmentContentService: AttachmentContentService
+    @Autowired private lateinit var attachmentContentService: HankeAttachmentContentService
     @Autowired override lateinit var fileClient: MockFileClient
     @Autowired override lateinit var hankeAttachmentRepository: HankeAttachmentRepository
     @Autowired
