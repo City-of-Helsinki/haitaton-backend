@@ -247,29 +247,32 @@ class HankeAttachmentServiceITests : DatabaseTest(), HankeAttachmentFactory {
         assertThat(hankeAttachmentRepository.findAll()).isEmpty()
     }
 
-    @Test
-    fun `deleteAttachment when valid input should succeed`() {
-        mockClamAv.enqueue(response(body(results = successResult())))
-        val hanke = hankeFactory.save()
-        val attachment = hankeAttachmentService.addAttachment(hanke.hankeTunnus, testFile())
-        val attachmentId = attachment.id
-        assertThat(hankeAttachmentRepository.findById(attachmentId)).isPresent()
+    @Nested
+    inner class DeleteAttachment {
+        @Test
+        fun `throws exception when attachment is missing`() {
+            val attachmentId = UUID.fromString("ab7993b7-a775-4eac-b5b7-8546332944fe")
 
-        hankeAttachmentService.deleteAttachment(attachmentId)
+            val failure = assertFailure { hankeAttachmentService.deleteAttachment(attachmentId) }
 
-        val remainingAttachment = hankeAttachmentRepository.findById(attachmentId)
-        assertThat(remainingAttachment).isEmpty()
-    }
+            failure.all {
+                hasClass(AttachmentNotFoundException::class)
+                messageContains(attachmentId.toString())
+            }
+        }
 
-    @Test
-    fun `deleteAttachment throws exception when attachment is missing`() {
-        val attachmentId = UUID.fromString("ab7993b7-a775-4eac-b5b7-8546332944fe")
+        @Test
+        fun `deletes attachment when attachment exists`() {
+            mockClamAv.enqueue(response(body(results = successResult())))
+            val hanke = hankeFactory.save()
+            val attachment = hankeAttachmentService.addAttachment(hanke.hankeTunnus, testFile())
+            val attachmentId = attachment.id
+            assertThat(hankeAttachmentRepository.findById(attachmentId)).isPresent()
 
-        val failure = assertFailure { hankeAttachmentService.deleteAttachment(attachmentId) }
+            hankeAttachmentService.deleteAttachment(attachmentId)
 
-        failure.all {
-            hasClass(AttachmentNotFoundException::class)
-            messageContains(attachmentId.toString())
+            val remainingAttachment = hankeAttachmentRepository.findById(attachmentId)
+            assertThat(remainingAttachment).isEmpty()
         }
     }
 }
