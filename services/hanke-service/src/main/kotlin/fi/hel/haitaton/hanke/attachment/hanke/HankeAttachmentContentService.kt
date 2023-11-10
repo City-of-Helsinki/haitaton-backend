@@ -19,22 +19,22 @@ class HankeAttachmentContentService(
     private val hankeAttachmentContentRepository: HankeAttachmentContentRepository,
     private val fileClient: FileClient,
 ) {
-    fun saveHankeContent(attachmentId: UUID, content: ByteArray) {
+    fun save(attachmentId: UUID, content: ByteArray) {
         hankeAttachmentContentRepository.save(HankeAttachmentContentEntity(attachmentId, content))
     }
 
-    fun findHankeContent(attachment: HankeAttachmentEntity): ByteArray =
-        attachment.blobLocation?.let { readHankeAttachmentFromFile(it, attachment.id!!) }
-            ?: readHankeAttachmentFromDatabase(attachment.id!!)
+    fun find(attachment: HankeAttachmentEntity): ByteArray =
+        attachment.blobLocation?.let { readFromFile(it, attachment.id!!) }
+            ?: readFromDatabase(attachment.id!!)
 
-    fun readHankeAttachmentFromFile(location: String, attachmentId: UUID): ByteArray =
+    fun readFromFile(location: String, attachmentId: UUID): ByteArray =
         try {
             fileClient.download(Container.HANKE_LIITTEET, location).content.toBytes()
         } catch (e: DownloadNotFoundException) {
             throw AttachmentNotFoundException(attachmentId)
         }
 
-    fun readHankeAttachmentFromDatabase(attachmentId: UUID): ByteArray =
+    fun readFromDatabase(attachmentId: UUID): ByteArray =
         hankeAttachmentContentRepository.findByIdOrNull(attachmentId)?.content
             ?: run {
                 logger.error { "Content not found for hanke attachment $attachmentId" }

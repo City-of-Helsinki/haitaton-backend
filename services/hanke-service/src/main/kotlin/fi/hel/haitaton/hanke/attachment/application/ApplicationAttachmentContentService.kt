@@ -13,13 +13,13 @@ private val logger = KotlinLogging.logger {}
 class ApplicationAttachmentContentService(
     private val applicationAttachmentContentRepository: ApplicationAttachmentContentRepository
 ) {
-    fun saveApplicationContent(attachmentId: UUID, content: ByteArray) {
+    fun save(attachmentId: UUID, content: ByteArray) {
         applicationAttachmentContentRepository.save(
             ApplicationAttachmentContentEntity(attachmentId, content)
         )
     }
 
-    fun findApplicationContent(attachmentId: UUID): ByteArray =
+    fun find(attachmentId: UUID): ByteArray =
         applicationAttachmentContentRepository
             .findById(attachmentId)
             .map { it.content }

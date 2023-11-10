@@ -40,7 +40,7 @@ class HankeAttachmentService(
     fun getContent(attachmentId: UUID): AttachmentContent {
         val attachment = findAttachment(attachmentId)
 
-        val content = attachmentContentService.findHankeContent(attachment)
+        val content = attachmentContentService.find(attachment)
         return AttachmentContent(attachment.fileName, attachment.contentType, content)
     }
 
@@ -69,7 +69,7 @@ class HankeAttachmentService(
                 hanke = hanke,
             )
         val savedAttachment = attachmentRepository.save(entity)
-        attachmentContentService.saveHankeContent(savedAttachment.id!!, attachment.bytes)
+        attachmentContentService.save(savedAttachment.id!!, attachment.bytes)
 
         return savedAttachment.toMetadata().also {
             logger.info { "Added attachment ${it.id} to hanke $hankeTunnus" }

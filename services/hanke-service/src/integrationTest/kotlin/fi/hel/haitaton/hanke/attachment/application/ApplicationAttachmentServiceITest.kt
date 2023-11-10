@@ -199,7 +199,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(attachmentInDb.applicationId).isEqualTo(application.id)
         assertThat(attachmentInDb.attachmentType).isEqualTo(typeInput)
 
-        val content = attachmentContentService.findApplicationContent(result.id)
+        val content = attachmentContentService.find(result.id)
         assertThat(content).isEqualTo(DEFAULT_DATA)
 
         verify { cableReportService wasNot Called }
