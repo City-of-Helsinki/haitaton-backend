@@ -14,7 +14,6 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.common.AttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
@@ -37,7 +36,7 @@ class ApplicationAttachmentService(
     private val cableReportService: CableReportService,
     private val applicationRepository: ApplicationRepository,
     private val attachmentRepository: ApplicationAttachmentRepository,
-    private val attachmentContentService: AttachmentContentService,
+    private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) {
     @Transactional(readOnly = true)

@@ -1,6 +1,12 @@
-package fi.hel.haitaton.hanke.attachment.common
+package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.DownloadNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.FileClient
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentEntity
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
@@ -9,27 +15,10 @@ import org.springframework.stereotype.Service
 private val logger = KotlinLogging.logger {}
 
 @Service
-class AttachmentContentService(
-    private val applicationAttachmentContentRepository: ApplicationAttachmentContentRepository,
+class HankeAttachmentContentService(
     private val hankeAttachmentContentRepository: HankeAttachmentContentRepository,
     private val fileClient: FileClient,
 ) {
-
-    fun saveApplicationContent(attachmentId: UUID, content: ByteArray) {
-        applicationAttachmentContentRepository.save(
-            ApplicationAttachmentContentEntity(attachmentId, content)
-        )
-    }
-
-    fun findApplicationContent(attachmentId: UUID): ByteArray =
-        applicationAttachmentContentRepository
-            .findById(attachmentId)
-            .map { it.content }
-            .orElseThrow {
-                logger.error { "Content not found for application attachment $attachmentId" }
-                AttachmentNotFoundException(attachmentId)
-            }
-
     fun saveHankeContent(attachmentId: UUID, content: ByteArray) {
         hankeAttachmentContentRepository.save(HankeAttachmentContentEntity(attachmentId, content))
     }
