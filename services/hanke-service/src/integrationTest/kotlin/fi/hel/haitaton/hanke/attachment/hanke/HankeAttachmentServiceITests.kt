@@ -1,13 +1,17 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
+import assertk.all
+import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.each
 import assertk.assertions.endsWith
+import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isPresent
+import assertk.assertions.messageContains
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeNotFoundException
@@ -16,6 +20,7 @@ import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
@@ -26,6 +31,7 @@ import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import java.util.UUID
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -88,6 +94,19 @@ class HankeAttachmentServiceITests : DatabaseTest(), HankeAttachmentFactory {
 
     @Nested
     inner class GetContent {
+
+        @Test
+        fun `throws exception if attachment not found`() {
+            val attachmentId = UUID.fromString("93b5c49d-918a-453d-a2bf-b918b47923c1")
+
+            val failure = assertFailure { hankeAttachmentService.getContent(attachmentId) }
+
+            failure.all {
+                hasClass(AttachmentNotFoundException::class)
+                messageContains(attachmentId.toString())
+            }
+        }
+
         @Nested
         inner class FromDb {
             @Test
@@ -240,5 +259,17 @@ class HankeAttachmentServiceITests : DatabaseTest(), HankeAttachmentFactory {
 
         val remainingAttachment = hankeAttachmentRepository.findById(attachmentId)
         assertThat(remainingAttachment).isEmpty()
+    }
+
+    @Test
+    fun `deleteAttachment throws exception when attachment is missing`() {
+        val attachmentId = UUID.fromString("ab7993b7-a775-4eac-b5b7-8546332944fe")
+
+        val failure = assertFailure { hankeAttachmentService.deleteAttachment(attachmentId) }
+
+        failure.all {
+            hasClass(AttachmentNotFoundException::class)
+            messageContains(attachmentId.toString())
+        }
     }
 }
