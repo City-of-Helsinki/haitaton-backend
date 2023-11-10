@@ -13,10 +13,8 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import org.testcontainers.junit.jupiter.Testcontainers
 
-@Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
 
@@ -26,9 +24,8 @@ internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
 
     private fun createHankeGeometria(): Set<Int> {
         val geometriat =
-            "/fi/hel/haitaton/hanke/tormaystarkastelu/hankeGeometriat.json".asJsonResource(
-                Geometriat::class.java
-            )
+            "/fi/hel/haitaton/hanke/tormaystarkastelu/hankeGeometriat.json"
+                .asJsonResource(Geometriat::class.java)
         return setOf(geometriatDao.createGeometriat(geometriat).id!!)
     }
 

@@ -86,7 +86,6 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
-import org.testcontainers.junit.jupiter.Testcontainers
 
 private const val NAME_1 = "etu1 suku1"
 private const val NAME_2 = "etu2 suku2"
@@ -95,8 +94,7 @@ private const val NAME_4 = "etu4 suku4"
 private const val NAME_SOMETHING = "Som Et Hing"
 private const val USER_NAME = "test7358"
 
-@Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USER_NAME)
 class HankeServiceITests : DatabaseTest() {

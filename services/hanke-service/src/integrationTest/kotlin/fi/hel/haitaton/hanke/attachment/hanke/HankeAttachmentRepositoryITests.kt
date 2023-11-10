@@ -21,14 +21,12 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.test.context.ActiveProfiles
-import org.testcontainers.junit.jupiter.Testcontainers
 
 /** Consists of [HankeEntity.id] and a UUID. */
 private const val BLOB_LOCATION = "1/bcae2ff2-74e9-48d2-a8ed-e33a40652304"
 
-@Testcontainers
 @ActiveProfiles("test")
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 class HankeAttachmentRepositoryITests : DatabaseTest() {
 
     @Autowired private lateinit var hankeFactory: HankeFactory

@@ -16,15 +16,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
-import org.testcontainers.junit.jupiter.Testcontainers
 
 private const val USERNAME = "testUser"
 
-@Testcontainers
-@SpringBootTest(
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-    properties = ["haitaton.testdata.enabled=true"],
-)
+@SpringBootTest(properties = ["haitaton.testdata.enabled=true"])
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class TestDataServiceITest : DatabaseTest() {
