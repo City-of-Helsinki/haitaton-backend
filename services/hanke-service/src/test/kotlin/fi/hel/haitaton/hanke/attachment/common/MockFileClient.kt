@@ -45,8 +45,7 @@ class MockFileClient : FileClient {
     override fun delete(container: Container, path: String): Boolean =
         fileMap[container]!!.remove(path) != null
 
-    internal fun listBlobs(container: Container): List<TestFile> =
-        fileMap[container]!!.values.toList()
+    fun listBlobs(container: Container): List<TestFile> = fileMap[container]!!.values.toList()
 }
 
 data class TestFile(
