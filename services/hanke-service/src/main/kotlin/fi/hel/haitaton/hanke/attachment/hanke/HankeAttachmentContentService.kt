@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.DownloadNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.FileClient
@@ -21,6 +22,10 @@ class HankeAttachmentContentService(
 ) {
     fun save(attachmentId: UUID, content: ByteArray) {
         hankeAttachmentContentRepository.save(HankeAttachmentContentEntity(attachmentId, content))
+    }
+
+    fun delete(attachment: HankeAttachmentEntity) {
+        attachment.blobLocation?.let { fileClient.delete(HANKE_LIITTEET, it) }
     }
 
     fun find(attachment: HankeAttachmentEntity): ByteArray =

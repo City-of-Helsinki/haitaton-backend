@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import java.util.UUID
+import mu.KotlinLogging
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -20,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
+
+private val logger = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/hankkeet/{hankeTunnus}/liitteet")
@@ -118,6 +121,7 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
             "@hankeAttachmentAuthorizer.authorizeAttachment(#hankeTunnus,#attachmentId,'EDIT')"
     )
     fun deleteAttachment(@PathVariable hankeTunnus: String, @PathVariable attachmentId: UUID) {
-        return hankeAttachmentService.deleteAttachment(attachmentId)
+        hankeAttachmentService.deleteAttachment(attachmentId)
+        logger.info { "Deleted hanke attachment $attachmentId" }
     }
 }
