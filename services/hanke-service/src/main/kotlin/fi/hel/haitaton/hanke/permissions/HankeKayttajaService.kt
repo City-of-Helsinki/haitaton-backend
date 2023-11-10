@@ -6,7 +6,7 @@ import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.Perustaja
+import fi.hel.haitaton.hanke.domain.HankeFounder
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.HankeInvitationData
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
@@ -110,19 +110,19 @@ class HankeKayttajaService(
     }
 
     @Transactional
-    fun addHankeFounder(hankeId: Int, perustaja: Perustaja?, currentUser: String) {
+    fun addHankeFounder(hankeId: Int, hankeFounder: HankeFounder?, currentUser: String) {
         val permissionEntity =
             permissionService.create(hankeId, currentUser, Kayttooikeustaso.KAIKKI_OIKEUDET)
 
         if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
             return
         }
-        perustaja?.let {
-            logger.info { "Saving user for Hanke perustaja." }
+        hankeFounder?.let {
+            logger.info { "Saving user for Hanke founder." }
             createUser(
                 currentUser,
                 hankeId = hankeId,
-                nimi = it.nimi!!,
+                nimi = it.name,
                 sahkoposti = it.email,
                 permission = permissionEntity,
             )

@@ -205,7 +205,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Nested
     inner class AddHankeFounder {
-        private val perustaja = HankeFactory.defaultPerustaja
+        private val founder = HankeFactory.defaultHankeFounder
 
         @Test
         fun `Saves kayttaja with correct permission and other data`() {
@@ -213,7 +213,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val savedHankeId = hankeEntity.id
             assertThat(hankeKayttajaRepository.findAll()).isEmpty()
 
-            hankeKayttajaService.addHankeFounder(savedHankeId, perustaja, USERNAME)
+            hankeKayttajaService.addHankeFounder(savedHankeId, founder, USERNAME)
 
             val kayttajaEntity =
                 hankeKayttajaRepository.findAll().also { assertThat(it).hasSize(1) }.first()
@@ -226,8 +226,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                     prop(PermissionEntity::hankeId).isEqualTo(savedHankeId)
                     prop(PermissionEntity::userId).isEqualTo(USERNAME)
                 }
-                assertThat(sahkoposti).isEqualTo(perustaja.email)
-                assertThat(nimi).isEqualTo(perustaja.nimi)
+                assertThat(sahkoposti).isEqualTo(founder.email)
+                assertThat(nimi).isEqualTo(founder.name)
             }
         }
 
@@ -237,7 +237,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val savedHankeId = hankeEntity.id
             auditLogRepository.deleteAll()
 
-            hankeKayttajaService.addHankeFounder(savedHankeId, perustaja, USERNAME)
+            hankeKayttajaService.addHankeFounder(savedHankeId, founder, USERNAME)
 
             val (kayttajaEntries, tunnisteEntries) =
                 auditLogRepository
@@ -256,8 +256,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                         prop(HankeKayttaja::hankeId).isEqualTo(savedHankeId)
                         prop(HankeKayttaja::kayttajaTunnisteId).isNull()
                         prop(HankeKayttaja::permissionId).isNotNull()
-                        prop(HankeKayttaja::nimi).isEqualTo(perustaja.nimi)
-                        prop(HankeKayttaja::sahkoposti).isEqualTo(perustaja.email)
+                        prop(HankeKayttaja::nimi).isEqualTo(founder.name)
+                        prop(HankeKayttaja::sahkoposti).isEqualTo(founder.email)
                     }
                 }
             }

@@ -30,6 +30,7 @@ import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withArea
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -39,15 +40,19 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedRakennu
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
 import fi.hel.haitaton.hanke.factory.HankealueFactory
+import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.logging.AuditLogEntryEntity
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaRepository
 import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.permissions.PermissionEntity
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.test.Asserts.hasSingleGeometryWithCoordinates
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
@@ -256,13 +261,11 @@ class HankeServiceITests : DatabaseTest() {
     }
 
     @Test
-    fun `create Hanke with without perustaja and contacts does not create hanke users`() {
+    fun `create Hanke with without founder and contacts does not create hanke users`() {
         val request = HankeFactory.createRequest().build()
 
-        val hanke = hankeService.createHanke(request)
+        hankeService.createHanke(request)
 
-        val hankeEntity = hankeRepository.findByHankeTunnus(hanke.hankeTunnus)!!
-        assertThat(hankeEntity.perustaja).isNull()
         assertThat(hankeKayttajaRepository.findAll()).isEmpty()
         assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
     }
@@ -373,6 +376,20 @@ class HankeServiceITests : DatabaseTest() {
         val exception = assertThrows<HankeArgumentException> { hankeService.updateHanke(hanke) }
 
         assertThat(exception).hasMessage("A public hanke didn't have all mandatory fields filled.")
+    }
+
+    @Test
+    fun `updateHanke with yhteystieto with wrong id should throw`() {
+        val request = hankeFactory.createRequest().withYhteystiedot().withHankealue().build()
+        val hanke = hankeService.createHanke(request)
+        val rubbishId = hanke.extractYhteystiedot().mapNotNull { it.id }.max() + 1
+        hanke.omistajat[0].id = rubbishId
+
+        val exception =
+            assertThrows<HankeYhteystietoNotFoundException> { hankeService.updateHanke(hanke) }
+
+        assertThat(exception)
+            .hasMessage("HankeYhteystiedot $rubbishId not found for Hanke ${hanke.id}")
     }
 
     @Test
@@ -910,8 +927,26 @@ class HankeServiceITests : DatabaseTest() {
             assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
             assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
             assertThat(hanke.nimi).isEqualTo(application.applicationData.name)
-            assertThat(hanke.perustaja?.nimi).isEqualTo("Teppo Testihenkilö")
-            assertThat(hanke.perustaja?.email).isEqualTo("teppo@example.test")
+        }
+
+        @Test
+        fun `generates hankekayttaja for founder based on application`() {
+            val inputApplication = AlluDataFactory.cableReportWithoutHanke()
+
+            val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
+
+            val hanke = hankeRepository.findByHankeTunnus(application.hankeTunnus)!!
+            val users = hankeKayttajaRepository.findByHankeId(hanke.id)
+            assertk.assertThat(users.first()).all {
+                prop(HankeKayttajaEntity::id).isNotNull()
+                prop(HankeKayttajaEntity::sahkoposti).isEqualTo(AlluDataFactory.teppoEmail)
+                prop(HankeKayttajaEntity::nimi).isEqualTo(TEPPO_TESTI)
+                prop(HankeKayttajaEntity::permission).isNotNull().all {
+                    prop(PermissionEntity::kayttooikeustaso)
+                        .isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
+                }
+                prop(HankeKayttajaEntity::kayttajaTunniste).isNull() // no token for creator
+            }
         }
 
         @Test
@@ -932,8 +967,6 @@ class HankeServiceITests : DatabaseTest() {
             assertThat(hanke.generated).isTrue
             assertThat(hanke.status).isEqualTo(HankeStatus.DRAFT)
             assertThat(hanke.hankeTunnus).isEqualTo(application.hankeTunnus)
-            assertThat(hanke.perustaja?.nimi).isEqualTo("Teppo Testihenkilö")
-            assertThat(hanke.perustaja?.email).isEqualTo("teppo@example.test")
         }
 
         @Test
@@ -971,6 +1004,23 @@ class HankeServiceITests : DatabaseTest() {
             }
 
             assertThat(hankeRepository.findAll()).isEmpty()
+        }
+
+        @Test
+        fun `should throw if no founder can be deduced from application`() {
+            val data =
+                AlluDataFactory.createCableReportApplicationData(
+                    customerWithContacts =
+                        AlluDataFactory.createCompanyCustomer().withContacts() // no orderer
+                )
+            val application = AlluDataFactory.cableReportWithoutHanke(applicationData = data)
+
+            val exception =
+                assertThrows<HankeArgumentException> {
+                    hankeService.generateHankeWithApplication(application, USER_NAME)
+                }
+
+            assertThat(exception).hasMessage("Orderer not found.")
         }
     }
 
@@ -1448,7 +1498,7 @@ class HankeServiceITests : DatabaseTest() {
     @Test
     fun `update hanke enforces generated to be false`() {
         val hanke = hankeFactory.save()
-        assertThat(hanke.generated).isFalse()
+        assertThat(hanke.generated).isFalse
 
         val result = hankeService.updateHanke(hanke.copy(generated = true))
 

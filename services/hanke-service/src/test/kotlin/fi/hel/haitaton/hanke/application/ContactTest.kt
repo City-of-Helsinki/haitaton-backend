@@ -99,8 +99,8 @@ class ContactTest {
 
     @ParameterizedTest
     @MethodSource("invalidContacts")
-    fun `toHankePerustaja when invalid contact input should throw`(contact: Contact) {
-        assertThrows<HankeArgumentException> { contact.toHankePerustaja() }
+    fun `toHankeFounder when invalid contact input should throw`(contact: Contact) {
+        assertThrows<HankeArgumentException> { contact.toHankeFounder() }
     }
 
     companion object {
