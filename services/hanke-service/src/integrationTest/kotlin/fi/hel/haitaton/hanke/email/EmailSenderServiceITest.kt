@@ -17,15 +17,13 @@ import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import org.testcontainers.junit.jupiter.Testcontainers
 
 private const val TEST_EMAIL = "test@test.test"
 private const val HAITATON_NO_REPLY = "no-reply@hel.fi"
 private const val APPLICATION_IDENTIFIER = "JS2300001"
 private const val INVITER_NAME = "Matti Meikäläinen"
 
-@Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 class EmailSenderServiceITest : DatabaseTest() {
 

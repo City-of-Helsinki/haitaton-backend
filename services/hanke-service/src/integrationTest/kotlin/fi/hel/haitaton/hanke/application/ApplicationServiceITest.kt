@@ -121,15 +121,13 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
-import org.testcontainers.junit.jupiter.Testcontainers
 
 private const val USERNAME = "test7358"
 private const val HANKE_TUNNUS = "HAI23-5"
 
 private val dataWithoutAreas = createCableReportApplicationData(areas = listOf())
 
-@Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class ApplicationServiceITest : DatabaseTest() {
