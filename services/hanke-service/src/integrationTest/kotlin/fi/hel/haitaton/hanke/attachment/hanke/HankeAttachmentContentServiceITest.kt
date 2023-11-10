@@ -53,7 +53,7 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
             val attachmentEntity =
                 HankeAttachmentFactory.createEntity(attachmentId, blobLocation = path)
 
-            val result = attachmentContentService.findHankeContent(attachmentEntity)
+            val result = attachmentContentService.find(attachmentEntity)
 
             assertThat(result).isEqualTo(bytes)
         }
@@ -63,7 +63,7 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
             val attachmentEntity = saveAttachment(blobLocation = null)
             saveContentToDb(attachmentEntity.id!!, bytes)
 
-            val result = attachmentContentService.findHankeContent(attachmentEntity)
+            val result = attachmentContentService.find(attachmentEntity)
 
             assertThat(result).isEqualTo(bytes)
         }
@@ -76,16 +76,14 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
         fun `returns the right content`() {
             saveContentToCloud(path, bytes = bytes)
 
-            val result = attachmentContentService.readHankeAttachmentFromFile(path, attachmentId)
+            val result = attachmentContentService.readFromFile(path, attachmentId)
 
             assertThat(result).isEqualTo(bytes)
         }
 
         @Test
         fun `throws AttachmentNotFoundException if attachment not found`() {
-            assertFailure {
-                    attachmentContentService.readHankeAttachmentFromFile(path, attachmentId)
-                }
+            assertFailure { attachmentContentService.readFromFile(path, attachmentId) }
                 .all {
                     hasClass(AttachmentNotFoundException::class)
                     hasMessage("Attachment not found, id=$attachmentId")
@@ -100,14 +98,14 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
             val attachmentId = saveAttachment().id!!
             saveContentToDb(attachmentId, bytes)
 
-            val result = attachmentContentService.readHankeAttachmentFromDatabase(attachmentId)
+            val result = attachmentContentService.readFromDatabase(attachmentId)
 
             assertThat(result).isEqualTo(bytes)
         }
 
         @Test
         fun `throws AttachmentNotFoundException if attachment not found`() {
-            assertFailure { attachmentContentService.readHankeAttachmentFromDatabase(attachmentId) }
+            assertFailure { attachmentContentService.readFromDatabase(attachmentId) }
                 .all {
                     hasClass(AttachmentNotFoundException::class)
                     hasMessage("Attachment not found, id=$attachmentId")

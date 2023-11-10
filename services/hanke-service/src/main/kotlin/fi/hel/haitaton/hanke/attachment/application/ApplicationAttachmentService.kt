@@ -46,7 +46,7 @@ class ApplicationAttachmentService(
     @Transactional(readOnly = true)
     fun getContent(applicationId: Long, attachmentId: UUID): AttachmentContent {
         val attachment = findAttachment(applicationId, attachmentId)
-        val content = attachmentContentService.findApplicationContent(attachmentId)
+        val content = attachmentContentService.find(attachmentId)
         with(attachment) {
             return AttachmentContent(fileName, contentType, content)
         }
@@ -88,7 +88,7 @@ class ApplicationAttachmentService(
             )
 
         val newAttachment = attachmentRepository.save(entity)
-        attachmentContentService.saveApplicationContent(newAttachment.id!!, attachment.bytes)
+        attachmentContentService.save(newAttachment.id!!, attachment.bytes)
 
         application.alluid?.let {
             cableReportService.addAttachment(it, newAttachment.toAlluAttachment(attachment.bytes))
@@ -123,9 +123,7 @@ class ApplicationAttachmentService(
             return
         }
 
-        cableReportService.addAttachments(alluId, attachments) {
-            attachmentContentService.findApplicationContent(it)
-        }
+        cableReportService.addAttachments(alluId, attachments) { attachmentContentService.find(it) }
     }
 
     private fun findAttachment(

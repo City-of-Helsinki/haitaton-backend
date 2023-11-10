@@ -28,7 +28,7 @@ class AttachmentFactory(
             applicationAttachmentRepository.save(
                 applicationAttachmentEntity(applicationId = applicationId)
             )
-        attachmentContentService.saveApplicationContent(attachment.id!!, dummyData)
+        attachmentContentService.save(attachment.id!!, dummyData)
         return attachment
     }
 
