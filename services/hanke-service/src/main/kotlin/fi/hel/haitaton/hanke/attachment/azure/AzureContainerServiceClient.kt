@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.azure
 
+import com.azure.identity.DefaultAzureCredentialBuilder
 import com.azure.storage.blob.BlobServiceClient
 import com.azure.storage.blob.BlobServiceClientBuilder
 import kotlin.reflect.full.memberProperties
@@ -15,13 +16,23 @@ private val logger = KotlinLogging.logger {}
 @Configuration
 @Profile("!test")
 class AzureContainerServiceClient(
-    @Value("\${haitaton.azure.blob.connection-string}") private val connectionString: String,
+    @Value("\${haitaton.azure.blob.connection-string}") private val connectionString: String?,
+    @Value("\${haitaton.azure.blob.endpoint}") private val endpoint: String,
 ) {
     @Bean
     fun blobServiceClient(): BlobServiceClient {
         logger.info { "Creating BlobServiceClient" }
         logger.info { "Connection string is $connectionString" }
-        return BlobServiceClientBuilder().connectionString(connectionString).buildClient()
+        return if (connectionString != null) {
+            logger.info { "Connecting using a connection string (local development)" }
+            BlobServiceClientBuilder().connectionString(connectionString).buildClient()
+        } else {
+            logger.info { "Connecting using a default credential provider (cloud environments)" }
+            BlobServiceClientBuilder()
+                .endpoint(endpoint)
+                .credential(DefaultAzureCredentialBuilder().build())
+                .buildClient()
+        }
     }
 }
 

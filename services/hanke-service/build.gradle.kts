@@ -117,6 +117,7 @@ dependencies {
     // Azure
     implementation(platform("com.azure:azure-sdk-bom:1.2.18"))
     implementation("com.azure:azure-storage-blob")
+    implementation("com.azure:azure-identity")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 }
