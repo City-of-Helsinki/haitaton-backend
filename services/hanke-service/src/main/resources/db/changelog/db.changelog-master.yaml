@@ -139,3 +139,5 @@ databaseChangeLog:
       file: db/changelog/changesets/054-add-hanke-attachment-blob-location.yml
   - include:
       file: db/changelog/changesets/055-make-nimi-mandatory-in-hankealue.yml
+  - include:
+      file: db/changelog/changesets/056-remove-perustaja-from-hanke.yml

@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeFounder
 
 interface HankeService {
 
@@ -13,7 +14,11 @@ interface HankeService {
 
     fun getHankeApplications(hankeTunnus: String): List<Application>
 
-    fun createHanke(request: CreateHankeRequest): Hanke
+    fun createHanke(
+        request: CreateHankeRequest,
+        founder: HankeFounder? = null,
+        generated: Boolean = false,
+    ): Hanke
 
     fun generateHankeWithApplication(
         cableReport: CableReportWithoutHanke,
