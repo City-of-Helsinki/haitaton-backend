@@ -24,16 +24,34 @@ private val logger = KotlinLogging.logger {}
 class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Containers) : FileClient {
 
     @EventListener(ApplicationReadyEvent::class)
-    fun startup() {
-        logger.info { "Getting a list of blobs in hanke attachments..." }
-        val blobs = hankeAttachmentClient.listBlobs().toList()
-        logger.info { "Found ${blobs.size} blobs:" }
-        blobs.forEachIndexed { i, blob ->
-            logger.info {
-                "${i+1} ${blob.name}, ${blob.properties.contentLength},${blob.properties.contentType}, ${blob.properties.contentDisposition}"
-            }
-        }
-        logger.info { "End of blob list." }
+    fun atStart() {
+        val i = 4
+        val testPath = "fake/test$i.txt"
+        val originalFilename = "test$i.txt"
+        val contentType = MediaType.TEXT_PLAIN
+        val content = "This is test file #$i".toByteArray()
+
+        logger.info("<AtStart> Trying to delete a file.")
+        val deleteResult1 = delete(Container.HANKE_LIITTEET, testPath)
+        logger.info("<AtStart> deleteResult $deleteResult1")
+
+        logger.info("<AtStart> Uploading a file.")
+        val options = BlobParallelUploadOptions(BinaryData.fromBytes(content))
+        options.headers = BlobHttpHeaders()
+        options.headers.setContentType(contentType.toString())
+        options.headers.setContentDisposition("attachment; filename=$originalFilename")
+        upload(Container.HANKE_LIITTEET, testPath, originalFilename, contentType, content)
+
+        logger.info("<AtStart> Downloading a file.")
+        val downloaded = download(Container.HANKE_LIITTEET, testPath)
+        logger.info(
+            "<AtStart> ${downloaded.content.toStream().readAllBytes().toString(Charsets.UTF_8)}"
+        )
+        logger.info("<AtStart> Downloaded: $downloaded")
+
+        logger.info("<AtStart> Trying to delete a file.")
+        val deleteResult = delete(Container.HANKE_LIITTEET, testPath)
+        logger.info("<AtStart> deleteResult $deleteResult")
     }
 
     private val decisionClient = blobServiceClient.getBlobContainerClient(containers.decisions)
