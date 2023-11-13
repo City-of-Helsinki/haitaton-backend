@@ -941,10 +941,10 @@ class HankeServiceITests : DatabaseTest() {
                 prop(HankeKayttajaEntity::id).isNotNull()
                 prop(HankeKayttajaEntity::sahkoposti).isEqualTo(AlluDataFactory.teppoEmail)
                 prop(HankeKayttajaEntity::nimi).isEqualTo(TEPPO_TESTI)
-                prop(HankeKayttajaEntity::permission).isNotNull().all {
-                    prop(PermissionEntity::kayttooikeustaso)
-                        .isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
-                }
+                prop(HankeKayttajaEntity::permission)
+                    .isNotNull()
+                    .prop(PermissionEntity::kayttooikeustaso)
+                    .isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
                 prop(HankeKayttajaEntity::kayttajaTunniste).isNull() // no token for creator
             }
         }
