@@ -41,7 +41,7 @@ class BlobFileClientITest : FileClientTest() {
         azuriteContainer.start()
         val connectionString =
             "BlobEndpoint=http://${azuriteContainer.host}:${azuriteContainer.firstMappedPort}/devstoreaccount1;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;"
-        serviceClient = AzureContainerServiceClient(connectionString).blobServiceClient()
+        serviceClient = AzureContainerServiceClient(connectionString, "").blobServiceClient()
         hankeAttachmentClient = serviceClient.getBlobContainerClient(containers.hankeAttachments)
 
         fileClient = BlobFileClient(serviceClient, containers)
