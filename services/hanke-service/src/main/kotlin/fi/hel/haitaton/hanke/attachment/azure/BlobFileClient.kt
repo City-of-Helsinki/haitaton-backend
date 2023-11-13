@@ -11,7 +11,9 @@ import fi.hel.haitaton.hanke.attachment.common.DownloadNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.DownloadResponse
 import fi.hel.haitaton.hanke.attachment.common.FileClient
 import mu.KotlinLogging
+import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.annotation.Profile
+import org.springframework.context.event.EventListener
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 
@@ -20,6 +22,19 @@ private val logger = KotlinLogging.logger {}
 @Component
 @Profile("!test")
 class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Containers) : FileClient {
+
+    @EventListener(ApplicationReadyEvent::class)
+    fun startup() {
+        logger.info { "Getting a list of blobs in hanke attachments..." }
+        val blobs = hankeAttachmentClient.listBlobs().toList()
+        logger.info { "Found ${blobs.size} blobs:" }
+        blobs.forEachIndexed { i, blob ->
+            logger.info {
+                "${i+1} ${blob.name}, ${blob.properties.contentLength},${blob.properties.contentType}, ${blob.properties.contentDisposition}"
+            }
+        }
+        logger.info { "End of blob list." }
+    }
 
     private val decisionClient = blobServiceClient.getBlobContainerClient(containers.decisions)
 
