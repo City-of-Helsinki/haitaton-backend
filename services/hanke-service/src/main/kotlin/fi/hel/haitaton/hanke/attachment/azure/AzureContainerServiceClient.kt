@@ -23,6 +23,7 @@ class AzureContainerServiceClient(
     fun blobServiceClient(): BlobServiceClient {
         logger.info { "Creating BlobServiceClient" }
         logger.info { "Connection string is $connectionString" }
+        logger.info { "Endpoint is $connectionString" }
         return if (connectionString != null) {
             logger.info { "Connecting using a connection string (local development)" }
             BlobServiceClientBuilder().connectionString(connectionString).buildClient()

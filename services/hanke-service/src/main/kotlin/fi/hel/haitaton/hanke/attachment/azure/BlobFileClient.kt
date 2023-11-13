@@ -25,11 +25,11 @@ class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Container
 
     @EventListener(ApplicationReadyEvent::class)
     fun atStart() {
-        val i = 4
-        val testPath = "fake/test$i.txt"
-        val originalFilename = "test$i.txt"
+        val id = 4
+        val testPath = "fake/test$id.txt"
+        val originalFilename = "test$id.txt"
         val contentType = MediaType.TEXT_PLAIN
-        val content = "This is test file #$i".toByteArray()
+        val content = "This is test file #$id".toByteArray()
 
         logger.info("<AtStart> Trying to delete a file.")
         val deleteResult1 = delete(Container.HANKE_LIITTEET, testPath)
@@ -52,15 +52,32 @@ class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Container
         logger.info("<AtStart> Trying to delete a file.")
         val deleteResult = delete(Container.HANKE_LIITTEET, testPath)
         logger.info("<AtStart> deleteResult $deleteResult")
+
+        logger.info { "<AtStart> Getting a list of blobs in hanke attachments..." }
+        val blobs = hankeAttachmentClient.listBlobs().toList()
+        logger.info { "<AtStart> Found ${blobs.size} blobs:" }
+        blobs.forEachIndexed { i, blob ->
+            logger.info {
+                "<AtStart> ${i+1} ${blob.name}, ${blob.properties.contentLength},${blob.properties.contentType}, ${blob.properties.contentDisposition}"
+            }
+        }
+        logger.info { "<AtStart> End of blob list." }
     }
 
-    private val decisionClient = blobServiceClient.getBlobContainerClient(containers.decisions)
+    private val decisionClient =
+        blobServiceClient.getBlobContainerClient(containers.decisions).also {
+            logger.info("<AtStart> decisions container: ${containers.decisions}")
+        }
 
     private val hakemusAttachmentClient =
-        blobServiceClient.getBlobContainerClient(containers.hakemusAttachments)
+        blobServiceClient.getBlobContainerClient(containers.hakemusAttachments).also {
+            logger.info("<AtStart> hakemusAttachments container: ${containers.hakemusAttachments}")
+        }
 
     private val hankeAttachmentClient =
-        blobServiceClient.getBlobContainerClient(containers.hankeAttachments)
+        blobServiceClient.getBlobContainerClient(containers.hankeAttachments).also {
+            logger.info("<AtStart> hankeAttachments container: ${containers.hankeAttachments}")
+        }
 
     override fun upload(
         container: Container,
