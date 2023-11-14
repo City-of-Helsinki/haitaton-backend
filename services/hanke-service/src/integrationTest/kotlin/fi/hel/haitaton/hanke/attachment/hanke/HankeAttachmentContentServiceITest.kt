@@ -46,7 +46,7 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
     private val bytes = "Test content. Sisältää myös skandeja.".toByteArray()
 
     @Nested
-    inner class FindHankeContent {
+    inner class Find {
         @Test
         fun `returns the content when blobLocation is specified`() {
             saveContentToCloud(path, bytes = bytes)
@@ -70,7 +70,7 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
     }
 
     @Nested
-    inner class ReadHankeAttachmentFromFile {
+    inner class ReadFromFile {
 
         @Test
         fun `returns the right content`() {
@@ -92,7 +92,7 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
     }
 
     @Nested
-    inner class ReadHankeAttachmentFromDatabase {
+    inner class ReadFromDatabase {
         @Test
         fun `returns the right content`() {
             val attachmentId = saveAttachment().id!!
