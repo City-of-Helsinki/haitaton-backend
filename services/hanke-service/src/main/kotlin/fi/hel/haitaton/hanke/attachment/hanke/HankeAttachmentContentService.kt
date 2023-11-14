@@ -10,7 +10,9 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
 
@@ -23,8 +25,30 @@ class HankeAttachmentContentService(
         hankeAttachmentContentRepository.save(HankeAttachmentContentEntity(attachmentId, content))
     }
 
+    /** Move the attachment content to cloud. In test-data use for now, can be used for HAI-1964. */
+    @Transactional
+    fun moveToCloud(attachment: HankeAttachmentEntity): String {
+        val path = cloudName(attachment.hanke.id, attachment.id!!)
+        val content =
+            hankeAttachmentContentRepository.findByIdOrNull(attachment.id!!)
+                ?: run {
+                    logger.error { "Content not found for hanke attachment ${attachment.id}" }
+                    throw AttachmentNotFoundException(attachment.id!!)
+                }
+        fileClient.upload(
+            Container.HANKE_LIITTEET,
+            path,
+            attachment.fileName,
+            MediaType.parseMediaType(attachment.contentType),
+            content.content,
+        )
+        hankeAttachmentContentRepository.delete(content)
+        attachment.blobLocation = path
+        return path
+    }
+
     fun delete(attachment: HankeAttachmentEntity) {
-        logger.info { "Deleting attachment content from attachment ${attachment.id}..." }
+        logger.info { "Deleting attachment content from hanke attachment ${attachment.id}..." }
         attachment.blobLocation?.let { fileClient.delete(Container.HANKE_LIITTEET, it) }
     }
 
@@ -45,4 +69,6 @@ class HankeAttachmentContentService(
                 logger.error { "Content not found for hanke attachment $attachmentId" }
                 throw AttachmentNotFoundException(attachmentId)
             }
+
+    private fun cloudName(hankeId: Int, attachmentId: UUID) = "${hankeId}/${attachmentId}"
 }

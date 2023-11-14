@@ -76,9 +76,17 @@ class HankeAttachmentService(
         }
     }
 
+    /** Move the attachment content to cloud. In test-data use for now, can be used for HAI-1964. */
+    @Transactional
+    fun moveToCloud(attachmentId: UUID): String {
+        logger.info { "Moving attachment content to cloud for hanke attachment $attachmentId" }
+        val attachment = findAttachment(attachmentId)
+        return attachmentContentService.moveToCloud(attachment)
+    }
+
     @Transactional
     fun deleteAttachment(attachmentId: UUID) {
-        logger.info { "Deleting attachment $attachmentId..." }
+        logger.info { "Deleting hanke attachment $attachmentId..." }
         val attachmentToDelete = findAttachment(attachmentId)
         attachmentContentService.delete(attachmentToDelete)
         attachmentToDelete.hanke.liitteet.remove(attachmentToDelete)
