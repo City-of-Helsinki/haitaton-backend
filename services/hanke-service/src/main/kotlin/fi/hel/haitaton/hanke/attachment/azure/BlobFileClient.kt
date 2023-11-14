@@ -10,21 +10,31 @@ import com.azure.storage.blob.options.BlobParallelUploadOptions
 import fi.hel.haitaton.hanke.attachment.common.DownloadNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.DownloadResponse
 import fi.hel.haitaton.hanke.attachment.common.FileClient
+import mu.KotlinLogging
 import org.springframework.context.annotation.Profile
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
+
+private val logger = KotlinLogging.logger {}
 
 @Component
 @Profile("!test")
 class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Containers) : FileClient {
 
-    private val decisionClient = blobServiceClient.getBlobContainerClient(containers.decisions)
+    private val decisionClient =
+        blobServiceClient.getBlobContainerClient(containers.decisions).also {
+            logger.info("Blob container for decisions: ${containers.decisions}")
+        }
 
     private val hakemusAttachmentClient =
-        blobServiceClient.getBlobContainerClient(containers.hakemusAttachments)
+        blobServiceClient.getBlobContainerClient(containers.hakemusAttachments).also {
+            logger.info("Blob container for hakemusAttachments: ${containers.hakemusAttachments}")
+        }
 
     private val hankeAttachmentClient =
-        blobServiceClient.getBlobContainerClient(containers.hankeAttachments)
+        blobServiceClient.getBlobContainerClient(containers.hankeAttachments).also {
+            logger.info("Blob container for hankeAttachments: ${containers.hankeAttachments}")
+        }
 
     override fun upload(
         container: Container,
@@ -57,6 +67,7 @@ class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Container
             )
         } catch (e: BlobStorageException) {
             if (e.errorCode == BlobErrorCode.BLOB_NOT_FOUND) {
+                logger.error { "Blob not found, container=$container path=$path" }
                 throw DownloadNotFoundException(path, container)
             } else {
                 throw e

@@ -71,6 +71,15 @@ $ az storage container list --connection-string "DefaultEndpointsProtocol=http;A
 Azurite is configured to produce debug logging in `azurite-debug.log`.
 Azurite uses Docker top-level volume for data (see https://docs.docker.com/compose/compose-file/07-volumes/).
 
+Connecting to Azurite for hanke-service is handled with connection strings. For `./gradlew bootRun`,
+the connection string is set in build.gradle.kts. The special development storage string can be used
+there. For the Docker Compose environment, the connection string is set in docker-compose.yml. It's
+slightly more involved, since it needs a customized endpoint to connect inside the Docker network.
+
+Connection strings are not set in the cloud environments. In cloud environments, the connection is
+authenticated by the default authenticator, which reads environment variables AZURE_CLIENT_ID,
+AZURE_CLIENT_SECRET and AZURE_TENANT_ID to build an authenticator.
+
 ### Swagger UI
 
 Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON). You
