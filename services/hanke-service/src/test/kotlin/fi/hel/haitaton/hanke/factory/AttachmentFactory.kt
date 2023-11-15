@@ -1,12 +1,12 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
-import fi.hel.haitaton.hanke.attachment.common.AttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import fi.hel.haitaton.hanke.currentUserId
@@ -21,14 +21,14 @@ private val defaultAttachmentId = UUID.fromString("5cba3a76-28ad-42aa-b7e6-b5c17
 @Component
 class AttachmentFactory(
     private val applicationAttachmentRepository: ApplicationAttachmentRepository,
-    private val attachmentContentService: AttachmentContentService,
+    private val attachmentContentService: ApplicationAttachmentContentService,
 ) {
     fun saveAttachment(applicationId: Long): ApplicationAttachmentEntity {
         val attachment =
             applicationAttachmentRepository.save(
                 applicationAttachmentEntity(applicationId = applicationId)
             )
-        attachmentContentService.saveApplicationContent(attachment.id!!, dummyData)
+        attachmentContentService.save(attachment.id!!, dummyData)
         return attachment
     }
 
