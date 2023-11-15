@@ -39,7 +39,7 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
                 ),
             ]
     )
-    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus,'VIEW')")
+    @PreAuthorize("@hankeAttachmentAuthorizer.authorizeHankeTunnus(#hankeTunnus,'VIEW')")
     fun getMetadataList(@PathVariable hankeTunnus: String): List<HankeAttachmentMetadata> {
         return hankeAttachmentService.getMetadataList(hankeTunnus)
     }
@@ -57,12 +57,14 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
                 ),
             ]
     )
-    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus,'VIEW')")
+    @PreAuthorize(
+        "@hankeAttachmentAuthorizer.authorizeAttachment(#hankeTunnus,#attachmentId,'VIEW')"
+    )
     fun getAttachmentContent(
         @PathVariable hankeTunnus: String,
         @PathVariable attachmentId: UUID,
     ): ResponseEntity<ByteArray> {
-        val content = hankeAttachmentService.getContent(hankeTunnus, attachmentId)
+        val content = hankeAttachmentService.getContent(attachmentId)
 
         return ResponseEntity.ok()
             .headers(buildHeaders(content.fileName, content.contentType))
@@ -89,7 +91,7 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
     )
     @PreAuthorize(
         "@featureService.isEnabled('HANKE_EDITING') && " +
-            "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus,'EDIT')"
+            "@hankeAttachmentAuthorizer.authorizeHankeTunnus(#hankeTunnus,'EDIT')"
     )
     fun postAttachment(
         @PathVariable hankeTunnus: String,
@@ -113,9 +115,9 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
     )
     @PreAuthorize(
         "@featureService.isEnabled('HANKE_EDITING') && " +
-            "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus,'EDIT')"
+            "@hankeAttachmentAuthorizer.authorizeAttachment(#hankeTunnus,#attachmentId,'EDIT')"
     )
     fun deleteAttachment(@PathVariable hankeTunnus: String, @PathVariable attachmentId: UUID) {
-        return hankeAttachmentService.deleteAttachment(hankeTunnus, attachmentId)
+        return hankeAttachmentService.deleteAttachment(attachmentId)
     }
 }

@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentAuthorizer
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
@@ -79,8 +80,12 @@ class IntegrationTestConfiguration {
     @Bean fun hankeKayttajaService(): HankeKayttajaService = mockk()
 
     @Bean fun hankeKayttajaAuthorizer(): HankeKayttajaAuthorizer = mockk(relaxUnitFun = true)
+
     @Bean fun hankeAuthorizer(): HankeAuthorizer = mockk(relaxUnitFun = true)
+
     @Bean fun applicationAuthorizer(): ApplicationAuthorizer = mockk(relaxUnitFun = true)
+
+    @Bean fun hankeAttachmentAuthorizer(): HankeAttachmentAuthorizer = mockk(relaxUnitFun = true)
 
     @Bean fun featureService(featureFlags: FeatureFlags) = FeatureService(featureFlags)
 
