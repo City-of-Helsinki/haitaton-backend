@@ -4,7 +4,6 @@ import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.common.AttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
@@ -29,7 +28,7 @@ private val logger = KotlinLogging.logger {}
 class HankeAttachmentService(
     val hankeRepository: HankeRepository,
     val attachmentRepository: HankeAttachmentRepository,
-    val attachmentContentService: AttachmentContentService,
+    val attachmentContentService: HankeAttachmentContentService,
     val scanClient: FileScanClient,
 ) {
 
@@ -41,7 +40,7 @@ class HankeAttachmentService(
     fun getContent(attachmentId: UUID): AttachmentContent {
         val attachment = findAttachment(attachmentId)
 
-        val content = attachmentContentService.findHankeContent(attachment)
+        val content = attachmentContentService.find(attachment)
         return AttachmentContent(attachment.fileName, attachment.contentType, content)
     }
 
@@ -70,7 +69,7 @@ class HankeAttachmentService(
                 hanke = hanke,
             )
         val savedAttachment = attachmentRepository.save(entity)
-        attachmentContentService.saveHankeContent(savedAttachment.id!!, attachment.bytes)
+        attachmentContentService.save(savedAttachment.id!!, attachment.bytes)
 
         return savedAttachment.toMetadata().also {
             logger.info { "Added attachment ${it.id} to hanke $hankeTunnus" }

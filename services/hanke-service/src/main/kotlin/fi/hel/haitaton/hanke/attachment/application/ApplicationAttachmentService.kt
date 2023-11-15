@@ -14,7 +14,6 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.common.AttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
@@ -37,7 +36,7 @@ class ApplicationAttachmentService(
     private val cableReportService: CableReportService,
     private val applicationRepository: ApplicationRepository,
     private val attachmentRepository: ApplicationAttachmentRepository,
-    private val attachmentContentService: AttachmentContentService,
+    private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) {
     @Transactional(readOnly = true)
@@ -47,7 +46,7 @@ class ApplicationAttachmentService(
     @Transactional(readOnly = true)
     fun getContent(applicationId: Long, attachmentId: UUID): AttachmentContent {
         val attachment = findAttachment(applicationId, attachmentId)
-        val content = attachmentContentService.findApplicationContent(attachmentId)
+        val content = attachmentContentService.find(attachmentId)
         with(attachment) {
             return AttachmentContent(fileName, contentType, content)
         }
@@ -89,7 +88,7 @@ class ApplicationAttachmentService(
             )
 
         val newAttachment = attachmentRepository.save(entity)
-        attachmentContentService.saveApplicationContent(newAttachment.id!!, attachment.bytes)
+        attachmentContentService.save(newAttachment.id!!, attachment.bytes)
 
         application.alluid?.let {
             cableReportService.addAttachment(it, newAttachment.toAlluAttachment(attachment.bytes))
@@ -124,9 +123,7 @@ class ApplicationAttachmentService(
             return
         }
 
-        cableReportService.addAttachments(alluId, attachments) {
-            attachmentContentService.findApplicationContent(it)
-        }
+        cableReportService.addAttachments(alluId, attachments) { attachmentContentService.find(it) }
     }
 
     private fun findAttachment(

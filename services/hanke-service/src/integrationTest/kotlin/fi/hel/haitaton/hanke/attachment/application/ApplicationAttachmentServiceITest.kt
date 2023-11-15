@@ -28,7 +28,6 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.LIIKENNEJARJESTELY
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.VALTAKIRJA
-import fi.hel.haitaton.hanke.attachment.common.AttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
@@ -70,7 +69,7 @@ private const val ALLU_ID = 42
 class ApplicationAttachmentServiceITest : DatabaseTest() {
     @MockkBean private lateinit var cableReportService: CableReportService
     @Autowired private lateinit var applicationAttachmentService: ApplicationAttachmentService
-    @Autowired private lateinit var attachmentContentService: AttachmentContentService
+    @Autowired private lateinit var attachmentContentService: ApplicationAttachmentContentService
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
     @Autowired private lateinit var attachmentFactory: AttachmentFactory
@@ -200,7 +199,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(attachmentInDb.applicationId).isEqualTo(application.id)
         assertThat(attachmentInDb.attachmentType).isEqualTo(typeInput)
 
-        val content = attachmentContentService.findApplicationContent(result.id)
+        val content = attachmentContentService.find(result.id)
         assertThat(content).isEqualTo(DEFAULT_DATA)
 
         verify { cableReportService wasNot Called }
