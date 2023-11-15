@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.ControllerTest
-import fi.hel.haitaton.hanke.HankeAuthorizer
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeError.HAI0001
 import fi.hel.haitaton.hanke.HankeNotFoundException
@@ -56,7 +55,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired private lateinit var hankeAttachmentService: HankeAttachmentService
-    @Autowired private lateinit var authorizer: HankeAuthorizer
+    @Autowired private lateinit var authorizer: HankeAttachmentAuthorizer
 
     @BeforeEach
     fun clearMocks() {
@@ -87,8 +86,8 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
     @Test
     fun `getAttachmentContent when valid request should return attachment file`() {
         val liiteId = UUID.fromString("19d6a9f7-afb0-469f-b570-cba0d10b03fc")
-        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
-        every { hankeAttachmentService.getContent(HANKE_TUNNUS, liiteId) } returns
+        every { authorizer.authorizeAttachment(HANKE_TUNNUS, liiteId, VIEW.name) } returns true
+        every { hankeAttachmentService.getContent(liiteId) } returns
             AttachmentContent(FILE_NAME_PDF, APPLICATION_PDF_VALUE, DUMMY_DATA)
 
         getAttachmentContent(attachmentId = liiteId)
@@ -97,8 +96,8 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
             .andExpect(content().bytes(DUMMY_DATA))
 
         verifyOrder {
-            authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name)
-            hankeAttachmentService.getContent(HANKE_TUNNUS, liiteId)
+            authorizer.authorizeAttachment(HANKE_TUNNUS, liiteId, VIEW.name)
+            hankeAttachmentService.getContent(liiteId)
         }
     }
 
@@ -130,14 +129,14 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
     @Test
     fun `deleteAttachment when valid request should succeed`() {
         val liiteId = UUID.fromString("357bb2e4-9464-4aff-9e66-f4b2764ffbf4")
-        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name) } returns true
-        justRun { hankeAttachmentService.deleteAttachment(HANKE_TUNNUS, liiteId) }
+        every { authorizer.authorizeAttachment(HANKE_TUNNUS, liiteId, EDIT.name) } returns true
+        justRun { hankeAttachmentService.deleteAttachment(liiteId) }
 
         deleteAttachment(attachmentId = liiteId).andExpect(status().isOk)
 
         verifyOrder {
-            authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name)
-            hankeAttachmentService.deleteAttachment(HANKE_TUNNUS, liiteId)
+            authorizer.authorizeAttachment(HANKE_TUNNUS, liiteId, EDIT.name)
+            hankeAttachmentService.deleteAttachment(liiteId)
         }
     }
 
