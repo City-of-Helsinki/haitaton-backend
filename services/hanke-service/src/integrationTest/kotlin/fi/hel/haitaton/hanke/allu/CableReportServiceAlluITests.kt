@@ -40,7 +40,7 @@ import org.springframework.http.MediaType.IMAGE_PNG
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.WebClientResponseException
 
-class CableReportServiceAlluITests {
+class CableReportServiceITests {
 
     private lateinit var mockWebServer: MockWebServer
     private lateinit var service: CableReportService
