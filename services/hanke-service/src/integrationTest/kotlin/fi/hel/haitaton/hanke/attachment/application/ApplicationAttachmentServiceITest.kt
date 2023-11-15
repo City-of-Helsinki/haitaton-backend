@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.application
 
 import assertk.assertThat
-import assertk.assertions.containsExactly
 import assertk.assertions.each
 import assertk.assertions.endsWith
 import assertk.assertions.hasSize
@@ -20,6 +19,7 @@ import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
+import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.body
@@ -32,7 +32,6 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.defaultData
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
@@ -202,7 +201,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(attachmentInDb.attachmentType).isEqualTo(typeInput)
 
         val content = attachmentContentService.findApplicationContent(result.id)
-        assertThat(content).containsExactly(*defaultData)
+        assertThat(content).isEqualTo(DEFAULT_DATA)
 
         verify { cableReportService wasNot Called }
     }

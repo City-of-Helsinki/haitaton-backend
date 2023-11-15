@@ -6,12 +6,12 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeError.HAI0001
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
+import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.HANKE_TUNNUS
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.andExpectError
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.dummyData
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.hankeError
@@ -89,12 +89,12 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
         val liiteId = UUID.fromString("19d6a9f7-afb0-469f-b570-cba0d10b03fc")
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
         every { hankeAttachmentService.getContent(HANKE_TUNNUS, liiteId) } returns
-            AttachmentContent(FILE_NAME_PDF, APPLICATION_PDF_VALUE, dummyData)
+            AttachmentContent(FILE_NAME_PDF, APPLICATION_PDF_VALUE, DUMMY_DATA)
 
         getAttachmentContent(attachmentId = liiteId)
             .andExpect(status().isOk)
             .andExpect(header().string(CONTENT_DISPOSITION, "attachment; filename=$FILE_NAME_PDF"))
-            .andExpect(content().bytes(dummyData))
+            .andExpect(content().bytes(DUMMY_DATA))
 
         verifyOrder {
             authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name)

@@ -39,10 +39,8 @@ class HankeAttachmentService(
     @Transactional(readOnly = true)
     fun getContent(hankeTunnus: String, attachmentId: UUID): AttachmentContent {
         val attachment = findHanke(hankeTunnus).liitteet.findBy(attachmentId)
-        val content = attachmentContentService.findHankeContent(attachmentId)
-        with(attachment) {
-            return AttachmentContent(fileName, contentType, content)
-        }
+        val content = attachmentContentService.findHankeContent(attachment)
+        return AttachmentContent(attachment.fileName, attachment.contentType, content)
     }
 
     @Transactional

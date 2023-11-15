@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import assertk.assertThat
-import assertk.assertions.containsExactly
 import assertk.assertions.each
 import assertk.assertions.endsWith
 import assertk.assertions.hasSize
@@ -12,23 +11,26 @@ import assertk.assertions.isPresent
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.body
-import fi.hel.haitaton.hanke.attachment.common.AttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
-import fi.hel.haitaton.hanke.attachment.defaultData
+import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
@@ -40,29 +42,31 @@ import org.springframework.test.context.ActiveProfiles
 @SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
-class HankeAttachmentServiceITests : DatabaseTest() {
+class HankeAttachmentServiceITests : DatabaseTest(), HankeAttachmentFactory {
     @Autowired private lateinit var hankeAttachmentService: HankeAttachmentService
-    @Autowired private lateinit var hankeAttachmentRepository: HankeAttachmentRepository
-    @Autowired private lateinit var attachmentContentService: AttachmentContentService
-    @Autowired private lateinit var hankeFactory: HankeFactory
+    @Autowired override lateinit var hankeAttachmentRepository: HankeAttachmentRepository
+    @Autowired override lateinit var hankeFactory: HankeFactory
+    @Autowired override lateinit var fileClient: MockFileClient
+    @Autowired
+    override lateinit var hankeAttachmentContentRepository: HankeAttachmentContentRepository
 
-    private lateinit var mockWebServer: MockWebServer
+    private lateinit var mockClamAv: MockWebServer
 
     @BeforeEach
     fun setup() {
-        mockWebServer = MockWebServer()
-        mockWebServer.start(6789)
+        mockClamAv = MockWebServer()
+        mockClamAv.start(6789)
     }
 
     @AfterEach
     fun tearDown() {
-        mockWebServer.shutdown()
+        mockClamAv.shutdown()
     }
 
     @Test
     fun `getMetadataList should return related metadata list`() {
-        mockWebServer.enqueue(response(body(results = successResult())))
-        mockWebServer.enqueue(response(body(results = successResult())))
+        mockClamAv.enqueue(response(body(results = successResult())))
+        mockClamAv.enqueue(response(body(results = successResult())))
         val hanke = hankeFactory.save()
         (1..2).forEach { _ ->
             hankeAttachmentService.addAttachment(
@@ -83,47 +87,89 @@ class HankeAttachmentServiceITests : DatabaseTest() {
         }
     }
 
-    @Test
-    fun `getContent when status is OK should succeed`() {
-        mockWebServer.enqueue(response(body(results = successResult())))
-        val file = testFile()
-        val hanke = hankeFactory.save()
-        val attachment = hankeAttachmentService.addAttachment(hanke.hankeTunnus, file)
+    @Nested
+    inner class GetContent {
+        @Nested
+        inner class FromDb {
+            @Test
+            fun `returns the attachment content, filename and content type`() {
+                val hanke = hankeFactory.saveEntity()
+                val attachment = saveAttachment(hanke = hanke).withDbContent()
 
-        val result = hankeAttachmentService.getContent(hanke.hankeTunnus, attachment.id)
+                val result = hankeAttachmentService.getContent(hanke.hankeTunnus, attachment.id!!)
 
-        assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-        assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
-        assertThat(result.bytes).isEqualTo(file.bytes)
-    }
-
-    @Test
-    fun `getContent when attachment is not in requested hanke should throw`() {
-        mockWebServer.enqueue(response(body(results = successResult())))
-        mockWebServer.enqueue(response(body(results = successResult())))
-        val firstHanke = hankeFactory.save()
-        val secondHanke = hankeFactory.save()
-        hankeAttachmentService.addAttachment(
-            hankeTunnus = firstHanke.hankeTunnus,
-            attachment = testFile(),
-        )
-        val secondAttachment =
-            hankeAttachmentService.addAttachment(
-                hankeTunnus = secondHanke.hankeTunnus,
-                attachment = testFile(),
-            )
-
-        val exception =
-            assertThrows<AttachmentNotFoundException> {
-                hankeAttachmentService.getContent(firstHanke.hankeTunnus, secondAttachment.id)
+                assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
+                assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
+                assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
             }
 
-        assertThat(exception.message).isEqualTo("Attachment not found, id=${secondAttachment.id}")
+            @Test
+            fun `throws exception when attachment is not in the requested hanke`() {
+                val firstHanke = hankeFactory.saveEntity()
+                val secondHanke = hankeFactory.saveEntity()
+                saveAttachment(hanke = firstHanke).withDbContent()
+                val secondAttachment = saveAttachment(hanke = secondHanke).withDbContent()
+
+                val exception =
+                    assertThrows<AttachmentNotFoundException> {
+                        hankeAttachmentService.getContent(
+                            firstHanke.hankeTunnus,
+                            secondAttachment.id!!
+                        )
+                    }
+
+                assertThat(exception.message)
+                    .isEqualTo("Attachment not found, id=${secondAttachment.id}")
+            }
+        }
+
+        @Nested
+        inner class FromCloud {
+            private val path = "in/cloud"
+            private val path2 = "in/cloud2"
+
+            @BeforeEach
+            fun clear() {
+                fileClient.recreateContainers()
+            }
+
+            @Test
+            fun `returns the attachment content, filename and content type`() {
+                val hanke = hankeFactory.saveEntity()
+                val attachment = saveAttachment(hanke = hanke).withCloudContent(path)
+
+                val result = hankeAttachmentService.getContent(hanke.hankeTunnus, attachment.id!!)
+
+                assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
+                assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
+                assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
+                assertThat(mockClamAv.requestCount).isEqualTo(0)
+            }
+
+            @Test
+            fun `throws exception when attachment is not in the requested hanke`() {
+                val firstHanke = hankeFactory.saveEntity()
+                val secondHanke = hankeFactory.saveEntity()
+                saveAttachment(hanke = firstHanke).withCloudContent(path)
+                val secondAttachment = saveAttachment(hanke = secondHanke).withCloudContent(path2)
+
+                val exception =
+                    assertThrows<AttachmentNotFoundException> {
+                        hankeAttachmentService.getContent(
+                            firstHanke.hankeTunnus,
+                            secondAttachment.id!!
+                        )
+                    }
+
+                assertThat(exception.message)
+                    .isEqualTo("Attachment not found, id=${secondAttachment.id}")
+            }
+        }
     }
 
     @Test
     fun `addAttachment when valid input returns metadata of saved attachment`() {
-        mockWebServer.enqueue(response(body(results = successResult())))
+        mockClamAv.enqueue(response(body(results = successResult())))
         val hanke = hankeFactory.save()
 
         val result = hankeAttachmentService.addAttachment(hanke.hankeTunnus, testFile())
@@ -141,13 +187,13 @@ class HankeAttachmentServiceITests : DatabaseTest() {
         assertThat(attachmentInDb.fileName).isEqualTo(FILE_NAME_PDF)
         assertThat(attachmentInDb.createdAt).isNotNull()
 
-        val savedContent = attachmentContentService.findHankeContent(attachmentInDb.id!!)
-        assertThat(savedContent).containsExactly(*defaultData)
+        val savedContent = hankeAttachmentContentRepository.getReferenceById(result.id).content
+        assertThat(savedContent).isEqualTo(DEFAULT_DATA)
     }
 
     @Test
     fun `addAttachment with special characters in filename sanitizes filename`() {
-        mockWebServer.enqueue(response(body(results = successResult())))
+        mockClamAv.enqueue(response(body(results = successResult())))
         val hanke = hankeFactory.save()
 
         val result =
@@ -211,7 +257,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
 
     @Test
     fun `addAttachment when scan fails should throw`() {
-        mockWebServer.enqueue(response(body(results = failResult())))
+        mockClamAv.enqueue(response(body(results = failResult())))
         val hanke = hankeFactory.save()
 
         val exception =
@@ -226,7 +272,7 @@ class HankeAttachmentServiceITests : DatabaseTest() {
 
     @Test
     fun `deleteAttachment when valid input should succeed`() {
-        mockWebServer.enqueue(response(body(results = successResult())))
+        mockClamAv.enqueue(response(body(results = successResult())))
         val hanke = hankeFactory.save()
         val attachment = hankeAttachmentService.addAttachment(hanke.hankeTunnus, testFile())
         val attachmentId = attachment.id

@@ -12,10 +12,8 @@ import org.junit.jupiter.api.TestInstance
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.testcontainers.containers.GenericContainer
-import org.testcontainers.junit.jupiter.Testcontainers
 import org.testcontainers.utility.DockerImageName
 
-@Testcontainers
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class BlobFileClientITest : FileClientTest() {
