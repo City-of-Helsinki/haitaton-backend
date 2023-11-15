@@ -5,7 +5,6 @@ import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluProperties
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.allu.CableReportServiceAllu
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
@@ -55,7 +54,7 @@ class Configuration {
                 if (alluTrustInsecure) createInsecureTrustingWebClient(webClientBuilder)
                 else webClientBuilder
             )
-        return CableReportServiceAllu(webClient, alluProperties)
+        return CableReportService(webClient, alluProperties)
     }
 
     private fun createInsecureTrustingWebClient(
