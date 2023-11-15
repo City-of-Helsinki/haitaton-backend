@@ -20,7 +20,6 @@ import fi.hel.haitaton.hanke.security.AccessRules
 import fi.hel.haitaton.hanke.testdata.TestDataService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -66,8 +65,7 @@ class IntegrationTestConfiguration {
         mockk()
 
     @Bean
-    fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService =
-        TormaystarkasteluTormaysServicePG(jdbcOperations)
+    fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService = mockk()
 
     @Bean fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
 
