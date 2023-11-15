@@ -74,11 +74,7 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
     @ApiResponses(
         value =
             [
-                ApiResponse(
-                    description = "Success",
-                    responseCode = "200",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                ),
+                ApiResponse(description = "Success", responseCode = "200"),
                 ApiResponse(
                     description = "Hanke not found",
                     responseCode = "404",
@@ -97,7 +93,7 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
     )
     fun postAttachment(
         @PathVariable hankeTunnus: String,
-        @RequestParam("liite") attachment: MultipartFile
+        @RequestParam("liite") attachment: MultipartFile,
     ): HankeAttachmentMetadata {
         return hankeAttachmentService.addAttachment(hankeTunnus, attachment)
     }

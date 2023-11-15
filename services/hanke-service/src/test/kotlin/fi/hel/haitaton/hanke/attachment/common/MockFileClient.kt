@@ -3,24 +3,21 @@ package fi.hel.haitaton.hanke.attachment.common
 import com.azure.core.util.BinaryData
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import java.util.EnumMap
-import org.junit.jupiter.api.extension.BeforeAllCallback
-import org.junit.jupiter.api.extension.BeforeEachCallback
-import org.junit.jupiter.api.extension.ExtensionContext
 import org.springframework.context.annotation.Profile
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Component
 
 @Component
 @Profile("test")
-class MockFileClient : FileClient, BeforeAllCallback, BeforeEachCallback {
+class MockFileClient : FileClient {
     private val fileMap: EnumMap<Container, MutableMap<String, TestFile>> =
         EnumMap(Container::class.java)
 
-    override fun beforeAll(context: ExtensionContext?) {
+    fun recreateContainers() {
         Container.entries.forEach { fileMap[it] = mutableMapOf() }
     }
 
-    override fun beforeEach(context: ExtensionContext?) {
+    fun clearContainers() {
         Container.entries.forEach { fileMap[it]!!.clear() }
     }
 
