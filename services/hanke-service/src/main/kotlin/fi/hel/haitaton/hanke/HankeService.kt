@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
+import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeFounder
@@ -12,7 +13,6 @@ import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasYhteystiedot
 import fi.hel.haitaton.hanke.domain.Yhteystieto
 import fi.hel.haitaton.hanke.domain.geometriaIds
-import fi.hel.haitaton.hanke.logging.AuditLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
@@ -30,10 +30,10 @@ class HankeService(
     private val hankeRepository: HankeRepository,
     private val hanketunnusService: HanketunnusService,
     private val hankealueService: HankealueService,
-    private val auditLogService: AuditLogService,
     private val hankeLoggingService: HankeLoggingService,
     private val applicationService: ApplicationService,
     private val hankeKayttajaService: HankeKayttajaService,
+    private val hankeAttachmentService: HankeAttachmentService,
 ) {
 
     @Transactional(readOnly = true)
@@ -199,6 +199,8 @@ class HankeService(
         hakemukset.forEach { hakemus ->
             hakemus.id?.let { id -> applicationService.delete(id, userId) }
         }
+
+        hankeAttachmentService.deleteAllAttachments(hanke)
 
         hankeRepository.deleteById(hanke.id)
         hankeLoggingService.logDelete(hanke, userId)
@@ -703,7 +705,7 @@ class HankeService(
     private fun postProcessAndSaveLoggingForRestrictions(
         loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder
     ) {
-        loggingEntryHolderForRestrictedActions.saveLogEntries(auditLogService)
+        loggingEntryHolderForRestrictedActions.saveLogEntries(hankeLoggingService)
         val idList = loggingEntryHolderForRestrictedActions.objectIds()
         throw HankeYhteystietoProcessingRestrictedException(
             "Can not modify/delete yhteystieto which has data processing restricted (id: $idList)"
@@ -731,7 +733,7 @@ class HankeService(
             savedHankeEntity.listOfHankeYhteystieto,
             userid
         )
-        loggingEntryHolder.saveLogEntries(auditLogService)
+        loggingEntryHolder.saveLogEntries(hankeLoggingService)
     }
 
     /**

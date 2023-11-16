@@ -21,12 +21,9 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.integration.jdbc.lock.JdbcLockRegistry
-import org.springframework.test.context.junit.jupiter.SpringExtension
 import org.springframework.web.reactive.function.client.WebClientResponseException
 
-@ExtendWith(SpringExtension::class)
 class AlluUpdateServiceTest {
     private val applicationRepository: ApplicationRepository = mockk()
     private val alluStatusRepository: AlluStatusRepository = mockk()

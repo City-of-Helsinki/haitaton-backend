@@ -35,6 +35,10 @@ object Asserts {
             assertThat(actual).isBetween(now.minus(offset), now)
         }
 
+    fun Assert<OffsetDateTime>.isSameInstantAs(expected: OffsetDateTime) {
+        this.prop(OffsetDateTime::toInstant).isEqualTo(expected.toInstant())
+    }
+
     fun <T> Assert<Feature>.hasSameCoordinatesAs(other: Geometry<T>) {
         prop(Feature::getGeometry)
             .isInstanceOf(Geometry::class)

@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.attachment.common
 
 import com.azure.core.util.BinaryData
 import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.azure.UnexpectedSubdirectoryException
 import java.util.EnumMap
 import org.springframework.context.annotation.Profile
 import org.springframework.http.MediaType
@@ -12,6 +13,8 @@ import org.springframework.stereotype.Component
 class MockFileClient : FileClient {
     private val fileMap: EnumMap<Container, MutableMap<String, TestFile>> =
         EnumMap(Container::class.java)
+
+    private val subfolderRegex = Regex("/.*/")
 
     fun recreateContainers() {
         Container.entries.forEach { fileMap[it] = mutableMapOf() }
@@ -44,6 +47,15 @@ class MockFileClient : FileClient {
 
     override fun delete(container: Container, path: String): Boolean =
         fileMap[container]!!.remove(path) != null
+
+    override fun deleteAllByPrefix(container: Container, prefix: String) {
+        val files = fileMap[container]!!
+        val paths = files.keys.filter { it.startsWith(prefix) }
+        paths
+            .find { it.contains(subfolderRegex) }
+            ?.let { throw UnexpectedSubdirectoryException(container, it) }
+        paths.forEach { files.remove(it) }
+    }
 
     fun listBlobs(container: Container): List<TestFile> = fileMap[container]!!.values.toList()
 }

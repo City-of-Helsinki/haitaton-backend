@@ -4,6 +4,7 @@ import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.each
 import assertk.assertions.extracting
 import assertk.assertions.first
 import assertk.assertions.hasClass
@@ -15,6 +16,8 @@ import assertk.assertions.isTrue
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.azure.UnexpectedSubdirectoryException
+import fi.hel.haitaton.hanke.hasSameElementsAs
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -203,13 +206,88 @@ abstract class FileClientTest {
         @ParameterizedTest
         @EnumSource(Container::class)
         fun `deletes from the given container`(container: Container) {
-            fileClient.upload(container, path, originalFileName, mediaType, testContent)
+            Container.entries.forEach {
+                fileClient.upload(it, path, originalFileName, mediaType, testContent)
+            }
             assertThat(listBlobs(container)).hasSize(1)
 
             val response = fileClient.delete(container, path)
 
             assertThat(response).isTrue()
             assertThat(listBlobs(container)).isEmpty()
+            assertThat(Container.entries.minus(container).map { listBlobs(it) }).each {
+                it.hasSize(1)
+            }
+        }
+    }
+
+    @Nested
+    inner class DeleteAllByPrefix {
+        private val originalFileName = "test.txt"
+        private val mediaType = MediaType.TEXT_PLAIN
+
+        @Test
+        fun `does not throw when there are no blobs`() {
+            fileClient.deleteAllByPrefix(container, "prefix")
+        }
+
+        @Test
+        fun `deletes the correct files`() {
+            val matchingPaths =
+                listOf(
+                    "45/file.txt",
+                    "45/file2.txt",
+                )
+            val notMatchingPaths =
+                listOf(
+                    "file.txt",
+                    "45file.txt",
+                    "4/file.txt",
+                    "44/file.txt",
+                    "454/file.txt",
+                    "other/45/file.txt",
+                )
+            for (path in matchingPaths + notMatchingPaths) {
+                fileClient.upload(container, path, originalFileName, mediaType, testContent)
+            }
+
+            fileClient.deleteAllByPrefix(container, "45/")
+
+            val remainingPaths = listBlobs().map { it.path }
+            assertThat(remainingPaths).hasSameElementsAs(notMatchingPaths)
+        }
+
+        @ParameterizedTest
+        @EnumSource(Container::class)
+        fun `deletes from the given container`(container: Container) {
+            val path = "45/file.txt"
+            Container.entries.forEach {
+                fileClient.upload(it, path, originalFileName, mediaType, testContent)
+            }
+            assertThat(listBlobs(container)).hasSize(1)
+
+            fileClient.deleteAllByPrefix(container, "45/")
+
+            assertThat(listBlobs(container)).isEmpty()
+            assertThat(Container.entries.minus(container).map { listBlobs(it) }).each {
+                it.hasSize(1)
+            }
+        }
+
+        @Test
+        fun `throws UnexpectedSubdirectoryException with a complex directory structure`() {
+            val paths = listOf("45/file.txt", "45/subfolder/file.txt", "45/file2.txt")
+            for (path in paths) {
+                fileClient.upload(container, path, originalFileName, mediaType, testContent)
+            }
+            val exception = assertFailure { fileClient.deleteAllByPrefix(container, "45/") }
+
+            exception.all {
+                hasClass(UnexpectedSubdirectoryException::class)
+                messageContains(container.toString())
+                messageContains("45/subfolder/")
+            }
+            assertThat(listBlobs().map { it.path }).hasSameElementsAs(paths)
         }
     }
 
