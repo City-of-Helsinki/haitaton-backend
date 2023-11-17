@@ -137,16 +137,6 @@ class EmailSenderService(
         mailSender.send(mimeMessage)
     }
 
-    private fun ApplicationType.translations() =
-        when (this) {
-            ApplicationType.CABLE_REPORT ->
-                Translations(
-                    fi = "johtoselvityshakemuksen",
-                    sv = "ledningsutredning",
-                    en = "a cable report application",
-                )
-        }
-
     private fun signatures() =
         Translations(
             "$templatePath/common/signature-fi.mustache".getResourceAsText(),
@@ -158,4 +148,16 @@ class EmailSenderService(
 
     private fun parseTemplate(path: String, contextObject: Any): String =
         Template.parse(path.getResource().openStream()).processToString(contextObject)
+
+    companion object {
+        fun ApplicationType.translations() =
+            when (this) {
+                ApplicationType.CABLE_REPORT ->
+                    Translations(
+                        fi = "johtoselvityshakemuksen",
+                        sv = "ledningsutredning",
+                        en = "a cable report application",
+                    )
+            }
+    }
 }

@@ -21,7 +21,6 @@ import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
-import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
@@ -29,17 +28,12 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
-import fi.hel.haitaton.hanke.attachment.response
-import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeIdentifierFactory
 import java.time.OffsetDateTime
 import java.util.UUID
-import okhttp3.mockwebserver.MockWebServer
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -61,25 +55,10 @@ class HankeAttachmentServiceITests(
     @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
 ) : DatabaseTest() {
 
-    private lateinit var mockClamAv: MockWebServer
-
-    @BeforeEach
-    fun setup() {
-        mockClamAv = MockWebServer()
-        mockClamAv.start(6789)
-    }
-
-    @AfterEach
-    fun tearDown() {
-        mockClamAv.shutdown()
-    }
-
     @Nested
     inner class GetMetadataList {
         @Test
         fun `getMetadataList should return related metadata list`() {
-            mockClamAv.enqueue(response(body(results = successResult())))
-            mockClamAv.enqueue(response(body(results = successResult())))
             val hanke = hankeFactory.saveEntity()
             (1..2).forEach { _ ->
                 hankeAttachmentRepository.save(
@@ -150,7 +129,6 @@ class HankeAttachmentServiceITests(
                 assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
                 assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
                 assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
-                assertThat(mockClamAv.requestCount).isEqualTo(0)
             }
         }
     }
@@ -159,7 +137,6 @@ class HankeAttachmentServiceITests(
     inner class SaveAttachment {
         @Test
         fun `Should return metadata of saved attachment`() {
-            mockClamAv.enqueue(response(body(results = successResult())))
             val hanke = hankeFactory.save()
             val blobPath = blobPath(hanke.id)
 
@@ -188,7 +165,6 @@ class HankeAttachmentServiceITests(
 
         @Test
         fun `Should throw if attachment amount is exceeded`() {
-            mockClamAv.enqueue(response(body(results = successResult())))
             val hanke = hankeFactory.saveEntity()
             (1..ALLOWED_ATTACHMENT_COUNT)
                 .map { AttachmentFactory.hankeAttachmentEntity(hanke = hanke) }
@@ -210,8 +186,6 @@ class HankeAttachmentServiceITests(
 
         @Test
         fun `Should fail when there is no related hanke`() {
-            mockClamAv.enqueue(response(body(results = successResult())))
-
             assertFailure {
                     hankeAttachmentService.saveAttachment(
                         hankeTunnus = "HAI-123",

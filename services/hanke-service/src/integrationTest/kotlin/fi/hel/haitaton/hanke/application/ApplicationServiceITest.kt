@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.application
 import assertk.Assert
 import assertk.all
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
@@ -21,8 +22,6 @@ import assertk.assertions.prop
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
-import com.ninjasquad.springmockk.MockkBean
-import com.ninjasquad.springmockk.SpykBean
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
@@ -43,8 +42,8 @@ import fi.hel.haitaton.hanke.application.ApplicationType.CABLE_REPORT
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
 import fi.hel.haitaton.hanke.domain.Hankealue
-import fi.hel.haitaton.hanke.email.ApplicationNotificationData
-import fi.hel.haitaton.hanke.email.EmailSenderService
+import fi.hel.haitaton.hanke.email.EmailSenderService.Companion.translations
+import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.asianHoitajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.cableReportWithoutHanke
@@ -82,6 +81,7 @@ import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso.HAKEMUSASIOINTI
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.permissions.kayttajaTunnistePattern
+import fi.hel.haitaton.hanke.test.Asserts.hasReceivers
 import fi.hel.haitaton.hanke.test.Asserts.hasSingleGeometryWithCoordinates
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
@@ -98,6 +98,7 @@ import io.mockk.justRun
 import io.mockk.verify
 import io.mockk.verifyOrder
 import io.mockk.verifySequence
+import jakarta.mail.internet.MimeMessage
 import java.time.OffsetDateTime
 import java.time.ZonedDateTime
 import org.geojson.Polygon
@@ -132,12 +133,10 @@ private val dataWithoutAreas = createCableReportApplicationData(areas = listOf()
 @WithMockUser(USERNAME)
 class ApplicationServiceITest : DatabaseTest() {
 
-    @MockkBean private lateinit var cableReportServiceAllu: CableReportService
-    @SpykBean private lateinit var emailSenderService: EmailSenderService
-
     @Autowired private lateinit var applicationService: ApplicationService
     @Autowired private lateinit var hankeService: HankeService
     @Autowired private lateinit var permissionService: PermissionService
+    @Autowired private lateinit var cableReportServiceAllu: CableReportService
 
     @Autowired private lateinit var applicationRepository: ApplicationRepository
     @Autowired private lateinit var hankeRepository: HankeRepository
@@ -638,15 +637,10 @@ class ApplicationServiceITest : DatabaseTest() {
                     USERNAME,
                 )
             setAlluFields(applicationRepository.findById(application.id!!).orElseThrow())
-            val capturedNotifications = mutableListOf<ApplicationNotificationData>()
             justRun { cableReportServiceAllu.update(21, any()) }
             every { cableReportServiceAllu.getApplicationInformation(any()) } returns
                 createAlluApplicationResponse(21)
             justRun { cableReportServiceAllu.addAttachment(21, any()) }
-            justRun { emailSenderService.sendHankeInvitationEmail(any()) }
-            justRun {
-                emailSenderService.sendApplicationNotificationEmail(capture(capturedNotifications))
-            }
             val updatedApplication =
                 cableReport.copy(
                     representativeWithContacts = asianHoitajaCustomerContact,
@@ -657,11 +651,11 @@ class ApplicationServiceITest : DatabaseTest() {
 
             applicationService.updateApplicationData(application.id!!, updatedApplication, USERNAME)
 
+            val capturedNotifications = getApplicationNotifications()
             assertThat(capturedNotifications)
                 .areValid(application.applicationType, application.hankeTunnus)
-            assertThat(capturedNotifications)
-                .extracting { it.recipientEmail }
-                .containsExactlyInAnyOrder(
+            assertThat(capturedNotifications.toTypedArray())
+                .hasReceivers(
                     "new.mail@foo.fi",
                     asianHoitajaCustomerContact.contacts[0].email,
                     rakennuttajaCustomerContact.contacts[0].email
@@ -671,8 +665,6 @@ class ApplicationServiceITest : DatabaseTest() {
                 cableReportServiceAllu.update(21, any())
                 cableReportServiceAllu.addAttachment(any(), any())
             }
-            verify(exactly = 3) { emailSenderService.sendHankeInvitationEmail(any()) }
-            verify(exactly = 3) { emailSenderService.sendApplicationNotificationEmail(any()) }
         }
 
         @Test
@@ -714,7 +706,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 cableReportServiceAllu.update(21, any())
                 cableReportServiceAllu.addAttachment(any(), any())
             }
-            verify { emailSenderService wasNot Called }
+            assertThat(greenMail.receivedMessages).isEmpty()
         }
 
         @Test
@@ -1198,16 +1190,14 @@ class ApplicationServiceITest : DatabaseTest() {
                     CableReportWithoutHanke(CABLE_REPORT, cableReportData),
                     USERNAME,
                 )
-            val capturedEmails = mutableListOf<ApplicationNotificationData>()
             every { cableReportServiceAllu.create(any()) } returns 26
             every { cableReportServiceAllu.getApplicationInformation(any()) } returns
                 createAlluApplicationResponse(26)
             justRun { cableReportServiceAllu.addAttachment(26, any()) }
-            justRun { emailSenderService.sendHankeInvitationEmail(any()) }
-            justRun { emailSenderService.sendApplicationNotificationEmail(capture(capturedEmails)) }
 
             applicationService.sendApplication(application.id!!, USERNAME)
 
+            val capturedEmails = getApplicationNotifications()
             assertThat(capturedEmails).hasSize(3) // 4 contacts, but one is the sender
             assertThat(capturedEmails)
                 .areValid(application.applicationType, application.hankeTunnus)
@@ -1216,8 +1206,6 @@ class ApplicationServiceITest : DatabaseTest() {
                 cableReportServiceAllu.addAttachment(any(), any())
                 cableReportServiceAllu.getApplicationInformation(any())
             }
-            verify(exactly = 3) { emailSenderService.sendHankeInvitationEmail(any()) }
-            verify(exactly = 3) { emailSenderService.sendApplicationNotificationEmail(any()) }
         }
 
         @Test
@@ -1856,16 +1844,24 @@ class ApplicationServiceITest : DatabaseTest() {
         }
     }
 
-    private fun Assert<List<ApplicationNotificationData>>.areValid(
-        type: ApplicationType,
-        hankeTunnus: String?
-    ) = each { data ->
-        data.transform { it.senderEmail }.isEqualTo(hakijaContact.email)
-        data.transform { it.senderName }.isEqualTo(hakijaContact.name)
-        data.transform { it.applicationIdentifier }.isEqualTo(defaultApplicationIdentifier)
-        data.transform { it.applicationType }.isEqualTo(type)
-        data.transform { it.recipientEmail }.isIn(*expectedRecipients)
-        data.transform { it.hankeTunnus }.isEqualTo(hankeTunnus)
+    private fun getApplicationNotifications() =
+        greenMail.receivedMessages.filter {
+            it.subject.startsWith("Haitaton: Sinut on lisätty hakemukselle")
+        }
+
+    private fun Assert<List<MimeMessage>>.areValid(type: ApplicationType, hankeTunnus: String?) {
+        each { it.isValid(type, hankeTunnus) }
+    }
+
+    private fun Assert<MimeMessage>.isValid(type: ApplicationType, hankeTunnus: String?) {
+        prop(MimeMessage::textBody).all {
+            contains("${hakijaContact.name} (${hakijaContact.email}) on tehnyt")
+            contains("hakemukselle $defaultApplicationIdentifier")
+            contains("on tehnyt ${type.translations().fi}")
+            contains("hankkeella $hankeTunnus")
+        }
+
+        transform { it.allRecipients.first().toString() }.isIn(*expectedRecipients)
     }
 
     private fun initializedHanke(): HankeEntity =

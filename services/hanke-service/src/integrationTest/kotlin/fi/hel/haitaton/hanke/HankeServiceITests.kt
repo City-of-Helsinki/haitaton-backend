@@ -13,7 +13,6 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.messageContains
 import assertk.assertions.prop
-import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ALLU_USER_CANCELLATION_MSG
@@ -123,9 +122,8 @@ class HankeServiceITests(
     @Autowired private val fileClient: MockFileClient,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
+    @Autowired private val cableReportService: CableReportService,
 ) : DatabaseTest() {
-
-    @MockkBean private lateinit var cableReportService: CableReportService
 
     @BeforeEach
     fun clearMocks() {

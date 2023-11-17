@@ -19,7 +19,7 @@ import org.springframework.test.context.ActiveProfiles
 
 private const val USERNAME = "testUser"
 
-@SpringBootTest(properties = ["haitaton.testdata.enabled=true"])
+@SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class TestDataServiceITest : DatabaseTest() {
