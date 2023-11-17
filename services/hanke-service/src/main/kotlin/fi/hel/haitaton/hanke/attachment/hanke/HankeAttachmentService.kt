@@ -78,9 +78,10 @@ class HankeAttachmentService(
 
     @Transactional
     fun deleteAttachment(attachmentId: UUID) {
+        logger.info { "Deleting attachment $attachmentId..." }
         val attachmentToDelete = findAttachment(attachmentId)
+        attachmentContentService.delete(attachmentToDelete)
         attachmentToDelete.hanke.liitteet.remove(attachmentToDelete)
-        logger.info { "Deleted hanke attachment ${attachmentToDelete.id}" }
     }
 
     private fun findAttachment(attachmentId: UUID) =

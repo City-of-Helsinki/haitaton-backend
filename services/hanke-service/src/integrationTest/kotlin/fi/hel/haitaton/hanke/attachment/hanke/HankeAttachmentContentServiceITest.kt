@@ -3,12 +3,18 @@ package fi.hel.haitaton.hanke.attachment.hanke
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
+import assertk.assertions.first
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
+import assertk.assertions.hasSize
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.attachment.USERNAME
+import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
@@ -44,6 +50,44 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
     private val attachmentId = UUID.fromString("b820121e-ad54-4ab8-926a-c4a8193010b5")
     private val path = "$hankeId/$attachmentId"
     private val bytes = "Test content. Sisältää myös skandeja.".toByteArray()
+
+    @Nested
+    inner class Delete {
+        @Test
+        fun `deletes the content when blobLocation is specified`() {
+            saveContentToCloud(path, bytes = bytes)
+            val attachmentEntity =
+                HankeAttachmentFactory.createEntity(attachmentId, blobLocation = path)
+
+            attachmentContentService.delete(attachmentEntity)
+
+            assertThat(fileClient.listBlobs(Container.HANKE_LIITTEET)).isEmpty()
+        }
+
+        @Test
+        fun `doesn't throw an error if content is missing`() {
+            val attachmentEntity =
+                HankeAttachmentFactory.createEntity(attachmentId, blobLocation = path)
+
+            attachmentContentService.delete(attachmentEntity)
+
+            assertThat(fileClient.listBlobs(Container.HANKE_LIITTEET)).isEmpty()
+        }
+
+        @Test
+        fun `doesn't do anything if blobLocation is not specified`() {
+            val attachmentEntity = saveAttachment(blobLocation = null).withDbContent(bytes)
+
+            attachmentContentService.delete(attachmentEntity)
+
+            val blobs = hankeAttachmentContentRepository.findAll()
+            assertThat(blobs).hasSize(1)
+            assertThat(blobs)
+                .first()
+                .prop(HankeAttachmentContentEntity::attachmentId)
+                .isEqualTo(attachmentEntity.id)
+        }
+    }
 
     @Nested
     inner class Find {

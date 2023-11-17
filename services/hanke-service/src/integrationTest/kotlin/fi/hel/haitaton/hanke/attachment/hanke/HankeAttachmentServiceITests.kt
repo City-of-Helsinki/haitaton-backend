@@ -10,7 +10,6 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
-import assertk.assertions.isPresent
 import assertk.assertions.messageContains
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
@@ -18,6 +17,7 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
+import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
@@ -261,18 +261,41 @@ class HankeAttachmentServiceITests : DatabaseTest(), HankeAttachmentFactory {
             }
         }
 
-        @Test
-        fun `deletes attachment when attachment exists`() {
-            mockClamAv.enqueue(response(body(results = successResult())))
-            val hanke = hankeFactory.save()
-            val attachment = hankeAttachmentService.addAttachment(hanke.hankeTunnus, testFile())
-            val attachmentId = attachment.id
-            assertThat(hankeAttachmentRepository.findById(attachmentId)).isPresent()
+        @Nested
+        inner class FromDb {
+            @Test
+            fun `deletes attachment and content when attachment exists`() {
+                val attachment = saveAttachment().withDbContent()
+                assertThat(hankeAttachmentRepository.findAll()).hasSize(1)
+                assertThat(hankeAttachmentContentRepository.findAll()).hasSize(1)
 
-            hankeAttachmentService.deleteAttachment(attachmentId)
+                hankeAttachmentService.deleteAttachment(attachment.id!!)
 
-            val remainingAttachment = hankeAttachmentRepository.findById(attachmentId)
-            assertThat(remainingAttachment).isEmpty()
+                assertThat(hankeAttachmentRepository.findAll()).isEmpty()
+                assertThat(hankeAttachmentContentRepository.findAll()).isEmpty()
+            }
+        }
+
+        @Nested
+        inner class FromCloud {
+            private val path = "in/cloud"
+
+            @BeforeEach
+            fun clear() {
+                fileClient.recreateContainers()
+            }
+
+            @Test
+            fun `deletes attachment and content when attachment exists`() {
+                val attachment = saveAttachment().withCloudContent(path)
+                assertThat(hankeAttachmentRepository.findAll()).hasSize(1)
+                assertThat(fileClient.listBlobs(HANKE_LIITTEET)).hasSize(1)
+
+                hankeAttachmentService.deleteAttachment(attachment.id!!)
+
+                assertThat(hankeAttachmentRepository.findAll()).isEmpty()
+                assertThat(fileClient.listBlobs(HANKE_LIITTEET)).isEmpty()
+            }
         }
     }
 }
