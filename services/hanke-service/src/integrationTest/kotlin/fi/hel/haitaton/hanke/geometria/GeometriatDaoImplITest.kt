@@ -23,7 +23,7 @@ import org.springframework.test.context.jdbc.Sql
 
 @SpringBootTest
 @ActiveProfiles("test")
-internal class GeometriatDaoImplITest : DatabaseTest() {
+internal class GeometriatDaoITest : DatabaseTest() {
 
     private val expectedPolygonArea = 1707f
 

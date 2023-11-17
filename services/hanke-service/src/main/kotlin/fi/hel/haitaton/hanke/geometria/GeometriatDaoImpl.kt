@@ -15,8 +15,10 @@ import org.geojson.GeoJsonObject
 import org.geojson.MultiPolygon
 import org.geojson.Polygon
 import org.springframework.jdbc.core.JdbcOperations
+import org.springframework.stereotype.Component
 
-class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : GeometriatDao {
+@Component
+class GeometriatDao(private val jdbcOperations: JdbcOperations) {
 
     companion object {
 
@@ -49,7 +51,8 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
                     },
                         ?
                     )
-                    """.trimIndent(),
+                    """
+                        .trimIndent(),
                     arguments,
                     argumentTypes
                 )
@@ -71,7 +74,8 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
                     modifiedAt = ?
                 WHERE
                     id = ?
-            """.trimIndent()
+            """
+                    .trimIndent()
             ) { ps ->
                 ps.setInt(1, geometriat.version)
                 if (geometriat.modifiedByUserId != null) {
@@ -107,7 +111,7 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
         }
     }
 
-    override fun createGeometriat(geometriat: Geometriat): Geometriat {
+    fun createGeometriat(geometriat: Geometriat): Geometriat {
         with(jdbcOperations) {
             val id =
                 queryForObject(
@@ -126,7 +130,8 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
                         ?
                     )
                     RETURNING id
-                    """.trimIndent(),
+                    """
+                        .trimIndent(),
                     { rs, _ -> rs.getInt(1) },
                     geometriat.version,
                     geometriat.createdByUserId,
@@ -148,7 +153,7 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
         }
     }
 
-    override fun retrieveGeometriat(id: Int): Geometriat? {
+    fun retrieveGeometriat(id: Int): Geometriat? {
         with(jdbcOperations) {
             val geometriat =
                 query(
@@ -160,7 +165,8 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
                             createdAt,
                             modifiedByUserId,
                             modifiedAt
-                        FROM Geometriat WHERE id = ?""".trimIndent(),
+                        FROM Geometriat WHERE id = ?"""
+                            .trimIndent(),
                         { rs, _ ->
                             Geometriat(
                                 id = rs.getInt(1),
@@ -184,7 +190,7 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
         }
     }
 
-    override fun validateGeometria(geometria: GeoJsonObject): GeometriatDao.InvalidDetail? {
+    fun validateGeometria(geometria: GeoJsonObject): GeometriatDao.InvalidDetail? {
         val detailQuery =
             "select valid, reason, ST_AsGeoJSON(location) as location from ST_IsValidDetail(ST_GeomFromGeoJSON(?))"
 
@@ -205,25 +211,37 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
             )[0]
     }
 
-    override fun validateGeometriat(geometriat: List<GeoJsonObject>): GeometriatDao.InvalidDetail? =
+    /**
+     * Uses PostGIS to check if the geometries are valid.
+     *
+     * For e.g. polygons it checks - among other things - that the first and last coordinate are
+     * identical and that the line doesn't intersect itself.
+     *
+     * Note that some empty geometries are valid, like empty GeometryCollections and
+     * FeatureCollections.
+     *
+     * @return List of indexes in the feature collection where the validation failed.
+     */
+    fun validateGeometriat(geometriat: List<GeoJsonObject>): GeometriatDao.InvalidDetail? =
         geometriat.firstNotNullOfOrNull { validateGeometria(it) }
 
     /** Check if the given geometry is inside any hankealue of the given hanke. */
-    override fun isInsideHankeAlueet(hankeId: Int, geometria: GeoJsonObject): Boolean {
+    fun isInsideHankeAlueet(hankeId: Int, geometria: GeoJsonObject): Boolean {
         val query =
             """
             SELECT ST_Covers(hg.geometria, ST_GeomFromGeoJSON(?))
             FROM hankealue ha
             INNER JOIN hankegeometria hg ON hg.hankegeometriatid = ha.geometriat
             WHERE ha.hankeid = ?
-            """.trimIndent()
+            """
+                .trimIndent()
 
         return jdbcOperations
             .queryForList(query, Boolean::class.java, geometria.toJsonString(), hankeId)
             .any { it }
     }
 
-    override fun calculateArea(geometria: GeoJsonObject): Float? {
+    fun calculateArea(geometria: GeoJsonObject): Float? {
         val areaQuery = "select ST_Area(ST_SetSRID(ST_GeomFromGeoJSON(?), $SRID))"
 
         return jdbcOperations.queryForObject(
@@ -233,7 +251,7 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
         )
     }
 
-    override fun calculateCombinedArea(geometriat: List<Polygon>): Float? {
+    fun calculateCombinedArea(geometriat: List<Polygon>): Float? {
         val geometryCollection = MultiPolygon()
         geometriat.forEach { geometryCollection.add(it) }
 
@@ -258,7 +276,8 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
                 HankeGeometria
             WHERE
                 hankeGeometriatId = ?
-            """.trimIndent(),
+            """
+                .trimIndent(),
             { rs, _ ->
                 val geojson = rs.getString(1)
                 val paramjson = rs.getString(2)
@@ -271,7 +290,8 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
         )
     }
 
-    override fun updateGeometriat(geometriat: Geometriat) {
+    /** Updates geometry rows by FIRST DELETING ALL OF THEM AND THEN CREATING NEW ROWS */
+    fun updateGeometriat(geometriat: Geometriat) {
         with(jdbcOperations) {
             // update master row
             updateGeometriat(geometriat, this)
@@ -282,10 +302,13 @@ class GeometriatDaoImpl(private val jdbcOperations: JdbcOperations) : Geometriat
         }
     }
 
-    override fun deleteGeometriat(geometriat: Geometriat) {
+    /** Deletes geometry rows BUT DOES NOT DELETE THE MASTER ROW (Geometriat row) */
+    fun deleteGeometriat(geometriat: Geometriat) {
         with(jdbcOperations) {
             // delete master row, hankegeometria rows are removed with cascading
             deleteGeometriat(geometriat, this)
         }
     }
+
+    data class InvalidDetail(val reason: String, val location: String)
 }

@@ -20,11 +20,13 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.validation.HankePublicValidator
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
 
-open class HankeServiceImpl(
+@Service
+class HankeService(
     private val hankeRepository: HankeRepository,
     private val hanketunnusService: HanketunnusService,
     private val hankealueService: HankealueService,
@@ -32,43 +34,43 @@ open class HankeServiceImpl(
     private val hankeLoggingService: HankeLoggingService,
     private val applicationService: ApplicationService,
     private val hankeKayttajaService: HankeKayttajaService,
-) : HankeService {
+) {
 
     @Transactional(readOnly = true)
-    override fun findIdentifier(hankeTunnus: String): HankeIdentifier? =
+    fun findIdentifier(hankeTunnus: String): HankeIdentifier? =
         hankeRepository.findOneByHankeTunnus(hankeTunnus)
 
     @Transactional(readOnly = true)
-    override fun getHankeApplications(hankeTunnus: String): List<Application> =
+    fun getHankeApplications(hankeTunnus: String): List<Application> =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let { entity ->
             entity.hakemukset.map { hakemus -> hakemus.toApplication() }
         } ?: throw HankeNotFoundException(hankeTunnus)
 
     @Transactional(readOnly = true)
-    override fun loadHanke(hankeTunnus: String) =
+    fun loadHanke(hankeTunnus: String) =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let {
             createHankeDomainObjectFromEntity(it)
         }
 
     @Transactional(readOnly = true)
-    override fun loadPublicHanke() =
+    fun loadPublicHanke() =
         hankeRepository.findAllByStatus(HankeStatus.PUBLIC).map {
             createHankeDomainObjectFromEntity(it)
         }
 
     @Transactional(readOnly = true)
-    override fun loadHankeById(id: Int): Hanke? =
+    fun loadHankeById(id: Int): Hanke? =
         hankeRepository.findByIdOrNull(id)?.let { createHankeDomainObjectFromEntity(it) }
 
     @Transactional(readOnly = true)
-    override fun loadHankkeetByIds(ids: List<Int>) =
+    fun loadHankkeetByIds(ids: List<Int>) =
         hankeRepository.findAllById(ids).map { createHankeDomainObjectFromEntity(it) }
 
     @Transactional
-    override fun createHanke(
+    fun createHanke(
         request: CreateHankeRequest,
-        founder: HankeFounder?,
-        generated: Boolean,
+        founder: HankeFounder? = null,
+        generated: Boolean = false,
     ): Hanke {
         val userId = currentUserId()
 
@@ -131,7 +133,7 @@ open class HankeServiceImpl(
      * Create application when no existing hanke. Autogenerates hanke and applies application to it.
      */
     @Transactional
-    override fun generateHankeWithApplication(
+    fun generateHankeWithApplication(
         cableReport: CableReportWithoutHanke,
         userId: String
     ): Application {
@@ -141,7 +143,7 @@ open class HankeServiceImpl(
     }
 
     @Transactional
-    override fun updateHanke(hanke: Hanke): Hanke {
+    fun updateHanke(hanke: Hanke): Hanke {
         val userId = currentUserId()
 
         // Both checks that the hanke already exists, and get its old fields to transfer data into
@@ -184,7 +186,7 @@ open class HankeServiceImpl(
     }
 
     @Transactional
-    override fun deleteHanke(hankeTunnus: String, userId: String) {
+    fun deleteHanke(hankeTunnus: String, userId: String) {
         val hanke = loadHanke(hankeTunnus) ?: throw HankeNotFoundException(hankeTunnus)
         val hakemukset = getHankeApplications(hankeTunnus)
 

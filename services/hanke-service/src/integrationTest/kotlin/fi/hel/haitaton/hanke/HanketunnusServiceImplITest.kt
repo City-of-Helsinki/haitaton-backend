@@ -9,7 +9,7 @@ import org.springframework.test.context.ActiveProfiles
 
 @SpringBootTest
 @ActiveProfiles("test")
-internal class HanketunnusServiceImplITest : DatabaseTest() {
+internal class HanketunnusServiceITest : DatabaseTest() {
 
     @Autowired lateinit var hanketunnusService: HanketunnusService
 

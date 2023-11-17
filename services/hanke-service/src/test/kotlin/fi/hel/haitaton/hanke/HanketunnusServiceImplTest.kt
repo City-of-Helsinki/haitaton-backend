@@ -4,19 +4,18 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import io.mockk.every
 import io.mockk.mockk
-import org.junit.jupiter.api.Test
 import java.time.ZonedDateTime
+import org.junit.jupiter.api.Test
 
-class HanketunnusServiceImplTest {
+class HanketunnusServiceTest {
 
     @Test
     fun `newHanketunnus() returns id matching pattern HAIYY-N`() {
         val repository: IdCounterRepository = mockk()
-        val service = HanketunnusServiceImpl(repository)
+        val service = HanketunnusService(repository)
 
-        every { repository.incrementAndGet(CounterType.HANKETUNNUS.name) }.returns(
-            listOf(IdCounter(CounterType.HANKETUNNUS, 1))
-        )
+        every { repository.incrementAndGet(CounterType.HANKETUNNUS.name) }
+            .returns(listOf(IdCounter(CounterType.HANKETUNNUS, 1)))
 
         val hankeTunnus = service.newHanketunnus()
         val currentYear = ZonedDateTime.now(TZ_UTC).year
