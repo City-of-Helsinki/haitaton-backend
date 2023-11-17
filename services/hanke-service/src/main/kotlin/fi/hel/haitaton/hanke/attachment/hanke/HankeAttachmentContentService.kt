@@ -23,6 +23,11 @@ class HankeAttachmentContentService(
         hankeAttachmentContentRepository.save(HankeAttachmentContentEntity(attachmentId, content))
     }
 
+    fun delete(attachment: HankeAttachmentEntity) {
+        logger.info { "Deleting attachment content from attachment ${attachment.id}..." }
+        attachment.blobLocation?.let { fileClient.delete(Container.HANKE_LIITTEET, it) }
+    }
+
     fun find(attachment: HankeAttachmentEntity): ByteArray =
         attachment.blobLocation?.let { readFromFile(it, attachment.id!!) }
             ?: readFromDatabase(attachment.id!!)

@@ -43,11 +43,13 @@ class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Container
         contentType: MediaType,
         content: ByteArray,
     ) {
+        logger.info { "Uploading Blob to container $container with path $path..." }
         val options = BlobParallelUploadOptions(BinaryData.fromBytes(content))
         options.headers = BlobHttpHeaders()
         options.headers.setContentType(contentType.toString())
         options.headers.setContentDisposition("attachment; filename=$originalFilename")
         getContainerClient(container).getBlobClient(path).uploadWithResponse(options, null, null)
+        logger.info { "Uploaded Blob to container $container with path $path" }
     }
 
     override fun download(container: Container, path: String): DownloadResponse {
@@ -75,8 +77,12 @@ class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Container
         }
     }
 
-    override fun delete(container: Container, path: String): Boolean =
-        getContainerClient(container).getBlobClient(path).deleteIfExists()
+    override fun delete(container: Container, path: String): Boolean {
+        logger.info { "Deleting Blob from container $container with path $path..." }
+        val response = getContainerClient(container).getBlobClient(path).deleteIfExists()
+        logger.info { "Deleted Blob from container $container with path $path" }
+        return response
+    }
 
     private fun getContainerClient(container: Container) =
         when (container) {
