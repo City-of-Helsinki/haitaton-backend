@@ -34,7 +34,7 @@ import org.springframework.test.context.ActiveProfiles
 @SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(username = "test")
-internal class GeometriatServiceImplITest : DatabaseTest() {
+internal class GeometriatServiceITest : DatabaseTest() {
 
     @Autowired private lateinit var hankeService: HankeService
 

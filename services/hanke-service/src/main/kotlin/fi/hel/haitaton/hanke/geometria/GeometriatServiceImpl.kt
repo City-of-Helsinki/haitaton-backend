@@ -6,14 +6,17 @@ import fi.hel.haitaton.hanke.domain.HasFeatures
 import java.time.ZonedDateTime
 import mu.KotlinLogging
 import org.geojson.FeatureCollection
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
 
-open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) : GeometriatService {
+@Service
+class GeometriatService(private val hankeGeometriaDao: GeometriatDao) {
 
+    /** Insert/Update geometries. */
     @Transactional
-    override fun saveGeometriat(geometriat: HasFeatures, existingId: Int?): Geometriat? {
+    fun saveGeometriat(geometriat: HasFeatures, existingId: Int?): Geometriat? {
         GeometriatValidator.expectValid(geometriat)
 
         val oldGeometriat = existingId?.let { hankeGeometriaDao.retrieveGeometriat(existingId) }
@@ -28,7 +31,7 @@ open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) :
         }
     }
 
-    override fun createGeometriat(geometriat: HasFeatures): Geometriat {
+    fun createGeometriat(geometriat: HasFeatures): Geometriat {
         val created =
             Geometriat(
                     featureCollection = geometriat.featureCollection,
@@ -64,7 +67,7 @@ open class GeometriatServiceImpl(private val hankeGeometriaDao: GeometriatDao) :
     }
 
     /** Get geometries by geometry object id. */
-    override fun getGeometriat(geometriatId: Int): Geometriat? {
+    fun getGeometriat(geometriatId: Int): Geometriat? {
         return hankeGeometriaDao.retrieveGeometriat(geometriatId)
     }
 }

@@ -1,18 +1,20 @@
 package fi.hel.haitaton.hanke
 
+import java.time.ZonedDateTime
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Isolation
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
-import java.time.ZonedDateTime
 
-open class HanketunnusServiceImpl(private val idCounterRepository: IdCounterRepository) : HanketunnusService {
+@Service
+class HanketunnusService(private val idCounterRepository: IdCounterRepository) {
 
     @Transactional(
         readOnly = false,
         propagation = Propagation.REQUIRES_NEW,
         isolation = Isolation.READ_COMMITTED
     )
-    override fun newHanketunnus(): String {
+    fun newHanketunnus(): String {
         val currentYear = currentYear()
         val nextId = nextId()
         return "${HANKETUNNUS_PREFIX}$currentYear-$nextId"

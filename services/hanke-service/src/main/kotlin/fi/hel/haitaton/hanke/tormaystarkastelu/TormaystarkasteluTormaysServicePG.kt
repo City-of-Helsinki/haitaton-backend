@@ -2,19 +2,22 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 import java.util.Collections
 import org.springframework.jdbc.core.JdbcOperations
+import org.springframework.stereotype.Service
 
-// PostGIS implementation
-class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperations) :
-    TormaystarkasteluTormaysService {
+@Service
+class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations) {
 
-    override fun anyIntersectsYleinenKatuosa(geometriaIds: Set<Int>) =
+    /** yleinen katuosa, ylre_parts */
+    fun anyIntersectsYleinenKatuosa(geometriaIds: Set<Int>) =
         anyIntersectsWith(geometriaIds, "tormays_ylre_parts_polys")
 
-    override fun maxIntersectingYleinenkatualueKatuluokka(geometriaIds: Set<Int>) =
+    /** yleinen katualue, ylre_classes */
+    fun maxIntersectingYleinenkatualueKatuluokka(geometriaIds: Set<Int>) =
         getDistinctValuesIntersectingRows(geometriaIds, "tormays_ylre_classes_polys", "ylre_class")
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
-    override fun maxIntersectingLiikenteellinenKatuluokka(geometriaIds: Set<Int>) =
+    /** liikenteellinen katuluokka, street_classes */
+    fun maxIntersectingLiikenteellinenKatuluokka(geometriaIds: Set<Int>) =
         getDistinctValuesIntersectingRows(
                 geometriaIds,
                 "tormays_street_classes_polys",
@@ -22,10 +25,11 @@ class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperatio
             )
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
-    override fun anyIntersectsWithKantakaupunki(geometriaIds: Set<Int>) =
+    /** kantakaupunki, central_business_area */
+    fun anyIntersectsWithKantakaupunki(geometriaIds: Set<Int>) =
         anyIntersectsWith(geometriaIds, "tormays_central_business_area_polys")
 
-    override fun maxLiikennemaara(
+    fun maxLiikennemaara(
         geometriaIds: Set<Int>,
         etaisyys: TormaystarkasteluLiikennemaaranEtaisyys
     ): Int? {
@@ -39,7 +43,8 @@ class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperatio
             FROM $tableName, hankegeometria
             WHERE hankegeometria.hankegeometriatid in ($placeholders)
             AND ST_Intersects($tableName.geom, hankegeometria.geometria)
-            """.trimIndent(),
+            """
+                        .trimIndent(),
                     Integer::class.java,
                     *geometriaIds.toTypedArray()
                 )
@@ -47,12 +52,10 @@ class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperatio
         }
     }
 
-    override fun anyIntersectsCriticalBusRoutes(geometriaIds: Set<Int>) =
+    fun anyIntersectsCriticalBusRoutes(geometriaIds: Set<Int>) =
         anyIntersectsWith(geometriaIds, "tormays_critical_area_polys")
 
-    override fun getIntersectingBusRoutes(
-        geometriaIds: Set<Int>
-    ): Set<TormaystarkasteluBussireitti> {
+    fun getIntersectingBusRoutes(geometriaIds: Set<Int>): Set<TormaystarkasteluBussireitti> {
         if (geometriaIds.isEmpty()) return setOf()
         val placeholders = Collections.nCopies(geometriaIds.size, "?").joinToString(", ")
         with(jdbcOperations) {
@@ -69,7 +72,8 @@ class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperatio
                 FROM tormays_buses_polys, hankegeometria
                 WHERE hankegeometria.hankegeometriatid in ($placeholders)
                 AND ST_Intersects(tormays_buses_polys.geom, hankegeometria.geometria)
-                """.trimIndent(),
+                """
+                        .trimIndent(),
                     { rs, _ ->
                         TormaystarkasteluBussireitti(
                             rs.getString(2),
@@ -84,15 +88,15 @@ class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperatio
         }
     }
 
-    override fun maxIntersectingTramByLaneType(geometriaIds: Set<Int>) =
+    fun maxIntersectingTramByLaneType(geometriaIds: Set<Int>) =
         getDistinctValuesIntersectingRows(geometriaIds, "tormays_trams_polys", "lane").maxOfOrNull {
             TormaystarkasteluRaitiotiekaistatyyppi.valueOfKaistatyyppi(it).value
         }
 
-    override fun anyIntersectsWithCyclewaysPriority(geometriaIds: Set<Int>) =
+    fun anyIntersectsWithCyclewaysPriority(geometriaIds: Set<Int>) =
         anyIntersectsWith(geometriaIds, "tormays_cycleways_priority_polys")
 
-    override fun anyIntersectsWithCyclewaysMain(geometriaIds: Set<Int>) =
+    fun anyIntersectsWithCyclewaysMain(geometriaIds: Set<Int>) =
         anyIntersectsWith(geometriaIds, "tormays_cycleways_main_polys")
 
     private fun getDistinctValuesIntersectingRows(
@@ -109,7 +113,8 @@ class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperatio
             FROM $table, hankegeometria
             WHERE hankegeometria.hankegeometriatid in ($placeholders)
             AND ST_Intersects($table.geom, hankegeometria.geometria)
-            """.trimIndent(),
+            """
+                    .trimIndent(),
                 { rs, _ -> rs.getString(1) },
                 *geometriaIds.toTypedArray()
             )
@@ -125,7 +130,8 @@ class TormaystarkasteluTormaysServicePG(private val jdbcOperations: JdbcOperatio
             FROM $table, hankegeometria
             WHERE hankegeometria.hankegeometriatid in ($placeholders)
             AND ST_Intersects($table.geom, hankegeometria.geometria)
-            """.trimIndent(),
+            """
+                .trimIndent(),
             Int::class.java,
             *geometriat.toTypedArray()
         )!! > 0
@@ -175,5 +181,35 @@ enum class TormaystarkasteluRaitiotiekaistatyyppi(val value: Int, val kaistatyyp
         fun valueOfKaistatyyppi(kaistatyyppi: String): TormaystarkasteluRaitiotiekaistatyyppi {
             return entries.first { it.kaistatyyppi == kaistatyyppi }
         }
+    }
+}
+
+/** There are two(2) separate traffic counts - one for radius of 15m and other for 30m */
+enum class TormaystarkasteluLiikennemaaranEtaisyys(internal val radius: Int) {
+    RADIUS_15(15),
+    RADIUS_30(30)
+}
+
+/** Bus route */
+class TormaystarkasteluBussireitti(
+    val reittiId: String,
+    val suunta: Int,
+    val vuoromaaraRuuhkatunnissa: Int,
+    val runkolinja: TormaystarkasteluBussiRunkolinja
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is TormaystarkasteluBussireitti) return false
+
+        if (reittiId != other.reittiId) return false
+        if (suunta != other.suunta) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = reittiId.hashCode()
+        result = 31 * result + suunta
+        return result
     }
 }

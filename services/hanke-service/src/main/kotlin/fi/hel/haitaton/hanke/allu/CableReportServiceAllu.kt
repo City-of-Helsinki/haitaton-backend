@@ -29,11 +29,11 @@ private val logger = KotlinLogging.logger {}
 
 const val HAITATON_SYSTEM = "Haitaton järjestelmä"
 
-class CableReportServiceAllu(
+class CableReportService(
     private val webClient: WebClient,
     private val properties: AlluProperties,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
-) : CableReportService {
+) {
 
     private val baseUrl = properties.baseUrl
     private val defaultTimeout = ofSeconds(30)
@@ -57,14 +57,13 @@ class CableReportServiceAllu(
                 // Allu has gone back and forth on whether it returns the login token surrounded
                 // with quotes or not. To be safe, remove them if they are found.
                 .map { it.trim('"') }
-                .block()
-                ?: throw AlluApiException(uri, "Login token null")
+                .block() ?: throw AlluApiException(uri, "Login token null")
         } catch (e: Throwable) {
             throw AlluLoginException(e)
         }
     }
 
-    override fun getApplicationInformation(alluApplicationId: Int): AlluApplicationResponse {
+    fun getApplicationInformation(alluApplicationId: Int): AlluApplicationResponse {
         logger.info { "Fetching application information for application: $alluApplicationId" }
         val token = login()
         return webClient
@@ -88,7 +87,7 @@ class CableReportServiceAllu(
      * In other environments, this would cause an endless stream of false errors, since the Allu
      * test instance is shared for all local, dev and test environments.
      */
-    override fun getApplicationStatusHistories(
+    fun getApplicationStatusHistories(
         alluApplicationIds: List<Int>,
         eventsAfter: ZonedDateTime,
     ): List<ApplicationHistory> {
@@ -114,7 +113,7 @@ class CableReportServiceAllu(
             .block()!!
     }
 
-    override fun create(cableReport: AlluCableReportApplicationData): Int {
+    fun create(cableReport: AlluCableReportApplicationData): Int {
         logger.info { "Creating cable report." }
         val token = login()
         return webClient
@@ -134,7 +133,7 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
-    override fun update(alluApplicationId: Int, cableReport: AlluCableReportApplicationData) {
+    fun update(alluApplicationId: Int, cableReport: AlluCableReportApplicationData) {
         logger.info { "Updating application $alluApplicationId." }
         val token = login()
         webClient
@@ -154,7 +153,7 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
-    override fun cancel(alluApplicationId: Int) {
+    fun cancel(alluApplicationId: Int) {
         logger.info { "Cancelling application $alluApplicationId." }
         val token = login()
         webClient
@@ -173,13 +172,13 @@ class CableReportServiceAllu(
     }
 
     /** Send an individual attachment. */
-    override fun addAttachment(alluApplicationId: Int, attachment: Attachment) {
+    fun addAttachment(alluApplicationId: Int, attachment: Attachment) {
         val token = login()
         postAttachment(alluApplicationId, token, attachment)
     }
 
     /** Send many attachments in parallel. */
-    override fun addAttachments(
+    fun addAttachments(
         alluApplicationId: Int,
         attachments: List<ApplicationAttachmentEntity>,
         getContent: (UUID) -> ByteArray,
@@ -198,7 +197,7 @@ class CableReportServiceAllu(
         }
     }
 
-    override fun getInformationRequests(alluApplicationId: Int): List<InformationRequest> {
+    fun getInformationRequests(alluApplicationId: Int): List<InformationRequest> {
         logger.info { "Fetching information request for application $alluApplicationId." }
         val token = login()
         return webClient
@@ -217,7 +216,7 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
-    override fun respondToInformationRequest(
+    fun respondToInformationRequest(
         alluApplicationId: Int,
         requestId: Int,
         cableReport: AlluCableReportApplicationData,
@@ -240,7 +239,7 @@ class CableReportServiceAllu(
             .block()
     }
 
-    override fun getDecisionPdf(alluApplicationId: Int): ByteArray {
+    fun getDecisionPdf(alluApplicationId: Int): ByteArray {
         logger.info { "Fetching decision pdf for application $alluApplicationId." }
         val token = login()
         val requestUri = "$baseUrl/v2/cablereports/$alluApplicationId/decision"
@@ -280,7 +279,7 @@ class CableReportServiceAllu(
         return body.byteArray
     }
 
-    override fun getDecisionAttachments(alluApplicationId: Int): List<AttachmentMetadata> {
+    fun getDecisionAttachments(alluApplicationId: Int): List<AttachmentMetadata> {
         logger.info { "Fetching decision attachments for application $alluApplicationId." }
         val token = login()
         return webClient
@@ -299,7 +298,7 @@ class CableReportServiceAllu(
             .orElseThrow()
     }
 
-    override fun getDecisionAttachmentData(alluApplicationId: Int, attachmentId: Int): ByteArray {
+    fun getDecisionAttachmentData(alluApplicationId: Int, attachmentId: Int): ByteArray {
         logger.info { "Fetching decision attachment for application: $alluApplicationId." }
         val token = login()
         return webClient
@@ -323,7 +322,7 @@ class CableReportServiceAllu(
      *
      * @return The id of the added comment in Allu
      */
-    override fun sendSystemComment(alluApplicationId: Int, msg: String): Int =
+    fun sendSystemComment(alluApplicationId: Int, msg: String): Int =
         sendComment(alluApplicationId, Comment(HAITATON_SYSTEM, msg))
 
     private fun sendComment(alluApplicationId: Int, comment: Comment): Int {

@@ -27,11 +27,11 @@ private const val USERNAME = "tester"
 
 @ExtendWith(SpringExtension::class)
 @WithMockUser(USERNAME)
-internal class GeometriatServiceImplTest {
+internal class GeometriatServiceTest {
 
     private val geometriatDao: GeometriatDao = mockk()
 
-    private val service = GeometriatServiceImpl(geometriatDao)
+    private val service = GeometriatService(geometriatDao)
 
     @Test
     fun `save Geometriat OK - with old version`() {
