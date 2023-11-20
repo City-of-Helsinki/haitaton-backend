@@ -95,7 +95,7 @@ dependencies {
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.27.0")
     testImplementation("com.squareup.okhttp3:mockwebserver")
-    testImplementation("com.icegreen:greenmail-junit5:2.0.0")
+    testImplementation("com.icegreen:greenmail-junit5:2.0.1")
 
     // Testcontainers
     implementation(platform("org.testcontainers:testcontainers-bom:1.19.2"))
