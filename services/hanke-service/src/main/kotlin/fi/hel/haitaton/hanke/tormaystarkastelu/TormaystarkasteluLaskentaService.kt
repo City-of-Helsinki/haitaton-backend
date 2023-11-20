@@ -10,8 +10,10 @@ import fi.hel.haitaton.hanke.domain.loppuPvm
 import fi.hel.haitaton.hanke.roundToOneDecimal
 import kotlin.math.max
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.stereotype.Service
 
-open class TormaystarkasteluLaskentaService(
+@Service
+class TormaystarkasteluLaskentaService(
     @Autowired private val tormaysService: TormaystarkasteluTormaysService
 ) {
 
@@ -72,20 +74,20 @@ open class TormaystarkasteluLaskentaService(
         return if (tormaysService.anyIntersectsYleinenKatuosa(geometriaIds)) {
             // ON ylre_parts => street_classes?
             tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds)
-            // EI street_classes => ylre_classes?
-            ?: tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriaIds)
+                // EI street_classes => ylre_classes?
+                ?: tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriaIds)
                 // EI ylre_classes
                 ?: 0
         } else {
             // EI ylre_parts => ylre_classes?
             val max =
                 tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriaIds)
-                // EI ylre_classes
-                ?: return 0
+                    // EI ylre_classes
+                    ?: return 0
             // ON ylre_classes => street_classes?
             tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriaIds)
-            // JOS EI LÖYDY => Valitse ylre_classes
-            ?: max
+                // JOS EI LÖYDY => Valitse ylre_classes
+                ?: max
         }
     }
 
@@ -131,8 +133,8 @@ open class TormaystarkasteluLaskentaService(
 
         val valueByRunkolinja =
             bussireitit.maxOfOrNull { it.runkolinja.toBussiLiikenneLuokittelu().value }
-            // bussireitit is empty
-            ?: return BussiLiikenneLuokittelu.EI_VAIKUTA.value
+                // bussireitit is empty
+                ?: return BussiLiikenneLuokittelu.EI_VAIKUTA.value
 
         val countOfRushHourBuses = bussireitit.sumOf { it.vuoromaaraRuuhkatunnissa }
         val valueByRajaArvo =
