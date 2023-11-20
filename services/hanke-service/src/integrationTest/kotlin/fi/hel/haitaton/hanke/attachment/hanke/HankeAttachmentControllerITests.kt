@@ -13,6 +13,7 @@ import fi.hel.haitaton.hanke.attachment.andExpectError
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.TestHankeIdentifier
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
@@ -70,8 +71,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
 
     @Test
     fun `getMetadataList when valid request should return metadata list`() {
-        val data =
-            (1..3).map { AttachmentFactory.hankeAttachmentMetadata(fileName = "${it}file.pdf") }
+        val data = (1..3).map { AttachmentFactory.hankeAttachment(fileName = "${it}file.pdf") }
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
         every { hankeAttachmentService.getMetadataList(HANKE_TUNNUS) } returns data
 
@@ -104,15 +104,19 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
     @Test
     fun `postAttachment when valid request should succeed`() {
         val file = testFile()
+        val hanke = TestHankeIdentifier(1, HANKE_TUNNUS)
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name) } returns true
-        every { hankeAttachmentService.addAttachment(HANKE_TUNNUS, file) } returns
-            AttachmentFactory.hankeAttachmentMetadata(fileName = "text.txt")
+        every { hankeAttachmentService.hankeWithRoomForAttachment(HANKE_TUNNUS) } returns hanke
+        every {
+            hankeAttachmentService.addAttachment(hanke, FILE_NAME_PDF, APPLICATION_PDF, file.bytes)
+        } returns AttachmentFactory.hankeAttachment()
 
         postAttachment(file = file).andExpect(status().isOk)
 
         verifyOrder {
             authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name)
-            hankeAttachmentService.addAttachment(HANKE_TUNNUS, file)
+            hankeAttachmentService.hankeWithRoomForAttachment(HANKE_TUNNUS)
+            hankeAttachmentService.addAttachment(hanke, FILE_NAME_PDF, APPLICATION_PDF, file.bytes)
         }
     }
 

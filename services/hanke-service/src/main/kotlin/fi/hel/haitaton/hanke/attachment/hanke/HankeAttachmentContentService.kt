@@ -21,6 +21,11 @@ class HankeAttachmentContentService(
     private val hankeAttachmentContentRepository: HankeAttachmentContentRepository,
     private val fileClient: FileClient,
 ) {
+    companion object {
+        fun generateBlobPath(hankeId: Int) =
+            "$hankeId/${UUID.randomUUID()}".also { logger.info { "Generated blob path: $it" } }
+    }
+
     fun save(attachmentId: UUID, content: ByteArray) {
         hankeAttachmentContentRepository.save(HankeAttachmentContentEntity(attachmentId, content))
     }

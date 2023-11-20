@@ -3,6 +3,8 @@ package fi.hel.haitaton.hanke.attachment.common
 import mu.KotlinLogging
 import org.apache.commons.io.FilenameUtils.getExtension
 import org.apache.commons.io.FilenameUtils.removeExtension
+import org.springframework.http.InvalidMediaTypeException
+import org.springframework.http.MediaType
 
 private val logger = KotlinLogging.logger {}
 
@@ -63,6 +65,17 @@ object AttachmentValidator {
         }
         return sanitizedFilename!!
     }
+
+    fun ensureMediaType(contentType: String?): MediaType =
+        contentType?.let { parseMediaType(it) }
+            ?: throw AttachmentInvalidException("Content-Type null")
+
+    private fun parseMediaType(type: String): MediaType =
+        try {
+            MediaType.parseMediaType(type)
+        } catch (e: InvalidMediaTypeException) {
+            throw AttachmentInvalidException("Invalid content type, $type")
+        }
 
     private fun sanitizeFilename(filename: String?): String? =
         filename?.replace(INVALID_CHARS_PATTERN, "_")

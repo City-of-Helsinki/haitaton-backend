@@ -1,8 +1,9 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachment
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
+import fi.hel.haitaton.hanke.validNameAndType
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -43,7 +44,7 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
             ]
     )
     @PreAuthorize("@hankeAttachmentAuthorizer.authorizeHankeTunnus(#hankeTunnus,'VIEW')")
-    fun getMetadataList(@PathVariable hankeTunnus: String): List<HankeAttachmentMetadata> {
+    fun getMetadataList(@PathVariable hankeTunnus: String): List<HankeAttachment> {
         return hankeAttachmentService.getMetadataList(hankeTunnus)
     }
 
@@ -99,8 +100,23 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
     fun postAttachment(
         @PathVariable hankeTunnus: String,
         @RequestParam("liite") attachment: MultipartFile,
-    ): HankeAttachmentMetadata {
-        return hankeAttachmentService.addAttachment(hankeTunnus, attachment)
+    ): HankeAttachment {
+        logger.info {
+            "Adding attachment to hanke, hankeTunnus = $hankeTunnus, " +
+                "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}, " +
+                "content type = ${attachment.contentType}"
+        }
+
+        val hanke = hankeAttachmentService.hankeWithRoomForAttachment(hankeTunnus)
+
+        attachment.validNameAndType().let { (name, type) ->
+            return hankeAttachmentService.addAttachment(
+                hanke = hanke,
+                name = name,
+                type = type,
+                content = attachment.bytes
+            )
+        }
     }
 
     @DeleteMapping("/{attachmentId}")

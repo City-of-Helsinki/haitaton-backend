@@ -8,6 +8,7 @@ import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
 import assertk.assertions.endsWith
 import assertk.assertions.hasClass
+import assertk.assertions.hasMessage
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
@@ -24,26 +25,29 @@ import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
-import fi.hel.haitaton.hanke.attachment.testFile
+import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeIdentifierFactory
+import fi.hel.haitaton.hanke.factory.TestHankeIdentifier
+import fi.hel.haitaton.hanke.factory.identifier
+import java.time.OffsetDateTime
 import java.util.UUID
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
@@ -73,33 +77,42 @@ class HankeAttachmentServiceITests(
         mockClamAv.shutdown()
     }
 
-    @Test
-    fun `getMetadataList should return related metadata list`() {
-        mockClamAv.enqueue(response(body(results = successResult())))
-        mockClamAv.enqueue(response(body(results = successResult())))
-        val hanke = hankeFactory.save()
-        (1..2).forEach { _ ->
-            hankeAttachmentService.addAttachment(
-                hankeTunnus = hanke.hankeTunnus,
-                attachment = testFile()
-            )
-        }
+    @Nested
+    inner class GetMetadataList {
+        @Test
+        fun `getMetadataList should return related metadata list`() {
+            mockClamAv.enqueue(response(body(results = successResult())))
+            mockClamAv.enqueue(response(body(results = successResult())))
+            val hanke = hankeFactory.saveEntity()
+            (1..2).forEach { _ ->
+                hankeAttachmentRepository.save(
+                    HankeAttachmentEntity(
+                        id = null,
+                        fileName = FILE_NAME_PDF,
+                        contentType = APPLICATION_PDF_VALUE,
+                        createdByUserId = USERNAME,
+                        createdAt = OffsetDateTime.now(),
+                        blobLocation = "${hanke.id}/${UUID.randomUUID()}",
+                        hanke = hanke,
+                    )
+                )
+            }
 
-        val result = hankeAttachmentService.getMetadataList(hanke.hankeTunnus)
+            val result = hankeAttachmentService.getMetadataList(hanke.hankeTunnus)
 
-        assertThat(result).hasSize(2)
-        assertThat(result).each { d ->
-            d.transform { it.id }.isNotNull()
-            d.transform { it.fileName }.endsWith(FILE_NAME_PDF)
-            d.transform { it.createdByUserId }.isEqualTo(USERNAME)
-            d.transform { it.createdAt }.isNotNull()
-            d.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
+            assertThat(result).hasSize(2)
+            assertThat(result).each { d ->
+                d.transform { it.id }.isNotNull()
+                d.transform { it.fileName }.endsWith(FILE_NAME_PDF)
+                d.transform { it.createdByUserId }.isEqualTo(USERNAME)
+                d.transform { it.createdAt }.isNotNull()
+                d.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
+            }
         }
     }
 
     @Nested
     inner class GetContent {
-
         @Test
         fun `throws exception if attachment not found`() {
             val attachmentId = UUID.fromString("93b5c49d-918a-453d-a2bf-b918b47923c1")
@@ -145,103 +158,131 @@ class HankeAttachmentServiceITests(
         }
     }
 
-    @Test
-    fun `addAttachment when valid input returns metadata of saved attachment`() {
-        mockClamAv.enqueue(response(body(results = successResult())))
-        val hanke = hankeFactory.save()
+    @Nested
+    inner class AddAttachment {
 
-        val result = hankeAttachmentService.addAttachment(hanke.hankeTunnus, testFile())
-
-        assertThat(result.id).isNotNull()
-        assertThat(result.createdByUserId).isEqualTo(USERNAME)
-        assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-        assertThat(result.createdAt).isNotNull()
-        assertThat(result.hankeTunnus).isEqualTo(hanke.hankeTunnus)
-
-        val attachments = hankeAttachmentRepository.findAll()
-        assertThat(attachments).hasSize(1)
-        val attachmentInDb = attachments.first()
-        assertThat(attachmentInDb.createdByUserId).isEqualTo(USERNAME)
-        assertThat(attachmentInDb.fileName).isEqualTo(FILE_NAME_PDF)
-        assertThat(attachmentInDb.createdAt).isNotNull()
-
-        val savedContent = hankeAttachmentContentRepository.getReferenceById(result.id).content
-        assertThat(savedContent).isEqualTo(DEFAULT_DATA)
-    }
-
-    @Test
-    fun `addAttachment with special characters in filename sanitizes filename`() {
-        mockClamAv.enqueue(response(body(results = successResult())))
-        val hanke = hankeFactory.save()
-
-        val result =
-            hankeAttachmentService.addAttachment(
-                hanke.hankeTunnus,
-                testFile(fileName = "exa*mple.txt")
-            )
-
-        assertThat(result.fileName).isEqualTo("exa_mple.txt")
-        val attachmentInDb = hankeAttachmentRepository.getReferenceById(result.id)
-        assertThat(attachmentInDb.fileName).isEqualTo("exa_mple.txt")
-    }
-
-    @Test
-    fun `addAttachment when allowed attachment amount is exceeded should throw`() {
-        val hanke = hankeFactory.saveEntity()
-        (1..ALLOWED_ATTACHMENT_COUNT).map { hankeAttachmentFactory.save(hanke = hanke) }
-
-        val exception =
-            assertThrows<AttachmentInvalidException> {
-                hankeAttachmentService.addAttachment(
-                    hankeTunnus = hanke.hankeTunnus,
-                    attachment = testFile()
-                )
-            }
-
-        assertThat(exception.message)
-            .isEqualTo("Attachment upload exception: Attachment amount limit reached")
-    }
-
-    @Test
-    fun `addAttachment when no related hanke should fail`() {
-        assertThrows<HankeNotFoundException> {
-            hankeAttachmentService.addAttachment("", testFile())
+        @BeforeEach
+        fun clear() {
+            fileClient.recreateContainers()
         }
 
-        assertThat(hankeAttachmentRepository.findAll()).isEmpty()
-    }
+        @Test
+        fun `Should return metadata of saved attachment`() {
+            mockClamAv.enqueue(response(body(results = successResult())))
+            val hanke = hankeFactory.save()
 
-    @Test
-    fun `addAttachment when content type not supported should throw`() {
-        val hanke = hankeFactory.save()
-        val invalidFilename = "hello.html"
-
-        val ex =
-            assertThrows<AttachmentInvalidException> {
+            val result =
                 hankeAttachmentService.addAttachment(
-                    hanke.hankeTunnus,
-                    testFile(fileName = invalidFilename),
+                    hanke = hanke.identifier(),
+                    name = FILE_NAME_PDF,
+                    type = APPLICATION_PDF,
+                    content = DEFAULT_DATA
                 )
-            }
 
-        assertThat(ex.message)
-            .isEqualTo("Attachment upload exception: File 'hello.html' not supported")
-        assertThat(hankeAttachmentRepository.findAll()).isEmpty()
+            assertThat(result.id).isNotNull()
+            assertThat(result.createdByUserId).isEqualTo(USERNAME)
+            assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
+            assertThat(result.createdAt).isNotNull()
+            assertThat(result.hankeTunnus).isEqualTo(hanke.hankeTunnus)
+
+            val attachments = hankeAttachmentRepository.findAll()
+            assertThat(attachments).hasSize(1)
+            val attachmentInDb = attachments.first()
+            assertThat(attachmentInDb.createdByUserId).isEqualTo(USERNAME)
+            assertThat(attachmentInDb.fileName).isEqualTo(FILE_NAME_PDF)
+            assertThat(attachmentInDb.createdAt).isNotNull()
+            val blob = fileClient.download(HANKE_LIITTEET, attachmentInDb.blobLocation!!)
+            assertThat(blob.contentType).isEqualTo(APPLICATION_PDF)
+        }
+
+        @Test
+        fun `Should throw if attachment amount is exceeded`() {
+            mockClamAv.enqueue(response(body(results = successResult())))
+            val hanke = hankeFactory.saveEntity()
+            (1..ALLOWED_ATTACHMENT_COUNT)
+                .map { AttachmentFactory.hankeAttachmentEntity(hanke = hanke) }
+                .let { hankeAttachmentRepository.saveAll(it) }
+
+            assertFailure {
+                    hankeAttachmentService.addAttachment(
+                        TestHankeIdentifier(hanke.id, hanke.hankeTunnus),
+                        FILE_NAME_PDF,
+                        APPLICATION_PDF,
+                        ByteArray(0)
+                    )
+                }
+                .all {
+                    hasClass(AttachmentInvalidException::class)
+                    hasMessage("Attachment upload exception: Attachment limit reached")
+                }
+        }
+
+        @Test
+        fun `Should fail when there is no related hanke`() {
+            mockClamAv.enqueue(response(body(results = successResult())))
+
+            assertFailure {
+                    hankeAttachmentService.addAttachment(
+                        hanke = TestHankeIdentifier(5, "HAI-123"),
+                        name = FILE_NAME_PDF,
+                        type = APPLICATION_PDF,
+                        content = DEFAULT_DATA
+                    )
+                }
+                .hasClass(HankeNotFoundException::class)
+
+            assertThat(hankeAttachmentRepository.findAll()).isEmpty()
+        }
+
+        @Test
+        fun `Should throw when infected file is encountered`() {
+            mockClamAv.enqueue(response(body(results = failResult())))
+            val hanke = hankeFactory.save()
+
+            assertFailure {
+                    hankeAttachmentService.addAttachment(
+                        hanke = hanke.identifier(),
+                        name = FILE_NAME_PDF,
+                        type = APPLICATION_PDF,
+                        content = DEFAULT_DATA
+                    )
+                }
+                .all {
+                    hasClass(AttachmentInvalidException::class)
+                    hasMessage(
+                        "Attachment upload exception: Infected file detected, see previous logs."
+                    )
+                }
+        }
     }
 
-    @Test
-    fun `addAttachment when scan fails should throw`() {
-        mockClamAv.enqueue(response(body(results = failResult())))
-        val hanke = hankeFactory.save()
+    @Nested
+    inner class HankeWithRoomForAttachment {
+        @Test
+        fun `When there is still room, should return hanke info`() {
+            val hanke = hankeFactory.saveEntity()
 
-        val exception =
-            assertThrows<AttachmentInvalidException> {
-                hankeAttachmentService.addAttachment(hanke.hankeTunnus, testFile())
-            }
+            val result = hankeAttachmentService.hankeWithRoomForAttachment(hanke.hankeTunnus)
 
-        assertThat(exception.message)
-            .isEqualTo("Attachment upload exception: Infected file detected, see previous logs.")
-        assertThat(hankeAttachmentRepository.findAll()).isEmpty()
+            assertThat(result.id).isEqualTo(hanke.id)
+            assertThat(result.hankeTunnus).isEqualTo(hanke.hankeTunnus)
+        }
+
+        @Test
+        fun `When allowed attachment amount is exceeded should throw`() {
+            val hanke = hankeFactory.saveEntity()
+            val attachments =
+                (1..ALLOWED_ATTACHMENT_COUNT).map {
+                    AttachmentFactory.hankeAttachmentEntity(hanke = hanke)
+                }
+            hankeAttachmentRepository.saveAll(attachments)
+
+            assertFailure { hankeAttachmentService.hankeWithRoomForAttachment(hanke.hankeTunnus) }
+                .all {
+                    hasClass(AttachmentInvalidException::class)
+                    hasMessage("Attachment upload exception: Attachment limit reached")
+                }
+        }
     }
 
     @Nested

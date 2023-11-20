@@ -1,112 +1,137 @@
 package fi.hel.haitaton.hanke.attachment
 
+import assertk.all
+import assertk.assertFailure
 import assertk.assertThat
-import assertk.assertions.contains
+import assertk.assertions.hasClass
+import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
-import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
-import org.springframework.boot.test.system.CapturedOutput
-import org.springframework.boot.test.system.OutputCaptureExtension
+import org.junit.jupiter.params.provider.ValueSource
 
-@ExtendWith(OutputCaptureExtension::class)
 class AttachmentValidatorTest {
 
-    @Test
-    fun validFileName() {
-        val filename = "example.txt"
+    @Nested
+    inner class ValidFilename {
+        @Test
+        fun `Normal filename should be valid`() {
+            val filename = "example.txt"
 
-        val result = AttachmentValidator.validFilename(filename)
+            val result = AttachmentValidator.validFilename(filename)
 
-        assertThat(result).isEqualTo(filename)
+            assertThat(result).isEqualTo(filename)
+        }
+
+        @Test
+        fun `Filename in upper case should be valid`() {
+            val filename = "EXAMPLE.TXT"
+
+            val result = AttachmentValidator.validFilename(filename)
+
+            assertThat(result).isEqualTo(filename)
+        }
+
+        @Test
+        fun `Missing filename should cause exception`() {
+            assertFailure { AttachmentValidator.validFilename("") }
+                .all {
+                    hasClass(AttachmentInvalidException::class)
+                    hasMessage("Attachment upload exception: File '' not supported")
+                }
+        }
+
+        @Test
+        fun `Too long filename should cause an exception`() {
+            val filename = "a".repeat(129)
+
+            assertFailure { AttachmentValidator.validFilename(filename) }
+                .all {
+                    hasClass(AttachmentInvalidException::class)
+                    hasMessage("Attachment upload exception: File '$filename' not supported")
+                }
+        }
+
+        @ParameterizedTest
+        @CsvSource(
+            "exa\\mple,exa_mple",
+            "exa/mple,exa_mple",
+            "example:,example_",
+            "exa*mple,exa_mple",
+            "examp?le,examp_le",
+            "e\"xample,e_xample",
+            "exa<mple,exa_mple",
+            ">example,_example",
+            "example|,example_",
+            "exa%22mple,exa_mple",
+            "exa*|%22:<>mple,exa______mple",
+            "exa-mple,exa-mple",
+        )
+        fun `Invalid characters should be sanitized`(given: String, expected: String) {
+            val filename = "$given.txt"
+
+            val result = AttachmentValidator.validFilename(filename)
+
+            assertThat(result).isEqualTo("$expected.txt")
+        }
+
+        @Test
+        fun `Reserved filename should cause an exception`() {
+            val filename = "con.txt"
+
+            assertFailure { AttachmentValidator.validFilename(filename) }
+                .all {
+                    hasClass(AttachmentInvalidException::class)
+                    hasMessage("Attachment upload exception: File '$filename' not supported")
+                }
+        }
+
+        @Test
+        fun `PathTraversal should cause an exception`() {
+            val filename = "../example.txt"
+
+            assertFailure { AttachmentValidator.validFilename(filename) }
+                .all {
+                    hasClass(AttachmentInvalidException::class)
+                    hasMessage("Attachment upload exception: File '.._example.txt' not supported")
+                }
+        }
+
+        @Test
+        fun `Unsupported type should cause an exception`() {
+            val filename = "file.gif"
+
+            assertFailure { AttachmentValidator.validFilename(filename) }
+                .all {
+                    hasClass(AttachmentInvalidException::class)
+                    hasMessage("Attachment upload exception: File '$filename' not supported")
+                }
+        }
     }
 
-    @Test
-    fun `valid filename in uppercase`() {
-        val filename = "EXAMPLE.TXT"
+    @Nested
+    inner class EnsureMediaType {
+        @ParameterizedTest
+        @ValueSource(strings = ["invalid", ""])
+        fun `Invalid media type should cause an exception`(input: String) {
+            assertFailure { AttachmentValidator.ensureMediaType(input) }
+                .all {
+                    hasClass(AttachmentInvalidException::class)
+                    hasMessage("Attachment upload exception: Invalid content type, $input")
+                }
+        }
 
-        val result = AttachmentValidator.validFilename(filename)
-
-        assertThat(result).isEqualTo(filename)
-    }
-
-    @Test
-    fun fileNameMissing(logOutput: CapturedOutput) {
-        val ex = assertThrows<AttachmentInvalidException> { AttachmentValidator.validFilename("") }
-
-        assertEquals("Attachment upload exception: File '' not supported", ex.message)
-        assertThat(logOutput).contains("Attachment file name null or blank")
-    }
-
-    @Test
-    fun fileNameTooLong(logOutput: CapturedOutput) {
-        val filename = "a".repeat(129)
-
-        val ex =
-            assertThrows<AttachmentInvalidException> { AttachmentValidator.validFilename(filename) }
-
-        assertEquals("Attachment upload exception: File '$filename' not supported", ex.message)
-        assertThat(logOutput).contains("File name is too long")
-    }
-
-    @ParameterizedTest
-    @CsvSource(
-        "exa\\mple,exa_mple",
-        "exa/mple,exa_mple",
-        "example:,example_",
-        "exa*mple,exa_mple",
-        "examp?le,examp_le",
-        "e\"xample,e_xample",
-        "exa<mple,exa_mple",
-        ">example,_example",
-        "example|,example_",
-        "exa%22mple,exa_mple",
-        "exa*|%22:<>mple,exa______mple",
-        "exa-mple,exa-mple",
-    )
-    fun invalidCharacters(given: String, expected: String) {
-        val filename = "$given.txt"
-
-        val result = AttachmentValidator.validFilename(filename)
-
-        assertThat(result).isEqualTo("$expected.txt")
-    }
-
-    @Test
-    fun reservedFileName(logOutput: CapturedOutput) {
-        val filename = "con.txt"
-
-        val ex =
-            assertThrows<AttachmentInvalidException> { AttachmentValidator.validFilename(filename) }
-
-        assertEquals("Attachment upload exception: File '$filename' not supported", ex.message)
-        assertThat(logOutput).contains("File name is reserved")
-    }
-
-    @Test
-    fun pathTraversal(logOutput: CapturedOutput) {
-        val filename = "../example.txt"
-
-        val ex =
-            assertThrows<AttachmentInvalidException> { AttachmentValidator.validFilename(filename) }
-
-        assertEquals("Attachment upload exception: File '.._example.txt' not supported", ex.message)
-        assertThat(logOutput).contains("File name contains path traversal characters")
-    }
-
-    @Test
-    fun `validate when unsupported type should throw`(logOutput: CapturedOutput) {
-        val filename = "file.gif"
-
-        val ex =
-            assertThrows<AttachmentInvalidException> { AttachmentValidator.validFilename(filename) }
-
-        assertEquals("Attachment upload exception: File '$filename' not supported", ex.message)
-        assertThat(logOutput).contains("File 'file.gif' not supported")
+        @Test
+        fun `Null content type should cause an exception`() {
+            assertFailure { AttachmentValidator.ensureMediaType(null) }
+                .all {
+                    hasClass(AttachmentInvalidException::class)
+                    hasMessage("Attachment upload exception: Content-Type null")
+                }
+        }
     }
 }
