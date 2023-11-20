@@ -20,6 +20,10 @@ class MockFileClient : FileClient {
         Container.entries.forEach { fileMap[it] = mutableMapOf() }
     }
 
+    fun removeContainers() {
+        Container.entries.forEach { fileMap[it] = mutableMapOf() }
+    }
+
     fun clearContainers() {
         Container.entries.forEach { fileMap[it]!!.clear() }
     }
