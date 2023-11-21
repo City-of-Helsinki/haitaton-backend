@@ -139,6 +139,7 @@ services:
       # - haitaton-ui-dev for Suomi.fi authentication
       # - haitaton-admin-ui-dev for Helsinki AD authentication
       REACT_APP_OIDC_CLIENT_ID: haitaton-admin-ui-dev
+      LOGIN_SERVER: https://tunnistamo.test.hel.ninja
     ports:
       - 8000:8000
     volumes:
