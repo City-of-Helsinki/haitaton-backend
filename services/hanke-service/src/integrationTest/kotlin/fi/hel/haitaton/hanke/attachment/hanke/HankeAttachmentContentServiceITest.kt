@@ -16,14 +16,13 @@ import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
+import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory
 import java.util.UUID
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
@@ -32,19 +31,13 @@ import org.springframework.test.context.ActiveProfiles
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
-class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactory {
-
-    @Autowired private lateinit var attachmentContentService: HankeAttachmentContentService
-    @Autowired override lateinit var fileClient: MockFileClient
-    @Autowired override lateinit var hankeAttachmentRepository: HankeAttachmentRepository
-    @Autowired
-    override lateinit var hankeAttachmentContentRepository: HankeAttachmentContentRepository
-    @Autowired override lateinit var hankeFactory: HankeFactory
-
-    @BeforeEach
-    fun beforeEach() {
-        fileClient.recreateContainers()
-    }
+@ExtendWith(MockFileClientExtension::class)
+class HankeAttachmentContentServiceITest(
+    @Autowired private val attachmentContentService: HankeAttachmentContentService,
+    @Autowired private val fileClient: MockFileClient,
+    @Autowired private val hankeAttachmentContentRepository: HankeAttachmentContentRepository,
+    @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
+) : DatabaseTest() {
 
     private val hankeId = 1
     private val attachmentId = UUID.fromString("b820121e-ad54-4ab8-926a-c4a8193010b5")
@@ -55,7 +48,7 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
     inner class Delete {
         @Test
         fun `deletes the content when blobLocation is specified`() {
-            saveContentToCloud(path, bytes = bytes)
+            hankeAttachmentFactory.saveContentToCloud(path, bytes = bytes)
             val attachmentEntity =
                 HankeAttachmentFactory.createEntity(attachmentId, blobLocation = path)
 
@@ -76,7 +69,8 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
 
         @Test
         fun `doesn't do anything if blobLocation is not specified`() {
-            val attachmentEntity = saveAttachment(blobLocation = null).withDbContent(bytes)
+            val attachmentEntity =
+                hankeAttachmentFactory.save(blobLocation = null).withDbContent(bytes).value
 
             attachmentContentService.delete(attachmentEntity)
 
@@ -93,7 +87,7 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
     inner class Find {
         @Test
         fun `returns the content when blobLocation is specified`() {
-            saveContentToCloud(path, bytes = bytes)
+            hankeAttachmentFactory.saveContentToCloud(path, bytes = bytes)
             val attachmentEntity =
                 HankeAttachmentFactory.createEntity(attachmentId, blobLocation = path)
 
@@ -104,8 +98,8 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
 
         @Test
         fun `returns the content when blobLocation is not specified`() {
-            val attachmentEntity = saveAttachment(blobLocation = null)
-            saveContentToDb(attachmentEntity.id!!, bytes)
+            val attachmentEntity =
+                hankeAttachmentFactory.save(blobLocation = null).withDbContent(bytes).value
 
             val result = attachmentContentService.find(attachmentEntity)
 
@@ -118,7 +112,7 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
 
         @Test
         fun `returns the right content`() {
-            saveContentToCloud(path, bytes = bytes)
+            hankeAttachmentFactory.saveContentToCloud(path, bytes = bytes)
 
             val result = attachmentContentService.readFromFile(path, attachmentId)
 
@@ -139,8 +133,8 @@ class HankeAttachmentContentServiceITest : DatabaseTest(), HankeAttachmentFactor
     inner class ReadFromDatabase {
         @Test
         fun `returns the right content`() {
-            val attachmentId = saveAttachment().id!!
-            saveContentToDb(attachmentId, bytes)
+            val attachmentId = hankeAttachmentFactory.save().value.id!!
+            hankeAttachmentFactory.saveContentToDb(attachmentId, bytes)
 
             val result = attachmentContentService.readFromDatabase(attachmentId)
 

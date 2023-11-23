@@ -28,7 +28,7 @@ class HankeAttachmentContentService(
     /** Move the attachment content to cloud. In test-data use for now, can be used for HAI-1964. */
     @Transactional
     fun moveToCloud(attachment: HankeAttachmentEntity): String {
-        val path = cloudName(attachment.hanke.id, attachment.id!!)
+        val path = attachment.cloudPath()
         val content =
             hankeAttachmentContentRepository.findByIdOrNull(attachment.id!!)
                 ?: run {
@@ -52,6 +52,10 @@ class HankeAttachmentContentService(
         attachment.blobLocation?.let { fileClient.delete(Container.HANKE_LIITTEET, it) }
     }
 
+    fun deleteAllForHanke(hankeId: Int) {
+        fileClient.deleteAllByPrefix(Container.HANKE_LIITTEET, hankePrefix(hankeId))
+    }
+
     fun find(attachment: HankeAttachmentEntity): ByteArray =
         attachment.blobLocation?.let { readFromFile(it, attachment.id!!) }
             ?: readFromDatabase(attachment.id!!)
@@ -70,5 +74,16 @@ class HankeAttachmentContentService(
                 throw AttachmentNotFoundException(attachmentId)
             }
 
-    private fun cloudName(hankeId: Int, attachmentId: UUID) = "${hankeId}/${attachmentId}"
+    companion object {
+        /** Name (path from container root) the attachment should have in the cloud storage. */
+        fun HankeAttachmentEntity.cloudPath(): String = hankePrefix(hanke.id) + id!!.toString()
+
+        /**
+         * Prefix derived from hanke each attachment of that hanke should have in the cloud storage.
+         *
+         * Used to distinguish the attachments of different from each other in the cloud storage and
+         * to enable deleting all of them at once.
+         */
+        private fun hankePrefix(hankeId: Int): String = "${hankeId}/"
+    }
 }

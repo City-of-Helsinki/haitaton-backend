@@ -10,9 +10,6 @@ import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.FileClient
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
@@ -33,11 +30,9 @@ import org.springframework.test.context.ActiveProfiles
 class HankeAttachmentAuthorizerITest(
     @Autowired private val authorizer: HankeAttachmentAuthorizer,
     @Autowired private val permissionService: PermissionService,
-    @Autowired override val hankeFactory: HankeFactory,
-    @Autowired override val hankeAttachmentRepository: HankeAttachmentRepository,
-    @Autowired override val hankeAttachmentContentRepository: HankeAttachmentContentRepository,
-    @Autowired override val fileClient: FileClient,
-) : DatabaseTest(), HankeAttachmentFactory {
+    @Autowired private val hankeFactory: HankeFactory,
+    @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
+) : DatabaseTest() {
     private val hankeTunnus = "HAI24-14"
     private val attachmentId = UUID.fromString("3b0e3149-37a2-4393-af03-6a34b946fef1")
 
@@ -90,7 +85,7 @@ class HankeAttachmentAuthorizerITest(
         @Test
         fun `throws exception if the attachment belongs to another hanke`() {
             val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
-            val attachment = saveAttachment()
+            val attachment = hankeAttachmentFactory.save().value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
             assertFailure {
@@ -105,7 +100,7 @@ class HankeAttachmentAuthorizerITest(
         @Test
         fun `returns true if the attachment is found, it belongs to the hanke and the user has the correct permission`() {
             val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
-            val attachment = saveAttachment(hanke = hanke)
+            val attachment = hankeAttachmentFactory.save(hanke = hanke).value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
             assertThat(authorizer.authorizeAttachment(hankeTunnus, attachment.id!!, VIEW.name))

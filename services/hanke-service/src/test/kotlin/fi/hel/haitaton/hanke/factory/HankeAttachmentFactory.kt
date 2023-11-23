@@ -13,32 +13,42 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.http.MediaType
+import org.springframework.stereotype.Component
 
-interface HankeAttachmentFactory {
-    val hankeAttachmentRepository: HankeAttachmentRepository
-    val hankeAttachmentContentRepository: HankeAttachmentContentRepository
-    val hankeFactory: HankeFactory
-    val fileClient: FileClient
-
-    fun saveAttachment(
-        blobLocation: String? = null,
-        filename: String = FILE_NAME_PDF,
+@Component
+class HankeAttachmentFactory(
+    val attachmentRepository: HankeAttachmentRepository,
+    val contentRepository: HankeAttachmentContentRepository,
+    val hankeFactory: HankeFactory,
+    val fileClient: FileClient,
+) {
+    fun save(
+        id: UUID? = null,
+        fileName: String = FILE_NAME_PDF,
         contentType: String = CONTENT_TYPE,
-        hanke: HankeEntity = hankeFactory.saveEntity(),
-    ): HankeAttachmentEntity {
-        val attachment =
-            createEntity(
-                blobLocation = blobLocation,
-                fileName = filename,
-                contentType = contentType,
-                hanke = hanke
+        createdByUser: String = USERNAME,
+        createdAt: OffsetDateTime = CREATED_AT,
+        blobLocation: String? = null,
+        hanke: HankeEntity = hankeFactory.saveEntity()
+    ): HankeAttachmentBuilder {
+        val entity =
+            attachmentRepository.save(
+                createEntity(
+                    id,
+                    fileName,
+                    contentType,
+                    createdByUser,
+                    createdAt,
+                    blobLocation,
+                    hanke
+                )
             )
-        return hankeAttachmentRepository.save(attachment)
+        return HankeAttachmentBuilder(entity, attachmentRepository, this)
     }
 
     fun saveContentToDb(attachmentId: UUID, bytes: ByteArray): HankeAttachmentContentEntity {
         val entity = HankeAttachmentContentEntity(attachmentId, bytes)
-        return hankeAttachmentContentRepository.save(entity)
+        return contentRepository.save(entity)
     }
 
     fun saveContentToCloud(
@@ -48,25 +58,6 @@ interface HankeAttachmentFactory {
         bytes: ByteArray = DEFAULT_DATA
     ) {
         fileClient.upload(HANKE_LIITTEET, path, filename, mediaType, bytes)
-    }
-
-    fun HankeAttachmentEntity.withDbContent(
-        bytes: ByteArray = DEFAULT_DATA
-    ): HankeAttachmentEntity {
-        saveContentToDb(id!!, bytes)
-        return this
-    }
-
-    fun HankeAttachmentEntity.withCloudContent(
-        path: String = "${hanke.id}/${id}",
-        filename: String = FILE_NAME_PDF,
-        mediaType: MediaType = Companion.MEDIA_TYPE,
-        bytes: ByteArray = DEFAULT_DATA
-    ): HankeAttachmentEntity {
-        blobLocation = path
-        hankeAttachmentRepository.save(this)
-        saveContentToCloud(path, filename, mediaType, bytes)
-        return this
     }
 
     companion object {
@@ -79,6 +70,8 @@ interface HankeAttachmentFactory {
             id: UUID? = null,
             fileName: String = FILE_NAME_PDF,
             contentType: String = CONTENT_TYPE,
+            createdByUser: String = USERNAME,
+            createdAt: OffsetDateTime = CREATED_AT,
             blobLocation: String? = null,
             hanke: HankeEntity = HankeFactory.createMinimalEntity()
         ) =
@@ -86,8 +79,8 @@ interface HankeAttachmentFactory {
                 id = id,
                 fileName = fileName,
                 contentType = contentType,
-                createdByUserId = USERNAME,
-                createdAt = CREATED_AT,
+                createdByUserId = createdByUser,
+                createdAt = createdAt,
                 blobLocation = blobLocation,
                 hanke = hanke,
             )
