@@ -120,7 +120,6 @@ services:
       - db
       - clamav-api
       - azurite-setup
-    command: [ "./wait-for-it.sh", "-t", "30", "--strict", "db:5432", "--", "java", "-jar", "haitaton.jar" ]
     networks:
       backbone:
         aliases:

@@ -1,21 +1,23 @@
-FROM eclipse-temurin:17 as builder
-USER root
+FROM eclipse-temurin:17 as build
+WORKDIR /workspace/app
 
-# Copy gradle to avoid redownloading it
-COPY *.gradle gradle.* gradlew /builder/
-COPY gradle /builder/gradle
-WORKDIR /builder
-RUN ./gradlew --version
-RUN java -version
+COPY gradlew settings.gradle.kts ./
+COPY gradle/ ./gradle/
+COPY services/hanke-service/build.gradle.kts ./services/hanke-service/
+COPY services/hanke-service/src/main ./services/hanke-service/src/main
 
-ADD . /builder
-WORKDIR /builder
-# Add GRADLE_OPTS to prevent JVM forking while building
-RUN GRADLE_OPTS="-XX:MaxMetaspaceSize=256m -XX:+HeapDumpOnOutOfMemoryError -Xms256m -Xmx512m" ./gradlew assemble --no-daemon
+RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon :services:hanke-service:assemble
+RUN mkdir -p services/hanke-service/build/dependency && \
+    (cd services/hanke-service/build/dependency; jar -xf ../libs/*SNAPSHOT.jar)
 
 FROM eclipse-temurin:17
-WORKDIR /app
-EXPOSE 8080 8081
-COPY --from=builder /builder/services/hanke-service/build/libs/hanke-service-*.jar /app/haitaton.jar
-COPY --from=builder /builder/scripts/wait-for-it.sh /app/wait-for-it.sh
-CMD ["java", "-jar", "haitaton.jar" ]
+VOLUME /tmp
+
+ARG DEPENDENCY=/workspace/app/services/hanke-service/build/dependency
+COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
+COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
+COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
+COPY scripts/wait-for-it.sh ./
+
+
+ENTRYPOINT ["./wait-for-it.sh", "db:5432", "--timeout=50", "--strict", "--", "java", "-cp", "app:app/lib/*", "fi.hel.haitaton.hanke.ApplicationKt"]
