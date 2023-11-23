@@ -29,15 +29,12 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
-import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeIdentifierFactory
-import fi.hel.haitaton.hanke.factory.TestHankeIdentifier
-import fi.hel.haitaton.hanke.factory.identifier
 import java.time.OffsetDateTime
 import java.util.UUID
 import okhttp3.mockwebserver.MockWebServer
@@ -48,7 +45,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
@@ -160,24 +156,19 @@ class HankeAttachmentServiceITests(
     }
 
     @Nested
-    inner class AddAttachment {
-
-        @BeforeEach
-        fun clear() {
-            fileClient.recreateContainers()
-        }
-
+    inner class SaveAttachment {
         @Test
         fun `Should return metadata of saved attachment`() {
             mockClamAv.enqueue(response(body(results = successResult())))
             val hanke = hankeFactory.save()
+            val blobPath = blobPath(hanke.id)
 
             val result =
-                hankeAttachmentService.addAttachment(
-                    hanke = hanke.identifier(),
+                hankeAttachmentService.saveAttachment(
+                    hankeTunnus = hanke.hankeTunnus,
                     name = FILE_NAME_PDF,
-                    type = APPLICATION_PDF,
-                    content = DEFAULT_DATA
+                    type = APPLICATION_PDF_VALUE,
+                    blobPath = blobPath,
                 )
 
             assertThat(result.id).isNotNull()
@@ -192,8 +183,7 @@ class HankeAttachmentServiceITests(
             assertThat(attachmentInDb.createdByUserId).isEqualTo(USERNAME)
             assertThat(attachmentInDb.fileName).isEqualTo(FILE_NAME_PDF)
             assertThat(attachmentInDb.createdAt).isNotNull()
-            val blob = fileClient.download(HANKE_LIITTEET, attachmentInDb.blobLocation!!)
-            assertThat(blob.contentType).isEqualTo(APPLICATION_PDF)
+            assertThat(attachmentInDb.blobLocation).isEqualTo(blobPath)
         }
 
         @Test
@@ -205,11 +195,11 @@ class HankeAttachmentServiceITests(
                 .let { hankeAttachmentRepository.saveAll(it) }
 
             assertFailure {
-                    hankeAttachmentService.addAttachment(
-                        TestHankeIdentifier(hanke.id, hanke.hankeTunnus),
+                    hankeAttachmentService.saveAttachment(
+                        hanke.hankeTunnus,
                         FILE_NAME_PDF,
-                        APPLICATION_PDF,
-                        ByteArray(0)
+                        APPLICATION_PDF_VALUE,
+                        blobPath(hanke.id),
                     )
                 }
                 .all {
@@ -223,11 +213,11 @@ class HankeAttachmentServiceITests(
             mockClamAv.enqueue(response(body(results = successResult())))
 
             assertFailure {
-                    hankeAttachmentService.addAttachment(
-                        hanke = TestHankeIdentifier(5, "HAI-123"),
+                    hankeAttachmentService.saveAttachment(
+                        hankeTunnus = "HAI-123",
                         name = FILE_NAME_PDF,
-                        type = APPLICATION_PDF,
-                        content = DEFAULT_DATA
+                        type = APPLICATION_PDF_VALUE,
+                        blobPath = blobPath(123)
                     )
                 }
                 .hasClass(HankeNotFoundException::class)
@@ -235,26 +225,7 @@ class HankeAttachmentServiceITests(
             assertThat(hankeAttachmentRepository.findAll()).isEmpty()
         }
 
-        @Test
-        fun `Should throw when infected file is encountered`() {
-            mockClamAv.enqueue(response(body(results = failResult())))
-            val hanke = hankeFactory.save()
-
-            assertFailure {
-                    hankeAttachmentService.addAttachment(
-                        hanke = hanke.identifier(),
-                        name = FILE_NAME_PDF,
-                        type = APPLICATION_PDF,
-                        content = DEFAULT_DATA
-                    )
-                }
-                .all {
-                    hasClass(AttachmentInvalidException::class)
-                    hasMessage(
-                        "Attachment upload exception: Infected file detected, see previous logs."
-                    )
-                }
-        }
+        private fun blobPath(hankeId: Int) = HankeAttachmentContentService.generateBlobPath(hankeId)
     }
 
     @Nested

@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentAuthorizer
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
@@ -72,6 +73,8 @@ class IntegrationTestConfiguration {
     @Bean fun disclosureLogService(): DisclosureLogService = mockk(relaxUnitFun = true)
 
     @Bean fun hankeAttachmentService(): HankeAttachmentService = mockk()
+
+    @Bean fun attachmentUploadService(): AttachmentUploadService = mockk()
 
     @Bean fun applicationAttachmentService(): ApplicationAttachmentService = mockk()
 

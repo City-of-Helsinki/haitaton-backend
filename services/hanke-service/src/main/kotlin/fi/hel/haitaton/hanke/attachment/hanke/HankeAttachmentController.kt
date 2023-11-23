@@ -1,9 +1,9 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadService
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachment
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
-import fi.hel.haitaton.hanke.attachment.common.validNameAndType
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -28,7 +28,10 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/hankkeet/{hankeTunnus}/liitteet")
 @SecurityRequirement(name = "bearerAuth")
-class HankeAttachmentController(private val hankeAttachmentService: HankeAttachmentService) {
+class HankeAttachmentController(
+    private val hankeAttachmentService: HankeAttachmentService,
+    private val attachmentUploadService: AttachmentUploadService,
+) {
 
     @GetMapping
     @Operation(summary = "Get metadata from hanke attachments")
@@ -107,16 +110,7 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
                 "content type = ${attachment.contentType}"
         }
 
-        val hanke = hankeAttachmentService.hankeWithRoomForAttachment(hankeTunnus)
-
-        attachment.validNameAndType().let { (name, type) ->
-            return hankeAttachmentService.addAttachment(
-                hanke = hanke,
-                name = name,
-                type = type,
-                content = attachment.bytes
-            )
-        }
+        return attachmentUploadService.uploadHankeAttachment(hankeTunnus, attachment)
     }
 
     @DeleteMapping("/{attachmentId}")

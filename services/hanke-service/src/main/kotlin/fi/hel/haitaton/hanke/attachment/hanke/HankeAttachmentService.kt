@@ -1,21 +1,20 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
+import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentPersister
-import fi.hel.haitaton.hanke.attachment.common.FileScanClient
-import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachment
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
-import fi.hel.haitaton.hanke.attachment.common.hasInfected
+import fi.hel.haitaton.hanke.currentUserId
+import java.time.OffsetDateTime
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -26,8 +25,6 @@ class HankeAttachmentService(
     private val hankeRepository: HankeRepository,
     private val attachmentRepository: HankeAttachmentRepository,
     private val attachmentContentService: HankeAttachmentContentService,
-    private val persister: AttachmentPersister,
-    private val scanClient: FileScanClient,
 ) {
 
     @Transactional(readOnly = true)
@@ -42,33 +39,28 @@ class HankeAttachmentService(
         return AttachmentContent(attachment.fileName, attachment.contentType, content)
     }
 
-    fun addAttachment(
-        hanke: HankeIdentifier,
+    @Transactional
+    fun saveAttachment(
+        hankeTunnus: String,
         name: String,
-        type: MediaType,
-        content: ByteArray
+        type: String,
+        blobPath: String,
     ): HankeAttachment {
-        scanAttachment(name, content)
+        val hanke = findHanke(hankeTunnus).also { checkRoomForAttachment(it.id) }
 
-        val blobPath =
-            attachmentContentService.upload(
-                fileName = name,
-                contentType = type,
-                content = content,
-                hankeId = hanke.id
+        return attachmentRepository
+            .save(
+                HankeAttachmentEntity(
+                    id = null,
+                    fileName = name,
+                    contentType = type,
+                    createdAt = OffsetDateTime.now(),
+                    createdByUserId = currentUserId(),
+                    blobLocation = blobPath,
+                    hanke = hanke,
+                )
             )
-
-        val entity = // transaction only after http calls.
-            persister.hankeAttachment(
-                filename = name,
-                mediaType = type.toString(),
-                blobPath = blobPath,
-                hankeTunnus = hanke.hankeTunnus,
-            )
-
-        return entity.toDomain().also {
-            logger.info { "Added attachment ${it.id} to hanke ${hanke.hankeTunnus}" }
-        }
+            .toDomain()
     }
 
     /** Move the attachment content to cloud. In test-data use for now, can be used for HAI-1964. */
@@ -97,9 +89,17 @@ class HankeAttachmentService(
 
     @Transactional(readOnly = true)
     fun hankeWithRoomForAttachment(hankeTunnus: String): HankeIdentifier =
-        findHankeIdentifiers(hankeTunnus).also {
-            persister.checkRoomForAttachment(it.id, it.hankeTunnus)
+        findHankeIdentifiers(hankeTunnus).also { checkRoomForAttachment(it.id) }
+
+    private fun checkRoomForAttachment(hankeId: Int) =
+        verifyCount(attachmentRepository.countByHankeId(hankeId))
+
+    private fun verifyCount(count: Int) {
+        logger.info { "There is $count attachments beforehand." }
+        if (count >= ALLOWED_ATTACHMENT_COUNT) {
+            throw AttachmentInvalidException("Attachment limit reached")
         }
+    }
 
     private fun findAttachment(attachmentId: UUID) =
         attachmentRepository.findByIdOrNull(attachmentId)
@@ -111,11 +111,4 @@ class HankeAttachmentService(
     private fun findHankeIdentifiers(hankeTunnus: String) =
         hankeRepository.findOneByHankeTunnus(hankeTunnus)
             ?: throw HankeNotFoundException(hankeTunnus)
-
-    private fun scanAttachment(filename: String, content: ByteArray) {
-        val scanResult = scanClient.scan(listOf(FileScanInput(filename, content)))
-        if (scanResult.hasInfected()) {
-            throw AttachmentInvalidException("Infected file detected, see previous logs.")
-        }
-    }
 }

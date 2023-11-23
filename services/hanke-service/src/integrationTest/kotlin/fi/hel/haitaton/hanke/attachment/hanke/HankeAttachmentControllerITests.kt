@@ -11,6 +11,8 @@ import fi.hel.haitaton.hanke.attachment.HANKE_TUNNUS
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.andExpectError
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
+import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadService
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.TestHankeIdentifier
@@ -56,6 +58,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired private lateinit var hankeAttachmentService: HankeAttachmentService
+    @Autowired private lateinit var attachmentUploadService: AttachmentUploadService
     @Autowired private lateinit var authorizer: HankeAttachmentAuthorizer
 
     @BeforeEach
@@ -106,17 +109,30 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
         val file = testFile()
         val hanke = TestHankeIdentifier(1, HANKE_TUNNUS)
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name) } returns true
-        every { hankeAttachmentService.hankeWithRoomForAttachment(HANKE_TUNNUS) } returns hanke
-        every {
-            hankeAttachmentService.addAttachment(hanke, FILE_NAME_PDF, APPLICATION_PDF, file.bytes)
-        } returns AttachmentFactory.hankeAttachment()
+        every { attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file) } returns
+            AttachmentFactory.hankeAttachment()
 
         postAttachment(file = file).andExpect(status().isOk)
 
         verifyOrder {
             authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name)
-            hankeAttachmentService.hankeWithRoomForAttachment(HANKE_TUNNUS)
-            hankeAttachmentService.addAttachment(hanke, FILE_NAME_PDF, APPLICATION_PDF, file.bytes)
+            attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file)
+        }
+    }
+
+    @Test
+    fun `postAttachment when attachment invalid or amount exceeded return bad request`() {
+        val file = testFile()
+        val hanke = TestHankeIdentifier(1, HANKE_TUNNUS)
+        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name) } returns true
+        every { attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file) } throws
+            AttachmentInvalidException("Something went wrong")
+
+        postAttachment(file = file).andExpect(status().isBadRequest)
+
+        verifyOrder {
+            authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name)
+            attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file)
         }
     }
 
