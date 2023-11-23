@@ -4,7 +4,8 @@ WORKDIR /workspace/app
 COPY gradlew settings.gradle.kts ./
 COPY gradle/ ./gradle/
 COPY services/hanke-service/build.gradle.kts ./services/hanke-service/
-COPY services/hanke-service/src ./services/hanke-service/src
+COPY services/hanke-service/src/main ./services/hanke-service/src/main
+COPY scripts/wait-for-it.sh ./
 
 RUN --mount=type=cache,target=/root/.gradle ./gradlew --no-daemon :services:hanke-service:assemble
 RUN mkdir -p services/hanke-service/build/dependency && \
@@ -17,5 +18,6 @@ ARG DEPENDENCY=/workspace/app/services/hanke-service/build/dependency
 COPY --from=build ${DEPENDENCY}/BOOT-INF/lib /app/lib
 COPY --from=build ${DEPENDENCY}/META-INF /app/META-INF
 COPY --from=build ${DEPENDENCY}/BOOT-INF/classes /app
+COPY --from=build /workspace/app/wait-for-it.sh ./
 
-ENTRYPOINT exec java -cp app:app/lib/* fi.hel.haitaton.hanke.ApplicationKt
+ENTRYPOINT ["./wait-for-it.sh", "db:5432", "--timeout=50", "--strict", "--", "java", "-cp", "app:app/lib/*", "fi.hel.haitaton.hanke.ApplicationKt"]
