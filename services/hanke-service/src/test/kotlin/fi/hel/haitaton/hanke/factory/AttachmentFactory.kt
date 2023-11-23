@@ -1,13 +1,11 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime
@@ -52,25 +50,6 @@ class AttachmentFactory(
                 createdAt = createdAt,
                 attachmentType = attachmentType,
                 applicationId = applicationId,
-            )
-
-        fun hankeAttachmentEntity(
-            id: UUID? = defaultAttachmentId,
-            fileName: String = FILE_NAME,
-            blobLocation: String? = null,
-            contentType: String = APPLICATION_PDF_VALUE,
-            createdByUser: String = "currentUserId",
-            createdAt: OffsetDateTime = OffsetDateTime.now(),
-            hanke: HankeEntity,
-        ): HankeAttachmentEntity =
-            HankeAttachmentEntity(
-                id = id,
-                fileName = fileName,
-                contentType = contentType,
-                createdByUserId = createdByUser,
-                createdAt = createdAt,
-                hanke = hanke,
-                blobLocation = blobLocation,
             )
 
         fun hankeAttachmentMetadata(

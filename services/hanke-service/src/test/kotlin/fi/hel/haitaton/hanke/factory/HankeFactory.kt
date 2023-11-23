@@ -19,7 +19,6 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeFounder
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.factory.AttachmentFactory.Companion.hankeAttachmentEntity
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createEntity
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
@@ -184,7 +183,10 @@ class HankeFactory(
                         mutableListOf(createHankeAlueEntity(mockId = mockId, hankeEntity = this))
                     liitteet =
                         mutableListOf(
-                            hankeAttachmentEntity(hanke = this, createdByUser = defaultUser)
+                            HankeAttachmentFactory.createEntity(
+                                hanke = this,
+                                createdByUser = defaultUser
+                            )
                         )
                     tormaystarkasteluTulokset = mutableListOf(tormaysTarkastelu(hankeEntity = this))
                 }

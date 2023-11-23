@@ -3,9 +3,11 @@ package fi.hel.haitaton.hanke.attachment.azure
 import com.azure.core.http.HttpHeaderName
 import com.azure.core.util.BinaryData
 import com.azure.storage.blob.BlobServiceClient
+import com.azure.storage.blob.batch.BlobBatchClientBuilder
 import com.azure.storage.blob.models.BlobErrorCode
 import com.azure.storage.blob.models.BlobHttpHeaders
 import com.azure.storage.blob.models.BlobStorageException
+import com.azure.storage.blob.models.DeleteSnapshotsOptionType
 import com.azure.storage.blob.options.BlobParallelUploadOptions
 import fi.hel.haitaton.hanke.attachment.common.DownloadNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.DownloadResponse
@@ -35,6 +37,8 @@ class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Container
         blobServiceClient.getBlobContainerClient(containers.hankeAttachments).also {
             logger.info("Blob container for hankeAttachments: ${containers.hankeAttachments}")
         }
+
+    private val batchClient = BlobBatchClientBuilder(blobServiceClient).buildClient()
 
     override fun upload(
         container: Container,
@@ -84,6 +88,24 @@ class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Container
         return response
     }
 
+    override fun deleteAllByPrefix(container: Container, prefix: String) {
+        logger.info { "Deleting all Blobs from container $container with prefix $prefix" }
+        val containerClient = getContainerClient(container)
+        val blobUrls =
+            containerClient.listBlobsByHierarchy(prefix).map {
+                if (it.isPrefix) {
+                    throw UnexpectedSubdirectoryException(container, it.name)
+                }
+                containerClient.getBlobClient(it.name).blobUrl
+            }
+        if (blobUrls.isEmpty()) {
+            return
+        }
+        batchClient.deleteBlobs(blobUrls, DeleteSnapshotsOptionType.INCLUDE).forEach {
+            logger.info { "Deleted blob ${it.request.url} with status ${it.statusCode}" }
+        }
+    }
+
     private fun getContainerClient(container: Container) =
         when (container) {
             Container.HAKEMUS_LIITTEET -> hakemusAttachmentClient
@@ -91,3 +113,8 @@ class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Container
             Container.PAATOKSET -> decisionClient
         }
 }
+
+data class UnexpectedSubdirectoryException(val container: Container, val path: String) :
+    RuntimeException(
+        "Unexpected subdirectory found at Blob Storage, container=$container path=$path"
+    )

@@ -18,6 +18,8 @@ interface FileClient {
     fun download(container: Container, path: String): DownloadResponse
 
     fun delete(container: Container, path: String): Boolean
+
+    fun deleteAllByPrefix(container: Container, prefix: String)
 }
 
 data class DownloadResponse(

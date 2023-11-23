@@ -1,28 +1,15 @@
 package fi.hel.haitaton.hanke.attachment.common
 
 import fi.hel.haitaton.hanke.attachment.azure.Container
-import org.junit.jupiter.api.BeforeAll
-import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.extension.RegisterExtension
 
 open class MockFileClientTest : FileClientTest() {
 
-    override val fileClient: MockFileClient = Companion.fileClient
+    override val fileClient: MockFileClient = mockFileClientExtension.client
 
-    @BeforeEach
-    fun cleanUp() {
-        fileClient.clearContainers()
-    }
-
-    override fun listBlobs(container: Container): List<TestFile> =
-        Companion.fileClient.listBlobs(container)
+    override fun listBlobs(container: Container): List<TestFile> = fileClient.listBlobs(container)
 
     companion object {
-        private val fileClient = MockFileClient()
-
-        @JvmStatic
-        @BeforeAll
-        fun setup() {
-            fileClient.recreateContainers()
-        }
+        @JvmField @RegisterExtension val mockFileClientExtension = MockFileClientExtension.create()
     }
 }

@@ -12,8 +12,9 @@ import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.test.Asserts.isRecent
+import fi.hel.haitaton.hanke.test.Asserts.isSameInstantAs
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.NullSource
 import org.junit.jupiter.params.provider.ValueSource
@@ -47,14 +48,15 @@ class HankeAttachmentRepositoryITests : DatabaseTest() {
             prop(HankeAttachmentEntity::fileName).isEqualTo(AttachmentFactory.FILE_NAME)
             prop(HankeAttachmentEntity::contentType).isEqualTo(APPLICATION_PDF_VALUE)
             prop(HankeAttachmentEntity::createdByUserId).isEqualTo(USERNAME)
-            prop(HankeAttachmentEntity::createdAt).isRecent()
+            prop(HankeAttachmentEntity::createdAt)
+                .isSameInstantAs(HankeAttachmentFactory.CREATED_AT)
             prop(HankeAttachmentEntity::hanke).isEqualTo(hanke)
             prop(HankeAttachmentEntity::blobLocation).isEqualTo(blobLocation)
         }
     }
 
     fun newAttachment(hanke: HankeEntity, blobLocation: String?) =
-        AttachmentFactory.hankeAttachmentEntity(
+        HankeAttachmentFactory.createEntity(
             id = null,
             hanke = hanke,
             createdByUser = USERNAME,

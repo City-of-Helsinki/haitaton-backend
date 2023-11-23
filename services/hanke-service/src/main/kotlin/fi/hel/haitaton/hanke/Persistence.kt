@@ -114,7 +114,7 @@ enum class Haitta13 {
 @Table(name = "hanke")
 class HankeEntity(
     @Enumerated(EnumType.STRING) var status: HankeStatus = HankeStatus.DRAFT,
-    val hankeTunnus: String,
+    override val hankeTunnus: String,
     var nimi: String,
     var kuvaus: String? = null,
     @Enumerated(EnumType.STRING) var vaihe: Vaihe? = null,
@@ -156,7 +156,7 @@ class HankeEntity(
         orphanRemoval = true
     )
     var liitteet: MutableList<HankeAttachmentEntity> = mutableListOf(),
-) : HasId<Int> {
+) : HankeIdentifier {
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
     var tyomaaKatuosoite: String? = null
 
@@ -232,8 +232,8 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findAllByStatus(status: HankeStatus): List<HankeEntity>
 }
 
-interface HankeIdentifier {
-    val id: Int
+interface HankeIdentifier : HasId<Int> {
+    override val id: Int
     val hankeTunnus: String
 
     fun logString() = "Hanke: (id=${id}, tunnus=${hankeTunnus})"

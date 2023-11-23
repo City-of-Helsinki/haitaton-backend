@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
+import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
@@ -90,6 +91,14 @@ class HankeAttachmentService(
         val attachmentToDelete = findAttachment(attachmentId)
         attachmentContentService.delete(attachmentToDelete)
         attachmentToDelete.hanke.liitteet.remove(attachmentToDelete)
+    }
+
+    @Transactional
+    fun deleteAllAttachments(hanke: HankeIdentifier) {
+        logger.info { "Deleting all attachments from hanke ${hanke.logString()}" }
+        attachmentContentService.deleteAllForHanke(hanke.id)
+        val hankeEntity = hankeRepository.findByIdOrNull(hanke.id)
+        hankeEntity?.liitteet?.clear()
     }
 
     private fun findAttachment(attachmentId: UUID) =

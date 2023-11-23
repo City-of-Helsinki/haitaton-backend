@@ -62,7 +62,7 @@ class YhteystietoLoggingEntryHolder {
      * @param failureDescription description for the failure, if one is available
      * @param oldEntity for logging the previous field values; can be null (when creating new)
      * @param newEntity for logging the new state of field values; can be null (when deleting or
-     * reading)
+     *   reading)
      * @param userId ID of the user making the API call
      */
     fun addLogEntriesForEvent(
@@ -114,7 +114,7 @@ class YhteystietoLoggingEntryHolder {
             }
     }
 
-    fun saveLogEntries(auditLogService: AuditLogService) {
+    fun saveLogEntries(auditLogService: HankeLoggingService) {
         auditLogService.createAll(auditLogEntries)
     }
 }
