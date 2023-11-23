@@ -1,14 +1,9 @@
 package fi.hel.haitaton.hanke
 
-import assertk.all
-import assertk.assertFailure
 import assertk.assertThat
-import assertk.assertions.hasClass
-import assertk.assertions.hasMessage
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
-import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -16,14 +11,8 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.NullSource
 import org.junit.jupiter.params.provider.ValueSource
-import org.springframework.http.MediaType
-import org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE
-import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
-import org.springframework.http.MediaType.TEXT_PLAIN_VALUE
-import org.springframework.mock.web.MockMultipartFile
 
 class UtilsKtTest {
 
@@ -139,45 +128,6 @@ class UtilsKtTest {
         @NullSource
         fun `isValid when not valid businessId returns false`(businessId: String?) {
             assertFalse(businessId.isValidBusinessId())
-        }
-    }
-
-    @Nested
-    inner class MultiPartFileValidation {
-        @CsvSource("exa*mple.pdf,exa_mple.pdf", "example.pdf,example.pdf")
-        @ParameterizedTest
-        fun `Should sanitize file name when it has special characters`(
-            input: String,
-            expected: String
-        ) {
-            val file = MockMultipartFile("file", input, APPLICATION_PDF_VALUE, ByteArray(0))
-
-            val (filename, _) = file.validNameAndType()
-
-            assertThat(filename).isEqualTo(expected)
-        }
-
-        @Test
-        fun `When content type not supported should throw`() {
-            val file = MockMultipartFile("file", "hello.html", APPLICATION_PDF_VALUE, ByteArray(0))
-
-            assertFailure { file.validNameAndType() }
-                .all {
-                    hasMessage("Attachment upload exception: File 'hello.html' not supported")
-                    hasClass(AttachmentInvalidException::class)
-                }
-        }
-
-        @ValueSource(
-            strings = [APPLICATION_PDF_VALUE, APPLICATION_OCTET_STREAM_VALUE, TEXT_PLAIN_VALUE]
-        )
-        @ParameterizedTest
-        fun `Should be able to pick up the media type`(input: String) {
-            val file = MockMultipartFile("file", "file.pdf", input, ByteArray(0))
-
-            val (_, mediaType) = file.validNameAndType()
-
-            assertThat(mediaType).isEqualTo(MediaType.parseMediaType(input))
         }
     }
 }

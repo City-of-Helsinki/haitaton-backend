@@ -1,13 +1,11 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.domain.HasId
 import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.web.multipart.MultipartFile
 
 private val logger = KotlinLogging.logger {}
 
@@ -112,9 +110,3 @@ fun String?.isValidBusinessId(): Boolean {
         false
     }
 }
-
-fun MultipartFile.validNameAndType() =
-    Pair(
-        AttachmentValidator.validFilename(originalFilename),
-        AttachmentValidator.ensureMediaType(contentType)
-    )

@@ -10,7 +10,10 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.prop
+import assertk.assertions.startsWith
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
+import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
@@ -25,6 +28,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 
@@ -80,6 +84,22 @@ class HankeAttachmentContentServiceITest(
                 .first()
                 .prop(HankeAttachmentContentEntity::attachmentId)
                 .isEqualTo(attachmentEntity.id)
+        }
+    }
+
+    @Nested
+    inner class Upload {
+        @Test
+        fun `Should return location of uploaded blob`() {
+            val blobLocation =
+                attachmentContentService.upload(
+                    FILE_NAME_PDF,
+                    MediaType.APPLICATION_PDF,
+                    DEFAULT_DATA,
+                    hankeId
+                )
+
+            assertThat(blobLocation).startsWith("$hankeId/")
         }
     }
 

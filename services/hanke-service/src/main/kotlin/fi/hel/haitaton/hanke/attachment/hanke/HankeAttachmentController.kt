@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.attachment.hanke
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachment
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
-import fi.hel.haitaton.hanke.validNameAndType
+import fi.hel.haitaton.hanke.attachment.common.validNameAndType
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema

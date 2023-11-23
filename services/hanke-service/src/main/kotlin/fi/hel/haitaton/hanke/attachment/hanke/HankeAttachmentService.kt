@@ -3,12 +3,10 @@ package fi.hel.haitaton.hanke.attachment.hanke
 import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
-import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentPersister
-import fi.hel.haitaton.hanke.attachment.common.FileClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachment
@@ -29,7 +27,6 @@ class HankeAttachmentService(
     private val attachmentRepository: HankeAttachmentRepository,
     private val attachmentContentService: HankeAttachmentContentService,
     private val persister: AttachmentPersister,
-    private val fileClient: FileClient,
     private val scanClient: FileScanClient,
 ) {
 
@@ -53,15 +50,13 @@ class HankeAttachmentService(
     ): HankeAttachment {
         scanAttachment(name, content)
 
-        val blobPath = HankeAttachmentContentService.generateBlobPath(hanke.id)
-
-        fileClient.upload(
-            container = HANKE_LIITTEET,
-            path = blobPath,
-            originalFilename = name,
-            contentType = type,
-            content = content,
-        )
+        val blobPath =
+            attachmentContentService.upload(
+                fileName = name,
+                contentType = type,
+                content = content,
+                hankeId = hanke.id
+            )
 
         val entity = // transaction only after http calls.
             persister.hankeAttachment(
