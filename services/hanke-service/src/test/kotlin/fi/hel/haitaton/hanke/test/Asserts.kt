@@ -2,6 +2,8 @@ package fi.hel.haitaton.hanke.test
 
 import assertk.Assert
 import assertk.all
+import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.extracting
 import assertk.assertions.first
 import assertk.assertions.hasSize
 import assertk.assertions.isBetween
@@ -11,6 +13,7 @@ import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasFeatures
+import jakarta.mail.internet.MimeMessage
 import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.ZonedDateTime
@@ -55,5 +58,9 @@ object Asserts {
                 prop(FeatureCollection::getFeatures).hasSize(1)
                 prop(FeatureCollection::getFeatures).first().hasSameCoordinatesAs(other)
             }
+    }
+
+    fun Assert<Array<MimeMessage>>.hasReceivers(vararg receivers: String?) {
+        extracting { it.allRecipients.first().toString() }.containsExactlyInAnyOrder(*receivers)
     }
 }

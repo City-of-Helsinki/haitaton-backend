@@ -22,6 +22,7 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
@@ -30,6 +31,7 @@ import org.springframework.test.context.ActiveProfiles
 @SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
+@ExtendWith(MockFileClientExtension::class)
 class AttachmentUploadServiceITest(
     @Autowired private val attachmentUploadService: AttachmentUploadService,
     @Autowired private val attachmentRepository: HankeAttachmentRepository,
@@ -41,7 +43,6 @@ class AttachmentUploadServiceITest(
 
     @BeforeEach
     fun setup() {
-        fileClient.recreateContainers()
         mockClamAv = MockWebServer()
         mockClamAv.start(6789)
     }

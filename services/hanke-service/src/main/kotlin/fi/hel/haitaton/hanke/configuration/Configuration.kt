@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
@@ -33,6 +34,7 @@ class Configuration {
     @Bean fun ioDispatcher(): CoroutineDispatcher = Dispatchers.IO
 
     @Bean
+    @Profile("!test")
     fun cableReportService(webClientBuilder: WebClient.Builder): CableReportService {
         val webClient =
             webClientWithLargeBuffer(
