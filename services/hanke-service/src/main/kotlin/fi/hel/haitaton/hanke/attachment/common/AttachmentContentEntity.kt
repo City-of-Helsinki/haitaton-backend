@@ -11,6 +11,7 @@ import java.sql.Types
 import java.util.UUID
 import org.hibernate.annotations.JdbcTypeCode
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 
 @MappedSuperclass
@@ -36,7 +37,13 @@ class ApplicationAttachmentContentEntity(
 ) : AttachmentContentEntity(attachmentId, content)
 
 @Repository
-interface HankeAttachmentContentRepository : JpaRepository<HankeAttachmentContentEntity, UUID>
+interface HankeAttachmentContentRepository : JpaRepository<HankeAttachmentContentEntity, UUID> {
+
+    @Query(value = "SELECT * FROM hanke_attachment_content LIMIT 1", nativeQuery = true)
+    fun pickOne(): HankeAttachmentContentEntity?
+
+    fun deleteByAttachmentId(attachmentId: UUID)
+}
 
 @Repository
 interface ApplicationAttachmentContentRepository :

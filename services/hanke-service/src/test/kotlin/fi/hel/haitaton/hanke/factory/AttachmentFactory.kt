@@ -7,7 +7,9 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
+import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachment
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime
@@ -73,6 +75,9 @@ class AttachmentFactory(
                 blobLocation = blobLocation,
             )
 
+        fun hankeAttachmentContentEntity(attachmentId: UUID, content: ByteArray = dummyData) =
+            HankeAttachmentContentEntity(attachmentId, content)
+
         fun hankeAttachment(
             attachmentId: UUID = defaultAttachmentId,
             fileName: String = FILE_NAME,
@@ -104,5 +109,11 @@ class AttachmentFactory(
                 applicationId = applicationId,
                 attachmentType = attachmentType
             )
+
+        fun attachmentContent(
+            fileName: String = FILE_NAME,
+            contentType: String = APPLICATION_PDF_VALUE,
+            bytes: ByteArray = dummyData,
+        ) = AttachmentContent(fileName = fileName, contentType = contentType, bytes = bytes)
     }
 }

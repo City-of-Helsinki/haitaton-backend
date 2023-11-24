@@ -77,7 +77,7 @@ object AttachmentValidator {
         contentType?.let { parseMediaType(it) }
             ?: throw AttachmentInvalidException("Content-Type null")
 
-    private fun parseMediaType(type: String): MediaType =
+    fun parseMediaType(type: String): MediaType =
         try {
             MediaType.parseMediaType(type)
         } catch (e: InvalidMediaTypeException) {
