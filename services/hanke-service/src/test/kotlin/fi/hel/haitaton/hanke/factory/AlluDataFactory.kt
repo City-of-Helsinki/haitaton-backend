@@ -41,7 +41,7 @@ class AlluDataFactory(
         const val teppoEmail = "teppo@example.test"
         val expectedRecipients =
             arrayOf(
-                "timo.työnsuorittaja@mail.com",
+                "timo.tyonsuorittaja@mail.com",
                 "anssi.asianhoitaja@mail.com",
                 "rane.rakennuttaja@mail.com",
                 "new.mail@foo.fi",

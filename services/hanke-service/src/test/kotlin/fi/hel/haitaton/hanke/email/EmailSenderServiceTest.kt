@@ -347,6 +347,8 @@ class EmailSenderServiceTest {
     }
 }
 
+fun MimeMessage.textBody(): String = bodies().first
+
 /** Returns a (text body, HTML body) pair. */
 fun MimeMessage.bodies(): Pair<String, String> {
     assertThat(content).isInstanceOf(MimeMultipart::class)

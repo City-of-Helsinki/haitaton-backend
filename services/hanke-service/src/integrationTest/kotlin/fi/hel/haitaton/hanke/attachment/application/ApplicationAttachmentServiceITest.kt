@@ -8,7 +8,6 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isPresent
-import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
@@ -67,7 +66,7 @@ private const val ALLU_ID = 42
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class ApplicationAttachmentServiceITest : DatabaseTest() {
-    @MockkBean private lateinit var cableReportService: CableReportService
+    @Autowired private lateinit var cableReportService: CableReportService
     @Autowired private lateinit var applicationAttachmentService: ApplicationAttachmentService
     @Autowired private lateinit var attachmentContentService: ApplicationAttachmentContentService
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository

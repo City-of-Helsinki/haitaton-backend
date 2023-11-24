@@ -10,5 +10,5 @@ object UserContactFactory {
 
     val asianhoitajaContact = UserContact("Anssi Asianhoitaja", "anssi.asianhoitaja@mail.com")
 
-    val suorittajaContact = UserContact("Timo Työnsuorittaja", "timo.työnsuorittaja@mail.com")
+    val suorittajaContact = UserContact("Timo Työnsuorittaja", "timo.tyonsuorittaja@mail.com")
 }
