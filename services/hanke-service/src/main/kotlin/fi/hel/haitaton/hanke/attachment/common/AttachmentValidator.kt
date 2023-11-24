@@ -3,6 +3,9 @@ package fi.hel.haitaton.hanke.attachment.common
 import mu.KotlinLogging
 import org.apache.commons.io.FilenameUtils.getExtension
 import org.apache.commons.io.FilenameUtils.removeExtension
+import org.springframework.http.InvalidMediaTypeException
+import org.springframework.http.MediaType
+import org.springframework.web.multipart.MultipartFile
 
 private val logger = KotlinLogging.logger {}
 
@@ -17,6 +20,12 @@ private val supportedFiletypes =
         "docx",
         "txt",
         "gt",
+    )
+
+fun MultipartFile.validNameAndType() =
+    Pair(
+        AttachmentValidator.validFilename(originalFilename),
+        AttachmentValidator.ensureMediaType(contentType)
     )
 
 // Microsoft: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
@@ -52,10 +61,10 @@ object AttachmentValidator {
             "LPT9",
         )
 
-    fun validFilename(originalFilename: String?): String {
-        logger.info { "Validating file name $originalFilename" }
+    fun validFilename(filename: String?): String {
+        logger.info { "Validating file name $filename" }
 
-        val sanitizedFilename = sanitizeFilename(originalFilename)
+        val sanitizedFilename = sanitizeFilename(filename)
         logger.info { "Sanitized file name to $sanitizedFilename" }
 
         if (!isValidFilename(sanitizedFilename)) {
@@ -63,6 +72,17 @@ object AttachmentValidator {
         }
         return sanitizedFilename!!
     }
+
+    fun ensureMediaType(contentType: String?): MediaType =
+        contentType?.let { parseMediaType(it) }
+            ?: throw AttachmentInvalidException("Content-Type null")
+
+    private fun parseMediaType(type: String): MediaType =
+        try {
+            MediaType.parseMediaType(type)
+        } catch (e: InvalidMediaTypeException) {
+            throw AttachmentInvalidException("Invalid content type, $type")
+        }
 
     private fun sanitizeFilename(filename: String?): String? =
         filename?.replace(INVALID_CHARS_PATTERN, "_")

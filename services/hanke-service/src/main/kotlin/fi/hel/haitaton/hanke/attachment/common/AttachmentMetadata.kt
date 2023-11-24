@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.attachment.common
 import java.time.OffsetDateTime
 import java.util.UUID
 
-data class HankeAttachmentMetadata(
+data class HankeAttachment(
     val id: UUID,
     val fileName: String,
     val createdByUserId: String,

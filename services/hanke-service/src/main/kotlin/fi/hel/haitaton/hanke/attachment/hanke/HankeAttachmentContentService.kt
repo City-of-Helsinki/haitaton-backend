@@ -21,6 +21,7 @@ class HankeAttachmentContentService(
     private val hankeAttachmentContentRepository: HankeAttachmentContentRepository,
     private val fileClient: FileClient,
 ) {
+
     fun save(attachmentId: UUID, content: ByteArray) {
         hankeAttachmentContentRepository.save(HankeAttachmentContentEntity(attachmentId, content))
     }
@@ -45,6 +46,19 @@ class HankeAttachmentContentService(
         hankeAttachmentContentRepository.delete(content)
         attachment.blobLocation = path
         return path
+    }
+
+    /** Uploads and returns the location of the created blob. */
+    fun upload(fileName: String, contentType: MediaType, content: ByteArray, hankeId: Int): String {
+        val blobPath = generateBlobPath(hankeId)
+        fileClient.upload(
+            container = Container.HANKE_LIITTEET,
+            path = blobPath,
+            originalFilename = fileName,
+            contentType = contentType,
+            content = content,
+        )
+        return blobPath
     }
 
     fun delete(attachment: HankeAttachmentEntity) {
@@ -75,6 +89,10 @@ class HankeAttachmentContentService(
             }
 
     companion object {
+        fun generateBlobPath(hankeId: Int) =
+            "${hankePrefix(hankeId)}/${UUID.randomUUID()}"
+                .also { logger.info { "Generated blob path: $it" } }
+
         /** Name (path from container root) the attachment should have in the cloud storage. */
         fun HankeAttachmentEntity.cloudPath(): String = hankePrefix(hanke.id) + id!!.toString()
 
@@ -84,6 +102,6 @@ class HankeAttachmentContentService(
          * Used to distinguish the attachments of different from each other in the cloud storage and
          * to enable deleting all of them at once.
          */
-        private fun hankePrefix(hankeId: Int): String = "${hankeId}/"
+        private fun hankePrefix(hankeId: Int): String = "$hankeId/"
     }
 }
