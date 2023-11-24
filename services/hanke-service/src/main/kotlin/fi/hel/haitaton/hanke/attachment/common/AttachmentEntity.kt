@@ -61,8 +61,8 @@ class HankeAttachmentEntity(
     @Column(name = "blob_location") var blobLocation: String?,
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "hanke_id") var hanke: HankeEntity,
 ) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt) {
-    fun toMetadata(): HankeAttachmentMetadata {
-        return HankeAttachmentMetadata(
+    fun toDomain(): HankeAttachment {
+        return HankeAttachment(
             id = id!!,
             fileName = fileName,
             createdAt = createdAt,

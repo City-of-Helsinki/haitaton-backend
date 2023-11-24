@@ -1,7 +1,8 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadService
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachment
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -27,7 +28,10 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/hankkeet/{hankeTunnus}/liitteet")
 @SecurityRequirement(name = "bearerAuth")
-class HankeAttachmentController(private val hankeAttachmentService: HankeAttachmentService) {
+class HankeAttachmentController(
+    private val hankeAttachmentService: HankeAttachmentService,
+    private val attachmentUploadService: AttachmentUploadService,
+) {
 
     @GetMapping
     @Operation(summary = "Get metadata from hanke attachments")
@@ -43,7 +47,7 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
             ]
     )
     @PreAuthorize("@hankeAttachmentAuthorizer.authorizeHankeTunnus(#hankeTunnus,'VIEW')")
-    fun getMetadataList(@PathVariable hankeTunnus: String): List<HankeAttachmentMetadata> {
+    fun getMetadataList(@PathVariable hankeTunnus: String): List<HankeAttachment> {
         return hankeAttachmentService.getMetadataList(hankeTunnus)
     }
 
@@ -99,8 +103,14 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
     fun postAttachment(
         @PathVariable hankeTunnus: String,
         @RequestParam("liite") attachment: MultipartFile,
-    ): HankeAttachmentMetadata {
-        return hankeAttachmentService.addAttachment(hankeTunnus, attachment)
+    ): HankeAttachment {
+        logger.info {
+            "Adding attachment to hanke, hankeTunnus = $hankeTunnus, " +
+                "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}, " +
+                "content type = ${attachment.contentType}"
+        }
+
+        return attachmentUploadService.uploadHankeAttachment(hankeTunnus, attachment)
     }
 
     @DeleteMapping("/{attachmentId}")

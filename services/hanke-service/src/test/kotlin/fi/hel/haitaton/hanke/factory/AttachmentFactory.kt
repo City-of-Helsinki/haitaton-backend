@@ -1,12 +1,14 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachment
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime
 import java.util.UUID
@@ -52,14 +54,33 @@ class AttachmentFactory(
                 applicationId = applicationId,
             )
 
-        fun hankeAttachmentMetadata(
+        fun hankeAttachmentEntity(
+            id: UUID? = defaultAttachmentId,
+            fileName: String = FILE_NAME,
+            blobLocation: String? = null,
+            contentType: String = APPLICATION_PDF_VALUE,
+            createdByUser: String = "currentUserId",
+            createdAt: OffsetDateTime = OffsetDateTime.now(),
+            hanke: HankeEntity,
+        ): HankeAttachmentEntity =
+            HankeAttachmentEntity(
+                id = id,
+                fileName = fileName,
+                contentType = contentType,
+                createdByUserId = createdByUser,
+                createdAt = createdAt,
+                hanke = hanke,
+                blobLocation = blobLocation,
+            )
+
+        fun hankeAttachment(
             attachmentId: UUID = defaultAttachmentId,
             fileName: String = FILE_NAME,
             createdByUser: String = currentUserId(),
             createdAt: OffsetDateTime = OffsetDateTime.now(),
             hankeTunnus: String = "HAI-1234",
-        ): HankeAttachmentMetadata =
-            HankeAttachmentMetadata(
+        ): HankeAttachment =
+            HankeAttachment(
                 id = attachmentId,
                 fileName = fileName,
                 createdByUserId = createdByUser,
