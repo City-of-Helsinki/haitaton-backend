@@ -9,8 +9,8 @@ import assertk.assertions.hasMessage
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNotNull
 import assertk.assertions.prop
-import assertk.assertions.startsWith
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
@@ -99,7 +99,10 @@ class HankeAttachmentContentServiceITest(
                     hankeId
                 )
 
-            assertThat(blobLocation).startsWith("$hankeId/")
+            val idPart = blobLocation.substringBefore("/")
+            val uuidPart = blobLocation.substringAfter("/")
+            assertThat(idPart.toIntOrNull()).isEqualTo(hankeId)
+            assertThat(UUID.fromString(uuidPart)).isNotNull()
         }
     }
 
