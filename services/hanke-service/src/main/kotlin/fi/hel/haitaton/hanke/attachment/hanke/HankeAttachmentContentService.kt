@@ -90,7 +90,7 @@ class HankeAttachmentContentService(
 
     companion object {
         fun generateBlobPath(hankeId: Int) =
-            "${hankePrefix(hankeId)}/${UUID.randomUUID()}"
+            "${hankePrefix(hankeId)}${UUID.randomUUID()}"
                 .also { logger.info { "Generated blob path: $it" } }
 
         /** Name (path from container root) the attachment should have in the cloud storage. */
