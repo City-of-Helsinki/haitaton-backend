@@ -16,7 +16,7 @@ import org.springframework.test.context.ActiveProfiles
 
 @SpringBootTest
 @ActiveProfiles("test")
-internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
+internal class TormaystarkasteluTormaysServiceITest : DatabaseTest() {
 
     @Autowired private lateinit var geometriatDao: GeometriatDao
 
@@ -115,8 +115,8 @@ internal class TormaystarkasteluTormaysServicePGITest : DatabaseTest() {
     @Test
     fun raitiotiet() {
         val geometriaIds = createHankeGeometria()
-        assertThat(tormaysService.maxIntersectingTramByLaneType(geometriaIds))
-            .isEqualTo(TormaystarkasteluRaitiotiekaistatyyppi.JAETTU.value)
+        assertThat(tormaysService.anyIntersectsWithTramLines(geometriaIds)).isTrue()
+        assertThat(tormaysService.anyIntersectsWithTramInfra(geometriaIds)).isTrue()
     }
 
     /** Test manually what kind of cycleways Hanke geometries are located on */

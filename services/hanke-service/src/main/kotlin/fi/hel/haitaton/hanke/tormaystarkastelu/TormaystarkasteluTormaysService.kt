@@ -88,10 +88,11 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
         }
     }
 
-    fun maxIntersectingTramByLaneType(geometriaIds: Set<Int>) =
-        getDistinctValuesIntersectingRows(geometriaIds, "tormays_trams_polys", "lane").maxOfOrNull {
-            TormaystarkasteluRaitiotiekaistatyyppi.valueOfKaistatyyppi(it).value
-        }
+    fun anyIntersectsWithTramLines(geometriaIds: Set<Int>) =
+        anyIntersectsWith(geometriaIds, "tormays_tram_lines_polys")
+
+    fun anyIntersectsWithTramInfra(geometriaIds: Set<Int>) =
+        anyIntersectsWith(geometriaIds, "tormays_tram_infra_polys")
 
     fun anyIntersectsWithCyclewaysPriority(geometriaIds: Set<Int>) =
         anyIntersectsWith(geometriaIds, "tormays_cycleways_priority_polys")

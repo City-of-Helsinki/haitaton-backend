@@ -33,8 +33,8 @@ class TormaystarkasteluLaskentaService(
         val bussiLuokittelu = bussiLuokittelu(geometriaIds)
         val bussiIndeksi = if (bussiLuokittelu >= 3) 4.0f else 1.0f
 
-        val raitiovaunuLuokittelu = raitiovaunuLuokittelu(geometriaIds)
-        val raitiovaunuIndeksi = if (raitiovaunuLuokittelu >= 3) 4.0f else 1.0f
+        val raitiovaunuLuokittelu = raitiotieLuokittelu(geometriaIds)
+        val raitiovaunuIndeksi = raitiovaunuLuokittelu.toFloat()
 
         return TormaystarkasteluTulos(
             perusIndeksi,
@@ -143,6 +143,12 @@ class TormaystarkasteluLaskentaService(
         return max(valueByRajaArvo, valueByRunkolinja)
     }
 
-    private fun raitiovaunuLuokittelu(geometriaIds: Set<Int>) =
-        tormaysService.maxIntersectingTramByLaneType(geometriaIds) ?: 0
+    internal fun raitiotieLuokittelu(geometriaIds: Set<Int>): Int =
+        when {
+            tormaysService.anyIntersectsWithTramLines(geometriaIds) ->
+                RaitiotieTormaysLuokittelu.RAITIOTIELINJA
+            tormaysService.anyIntersectsWithTramInfra(geometriaIds) ->
+                RaitiotieTormaysLuokittelu.RAITIOTIEVERKON_RATAOSA
+            else -> RaitiotieTormaysLuokittelu.EI_RAITIOTIETA
+        }.value
 }
