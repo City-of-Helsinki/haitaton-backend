@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
-import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.tormaystarkastelu.Luokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import jakarta.persistence.CascadeType
@@ -232,8 +231,8 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findAllByStatus(status: HankeStatus): List<HankeEntity>
 }
 
-interface HankeIdentifier : HasId<Int> {
-    override val id: Int
+interface HankeIdentifier {
+    val id: Int
     val hankeTunnus: String
 
     fun logString() = "Hanke: (id=${id}, tunnus=${hankeTunnus})"

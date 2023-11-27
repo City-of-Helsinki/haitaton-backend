@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.domain.HasId
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
@@ -14,7 +13,7 @@ import java.time.LocalDate
 @Entity
 @Table(name = "hankealue")
 class HankealueEntity(
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) override var id: Int = 0,
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Int = 0,
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "hankeid")
     var hanke: HankeEntity? = null,
@@ -30,7 +29,7 @@ class HankealueEntity(
     var polyHaitta: Haitta13? = null,
     var tarinaHaitta: Haitta13? = null,
     var nimi: String
-) : HasId<Int> {
+) {
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

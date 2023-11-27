@@ -20,8 +20,15 @@ class HankealueService(
 ) {
 
     fun mergeAlueetToHanke(incoming: List<SavedHankealue>, existingHanke: HankeEntity) {
-        mergeDataInto(incoming, existingHanke.alueet) { source, target ->
-            copyNonNullHankealueFieldsToEntity(existingHanke.hankeTunnus, source, target)
+        // Existing data is collected for mapping
+        val targetMap = existingHanke.alueet.associateBy { it.id }
+
+        // Target is overwritten with merged and new data from source
+        existingHanke.alueet.clear()
+        incoming.forEach {
+            existingHanke.alueet.add(
+                copyNonNullHankealueFieldsToEntity(existingHanke.hankeTunnus, it, targetMap[it.id])
+            )
         }
         existingHanke.alueet.forEach { it.hanke = existingHanke }
     }

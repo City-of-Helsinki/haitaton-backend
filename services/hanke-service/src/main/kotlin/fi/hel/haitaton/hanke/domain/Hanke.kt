@@ -77,7 +77,7 @@ data class Hanke(
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Indicates if Hanke data is generated, set by the service.")
     var generated: Boolean = false,
-) : BaseHanke, HasYhteystiedot, HankeIdentifier {
+) : BaseHanke, HasYhteystiedot, HankeIdentifier, HasId<Int> {
 
     // --------------- Yhteystiedot -----------------
     @JsonView(NotInChangeLogView::class)

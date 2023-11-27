@@ -4,7 +4,6 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.validation.ValidHanke
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -174,7 +173,7 @@ have those same permissions.
             "@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'MODIFY_EDIT_PERMISSIONS')"
     )
     fun updatePermissions(
-        @ValidHanke @RequestBody permissions: PermissionUpdate,
+        @RequestBody permissions: PermissionUpdate,
         @PathVariable hankeTunnus: String
     ) {
         val hankeIdentifier = hankeService.findIdentifier(hankeTunnus)!!
