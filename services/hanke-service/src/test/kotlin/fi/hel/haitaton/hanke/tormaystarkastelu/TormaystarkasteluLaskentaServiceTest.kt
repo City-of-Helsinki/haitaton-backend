@@ -333,7 +333,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         val geometriat = setOf<Int>()
 
         @Test
-        fun `returns 5 when intersects with active tram line`() {
+        fun `returns 5 when intersects with a tram line`() {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns true
 
             val result = laskentaService.raitiotieLuokittelu(geometriat)
@@ -344,7 +344,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         }
 
         @Test
-        fun `returns 3 when intersects with inactive tram line`() {
+        fun `returns 3 when intersects with tram infra`() {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns false
             every { tormaysService.anyIntersectsWithTramInfra(geometriat) } returns true
 
@@ -358,7 +358,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         }
 
         @Test
-        fun `returns 0 when doesn't intersect with any tram line`() {
+        fun `returns 0 when doesn't intersect with any tram line or infra`() {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns false
             every { tormaysService.anyIntersectsWithTramInfra(geometriat) } returns false
 
