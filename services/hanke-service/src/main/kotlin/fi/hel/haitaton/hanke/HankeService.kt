@@ -169,7 +169,7 @@ class HankeService(
         entity.modifiedAt = getCurrentTimeUTCAsLocalTime()
         entity.generated = false
 
-        calculateTormaystarkastelu(hanke.alueet, hanke.alueet.geometriaIds(), entity)
+        calculateTormaystarkastelu(hanke.alueet, entity.alueet.geometriaIds(), entity)
         entity.status = decideNewHankeStatus(entity)
 
         // Save changes:

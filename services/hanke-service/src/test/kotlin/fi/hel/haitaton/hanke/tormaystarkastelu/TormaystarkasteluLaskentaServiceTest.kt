@@ -336,9 +336,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
         fun `returns 5 when intersects with a tram line`() {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns true
 
-            val result = laskentaService.raitiotieLuokittelu(geometriat)
+            val result = laskentaService.calculateRaitiotieIndeksi(geometriat)
 
-            assertThat(result).isEqualTo(5)
+            assertThat(result).isEqualTo(5.0f)
             verify { tormaysService.anyIntersectsWithTramLines(geometriat) }
             verify(exactly = 0) { tormaysService.anyIntersectsWithTramInfra(geometriat) }
         }
@@ -348,9 +348,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns false
             every { tormaysService.anyIntersectsWithTramInfra(geometriat) } returns true
 
-            val result = laskentaService.raitiotieLuokittelu(geometriat)
+            val result = laskentaService.calculateRaitiotieIndeksi(geometriat)
 
-            assertThat(result).isEqualTo(3)
+            assertThat(result).isEqualTo(3.0f)
             verifyAll {
                 tormaysService.anyIntersectsWithTramLines(geometriat)
                 tormaysService.anyIntersectsWithTramInfra(geometriat)
@@ -362,9 +362,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns false
             every { tormaysService.anyIntersectsWithTramInfra(geometriat) } returns false
 
-            val result = laskentaService.raitiotieLuokittelu(geometriat)
+            val result = laskentaService.calculateRaitiotieIndeksi(geometriat)
 
-            assertThat(result).isEqualTo(0)
+            assertThat(result).isEqualTo(0.0f)
             verifyAll {
                 tormaysService.anyIntersectsWithTramLines(geometriat)
                 tormaysService.anyIntersectsWithTramInfra(geometriat)
