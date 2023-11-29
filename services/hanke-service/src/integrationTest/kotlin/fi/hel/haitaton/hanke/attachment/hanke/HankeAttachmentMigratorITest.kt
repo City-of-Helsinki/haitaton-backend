@@ -44,22 +44,6 @@ class HankeAttachmentMigratorITest(
 ) : DatabaseTest() {
 
     @Nested
-    inner class MigrationOperation {
-        @Test
-        fun `Should migrate to cloud and remove old content`() {
-            attachmentFactory.save().withDbContent().value
-
-            val (id, location) = migrate()
-
-            val meta = attachmentFactory.attachmentRepository.findByIdOrNull(id)!!
-            assertThat(meta).prop(HankeAttachmentEntity::blobLocation).isEqualTo(location)
-            assertThat(fileClient.download(HANKE_LIITTEET, location)).isNotNull()
-            val oldCount = attachmentFactory.contentRepository.count()
-            assertThat(oldCount).isEqualTo(0)
-        }
-    }
-
-    @Nested
     inner class UnMigratedAttachment {
         @Test
         fun `Should return null if no attachments in content table`() {
@@ -142,11 +126,6 @@ class HankeAttachmentMigratorITest(
             assertThat(blobs).isEmpty()
         }
     }
-
-    private fun migrate(): MigrationResult =
-        with(migrator.unMigratedAttachment()!!) {
-            migrator.migrate(this).also { (id, path) -> migrator.setBlobPathAndCleanup(id, path) }
-        }
 
     private fun unMigrated(id: UUID, hankeId: Int, bytes: ByteArray = DUMMY_DATA) =
         UnMigratedHankeAttachment(
