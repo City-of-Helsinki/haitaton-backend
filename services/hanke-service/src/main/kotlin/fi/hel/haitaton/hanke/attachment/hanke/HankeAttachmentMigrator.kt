@@ -8,7 +8,7 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
-import fi.hel.haitaton.hanke.attachment.common.UnmigratedHankeAttachment
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentWithContent
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
@@ -25,10 +25,10 @@ class HankeAttachmentMigrator(
 ) {
     /** Find an attachment that is not yet migrated, i.e. still has content in the db. */
     @Transactional(readOnly = true)
-    fun findAttachmentWithDatabaseContent(): UnmigratedHankeAttachment? {
+    fun findAttachmentWithDatabaseContent(): HankeAttachmentWithContent? {
         logAttachmentAmountToMigrate()
-        return pickOneForProcessing()?.let { (file, meta) ->
-            UnmigratedHankeAttachment(
+        return pickForMigration()?.let { (file, meta) ->
+            HankeAttachmentWithContent(
                 id = file.attachmentId,
                 hankeId = meta.hanke.id,
                 content =
@@ -42,7 +42,7 @@ class HankeAttachmentMigrator(
     }
 
     /** Moves content to cloud, returns the created blob path. */
-    fun migrate(attachment: UnmigratedHankeAttachment): String {
+    fun migrate(attachment: HankeAttachmentWithContent): String {
         val blobPath = HankeAttachmentContentService.generateBlobPath(attachment.hankeId)
         fileClient.upload(
             container = HANKE_LIITTEET,
@@ -66,7 +66,7 @@ class HankeAttachmentMigrator(
                     ?: error("Attachment $attachmentId missing")
             metadata.blobLocation = blobPath
             attachmentRepository.save(metadata)
-            contentRepository.deleteByAttachmentId(attachmentId)
+            contentRepository.deleteById(attachmentId)
         } catch (e: Exception) {
             logger.error {
                 "Attachment migration failed on db update. Deleting blob $blobPath for data consistency."
@@ -78,8 +78,8 @@ class HankeAttachmentMigrator(
     /**
      * A file with its metadata. Content references attachment data. Thus, the relation must exist.
      */
-    private fun pickOneForProcessing(): Pair<HankeAttachmentContentEntity, HankeAttachmentEntity>? {
-        val content = contentRepository.pickOne() ?: return null
+    private fun pickForMigration(): Pair<HankeAttachmentContentEntity, HankeAttachmentEntity>? {
+        val content = contentRepository.findFirstBy() ?: return null
         val metadata = attachmentRepository.findByIdOrNull(content.attachmentId)!!
         return Pair(content, metadata)
     }

@@ -26,7 +26,7 @@ data class AttachmentContent(
     @Suppress("ArrayInDataClass") val bytes: ByteArray
 )
 
-data class UnmigratedHankeAttachment(
+data class HankeAttachmentWithContent(
     val id: UUID,
     val hankeId: Int,
     val content: AttachmentContent
