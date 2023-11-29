@@ -30,7 +30,7 @@ class HankeAttachmentMigrationScheduler(
     )
     fun scheduleMigrate() =
         lockService.doIfUnlocked(MIGRATE_HANKE_ATTACHMENT) {
-            hankeAttachmentMigrator.unMigratedAttachment()?.let { migrate(it) }
+            hankeAttachmentMigrator.findAttachmentWithDatabaseContent()?.let { migrate(it) }
                 ?: logger.info { "No hanke attachments to migrate" }
         }
 

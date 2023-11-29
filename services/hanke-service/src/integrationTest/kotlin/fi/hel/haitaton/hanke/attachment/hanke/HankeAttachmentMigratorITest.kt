@@ -44,10 +44,10 @@ class HankeAttachmentMigratorITest(
 ) : DatabaseTest() {
 
     @Nested
-    inner class UnMigratedAttachment {
+    inner class FindAttachmentWithDatabaseContent() {
         @Test
         fun `Should return null if no attachments in content table`() {
-            val result = migrator.unMigratedAttachment()
+            val result = migrator.findAttachmentWithDatabaseContent()
 
             assertThat(result).isNull()
         }
@@ -56,7 +56,7 @@ class HankeAttachmentMigratorITest(
         fun `Should return un-migrated attachment if there are any`() {
             val attachment = attachmentFactory.save().withDbContent().value
 
-            val result: UnMigratedHankeAttachment? = migrator.unMigratedAttachment()
+            val result: UnMigratedHankeAttachment? = migrator.findAttachmentWithDatabaseContent()
 
             assertThat(result).isNotNull().all {
                 prop(UnMigratedHankeAttachment::attachmentId).isNotNull().isEqualTo(attachment.id)

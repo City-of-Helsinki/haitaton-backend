@@ -50,7 +50,7 @@ class HankeAttachmentMigrationSchedulerTest {
         val attachment = unMigratedAttachment()
         val uploadResult = attachment.uploadResult()
         val (attachmentId, blobPath) = uploadResult
-        every { migrator.unMigratedAttachment() } returns attachment
+        every { migrator.findAttachmentWithDatabaseContent() } returns attachment
         every { migrator.migrate(attachment) } returns uploadResult
         justRun { migrator.setBlobPathAndCleanup(attachmentId, blobPath) }
 
@@ -58,7 +58,7 @@ class HankeAttachmentMigrationSchedulerTest {
 
         verifyOrder {
             jdbcLockRegistry.obtain(MIGRATE_HANKE_ATTACHMENT)
-            migrator.unMigratedAttachment()
+            migrator.findAttachmentWithDatabaseContent()
             migrator.migrate(attachment)
             migrator.setBlobPathAndCleanup(attachmentId, blobPath)
         }
@@ -67,12 +67,12 @@ class HankeAttachmentMigrationSchedulerTest {
     @Test
     fun `Should handle situations of no attachments to migrate`() {
         lockMock(obtain = true)
-        every { migrator.unMigratedAttachment() } returns null
+        every { migrator.findAttachmentWithDatabaseContent() } returns null
 
         scheduler.scheduleMigrate()
 
         verify { jdbcLockRegistry.obtain(MIGRATE_HANKE_ATTACHMENT) }
-        verify { migrator.unMigratedAttachment() }
+        verify { migrator.findAttachmentWithDatabaseContent() }
         verify(exactly = 0) { migrator.migrate(any()) }
         verify(exactly = 0) { migrator.setBlobPathAndCleanup(any(), any()) }
     }

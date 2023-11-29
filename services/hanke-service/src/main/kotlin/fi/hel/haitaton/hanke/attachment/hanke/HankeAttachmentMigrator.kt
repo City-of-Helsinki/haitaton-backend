@@ -26,7 +26,7 @@ class HankeAttachmentMigrator(
 ) {
     /** Find an attachment that is not yet migrated, i.e. still has content in the db. */
     @Transactional(readOnly = true)
-    fun unMigratedAttachment(): UnMigratedHankeAttachment? {
+    fun findAttachmentWithDatabaseContent(): UnMigratedHankeAttachment? {
         logAttachmentAmountToMigrate()
         return pickOneForProcessing()?.let { (file, meta) ->
             UnMigratedHankeAttachment(
