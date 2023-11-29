@@ -62,6 +62,13 @@ cycle_infra:
   target_buffer_file: "tormays_cycle_infra_polys.gpkg"
   buffer:
     - 20
+liikennevaylat:
+  addr: "/local_data/liikennevaylat.gpkg"
+  local_file: "liikennevaylat.gpkg"
+  target_file: "street_classes.gpkg"
+  target_buffer_file: "tormays_street_classes_polys.gpkg"
+  buffer:
+    - 20
 
 common:
   download_path: "/downloads"
@@ -70,7 +77,7 @@ common:
 # pyynnöstä toimitetut
 bussiliikenne_kriittinen:
 pienalueet_kantakaupunki_yleiskaava:
-liikennevaylat:
+# liikennevaylat:
 
 local_development:
   database:

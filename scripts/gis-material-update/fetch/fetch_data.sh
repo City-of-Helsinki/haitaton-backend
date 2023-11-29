@@ -65,7 +65,7 @@ hsl)
     wget -O "$local_file" "$addr"
     ;;
 # plain cp from local file system
-cycle_infra)
+cycle_infra|liikennevaylat)
     cp "$addr" "$local_file"
     ;;
 # plain WFS fetch
