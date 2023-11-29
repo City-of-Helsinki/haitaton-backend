@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 017-drop-tormays_trams_polys
+      comment: Drop old tormays_trams_polys table which is replaced by tormays_tram_infra_polys and tormays_tram_lines_polys
+      author: Teemu Hiltunen
+      preConditions:
+        - onFail: MARK_RAN
+        - tableExists:
+            tableName: tormays_trams_polys
+      changes:
+        - dropTable:
+            tableName: tormays_trams_polys
