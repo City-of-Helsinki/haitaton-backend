@@ -29,7 +29,7 @@ class HankeAttachmentMigrator(
         logAttachmentAmountToMigrate()
         return pickOneForProcessing()?.let { (file, meta) ->
             UnmigratedHankeAttachment(
-                attachmentId = file.attachmentId,
+                id = file.attachmentId,
                 hankeId = meta.hanke.id,
                 content =
                     AttachmentContent(

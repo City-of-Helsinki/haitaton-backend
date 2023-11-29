@@ -27,7 +27,7 @@ data class AttachmentContent(
 )
 
 data class UnmigratedHankeAttachment(
-    val attachmentId: UUID,
+    val id: UUID,
     val hankeId: Int,
     val content: AttachmentContent
 )

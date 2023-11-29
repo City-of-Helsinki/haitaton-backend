@@ -34,9 +34,9 @@ class HankeAttachmentMigrationScheduler(
                 ?: logger.info { "No hanke attachments to migrate" }
         }
 
-    private fun migrate(attachment: UnmigratedHankeAttachment) =
-        hankeAttachmentMigrator.migrate(attachment).also { (id, path) ->
-            hankeAttachmentMigrator.setBlobPathAndCleanup(attachmentId = id, blobPath = path)
-            logger.info { "Hanke attachment $id migrated to $path successfully" }
-        }
+    private fun migrate(attachment: UnmigratedHankeAttachment) {
+        val blobPath = hankeAttachmentMigrator.migrate(attachment)
+        hankeAttachmentMigrator.setBlobPathAndCleanup(attachment.id, blobPath)
+        logger.info { "Hanke attachment ${attachment.id} migrated to $blobPath successfully" }
+    }
 }

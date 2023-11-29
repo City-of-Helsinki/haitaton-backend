@@ -16,7 +16,6 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator.parseMediaType
 import fi.hel.haitaton.hanke.attachment.common.DownloadResponse
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
-import fi.hel.haitaton.hanke.attachment.common.MigrationResult
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.attachment.common.UnmigratedHankeAttachment
@@ -44,7 +43,7 @@ class HankeAttachmentMigratorITest(
 ) : DatabaseTest() {
 
     @Nested
-    inner class FindAttachmentWithDatabaseContent() {
+    inner class FindAttachmentWithDatabaseContent {
         @Test
         fun `Should return null if no attachments in content table`() {
             val result = migrator.findAttachmentWithDatabaseContent()
@@ -59,7 +58,7 @@ class HankeAttachmentMigratorITest(
             val result: UnmigratedHankeAttachment? = migrator.findAttachmentWithDatabaseContent()
 
             assertThat(result).isNotNull().all {
-                prop(UnmigratedHankeAttachment::attachmentId).isNotNull().isEqualTo(attachment.id)
+                prop(UnmigratedHankeAttachment::id).isNotNull().isEqualTo(attachment.id)
                 prop(UnmigratedHankeAttachment::hankeId).isEqualTo(attachment.hanke.id)
                 prop(UnmigratedHankeAttachment::content).all {
                     prop(AttachmentContent::fileName).isEqualTo(attachment.fileName)
@@ -78,13 +77,11 @@ class HankeAttachmentMigratorITest(
             val unMigratedAttachment = unMigrated(attachment.id!!, attachment.hanke.id)
             val hankeId = unMigratedAttachment.hankeId
 
-            val result: MigrationResult = migrator.migrate(unMigratedAttachment)
+            val blobPath = migrator.migrate(unMigratedAttachment)
 
-            assertThat(result).all {
-                prop(MigrationResult::attachmentId).isNotNull().isEqualTo(attachment.id)
-                prop(MigrationResult::blobPath).isNotNull().isValidBlobLocation(hankeId)
-            }
-            assertThat(getBlob(result.blobPath))
+            assertThat(blobPath).isNotNull().isValidBlobLocation(hankeId)
+
+            assertThat(getBlob(blobPath))
                 .prop(DownloadResponse::contentType)
                 .isEqualTo(parseMediaType(attachment.contentType))
         }
@@ -117,10 +114,10 @@ class HankeAttachmentMigratorITest(
             val hankeId = 123
             val attachmentId = UUID.randomUUID()
             val attachment = unMigrated(attachmentId, hankeId)
-            val (id, path) = migrator.migrate(attachment)
-            assertThat(getBlob(path)).isNotNull()
+            val blobPath = migrator.migrate(attachment)
+            assertThat(getBlob(blobPath)).isNotNull()
 
-            migrator.setBlobPathAndCleanup(id, path)
+            migrator.setBlobPathAndCleanup(attachment.id, blobPath)
 
             val blobs = fileClient.listBlobs(HANKE_LIITTEET)
             assertThat(blobs).isEmpty()
@@ -129,7 +126,7 @@ class HankeAttachmentMigratorITest(
 
     private fun unMigrated(id: UUID, hankeId: Int, bytes: ByteArray = DUMMY_DATA) =
         UnmigratedHankeAttachment(
-            attachmentId = id,
+            id = id,
             hankeId = hankeId,
             content = AttachmentFactory.attachmentContent(bytes = bytes)
         )

@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.common.MigrationResult
 import fi.hel.haitaton.hanke.attachment.common.UnmigratedHankeAttachment
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentMigrationScheduler.Companion.MIGRATE_HANKE_ATTACHMENT
 import fi.hel.haitaton.hanke.configuration.LockService
@@ -48,11 +47,10 @@ class HankeAttachmentMigrationSchedulerTest {
     fun `Should migrate and cleanup if not migrated attachment is found`() {
         lockMock(obtain = true)
         val attachment = unMigratedAttachment()
-        val uploadResult = attachment.uploadResult()
-        val (attachmentId, blobPath) = uploadResult
+        val blobPath = attachment.blobPath()
         every { migrator.findAttachmentWithDatabaseContent() } returns attachment
-        every { migrator.migrate(attachment) } returns uploadResult
-        justRun { migrator.setBlobPathAndCleanup(attachmentId, blobPath) }
+        every { migrator.migrate(attachment) } returns blobPath
+        justRun { migrator.setBlobPathAndCleanup(attachment.id, blobPath) }
 
         scheduler.scheduleMigrate()
 
@@ -60,7 +58,7 @@ class HankeAttachmentMigrationSchedulerTest {
             jdbcLockRegistry.obtain(MIGRATE_HANKE_ATTACHMENT)
             migrator.findAttachmentWithDatabaseContent()
             migrator.migrate(attachment)
-            migrator.setBlobPathAndCleanup(attachmentId, blobPath)
+            migrator.setBlobPathAndCleanup(attachment.id, blobPath)
         }
     }
 
@@ -101,7 +99,7 @@ class HankeAttachmentMigrationSchedulerTest {
         val content = AttachmentFactory.hankeAttachmentContentEntity(attachmentId = attachment.id!!)
 
         return UnmigratedHankeAttachment(
-            attachmentId = content.attachmentId,
+            id = content.attachmentId,
             hankeId = hanke.id,
             content =
                 AttachmentContent(
@@ -112,9 +110,6 @@ class HankeAttachmentMigrationSchedulerTest {
         )
     }
 }
-
-private fun UnmigratedHankeAttachment.uploadResult(): MigrationResult =
-    MigrationResult(attachmentId = attachmentId, blobPath = blobPath())
 
 private fun UnmigratedHankeAttachment.blobPath() =
     HankeAttachmentContentService.generateBlobPath(hankeId)
