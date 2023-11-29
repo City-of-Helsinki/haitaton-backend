@@ -8,8 +8,7 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
-import fi.hel.haitaton.hanke.attachment.common.MigrationResult
-import fi.hel.haitaton.hanke.attachment.common.UnMigratedHankeAttachment
+import fi.hel.haitaton.hanke.attachment.common.UnmigratedHankeAttachment
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
@@ -26,10 +25,10 @@ class HankeAttachmentMigrator(
 ) {
     /** Find an attachment that is not yet migrated, i.e. still has content in the db. */
     @Transactional(readOnly = true)
-    fun findAttachmentWithDatabaseContent(): UnMigratedHankeAttachment? {
+    fun findAttachmentWithDatabaseContent(): UnmigratedHankeAttachment? {
         logAttachmentAmountToMigrate()
         return pickOneForProcessing()?.let { (file, meta) ->
-            UnMigratedHankeAttachment(
+            UnmigratedHankeAttachment(
                 attachmentId = file.attachmentId,
                 hankeId = meta.hanke.id,
                 content =
@@ -42,19 +41,18 @@ class HankeAttachmentMigrator(
         }
     }
 
-    /** Moves content to cloud, returns the migrated attachment id and the created blob path. */
-    fun migrate(attachment: UnMigratedHankeAttachment): MigrationResult =
-        attachment.let { (id, hankeId, content) ->
-            val blobPath = HankeAttachmentContentService.generateBlobPath(hankeId)
-            fileClient.upload(
-                container = HANKE_LIITTEET,
-                path = blobPath,
-                originalFilename = content.fileName,
-                contentType = AttachmentValidator.parseMediaType(content.contentType),
-                content = content.bytes,
-            )
-            return MigrationResult(attachmentId = id, blobPath = blobPath)
-        }
+    /** Moves content to cloud, returns the created blob path. */
+    fun migrate(attachment: UnmigratedHankeAttachment): String {
+        val blobPath = HankeAttachmentContentService.generateBlobPath(attachment.hankeId)
+        fileClient.upload(
+            container = HANKE_LIITTEET,
+            path = blobPath,
+            originalFilename = attachment.content.fileName,
+            contentType = AttachmentValidator.parseMediaType(attachment.content.contentType),
+            content = attachment.content.bytes,
+        )
+        return blobPath
+    }
 
     /**
      * Set new blob location for an attachment and remove the content from old location in the db.

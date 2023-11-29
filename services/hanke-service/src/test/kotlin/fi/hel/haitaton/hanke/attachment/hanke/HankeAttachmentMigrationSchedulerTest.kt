@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.MigrationResult
-import fi.hel.haitaton.hanke.attachment.common.UnMigratedHankeAttachment
+import fi.hel.haitaton.hanke.attachment.common.UnmigratedHankeAttachment
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentMigrationScheduler.Companion.MIGRATE_HANKE_ATTACHMENT
 import fi.hel.haitaton.hanke.configuration.LockService
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
@@ -95,12 +95,12 @@ class HankeAttachmentMigrationSchedulerTest {
             every { jdbcLockRegistry.obtain(MIGRATE_HANKE_ATTACHMENT) } returns it
         }
 
-    private fun unMigratedAttachment(): UnMigratedHankeAttachment {
+    private fun unMigratedAttachment(): UnmigratedHankeAttachment {
         val hanke = HankeFactory.createEntity()
         val attachment = AttachmentFactory.hankeAttachmentEntity(hanke = hanke)
         val content = AttachmentFactory.hankeAttachmentContentEntity(attachmentId = attachment.id!!)
 
-        return UnMigratedHankeAttachment(
+        return UnmigratedHankeAttachment(
             attachmentId = content.attachmentId,
             hankeId = hanke.id,
             content =
@@ -113,8 +113,8 @@ class HankeAttachmentMigrationSchedulerTest {
     }
 }
 
-private fun UnMigratedHankeAttachment.uploadResult(): MigrationResult =
+private fun UnmigratedHankeAttachment.uploadResult(): MigrationResult =
     MigrationResult(attachmentId = attachmentId, blobPath = blobPath())
 
-private fun UnMigratedHankeAttachment.blobPath() =
+private fun UnmigratedHankeAttachment.blobPath() =
     HankeAttachmentContentService.generateBlobPath(hankeId)

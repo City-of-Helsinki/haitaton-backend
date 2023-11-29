@@ -26,9 +26,7 @@ data class AttachmentContent(
     @Suppress("ArrayInDataClass") val bytes: ByteArray
 )
 
-data class MigrationResult(val attachmentId: UUID, val blobPath: String)
-
-data class UnMigratedHankeAttachment(
+data class UnmigratedHankeAttachment(
     val attachmentId: UUID,
     val hankeId: Int,
     val content: AttachmentContent

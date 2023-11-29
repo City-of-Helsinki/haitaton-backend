@@ -19,7 +19,7 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.MigrationResult
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
-import fi.hel.haitaton.hanke.attachment.common.UnMigratedHankeAttachment
+import fi.hel.haitaton.hanke.attachment.common.UnmigratedHankeAttachment
 import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.test.Asserts.isValidBlobLocation
@@ -56,12 +56,12 @@ class HankeAttachmentMigratorITest(
         fun `Should return un-migrated attachment if there are any`() {
             val attachment = attachmentFactory.save().withDbContent().value
 
-            val result: UnMigratedHankeAttachment? = migrator.findAttachmentWithDatabaseContent()
+            val result: UnmigratedHankeAttachment? = migrator.findAttachmentWithDatabaseContent()
 
             assertThat(result).isNotNull().all {
-                prop(UnMigratedHankeAttachment::attachmentId).isNotNull().isEqualTo(attachment.id)
-                prop(UnMigratedHankeAttachment::hankeId).isEqualTo(attachment.hanke.id)
-                prop(UnMigratedHankeAttachment::content).all {
+                prop(UnmigratedHankeAttachment::attachmentId).isNotNull().isEqualTo(attachment.id)
+                prop(UnmigratedHankeAttachment::hankeId).isEqualTo(attachment.hanke.id)
+                prop(UnmigratedHankeAttachment::content).all {
                     prop(AttachmentContent::fileName).isEqualTo(attachment.fileName)
                     prop(AttachmentContent::contentType).isEqualTo(attachment.contentType)
                     prop(AttachmentContent::bytes).isEqualTo(DEFAULT_DATA)
@@ -128,7 +128,7 @@ class HankeAttachmentMigratorITest(
     }
 
     private fun unMigrated(id: UUID, hankeId: Int, bytes: ByteArray = DUMMY_DATA) =
-        UnMigratedHankeAttachment(
+        UnmigratedHankeAttachment(
             attachmentId = id,
             hankeId = hankeId,
             content = AttachmentFactory.attachmentContent(bytes = bytes)

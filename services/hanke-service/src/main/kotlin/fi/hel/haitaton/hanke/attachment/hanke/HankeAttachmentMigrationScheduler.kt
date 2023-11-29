@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
-import fi.hel.haitaton.hanke.attachment.common.UnMigratedHankeAttachment
+import fi.hel.haitaton.hanke.attachment.common.UnmigratedHankeAttachment
 import fi.hel.haitaton.hanke.configuration.LockService
 import mu.KotlinLogging
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -34,7 +34,7 @@ class HankeAttachmentMigrationScheduler(
                 ?: logger.info { "No hanke attachments to migrate" }
         }
 
-    private fun migrate(attachment: UnMigratedHankeAttachment) =
+    private fun migrate(attachment: UnmigratedHankeAttachment) =
         hankeAttachmentMigrator.migrate(attachment).also { (id, path) ->
             hankeAttachmentMigrator.setBlobPathAndCleanup(attachmentId = id, blobPath = path)
             logger.info { "Hanke attachment $id migrated to $path successfully" }
