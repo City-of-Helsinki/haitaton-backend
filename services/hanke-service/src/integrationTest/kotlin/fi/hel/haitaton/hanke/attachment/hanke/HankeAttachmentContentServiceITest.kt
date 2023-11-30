@@ -9,7 +9,6 @@ import assertk.assertions.hasMessage
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
-import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
@@ -22,6 +21,7 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
+import fi.hel.haitaton.hanke.test.Asserts.isValidBlobLocation
 import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -99,10 +99,7 @@ class HankeAttachmentContentServiceITest(
                     hankeId
                 )
 
-            val idPart = blobLocation.substringBefore("/")
-            val uuidPart = blobLocation.substringAfter("/")
-            assertThat(idPart.toIntOrNull()).isEqualTo(hankeId)
-            assertThat(UUID.fromString(uuidPart)).isNotNull()
+            assertThat(blobLocation).isValidBlobLocation(id = hankeId)
         }
     }
 

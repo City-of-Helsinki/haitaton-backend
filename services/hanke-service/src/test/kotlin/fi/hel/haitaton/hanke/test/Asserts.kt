@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.test
 
 import assertk.Assert
 import assertk.all
+import assertk.assertions.contains
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.extracting
 import assertk.assertions.first
@@ -18,6 +19,7 @@ import java.time.Duration
 import java.time.OffsetDateTime
 import java.time.ZonedDateTime
 import java.time.temporal.TemporalAmount
+import java.util.UUID
 import org.geojson.Feature
 import org.geojson.FeatureCollection
 import org.geojson.Geometry
@@ -62,5 +64,17 @@ object Asserts {
 
     fun Assert<Array<MimeMessage>>.hasReceivers(vararg receivers: String?) {
         extracting { it.allRecipients.first().toString() }.containsExactlyInAnyOrder(*receivers)
+    }
+
+    /**
+     * Blob location has a format of 123/ab7993b7-a775-4eac-b5b7-8546332944fe. Hanke or application
+     * id followed by a slash and a UUID.
+     */
+    fun Assert<String>.isValidBlobLocation(id: Number) = given { actual ->
+        assertThat(actual).contains("/")
+        val idPart = actual.substringBefore("/")
+        val uuidPart = actual.substringAfter("/")
+        assertThat(idPart.toIntOrNull()).isEqualTo(id)
+        assertThat(UUID.fromString(uuidPart)).isNotNull()
     }
 }
