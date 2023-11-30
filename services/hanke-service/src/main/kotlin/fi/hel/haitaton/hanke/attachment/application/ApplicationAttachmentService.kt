@@ -81,6 +81,7 @@ class ApplicationAttachmentService(
                 id = null,
                 fileName = filename,
                 contentType = attachment.contentType!!,
+                blobLocation = null,
                 createdByUserId = currentUserId(),
                 createdAt = now(),
                 attachmentType = attachmentType,

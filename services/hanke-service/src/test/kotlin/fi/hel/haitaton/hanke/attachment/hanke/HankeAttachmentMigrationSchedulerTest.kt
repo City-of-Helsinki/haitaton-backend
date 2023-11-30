@@ -4,7 +4,8 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentWithContent
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentMigrationScheduler.Companion.MIGRATE_HANKE_ATTACHMENT
 import fi.hel.haitaton.hanke.configuration.LockService
-import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
+import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -95,8 +96,12 @@ class HankeAttachmentMigrationSchedulerTest {
 
     private fun unMigratedAttachment(): HankeAttachmentWithContent {
         val hanke = HankeFactory.createEntity()
-        val attachment = AttachmentFactory.hankeAttachmentEntity(hanke = hanke)
-        val content = AttachmentFactory.hankeAttachmentContentEntity(attachmentId = attachment.id!!)
+        val attachment =
+            HankeAttachmentFactory.createEntity(
+                id = ApplicationAttachmentFactory.defaultAttachmentId,
+                hanke = hanke,
+            )
+        val content = HankeAttachmentFactory.createContentEntity(attachmentId = attachment.id!!)
 
         return HankeAttachmentWithContent(
             id = content.attachmentId,

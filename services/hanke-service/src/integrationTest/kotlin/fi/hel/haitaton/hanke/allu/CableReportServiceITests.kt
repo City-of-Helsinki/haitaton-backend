@@ -13,8 +13,8 @@ import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.configuration.Configuration.Companion.webClientWithLargeBuffer
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
-import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import java.time.ZonedDateTime
 import okhttp3.MultipartReader
@@ -107,7 +107,7 @@ class CableReportServiceITests {
         addStubbedLoginResponse()
         val alluId = 123
         val file = "test file content".toByteArray()
-        val attachment = AttachmentFactory.applicationAttachmentEntity(applicationId = 123456)
+        val attachment = ApplicationAttachmentFactory.createEntity(applicationId = 123456)
         val mockResponse = MockResponse().setResponseCode(200)
         (1..3).forEach { _ -> mockWebServer.enqueue(mockResponse) }
         val attachments = listOf(attachment, attachment, attachment)

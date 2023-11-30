@@ -14,7 +14,7 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadService
 import fi.hel.haitaton.hanke.attachment.testFile
-import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.TestHankeIdentifier
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
@@ -74,7 +74,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
 
     @Test
     fun `getMetadataList when valid request should return metadata list`() {
-        val data = (1..3).map { AttachmentFactory.hankeAttachment(fileName = "${it}file.pdf") }
+        val data = (1..3).map { HankeAttachmentFactory.create(fileName = "${it}file.pdf") }
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
         every { hankeAttachmentService.getMetadataList(HANKE_TUNNUS) } returns data
 
@@ -110,7 +110,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
         val hanke = TestHankeIdentifier(1, HANKE_TUNNUS)
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name) } returns true
         every { attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file) } returns
-            AttachmentFactory.hankeAttachment()
+            HankeAttachmentFactory.create()
 
         postAttachment(file = file).andExpect(status().isOk)
 
