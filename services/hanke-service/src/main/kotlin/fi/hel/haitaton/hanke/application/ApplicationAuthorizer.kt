@@ -44,8 +44,8 @@ class ApplicationAuthorizer(
         permissionCode: String
     ): Boolean {
         authorizeApplicationId(applicationId, permissionCode)
-        if (findApplicationIdForAttachment(attachmentId) == applicationId) return true
-        throw AttachmentNotFoundException(attachmentId)
+        return findApplicationIdForAttachment(attachmentId) == applicationId ||
+            throw AttachmentNotFoundException(attachmentId)
     }
 
     private fun findApplicationIdForAttachment(attachmentId: UUID): Long? =

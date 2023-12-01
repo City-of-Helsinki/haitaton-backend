@@ -127,7 +127,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 attachment = file
             )
 
-        val result = applicationAttachmentService.getContent(attachmentId = attachment.id)
+        val result = applicationAttachmentService.getContent(attachment.id)
 
         assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
         assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
@@ -345,7 +345,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             )
         assertThat(applicationAttachmentRepository.findById(attachment.id)).isPresent()
 
-        applicationAttachmentService.deleteAttachment(attachmentId = attachment.id)
+        applicationAttachmentService.deleteAttachment(attachment.id)
 
         assertThat(applicationAttachmentRepository.findById(attachment.id)).isEmpty()
     }
