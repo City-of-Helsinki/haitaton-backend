@@ -51,7 +51,7 @@ plugins {
     val kotlinVersion = "1.9.21"
     id("org.springframework.boot") version "3.1.5"
     id("io.spring.dependency-management") version "1.1.4"
-    id("com.diffplug.spotless") version "6.22.0"
+    id("com.diffplug.spotless") version "6.23.2"
     kotlin("jvm") version kotlinVersion
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
     kotlin("plugin.spring") version kotlinVersion
@@ -80,7 +80,7 @@ dependencies {
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
     implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.6.1")
-    implementation("commons-io:commons-io:2.15.0")
+    implementation("commons-io:commons-io:2.15.1")
     implementation("com.github.librepdf:openpdf:1.3.33")
     implementation("net.pwall.mustache:kotlin-mustache:0.11")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")

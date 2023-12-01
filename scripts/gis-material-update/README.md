@@ -121,6 +121,7 @@ Where `<source>` is currently one of:
 - `ylre_katuosat` - Helsinki YLRE parts, polygons.
 - `maka_autoliikennemaarat` - Traffic volumes (car traffic)
 - `cycle_infra` - Cycle infra (local file)
+- `central_business_area` - Helsinki city "kantakaupunki"
 
 Data files are downloaded to `./haitaton-downloads` -directory.
 
@@ -300,6 +301,27 @@ Output files (names configured in `config.yaml`)
 
 - cycle_infra.gpkg
 - tormays_cycle_infra_polys.gpkg
+
+### `central_business_area`
+
+Prerequisite: fetched `central_business_area` -material.
+
+Docker example run (ensure that image build and file copying is
+already performed as instructed above):
+
+```sh
+docker-compose up -d gis-db
+docker-compose run --rm gis-fetch central_business_area
+docker-compose run --rm gis-process central_business_area
+docker-compose stop gis-db
+```
+
+Processed GIS material is available in:
+haitaton-gis-output
+
+Output files (names configured in `config.yaml`)
+
+- tormays_central_business_areas.gpkg
 
 # Run tests
 
