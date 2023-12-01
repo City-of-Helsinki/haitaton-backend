@@ -62,25 +62,35 @@ internal class TormaystarkasteluTormaysServiceITest : DatabaseTest() {
         assertThat(tormaysService.anyIntersectsWithKantakaupunki(geometriaIds)).isEqualTo(result)
     }
 
-    /** Test manually what kinds of traffic counts there are on Hanke geometries with radius of 15m */
+    /**
+     * Test manually what kinds of traffic counts there are on Hanke geometries with radius of 15m
+     */
     @ParameterizedTest
     @CsvSource("Kaivokatu,17566", "Mustikkamaa,")
     fun `traffic counts with radius of 15m`(location: String, result: Int?) {
         val geometriaIds = createHankeGeometriat(location)
         assertThat(
-            tormaysService.maxLiikennemaara(
-                geometriaIds, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15))
+                tormaysService.maxLiikennemaara(
+                    geometriaIds,
+                    TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_15
+                )
+            )
             .isEqualTo(result)
     }
 
-    /** Test manually what kinds of traffic counts there are on Hanke geometries with radius of 30m */
+    /**
+     * Test manually what kinds of traffic counts there are on Hanke geometries with radius of 30m
+     */
     @ParameterizedTest
     @CsvSource("Kaivokatu,17566", "Mustikkamaa,")
     fun `traffic counts with radius of 30m`(location: String, result: Int?) {
         val geometriaIds = createHankeGeometriat(location)
         assertThat(
-            tormaysService.maxLiikennemaara(
-                geometriaIds, TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30))
+                tormaysService.maxLiikennemaara(
+                    geometriaIds,
+                    TormaystarkasteluLiikennemaaranEtaisyys.RADIUS_30
+                )
+            )
             .isEqualTo(result)
     }
 
@@ -128,7 +138,8 @@ internal class TormaystarkasteluTormaysServiceITest : DatabaseTest() {
     @CsvSource("Kaivokatu,true", "Mustikkamaa,false")
     fun `priority cycleways`(location: String, result: Boolean) {
         val geometriaIds = createHankeGeometriat(location)
-        assertThat(tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds)).isEqualTo(result)
+        assertThat(tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds))
+            .isEqualTo(result)
     }
 
     /** Test manually what main cycleways Hanke geometries are located on */
