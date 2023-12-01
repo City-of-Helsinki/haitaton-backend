@@ -1,0 +1,141 @@
+haitaton:
+  allu:
+    baseUrl: ${ALLU_BASEURL:/}
+    concurrentUploads: ${ALLU_CONCURRENT_UPLOADS:1}
+    insecure: ${ALLU_INSECURE:false}
+    password: ${ALLU_PASSWORD:fake_password}
+    updateInitialDelayMilliSeconds: ${ALLU_UPDATE_INITIAL_DELAY:60000}
+    updateIntervalMilliSeconds: ${ALLU_UPDATE_INTERVAL:60000}
+    username: ${ALLU_USERNAME:fake_user}
+  attachment-migration:
+    hanke:
+      enabled: ${HAITATON_ATTACHMENT_MIGRATION_HANKE_ENABLED:false}
+      initial-delay: ${HAITATON_ATTACHMENT_MIGRATION_HANKE_INITIAL_DELAY:10000}
+      interval: ${HAITATON_ATTACHMENT_MIGRATION_HANKE_INTERVAL:60000}
+  azure:
+    blob:
+      connection-string: ${HAITATON_BLOB_CONNECTION_STRING:#{null}}
+      decisions: ${HAITATON_BLOB_CONTAINER_DECISIONS:haitaton-paatokset-local}
+      endpoint: https://${AZURE_STORAGE_ACCOUNT:}.blob.core.windows.net/
+      hakemus-attachments: ${HAITATON_BLOB_CONTAINER_HAKEMUS_LIITTEET:haitaton-hakemusliitteet-local}
+      hanke-attachments: ${HAITATON_BLOB_CONTAINER_HANKE_LIITTEET:haitaton-hankeliitteet-local}
+  clamav:
+    baseUrl: ${CLAMAV_BASE_URL:http://localhost:3030}
+  cors:
+    allowedOrigins: ${HAITATON_CORS_ALLOWED_ORIGINS:http://localhost:3001}
+  email:
+    baseUrl: ${HAITATON_EMAIL_BASEURL:http://localhost:3001}
+    # For non-prod envs, send filter should be used to send only in allowed addresses.
+    filter:
+      # List of allowed addresses, separated by ;
+      allow-list: ${HAITATON_EMAIL_FILTER_ALLOW_LIST:haitaton@test.com}
+      use: ${HAITATON_EMAIL_FILTER_USE:true}
+    from: ${HAITATON_EMAIL_FROM:Haitaton <noreply.haitaton@hel.fi>}
+    # Disable endpoints that are e.g. in development and should not be in production.
+  features:
+    hanke-editing: ${HAITATON_FEATURE_HANKE_EDITING:false}
+    user-management: ${HAITATON_FEATURE_USER_MANAGEMENT:false}
+    # GDPR API is disabled by default for tests and local running.
+    # Spring Security will otherwise try to call the issuer's openid-configuration URL,
+    # which will fail, unless the developer has also started profile-gdpr-api-tester.
+  gdpr:
+    audience: ${HAITATON_GDPR_AUDIENCE:http://localhost:8080/haitaton}
+    authorization-field: ${HAITATON_GDPR_AUTHORIZATION_FIELD:http://localhost:8080}
+    delete-scope: ${HAITATON_GDPR_DELETE_SCOPE:haitaton.gdprdelete}
+    disabled: ${HAITATON_GDPR_DISABLED:true}
+    issuer: ${HAITATON_GDPR_ISSUER:http://gdpr-api-tester:8888/}
+    query-scope: ${HAITATON_GDPR_QUERY_SCOPE:haitaton.gdprquery}
+    # For dev and test environments, enable the testdata controller for resetting data
+  testdata:
+    enabled: ${HAITATON_TESTDATA_ENABLED:false}
+
+info:
+  java-vendor: ${java.specification.vendor}
+  java-version: ${java.specification.version}
+
+logging:
+  level:
+    liquibase: INFO
+
+# Actuator Management for Kubernetes. Separate HTTP port for probes.
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessState:
+      enabled: true
+    readinessState:
+      enabled: true
+  server:
+    port: 8081
+
+security:
+  oauth2:
+    client:
+      client-id: ${HAITATON_OAUTH2_CLIENT_ID:iTestMock}
+    resource:
+      prefer-token-info: false
+      user-info-uri: ${HAITATON_OAUTH2_USER_INFO_URI:iTestMock}
+
+sentry:
+  # DSN is a public detail.
+  dsn: https://a4148023aaeb4e88a37cb41e938dc076@o394401.ingest.sentry.io/5617535
+  environment: ${HAITATON_SENTRY_ENVIRONMENT:dev}
+  # Only exceptions that have not been handled by exception resolvers with higher order are sent to Sentry.
+  exception-resolver-order: 2147483647
+  logging:
+    enabled: ${HAITATON_SENTRY_LOGGING_ENABLED:false}
+    minimum-breadcrumb-level: info
+    minimum-event-level: error
+
+server:
+  forward-headers-strategy: FRAMEWORK
+
+spring:
+  datasource:
+    password: ${HAITATON_PASSWORD:haitaton}
+    url: jdbc:postgresql://${HAITATON_HOST:localhost}:${HAITATON_PORT:5432}/${HAITATON_DATABASE:haitaton}
+    username: ${HAITATON_USER:haitaton_user}
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      naming:
+        # Make database field names to match the entity member names
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    open-in-view: false
+    # This is the default. Left here to make it easy to enable while developing.
+    show-sql: false
+  liquibase:
+    password: ${HAITATON_PASSWORD:haitaton}
+    url: jdbc:postgresql://${HAITATON_HOST:localhost}:${HAITATON_PORT:5432}/${HAITATON_DATABASE:haitaton}
+    user: ${HAITATON_USER:haitaton_user}
+  mail:
+    host: ${MAIL_SENDER_HOST:localhost}
+    port: ${MAIL_SENDER_PORT:2525}
+    properties:
+      mail:
+        debug: ${MAIL_SENDER_DEBUG:false}
+        smtp:
+          auth: ${MAIL_SENDER_AUTH:false}
+          starttls:
+            enable: ${MAIL_SENDER_STARTTLS_ENABLE:true}
+        transport:
+          protocol: ${MAIL_SENDER_PROTOCOL:smtp}
+  mvc:
+    format:
+      # REST API request parameter parsing to work for date values
+      date: yyyy-MM-dd
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 101MB
+
+# Configuration for Swagger UI & OpenAPI documentation. Default is access from behind reverse proxy.
+springdoc:
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+  swagger-ui:
+    config-url: ${HAITATON_SWAGGER_PATH_PREFIX:/api/v3}/api-docs/swagger-config
+    url: ${HAITATON_SWAGGER_PATH_PREFIX:/api/v3}/api-docs
