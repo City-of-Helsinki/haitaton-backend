@@ -28,7 +28,6 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
-import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeIdentifierFactory
@@ -167,7 +166,7 @@ class HankeAttachmentServiceITests(
         fun `Should throw if attachment amount is exceeded`() {
             val hanke = hankeFactory.saveEntity()
             (1..ALLOWED_ATTACHMENT_COUNT)
-                .map { AttachmentFactory.hankeAttachmentEntity(hanke = hanke) }
+                .map { HankeAttachmentFactory.createEntity(hanke = hanke) }
                 .let { hankeAttachmentRepository.saveAll(it) }
 
             assertFailure {
@@ -219,7 +218,7 @@ class HankeAttachmentServiceITests(
             val hanke = hankeFactory.saveEntity()
             val attachments =
                 (1..ALLOWED_ATTACHMENT_COUNT).map {
-                    AttachmentFactory.hankeAttachmentEntity(hanke = hanke)
+                    HankeAttachmentFactory.createEntity(hanke = hanke)
                 }
             hankeAttachmentRepository.saveAll(attachments)
 

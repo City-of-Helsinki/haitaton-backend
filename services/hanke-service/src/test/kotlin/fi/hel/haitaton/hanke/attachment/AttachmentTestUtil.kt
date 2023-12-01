@@ -23,7 +23,9 @@ const val APPLICATION_ID = 1L
 const val CONTENT_TYPE_HEADER = "Content-Type"
 
 val DUMMY_DATA = "ABC".toByteArray()
-val DEFAULT_DATA = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
+val DEFAULT_DATA by lazy {
+    "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
+}
 
 fun testFile(
     fileParam: String = FILE_PARAM,

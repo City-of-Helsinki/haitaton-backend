@@ -19,7 +19,6 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentWithContent
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
-import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.test.Asserts.isValidBlobLocation
 import java.util.UUID
@@ -128,7 +127,7 @@ class HankeAttachmentMigratorITest(
         HankeAttachmentWithContent(
             id = id,
             hankeId = hankeId,
-            content = AttachmentFactory.attachmentContent(bytes = bytes)
+            content = HankeAttachmentFactory.createContent(bytes = bytes)
         )
 
     private fun blobPath(id: Int) = HankeAttachmentContentService.generateBlobPath(id)
