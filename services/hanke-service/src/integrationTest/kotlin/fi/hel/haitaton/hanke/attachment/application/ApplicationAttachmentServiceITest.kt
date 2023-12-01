@@ -29,7 +29,6 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.VALTAKIRJA
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
@@ -128,44 +127,11 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 attachment = file
             )
 
-        val result =
-            applicationAttachmentService.getContent(
-                applicationId = application.id!!,
-                attachmentId = attachment.id
-            )
+        val result = applicationAttachmentService.getContent(attachmentId = attachment.id)
 
         assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
         assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
         assertThat(result.bytes).isEqualTo(file.bytes)
-    }
-
-    @Test
-    fun `getContent when attachment is not in requested application should throw`() {
-        mockWebServer.enqueue(response(body(results = successResult())))
-        mockWebServer.enqueue(response(body(results = successResult())))
-        val firstApplication = initApplication().toApplication()
-        val secondApplication = initApplication().toApplication()
-        applicationAttachmentService.addAttachment(
-            applicationId = firstApplication.id!!,
-            attachmentType = VALTAKIRJA,
-            attachment = testFile(),
-        )
-        val secondAttachment =
-            applicationAttachmentService.addAttachment(
-                applicationId = secondApplication.id!!,
-                attachmentType = LIIKENNEJARJESTELY,
-                attachment = testFile(),
-            )
-
-        val exception =
-            assertThrows<AttachmentNotFoundException> {
-                applicationAttachmentService.getContent(
-                    applicationId = firstApplication.id!!,
-                    attachmentId = secondAttachment.id,
-                )
-            }
-
-        assertThat(exception.message).isEqualTo("Attachment not found, id=${secondAttachment.id}")
     }
 
     @EnumSource(ApplicationAttachmentType::class)
@@ -379,10 +345,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             )
         assertThat(applicationAttachmentRepository.findById(attachment.id)).isPresent()
 
-        applicationAttachmentService.deleteAttachment(
-            applicationId = application.id!!,
-            attachmentId = attachment.id
-        )
+        applicationAttachmentService.deleteAttachment(attachmentId = attachment.id)
 
         assertThat(applicationAttachmentRepository.findById(attachment.id)).isEmpty()
     }
@@ -395,10 +358,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
         val exception =
             assertThrows<ApplicationInAlluException> {
-                applicationAttachmentService.deleteAttachment(
-                    applicationId = application.id!!,
-                    attachmentId = attachment.id!!
-                )
+                applicationAttachmentService.deleteAttachment(attachmentId = attachment.id!!)
             }
 
         assertThat(exception.message)
