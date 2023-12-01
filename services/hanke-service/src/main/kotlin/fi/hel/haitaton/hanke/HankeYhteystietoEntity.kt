@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
+import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.persistence.Column
@@ -141,4 +142,10 @@ data class Yhteyshenkilo(
     @field:Schema(description = "Phone number") val puhelinnumero: String,
 ) {
     fun fullName(): String = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
+
+    fun toHankekayttajaInput(): HankekayttajaInput? =
+        if (missingData()) null else HankekayttajaInput(etunimi, sukunimi, email, puhelinnumero)
+
+    private fun missingData(): Boolean =
+        listOf(etunimi, sukunimi, email, puhelinnumero).any { it.isBlank() }
 }

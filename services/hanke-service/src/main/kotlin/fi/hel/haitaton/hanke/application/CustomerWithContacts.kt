@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.allu.CustomerWithContacts as AlluCustomerWithContac
 import fi.hel.haitaton.hanke.allu.PostalAddress as AlluPostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress as AlluStreetAddress
 import fi.hel.haitaton.hanke.domain.HankeFounder
+import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CustomerWithContacts(val customer: Customer, val contacts: List<Contact>) {
@@ -58,6 +59,18 @@ data class Contact(
 
         return HankeFounder(name, email)
     }
+
+    fun toHankekayttajaInput(): HankekayttajaInput? =
+        if (
+            firstName.isNullOrBlank() ||
+                lastName.isNullOrBlank() ||
+                email.isNullOrBlank() ||
+                phone.isNullOrBlank()
+        ) {
+            null
+        } else {
+            HankekayttajaInput(firstName, lastName, email, phone)
+        }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)

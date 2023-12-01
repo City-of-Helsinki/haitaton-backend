@@ -145,3 +145,7 @@ databaseChangeLog:
       file: db/changelog/changesets/057-drop-tormays_trams_polys.yml
   - include:
       file: db/changelog/changesets/058-add-blob-location-to-application-attachment.yml
+  - include:
+      file: db/changelog/changesets/059-hankekayttaja-changes.yml
+  - include:
+      file: db/changelog/changesets/060-timestamp-triggers-for-kayttajas.sql

@@ -7,7 +7,6 @@ import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeFounder
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasYhteystiedot
@@ -17,6 +16,7 @@ import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.validation.HankePublicValidator
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
@@ -69,7 +69,7 @@ class HankeService(
     @Transactional
     fun createHanke(
         request: CreateHankeRequest,
-        founder: HankeFounder? = null,
+        founder: HankekayttajaInput? = null,
         generated: Boolean = false,
     ): Hanke {
         val userId = currentUserId()
@@ -214,7 +214,7 @@ class HankeService(
 
     private fun initAccessForCreatedHanke(
         hanke: Hanke,
-        hankeFounder: HankeFounder?,
+        hankeFounder: HankekayttajaInput?,
         userId: String
     ) {
         hankeKayttajaService.addHankeFounder(hanke.id, hankeFounder, userId)
@@ -767,6 +767,6 @@ class HankeService(
             name
         }
 
-    private fun CableReportApplicationData.ordererAsFounder(): HankeFounder =
-        findOrderer()?.toHankeFounder() ?: throw HankeArgumentException("Orderer not found.")
+    private fun CableReportApplicationData.ordererAsFounder(): HankekayttajaInput =
+        findOrderer()?.toHankekayttajaInput() ?: throw HankeArgumentException("Orderer not found.")
 }

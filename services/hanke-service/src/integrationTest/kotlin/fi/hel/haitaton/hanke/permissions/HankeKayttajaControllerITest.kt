@@ -96,12 +96,14 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             )
 
         private val hankeKayttajaEntity =
-            HankeKayttajaEntity(
+            HankekayttajaEntity(
                 id = hankeKayttajaId,
-                sahkoposti = "Doesn't",
-                nimi = "Matter",
+                sahkoposti = "some@email.fi",
+                etunimi = "Test",
+                sukunimi = "Person",
+                puhelin = "0401234567",
                 hankeId = hankeId,
-                kayttajaTunniste = null,
+                kayttajakutsu = null,
                 permission = null,
             )
 

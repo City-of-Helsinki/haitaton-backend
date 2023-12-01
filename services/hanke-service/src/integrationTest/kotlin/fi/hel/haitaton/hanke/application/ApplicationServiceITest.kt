@@ -66,7 +66,8 @@ import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.UserContactFactory.hakijaContact
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
+import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -76,9 +77,12 @@ import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
-import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
-import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
+import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
+import fi.hel.haitaton.hanke.permissions.KayttajakutsuEntity
+import fi.hel.haitaton.hanke.permissions.KayttajakutsuRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso.HAKEMUSASIOINTI
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso.KATSELUOIKEUS
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.permissions.kayttajaTunnistePattern
 import fi.hel.haitaton.hanke.test.Asserts.hasReceivers
@@ -142,7 +146,8 @@ class ApplicationServiceITest : DatabaseTest() {
     @Autowired private lateinit var hankeRepository: HankeRepository
     @Autowired private lateinit var alluStatusRepository: AlluStatusRepository
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
-    @Autowired private lateinit var kayttajaTunnisteRepository: KayttajaTunnisteRepository
+    @Autowired private lateinit var kayttajakutsuRepository: KayttajakutsuRepository
+    @Autowired private lateinit var hankeKayttajaRepository: HankekayttajaRepository
     @Autowired private lateinit var geometriatDao: GeometriatDao
 
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
@@ -1135,41 +1140,46 @@ class ApplicationServiceITest : DatabaseTest() {
         }
 
         @Test
-        @Sql("/sql/senaatintorin-hanke.sql")
         fun `Saves user tokens from application contacts`() {
-            val application =
-                alluDataFactory.saveApplicationEntity(
-                    USERNAME,
-                    hanke = initializedHanke(),
-                    application = mockApplicationWithArea()
-                ) {
-                    it.alluid = null
-                }
-            val applicationData = application.applicationData as CableReportApplicationData
-            val pendingApplicationData = applicationData.copy(pendingOnClient = false)
-            every {
-                cableReportServiceAllu.create(pendingApplicationData.toAlluData(HANKE_TUNNUS))
-            } returns 26
+            val cableReport =
+                cableReportWithoutHanke(
+                    createCableReportApplicationData(
+                        customerWithContacts = hakijaCustomerContact,
+                    )
+                )
+            val application = hankeService.generateHankeWithApplication(cableReport, USERNAME)
+            val data = application.applicationData as CableReportApplicationData
+            val hanke = hankeRepository.findOneByHankeTunnus(application.hankeTunnus)!!
+            val pending = data.copy(pendingOnClient = false).toAlluData(hanke.hankeTunnus)
+            every { cableReportServiceAllu.create(pending) } returns 26
             justRun { cableReportServiceAllu.addAttachment(26, any()) }
             every { cableReportServiceAllu.getApplicationInformation(26) } returns
                 createAlluApplicationResponse(26)
 
             applicationService.sendApplication(application.id!!, USERNAME)
 
-            val tunnisteet = kayttajaTunnisteRepository.findAll()
-            assertThat(tunnisteet).hasSize(1)
-            assertThat(tunnisteet[0].kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
-            assertThat(tunnisteet[0].createdAt).isRecent()
-            assertThat(tunnisteet[0].tunniste).matches(Regex(kayttajaTunnistePattern))
-            assertThat(tunnisteet[0].hankeKayttaja).isNotNull()
-            val kayttaja = tunnisteet[0].hankeKayttaja
-            assertThat(kayttaja.nimi).isEqualTo("Teppo Testihenkilö")
-            assertThat(kayttaja.sahkoposti).isEqualTo(teppoEmail)
-            assertThat(kayttaja.hankeId).isEqualTo(application.hanke.id)
-            assertThat(kayttaja.permission).isNull()
-            assertThat(kayttaja.kayttajaTunniste).isNotNull()
+            val kutsut = kayttajakutsuRepository.findAll()
+            assertThat(kutsut).hasSize(1)
+            assertThat(kutsut.first()).all {
+                prop(KayttajakutsuEntity::kayttooikeustaso).isEqualTo(KATSELUOIKEUS)
+                prop(KayttajakutsuEntity::createdAt).isRecent()
+                prop(KayttajakutsuEntity::tunniste).matches(Regex(kayttajaTunnistePattern))
+                prop(KayttajakutsuEntity::hankekayttaja).isNotNull()
+            }
+            val inviter = findKayttaja(hanke.id, KAYTTAJA_INPUT_HAKIJA.email)
+            assertThat(kutsut.first().hankekayttaja).all {
+                prop(HankekayttajaEntity::fullName).isEqualTo(TEPPO_TESTI)
+                prop(HankekayttajaEntity::puhelin).isEqualTo("04012345678")
+                prop(HankekayttajaEntity::kutsuttuEtunimi).isEqualTo("Teppo")
+                prop(HankekayttajaEntity::kutsuttuSukunimi).isEqualTo("Testihenkilö")
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(teppoEmail)
+                prop(HankekayttajaEntity::hankeId).isEqualTo(hanke.id)
+                prop(HankekayttajaEntity::permission).isNull() // user not logged in yet
+                prop(HankekayttajaEntity::kayttajakutsu).isNotNull()
+                prop(HankekayttajaEntity::kutsujaId).isEqualTo(inviter.id)
+            }
             verifyOrder {
-                cableReportServiceAllu.create(pendingApplicationData.toAlluData(HANKE_TUNNUS))
+                cableReportServiceAllu.create(pending)
                 cableReportServiceAllu.addAttachment(26, any())
                 cableReportServiceAllu.getApplicationInformation(26)
             }
@@ -1414,6 +1424,9 @@ class ApplicationServiceITest : DatabaseTest() {
                 cableReportServiceAllu.getApplicationInformation(26)
             }
         }
+
+        private fun findKayttaja(hankeId: Int, email: String) =
+            hankeKayttajaRepository.findByHankeIdAndSahkopostiIn(hankeId, listOf(email)).first()
     }
 
     @Nested
@@ -1854,8 +1867,10 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     private fun Assert<MimeMessage>.isValid(type: ApplicationType, hankeTunnus: String?) {
+        val name = KAYTTAJA_INPUT_HAKIJA.fullName()
+        val email = KAYTTAJA_INPUT_HAKIJA.email
         prop(MimeMessage::textBody).all {
-            contains("${hakijaContact.name} (${hakijaContact.email}) on tehnyt")
+            contains("$name ($email) on tehnyt")
             contains("hakemukselle $defaultApplicationIdentifier")
             contains("on tehnyt ${type.translations().fi}")
             contains("hankkeella $hankeTunnus")
