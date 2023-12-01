@@ -23,7 +23,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.testFile
-import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import io.mockk.checkUnnecessaryStub
@@ -81,9 +81,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     @Test
     fun `getApplicationAttachments when valid request should return metadata list`() {
         val data =
-            (1..3).map {
-                AttachmentFactory.applicationAttachmentMetadata(fileName = "${it}file.pdf")
-            }
+            (1..3).map { ApplicationAttachmentFactory.createMetadata(fileName = "${it}file.pdf") }
         every { authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name) } returns true
         every { applicationAttachmentService.getMetadataList(APPLICATION_ID) } returns data
         val result: List<ApplicationAttachmentMetadata> =
@@ -128,7 +126,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         every { authorizer.authorizeApplicationId(APPLICATION_ID, EDIT_APPLICATIONS.name) } returns
             true
         every { applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file) } returns
-            AttachmentFactory.applicationAttachmentMetadata()
+            ApplicationAttachmentFactory.createMetadata()
 
         val result: ApplicationAttachmentMetadata =
             postAttachment(file = file).andExpect(status().isOk).andReturnBody()

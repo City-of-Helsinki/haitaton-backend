@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
+import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
@@ -8,41 +9,37 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachment
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentEntity
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.stereotype.Component
 
-private val dummyData = "ABC".toByteArray()
-private val defaultAttachmentId = UUID.fromString("5cba3a76-28ad-42aa-b7e6-b5c1775be81a")
-
 @Component
-class AttachmentFactory(
+class ApplicationAttachmentFactory(
     private val applicationAttachmentRepository: ApplicationAttachmentRepository,
     private val attachmentContentService: ApplicationAttachmentContentService,
 ) {
     fun saveAttachment(applicationId: Long): ApplicationAttachmentEntity {
         val attachment =
-            applicationAttachmentRepository.save(
-                applicationAttachmentEntity(applicationId = applicationId)
-            )
-        attachmentContentService.save(attachment.id!!, dummyData)
+            applicationAttachmentRepository.save(createEntity(applicationId = applicationId))
+        attachmentContentService.save(attachment.id!!, DUMMY_DATA)
         return attachment
     }
 
     companion object {
+        val defaultAttachmentId: UUID = UUID.fromString("5cba3a76-28ad-42aa-b7e6-b5c1775be81a")
+        val CREATED_AT: OffsetDateTime = OffsetDateTime.parse("2023-11-09T10:03:55+02:00")
+
         const val FILE_NAME = "file.pdf"
 
-        fun applicationAttachmentEntity(
+        fun createEntity(
             id: UUID = defaultAttachmentId,
             fileName: String = FILE_NAME,
             contentType: String = APPLICATION_PDF_VALUE,
-            createdByUserId: String = "currentUserId",
-            createdAt: OffsetDateTime = OffsetDateTime.now(),
+            blobLocation: String? = null,
+            createdByUserId: String = USERNAME,
+            createdAt: OffsetDateTime = CREATED_AT,
             attachmentType: ApplicationAttachmentType = MUU,
             applicationId: Long,
         ): ApplicationAttachmentEntity =
@@ -50,50 +47,14 @@ class AttachmentFactory(
                 id = id,
                 fileName = fileName,
                 contentType = contentType,
+                blobLocation = blobLocation,
                 createdByUserId = createdByUserId,
                 createdAt = createdAt,
                 attachmentType = attachmentType,
                 applicationId = applicationId,
             )
 
-        fun hankeAttachmentEntity(
-            id: UUID? = defaultAttachmentId,
-            fileName: String = FILE_NAME,
-            blobLocation: String? = null,
-            contentType: String = APPLICATION_PDF_VALUE,
-            createdByUser: String = "currentUserId",
-            createdAt: OffsetDateTime = OffsetDateTime.now(),
-            hanke: HankeEntity,
-        ): HankeAttachmentEntity =
-            HankeAttachmentEntity(
-                id = id,
-                fileName = fileName,
-                contentType = contentType,
-                createdByUserId = createdByUser,
-                createdAt = createdAt,
-                hanke = hanke,
-                blobLocation = blobLocation,
-            )
-
-        fun hankeAttachmentContentEntity(attachmentId: UUID, content: ByteArray = dummyData) =
-            HankeAttachmentContentEntity(attachmentId, content)
-
-        fun hankeAttachment(
-            attachmentId: UUID = defaultAttachmentId,
-            fileName: String = FILE_NAME,
-            createdByUser: String = currentUserId(),
-            createdAt: OffsetDateTime = OffsetDateTime.now(),
-            hankeTunnus: String = "HAI-1234",
-        ): HankeAttachment =
-            HankeAttachment(
-                id = attachmentId,
-                fileName = fileName,
-                createdByUserId = createdByUser,
-                createdAt = createdAt,
-                hankeTunnus = hankeTunnus,
-            )
-
-        fun applicationAttachmentMetadata(
+        fun createMetadata(
             attachmentId: UUID = defaultAttachmentId,
             fileName: String = FILE_NAME,
             createdBy: String = currentUserId(),
@@ -110,10 +71,10 @@ class AttachmentFactory(
                 attachmentType = attachmentType
             )
 
-        fun attachmentContent(
+        fun createContent(
             fileName: String = FILE_NAME,
             contentType: String = APPLICATION_PDF_VALUE,
-            bytes: ByteArray = dummyData,
+            bytes: ByteArray = DUMMY_DATA,
         ) = AttachmentContent(fileName = fileName, contentType = contentType, bytes = bytes)
     }
 }

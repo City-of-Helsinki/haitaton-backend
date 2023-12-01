@@ -62,8 +62,8 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaCustome
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withArea
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
+import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
-import fi.hel.haitaton.hanke.factory.AttachmentFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.UserContactFactory.hakijaContact
@@ -146,7 +146,7 @@ class ApplicationServiceITest : DatabaseTest() {
     @Autowired private lateinit var geometriatDao: GeometriatDao
 
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
-    @Autowired private lateinit var attachmentFactory: AttachmentFactory
+    @Autowired private lateinit var attachmentFactory: ApplicationAttachmentFactory
     @Autowired private lateinit var hankeFactory: HankeFactory
 
     companion object {

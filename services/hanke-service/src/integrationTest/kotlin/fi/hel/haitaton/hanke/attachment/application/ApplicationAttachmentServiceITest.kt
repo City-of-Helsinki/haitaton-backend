@@ -36,7 +36,7 @@ import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createAlluApplicationResponse
-import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import io.mockk.Called
@@ -71,7 +71,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     @Autowired private lateinit var attachmentContentService: ApplicationAttachmentContentService
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
-    @Autowired private lateinit var attachmentFactory: AttachmentFactory
+    @Autowired private lateinit var attachmentFactory: ApplicationAttachmentFactory
     @Autowired private lateinit var hankeFactory: HankeFactory
 
     private lateinit var mockWebServer: MockWebServer
@@ -226,7 +226,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         val application = initApplication()
         val attachments =
             (1..ALLOWED_ATTACHMENT_COUNT).map {
-                AttachmentFactory.applicationAttachmentEntity(applicationId = application.id!!)
+                ApplicationAttachmentFactory.createEntity(applicationId = application.id!!)
             }
         applicationAttachmentRepository.saveAll(attachments)
 

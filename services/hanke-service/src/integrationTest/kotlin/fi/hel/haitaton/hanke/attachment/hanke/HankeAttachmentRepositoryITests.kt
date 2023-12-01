@@ -11,7 +11,7 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
-import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.test.Asserts.isSameInstantAs
@@ -45,7 +45,7 @@ class HankeAttachmentRepositoryITests : DatabaseTest() {
         assertThat(attachments).hasSize(1)
         assertThat(attachments.first()).all {
             prop(HankeAttachmentEntity::id).isNotNull().isEqualTo(saved.id)
-            prop(HankeAttachmentEntity::fileName).isEqualTo(AttachmentFactory.FILE_NAME)
+            prop(HankeAttachmentEntity::fileName).isEqualTo(ApplicationAttachmentFactory.FILE_NAME)
             prop(HankeAttachmentEntity::contentType).isEqualTo(APPLICATION_PDF_VALUE)
             prop(HankeAttachmentEntity::createdByUserId).isEqualTo(USERNAME)
             prop(HankeAttachmentEntity::createdAt)
