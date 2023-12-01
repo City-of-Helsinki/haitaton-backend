@@ -62,6 +62,11 @@ cycle_infra:
   target_buffer_file: "tormays_cycle_infra_polys.gpkg"
   buffer:
     - 20
+central_business_area:
+  addr: "WFS:https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
+  layer: "avoindata:Piirijako_pienalue"
+  local_file: "central_business_areas.gpkg"
+  target_file: "tormays_central_business_area_polys.gpkg"
 
 common:
   download_path: "/downloads"

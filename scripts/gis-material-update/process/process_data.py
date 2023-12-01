@@ -13,6 +13,7 @@ from modules.ylre_katuosat import YlreKatuosat
 from modules.tram_infra import TramInfra
 from modules.tram_lines import TramLines
 from modules.cycling_infra import CycleInfra
+from modules.central_business_area import CentralBusinessAreas
 
 DEFAULT_DEPLOYMENT_PROFILE = "local_development"
 
@@ -42,6 +43,8 @@ def instantiate_processor(item: str, cfg: Config) -> GisProcessor:
         return TramLines(cfg)
     elif item == "cycle_infra":
         return CycleInfra(cfg)
+    elif item == "central_business_area":
+        return CentralBusinessAreas(cfg)
     else:
         try:
             raise RuntimeError("Configuration not recognized: {}".format(item))
