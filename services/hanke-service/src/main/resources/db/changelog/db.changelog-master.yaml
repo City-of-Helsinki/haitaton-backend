@@ -142,4 +142,6 @@ databaseChangeLog:
   - include:
       file: db/changelog/changesets/056-remove-perustaja-from-hanke.yml
   - include:
+      file: db/changelog/changesets/057-drop-tormays_trams_polys.yml
+  - include:
       file: db/changelog/changesets/058-add-blob-location-to-application-attachment.yml

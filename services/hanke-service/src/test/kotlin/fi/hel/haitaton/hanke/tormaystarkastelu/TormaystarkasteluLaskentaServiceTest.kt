@@ -328,6 +328,51 @@ internal class TormaystarkasteluLaskentaServiceTest {
     }
 
     @Nested
+    inner class RaitiotieLuokittelu {
+        // The parameter is only used to call mocks
+        val geometriat = setOf<Int>()
+
+        @Test
+        fun `returns 5 when intersects with a tram line`() {
+            every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns true
+
+            val result = laskentaService.calculateRaitiotieIndeksi(geometriat)
+
+            assertThat(result).isEqualTo(5.0f)
+            verify { tormaysService.anyIntersectsWithTramLines(geometriat) }
+            verify(exactly = 0) { tormaysService.anyIntersectsWithTramInfra(geometriat) }
+        }
+
+        @Test
+        fun `returns 3 when intersects with tram infra`() {
+            every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns false
+            every { tormaysService.anyIntersectsWithTramInfra(geometriat) } returns true
+
+            val result = laskentaService.calculateRaitiotieIndeksi(geometriat)
+
+            assertThat(result).isEqualTo(3.0f)
+            verifyAll {
+                tormaysService.anyIntersectsWithTramLines(geometriat)
+                tormaysService.anyIntersectsWithTramInfra(geometriat)
+            }
+        }
+
+        @Test
+        fun `returns 0 when doesn't intersect with any tram line or infra`() {
+            every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns false
+            every { tormaysService.anyIntersectsWithTramInfra(geometriat) } returns false
+
+            val result = laskentaService.calculateRaitiotieIndeksi(geometriat)
+
+            assertThat(result).isEqualTo(0.0f)
+            verifyAll {
+                tormaysService.anyIntersectsWithTramLines(geometriat)
+                tormaysService.anyIntersectsWithTramInfra(geometriat)
+            }
+        }
+    }
+
+    @Nested
     inner class BussiLuokittelu {
         // The parameter is only used to call mocks
         val geometriat = setOf<Int>()
@@ -427,6 +472,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         assertThat(tulos!!.liikennehaittaIndeksi).isNotNull()
         assertThat(tulos.liikennehaittaIndeksi.indeksi).isNotNull()
         assertThat(tulos.liikennehaittaIndeksi.indeksi).isEqualTo(4.0f)
+        assertThat(tulos.raitiovaunuIndeksi).isEqualTo(3.0f)
 
         verifyAll {
             tormaysService.anyIntersectsYleinenKatuosa(geometriaIds)
@@ -435,7 +481,8 @@ internal class TormaystarkasteluLaskentaServiceTest {
             tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds)
             tormaysService.anyIntersectsWithCyclewaysMain(geometriaIds)
             tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds)
-            tormaysService.maxIntersectingTramByLaneType(geometriaIds)
+            tormaysService.anyIntersectsWithTramLines(geometriaIds)
+            tormaysService.anyIntersectsWithTramInfra(geometriaIds)
         }
     }
 
@@ -461,8 +508,8 @@ internal class TormaystarkasteluLaskentaServiceTest {
         every { tormaysService.maxLiikennemaara(geometriaIds, RADIUS_30) } returns 1000
         every { tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds) } returns false
         every { tormaysService.anyIntersectsWithCyclewaysMain(geometriaIds) } returns true
-        every { tormaysService.maxIntersectingTramByLaneType(geometriaIds) } returns
-            TormaystarkasteluRaitiotiekaistatyyppi.JAETTU.value
+        every { tormaysService.anyIntersectsWithTramInfra(geometriaIds) } returns true
+        every { tormaysService.anyIntersectsWithTramLines(geometriaIds) } returns false
         every { tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds) } returns true
 
         return alueet
