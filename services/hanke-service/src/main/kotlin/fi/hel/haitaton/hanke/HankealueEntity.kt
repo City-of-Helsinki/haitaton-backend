@@ -66,3 +66,5 @@ class HankealueEntity(
         return result
     }
 }
+
+fun List<HankealueEntity>.geometriaIds(): Set<Int> = mapNotNull { it.geometriat }.toSet()
