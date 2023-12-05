@@ -1,11 +1,11 @@
 package fi.hel.haitaton.hanke.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.ContactType
-import fi.hel.haitaton.hanke.Haitta13
-import fi.hel.haitaton.hanke.KaistajarjestelynPituus
-import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
+import fi.hel.haitaton.hanke.Haitta123
 import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.Yhteyshenkilo
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
@@ -77,11 +77,11 @@ interface Hankealue {
     val haittaAlkuPvm: ZonedDateTime?
     val haittaLoppuPvm: ZonedDateTime?
     val geometriat: HasFeatures?
-    val kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin?
-    val kaistaPituusHaitta: KaistajarjestelynPituus?
-    val meluHaitta: Haitta13?
-    val polyHaitta: Haitta13?
-    val tarinaHaitta: Haitta13?
+    val kaistaHaitta: VaikutusAutoliikenteenKaistamaariin?
+    val kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus?
+    val meluHaitta: Haitta123?
+    val polyHaitta: Haitta123?
+    val tarinaHaitta: Haitta123?
     val nimi: String
 }
 

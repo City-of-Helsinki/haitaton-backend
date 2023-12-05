@@ -241,17 +241,17 @@ class HankeFactory(
         }
 
         fun Hanke.withTormaystarkasteluTulos(
-            perusIndeksi: Float = 1f,
-            pyorailyIndeksi: Float = 1f,
-            linjaautoIndeksi: Float = 1f,
-            raitiovaunuIndeksi: Float = 1f,
+            autoliikenneindeksi: Float = 1f,
+            pyoraliikenneindeksi: Float = 1f,
+            linjaautoliikenneindeksi: Float = 1f,
+            raitioliikenneindeksi: Float = 1f,
         ): Hanke {
             this.tormaystarkasteluTulos =
                 TormaystarkasteluTulos(
-                    perusIndeksi,
-                    pyorailyIndeksi,
-                    linjaautoIndeksi,
-                    raitiovaunuIndeksi,
+                    autoliikenneindeksi,
+                    pyoraliikenneindeksi,
+                    linjaautoliikenneindeksi,
+                    raitioliikenneindeksi,
                 )
             return this
         }
@@ -434,10 +434,10 @@ class HankeFactory(
         ): TormaystarkasteluTulosEntity =
             TormaystarkasteluTulosEntity(
                 id = id,
-                perus = 1.25f,
-                pyoraily = 2.5f,
-                linjaauto = 3.75f,
-                raitiovaunu = 3.75f,
+                autoliikenne = 1.25f,
+                pyoraliikenne = 2.5f,
+                linjaautoliikenne = 3.75f,
+                raitioliikenne = 3.75f,
                 hanke = hankeEntity,
             )
     }

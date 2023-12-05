@@ -18,7 +18,7 @@ class RajaArvoLuokittelijaTest {
         "180,5",
     )
     fun haittaAjanKesto(days: Int, classificationValue: Int) {
-        val actual = RajaArvoLuokittelija.getHaittaAjanKestoLuokka(days)
+        val actual = RajaArvoLuokittelija.haittaajankestoluokka(days)
         assertThat(actual).isEqualTo(classificationValue)
     }
 
@@ -38,7 +38,7 @@ class RajaArvoLuokittelijaTest {
         "18000,5",
     )
     fun liikennemaara(volume: Int, classificationValue: Int) {
-        val actual = RajaArvoLuokittelija.getLiikennemaaraLuokka(volume)
+        val actual = RajaArvoLuokittelija.liikennemaaraluokka(volume)
         assertThat(actual).isEqualTo(classificationValue)
     }
 
@@ -56,7 +56,7 @@ class RajaArvoLuokittelijaTest {
         "100,5",
     )
     fun getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses: Int, classificationValue: Int) {
-        val actual = RajaArvoLuokittelija.getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses)
+        val actual = RajaArvoLuokittelija.linjaautoliikenteenRuuhkavuoroluokka(countOfRushHourBuses)
         assertThat(actual).isEqualTo(classificationValue)
     }
 }

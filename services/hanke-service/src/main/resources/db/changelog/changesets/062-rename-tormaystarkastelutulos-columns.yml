@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 062-rename-tormaystarkastelutulos-columns
+      author: Teemu Hiltunen
+      comment: Rename columns to be in-sync with updated specification
+      changes:
+        - renameColumn:
+            tableName: tormaystarkastelutulos
+            oldColumnName: perus
+            newColumnName: autoliikenne
+        - renameColumn:
+            tableName: tormaystarkastelutulos
+            oldColumnName: pyoraily
+            newColumnName: pyoraliikenne
+        - renameColumn:
+            tableName: tormaystarkastelutulos
+            oldColumnName: linjaauto
+            newColumnName: linjaautoliikenne
+        - renameColumn:
+            tableName: tormaystarkastelutulos
+            oldColumnName: raitiovaunu
+            newColumnName: raitioliikenne

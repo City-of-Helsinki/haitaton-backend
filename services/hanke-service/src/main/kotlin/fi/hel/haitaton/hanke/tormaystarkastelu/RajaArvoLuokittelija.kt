@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 object RajaArvoLuokittelija {
 
-    fun getHaittaAjanKestoLuokka(days: Int): Int =
+    fun haittaajankestoluokka(days: Int): Int =
         when {
             days >= 91 -> HaittaAjanKestoLuokittelu.YLI_3KK.value
             days >= 14 -> HaittaAjanKestoLuokittelu.ALLE_3KK_YLI_2VK.value
@@ -10,22 +10,22 @@ object RajaArvoLuokittelija {
             else -> 0
         }
 
-    fun getLiikennemaaraLuokka(volume: Int) =
+    fun liikennemaaraluokka(volume: Int) =
         when {
-            volume >= 10000 -> LiikenneMaaraLuokittelu.YLI_10K
-            volume >= 5000 -> LiikenneMaaraLuokittelu._5K_10K
-            volume >= 1500 -> LiikenneMaaraLuokittelu._1500_5K
-            volume >= 500 -> LiikenneMaaraLuokittelu._500_1500
-            volume >= 1 -> LiikenneMaaraLuokittelu.ALLE_500
-            else -> LiikenneMaaraLuokittelu.EI_LIIKENNETTA
+            volume >= 10000 -> Liikennemaaraluokittelu.YLI_10K
+            volume >= 5000 -> Liikennemaaraluokittelu._5K_10K
+            volume >= 1500 -> Liikennemaaraluokittelu._1500_5K
+            volume >= 500 -> Liikennemaaraluokittelu._500_1500
+            volume >= 1 -> Liikennemaaraluokittelu.ALLE_500
+            else -> Liikennemaaraluokittelu.EI_LIIKENNETTA
         }.value
 
-    fun getBussiLiikenneRuuhkaLuokka(countOfRushHourBuses: Int) =
+    fun linjaautoliikenteenRuuhkavuoroluokka(countOfRushHourBuses: Int) =
         when {
-            countOfRushHourBuses >= 21 -> BussiLiikenneLuokittelu.KAMPPI_RAUTATIENTORI
-            countOfRushHourBuses >= 11 -> BussiLiikenneLuokittelu.RUNKOLINJA
-            countOfRushHourBuses >= 5 -> BussiLiikenneLuokittelu.RUNKOLINJAMAINEN
-            countOfRushHourBuses >= 0 -> BussiLiikenneLuokittelu.PERUS
-            else -> BussiLiikenneLuokittelu.EI_VAIKUTA
+            countOfRushHourBuses >= 21 -> Linjaautoliikenneluokittelu.KAMPPI_RAUTATIENTORI
+            countOfRushHourBuses >= 11 -> Linjaautoliikenneluokittelu.RUNKOLINJA
+            countOfRushHourBuses >= 5 -> Linjaautoliikenneluokittelu.RUNKOLINJAMAINEN
+            countOfRushHourBuses >= 0 -> Linjaautoliikenneluokittelu.PERUS
+            else -> Linjaautoliikenneluokittelu.EI_VAIKUTA
         }.value
 }

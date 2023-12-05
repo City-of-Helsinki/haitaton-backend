@@ -1,10 +1,10 @@
 package fi.hel.haitaton.hanke.domain
 
-import fi.hel.haitaton.hanke.Haitta13
-import fi.hel.haitaton.hanke.KaistajarjestelynPituus
-import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
+import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.Haitta123
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.Yhteyshenkilo
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
@@ -122,23 +122,23 @@ data class NewHankealue(
     @field:Schema(
         description = "Street lane hindrance value and explanation",
     )
-    override val kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
+    override val kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
     @field:Schema(
         description = "Street lane hindrance length",
     )
-    override val kaistaPituusHaitta: KaistajarjestelynPituus? = null,
+    override val kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
     @field:Schema(
         description = "Noise nuisance",
     )
-    override val meluHaitta: Haitta13? = null,
+    override val meluHaitta: Haitta123? = null,
     @field:Schema(
         description = "Dust nuisance",
     )
-    override val polyHaitta: Haitta13? = null,
+    override val polyHaitta: Haitta123? = null,
     @field:Schema(
         description = "Vibration nuisance",
     )
-    override val tarinaHaitta: Haitta13? = null,
+    override val tarinaHaitta: Haitta123? = null,
     @field:Schema(
         description = "Area name, must not be null or empty",
     )

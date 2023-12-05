@@ -24,11 +24,11 @@ class HankealueEntity(
     var geometriat: Int? = null,
     var haittaAlkuPvm: LocalDate? = null,
     var haittaLoppuPvm: LocalDate? = null,
-    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
-    var kaistaPituusHaitta: KaistajarjestelynPituus? = null,
-    var meluHaitta: Haitta13? = null,
-    var polyHaitta: Haitta13? = null,
-    var tarinaHaitta: Haitta13? = null,
+    var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
+    var kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
+    var meluHaitta: Haitta123? = null,
+    var polyHaitta: Haitta123? = null,
+    var tarinaHaitta: Haitta123? = null,
     var nimi: String
 ) : HasId<Int> {
 

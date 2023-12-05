@@ -1,11 +1,11 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
-import fi.hel.haitaton.hanke.Haitta13
+import fi.hel.haitaton.hanke.Haitta123
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankealueEntity
-import fi.hel.haitaton.hanke.KaistajarjestelynPituus
-import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
+import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import java.time.ZonedDateTime
@@ -18,12 +18,13 @@ object HankealueFactory {
         haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
         haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
         geometriat: Geometriat? = GeometriaFactory.create(),
-        kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? =
-            TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI,
-        kaistaPituusHaitta: KaistajarjestelynPituus? = KaistajarjestelynPituus.NELJA,
-        meluHaitta: Haitta13? = Haitta13.YKSI,
-        polyHaitta: Haitta13? = Haitta13.KAKSI,
-        tarinaHaitta: Haitta13? = Haitta13.KOLME,
+        kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? =
+            VaikutusAutoliikenteenKaistamaariin.KAKSI,
+        kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? =
+            AutoliikenteenKaistavaikutustenPituus.NELJA,
+        meluHaitta: Haitta123? = Haitta123.YKSI,
+        polyHaitta: Haitta123? = Haitta123.KAKSI,
+        tarinaHaitta: Haitta123? = Haitta123.KOLME,
         nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
     ): SavedHankealue {
         return SavedHankealue(
@@ -47,11 +48,11 @@ object HankealueFactory {
         haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
         haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
         geometriat: Geometriat? = null,
-        kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
-        kaistaPituusHaitta: KaistajarjestelynPituus? = null,
-        meluHaitta: Haitta13? = null,
-        polyHaitta: Haitta13? = null,
-        tarinaHaitta: Haitta13? = null,
+        kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
+        kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
+        meluHaitta: Haitta123? = null,
+        polyHaitta: Haitta123? = null,
+        tarinaHaitta: Haitta123? = null,
         nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
     ): SavedHankealue {
         return SavedHankealue(

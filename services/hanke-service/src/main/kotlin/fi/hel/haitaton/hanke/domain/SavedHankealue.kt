@@ -1,10 +1,10 @@
 package fi.hel.haitaton.hanke.domain
 
 import com.fasterxml.jackson.annotation.JsonView
+import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.ChangeLogView
-import fi.hel.haitaton.hanke.Haitta13
-import fi.hel.haitaton.hanke.KaistajarjestelynPituus
-import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
+import fi.hel.haitaton.hanke.Haitta123
+import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
@@ -39,23 +39,23 @@ data class SavedHankealue(
     @field:Schema(
         description = "Street lane hindrance value and explanation",
     )
-    override var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
+    override var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
     @field:Schema(
         description = "Street lane hindrance length",
     )
-    override var kaistaPituusHaitta: KaistajarjestelynPituus? = null,
+    override var kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
     @field:Schema(
         description = "Noise nuisance",
     )
-    override var meluHaitta: Haitta13? = null,
+    override var meluHaitta: Haitta123? = null,
     @field:Schema(
         description = "Dust nuisance",
     )
-    override var polyHaitta: Haitta13? = null,
+    override var polyHaitta: Haitta123? = null,
     @field:Schema(
         description = "Vibration nuisance",
     )
-    override var tarinaHaitta: Haitta13? = null,
+    override var tarinaHaitta: Haitta123? = null,
     @field:Schema(
         description = "Area name, must not be null or empty",
     )
@@ -66,11 +66,13 @@ fun List<Hankealue>.alkuPvm(): ZonedDateTime? = mapNotNull { it.haittaAlkuPvm }.
 
 fun List<Hankealue>.loppuPvm(): ZonedDateTime? = mapNotNull { it.haittaLoppuPvm }.maxOfOrNull { it }
 
-fun List<Hankealue>.kaistaHaitat(): Set<TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin> {
+fun List<Hankealue>.vaikutusAutoliikenteenKaistamaariin():
+    Set<VaikutusAutoliikenteenKaistamaariin> {
     return mapNotNull { it.kaistaHaitta }.toSet()
 }
 
-fun List<Hankealue>.kaistaPituusHaitat(): Set<KaistajarjestelynPituus> {
+fun List<Hankealue>.autoliikenteenKaistavaikutustenPituus():
+    Set<AutoliikenteenKaistavaikutustenPituus> {
     return mapNotNull { it.kaistaPituusHaitta }.toSet()
 }
 

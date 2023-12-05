@@ -80,7 +80,7 @@ enum class TyomaaTyyppi {
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
-enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(
+enum class VaikutusAutoliikenteenKaistamaariin(
     override val value: Int,
     override val explanation: String
 ) : Luokittelu {
@@ -92,17 +92,19 @@ enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
-enum class KaistajarjestelynPituus(override val value: Int, override val explanation: String) :
-    Luokittelu {
-    YKSI(1, "Ei tarvita"),
-    KAKSI(2, "Enintään 10 m"),
-    KOLME(3, "11 - 100 m"),
-    NELJA(4, "101 - 500 m"),
-    VIISI(5, "Yli 500 m")
+enum class AutoliikenteenKaistavaikutustenPituus(
+    override val value: Int,
+    override val explanation: String
+) : Luokittelu {
+    YKSI(1, "Ei vaikuta kaistajärjestelyihin"),
+    KAKSI(2, "Kaistavaikutusten pituus alle 10 m"),
+    KOLME(3, "Kaistavaikutusten pituus 10-99 m"),
+    NELJA(4, "Kaistavaikutusten pituus 100-499 m"),
+    VIISI(5, "Kaistavaikutusten pituus 500 m tai enemmän")
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
-enum class Haitta13 {
+enum class Haitta123 {
     YKSI,
     KAKSI,
     KOLME
@@ -168,11 +170,11 @@ class HankeEntity(
     // --------------- Hankkeen haitat -------------------
     // These five fields have generic string values, so can just as well store them with the ordinal
     // number.
-    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null
-    var kaistaPituusHaitta: KaistajarjestelynPituus? = null
-    var meluHaitta: Haitta13? = null
-    var polyHaitta: Haitta13? = null
-    var tarinaHaitta: Haitta13? = null
+    var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null
+    var kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null
+    var meluHaitta: Haitta123? = null
+    var polyHaitta: Haitta123? = null
+    var tarinaHaitta: Haitta123? = null
 
     // Made bidirectional relation mainly to allow cascaded delete.
     @OneToMany(

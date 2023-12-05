@@ -9,7 +9,6 @@ import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.permissions.PermissionCode
-import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
@@ -138,10 +137,6 @@ data class Hanke(
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Collision review result, set by the service.")
     var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
-
-    @JsonView(NotInChangeLogView::class)
-    fun getLiikennehaittaindeksi(): LiikennehaittaIndeksiType? =
-        tormaystarkasteluTulos?.liikennehaittaIndeksi
 
     fun toLogString(): String {
         return toString()

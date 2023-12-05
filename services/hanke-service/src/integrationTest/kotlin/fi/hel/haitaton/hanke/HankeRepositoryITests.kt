@@ -40,11 +40,11 @@ internal class HankeRepositoryITests : DatabaseTest() {
         baseHankeEntity.tyomaaKatuosoite = "katu 1"
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
-        baseHankeEntity.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
-        baseHankeEntity.kaistaPituusHaitta = KaistajarjestelynPituus.KOLME
-        baseHankeEntity.meluHaitta = Haitta13.YKSI
-        baseHankeEntity.polyHaitta = Haitta13.KAKSI
-        baseHankeEntity.tarinaHaitta = Haitta13.KOLME
+        baseHankeEntity.kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.KAKSI
+        baseHankeEntity.kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.KOLME
+        baseHankeEntity.meluHaitta = Haitta123.YKSI
+        baseHankeEntity.polyHaitta = Haitta123.KAKSI
+        baseHankeEntity.tarinaHaitta = Haitta123.KOLME
         hankeRepository.save(baseHankeEntity)
 
         val loadedHanke = hankeRepository.findByHankeTunnus("ABC-123")
@@ -56,12 +56,12 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
         assertThat(loadedHanke.tyomaaKatuosoite).isEqualTo("katu 1")
         assertThat(loadedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
-        assertThat(loadedHanke.kaistaHaitta)
-            .isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI)
-        assertThat(loadedHanke.kaistaPituusHaitta).isEqualTo(KaistajarjestelynPituus.KOLME)
-        assertThat(loadedHanke.meluHaitta).isEqualTo(Haitta13.YKSI)
-        assertThat(loadedHanke.polyHaitta).isEqualTo(Haitta13.KAKSI)
-        assertThat(loadedHanke.tarinaHaitta).isEqualTo(Haitta13.KOLME)
+        assertThat(loadedHanke.kaistaHaitta).isEqualTo(VaikutusAutoliikenteenKaistamaariin.KAKSI)
+        assertThat(loadedHanke.kaistaPituusHaitta)
+            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.KOLME)
+        assertThat(loadedHanke.meluHaitta).isEqualTo(Haitta123.YKSI)
+        assertThat(loadedHanke.polyHaitta).isEqualTo(Haitta123.KAKSI)
+        assertThat(loadedHanke.tarinaHaitta).isEqualTo(Haitta123.KOLME)
     }
 
     @Test

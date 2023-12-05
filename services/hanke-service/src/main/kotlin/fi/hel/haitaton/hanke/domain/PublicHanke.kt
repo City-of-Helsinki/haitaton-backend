@@ -1,12 +1,11 @@
 package fi.hel.haitaton.hanke.domain
 
-import fi.hel.haitaton.hanke.Haitta13
-import fi.hel.haitaton.hanke.KaistajarjestelynPituus
-import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
+import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.Haitta123
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
+import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.geometria.Geometriat
-import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
@@ -39,11 +38,11 @@ data class PublicHankealue(
     var haittaAlkuPvm: ZonedDateTime? = null,
     var haittaLoppuPvm: ZonedDateTime? = null,
     var geometriat: PublicGeometriat? = null,
-    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
-    var kaistaPituusHaitta: KaistajarjestelynPituus? = null,
-    var meluHaitta: Haitta13? = null,
-    var polyHaitta: Haitta13? = null,
-    var tarinaHaitta: Haitta13? = null,
+    var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
+    var kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
+    var meluHaitta: Haitta123? = null,
+    var polyHaitta: Haitta123? = null,
+    var tarinaHaitta: Haitta123? = null,
     var nimi: String,
 )
 
@@ -56,7 +55,6 @@ data class PublicHanke(
     val loppuPvm: ZonedDateTime,
     val vaihe: Vaihe,
     val tyomaaTyyppi: MutableSet<TyomaaTyyppi>,
-    val liikennehaittaindeksi: LiikennehaittaIndeksiType,
     val tormaystarkasteluTulos: TormaystarkasteluTulos,
     val omistajat: List<PublicHankeYhteystieto>,
     val alueet: List<PublicHankealue>,
@@ -93,7 +91,6 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
         hanke.loppuPvm!!,
         hanke.vaihe!!,
         hanke.tyomaaTyyppi,
-        hanke.getLiikennehaittaindeksi()!!,
         hanke.tormaystarkasteluTulos!!,
         omistajat,
         alueet,

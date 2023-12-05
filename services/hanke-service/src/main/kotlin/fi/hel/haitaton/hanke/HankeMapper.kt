@@ -77,6 +77,11 @@ object HankeMapper {
 
     private fun tormaystarkasteluTulos(entity: HankeEntity) =
         entity.tormaystarkasteluTulokset.firstOrNull()?.let {
-            TormaystarkasteluTulos(it.perus, it.pyoraily, it.linjaauto, it.raitiovaunu)
+            TormaystarkasteluTulos(
+                it.autoliikenne,
+                it.pyoraliikenne,
+                it.linjaautoliikenne,
+                it.raitioliikenne
+            )
         }
 }

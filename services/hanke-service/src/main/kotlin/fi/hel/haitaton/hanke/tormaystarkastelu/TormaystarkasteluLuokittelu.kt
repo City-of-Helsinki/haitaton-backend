@@ -2,10 +2,10 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 
 enum class LuokitteluType {
     HAITTA_AJAN_KESTO,
-    TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN,
-    KAISTAJARJESTELYN_PITUUS,
+    VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN,
+    AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS,
     KATULUOKKA,
-    LIIKENNEMAARA
+    AUTOLIIKENTEEN_MAARA
 }
 
 interface Luokittelu {
@@ -20,7 +20,7 @@ enum class HaittaAjanKestoLuokittelu(override val value: Int, override val expla
     ALLE_2VK(1, "Kesto alle 2 viikkoa")
 }
 
-enum class LiikenneMaaraLuokittelu(override val value: Int, override val explanation: String) :
+enum class Liikennemaaraluokittelu(override val value: Int, override val explanation: String) :
     Luokittelu {
     YLI_10K(5, "10000 tai enemmän"),
     _5K_10K(4, "5 000-9999"),
@@ -30,14 +30,14 @@ enum class LiikenneMaaraLuokittelu(override val value: Int, override val explana
     EI_LIIKENNETTA(0, "Ei autoliikennettä")
 }
 
-enum class PyorailyTormaysLuokittelu(override val value: Int, override val explanation: String) :
+enum class Pyoraliikenneluokittelu(override val value: Int, override val explanation: String) :
     Luokittelu {
     PRIORISOITU_REITTI(5, "Pyöräilyn priorisoidut reitit / priorisoidun reitin osana toimiva katu"),
     PAAREITTI(4, "Pyöräilyn pääreitti / pääreitin osana toimiva katu"),
     EI_PYORAILUREITTI(0, "Ei vaikuta pyöräliikenteeseen")
 }
 
-enum class BussiLiikenneLuokittelu(override val value: Int, override val explanation: String) :
+enum class Linjaautoliikenneluokittelu(override val value: Int, override val explanation: String) :
     Luokittelu {
     KAMPPI_RAUTATIENTORI(
         5,
@@ -52,7 +52,7 @@ enum class BussiLiikenneLuokittelu(override val value: Int, override val explana
     EI_VAIKUTA(0, "Ei vaikuta linja-autoliikenteeseen")
 }
 
-enum class RaitiotieTormaysLuokittelu(override val value: Int, override val explanation: String) :
+enum class Raitioliikenneluokittelu(override val value: Int, override val explanation: String) :
     Luokittelu {
     RAITIOTIELINJA(5, "Raitiotieverkon rataosa, jolla on säännöllistä linjaliikennettä"),
     RAITIOTIEVERKON_RATAOSA(
