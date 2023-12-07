@@ -33,6 +33,7 @@ const val TEPPO_TESTI = "Teppo Testihenkilö"
 @Component
 class AlluDataFactory(
     private val applicationRepository: ApplicationRepository,
+    private val hankeFactory: HankeFactory,
 ) {
     companion object {
         const val defaultApplicationId: Long = 1
@@ -401,7 +402,7 @@ class AlluDataFactory(
      */
     fun saveApplicationEntity(
         username: String,
-        hanke: HankeEntity,
+        hanke: HankeEntity = hankeFactory.saveMinimal(),
         mapper: (ApplicationEntity) -> ApplicationEntity = { it },
         application: Application = createApplication(),
         mutator: (ApplicationEntity) -> Unit = {},

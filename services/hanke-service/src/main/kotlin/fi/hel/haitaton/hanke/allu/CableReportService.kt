@@ -4,7 +4,6 @@ import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import java.time.Duration.ofSeconds
 import java.time.ZonedDateTime
-import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -181,7 +180,7 @@ class CableReportService(
     fun addAttachments(
         alluApplicationId: Int,
         attachments: List<ApplicationAttachmentEntity>,
-        getContent: (UUID) -> ByteArray,
+        getContent: (ApplicationAttachmentEntity) -> ByteArray,
     ) = runBlocking {
         val semaphore = Semaphore(properties.concurrentUploads)
         withContext(ioDispatcher) {
@@ -189,7 +188,7 @@ class CableReportService(
             attachments.forEach {
                 launch {
                     semaphore.withPermit {
-                        val content = getContent(it.id!!)
+                        val content = getContent(it)
                         postAttachment(alluApplicationId, token, it.toAlluAttachment(content))
                     }
                 }
@@ -369,7 +368,7 @@ class CableReportService(
             .headers { it.setBearerAuth(token) }
             .body(BodyInserters.fromMultipartData(multipartData))
             .retrieve()
-            .bodyToMono<Void>()
+            .bodyToMono<Unit>()
             .timeout(attachmentUploadTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error uploading attachment to Allu", it)
