@@ -399,22 +399,23 @@ class AlluDataFactory(
     fun saveApplicationEntity(
         username: String,
         hanke: HankeEntity = hankeFactory.saveMinimal(),
-        mapper: (ApplicationEntity) -> ApplicationEntity = { it },
-        application: Application = createApplication(),
-        mutator: (ApplicationEntity) -> Unit = {},
+        alluId: Int? = null,
+        alluStatus: ApplicationStatus? = null,
+        applicationIdentifier: String? = null,
+        applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
+        applicationData: ApplicationData = createCableReportApplicationData(),
     ): ApplicationEntity {
         val applicationEntity =
             ApplicationEntity(
                 id = null,
-                alluid = application.alluid,
-                alluStatus = null,
-                applicationIdentifier = application.applicationIdentifier,
-                username,
-                application.applicationType,
-                application.applicationData,
-                hanke,
+                alluid = alluId,
+                alluStatus = alluStatus,
+                applicationIdentifier = applicationIdentifier,
+                userId = username,
+                applicationType = applicationType,
+                applicationData = applicationData,
+                hanke = hanke,
             )
-        mutator(applicationEntity)
         return applicationRepository.save(applicationEntity)
     }
 
