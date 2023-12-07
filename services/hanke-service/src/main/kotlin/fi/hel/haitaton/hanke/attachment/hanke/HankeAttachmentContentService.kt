@@ -12,7 +12,6 @@ import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
 
@@ -24,28 +23,6 @@ class HankeAttachmentContentService(
 
     fun save(attachmentId: UUID, content: ByteArray) {
         hankeAttachmentContentRepository.save(HankeAttachmentContentEntity(attachmentId, content))
-    }
-
-    /** Move the attachment content to cloud. In test-data use for now, can be used for HAI-1964. */
-    @Transactional
-    fun moveToCloud(attachment: HankeAttachmentEntity): String {
-        val path = attachment.cloudPath()
-        val content =
-            hankeAttachmentContentRepository.findByIdOrNull(attachment.id!!)
-                ?: run {
-                    logger.error { "Content not found for hanke attachment ${attachment.id}" }
-                    throw AttachmentNotFoundException(attachment.id!!)
-                }
-        fileClient.upload(
-            Container.HANKE_LIITTEET,
-            path,
-            attachment.fileName,
-            MediaType.parseMediaType(attachment.contentType),
-            content.content,
-        )
-        hankeAttachmentContentRepository.delete(content)
-        attachment.blobLocation = path
-        return path
     }
 
     /** Uploads and returns the location of the created blob. */
@@ -92,9 +69,6 @@ class HankeAttachmentContentService(
         fun generateBlobPath(hankeId: Int) =
             "${hankePrefix(hankeId)}${UUID.randomUUID()}"
                 .also { logger.info { "Generated blob path: $it" } }
-
-        /** Name (path from container root) the attachment should have in the cloud storage. */
-        fun HankeAttachmentEntity.cloudPath(): String = hankePrefix(hanke.id) + id!!.toString()
 
         /**
          * Prefix derived from hanke each attachment of that hanke should have in the cloud storage.
