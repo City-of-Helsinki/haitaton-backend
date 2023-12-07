@@ -60,6 +60,31 @@ services:
     environment:
       - ServerOptions__HostName=smtp4dev
 
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    container_name: azurite
+    restart: always
+    command: azurite-blob --blobHost 0.0.0.0 --blobPort 10000 --location /data --debug /workspace/azurite-debug.log
+    ports:
+      - '10000:10000'
+    volumes:
+      - azurite-data:/data
+      - .:/workspace
+    networks:
+      backbone:
+        aliases:
+          - azurite
+  azurite-setup:
+    image: mcr.microsoft.com/azure-cli
+    container_name: azurite-setup
+    depends_on:
+      - azurite
+    command: /tmp/setup.sh
+    volumes:
+      - ${BUILD_ROOT}/haitaton-backend/scripts/docker-azurite:/tmp/.
+    networks:
+      - backbone
+
   haitaton-hanke:
     build:
       context: ${BUILD_ROOT}/haitaton-backend
@@ -76,6 +101,7 @@ services:
       HAITATON_PASSWORD: haitaton
       HAITATON_OAUTH2_CLIENT_ID: https://api.hel.fi/auth/haitatonapidev
       HAITATON_OAUTH2_USER_INFO_URI: https://tunnistamo.test.hel.ninja/openid/userinfo
+      HAITATON_BLOB_CONNECTION_STRING: BlobEndpoint=http://azurite:10000/devstoreaccount1;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;
       #      HAITATON_CORS_ALLOWED_ORIGINS: http://localhost:8000
       HAITATON_GDPR_DISABLED: ${HAITATON_GDPR_DISABLED:-true}
       ALLU_BASEURL: ${ALLU_BASEURL}
@@ -90,10 +116,13 @@ services:
       HAITATON_TESTDATA_ENABLED: true
       HAITATON_FEATURE_HANKE_EDITING: true
       HAITATON_FEATURE_USER_MANAGEMENT: true
+      HAITATON_ATTACHMENT_MIGRATION_HANKE_ENABLED: false
+      HAITATON_ATTACHMENT_MIGRATION_HANKE_INTERVAL: 60000
+      HAITATON_ATTACHMENT_MIGRATION_HANKE_INITIAL_DELAY: 10000
     depends_on:
       - db
       - clamav-api
-    command: [ "./wait-for-it.sh", "-t", "30", "--strict", "db:5432", "--", "java", "-jar", "haitaton.jar" ]
+      - azurite-setup
     networks:
       backbone:
         aliases:
@@ -112,6 +141,7 @@ services:
       # - haitaton-ui-dev for Suomi.fi authentication
       # - haitaton-admin-ui-dev for Helsinki AD authentication
       REACT_APP_OIDC_CLIENT_ID: haitaton-admin-ui-dev
+      LOGIN_SERVER: https://tunnistamo.test.hel.ninja
     ports:
       - 8000:8000
     volumes:
@@ -138,6 +168,9 @@ services:
     links:
       - haitaton-hanke
       - haitaton-ui
+
+volumes:
+  azurite-data:
 
 networks:
   backbone:

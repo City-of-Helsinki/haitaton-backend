@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 056-remove-perustaja-from-hanke
+      author: Niko Pitkonen
+      changes:
+        - dropColumn:
+            tableName: hanke
+            columns:
+              - column:
+                  name: perustajanimi
+              - column:
+                  name: perustajaemail

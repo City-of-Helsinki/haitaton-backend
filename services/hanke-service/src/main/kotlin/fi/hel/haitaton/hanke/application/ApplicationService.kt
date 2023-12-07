@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeMapper.domainFrom
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
@@ -37,6 +38,7 @@ import java.time.OffsetDateTime
 import kotlin.reflect.KClass
 import mu.KotlinLogging
 import org.springframework.http.MediaType
+import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
@@ -46,7 +48,8 @@ const val ALLU_USER_CANCELLATION_MSG = "Käyttäjä perui hakemuksen Haitattomas
 const val ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG =
     "Haitaton ei saanut lisättyä hakemuksen liitteitä. Hakemus peruttu."
 
-open class ApplicationService(
+@Service
+class ApplicationService(
     private val applicationRepository: ApplicationRepository,
     private val alluStatusRepository: AlluStatusRepository,
     private val cableReportService: CableReportService,
@@ -60,9 +63,10 @@ open class ApplicationService(
     private val hankeRepository: HankeRepository,
     private val hankeLoggingService: HankeLoggingService,
     private val featureFlags: FeatureFlags,
+    private val hankealueService: HankealueService,
 ) {
     @Transactional(readOnly = true)
-    open fun getAllApplicationsForUser(userId: String): List<Application> {
+    fun getAllApplicationsForUser(userId: String): List<Application> {
         val hankeIds =
             permissionService.getAllowedHankeIds(userId = userId, permission = PermissionCode.VIEW)
         return hankeRepository
@@ -72,15 +76,15 @@ open class ApplicationService(
     }
 
     @Transactional(readOnly = true)
-    open fun getAllApplicationsCreatedByUser(userId: String): List<Application> {
+    fun getAllApplicationsCreatedByUser(userId: String): List<Application> {
         return applicationRepository.getAllByUserId(userId).map { it.toApplication() }
     }
 
     @Transactional(readOnly = true)
-    open fun getApplicationById(id: Long): Application = getById(id).toApplication()
+    fun getApplicationById(id: Long): Application = getById(id).toApplication()
 
     @Transactional
-    open fun create(application: Application, userId: String): Application {
+    fun create(application: Application, userId: String): Application {
         logger.info("Creating a new application for user $userId")
 
         validateGeometry(application.applicationData) { validationError ->
@@ -123,7 +127,7 @@ open class ApplicationService(
     }
 
     @Transactional
-    open fun updateApplicationData(
+    fun updateApplicationData(
         id: Long,
         newApplicationData: ApplicationData,
         userId: String,
@@ -155,6 +159,10 @@ open class ApplicationService(
             "Invalid geometry received when updating application for user $userId, id=${application.id}, alluid=${application.alluid}, reason = ${validationError.reason}, location = ${validationError.location}"
         }
 
+        if (!isStillPending(application.alluid, application.alluStatus)) {
+            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
+        }
+
         val hanke = application.hanke
         if (!hanke.generated) {
             newApplicationData.areas?.let { areas ->
@@ -164,10 +172,8 @@ open class ApplicationService(
                         "application geometry = ${applicationArea.geometry.toJsonString()}"
                 }
             }
-        }
-
-        if (!isStillPending(application.alluid, application.alluStatus)) {
-            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
+        } else {
+            updateHankealueetFromApplicationData(hanke, newApplicationData)
         }
 
         // Don't change a draft to a non-draft or vice-versa with the update method.
@@ -189,7 +195,7 @@ open class ApplicationService(
     }
 
     @Transactional
-    open fun sendApplication(id: Long, userId: String): Application {
+    fun sendApplication(id: Long, userId: String): Application {
         val application = getById(id)
 
         val hanke = application.hanke
@@ -238,7 +244,7 @@ open class ApplicationService(
     }
 
     @Transactional
-    open fun handleApplicationUpdates(
+    fun handleApplicationUpdates(
         applicationHistories: List<ApplicationHistory>,
         updateTime: OffsetDateTime
     ) {
@@ -253,7 +259,7 @@ open class ApplicationService(
      * delete, if the application is in Allu, and it's beyond the pending status.
      */
     @Transactional
-    open fun delete(applicationId: Long, userId: String) =
+    fun delete(applicationId: Long, userId: String) =
         with(getById(applicationId)) { cancelAndDelete(this, userId) }
 
     /**
@@ -264,7 +270,7 @@ open class ApplicationService(
      * Hanke.
      */
     @Transactional
-    open fun deleteWithOrphanGeneratedHankeRemoval(
+    fun deleteWithOrphanGeneratedHankeRemoval(
         applicationId: Long,
         userId: String
     ): ApplicationDeletionResultDto {
@@ -288,7 +294,7 @@ open class ApplicationService(
     }
 
     @Transactional(readOnly = true)
-    open fun downloadDecision(applicationId: Long, userId: String): Pair<String, ByteArray> {
+    fun downloadDecision(applicationId: Long, userId: String): Pair<String, ByteArray> {
         val application = getApplicationById(applicationId)
         val alluid =
             application.alluid
@@ -304,7 +310,7 @@ open class ApplicationService(
      * An application is being processed in Allu if status it is NOT pending anymore. Pending status
      * needs verification from Allu. A post-pending status can never go back to pending.
      */
-    open fun isStillPending(alluId: Int?, alluStatus: ApplicationStatus?): Boolean =
+    fun isStillPending(alluId: Int?, alluStatus: ApplicationStatus?): Boolean =
         when (alluStatus) {
             null,
             PENDING,
@@ -478,6 +484,15 @@ open class ApplicationService(
             if (!geometriatDao.isInsideHankeAlueet(hankeId, area.geometry))
                 throw ApplicationGeometryNotInsideHankeException(customMessageOnFailure(area))
         }
+    }
+
+    private fun updateHankealueetFromApplicationData(
+        hanke: HankeEntity,
+        newApplicationData: CableReportApplicationData,
+    ) {
+        val hankealueet = HankealueService.createHankealueetFromCableReport(newApplicationData)
+        hanke.alueet.clear()
+        hanke.alueet.addAll(hankealueService.createAlueetFromCreateRequest(hankealueet, hanke))
     }
 
     private fun handleApplicationUpdate(applicationHistory: ApplicationHistory) {
@@ -731,9 +746,9 @@ open class ApplicationService(
 
     /** Map by area geometry id to area geometry data. */
     private fun geometryMapFrom(hanke: HankeEntity) =
-        hanke.listOfHankeAlueet
+        hanke.alueet
             .mapNotNull { it.geometriat }
-            .associateBy({ it }, { geometriatDao.retrieveGeometriat(it) })
+            .associateWith { geometriatDao.retrieveGeometriat(it) }
 }
 
 class IncompatibleApplicationException(

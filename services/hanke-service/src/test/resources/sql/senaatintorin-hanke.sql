@@ -48,7 +48,8 @@ INSERT INTO hankealue(id,
                       polyhaitta,
                       tarinahaitta,
                       geometriat,
-                      hankeid)
+                      hankeid,
+                      nimi)
 VALUES (23,
         '2024-11-18',
         '2024-11-24',
@@ -58,4 +59,5 @@ VALUES (23,
         0,
         0,
         15,
-        5);
+        5,
+        'Senaatintori');

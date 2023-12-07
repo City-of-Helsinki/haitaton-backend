@@ -1,7 +1,8 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadService
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachment
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import java.util.UUID
+import mu.KotlinLogging
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -21,10 +23,15 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 
+private val logger = KotlinLogging.logger {}
+
 @RestController
 @RequestMapping("/hankkeet/{hankeTunnus}/liitteet")
 @SecurityRequirement(name = "bearerAuth")
-class HankeAttachmentController(private val hankeAttachmentService: HankeAttachmentService) {
+class HankeAttachmentController(
+    private val hankeAttachmentService: HankeAttachmentService,
+    private val attachmentUploadService: AttachmentUploadService,
+) {
 
     @GetMapping
     @Operation(summary = "Get metadata from hanke attachments")
@@ -39,8 +46,8 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
                 ),
             ]
     )
-    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus,'VIEW')")
-    fun getMetadataList(@PathVariable hankeTunnus: String): List<HankeAttachmentMetadata> {
+    @PreAuthorize("@hankeAttachmentAuthorizer.authorizeHankeTunnus(#hankeTunnus,'VIEW')")
+    fun getMetadataList(@PathVariable hankeTunnus: String): List<HankeAttachment> {
         return hankeAttachmentService.getMetadataList(hankeTunnus)
     }
 
@@ -57,12 +64,14 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
                 ),
             ]
     )
-    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus,'VIEW')")
+    @PreAuthorize(
+        "@hankeAttachmentAuthorizer.authorizeAttachment(#hankeTunnus,#attachmentId,'VIEW')"
+    )
     fun getAttachmentContent(
         @PathVariable hankeTunnus: String,
         @PathVariable attachmentId: UUID,
     ): ResponseEntity<ByteArray> {
-        val content = hankeAttachmentService.getContent(hankeTunnus, attachmentId)
+        val content = hankeAttachmentService.getContent(attachmentId)
 
         return ResponseEntity.ok()
             .headers(buildHeaders(content.fileName, content.contentType))
@@ -74,11 +83,7 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
     @ApiResponses(
         value =
             [
-                ApiResponse(
-                    description = "Success",
-                    responseCode = "200",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                ),
+                ApiResponse(description = "Success", responseCode = "200"),
                 ApiResponse(
                     description = "Hanke not found",
                     responseCode = "404",
@@ -93,13 +98,19 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
     )
     @PreAuthorize(
         "@featureService.isEnabled('HANKE_EDITING') && " +
-            "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus,'EDIT')"
+            "@hankeAttachmentAuthorizer.authorizeHankeTunnus(#hankeTunnus,'EDIT')"
     )
     fun postAttachment(
         @PathVariable hankeTunnus: String,
-        @RequestParam("liite") attachment: MultipartFile
-    ): HankeAttachmentMetadata {
-        return hankeAttachmentService.addAttachment(hankeTunnus, attachment)
+        @RequestParam("liite") attachment: MultipartFile,
+    ): HankeAttachment {
+        logger.info {
+            "Adding attachment to hanke, hankeTunnus = $hankeTunnus, " +
+                "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}, " +
+                "content type = ${attachment.contentType}"
+        }
+
+        return attachmentUploadService.uploadHankeAttachment(hankeTunnus, attachment)
     }
 
     @DeleteMapping("/{attachmentId}")
@@ -117,9 +128,10 @@ class HankeAttachmentController(private val hankeAttachmentService: HankeAttachm
     )
     @PreAuthorize(
         "@featureService.isEnabled('HANKE_EDITING') && " +
-            "@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus,'EDIT')"
+            "@hankeAttachmentAuthorizer.authorizeAttachment(#hankeTunnus,#attachmentId,'EDIT')"
     )
     fun deleteAttachment(@PathVariable hankeTunnus: String, @PathVariable attachmentId: UUID) {
-        return hankeAttachmentService.deleteAttachment(hankeTunnus, attachmentId)
+        hankeAttachmentService.deleteAttachment(attachmentId)
+        logger.info { "Deleted hanke attachment $attachmentId" }
     }
 }

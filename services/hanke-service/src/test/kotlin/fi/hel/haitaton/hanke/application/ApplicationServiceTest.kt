@@ -11,6 +11,7 @@ import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatus
@@ -75,6 +76,7 @@ class ApplicationServiceTest {
     private val permissionService: PermissionService = mockk()
     private val emailSenderService: EmailSenderService = mockk()
     private val attachmentService: ApplicationAttachmentService = mockk()
+    private val hankealueService: HankealueService = mockk()
 
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
     private val loggingService: ApplicationLoggingService = mockk(relaxUnitFun = true)
@@ -97,7 +99,8 @@ class ApplicationServiceTest {
             permissionService,
             hankeRepository,
             hankeLoggingService,
-            featureFlags
+            featureFlags,
+            hankealueService,
         )
 
     companion object {
@@ -233,8 +236,8 @@ class ApplicationServiceTest {
             verifySequence {
                 applicationRepository.findOneById(3)
                 geometriatDao.validateGeometriat(any())
-                geometriatDao.isInsideHankeAlueet(1, any())
                 cableReportService.getApplicationInformation(42)
+                geometriatDao.isInsideHankeAlueet(1, any())
                 applicationRepository.save(applicationEntity)
                 geometriatDao.calculateCombinedArea(
                     listOf(applicationData.areas?.first()?.geometry!!)
@@ -270,6 +273,7 @@ class ApplicationServiceTest {
             every { geometriatDao.calculateArea(any()) } returns 100f
             justRun { cableReportService.update(42, any()) }
             justRun { cableReportService.addAttachment(42, any()) }
+            every { hankealueService.createAlueetFromCreateRequest(any(), any()) } returns listOf()
             every { featureFlags.isDisabled(Feature.USER_MANAGEMENT) } returns true
 
             applicationService.updateApplicationData(
@@ -282,6 +286,7 @@ class ApplicationServiceTest {
                 applicationRepository.findOneById(3)
                 geometriatDao.validateGeometriat(any())
                 cableReportService.getApplicationInformation(42)
+                hankealueService.createAlueetFromCreateRequest(any(), any())
                 applicationRepository.save(any())
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())

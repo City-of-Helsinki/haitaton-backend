@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.domain
 
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
 import fi.hel.haitaton.hanke.Haitta13
 import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.TZ_UTC
@@ -26,7 +27,8 @@ internal class HankeTest {
         hanke.alueet.add(
             SavedHankealue(
                 haittaAlkuPvm = startDate.atStartOfDay(TZ_UTC),
-                haittaLoppuPvm = endDate.atStartOfDay(TZ_UTC)
+                haittaLoppuPvm = endDate.atStartOfDay(TZ_UTC),
+                nimi = "$HANKEALUE_DEFAULT_NAME 1"
             )
         )
         val haittaAjanKesto = hanke.haittaAjanKestoDays

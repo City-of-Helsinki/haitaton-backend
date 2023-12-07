@@ -36,7 +36,10 @@ class ApplicationAttachmentContentEntity(
 ) : AttachmentContentEntity(attachmentId, content)
 
 @Repository
-interface HankeAttachmentContentRepository : JpaRepository<HankeAttachmentContentEntity, UUID>
+interface HankeAttachmentContentRepository : JpaRepository<HankeAttachmentContentEntity, UUID> {
+
+    fun findFirstBy(): HankeAttachmentContentEntity?
+}
 
 @Repository
 interface ApplicationAttachmentContentRepository :

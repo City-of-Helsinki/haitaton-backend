@@ -4,8 +4,10 @@ import assertk.Assert
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.containsMatch
 import assertk.assertions.each
 import assertk.assertions.exactly
 import assertk.assertions.first
@@ -14,28 +16,27 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isIn
-import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.matches
 import assertk.assertions.messageContains
 import assertk.assertions.prop
-import com.ninjasquad.springmockk.MockkBean
+import com.icegreen.greenmail.configuration.GreenMailConfiguration
+import com.icegreen.greenmail.junit5.GreenMailExtension
+import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
-import fi.hel.haitaton.hanke.email.EmailSenderService
-import fi.hel.haitaton.hanke.email.HankeInvitationData
+import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.asianHoitajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createApplicationEntity
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createCableReportApplicationData
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createCompanyCustomer
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationIdentifier
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationName
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.expectedRecipients
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.rakennuttajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaCustomerContact
@@ -56,6 +57,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.UserRole
+import fi.hel.haitaton.hanke.test.Asserts.hasReceivers
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.auditEvent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
@@ -65,29 +67,20 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.toChangeLogJsonString
-import io.mockk.Called
-import io.mockk.checkUnnecessaryStub
-import io.mockk.clearAllMocks
-import io.mockk.confirmVerified
-import io.mockk.justRun
-import io.mockk.verify
-import io.mockk.verifySequence
+import jakarta.mail.internet.MimeMessage
 import java.util.UUID
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
-import org.testcontainers.junit.jupiter.Testcontainers
 
 private const val USERNAME = "test7358"
 const val kayttajaTunnistePattern = "[a-zA-z0-9]{24}"
 
-@Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class HankeKayttajaServiceITest : DatabaseTest() {
@@ -104,17 +97,12 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
     @Autowired private lateinit var applicationRepository: ApplicationRepository
 
-    @MockkBean private lateinit var emailSenderService: EmailSenderService
-
-    @BeforeEach
-    fun setup() {
-        clearAllMocks()
-    }
-
-    @AfterEach
-    fun tearDown() {
-        checkUnnecessaryStub()
-        confirmVerified(emailSenderService)
+    companion object {
+        @JvmField
+        @RegisterExtension
+        val greenMail: GreenMailExtension =
+            GreenMailExtension(ServerSetupTest.SMTP)
+                .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication())
     }
 
     @Nested
@@ -153,7 +141,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Nested
     inner class GetKayttajaByUserId {
-
         @Test
         fun `When user exists should return current hanke user`() {
             val hanke = hankeFactory.saveGenerated(userId = USERNAME)
@@ -161,13 +148,15 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val result: HankeKayttajaEntity? =
                 hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)
 
-            assertThat(result).isNotNull()
-            with(result!!) {
-                assertThat(id).isNotNull()
-                assertThat(sahkoposti).isEqualTo(teppoEmail)
-                assertThat(nimi).isEqualTo(TEPPO_TESTI)
-                assertThat(permission?.kayttooikeustaso).isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
-                assertThat(permission).isNotNull()
+            assertThat(result).isNotNull().all {
+                prop(HankeKayttajaEntity::id).isNotNull()
+                prop(HankeKayttajaEntity::sahkoposti).isEqualTo(teppoEmail)
+                prop(HankeKayttajaEntity::nimi).isEqualTo(TEPPO_TESTI)
+                prop(HankeKayttajaEntity::permission).isNotNull().all {
+                    prop(PermissionEntity::kayttooikeustaso)
+                        .isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
+                }
+                prop(HankeKayttajaEntity::kayttajaTunniste).isNull() // no token for creator
             }
         }
 
@@ -206,7 +195,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Nested
     inner class AddHankeFounder {
-        private val perustaja = HankeFactory.defaultPerustaja
+        private val founder = HankeFactory.defaultHankeFounder
 
         @Test
         fun `Saves kayttaja with correct permission and other data`() {
@@ -214,7 +203,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val savedHankeId = hankeEntity.id
             assertThat(hankeKayttajaRepository.findAll()).isEmpty()
 
-            hankeKayttajaService.addHankeFounder(savedHankeId, perustaja, USERNAME)
+            hankeKayttajaService.addHankeFounder(savedHankeId, founder, USERNAME)
 
             val kayttajaEntity =
                 hankeKayttajaRepository.findAll().also { assertThat(it).hasSize(1) }.first()
@@ -227,8 +216,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                     prop(PermissionEntity::hankeId).isEqualTo(savedHankeId)
                     prop(PermissionEntity::userId).isEqualTo(USERNAME)
                 }
-                assertThat(sahkoposti).isEqualTo(perustaja.email)
-                assertThat(nimi).isEqualTo(perustaja.nimi)
+                assertThat(sahkoposti).isEqualTo(founder.email)
+                assertThat(nimi).isEqualTo(founder.name)
             }
         }
 
@@ -238,7 +227,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val savedHankeId = hankeEntity.id
             auditLogRepository.deleteAll()
 
-            hankeKayttajaService.addHankeFounder(savedHankeId, perustaja, USERNAME)
+            hankeKayttajaService.addHankeFounder(savedHankeId, founder, USERNAME)
 
             val (kayttajaEntries, tunnisteEntries) =
                 auditLogRepository
@@ -257,8 +246,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                         prop(HankeKayttaja::hankeId).isEqualTo(savedHankeId)
                         prop(HankeKayttaja::kayttajaTunnisteId).isNull()
                         prop(HankeKayttaja::permissionId).isNotNull()
-                        prop(HankeKayttaja::nimi).isEqualTo(perustaja.nimi)
-                        prop(HankeKayttaja::sahkoposti).isEqualTo(perustaja.email)
+                        prop(HankeKayttaja::nimi).isEqualTo(founder.name)
+                        prop(HankeKayttaja::sahkoposti).isEqualTo(founder.email)
                     }
                 }
             }
@@ -383,7 +372,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 currentKayttaja = null
             )
 
-            verify { emailSenderService wasNot Called }
+            assertThat(greenMail.receivedMessages).isEmpty()
         }
 
         @Test
@@ -402,8 +391,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 applicationRepository.findAll().first().apply {
                     applicationIdentifier = defaultApplicationIdentifier
                 }
-            val capturedEmails = mutableListOf<HankeInvitationData>()
-            justRun { emailSenderService.sendHankeInvitationEmail(capture(capturedEmails)) }
             val inviter =
                 with(hakijaContact) {
                     HankeKayttajaFactory.createEntity(nimi = name, sahkoposti = email)
@@ -418,16 +405,17 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 inviter
             )
 
-            assertThat(capturedEmails).each { inv ->
-                inv.transform { it.inviterEmail }.isEqualTo(hakijaContact.email)
-                inv.transform { it.inviterName }.isEqualTo(hakijaContact.name)
-                inv.transform { it.invitationToken }.isNotEmpty()
-                inv.transform { it.recipientEmail }.isIn(*expectedRecipients)
-                inv.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
-                inv.transform { it.hankeNimi }.isEqualTo(hanke.nimi)
-            }
+            val capturedEmails = greenMail.receivedMessages
             // 4 contacts but one is the sender
-            verify(exactly = 3) { emailSenderService.sendHankeInvitationEmail(any()) }
+            assertThat(capturedEmails).hasSize(3)
+            assertThat(capturedEmails)
+                .areValidHankeInvitations(hakijaContact.name, hakijaContact.email, hanke)
+            assertThat(capturedEmails)
+                .hasReceivers(
+                    suorittajaCustomerContact.contacts[0].email,
+                    asianHoitajaCustomerContact.contacts[0].email,
+                    rakennuttajaCustomerContact.contacts[0].email,
+                )
         }
 
         @Test
@@ -695,21 +683,14 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `Sends emails for new hanke users`() {
             val hanke = hankeFactory.saveGenerated(userId = USERNAME)
             val hankeWithYhteystiedot = hanke.withYhteystiedot() // 4 sub contacts
-            val capturedEmails = mutableListOf<HankeInvitationData>()
-            justRun { emailSenderService.sendHankeInvitationEmail(capture(capturedEmails)) }
 
             hankeKayttajaService.saveNewTokensFromHanke(hankeWithYhteystiedot, USERNAME)
 
-            verify(exactly = 4) { emailSenderService.sendHankeInvitationEmail(any()) }
-            assertThat(capturedEmails).each { inv ->
-                inv.transform { it.inviterName }.isEqualTo(TEPPO_TESTI)
-                inv.transform { it.inviterEmail }.isEqualTo(teppoEmail)
-                inv.transform { it.recipientEmail }
-                    .isIn("yhteys-email1", "yhteys-email2", "yhteys-email3", "yhteys-email4")
-                inv.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
-                inv.transform { it.hankeNimi }.isEqualTo(defaultApplicationName)
-                inv.transform { it.invitationToken }.isNotEmpty()
-            }
+            val capturedEmails = greenMail.receivedMessages
+            assertThat(capturedEmails).hasSize(4)
+            assertThat(capturedEmails).areValidHankeInvitations(TEPPO_TESTI, teppoEmail, hanke)
+            assertThat(capturedEmails)
+                .hasReceivers("yhteys-email1", "yhteys-email2", "yhteys-email3", "yhteys-email4")
         }
     }
 
@@ -1252,14 +1233,12 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             )
             val kayttaja = kayttajaFactory.saveUser(hanke.id)
             assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
-            justRun { emailSenderService.sendHankeInvitationEmail(any()) }
 
             hankeKayttajaService.resendInvitation(kayttaja.id, USERNAME)
 
             val tunnisteet = kayttajaTunnisteRepository.findAll()
             assertThat(tunnisteet).hasSize(1)
             assertThat(tunnisteet).first().hasKayttajaWithId(kayttaja.id)
-            verifySequence { emailSenderService.sendHankeInvitationEmail(any()) }
         }
 
         @Test
@@ -1274,7 +1253,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             assertThat(kayttajaTunnisteRepository.findAll()).hasSize(1)
             val tunnisteId = kayttaja.kayttajaTunniste!!.id
             val tunniste = kayttaja.kayttajaTunniste!!.tunniste
-            justRun { emailSenderService.sendHankeInvitationEmail(any()) }
 
             hankeKayttajaService.resendInvitation(kayttaja.id, USERNAME)
 
@@ -1285,7 +1263,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 prop(KayttajaTunnisteEntity::id).isNotEqualTo(tunnisteId)
                 prop(KayttajaTunnisteEntity::tunniste).isNotEqualTo(tunniste)
             }
-            verifySequence { emailSenderService.sendHankeInvitationEmail(any()) }
         }
 
         @Test
@@ -1298,21 +1275,19 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 nimi = "Current User"
             )
             val kayttaja = kayttajaFactory.saveUser(hanke.id)
-            val capturedEmails = mutableListOf<HankeInvitationData>()
-            justRun { emailSenderService.sendHankeInvitationEmail(capture(capturedEmails)) }
 
             hankeKayttajaService.resendInvitation(kayttaja.id, USERNAME)
 
+            val capturedEmails = greenMail.receivedMessages
             assertThat(capturedEmails).hasSize(1)
-            assertThat(capturedEmails).first().all {
-                prop(HankeInvitationData::inviterEmail).isEqualTo("current@user")
-                prop(HankeInvitationData::inviterName).isEqualTo("Current User")
-                prop(HankeInvitationData::recipientEmail).isEqualTo(kayttaja.sahkoposti)
-                prop(HankeInvitationData::hankeTunnus).isEqualTo(hanke.hankeTunnus)
-                prop(HankeInvitationData::hankeNimi).isEqualTo(hanke.nimi)
-                prop(HankeInvitationData::invitationToken).isNotNull()
-            }
-            verifySequence { emailSenderService.sendHankeInvitationEmail(any()) }
+            assertThat(capturedEmails[0])
+                .isValidHankeInvitation(
+                    "Current User",
+                    "current@user",
+                    hanke.nimi,
+                    hanke.hankeTunnus
+                )
+            assertThat(capturedEmails).hasReceivers(kayttaja.sahkoposti)
         }
     }
 
@@ -1337,6 +1312,27 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         k.prop(HankeKayttajaEntity::hankeId).isEqualTo(hankeId)
         k.prop(HankeKayttajaEntity::permission).isNull()
         k.prop(HankeKayttajaEntity::kayttajaTunniste).isNotNull()
+    }
+
+    private fun Assert<Array<MimeMessage>>.areValidHankeInvitations(
+        inviterName: String,
+        inviterEmail: String,
+        hanke: Hanke
+    ) {
+        each { it.isValidHankeInvitation(inviterName, inviterEmail, hanke.nimi, hanke.hankeTunnus) }
+    }
+
+    private fun Assert<MimeMessage>.isValidHankeInvitation(
+        inviterName: String,
+        inviterEmail: String,
+        hankeNimi: String,
+        hankeTunnus: String,
+    ) {
+        prop(MimeMessage::textBody).all {
+            contains("$inviterName ($inviterEmail) lisäsi sinut")
+            containsMatch("kutsu\\?id=$kayttajaTunnistePattern".toRegex())
+            contains("hankkeelle $hankeNimi ($hankeTunnus)")
+        }
     }
 
     private val expectedNames =

@@ -1,34 +1,10 @@
 package fi.hel.haitaton.hanke.configuration
 
-import fi.hel.haitaton.hanke.HankeRepository
-import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.HankeServiceImpl
-import fi.hel.haitaton.hanke.HanketunnusService
-import fi.hel.haitaton.hanke.HanketunnusServiceImpl
-import fi.hel.haitaton.hanke.IdCounterRepository
 import fi.hel.haitaton.hanke.allu.AlluProperties
-import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.allu.CableReportServiceAllu
-import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.ApplicationService
-import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.azure.Containers
 import fi.hel.haitaton.hanke.email.EmailProperties
-import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
-import fi.hel.haitaton.hanke.geometria.GeometriatDao
-import fi.hel.haitaton.hanke.geometria.GeometriatDaoImpl
-import fi.hel.haitaton.hanke.geometria.GeometriatService
-import fi.hel.haitaton.hanke.geometria.GeometriatServiceImpl
-import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
-import fi.hel.haitaton.hanke.logging.AuditLogService
-import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.logging.HankeLoggingService
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.permissions.PermissionService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import kotlinx.coroutines.CoroutineDispatcher
@@ -38,8 +14,8 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Profile
 import org.springframework.http.client.reactive.ReactorClientHttpConnector
-import org.springframework.jdbc.core.JdbcOperations
 import org.springframework.web.reactive.function.client.WebClient
 import reactor.netty.http.client.HttpClient
 
@@ -49,6 +25,7 @@ import reactor.netty.http.client.HttpClient
     FeatureFlags::class,
     AlluProperties::class,
     EmailProperties::class,
+    Containers::class,
 )
 class Configuration {
     @Value("\${haitaton.allu.insecure}") var alluTrustInsecure: Boolean = false
@@ -57,13 +34,14 @@ class Configuration {
     @Bean fun ioDispatcher(): CoroutineDispatcher = Dispatchers.IO
 
     @Bean
+    @Profile("!test")
     fun cableReportService(webClientBuilder: WebClient.Builder): CableReportService {
         val webClient =
             webClientWithLargeBuffer(
                 if (alluTrustInsecure) createInsecureTrustingWebClient(webClientBuilder)
                 else webClientBuilder
             )
-        return CableReportServiceAllu(webClient, alluProperties)
+        return CableReportService(webClient, alluProperties)
     }
 
     private fun createInsecureTrustingWebClient(
@@ -74,81 +52,6 @@ class Configuration {
         val httpClient = HttpClient.create().secure { t -> t.sslContext(sslContext) }
         return webClientBuilder.clientConnector(ReactorClientHttpConnector(httpClient))
     }
-
-    @Bean
-    fun applicationService(
-        applicationRepository: ApplicationRepository,
-        alluStatusRepository: AlluStatusRepository,
-        cableReportService: CableReportService,
-        disclosureLogService: DisclosureLogService,
-        applicationLoggingService: ApplicationLoggingService,
-        hankeKayttajaService: HankeKayttajaService,
-        emailSenderService: EmailSenderService,
-        applicationAttachmentService: ApplicationAttachmentService,
-        geometriatDao: GeometriatDao,
-        permissionService: PermissionService,
-        hankeRepository: HankeRepository,
-        hankeLoggingService: HankeLoggingService,
-        featureFlags: FeatureFlags,
-    ): ApplicationService =
-        ApplicationService(
-            applicationRepository,
-            alluStatusRepository,
-            cableReportService,
-            disclosureLogService,
-            applicationLoggingService,
-            hankeKayttajaService,
-            emailSenderService,
-            applicationAttachmentService,
-            geometriatDao,
-            permissionService,
-            hankeRepository,
-            hankeLoggingService,
-            featureFlags,
-        )
-
-    @Bean
-    fun hanketunnusService(idCounterRepository: IdCounterRepository): HanketunnusService =
-        HanketunnusServiceImpl(idCounterRepository)
-
-    @Bean
-    fun hankeService(
-        hankeRepository: HankeRepository,
-        tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
-        geometriatService: GeometriatService,
-        hanketunnusService: HanketunnusService,
-        auditLogService: AuditLogService,
-        hankeLoggingService: HankeLoggingService,
-        applicationService: ApplicationService,
-        hankeKayttajaService: HankeKayttajaService,
-    ): HankeService =
-        HankeServiceImpl(
-            hankeRepository,
-            tormaystarkasteluLaskentaService,
-            hanketunnusService,
-            geometriatService,
-            auditLogService,
-            hankeLoggingService,
-            applicationService,
-            hankeKayttajaService,
-        )
-
-    @Bean
-    fun geometriatDao(jdbcOperations: JdbcOperations): GeometriatDao =
-        GeometriatDaoImpl(jdbcOperations)
-
-    @Bean
-    fun geometriatService(geometriatDao: GeometriatDao): GeometriatService =
-        GeometriatServiceImpl(geometriatDao)
-
-    @Bean
-    fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService =
-        TormaystarkasteluTormaysServicePG(jdbcOperations)
-
-    @Bean
-    fun tormaystarkasteluLaskentaService(
-        tormaystarkasteluDao: TormaystarkasteluTormaysService
-    ): TormaystarkasteluLaskentaService = TormaystarkasteluLaskentaService(tormaystarkasteluDao)
 
     companion object {
         /** Create a web client that can download large files in memory. */

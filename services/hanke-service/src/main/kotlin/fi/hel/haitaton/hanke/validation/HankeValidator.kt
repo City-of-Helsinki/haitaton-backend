@@ -60,7 +60,8 @@ private fun BaseHanke.validate() =
 private fun validateHankeAlue(hankealue: Hankealue, path: String) = hankealue.validate(path)
 
 private fun Hankealue.validate(path: String) =
-    whenNotNull(nimi) { it.notLongerThan(MAXIMUM_HANKE_ALUE_NIMI_LENGTH, "$path.nimi") }
+    validate { notBlank(nimi, "$path.nimi") }
+        .and { nimi.notLongerThan(MAXIMUM_HANKE_ALUE_NIMI_LENGTH, "$path.nimi") }
         .whenNotNull(haittaAlkuPvm) { isBeforeOrEqual(it, MAXIMUM_DATE, "$path.haittaAlkuPvm") }
         .whenNotNull(haittaLoppuPvm) { isBeforeOrEqual(it, MAXIMUM_DATE, "$path.haittaLoppuPvm") }
         .andWhen(haittaAlkuPvm != null && haittaLoppuPvm != null) {

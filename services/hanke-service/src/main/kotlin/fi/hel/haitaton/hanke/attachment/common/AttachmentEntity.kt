@@ -35,6 +35,9 @@ abstract class AttachmentEntity(
 
     /** Creation timestamp. */
     @Column(name = "created_at", updatable = false, nullable = false) var createdAt: OffsetDateTime,
+
+    /** Location of the file in Azure Blob. */
+    @Column(name = "blob_location") var blobLocation: String?,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -58,12 +61,11 @@ class HankeAttachmentEntity(
     contentType: String,
     createdByUserId: String,
     createdAt: OffsetDateTime,
-
-    /** Hanke in which this attachment belongs to. */
+    blobLocation: String?,
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "hanke_id") var hanke: HankeEntity,
-) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt) {
-    fun toMetadata(): HankeAttachmentMetadata {
-        return HankeAttachmentMetadata(
+) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt, blobLocation) {
+    fun toDomain(): HankeAttachment {
+        return HankeAttachment(
             id = id!!,
             fileName = fileName,
             createdAt = createdAt,
@@ -97,11 +99,12 @@ class ApplicationAttachmentEntity(
     contentType: String,
     createdByUserId: String,
     createdAt: OffsetDateTime,
+    blobLocation: String?,
     @Column(name = "application_id") var applicationId: Long,
     @Enumerated(EnumType.STRING)
     @Column(name = "attachment_type")
     var attachmentType: ApplicationAttachmentType,
-) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt) {
+) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt, blobLocation) {
     fun toDto(): ApplicationAttachmentMetadata {
         return ApplicationAttachmentMetadata(
             id = id!!,

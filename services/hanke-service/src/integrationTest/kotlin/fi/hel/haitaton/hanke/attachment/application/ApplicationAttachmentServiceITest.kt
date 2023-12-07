@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.application
 
 import assertk.assertThat
-import assertk.assertions.containsExactly
 import assertk.assertions.each
 import assertk.assertions.endsWith
 import assertk.assertions.hasSize
@@ -9,7 +8,6 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isPresent
-import com.ninjasquad.springmockk.MockkBean
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
@@ -20,6 +18,7 @@ import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
+import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.body
@@ -28,18 +27,15 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.LIIKENNEJARJESTELY
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.VALTAKIRJA
-import fi.hel.haitaton.hanke.attachment.common.AttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.defaultData
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createAlluApplicationResponse
-import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import io.mockk.Called
@@ -62,23 +58,19 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.TestPropertySource
-import org.testcontainers.junit.jupiter.Testcontainers
 
 private const val ALLU_ID = 42
 
-@Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
-@TestPropertySource(locations = ["classpath:application-test.properties"])
 class ApplicationAttachmentServiceITest : DatabaseTest() {
-    @MockkBean private lateinit var cableReportService: CableReportService
+    @Autowired private lateinit var cableReportService: CableReportService
     @Autowired private lateinit var applicationAttachmentService: ApplicationAttachmentService
-    @Autowired private lateinit var attachmentContentService: AttachmentContentService
+    @Autowired private lateinit var attachmentContentService: ApplicationAttachmentContentService
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
-    @Autowired private lateinit var attachmentFactory: AttachmentFactory
+    @Autowired private lateinit var attachmentFactory: ApplicationAttachmentFactory
     @Autowired private lateinit var hankeFactory: HankeFactory
 
     private lateinit var mockWebServer: MockWebServer
@@ -135,44 +127,11 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 attachment = file
             )
 
-        val result =
-            applicationAttachmentService.getContent(
-                applicationId = application.id!!,
-                attachmentId = attachment.id
-            )
+        val result = applicationAttachmentService.getContent(attachment.id)
 
         assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
         assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
         assertThat(result.bytes).isEqualTo(file.bytes)
-    }
-
-    @Test
-    fun `getContent when attachment is not in requested application should throw`() {
-        mockWebServer.enqueue(response(body(results = successResult())))
-        mockWebServer.enqueue(response(body(results = successResult())))
-        val firstApplication = initApplication().toApplication()
-        val secondApplication = initApplication().toApplication()
-        applicationAttachmentService.addAttachment(
-            applicationId = firstApplication.id!!,
-            attachmentType = VALTAKIRJA,
-            attachment = testFile(),
-        )
-        val secondAttachment =
-            applicationAttachmentService.addAttachment(
-                applicationId = secondApplication.id!!,
-                attachmentType = LIIKENNEJARJESTELY,
-                attachment = testFile(),
-            )
-
-        val exception =
-            assertThrows<AttachmentNotFoundException> {
-                applicationAttachmentService.getContent(
-                    applicationId = firstApplication.id!!,
-                    attachmentId = secondAttachment.id,
-                )
-            }
-
-        assertThat(exception.message).isEqualTo("Attachment not found, id=${secondAttachment.id}")
     }
 
     @EnumSource(ApplicationAttachmentType::class)
@@ -205,8 +164,8 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(attachmentInDb.applicationId).isEqualTo(application.id)
         assertThat(attachmentInDb.attachmentType).isEqualTo(typeInput)
 
-        val content = attachmentContentService.findApplicationContent(result.id)
-        assertThat(content).containsExactly(*defaultData)
+        val content = attachmentContentService.find(result.id)
+        assertThat(content).isEqualTo(DEFAULT_DATA)
 
         verify { cableReportService wasNot Called }
     }
@@ -233,7 +192,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         val application = initApplication()
         val attachments =
             (1..ALLOWED_ATTACHMENT_COUNT).map {
-                AttachmentFactory.applicationAttachmentEntity(applicationId = application.id!!)
+                ApplicationAttachmentFactory.createEntity(applicationId = application.id!!)
             }
         applicationAttachmentRepository.saveAll(attachments)
 
@@ -386,10 +345,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             )
         assertThat(applicationAttachmentRepository.findById(attachment.id)).isPresent()
 
-        applicationAttachmentService.deleteAttachment(
-            applicationId = application.id!!,
-            attachmentId = attachment.id
-        )
+        applicationAttachmentService.deleteAttachment(attachment.id)
 
         assertThat(applicationAttachmentRepository.findById(attachment.id)).isEmpty()
     }
@@ -402,10 +358,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
         val exception =
             assertThrows<ApplicationInAlluException> {
-                applicationAttachmentService.deleteAttachment(
-                    applicationId = application.id!!,
-                    attachmentId = attachment.id!!
-                )
+                applicationAttachmentService.deleteAttachment(attachmentId = attachment.id!!)
             }
 
         assertThat(exception.message)

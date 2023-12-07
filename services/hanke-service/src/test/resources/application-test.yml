@@ -1,0 +1,31 @@
+haitaton:
+  azure:
+    blob:
+      decisions: paatokset-test
+      hakemus-attachments: hakemusliitteet-test
+      hanke-attachments: hankeliitteet-test
+  clamav:
+    baseUrl: http://localhost:6789
+  email:
+    filter:
+      use: false
+    from: no-reply@hel.fi
+  features:
+    hanke-editing: true
+    user-management: true
+  testdata:
+    enabled: true
+
+spring:
+  jpa:
+    show-sql: false
+  mail:
+    port: 3025
+    properties:
+      mail:
+        debug: false
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+            required: false

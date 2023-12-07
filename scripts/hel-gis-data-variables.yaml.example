@@ -14,7 +14,8 @@ files: |
   tormays_cycleways_main_polys.gpkg
   tormays_cycleways_priority_polys.gpkg
   tormays_street_classes_polys.gpkg
-  tormays_trams_polys.gpkg
+  tormays_tram_infra_polys.gpkg
+  tormays_tram_lines_polys.gpkg
   tormays_volumes15_polys.gpkg
   tormays_volumes30_polys.gpkg
   tormays_ylre_classes_polys.gpkg

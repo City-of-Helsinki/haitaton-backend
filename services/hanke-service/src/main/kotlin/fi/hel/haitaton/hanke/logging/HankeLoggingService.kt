@@ -55,4 +55,7 @@ class HankeLoggingService(private val auditLogService: AuditLogService) {
             auditLogService.create(it)
         }
     }
+
+    fun createAll(auditLogEntries: MutableList<AuditLogEntry>) =
+        auditLogService.createAll(auditLogEntries)
 }

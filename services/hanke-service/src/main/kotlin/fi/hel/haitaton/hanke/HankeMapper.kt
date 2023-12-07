@@ -44,7 +44,7 @@ object HankeMapper {
                 muut = contacts[MUU].orEmpty().toMutableList()
                 tyomaaKatuosoite = entity.tyomaaKatuosoite
                 tyomaaTyyppi = entity.tyomaaTyyppi
-                alueet = alueList(entity.hankeTunnus, entity.listOfHankeAlueet, geometriaData)
+                alueet = alueList(entity.hankeTunnus, entity.alueet, geometriaData)
                 tormaystarkasteluTulos = tormaystarkasteluTulos(entity)
             }
 

@@ -47,6 +47,39 @@ Required directory structure:
 
 See docker-compose.yml for details.
 
+#### Azurite
+
+For emulating Azure Blob Storage, an Azurite (see https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite)
+instance is started with Docker Compose. Blob Containers are also created via Docker Compose:
+- `haitaton-hakemusliitteet-local`
+- `haitaton-hankeliitteet-local`
+- `haitaton-paatokset-local`
+
+Notice that Azurite uses the default well-known development `AccountName` and `AccountKey`:
+```shell
+AccountName: devstoreaccount1
+AccountKey: Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==
+```
+
+Azurite is accessible via Microsoft Azure Storage Explorer (see https://azure.microsoft.com/en-us/products/storage/storage-explorer/)
+or Azure CLI (see https://learn.microsoft.com/en-us/cli/azure/).
+For example, to list all blob containers with Azure CLI:
+```shell
+$ az storage container list --connection-string "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://127.0.0.1:10000/devstoreaccount1;"
+```
+
+Azurite is configured to produce debug logging in `azurite-debug.log`.
+Azurite uses Docker top-level volume for data (see https://docs.docker.com/compose/compose-file/07-volumes/).
+
+Connecting to Azurite for hanke-service is handled with connection strings. For `./gradlew bootRun`,
+the connection string is set in build.gradle.kts. The special development storage string can be used
+there. For the Docker Compose environment, the connection string is set in docker-compose.yml. It's
+slightly more involved, since it needs a customized endpoint to connect inside the Docker network.
+
+Connection strings are not set in the cloud environments. In cloud environments, the connection is
+authenticated by the default authenticator, which reads environment variables AZURE_CLIENT_ID,
+AZURE_CLIENT_SECRET and AZURE_TENANT_ID to build an authenticator.
+
 ### Swagger UI
 
 Swagger UI (see https://springdoc.org/) and OpenAPI v3 description (JSON). You
@@ -172,8 +205,17 @@ Creation of new emails is done with [mjml.io](https://mjml.io/). Either IntelliJ
 needed. Mjml templates are located in email/. The output email content (html) is in
 hanke-service/resources/email/template.
 
-Once the Mjml template is done, it is converted to html. For example in Visual Studio, type >MJML:Copy HTML. The html
-output is the actual email content.
+MJML templates are automatically compiled to HTML during build. This is done using a Gradle plugin
+that outputs the compiled HTML files under the build directory. A custom task (`copyEmailTemplates`)
+is used to copy the compiled HTML files over to the resources-directory.
+
+The Gradle plugin is only looking at changes in the `.mjml` files, so it doesn't do the automatic
+recompiling if there are only changes to the `.partial` -files. In these cases it's necessary to
+force a new compile with `--rerun-tasks`. This can be done either as a part of the general build or
+as a separate step:
+```shell
+./gradlew copyEmailTemplates --rerun-tasks
+```
 
 ## File scan
 

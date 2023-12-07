@@ -5,5 +5,5 @@ package fi.hel.haitaton.hanke.domain
  * that need access to the id-field.
  */
 interface HasId<ID> {
-    val id: ID?
+    val id: ID
 }

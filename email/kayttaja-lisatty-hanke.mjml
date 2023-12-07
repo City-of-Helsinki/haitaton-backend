@@ -1,13 +1,14 @@
 <mjml>
     <mj-head>
-        <mj-include path="common/attributes.mjml"/>
+        <mj-include path="common/attributes.partial"/>
     </mj-head>
     <mj-body>
-        <mj-include path="common/header-content.mjml"/>
+        <mj-include path="common/header-content.partial"/>
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">
-                    Sinut on lisätty hankkeelle {{hankeTunnus}}
+                    Sinut on lisätty hankkeelle {{hankeTunnus}} / Du har lagts till i projektet {{hankeTunnus}} / You
+                    have been added to project {{hankeTunnus}}
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     {{inviterName}} ({{inviterEmail}}) lisäsi sinut hankkeelle <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
@@ -20,25 +21,43 @@
                 <mj-text mj-class="basic-txt">
                     Löydät hankkeesi Haitattoman etusivun Omat hankkeet -osion alta hankkeen nimellä.
                 </mj-text>
+                <mj-include path="common/signature-fi.partial"/>
+
+                <mj-divider mj-class="language-separator" />
+
                 <mj-text mj-class="basic-txt">
-                    Haitaton on Helsingin kaupungin asiointijärjestelmä yleisille alueille sijoittuvien hankkeiden
-                    edistämiseen ja haittojen hallintaan.
+                    {{inviterName}} ({{inviterEmail}}) lade till dig i projektet <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
+                    Identifiera dig i Haitaton via länken nedan.
                 </mj-text>
                 <mj-text mj-class="basic-txt">
-                    Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.
+                    <a href="{{baseUrl}}/sv/inbjudan?id={{invitationToken}}">
+                        {{baseUrl}}/sv/inbjudan?id={{invitationToken}}
+                    </a>
                 </mj-text>
                 <mj-text mj-class="basic-txt">
-                    Ystävällisin terveisin,
-                    <br/>
-                    <br/>
-                    Helsingin kaupungin kaupunkiympäristön toimiala
-                    <br/>
-                    Haitaton-asiointi
-                    <br/>
-                    haitaton@hel.fi
+                    Du hittar ditt projekt under dess namn under Egna projekt på Haitatons startsida.
                 </mj-text>
+                <mj-include path="common/signature-sv.partial"/>
+
+                <mj-divider mj-class="language-separator" />
+
+                <mj-text mj-class="basic-txt">
+                    {{inviterName}} ({{inviterEmail}}) has added you to the project <b>‘{{hankeNimi}}’
+                    ({{hankeTunnus}})</b>.
+                    Please log in to Haitaton via the link below.
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    <a href="{{baseUrl}}/en/invitation?id={{invitationToken}}">
+                        {{baseUrl}}/en/invitation?id={{invitationToken}}
+                    </a>
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    You will find your project in the ‘Own projects’ section of the Haitaton front page under the name
+                    of the project.
+                </mj-text>
+                <mj-include path="common/signature-en.partial"/>
             </mj-column>
         </mj-section>
-        <mj-include path="common/footer-content.mjml"/>
+        <mj-include path="common/footer-content.partial"/>
     </mj-body>
 </mjml>

@@ -7,7 +7,7 @@ enum class ApplicationType {
     CABLE_REPORT,
 }
 
-/** Interface to enable Application and CableReportWithoutHanke handling equivalently. */
+/** Interface to enable [Application] and [CableReportWithoutHanke] handling equivalently. */
 sealed interface BaseApplication {
     val applicationType: ApplicationType
     val applicationData: ApplicationData
@@ -21,7 +21,7 @@ data class Application(
     override val applicationType: ApplicationType,
     override val applicationData: ApplicationData,
     val hankeTunnus: String,
-) : HasId<Long>, BaseApplication {
+) : HasId<Long?>, BaseApplication {
     fun toMetadata() =
         ApplicationMetaData(
             id!!,
