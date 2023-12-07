@@ -11,7 +11,7 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts as AlluCustomerWithContacts
 import fi.hel.haitaton.hanke.allu.PostalAddress as AlluPostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress as AlluStreetAddress
-import fi.hel.haitaton.hanke.domain.Perustaja
+import fi.hel.haitaton.hanke.domain.HankeFounder
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CustomerWithContacts(val customer: Customer, val contacts: List<Contact>) {
@@ -47,16 +47,16 @@ data class Contact(
     }
 
     /**
-     * It is possible to create a cable report without an existing Hanke. In these cases an
-     * application contact (orderer) is used as Hanke perustaja.
+     * A cable report can be created without a Hanke. In such case, an application contact (orderer)
+     * is used as founder.
      */
-    fun toHankePerustaja(): Perustaja {
+    fun toHankeFounder(): HankeFounder {
         val name = fullName()
         if (name.isNullOrBlank() || email.isNullOrBlank()) {
-            throw HankeArgumentException("Invalid orderer $this for Hanke perustaja")
+            throw HankeArgumentException("Invalid contact $this for Hanke founder")
         }
 
-        return Perustaja(name, email)
+        return HankeFounder(name, email)
     }
 }
 

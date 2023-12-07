@@ -1,12 +1,12 @@
 <mjml>
     <mj-head>
-        <mj-include path="common/attributes.mjml"/>
+        <mj-include path="common/attributes.partial"/>
     </mj-head>
     <mj-body>
-        <mj-include path="common/header-content.mjml"/>
+        <mj-include path="common/header-content.partial"/>
         <mj-section>
             <mj-column>
-                <mj-text mj-class="header-txt">Johtoselvitys {{applicationIdentifier}}</mj-text>
+                <mj-text mj-class="header-txt">Johtoselvitys {{applicationIdentifier}} / Ledningsutredning {{applicationIdentifier}} / Cable report {{applicationIdentifier}}</mj-text>
                 <mj-text mj-class="basic-txt">
                     Hakemanne johtoselvitys {{applicationIdentifier}} on käsitelty. Lataa selvitys Haitattomasta <a
                         href="{{baseUrl}}/fi/hakemus/{{applicationId}}">{{baseUrl}}/fi/hakemus/{{applicationId}}
@@ -19,8 +19,8 @@
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     Ystävällisin terveisin,
-                    <br/>
-                    <br/>
+                </mj-text>
+                <mj-text mj-class="signature">
                     Helsingin kaupunkiympäristön asukas- ja yrityspalvelut
                     <br/>
                     Alueidenkäyttö ja -valvonta
@@ -31,13 +31,9 @@
                     <br/>
                     johtotietopalvelu@hel.fi
                 </mj-text>
-            </mj-column>
-        </mj-section>
-        <mj-section>
-            <mj-column>
-                <mj-text mj-class="header-txt">
-                    Haitaton: Ledningsutredning {{applicationIdentifier}}
-                </mj-text>
+
+                <mj-divider mj-class="language-separator" />
+
                 <mj-text mj-class="basic-txt">
                     Ledningsutredningen {{applicationIdentifier}} ni ansökt om har behandlats. Ladda ned utredningen
                     från Haitaton
@@ -54,8 +50,8 @@
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     Med vänlig hälsning,
-                    <br/>
-                    <br/>
+                </mj-text>
+                <mj-text mj-class="signature">
                     Helsingfors stadsmiljös boende- och företagstjänster
                     <br/>
                     Användning och tillsyn av områden
@@ -66,13 +62,9 @@
                     <br/>
                     johtotietopalvelu@hel.fi
                 </mj-text>
-            </mj-column>
-        </mj-section>
-        <mj-section>
-            <mj-column>
-                <mj-text mj-class="header-txt">
-                    Haitaton: Cable report {{applicationIdentifier}}
-                </mj-text>
+
+                <mj-divider mj-class="language-separator" />
+
                 <mj-text mj-class="basic-txt">
                     Cable report {{applicationIdentifier}} that you requested has been processed. Download the
                     report
@@ -87,8 +79,8 @@
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     Kind regards,
-                    <br/>
-                    <br/>
+                </mj-text>
+                <mj-text mj-class="signature">
                     Helsinki Urban Environment Resident and Business Services
                     <br/>
                     Land Use and Monitoring
@@ -98,10 +90,9 @@
                     Tel. +358 9 310 31940
                     <br/>
                     johtotietopalvelu@hel.fi
-                    <br/>
                 </mj-text>
             </mj-column>
         </mj-section>
-        <mj-include path="common/footer-content.mjml"/>
+        <mj-include path="common/footer-content.partial"/>
     </mj-body>
 </mjml>

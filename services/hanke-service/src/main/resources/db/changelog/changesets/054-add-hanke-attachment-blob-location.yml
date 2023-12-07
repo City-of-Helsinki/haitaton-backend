@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 054-add-hanke-attachment-file-location
+      author: Niko Pitkonen
+      changes:
+        - addColumn:
+            tableName: hanke_attachment
+            columns:
+              - column:
+                  name: blob_location
+                  type: text
+                  constraints:
+                    nullable: true
+                    unique: true

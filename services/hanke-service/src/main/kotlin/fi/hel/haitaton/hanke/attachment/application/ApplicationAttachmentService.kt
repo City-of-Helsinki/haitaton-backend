@@ -14,7 +14,6 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.common.AttachmentContentService
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
@@ -26,6 +25,7 @@ import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime.now
 import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
@@ -37,7 +37,7 @@ class ApplicationAttachmentService(
     private val cableReportService: CableReportService,
     private val applicationRepository: ApplicationRepository,
     private val attachmentRepository: ApplicationAttachmentRepository,
-    private val attachmentContentService: AttachmentContentService,
+    private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) {
     @Transactional(readOnly = true)
@@ -45,12 +45,11 @@ class ApplicationAttachmentService(
         attachmentRepository.findByApplicationId(applicationId).map { it.toDto() }
 
     @Transactional(readOnly = true)
-    fun getContent(applicationId: Long, attachmentId: UUID): AttachmentContent {
-        val attachment = findAttachment(applicationId, attachmentId)
-        val content = attachmentContentService.findApplicationContent(attachmentId)
-        with(attachment) {
-            return AttachmentContent(fileName, contentType, content)
-        }
+    fun getContent(attachmentId: UUID): AttachmentContent {
+        val attachment = findAttachment(attachmentId)
+        val content = attachmentContentService.find(attachmentId)
+
+        return AttachmentContent(attachment.fileName, attachment.contentType, content)
     }
 
     /**
@@ -82,6 +81,7 @@ class ApplicationAttachmentService(
                 id = null,
                 fileName = filename,
                 contentType = attachment.contentType!!,
+                blobLocation = null,
                 createdByUserId = currentUserId(),
                 createdAt = now(),
                 attachmentType = attachmentType,
@@ -89,7 +89,7 @@ class ApplicationAttachmentService(
             )
 
         val newAttachment = attachmentRepository.save(entity)
-        attachmentContentService.saveApplicationContent(newAttachment.id!!, attachment.bytes)
+        attachmentContentService.save(newAttachment.id!!, attachment.bytes)
 
         application.alluid?.let {
             cableReportService.addAttachment(it, newAttachment.toAlluAttachment(attachment.bytes))
@@ -102,12 +102,14 @@ class ApplicationAttachmentService(
 
     /** Attachment can be deleted if the application has not been sent to Allu (alluId null). */
     @Transactional
-    fun deleteAttachment(applicationId: Long, attachmentId: UUID) {
-        val attachment = findAttachment(applicationId, attachmentId)
-        val application = findApplication(applicationId)
+    fun deleteAttachment(attachmentId: UUID) {
+        val attachment = findAttachment(attachmentId)
+        val application = findApplication(attachment.applicationId)
 
         if (isInAllu(application)) {
-            logger.warn { "Application $applicationId is in Allu, attachments cannot be deleted." }
+            logger.warn {
+                "Application ${application.id} is in Allu, attachments cannot be deleted."
+            }
             throw ApplicationInAlluException(application.id, application.alluid)
         }
 
@@ -124,16 +126,11 @@ class ApplicationAttachmentService(
             return
         }
 
-        cableReportService.addAttachments(alluId, attachments) {
-            attachmentContentService.findApplicationContent(it)
-        }
+        cableReportService.addAttachments(alluId, attachments) { attachmentContentService.find(it) }
     }
 
-    private fun findAttachment(
-        applicationId: Long,
-        attachmentId: UUID
-    ): ApplicationAttachmentEntity =
-        attachmentRepository.findByApplicationIdAndId(applicationId, attachmentId)
+    private fun findAttachment(attachmentId: UUID): ApplicationAttachmentEntity =
+        attachmentRepository.findByIdOrNull(attachmentId)
             ?: throw AttachmentNotFoundException(attachmentId)
 
     private fun findApplication(applicationId: Long): ApplicationEntity =

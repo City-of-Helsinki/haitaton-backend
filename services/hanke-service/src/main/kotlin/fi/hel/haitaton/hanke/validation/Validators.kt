@@ -38,7 +38,7 @@ object Validators {
     fun notNull(value: Any?, path: String): ValidationResult = validateFalse(value == null, path)
 
     fun notBlank(value: String, path: String): ValidationResult =
-        validateFalse(value.isBlank(), path)
+        validateTrue(value.isNotBlank(), path)
 
     /**
      * Fails if the string is defined, non-empty and has nothing but whitespace characters.

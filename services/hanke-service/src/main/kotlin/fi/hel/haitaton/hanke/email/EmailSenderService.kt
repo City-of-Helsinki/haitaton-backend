@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.getResource
+import fi.hel.haitaton.hanke.getResourceAsText
 import jakarta.mail.internet.MimeMessage
 import mu.KotlinLogging
 import net.pwall.mustache.Template
@@ -45,6 +46,8 @@ data class HankeInvitationData(
     val invitationToken: String,
 )
 
+data class Translations(val fi: String, val sv: String, val en: String)
+
 enum class EmailTemplate(val value: String) {
     CABLE_REPORT_DONE("johtoselvitys-valmis"),
     INVITATION_HANKE("kayttaja-lisatty-hanke"),
@@ -57,6 +60,7 @@ class EmailSenderService(
     private val emailConfig: EmailProperties,
     private val featureFlags: FeatureFlags,
 ) {
+    val templatePath = "/email/template"
 
     fun sendJohtoselvitysCompleteEmail(
         to: String,
@@ -86,6 +90,7 @@ class EmailSenderService(
                 "hankeTunnus" to data.hankeTunnus,
                 "hankeNimi" to data.hankeNimi,
                 "invitationToken" to data.invitationToken,
+                "signatures" to signatures(),
             )
 
         sendHybridEmail(data.recipientEmail, EmailTemplate.INVITATION_HANKE, templateData)
@@ -98,30 +103,29 @@ class EmailSenderService(
 
         logger.info { "Sending notification email for application" }
 
-        val applicationTypeText = convertApplicationTypeFinnish(data.applicationType)
-
         val templateData =
             mapOf(
                 "baseUrl" to emailConfig.baseUrl,
                 "senderName" to data.senderName,
                 "senderEmail" to data.senderEmail,
-                "applicationType" to applicationTypeText,
+                "applicationType" to data.applicationType.translations(),
                 "applicationIdentifier" to data.applicationIdentifier,
                 "hankeTunnus" to data.hankeTunnus,
+                "signatures" to signatures(),
             )
 
         sendHybridEmail(data.recipientEmail, EmailTemplate.APPLICATION_NOTIFICATION, templateData)
     }
 
-    private fun sendHybridEmail(to: String, context: EmailTemplate, data: Map<String, String>) {
+    private fun sendHybridEmail(to: String, template: EmailTemplate, data: Map<String, Any>) {
         if (emailConfig.filter.use && emailNotAllowed(to)) {
             logger.info { "Email recipient not allowed, ignoring email." }
             return
         }
-        val basePath = "/email/template"
-        val textBody = parseTemplate("$basePath/${context.value}.text.mustache", data)
-        val htmlBody = parseTemplate("$basePath/${context.value}.html.mustache", data)
-        val subject = parseTemplate("$basePath/${context.value}.subject.mustache", data).trimEnd()
+        val textBody = parseTemplate("$templatePath/${template.value}.text.mustache", data)
+        val htmlBody = parseTemplate("$templatePath/${template.value}.html.mustache", data)
+        val subject =
+            parseTemplate("$templatePath/${template.value}.subject.mustache", data).trimEnd()
 
         val mimeMessage: MimeMessage = mailSender.createMimeMessage()
         val helper = MimeMessageHelper(mimeMessage, true, "utf-8")
@@ -133,13 +137,27 @@ class EmailSenderService(
         mailSender.send(mimeMessage)
     }
 
-    private fun convertApplicationTypeFinnish(type: ApplicationType): String =
-        when (type) {
-            ApplicationType.CABLE_REPORT -> "johtoselvityshakemuksen"
-        }
+    private fun signatures() =
+        Translations(
+            "$templatePath/common/signature-fi.mustache".getResourceAsText(),
+            "$templatePath/common/signature-sv.mustache".getResourceAsText(),
+            "$templatePath/common/signature-en.mustache".getResourceAsText(),
+        )
 
     private fun emailNotAllowed(email: String) = !emailConfig.filter.allowList.contains(email)
 
     private fun parseTemplate(path: String, contextObject: Any): String =
         Template.parse(path.getResource().openStream()).processToString(contextObject)
+
+    companion object {
+        fun ApplicationType.translations() =
+            when (this) {
+                ApplicationType.CABLE_REPORT ->
+                    Translations(
+                        fi = "johtoselvityshakemuksen",
+                        sv = "ledningsutredning",
+                        en = "a cable report application",
+                    )
+            }
+    }
 }

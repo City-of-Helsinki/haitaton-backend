@@ -57,10 +57,10 @@ data class SavedHankealue(
     )
     override var tarinaHaitta: Haitta13? = null,
     @field:Schema(
-        description = "Area name",
+        description = "Area name, must not be null or empty",
     )
-    override var nimi: String? = null,
-) : HasId<Int>, Hankealue
+    override var nimi: String,
+) : HasId<Int?>, Hankealue
 
 fun List<Hankealue>.alkuPvm(): ZonedDateTime? = mapNotNull { it.haittaAlkuPvm }.minOfOrNull { it }
 
@@ -74,7 +74,9 @@ fun List<Hankealue>.kaistaPituusHaitat(): Set<KaistajarjestelynPituus> {
     return mapNotNull { it.kaistaPituusHaitta }.toSet()
 }
 
-fun List<Hankealue>.geometriat(): List<Geometriat> = mapNotNull { it.geometriat }
+fun List<SavedHankealue>.geometriat(): List<Geometriat> = mapNotNull { it.geometriat }
+
+fun List<SavedHankealue>.geometriaIds(): Set<Int> = mapNotNull { it.geometriat?.id }.toSet()
 
 fun List<Hankealue>.haittaAjanKestoDays(): Int? =
     if (alkuPvm() != null && loppuPvm() != null) {

@@ -2,12 +2,12 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
+import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.tormaystarkastelu.Luokittelu
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import jakarta.persistence.CascadeType
 import jakarta.persistence.CollectionTable
 import jakarta.persistence.ElementCollection
-import jakarta.persistence.Embedded
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
@@ -114,7 +114,7 @@ enum class Haitta13 {
 @Table(name = "hanke")
 class HankeEntity(
     @Enumerated(EnumType.STRING) var status: HankeStatus = HankeStatus.DRAFT,
-    val hankeTunnus: String,
+    override val hankeTunnus: String,
     var nimi: String,
     var kuvaus: String? = null,
     @Enumerated(EnumType.STRING) var vaihe: Vaihe? = null,
@@ -127,12 +127,11 @@ class HankeEntity(
     var createdAt: LocalDateTime? = null,
     var modifiedByUserId: String? = null,
     var modifiedAt: LocalDateTime? = null,
-    @Embedded var perustaja: PerustajaEntity? = null,
     var generated: Boolean = false,
     // NOTE: using IDENTITY (i.e. db does auto-increments, Hibernate reads the result back)
     // can be a performance problem if there is a need to do bulk inserts.
     // Using SEQUENCE would allow getting multiple ids more efficiently.
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) var id: Int = 0,
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) override var id: Int = 0,
 
     // related
     // orphanRemoval is needed for even explicit child-object removal. JPA weirdness...
@@ -149,7 +148,7 @@ class HankeEntity(
         cascade = [CascadeType.ALL],
         orphanRemoval = true
     )
-    var listOfHankeAlueet: MutableList<HankealueEntity> = mutableListOf(),
+    var alueet: MutableList<HankealueEntity> = mutableListOf(),
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hanke",
@@ -157,7 +156,7 @@ class HankeEntity(
         orphanRemoval = true
     )
     var liitteet: MutableList<HankeAttachmentEntity> = mutableListOf(),
-) {
+) : HankeIdentifier {
     // --------------- Hankkeen lisätiedot / Työmaan tiedot -------------------
     var tyomaaKatuosoite: String? = null
 
@@ -233,8 +232,8 @@ interface HankeRepository : JpaRepository<HankeEntity, Int> {
     fun findAllByStatus(status: HankeStatus): List<HankeEntity>
 }
 
-interface HankeIdentifier {
-    val id: Int
+interface HankeIdentifier : HasId<Int> {
+    override val id: Int
     val hankeTunnus: String
 
     fun logString() = "Hanke: (id=${id}, tunnus=${hankeTunnus})"
@@ -260,9 +259,9 @@ interface IdCounterRepository : JpaRepository<IdCounter, CounterType> {
      * This SQL clause has some PostgreSQL specific thingies:
      * - 'WITH' clause describes a 'variable' table used inside query in two places
      * - 'FOR UPDATE' in nested SELECT clause makes sure that no other process can update the row
-     * during this whole UPDATE clause
+     *   during this whole UPDATE clause
      * - 'RETURNING' in the end is for UPDATE clase to return not just the number of affected rows
-     * but also the column data of those rows (a single row in our case)
+     *   but also the column data of those rows (a single row in our case)
      *
      * With these specialities we can assure that concurrent calls for this method will never return
      * duplicate values.

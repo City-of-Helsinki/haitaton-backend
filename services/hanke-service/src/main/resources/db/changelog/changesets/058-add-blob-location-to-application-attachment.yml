@@ -1,0 +1,14 @@
+databaseChangeLog:
+  - changeSet:
+      id: 058-add-blob-location-to-application-attachment
+      author: Topias Heinonen
+      changes:
+        - addColumn:
+            tableName: application_attachment
+            columns:
+              - column:
+                  name: blob_location
+                  type: text
+                  constraints:
+                    nullable: true
+                    unique: true

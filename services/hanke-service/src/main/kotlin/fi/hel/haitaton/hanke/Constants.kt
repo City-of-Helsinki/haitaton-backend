@@ -36,3 +36,5 @@ val MAXIMUM_DATE: ZonedDateTime = ZonedDateTime.of(2099, 12, 31, 23, 59, 59, 999
 const val HANKETUNNUS_PREFIX = "HAI"
 
 const val ALLOWED_ATTACHMENT_COUNT = 20
+
+const val HANKEALUE_DEFAULT_NAME = "Hankealue"

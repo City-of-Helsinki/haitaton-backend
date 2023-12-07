@@ -13,15 +13,13 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
-import org.testcontainers.junit.jupiter.Testcontainers
 
 /**
  * Testing the configurations and database setup for AuditLogRepository class with a database. The
  * repositories have no additional code over the base JPARepository, so only the configs/setups get
  * indirectly tested.
  */
-@Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 class AuditLogServiceITests : DatabaseTest() {
 

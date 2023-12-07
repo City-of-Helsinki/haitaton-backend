@@ -3,6 +3,8 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadService
+import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentAuthorizer
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
@@ -19,7 +21,6 @@ import fi.hel.haitaton.hanke.security.AccessRules
 import fi.hel.haitaton.hanke.testdata.TestDataService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysService
-import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTormaysServicePG
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -65,8 +66,7 @@ class IntegrationTestConfiguration {
         mockk()
 
     @Bean
-    fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService =
-        TormaystarkasteluTormaysServicePG(jdbcOperations)
+    fun tormaysService(jdbcOperations: JdbcOperations): TormaystarkasteluTormaysService = mockk()
 
     @Bean fun tormaystarkasteluLaskentaService(): TormaystarkasteluLaskentaService = mockk()
 
@@ -74,13 +74,19 @@ class IntegrationTestConfiguration {
 
     @Bean fun hankeAttachmentService(): HankeAttachmentService = mockk()
 
+    @Bean fun attachmentUploadService(): AttachmentUploadService = mockk()
+
     @Bean fun applicationAttachmentService(): ApplicationAttachmentService = mockk()
 
     @Bean fun hankeKayttajaService(): HankeKayttajaService = mockk()
 
     @Bean fun hankeKayttajaAuthorizer(): HankeKayttajaAuthorizer = mockk(relaxUnitFun = true)
+
     @Bean fun hankeAuthorizer(): HankeAuthorizer = mockk(relaxUnitFun = true)
+
     @Bean fun applicationAuthorizer(): ApplicationAuthorizer = mockk(relaxUnitFun = true)
+
+    @Bean fun hankeAttachmentAuthorizer(): HankeAttachmentAuthorizer = mockk(relaxUnitFun = true)
 
     @Bean fun featureService(featureFlags: FeatureFlags) = FeatureService(featureFlags)
 

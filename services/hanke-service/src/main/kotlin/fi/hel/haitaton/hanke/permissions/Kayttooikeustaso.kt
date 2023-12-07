@@ -23,13 +23,8 @@ enum class Kayttooikeustaso {
 class KayttooikeustasoEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Int = 0,
     @Enumerated(EnumType.STRING) val kayttooikeustaso: Kayttooikeustaso,
-    val permissionCode: Long,
-) {
-    fun hasPermission(permission: PermissionCode): Boolean = permissionCode and permission.code > 0
-
-    val permissionCodes: List<PermissionCode>
-        get() = PermissionCode.entries.filter(this::hasPermission)
-}
+    override val permissionCode: Long,
+) : HasPermissionCodes
 
 @Repository
 interface KayttooikeustasoRepository : JpaRepository<KayttooikeustasoEntity, Int> {

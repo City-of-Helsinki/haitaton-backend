@@ -7,8 +7,8 @@ import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
-import fi.hel.haitaton.hanke.geometria.Geometriat
 import java.time.ZonedDateTime
+import org.geojson.FeatureCollection
 
 interface BaseHanke : HasYhteystiedot {
     val nimi: String
@@ -36,7 +36,7 @@ interface HasYhteystiedot {
             .mapValues { (_, yhteystiedot) -> yhteystiedot ?: listOf() }
 }
 
-interface Yhteystieto : HasId<Int> {
+interface Yhteystieto : HasId<Int?> {
     override val id: Int?
     val nimi: String
     val email: String
@@ -76,11 +76,29 @@ interface Yhteystieto : HasId<Int> {
 interface Hankealue {
     val haittaAlkuPvm: ZonedDateTime?
     val haittaLoppuPvm: ZonedDateTime?
-    val geometriat: Geometriat?
+    val geometriat: HasFeatures?
     val kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin?
     val kaistaPituusHaitta: KaistajarjestelynPituus?
     val meluHaitta: Haitta13?
     val polyHaitta: Haitta13?
     val tarinaHaitta: Haitta13?
-    val nimi: String?
+    val nimi: String
+}
+
+fun List<Hankealue>.geometriat(): List<HasFeatures> = mapNotNull { it.geometriat }
+
+interface HasFeatures {
+    val featureCollection: FeatureCollection?
+
+    fun resetFeatureProperties(hankeTunnus: String?) {
+        featureCollection?.let { collection ->
+            collection.features.forEach { feature ->
+                feature.properties = mutableMapOf<String, Any?>("hankeTunnus" to hankeTunnus)
+            }
+        }
+    }
+
+    fun hasFeatures(): Boolean {
+        return !featureCollection?.features.isNullOrEmpty()
+    }
 }

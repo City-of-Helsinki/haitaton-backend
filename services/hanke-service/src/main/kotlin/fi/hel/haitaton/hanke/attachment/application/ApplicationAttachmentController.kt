@@ -64,12 +64,14 @@ class ApplicationAttachmentController(
                 ),
             ]
     )
-    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#applicationId, 'VIEW')")
+    @PreAuthorize(
+        "@applicationAuthorizer.authorizeAttachment(#applicationId, #attachmentId, 'VIEW')"
+    )
     fun getApplicationAttachmentContent(
         @PathVariable applicationId: Long,
         @PathVariable attachmentId: UUID,
     ): ResponseEntity<ByteArray> {
-        val content = applicationAttachmentService.getContent(applicationId, attachmentId)
+        val content = applicationAttachmentService.getContent(attachmentId)
 
         return ResponseEntity.ok()
             .headers(buildHeaders(content.fileName, content.contentType))
@@ -137,9 +139,9 @@ class ApplicationAttachmentController(
             ]
     )
     @PreAuthorize(
-        "@applicationAuthorizer.authorizeApplicationId(#applicationId, 'EDIT_APPLICATIONS')"
+        "@applicationAuthorizer.authorizeAttachment(#applicationId, #attachmentId, 'EDIT_APPLICATIONS')"
     )
     fun removeAttachment(@PathVariable applicationId: Long, @PathVariable attachmentId: UUID) {
-        return applicationAttachmentService.deleteAttachment(applicationId, attachmentId)
+        return applicationAttachmentService.deleteAttachment(attachmentId)
     }
 }

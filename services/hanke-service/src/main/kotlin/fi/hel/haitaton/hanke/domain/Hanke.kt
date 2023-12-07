@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.domain
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
+import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.TyomaaTyyppi
@@ -24,7 +25,7 @@ data class Hanke(
         description = "Hanke identity for external purposes, set by the service.",
         example = "HAI24-123"
     )
-    val hankeTunnus: String,
+    override val hankeTunnus: String,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(
@@ -76,7 +77,7 @@ data class Hanke(
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Indicates if Hanke data is generated, set by the service.")
     var generated: Boolean = false,
-) : HasId<Int>, BaseHanke, HasYhteystiedot {
+) : BaseHanke, HasYhteystiedot, HankeIdentifier {
 
     // --------------- Yhteystiedot -----------------
     @JsonView(NotInChangeLogView::class)

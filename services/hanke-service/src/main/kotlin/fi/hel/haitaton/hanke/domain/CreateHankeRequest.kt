@@ -6,9 +6,9 @@ import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihi
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
-import fi.hel.haitaton.hanke.geometria.Geometriat
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
+import org.geojson.FeatureCollection
 
 data class CreateHankeRequest(
     @field:Schema(
@@ -118,7 +118,7 @@ data class NewHankealue(
     @field:Schema(
         description = "Geometry data",
     )
-    override val geometriat: Geometriat? = null,
+    override val geometriat: NewGeometriat? = null,
     @field:Schema(
         description = "Street lane hindrance value and explanation",
     )
@@ -140,7 +140,12 @@ data class NewHankealue(
     )
     override val tarinaHaitta: Haitta13? = null,
     @field:Schema(
-        description = "Area name",
+        description = "Area name, must not be null or empty",
     )
-    override val nimi: String? = null,
+    override val nimi: String,
 ) : Hankealue
+
+data class NewGeometriat(
+    @field:Schema(description = "The geometry data")
+    override val featureCollection: FeatureCollection? = null,
+) : HasFeatures

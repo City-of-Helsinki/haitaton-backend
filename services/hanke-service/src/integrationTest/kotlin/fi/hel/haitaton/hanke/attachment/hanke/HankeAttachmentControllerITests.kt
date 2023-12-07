@@ -1,19 +1,21 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.ControllerTest
-import fi.hel.haitaton.hanke.HankeAuthorizer
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeError.HAI0001
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
+import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.HANKE_TUNNUS
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.andExpectError
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
-import fi.hel.haitaton.hanke.attachment.dummyData
+import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadService
 import fi.hel.haitaton.hanke.attachment.testFile
-import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
+import fi.hel.haitaton.hanke.factory.TestHankeIdentifier
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
@@ -56,7 +58,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired private lateinit var hankeAttachmentService: HankeAttachmentService
-    @Autowired private lateinit var authorizer: HankeAuthorizer
+    @Autowired private lateinit var attachmentUploadService: AttachmentUploadService
+    @Autowired private lateinit var authorizer: HankeAttachmentAuthorizer
 
     @BeforeEach
     fun clearMocks() {
@@ -71,8 +74,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
 
     @Test
     fun `getMetadataList when valid request should return metadata list`() {
-        val data =
-            (1..3).map { AttachmentFactory.hankeAttachmentMetadata(fileName = "${it}file.pdf") }
+        val data = (1..3).map { HankeAttachmentFactory.create(fileName = "${it}file.pdf") }
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
         every { hankeAttachmentService.getMetadataList(HANKE_TUNNUS) } returns data
 
@@ -87,33 +89,50 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
     @Test
     fun `getAttachmentContent when valid request should return attachment file`() {
         val liiteId = UUID.fromString("19d6a9f7-afb0-469f-b570-cba0d10b03fc")
-        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
-        every { hankeAttachmentService.getContent(HANKE_TUNNUS, liiteId) } returns
-            AttachmentContent(FILE_NAME_PDF, APPLICATION_PDF_VALUE, dummyData)
+        every { authorizer.authorizeAttachment(HANKE_TUNNUS, liiteId, VIEW.name) } returns true
+        every { hankeAttachmentService.getContent(liiteId) } returns
+            AttachmentContent(FILE_NAME_PDF, APPLICATION_PDF_VALUE, DUMMY_DATA)
 
         getAttachmentContent(attachmentId = liiteId)
             .andExpect(status().isOk)
             .andExpect(header().string(CONTENT_DISPOSITION, "attachment; filename=$FILE_NAME_PDF"))
-            .andExpect(content().bytes(dummyData))
+            .andExpect(content().bytes(DUMMY_DATA))
 
         verifyOrder {
-            authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name)
-            hankeAttachmentService.getContent(HANKE_TUNNUS, liiteId)
+            authorizer.authorizeAttachment(HANKE_TUNNUS, liiteId, VIEW.name)
+            hankeAttachmentService.getContent(liiteId)
         }
     }
 
     @Test
     fun `postAttachment when valid request should succeed`() {
         val file = testFile()
+        val hanke = TestHankeIdentifier(1, HANKE_TUNNUS)
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name) } returns true
-        every { hankeAttachmentService.addAttachment(HANKE_TUNNUS, file) } returns
-            AttachmentFactory.hankeAttachmentMetadata(fileName = "text.txt")
+        every { attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file) } returns
+            HankeAttachmentFactory.create()
 
         postAttachment(file = file).andExpect(status().isOk)
 
         verifyOrder {
             authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name)
-            hankeAttachmentService.addAttachment(HANKE_TUNNUS, file)
+            attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file)
+        }
+    }
+
+    @Test
+    fun `postAttachment when attachment invalid or amount exceeded return bad request`() {
+        val file = testFile()
+        val hanke = TestHankeIdentifier(1, HANKE_TUNNUS)
+        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name) } returns true
+        every { attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file) } throws
+            AttachmentInvalidException("Something went wrong")
+
+        postAttachment(file = file).andExpect(status().isBadRequest)
+
+        verifyOrder {
+            authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name)
+            attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file)
         }
     }
 
@@ -130,14 +149,14 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
     @Test
     fun `deleteAttachment when valid request should succeed`() {
         val liiteId = UUID.fromString("357bb2e4-9464-4aff-9e66-f4b2764ffbf4")
-        every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name) } returns true
-        justRun { hankeAttachmentService.deleteAttachment(HANKE_TUNNUS, liiteId) }
+        every { authorizer.authorizeAttachment(HANKE_TUNNUS, liiteId, EDIT.name) } returns true
+        justRun { hankeAttachmentService.deleteAttachment(liiteId) }
 
         deleteAttachment(attachmentId = liiteId).andExpect(status().isOk)
 
         verifyOrder {
-            authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name)
-            hankeAttachmentService.deleteAttachment(HANKE_TUNNUS, liiteId)
+            authorizer.authorizeAttachment(HANKE_TUNNUS, liiteId, EDIT.name)
+            hankeAttachmentService.deleteAttachment(liiteId)
         }
     }
 

@@ -1,3 +1,4 @@
+import io.freefair.gradle.plugins.mjml.ValidationMode
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.springframework.boot.gradle.tasks.run.BootRun
@@ -6,9 +7,7 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "6.32.0"
-
-ext["spring-security.version"] = "6.0.4"
+val sentryVersion = "6.34.0"
 
 repositories { mavenCentral() }
 
@@ -36,22 +35,23 @@ springBoot { buildInfo() }
 tasks.getByName<BootRun>("bootRun") {
     environment("HAITATON_SWAGGER_PATH_PREFIX", "/v3")
     environment("HAITATON_EMAIL_ENABLED", "true")
+    environment("HAITATON_BLOB_CONNECTION_STRING", "UseDevelopmentStorage=true;")
 }
 
 spotless {
     ratchetFrom("origin/dev") // only format files which have changed since origin/dev
 
     kotlin {
-        ktfmt("0.39").kotlinlangStyle()
+        ktfmt("0.46").kotlinlangStyle()
         toggleOffOn()
     }
 }
 
 plugins {
-    val kotlinVersion = "1.9.10"
-    id("org.springframework.boot") version "3.1.4"
-    id("io.spring.dependency-management") version "1.1.3"
-    id("com.diffplug.spotless") version "6.22.0"
+    val kotlinVersion = "1.9.21"
+    id("org.springframework.boot") version "3.1.5"
+    id("io.spring.dependency-management") version "1.1.4"
+    id("com.diffplug.spotless") version "6.23.2"
     kotlin("jvm") version kotlinVersion
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
     kotlin("plugin.spring") version kotlinVersion
@@ -59,6 +59,7 @@ plugins {
     kotlin("plugin.jpa") version kotlinVersion
     idea
     id("jacoco")
+    id("io.freefair.mjml.java") version "8.4"
 }
 
 dependencies {
@@ -77,10 +78,10 @@ dependencies {
     implementation("de.grundid.opendatalab:geojson-jackson:1.14")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
-    implementation("com.github.blagerweij:liquibase-sessionlock:1.6.6")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.6.0")
-    implementation("commons-io:commons-io:2.14.0")
-    implementation("com.github.librepdf:openpdf:1.3.30")
+    implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.6.1")
+    implementation("commons-io:commons-io:2.15.1")
+    implementation("com.github.librepdf:openpdf:1.3.33")
     implementation("net.pwall.mustache:kotlin-mustache:0.11")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
@@ -94,10 +95,10 @@ dependencies {
     testImplementation("com.ninja-squad:springmockk:4.0.2")
     testImplementation("com.willowtreeapps.assertk:assertk-jvm:0.27.0")
     testImplementation("com.squareup.okhttp3:mockwebserver")
-    testImplementation("com.icegreen:greenmail-junit5:2.0.0")
+    testImplementation("com.icegreen:greenmail-junit5:2.0.1")
 
     // Testcontainers
-    implementation(platform("org.testcontainers:testcontainers-bom:1.19.1"))
+    implementation(platform("org.testcontainers:testcontainers-bom:1.19.3"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
 
@@ -110,6 +111,12 @@ dependencies {
     // Sentry
     implementation("io.sentry:sentry-spring-boot-starter-jakarta:$sentryVersion")
     implementation("io.sentry:sentry-logback:$sentryVersion")
+
+    // Azure
+    implementation(platform("com.azure:azure-sdk-bom:1.2.18"))
+    implementation("com.azure:azure-storage-blob")
+    implementation("com.azure:azure-storage-blob-batch")
+    implementation("com.azure:azure-identity")
 
     annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
 }
@@ -145,6 +152,15 @@ tasks {
         }
     }
 
+    create("copyEmailTemplates", Copy::class) {
+        group = "other"
+        description = "Installs shared git hooks"
+        from(file("$buildDir/mjml/main/"))
+        into(file("${sourceSets.main.get().resources.srcDirs.first()}/email/template"))
+        rename { "$it.mustache" }
+        dependsOn(compileMjml)
+    }
+
     jacocoTestReport {
         mustRunAfter("test", "integrationTest")
         reports { xml.required.set(true) }
@@ -152,6 +168,8 @@ tasks {
             fileTree(buildDir).include("/jacoco/test.exec", "/jacoco/integrationTest.exec")
         )
     }
+
+    compileMjml { source(file("$rootDir/email")) }
 }
 
 tasks.register("installGitHook", Copy::class) {
@@ -165,3 +183,20 @@ tasks.register("installGitHook", Copy::class) {
 tasks.named("build") { dependsOn(tasks.named("installGitHook")) }
 
 tasks.named("check") { dependsOn(tasks.named("integrationTest")) }
+
+tasks.named("processResources") { dependsOn(tasks.named("copyEmailTemplates")) }
+
+mjml {
+    // For explanations on the configuration values, see
+    // https://github.com/mjmlio/mjml/blob/master/packages/mjml-cli/README.md
+    validationMode.set(ValidationMode.strict)
+    minify.set(true)
+    beautify.set(true)
+
+    // For minifier options, see https://github.com/kangax/html-minifier
+    minifyOptions.set(
+        """{"collapseWhitespace": false, "minifyCSS": true, "removeEmptyAttributes": true }"""
+    )
+}
+
+node { download.set(true) }

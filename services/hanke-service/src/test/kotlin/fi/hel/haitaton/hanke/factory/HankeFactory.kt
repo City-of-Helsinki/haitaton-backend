@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.ContactType.MUU
 import fi.hel.haitaton.hanke.ContactType.OMISTAJA
 import fi.hel.haitaton.hanke.ContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
+import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
@@ -16,9 +17,8 @@ import fi.hel.haitaton.hanke.Vaihe.SUUNNITTELU
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeFounder
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.domain.Perustaja
-import fi.hel.haitaton.hanke.factory.AttachmentFactory.Companion.hankeAttachmentEntity
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createEntity
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
@@ -112,7 +112,7 @@ class HankeFactory(
         const val defaultKuvaus = "lorem ipsum dolor sit amet..."
         const val defaultId = 123
         const val defaultUser = "Risto"
-        val defaultPerustaja = Perustaja("Pertti Perustaja", "foo@bar.com")
+        val defaultHankeFounder = HankeFounder("Pertti Perustaja", "foo@bar.com")
 
         /**
          * Create a simple Hanke with test values. The default values can be overridden with named
@@ -169,7 +169,6 @@ class HankeFactory(
                     createdAt = DateFactory.getStartDatetime().toLocalDateTime(),
                     modifiedByUserId = defaultUser,
                     modifiedAt = DateFactory.getEndDatetime().toLocalDateTime(),
-                    perustaja = defaultPerustaja.toEntity(),
                     generated = false,
                 )
                 .apply {
@@ -180,11 +179,14 @@ class HankeFactory(
                             createEntity(id = 3, contactType = RAKENNUTTAJA, hanke = this),
                             createEntity(id = 4, contactType = MUU, hanke = this)
                         )
-                    listOfHankeAlueet =
+                    alueet =
                         mutableListOf(createHankeAlueEntity(mockId = mockId, hankeEntity = this))
                     liitteet =
                         mutableListOf(
-                            hankeAttachmentEntity(hanke = this, createdByUser = defaultUser)
+                            HankeAttachmentFactory.createEntity(
+                                hanke = this,
+                                createdByUser = defaultUser
+                            )
                         )
                     tormaystarkasteluTulokset = mutableListOf(tormaysTarkastelu(hankeEntity = this))
                 }
@@ -218,7 +220,7 @@ class HankeFactory(
          * ```
          */
         fun Hanke.withHankealue(
-            nimi: String? = null,
+            nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
             haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
             haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
         ): Hanke {

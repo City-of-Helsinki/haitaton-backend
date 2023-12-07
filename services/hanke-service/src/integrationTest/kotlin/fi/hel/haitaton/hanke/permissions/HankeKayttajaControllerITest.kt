@@ -3,8 +3,10 @@ package fi.hel.haitaton.hanke.permissions
 import assertk.all
 import assertk.assertThat
 import assertk.assertions.hasSize
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
+import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError
@@ -154,6 +156,70 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 permissionService.findPermission(hankeId, USERNAME)
                 hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)
             }
+        }
+    }
+
+    @Nested
+    inner class WhoAmIByHanke {
+        private val url = "/my-permissions"
+
+        private val tunnus1 = "HAI23-1"
+        private val kayttaja1 = UUID.fromString("93473a95-1520-428c-b203-5d770fef78aa")
+
+        private val tunnus2 = "HAI23-2"
+
+        private val hankePermissions =
+            listOf(
+                HankePermission(
+                    hankeTunnus = tunnus1,
+                    hankeKayttajaId = kayttaja1,
+                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
+                    permissionCode = PermissionCode.entries.sumOf { it.code },
+                ),
+                HankePermission(
+                    hankeTunnus = tunnus2,
+                    hankeKayttajaId = null,
+                    kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+                    permissionCode = VIEW.code,
+                )
+            )
+
+        @Test
+        fun `Should return kayttooikeustaso and hankeKayttajaId if hankeKayttaja is found`() {
+            every { permissionService.permissionsByHanke(USERNAME) } returns hankePermissions
+
+            val response: Map<String, WhoamiResponse> =
+                get(url).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).hasSize(2)
+            assertThat(response[tunnus1]).isNotNull().all {
+                prop(WhoamiResponse::hankeKayttajaId).isEqualTo(kayttaja1)
+                prop(WhoamiResponse::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
+                prop(WhoamiResponse::kayttooikeudet).hasSameElementsAs(PermissionCode.entries)
+            }
+            assertThat(response[tunnus2]).isNotNull().all {
+                prop(WhoamiResponse::hankeKayttajaId).isNull()
+                prop(WhoamiResponse::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
+                prop(WhoamiResponse::kayttooikeudet).hasSameElementsAs(listOf(VIEW))
+            }
+            verify { permissionService.permissionsByHanke(USERNAME) }
+        }
+
+        @Test
+        fun `Should return empty when there are no permission roles`() {
+            every { permissionService.permissionsByHanke(USERNAME) } returns emptyList()
+
+            val response: Map<String, WhoamiResponse> =
+                get(url).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).isEmpty()
+            verify { permissionService.permissionsByHanke(USERNAME) }
+        }
+
+        @Test
+        @WithAnonymousUser
+        fun `Should return 401 when unauthorized`() {
+            get(url).andExpect(status().isUnauthorized)
         }
     }
 

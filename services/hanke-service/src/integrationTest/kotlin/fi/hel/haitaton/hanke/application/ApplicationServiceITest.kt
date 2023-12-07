@@ -1,11 +1,14 @@
 package fi.hel.haitaton.hanke.application
 
 import assertk.Assert
+import assertk.all
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
 import assertk.assertions.extracting
+import assertk.assertions.first
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
@@ -19,8 +22,6 @@ import assertk.assertions.prop
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
-import com.ninjasquad.springmockk.MockkBean
-import com.ninjasquad.springmockk.SpykBean
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
@@ -40,8 +41,9 @@ import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ApplicationType.CABLE_REPORT
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
-import fi.hel.haitaton.hanke.email.ApplicationNotificationData
-import fi.hel.haitaton.hanke.email.EmailSenderService
+import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.email.EmailSenderService.Companion.translations
+import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.asianHoitajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.cableReportWithoutHanke
@@ -58,13 +60,16 @@ import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaCustomerCon
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.rakennuttajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaCustomerContact
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
+import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withArea
 import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
+import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
-import fi.hel.haitaton.hanke.factory.AttachmentFactory
+import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.UserContactFactory.hakijaContact
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.firstReceivedMessage
+import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
@@ -76,6 +81,8 @@ import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso.HAKEMUSASIOINTI
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.permissions.kayttajaTunnistePattern
+import fi.hel.haitaton.hanke.test.Asserts.hasReceivers
+import fi.hel.haitaton.hanke.test.Asserts.hasSingleGeometryWithCoordinates
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
@@ -91,8 +98,10 @@ import io.mockk.justRun
 import io.mockk.verify
 import io.mockk.verifyOrder
 import io.mockk.verifySequence
+import jakarta.mail.internet.MimeMessage
 import java.time.OffsetDateTime
 import java.time.ZonedDateTime
+import org.geojson.Polygon
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -113,34 +122,31 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
-import org.testcontainers.junit.jupiter.Testcontainers
 
 private const val USERNAME = "test7358"
 private const val HANKE_TUNNUS = "HAI23-5"
 
 private val dataWithoutAreas = createCableReportApplicationData(areas = listOf())
 
-@Testcontainers
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
 class ApplicationServiceITest : DatabaseTest() {
 
-    @MockkBean private lateinit var cableReportServiceAllu: CableReportService
-    @SpykBean private lateinit var emailSenderService: EmailSenderService
-
     @Autowired private lateinit var applicationService: ApplicationService
     @Autowired private lateinit var hankeService: HankeService
     @Autowired private lateinit var permissionService: PermissionService
+    @Autowired private lateinit var cableReportServiceAllu: CableReportService
 
     @Autowired private lateinit var applicationRepository: ApplicationRepository
     @Autowired private lateinit var hankeRepository: HankeRepository
     @Autowired private lateinit var alluStatusRepository: AlluStatusRepository
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
     @Autowired private lateinit var kayttajaTunnisteRepository: KayttajaTunnisteRepository
+    @Autowired private lateinit var geometriatDao: GeometriatDao
 
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
-    @Autowired private lateinit var attachmentFactory: AttachmentFactory
+    @Autowired private lateinit var attachmentFactory: ApplicationAttachmentFactory
     @Autowired private lateinit var hankeFactory: HankeFactory
 
     companion object {
@@ -490,12 +496,15 @@ class ApplicationServiceITest : DatabaseTest() {
         fun `when hanke was generated should skip area inside hanke check`() {
             val initialApplication =
                 hankeService.generateHankeWithApplication(cableReportWithoutHanke(), USERNAME)
-            assertFalse(initialApplication.applicationData.areas.isNullOrEmpty())
+            assertThat(initialApplication.applicationData.areas).isNotNull().hasSize(1)
+            val hankeId = hankeService.findIdentifier(initialApplication.hankeTunnus)
+            val newGeometry: Polygon = GeometriaFactory.thirdPolygon
+            assertThat(geometriatDao.isInsideHankeAlueet(hankeId!!.id, newGeometry)).isFalse()
             val newApplicationData =
                 createCableReportApplicationData(
                     pendingOnClient = true,
                     name = "Uudistettu johtoselvitys",
-                    areas = initialApplication.applicationData.areas
+                    areas = listOf(createApplicationArea(geometry = newGeometry))
                 )
 
             val response =
@@ -506,6 +515,36 @@ class ApplicationServiceITest : DatabaseTest() {
                 )
 
             assertEquals(newApplicationData, response.applicationData)
+        }
+
+        @Test
+        fun `when the hanke is generated it should recreate the hankealueet`() {
+            val initialApplicationData =
+                createCableReportApplicationData(areas = null)
+                    .withArea("First area", GeometriaFactory.polygon)
+                    .withArea("Second area", GeometriaFactory.secondPolygon)
+            val initialApplication =
+                hankeService.generateHankeWithApplication(
+                    cableReportWithoutHanke(initialApplicationData),
+                    USERNAME,
+                )
+            val newApplicationData =
+                createCableReportApplicationData(areas = null)
+                    .withArea("New area", GeometriaFactory.thirdPolygon)
+
+            val response =
+                applicationService.updateApplicationData(
+                    initialApplication.id!!,
+                    newApplicationData,
+                    USERNAME
+                )
+
+            val hanke = hankeService.loadHanke(response.hankeTunnus)!!
+            assertThat(hanke.alueet).hasSize(1)
+            assertThat(hanke.alueet).first().all {
+                prop(Hankealue::nimi).isEqualTo("Hankealue 1")
+                hasSingleGeometryWithCoordinates(GeometriaFactory.thirdPolygon)
+            }
         }
 
         @Test
@@ -551,7 +590,9 @@ class ApplicationServiceITest : DatabaseTest() {
                     USERNAME,
                     hanke = initializedHanke(),
                     application = mockApplicationWithArea()
-                ) { it.alluid = 21 }
+                ) {
+                    it.alluid = 21
+                }
             val newApplicationData =
                 createCableReportApplicationData(
                     name = "Uudistettu johtoselvitys",
@@ -596,15 +637,10 @@ class ApplicationServiceITest : DatabaseTest() {
                     USERNAME,
                 )
             setAlluFields(applicationRepository.findById(application.id!!).orElseThrow())
-            val capturedNotifications = mutableListOf<ApplicationNotificationData>()
             justRun { cableReportServiceAllu.update(21, any()) }
             every { cableReportServiceAllu.getApplicationInformation(any()) } returns
                 createAlluApplicationResponse(21)
             justRun { cableReportServiceAllu.addAttachment(21, any()) }
-            justRun { emailSenderService.sendHankeInvitationEmail(any()) }
-            justRun {
-                emailSenderService.sendApplicationNotificationEmail(capture(capturedNotifications))
-            }
             val updatedApplication =
                 cableReport.copy(
                     representativeWithContacts = asianHoitajaCustomerContact,
@@ -615,11 +651,11 @@ class ApplicationServiceITest : DatabaseTest() {
 
             applicationService.updateApplicationData(application.id!!, updatedApplication, USERNAME)
 
+            val capturedNotifications = getApplicationNotifications()
             assertThat(capturedNotifications)
                 .areValid(application.applicationType, application.hankeTunnus)
-            assertThat(capturedNotifications)
-                .extracting { it.recipientEmail }
-                .containsExactlyInAnyOrder(
+            assertThat(capturedNotifications.toTypedArray())
+                .hasReceivers(
                     "new.mail@foo.fi",
                     asianHoitajaCustomerContact.contacts[0].email,
                     rakennuttajaCustomerContact.contacts[0].email
@@ -629,8 +665,6 @@ class ApplicationServiceITest : DatabaseTest() {
                 cableReportServiceAllu.update(21, any())
                 cableReportServiceAllu.addAttachment(any(), any())
             }
-            verify(exactly = 3) { emailSenderService.sendHankeInvitationEmail(any()) }
-            verify(exactly = 3) { emailSenderService.sendApplicationNotificationEmail(any()) }
         }
 
         @Test
@@ -672,7 +706,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 cableReportServiceAllu.update(21, any())
                 cableReportServiceAllu.addAttachment(any(), any())
             }
-            verify { emailSenderService wasNot Called }
+            assertThat(greenMail.receivedMessages).isEmpty()
         }
 
         @Test
@@ -683,7 +717,9 @@ class ApplicationServiceITest : DatabaseTest() {
                     USERNAME,
                     hanke = initializedHanke(),
                     application = mockApplicationWithArea()
-                ) { it.alluid = 21 }
+                ) {
+                    it.alluid = 21
+                }
             val newApplicationData =
                 createCableReportApplicationData(
                     name = "Uudistettu johtoselvitys",
@@ -854,7 +890,9 @@ class ApplicationServiceITest : DatabaseTest() {
                     USERNAME,
                     hanke = initializedHanke(),
                     application = mockApplicationWithArea()
-                ) { it.alluid = 21 }
+                ) {
+                    it.alluid = 21
+                }
             val newApplicationData =
                 createCableReportApplicationData(
                     name = "Uudistettu johtoselvitys",
@@ -920,6 +958,8 @@ class ApplicationServiceITest : DatabaseTest() {
                 }
             val cableReportApplicationData =
                 createCableReportApplicationData(areas = listOf(havisAmanda))
+            every { cableReportServiceAllu.getApplicationInformation(21) } returns
+                createAlluApplicationResponse(21)
 
             assertThrows<ApplicationGeometryNotInsideHankeException> {
                 applicationService.updateApplicationData(
@@ -928,6 +968,8 @@ class ApplicationServiceITest : DatabaseTest() {
                     USERNAME
                 )
             }
+
+            verifySequence { cableReportServiceAllu.getApplicationInformation(21) }
         }
     }
 
@@ -1100,7 +1142,9 @@ class ApplicationServiceITest : DatabaseTest() {
                     USERNAME,
                     hanke = initializedHanke(),
                     application = mockApplicationWithArea()
-                ) { it.alluid = null }
+                ) {
+                    it.alluid = null
+                }
             val applicationData = application.applicationData as CableReportApplicationData
             val pendingApplicationData = applicationData.copy(pendingOnClient = false)
             every {
@@ -1146,16 +1190,14 @@ class ApplicationServiceITest : DatabaseTest() {
                     CableReportWithoutHanke(CABLE_REPORT, cableReportData),
                     USERNAME,
                 )
-            val capturedEmails = mutableListOf<ApplicationNotificationData>()
             every { cableReportServiceAllu.create(any()) } returns 26
             every { cableReportServiceAllu.getApplicationInformation(any()) } returns
                 createAlluApplicationResponse(26)
             justRun { cableReportServiceAllu.addAttachment(26, any()) }
-            justRun { emailSenderService.sendHankeInvitationEmail(any()) }
-            justRun { emailSenderService.sendApplicationNotificationEmail(capture(capturedEmails)) }
 
             applicationService.sendApplication(application.id!!, USERNAME)
 
+            val capturedEmails = getApplicationNotifications()
             assertThat(capturedEmails).hasSize(3) // 4 contacts, but one is the sender
             assertThat(capturedEmails)
                 .areValid(application.applicationType, application.hankeTunnus)
@@ -1164,8 +1206,6 @@ class ApplicationServiceITest : DatabaseTest() {
                 cableReportServiceAllu.addAttachment(any(), any())
                 cableReportServiceAllu.getApplicationInformation(any())
             }
-            verify(exactly = 3) { emailSenderService.sendHankeInvitationEmail(any()) }
-            verify(exactly = 3) { emailSenderService.sendApplicationNotificationEmail(any()) }
         }
 
         @Test
@@ -1219,7 +1259,9 @@ class ApplicationServiceITest : DatabaseTest() {
                     USERNAME,
                     hanke = initializedHanke(),
                     application = mockApplicationWithArea()
-                ) { it.alluid = null }
+                ) {
+                    it.alluid = null
+                }
             val applicationData = application.applicationData as CableReportApplicationData
             val pendingApplicationData = applicationData.copy(pendingOnClient = false)
             every {
@@ -1802,16 +1844,24 @@ class ApplicationServiceITest : DatabaseTest() {
         }
     }
 
-    private fun Assert<List<ApplicationNotificationData>>.areValid(
-        type: ApplicationType,
-        hankeTunnus: String?
-    ) = each { data ->
-        data.transform { it.senderEmail }.isEqualTo(hakijaContact.email)
-        data.transform { it.senderName }.isEqualTo(hakijaContact.name)
-        data.transform { it.applicationIdentifier }.isEqualTo(defaultApplicationIdentifier)
-        data.transform { it.applicationType }.isEqualTo(type)
-        data.transform { it.recipientEmail }.isIn(*expectedRecipients)
-        data.transform { it.hankeTunnus }.isEqualTo(hankeTunnus)
+    private fun getApplicationNotifications() =
+        greenMail.receivedMessages.filter {
+            it.subject.startsWith("Haitaton: Sinut on lisätty hakemukselle")
+        }
+
+    private fun Assert<List<MimeMessage>>.areValid(type: ApplicationType, hankeTunnus: String?) {
+        each { it.isValid(type, hankeTunnus) }
+    }
+
+    private fun Assert<MimeMessage>.isValid(type: ApplicationType, hankeTunnus: String?) {
+        prop(MimeMessage::textBody).all {
+            contains("${hakijaContact.name} (${hakijaContact.email}) on tehnyt")
+            contains("hakemukselle $defaultApplicationIdentifier")
+            contains("on tehnyt ${type.translations().fi}")
+            contains("hankkeella $hankeTunnus")
+        }
+
+        transform { it.allRecipients.first().toString() }.isIn(*expectedRecipients)
     }
 
     private fun initializedHanke(): HankeEntity =
