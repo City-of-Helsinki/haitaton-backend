@@ -107,7 +107,7 @@ class CableReportServiceITests {
         addStubbedLoginResponse()
         val alluId = 123
         val file = "test file content".toByteArray()
-        val attachment = ApplicationAttachmentFactory.createEntity(applicationId = 123456)
+        val attachment = ApplicationAttachmentFactory.create(applicationId = 123456)
         val mockResponse = MockResponse().setResponseCode(200)
         (1..3).forEach { _ -> mockWebServer.enqueue(mockResponse) }
         val attachments = listOf(attachment, attachment, attachment)
