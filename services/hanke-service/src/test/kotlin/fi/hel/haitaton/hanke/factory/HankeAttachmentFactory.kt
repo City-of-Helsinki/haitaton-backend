@@ -69,7 +69,7 @@ class HankeAttachmentFactory(
         val CONTENT_TYPE = MEDIA_TYPE.toString()
         val CREATED_AT: OffsetDateTime = OffsetDateTime.parse("2023-11-09T10:03:55+02:00")
 
-        fun create(
+        fun createMetadata(
             attachmentId: UUID = ApplicationAttachmentFactory.defaultAttachmentId,
             fileName: String = ApplicationAttachmentFactory.FILE_NAME,
             createdByUser: String = currentUserId(),

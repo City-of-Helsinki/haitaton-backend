@@ -1,8 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.common
 
 import fi.hel.haitaton.hanke.HankeEntity
-import fi.hel.haitaton.hanke.allu.Attachment
-import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -64,7 +62,7 @@ class HankeAttachmentEntity(
     blobLocation: String?,
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "hanke_id") var hanke: HankeEntity,
 ) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt, blobLocation) {
-    fun toDomain(): HankeAttachment {
+    fun toDto(): HankeAttachment {
         return HankeAttachment(
             id = id!!,
             fileName = fileName,
@@ -116,18 +114,17 @@ class ApplicationAttachmentEntity(
         )
     }
 
-    fun toAlluAttachment(content: ByteArray): Attachment {
-        return Attachment(
-            metadata =
-                AttachmentMetadata(
-                    id = null,
-                    mimeType = contentType,
-                    name = fileName,
-                    description = null,
-                ),
-            file = content
+    fun toDomain(): ApplicationAttachment =
+        ApplicationAttachment(
+            id!!,
+            fileName,
+            contentType,
+            createdByUserId,
+            createdAt,
+            blobLocation,
+            applicationId,
+            attachmentType,
         )
-    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

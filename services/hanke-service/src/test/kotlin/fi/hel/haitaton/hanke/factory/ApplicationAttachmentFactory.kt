@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachment
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
@@ -84,6 +85,27 @@ class ApplicationAttachmentFactory(
         val CREATED_AT: OffsetDateTime = OffsetDateTime.parse("2023-11-09T10:03:55+02:00")
 
         const val FILE_NAME = "file.pdf"
+
+        fun create(
+            id: UUID = defaultAttachmentId,
+            fileName: String = FILE_NAME,
+            contentType: String = APPLICATION_PDF_VALUE,
+            blobLocation: String? = null,
+            createdByUserId: String = USERNAME,
+            createdAt: OffsetDateTime = CREATED_AT,
+            attachmentType: ApplicationAttachmentType = MUU,
+            applicationId: Long = AlluDataFactory.defaultApplicationId,
+        ): ApplicationAttachment =
+            ApplicationAttachment(
+                id = id,
+                fileName = fileName,
+                contentType = contentType,
+                blobLocation = blobLocation,
+                createdByUserId = createdByUserId,
+                createdAt = createdAt,
+                attachmentType = attachmentType,
+                applicationId = applicationId,
+            )
 
         fun createEntity(
             id: UUID? = defaultAttachmentId,

@@ -29,7 +29,7 @@ class HankeAttachmentService(
 
     @Transactional(readOnly = true)
     fun getMetadataList(hankeTunnus: String): List<HankeAttachment> =
-        findHanke(hankeTunnus).liitteet.map { it.toDomain() }
+        findHanke(hankeTunnus).liitteet.map { it.toDto() }
 
     @Transactional(readOnly = true)
     fun getContent(attachmentId: UUID): AttachmentContent {
@@ -60,7 +60,7 @@ class HankeAttachmentService(
                     hanke = hanke,
                 )
             )
-            .toDomain()
+            .toDto()
     }
 
     /** Move the attachment content to cloud. In test-data use for now, can be used for HAI-1964. */
