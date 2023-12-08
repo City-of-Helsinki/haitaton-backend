@@ -27,8 +27,8 @@ import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
@@ -399,7 +399,7 @@ class ApplicationService(
     private fun provideAccess(
         application: ApplicationEntity,
         hanke: HankeEntity,
-        currentKayttaja: HankeKayttajaEntity?,
+        currentKayttaja: HankekayttajaEntity?,
         currentUserId: String,
         emailRecipients: Set<String>,
     ) {
@@ -427,7 +427,7 @@ class ApplicationService(
         hankeTunnus: String,
         applicationIdentifier: String,
         applicationType: ApplicationType,
-        currentKayttaja: HankeKayttajaEntity?,
+        currentKayttaja: HankekayttajaEntity?,
         recipientEmail: String,
     ) {
         logger.info { "Sending Application notification." }
@@ -439,7 +439,7 @@ class ApplicationService(
 
         emailSenderService.sendApplicationNotificationEmail(
             ApplicationNotificationData(
-                senderName = currentKayttaja.nimi,
+                senderName = currentKayttaja.fullName(),
                 senderEmail = currentKayttaja.sahkoposti,
                 recipientEmail = recipientEmail,
                 hankeTunnus = hankeTunnus,

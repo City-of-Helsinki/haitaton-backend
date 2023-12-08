@@ -4,10 +4,10 @@ import assertk.assertThat
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.isEmpty
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.UserContactFactory.asianhoitajaContact
-import fi.hel.haitaton.hanke.factory.UserContactFactory.hakijaContact
-import fi.hel.haitaton.hanke.factory.UserContactFactory.rakennuttajaContact
-import fi.hel.haitaton.hanke.factory.UserContactFactory.suorittajaContact
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_RAKENNUTTAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_SUORITTAJA
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.NullAndEmptySource
@@ -23,10 +23,10 @@ class ApplicationDataTest {
 
         assertThat(result)
             .containsExactlyInAnyOrder(
-                hakijaContact.email,
-                suorittajaContact.email,
-                asianhoitajaContact.email,
-                rakennuttajaContact.email,
+                KAYTTAJA_INPUT_HAKIJA.email,
+                KAYTTAJA_INPUT_SUORITTAJA.email,
+                KAYTTAJA_INPUT_ASIANHOITAJA.email,
+                KAYTTAJA_INPUT_RAKENNUTTAJA.email,
             )
     }
 
@@ -42,23 +42,28 @@ class ApplicationDataTest {
 
         val result = applicationData.contactPersonEmails()
 
-        assertThat(result).containsExactlyInAnyOrder(hakijaContact.email, suorittajaContact.email)
+        assertThat(result)
+            .containsExactlyInAnyOrder(KAYTTAJA_INPUT_HAKIJA.email, KAYTTAJA_INPUT_SUORITTAJA.email)
     }
 
     @Test
     fun `contactPersonEmails when duplicate emails does not provide duplicates as output`() {
         val applicationData =
             cableReport(
-                customer = AlluDataFactory.hakijaCustomerContact.plusContact(hakijaContact.email),
+                customer =
+                    AlluDataFactory.hakijaCustomerContact.plusContact(KAYTTAJA_INPUT_HAKIJA.email),
                 contractor =
-                    AlluDataFactory.suorittajaCustomerContact.plusContact(suorittajaContact.email),
+                    AlluDataFactory.suorittajaCustomerContact.plusContact(
+                        KAYTTAJA_INPUT_SUORITTAJA.email
+                    ),
                 representative = AlluDataFactory.hakijaCustomerContact,
                 developer = AlluDataFactory.suorittajaCustomerContact,
             )
 
         val result = applicationData.contactPersonEmails()
 
-        assertThat(result).containsExactlyInAnyOrder(hakijaContact.email, suorittajaContact.email)
+        assertThat(result)
+            .containsExactlyInAnyOrder(KAYTTAJA_INPUT_HAKIJA.email, KAYTTAJA_INPUT_SUORITTAJA.email)
     }
 
     @Test
@@ -71,9 +76,9 @@ class ApplicationDataTest {
                 developer = null,
             )
 
-        val result = applicationData.contactPersonEmails(omit = suorittajaContact.email)
+        val result = applicationData.contactPersonEmails(omit = KAYTTAJA_INPUT_SUORITTAJA.email)
 
-        assertThat(result).containsExactlyInAnyOrder(hakijaContact.email)
+        assertThat(result).containsExactlyInAnyOrder(KAYTTAJA_INPUT_HAKIJA.email)
     }
 
     @Test
@@ -84,10 +89,10 @@ class ApplicationDataTest {
 
         assertThat(result)
             .containsExactlyInAnyOrder(
-                hakijaContact.email,
-                suorittajaContact.email,
-                asianhoitajaContact.email,
-                rakennuttajaContact.email,
+                KAYTTAJA_INPUT_HAKIJA.email,
+                KAYTTAJA_INPUT_SUORITTAJA.email,
+                KAYTTAJA_INPUT_ASIANHOITAJA.email,
+                KAYTTAJA_INPUT_RAKENNUTTAJA.email,
             )
     }
 

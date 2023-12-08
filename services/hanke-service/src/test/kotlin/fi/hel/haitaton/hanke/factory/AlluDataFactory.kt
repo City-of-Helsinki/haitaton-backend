@@ -19,10 +19,10 @@ import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.factory.UserContactFactory.asianhoitajaContact
-import fi.hel.haitaton.hanke.factory.UserContactFactory.hakijaContact
-import fi.hel.haitaton.hanke.factory.UserContactFactory.rakennuttajaContact
-import fi.hel.haitaton.hanke.factory.UserContactFactory.suorittajaContact
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_RAKENNUTTAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_SUORITTAJA
 import java.time.ZonedDateTime
 import org.geojson.Polygon
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
@@ -339,13 +339,12 @@ class AlluDataFactory(
             )
 
         val hakijaCustomerContact: CustomerWithContacts =
-            with(hakijaContact) {
-                val (firstName, lastName) = name.split(" ")
+            with(KAYTTAJA_INPUT_HAKIJA) {
                 createCompanyCustomer()
                     .withContacts(
                         createContact(
-                            firstName = firstName,
-                            lastName = lastName,
+                            firstName = etunimi,
+                            lastName = sukunimi,
                             email = email,
                             orderer = true
                         )
@@ -353,13 +352,12 @@ class AlluDataFactory(
             }
 
         val suorittajaCustomerContact: CustomerWithContacts =
-            with(suorittajaContact) {
-                val (firstName, lastName) = name.split(" ")
+            with(KAYTTAJA_INPUT_SUORITTAJA) {
                 createCompanyCustomer()
                     .withContacts(
                         createContact(
-                            firstName = firstName,
-                            lastName = lastName,
+                            firstName = etunimi,
+                            lastName = sukunimi,
                             email = email,
                             orderer = false
                         )
@@ -367,13 +365,12 @@ class AlluDataFactory(
             }
 
         val asianHoitajaCustomerContact: CustomerWithContacts =
-            with(asianhoitajaContact) {
-                val (firstName, lastName) = name.split(" ")
+            with(KAYTTAJA_INPUT_ASIANHOITAJA) {
                 createCompanyCustomer()
                     .withContacts(
                         createContact(
-                            firstName = firstName,
-                            lastName = lastName,
+                            firstName = etunimi,
+                            lastName = sukunimi,
                             email = email,
                             orderer = false
                         )
@@ -381,13 +378,12 @@ class AlluDataFactory(
             }
 
         val rakennuttajaCustomerContact: CustomerWithContacts =
-            with(rakennuttajaContact) {
-                val (firstName, lastName) = name.split(" ")
+            with(KAYTTAJA_INPUT_RAKENNUTTAJA) {
                 createCompanyCustomer()
                     .withContacts(
                         createContact(
-                            firstName = firstName,
-                            lastName = lastName,
+                            firstName = etunimi,
+                            lastName = sukunimi,
                             email = email,
                             orderer = false
                         )
