@@ -14,6 +14,16 @@ sealed interface AttachmentMetadata {
     val blobLocation: String?
 }
 
+data class HankeAttachmentMetadata(
+    override val id: UUID,
+    override val fileName: String,
+    override val contentType: String,
+    override val createdByUserId: String,
+    override val createdAt: OffsetDateTime,
+    override val blobLocation: String,
+    val hankeId: Int,
+) : AttachmentMetadata
+
 data class ApplicationAttachmentMetadata(
     override val id: UUID,
     override val fileName: String,

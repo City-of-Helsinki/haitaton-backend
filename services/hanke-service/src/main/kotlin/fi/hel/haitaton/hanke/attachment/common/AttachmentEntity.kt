@@ -68,6 +68,17 @@ class HankeAttachmentEntity(
             createdByUserId = createdByUserId,
         )
 
+    fun toDomain(): HankeAttachmentMetadata =
+        HankeAttachmentMetadata(
+            id!!,
+            fileName,
+            contentType,
+            createdByUserId,
+            createdAt,
+            blobLocation,
+            hanke.id,
+        )
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
