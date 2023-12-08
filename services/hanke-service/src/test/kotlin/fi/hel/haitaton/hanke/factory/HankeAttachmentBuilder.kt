@@ -23,4 +23,6 @@ data class HankeAttachmentBuilder(
         hankeAttachmentFactory.saveContentToCloud(path, filename, mediaType, bytes)
         return this
     }
+
+    fun toDomain() = value.toDomain()
 }
