@@ -12,6 +12,15 @@ import java.util.UUID
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
 
+data class HankekayttajaInput(
+    val etunimi: String,
+    val sukunimi: String,
+    val email: String,
+    val puhelin: String,
+) {
+    fun fullName(): String = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
+}
+
 @Schema(description = "Api response of user data of given Hanke")
 data class HankeKayttajaResponse(
     @field:Schema(description = "Hanke users") val kayttajat: List<HankeKayttajaDto>
@@ -27,22 +36,47 @@ data class HankeKayttajaDto(
 )
 
 @Entity
-@Table(name = "hanke_kayttaja")
-class HankeKayttajaEntity(
+@Table(name = "hankekayttaja")
+class HankekayttajaEntity(
     @Id val id: UUID = UUID.randomUUID(),
+
+    /** Related Hanke. */
     @Column(name = "hanke_id") val hankeId: Int,
-    val nimi: String,
+
+    /** First name. */
+    val etunimi: String,
+
+    /** Last name. */
+    val sukunimi: String,
+
+    /** Phone number. */
+    val puhelin: String,
+
+    /** Email address. */
     val sahkoposti: String,
+
+    /** Users first name used in a Hanke invitation. */
+    @Column(name = "kutsuttu_etunimi") val kutsuttuEtunimi: String? = null,
+
+    /** Users last name used in a Hanke invitation. */
+    @Column(name = "kutsuttu_sukunimi") val kutsuttuSukunimi: String? = null,
+
+    /** Related user permissions. */
     @OneToOne
     @JoinColumn(name = "permission_id", updatable = true, nullable = true)
     var permission: PermissionEntity?,
-    @OneToOne(mappedBy = "hankeKayttaja") var kayttajaTunniste: KayttajaTunnisteEntity?,
+
+    /** Invitation data including e.g. the sign in token. */
+    @OneToOne(mappedBy = "hankekayttaja") var kayttajakutsu: KayttajakutsuEntity? = null,
+
+    /** Identifier of the inviter. */
+    @Column(name = "kutsuja_id") val kutsujaId: UUID? = null,
 ) {
     fun toDto(): HankeKayttajaDto =
         HankeKayttajaDto(
             id = id,
             sahkoposti = sahkoposti,
-            nimi = nimi,
+            nimi = fullName(),
             kayttooikeustaso = deriveKayttooikeustaso(),
             tunnistautunut = permission != null,
         )
@@ -51,20 +85,22 @@ class HankeKayttajaEntity(
         HankeKayttaja(
             id = id,
             hankeId = hankeId,
-            nimi = nimi,
+            nimi = fullName(),
             sahkoposti = sahkoposti,
             permissionId = permission?.id,
-            kayttajaTunnisteId = kayttajaTunniste?.id,
+            kayttajaTunnisteId = kayttajakutsu?.id,
         )
 
     /**
-     * [KayttajaTunnisteEntity] stores kayttooikeustaso temporarily until user has signed in. After
+     * [KayttajakutsuEntity] stores kayttooikeustaso temporarily until user has signed in. After
      * that, [PermissionEntity] is used.
      *
      * Thus, kayttooikeustaso is read primarily from [PermissionEntity] if the relation exists.
      */
     fun deriveKayttooikeustaso(): Kayttooikeustaso? =
-        permission?.kayttooikeustaso ?: kayttajaTunniste?.kayttooikeustaso
+        permission?.kayttooikeustaso ?: kayttajakutsu?.kayttooikeustaso
+
+    fun fullName() = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
 }
 
 data class HankeKayttaja(
@@ -77,15 +113,15 @@ data class HankeKayttaja(
 ) : HasId<UUID>
 
 @Repository
-interface HankeKayttajaRepository : JpaRepository<HankeKayttajaEntity, UUID> {
-    fun findByHankeId(hankeId: Int): List<HankeKayttajaEntity>
+interface HankekayttajaRepository : JpaRepository<HankekayttajaEntity, UUID> {
+    fun findByHankeId(hankeId: Int): List<HankekayttajaEntity>
 
-    fun findByHankeIdAndIdIn(hankeId: Int, ids: Collection<UUID>): List<HankeKayttajaEntity>
+    fun findByHankeIdAndIdIn(hankeId: Int, ids: Collection<UUID>): List<HankekayttajaEntity>
 
     fun findByHankeIdAndSahkopostiIn(
         hankeId: Int,
         sahkopostit: List<String>
-    ): List<HankeKayttajaEntity>
+    ): List<HankekayttajaEntity>
 
-    fun findByPermissionId(permissionId: Int): HankeKayttajaEntity?
+    fun findByPermissionId(permissionId: Int): HankekayttajaEntity?
 }

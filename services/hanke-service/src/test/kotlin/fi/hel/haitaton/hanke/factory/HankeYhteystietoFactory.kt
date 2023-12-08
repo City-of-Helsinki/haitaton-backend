@@ -18,6 +18,14 @@ object HankeYhteystietoFactory {
 
     const val defaultYtunnus = "1817548-2"
 
+    val DEFAULT_ALIKONTAKTI =
+        Yhteyshenkilo(
+            "Ali",
+            "Kontakti",
+            "ali.kontakti@meili.com",
+            "050-4567890",
+        )
+
     /** Create a test yhteystieto with values in all fields. */
     fun create(
         id: Int? = 1,
@@ -28,6 +36,7 @@ object HankeYhteystietoFactory {
         puhelinnumero: String = "04012345678",
         createdAt: ZonedDateTime? = getCurrentTimeUTC(),
         modifiedAt: ZonedDateTime? = getCurrentTimeUTC(),
+        alikontaktit: List<Yhteyshenkilo> = listOf(DEFAULT_ALIKONTAKTI),
     ): HankeYhteystieto {
         return HankeYhteystieto(
             id = id,
@@ -43,8 +52,7 @@ object HankeYhteystietoFactory {
             modifiedBy = "test7358",
             modifiedAt = modifiedAt,
             rooli = "Isännöitsijä",
-            alikontaktit =
-                listOf(Yhteyshenkilo("Ali", "Kontakti", "ali.kontakti@meili.com", "050-4567890"))
+            alikontaktit = alikontaktit,
         )
     }
 

@@ -98,28 +98,51 @@ class ContactTest {
     }
 
     @ParameterizedTest
-    @MethodSource("invalidContacts")
+    @MethodSource("invalidFounderContacts")
     fun `toHankeFounder when invalid contact input should throw`(contact: Contact) {
         assertThrows<HankeArgumentException> { contact.toHankeFounder() }
     }
 
+    @ParameterizedTest
+    @MethodSource("invalidHankeKayttajaContacts")
+    fun `toHankeKayttajaInput when missing data should return null`(contact: Contact) {
+        val result = contact.toHankekayttajaInput()
+
+        assertThat(result).isNull()
+    }
+
     companion object {
         @JvmStatic
-        fun invalidContacts(): Stream<Contact> {
-            val contact =
-                Contact(
-                    firstName = "Firstname",
-                    lastName = "Lastname",
-                    email = "test@email.com",
-                    phone = "04012345678",
-                    orderer = true
+        fun invalidFounderContacts(): Stream<Contact> =
+            listOf(
+                    CONTACT.copy(firstName = null, lastName = null),
+                    CONTACT.copy(firstName = "", lastName = ""),
+                    CONTACT.copy(email = null),
+                    CONTACT.copy(email = "")
                 )
-            return Stream.of(
-                contact.copy(firstName = null, lastName = null),
-                contact.copy(firstName = "", lastName = ""),
-                contact.copy(email = null),
-                contact.copy(email = "")
+                .stream()
+
+        @JvmStatic
+        fun invalidHankeKayttajaContacts(): Stream<Contact> =
+            listOf(
+                    CONTACT.copy(firstName = null),
+                    CONTACT.copy(firstName = ""),
+                    CONTACT.copy(lastName = null),
+                    CONTACT.copy(lastName = ""),
+                    CONTACT.copy(email = null),
+                    CONTACT.copy(email = ""),
+                    CONTACT.copy(phone = ""),
+                    CONTACT.copy(phone = null)
+                )
+                .stream()
+
+        private val CONTACT =
+            Contact(
+                firstName = "Firstname",
+                lastName = "Lastname",
+                email = "test@email.com",
+                phone = "04012345678",
+                orderer = true,
             )
-        }
     }
 }

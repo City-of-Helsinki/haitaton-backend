@@ -67,7 +67,7 @@ interface PermissionRepository : JpaRepository<PermissionEntity, Int> {
         )
         FROM PermissionEntity pe
         INNER JOIN HankeEntity h ON pe.hankeId = h.id
-        LEFT JOIN HankeKayttajaEntity hk ON hk.permission.id = pe.id
+        LEFT JOIN HankekayttajaEntity hk ON hk.permission.id = pe.id
         WHERE pe.userId = :userId
     """
     )

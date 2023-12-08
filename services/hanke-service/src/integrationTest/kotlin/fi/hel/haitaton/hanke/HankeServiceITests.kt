@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import assertk.all
 import assertk.assertFailure
+import assertk.assertions.contains
 import assertk.assertions.each
 import assertk.assertions.first
 import assertk.assertions.hasClass
@@ -13,6 +14,9 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.messageContains
 import assertk.assertions.prop
+import com.icegreen.greenmail.configuration.GreenMailConfiguration
+import com.icegreen.greenmail.junit5.GreenMailExtension
+import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ALLU_USER_CANCELLATION_MSG
@@ -43,6 +47,8 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.defaultKuvaus
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.DEFAULT_ALIKONTAKTI
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
@@ -52,10 +58,13 @@ import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaEntity
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaRepository
-import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
-import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
+import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
+import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
+import fi.hel.haitaton.hanke.permissions.KayttajakutsuEntity
+import fi.hel.haitaton.hanke.permissions.KayttajakutsuRepository
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso.KAIKKI_OIKEUDET
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso.KATSELUOIKEUS
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionEntity
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -88,6 +97,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.skyscreamer.jsonassert.JSONAssert
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
@@ -114,8 +124,8 @@ class HankeServiceITests(
     @Autowired private val auditLogRepository: AuditLogRepository,
     @Autowired private val applicationRepository: ApplicationRepository,
     @Autowired private val hankeRepository: HankeRepository,
-    @Autowired private val hankeKayttajaRepository: HankeKayttajaRepository,
-    @Autowired private val kayttajaTunnisteRepository: KayttajaTunnisteRepository,
+    @Autowired private val hankekayttajaRepository: HankekayttajaRepository,
+    @Autowired private val kayttajakutsuRepository: KayttajakutsuRepository,
     @Autowired private val hankeAttachmentRepository: HankeAttachmentRepository,
     @Autowired private val hankeAttachmentContentRepository: HankeAttachmentContentRepository,
     @Autowired private val jdbcTemplate: JdbcTemplate,
@@ -124,6 +134,14 @@ class HankeServiceITests(
     @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
     @Autowired private val cableReportService: CableReportService,
 ) : DatabaseTest() {
+
+    companion object {
+        @JvmField
+        @RegisterExtension
+        val greenMail: GreenMailExtension =
+            GreenMailExtension(ServerSetupTest.SMTP)
+                .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication())
+    }
 
     @BeforeEach
     fun clearMocks() {
@@ -266,8 +284,8 @@ class HankeServiceITests(
         assertThat(rakennuttaja.id).isNotEqualTo(firstId)
         assertThat(toteuttaja.id).isNotEqualTo(firstId)
         assertThat(toteuttaja.id).isNotEqualTo(rakennuttaja.id)
-        assertThat(hankeKayttajaRepository.findAll()).hasSize(4)
-        assertThat(kayttajaTunnisteRepository.findAll()).hasSize(4)
+        assertThat(hankekayttajaRepository.findAll()).hasSize(4)
+        assertThat(kayttajakutsuRepository.findAll()).hasSize(4)
     }
 
     @Test
@@ -276,8 +294,8 @@ class HankeServiceITests(
 
         hankeService.createHanke(request)
 
-        assertThat(hankeKayttajaRepository.findAll()).isEmpty()
-        assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
+        assertThat(hankekayttajaRepository.findAll()).isEmpty()
+        assertThat(kayttajakutsuRepository.findAll()).isEmpty()
     }
 
     @Test
@@ -666,6 +684,46 @@ class HankeServiceITests(
     }
 
     @Test
+    fun `update Hanke should create hankekayttajas for contacts`() {
+        val founder =
+            HankekayttajaInput(
+                "Pertti",
+                "Perustaja",
+                "pertti@perustaja.com",
+                "05012345678",
+            )
+        val hanke = hankeService.createHanke(HankeFactory.createRequest().build(), founder)
+        val newContactEmail = "new@email.fi"
+        val contactPerson = DEFAULT_ALIKONTAKTI.copy(email = newContactEmail)
+        val hankeContact =
+            HankeYhteystietoFactory.create(id = null, alikontaktit = listOf(contactPerson))
+        hanke.apply { rakennuttajat = mutableListOf(hankeContact) }
+
+        hankeService.updateHanke(hanke)
+
+        val inviter = findKayttaja(hanke.id, founder.email)
+        val createdKayttaja = findKayttaja(hanke.id, newContactEmail)
+        assertk.assertThat(createdKayttaja).all {
+            prop(HankekayttajaEntity::id).isNotNull()
+            prop(HankekayttajaEntity::etunimi).isEqualTo("Ali")
+            prop(HankekayttajaEntity::sukunimi).isEqualTo("Kontakti")
+            prop(HankekayttajaEntity::sahkoposti).isEqualTo(newContactEmail)
+            prop(HankekayttajaEntity::puhelin).isEqualTo("050-4567890")
+            prop(HankekayttajaEntity::kutsuttuEtunimi).isEqualTo("Ali")
+            prop(HankekayttajaEntity::kutsuttuSukunimi).isEqualTo("Kontakti")
+            prop(HankekayttajaEntity::kutsujaId).isEqualTo(inviter.id)
+            prop(HankekayttajaEntity::kayttajakutsu).isNotNull().all {
+                prop(KayttajakutsuEntity::kayttooikeustaso).isEqualTo(KATSELUOIKEUS)
+                prop(KayttajakutsuEntity::tunniste).isNotNull()
+            }
+        }
+        val email = greenMail.firstReceivedMessage()
+        assertk.assertThat(email.allRecipients).hasSize(1)
+        assertk.assertThat(email.allRecipients[0].toString()).isEqualTo(newContactEmail)
+        assertk.assertThat(email.subject).contains("Sinut on lisätty hankkeelle")
+    }
+
+    @Test
     fun `test personal data logging`() {
         // Create hanke with two yhteystietos, save and check logs. There should be two rows and the
         // objectBefore fields should be null in them.
@@ -946,16 +1004,19 @@ class HankeServiceITests(
             val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
 
             val hanke = hankeRepository.findByHankeTunnus(application.hankeTunnus)!!
-            val users = hankeKayttajaRepository.findByHankeId(hanke.id)
+            val users = hankekayttajaRepository.findByHankeId(hanke.id)
             assertk.assertThat(users.first()).all {
-                prop(HankeKayttajaEntity::id).isNotNull()
-                prop(HankeKayttajaEntity::sahkoposti).isEqualTo(AlluDataFactory.teppoEmail)
-                prop(HankeKayttajaEntity::nimi).isEqualTo(TEPPO_TESTI)
-                prop(HankeKayttajaEntity::permission)
+                prop(HankekayttajaEntity::id).isNotNull()
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(AlluDataFactory.teppoEmail)
+                prop(HankekayttajaEntity::fullName).isEqualTo(TEPPO_TESTI)
+                prop(HankekayttajaEntity::permission)
                     .isNotNull()
                     .prop(PermissionEntity::kayttooikeustaso)
-                    .isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
-                prop(HankeKayttajaEntity::kayttajaTunniste).isNull() // no token for creator
+                    .isEqualTo(KAIKKI_OIKEUDET)
+                prop(HankekayttajaEntity::kayttajakutsu).isNull() // no token for creator
+                prop(HankekayttajaEntity::kutsujaId).isNull() // no inviter for creator
+                prop(HankekayttajaEntity::kutsuttuEtunimi).isNull() // no name in invitation
+                prop(HankekayttajaEntity::kutsuttuSukunimi).isNull() // no name in invitation
             }
         }
 
@@ -1288,14 +1349,14 @@ class HankeServiceITests(
         @Test
         fun `when hanke has users should remove users and tokens`() {
             val hanketunnus = hankeFactory.createRequest().withYhteystiedot().save().hankeTunnus
-            assertk.assertThat(hankeKayttajaRepository.findAll()).hasSize(4)
-            assertk.assertThat(kayttajaTunnisteRepository.findAll()).hasSize(4)
+            assertk.assertThat(hankekayttajaRepository.findAll()).hasSize(4)
+            assertk.assertThat(kayttajakutsuRepository.findAll()).hasSize(4)
 
             hankeService.deleteHanke(hanketunnus, USER_NAME)
 
             assertk.assertThat(hankeRepository.findAll()).isEmpty()
-            assertk.assertThat(hankeKayttajaRepository.findAll()).isEmpty()
-            assertk.assertThat(kayttajaTunnisteRepository.findAll()).isEmpty()
+            assertk.assertThat(hankekayttajaRepository.findAll()).isEmpty()
+            assertk.assertThat(kayttajakutsuRepository.findAll()).isEmpty()
         }
 
         @Test
@@ -1697,4 +1758,7 @@ class HankeServiceITests(
 
     private fun hankealueCount(): Int? =
         jdbcTemplate.queryForObject("SELECT count(*) from hankealue", Int::class.java)
+
+    private fun findKayttaja(hankeId: Int, email: String) =
+        hankekayttajaRepository.findByHankeIdAndSahkopostiIn(hankeId, listOf(email)).first()
 }
