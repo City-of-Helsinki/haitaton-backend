@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadService
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
 import io.swagger.v3.oas.annotations.Operation
@@ -30,7 +29,6 @@ private val logger = KotlinLogging.logger {}
 @SecurityRequirement(name = "bearerAuth")
 class HankeAttachmentController(
     private val hankeAttachmentService: HankeAttachmentService,
-    private val attachmentUploadService: AttachmentUploadService,
 ) {
 
     @GetMapping
@@ -110,7 +108,7 @@ class HankeAttachmentController(
                 "content type = ${attachment.contentType}"
         }
 
-        return attachmentUploadService.uploadHankeAttachment(hankeTunnus, attachment)
+        return hankeAttachmentService.uploadHankeAttachment(hankeTunnus, attachment)
     }
 
     @DeleteMapping("/{attachmentId}")

@@ -51,7 +51,7 @@ class HankeAttachmentContentServiceITest(
             attachmentFactory.saveContentToCloud(attachment1.blobLocation, bytes = bytes)
             attachmentFactory.saveContentToCloud(attachment2.blobLocation, bytes = bytes)
 
-            attachmentContentService.delete(attachment1)
+            attachmentContentService.delete(attachment1.toDomain())
 
             val existingBlobs = fileClient.listBlobs(HANKE_LIITTEET).map { it.path }
             assertThat(existingBlobs).containsExactly(attachment2.blobLocation)
@@ -61,7 +61,7 @@ class HankeAttachmentContentServiceITest(
         fun `Should not throw an error even if content does not exist`() {
             val attachment = HankeAttachmentFactory.createEntity(attachmentId)
 
-            attachmentContentService.delete(attachment)
+            attachmentContentService.delete(attachment.toDomain())
 
             assertThat(fileClient.listBlobs(HANKE_LIITTEET)).isEmpty()
         }
@@ -93,7 +93,7 @@ class HankeAttachmentContentServiceITest(
             attachmentFactory.saveContentToCloud(attachment.blobLocation, bytes = bytes)
             attachmentFactory.saveContentToCloud(other.blobLocation)
 
-            val result = attachmentContentService.find(attachment)
+            val result = attachmentContentService.find(attachment.toDomain())
 
             assertThat(result).isEqualTo(bytes)
         }
@@ -102,7 +102,7 @@ class HankeAttachmentContentServiceITest(
         fun `Should throw if attachment not found`() {
             val attachment = HankeAttachmentFactory.createEntity(attachmentId)
 
-            assertFailure { attachmentContentService.find(attachment) }
+            assertFailure { attachmentContentService.find(attachment.toDomain()) }
                 .all {
                     hasClass(AttachmentNotFoundException::class)
                     hasMessage("Attachment not found, id=$attachmentId")

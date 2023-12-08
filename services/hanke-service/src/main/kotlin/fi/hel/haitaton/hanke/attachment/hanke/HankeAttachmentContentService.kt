@@ -1,10 +1,10 @@
 package fi.hel.haitaton.hanke.attachment.hanke
 
-import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
+import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.DownloadNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.FileClient
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadata
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.http.MediaType
@@ -17,29 +17,30 @@ class HankeAttachmentContentService(
     private val fileClient: FileClient,
 ) {
     /** Uploads and returns the location of the created blob. */
-    fun upload(fileName: String, contentType: MediaType, content: ByteArray, hankeId: Int): String =
-        generateBlobPath(hankeId).also {
-            fileClient.upload(
-                container = HANKE_LIITTEET,
-                path = it,
-                originalFilename = fileName,
-                contentType = contentType,
-                content = content,
-            )
-        }
+    fun upload(fileName: String, contentType: MediaType, content: ByteArray, hankeId: Int): String {
+        val blobPath = generateBlobPath(hankeId)
+        fileClient.upload(
+            container = Container.HANKE_LIITTEET,
+            path = blobPath,
+            originalFilename = fileName,
+            contentType = contentType,
+            content = content,
+        )
+        return blobPath
+    }
 
-    fun delete(attachment: HankeAttachmentEntity) {
+    fun delete(attachment: HankeAttachmentMetadata) {
         logger.info { "Deleting attachment content from hanke attachment ${attachment.id}..." }
-        fileClient.delete(HANKE_LIITTEET, attachment.blobLocation)
+        fileClient.delete(Container.HANKE_LIITTEET, attachment.blobLocation)
     }
 
     fun deleteAllForHanke(hankeId: Int) {
-        fileClient.deleteAllByPrefix(HANKE_LIITTEET, prefix(hankeId))
+        fileClient.deleteAllByPrefix(Container.HANKE_LIITTEET, prefix(hankeId))
     }
 
-    fun find(attachment: HankeAttachmentEntity): ByteArray =
+    fun find(attachment: HankeAttachmentMetadata): ByteArray =
         try {
-            fileClient.download(HANKE_LIITTEET, attachment.blobLocation).content.toBytes()
+            fileClient.download(Container.HANKE_LIITTEET, attachment.blobLocation).content.toBytes()
         } catch (e: DownloadNotFoundException) {
             throw AttachmentNotFoundException(attachment.id)
         }

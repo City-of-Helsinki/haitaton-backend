@@ -4,7 +4,6 @@ import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
-import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
@@ -21,10 +20,9 @@ import org.springframework.transaction.annotation.Transactional
 private val logger = KotlinLogging.logger {}
 
 @Service
-class HankeAttachmentService(
+class HankeAttachmentMetadataService(
     private val hankeRepository: HankeRepository,
     private val attachmentRepository: HankeAttachmentRepository,
-    private val attachmentContentService: HankeAttachmentContentService,
 ) {
 
     @Transactional(readOnly = true)
@@ -32,12 +30,7 @@ class HankeAttachmentService(
         findHanke(hankeTunnus).liitteet.map { it.toDto() }
 
     @Transactional(readOnly = true)
-    fun getContent(attachmentId: UUID): AttachmentContent {
-        val attachment = findAttachment(attachmentId)
-
-        val content = attachmentContentService.find(attachment)
-        return AttachmentContent(attachment.fileName, attachment.contentType, content)
-    }
+    fun findAttachment(attachmentId: UUID) = findAttachmentEntity(attachmentId).toDomain()
 
     @Transactional
     fun saveAttachment(
@@ -64,18 +57,14 @@ class HankeAttachmentService(
     }
 
     @Transactional
-    fun deleteAttachment(attachmentId: UUID) {
-        logger.info { "Deleting hanke attachment $attachmentId..." }
-        val attachmentToDelete = findAttachment(attachmentId)
-        attachmentContentService.delete(attachmentToDelete)
+    fun delete(attachmentId: UUID) {
+        val attachmentToDelete = findAttachmentEntity(attachmentId)
         attachmentToDelete.hanke.liitteet.remove(attachmentToDelete)
     }
 
     @Transactional
-    fun deleteAllAttachments(hanke: HankeIdentifier) {
-        logger.info { "Deleting all attachments from hanke ${hanke.logString()}" }
-        attachmentContentService.deleteAllForHanke(hanke.id)
-        val hankeEntity = hankeRepository.findByIdOrNull(hanke.id)
+    fun deleteAllByHanke(hankeId: Int) {
+        val hankeEntity = hankeRepository.findByIdOrNull(hankeId)
         hankeEntity?.liitteet?.clear()
     }
 
@@ -93,7 +82,7 @@ class HankeAttachmentService(
         }
     }
 
-    private fun findAttachment(attachmentId: UUID) =
+    private fun findAttachmentEntity(attachmentId: UUID): HankeAttachmentEntity =
         attachmentRepository.findByIdOrNull(attachmentId)
             ?: throw AttachmentNotFoundException(attachmentId)
 

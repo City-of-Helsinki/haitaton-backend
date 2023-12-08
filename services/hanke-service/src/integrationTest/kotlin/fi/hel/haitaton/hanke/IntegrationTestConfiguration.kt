@@ -4,8 +4,8 @@ import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
-import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentAuthorizer
+import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
@@ -76,7 +76,7 @@ class IntegrationTestConfiguration {
 
     @Bean fun hankeAttachmentService(): HankeAttachmentService = mockk()
 
-    @Bean fun attachmentUploadService(): AttachmentUploadService = mockk()
+    @Bean fun hankeAttachmentMetadataService(): HankeAttachmentMetadataService = mockk()
 
     @Bean fun applicationAttachmentMetadataService(): ApplicationAttachmentMetadataService = mockk()
 
