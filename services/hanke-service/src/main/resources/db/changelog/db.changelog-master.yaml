@@ -149,3 +149,5 @@ databaseChangeLog:
       file: db/changelog/changesets/059-hankekayttaja-changes.yml
   - include:
       file: db/changelog/changesets/060-timestamp-triggers-for-kayttajas.sql
+  - include:
+      file: db/changelog/changesets/061-hanke-attachment-migration-cleanup.yml

@@ -6,7 +6,6 @@ TRUNCATE TABLE
     geometriat,
     hanke,
     hanke_attachment,
-    hanke_attachment_content,
     hankekayttaja,
     hankealue,
     hankegeometria,
