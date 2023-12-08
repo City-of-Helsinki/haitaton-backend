@@ -5,9 +5,9 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.HankeArgumentException
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createContact
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createContact
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import java.util.stream.Stream
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -60,11 +60,11 @@ class ContactTest {
     @Test
     fun `findOrderer when orderer contact exists should return it`() {
         val applicationData =
-            AlluDataFactory.createCableReportApplicationData(
+            ApplicationFactory.createCableReportApplicationData(
                 representativeWithContacts =
-                    AlluDataFactory.createCompanyCustomer().withContacts(createContact()),
+                    ApplicationFactory.createCompanyCustomer().withContacts(createContact()),
                 propertyDeveloperWithContacts =
-                    AlluDataFactory.createCompanyCustomer().withContacts(createContact()),
+                    ApplicationFactory.createCompanyCustomer().withContacts(createContact()),
             )
 
         val result = applicationData.findOrderer()
@@ -85,9 +85,9 @@ class ContactTest {
     @Test
     fun `findOrderer when no orderer contact exists should return null`() {
         val applicationData =
-            AlluDataFactory.createCableReportApplicationData(
+            ApplicationFactory.createCableReportApplicationData(
                 customerWithContacts =
-                    AlluDataFactory.createCompanyCustomer().withContacts(createContact())
+                    ApplicationFactory.createCompanyCustomer().withContacts(createContact())
             )
 
         val result = applicationData.findOrderer()

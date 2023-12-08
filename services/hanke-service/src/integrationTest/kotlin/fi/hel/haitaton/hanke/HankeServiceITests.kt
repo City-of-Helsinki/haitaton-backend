@@ -38,9 +38,10 @@ import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withArea
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.AlluFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withArea
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
@@ -998,7 +999,7 @@ class HankeServiceITests(
 
         @Test
         fun `generates hanke based on application`() {
-            val inputApplication = AlluDataFactory.cableReportWithoutHanke()
+            val inputApplication = ApplicationFactory.cableReportWithoutHanke()
 
             val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
 
@@ -1013,7 +1014,7 @@ class HankeServiceITests(
 
         @Test
         fun `generates hankekayttaja for founder based on application`() {
-            val inputApplication = AlluDataFactory.cableReportWithoutHanke()
+            val inputApplication = ApplicationFactory.cableReportWithoutHanke()
 
             val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
 
@@ -1021,7 +1022,7 @@ class HankeServiceITests(
             val users = hankekayttajaRepository.findByHankeId(hanke.id)
             assertk.assertThat(users.first()).all {
                 prop(HankekayttajaEntity::id).isNotNull()
-                prop(HankekayttajaEntity::sahkoposti).isEqualTo(AlluDataFactory.teppoEmail)
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(ApplicationFactory.TEPPO_EMAIL)
                 prop(HankekayttajaEntity::fullName).isEqualTo(TEPPO_TESTI)
                 prop(HankekayttajaEntity::permission)
                     .isNotNull()
@@ -1039,10 +1040,10 @@ class HankeServiceITests(
             val expectedName = "a".repeat(MAXIMUM_HANKE_NIMI_LENGTH)
             val tooLongName = expectedName + "bbb"
             val inputApplication =
-                AlluDataFactory.cableReportWithoutHanke()
+                ApplicationFactory.cableReportWithoutHanke()
                     .copy(
                         applicationData =
-                            AlluDataFactory.createCableReportApplicationData(name = tooLongName)
+                            ApplicationFactory.createCableReportApplicationData(name = tooLongName)
                     )
 
             val application = hankeService.generateHankeWithApplication(inputApplication, USER_NAME)
@@ -1057,8 +1058,8 @@ class HankeServiceITests(
         @Test
         fun `creates hankealueet from the application areas`() {
             val inputApplication =
-                AlluDataFactory.cableReportWithoutHanke(
-                    AlluDataFactory.createCableReportApplicationData(areas = null)
+                ApplicationFactory.cableReportWithoutHanke(
+                    ApplicationFactory.createCableReportApplicationData(areas = null)
                         .withArea(name = "Area", geometry = GeometriaFactory.secondPolygon)
                 )
 
@@ -1076,7 +1077,7 @@ class HankeServiceITests(
         fun `rolls back when application service throws an exception`() {
             // Use an intersecting geometry so that ApplicationService will throw an exception
             val inputApplication =
-                AlluDataFactory.cableReportWithoutHanke {
+                ApplicationFactory.cableReportWithoutHanke {
                     withArea(
                         "area",
                         "/fi/hel/haitaton/hanke/geometria/intersecting-polygon.json"
@@ -1094,11 +1095,11 @@ class HankeServiceITests(
         @Test
         fun `should throw if no founder can be deduced from application`() {
             val data =
-                AlluDataFactory.createCableReportApplicationData(
+                ApplicationFactory.createCableReportApplicationData(
                     customerWithContacts =
-                        AlluDataFactory.createCompanyCustomer().withContacts() // no orderer
+                        ApplicationFactory.createCompanyCustomer().withContacts() // no orderer
                 )
-            val application = AlluDataFactory.cableReportWithoutHanke(applicationData = data)
+            val application = ApplicationFactory.cableReportWithoutHanke(applicationData = data)
 
             val exception =
                 assertThrows<HankeArgumentException> {
@@ -1342,7 +1343,7 @@ class HankeServiceITests(
             val hakemusAlluId = 356
             val hanke = initHankeWithHakemus(hakemusAlluId)
             every { cableReportService.getApplicationInformation(hakemusAlluId) } returns
-                AlluDataFactory.createAlluApplicationResponse(status = ApplicationStatus.PENDING)
+                AlluFactory.createAlluApplicationResponse(status = ApplicationStatus.PENDING)
             justRun { cableReportService.cancel(hakemusAlluId) }
             every { cableReportService.sendSystemComment(hakemusAlluId, any()) } returns 1324
 
@@ -1362,7 +1363,7 @@ class HankeServiceITests(
             val hakemusAlluId = 123
             val hanke = initHankeWithHakemus(hakemusAlluId)
             every { cableReportService.getApplicationInformation(hakemusAlluId) } returns
-                AlluDataFactory.createAlluApplicationResponse(status = ApplicationStatus.HANDLING)
+                AlluFactory.createAlluApplicationResponse(status = ApplicationStatus.HANDLING)
 
             assertThrows<HankeAlluConflictException> {
                 hankeService.deleteHanke(hanke.hankeTunnus, USER_NAME)
@@ -1632,7 +1633,7 @@ class HankeServiceITests(
         val hanke = hankeFactory.saveMinimal(hankeTunnus = "HAI23-1")
         val application =
             applicationRepository.save(
-                AlluDataFactory.createApplicationEntity(
+                ApplicationFactory.createApplicationEntity(
                     hanke = hanke,
                     alluStatus = ApplicationStatus.PENDING,
                     alluid = alluId,

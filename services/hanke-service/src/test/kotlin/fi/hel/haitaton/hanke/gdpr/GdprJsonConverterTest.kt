@@ -12,9 +12,9 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
@@ -33,17 +33,20 @@ class GdprJsonConverterTest {
     fun `createGdprJson combines identical results when there are several infos`() {
         val applicationData: CableReportApplicationData =
             "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
-        val application = AlluDataFactory.createApplication(applicationData = applicationData)
+        val application = ApplicationFactory.createApplication(applicationData = applicationData)
         val otherApplication =
             application.withCustomer(
-                AlluDataFactory.createCompanyCustomer(name = "Yhteystieto Oy", registryKey = null)
+                ApplicationFactory.createCompanyCustomer(
+                        name = "Yhteystieto Oy",
+                        registryKey = null
+                    )
                     .withContacts(
-                        AlluDataFactory.createContact(
+                        ApplicationFactory.createContact(
                             phone = "12345678",
                             email = "teppo@yhteystieto.test",
                             orderer = true,
                         ),
-                        AlluDataFactory.createContact(
+                        ApplicationFactory.createContact(
                             firstName = "Toinen",
                             lastName = "Tyyppi",
                             phone = "987",
@@ -195,12 +198,12 @@ class GdprJsonConverterTest {
     fun `getCreatorInfoFromCustomerWithContacts returns GDPR infos from orderer contacts`() {
         val customerWithContacts =
             CustomerWithContacts(
-                AlluDataFactory.createPersonCustomer(),
+                ApplicationFactory.createPersonCustomer(),
                 listOf(
-                    AlluDataFactory.createContact(orderer = true, phone = "0000"),
-                    AlluDataFactory.createContact(orderer = false, phone = "1111"),
-                    AlluDataFactory.createContact(orderer = true, phone = "2222"),
-                    AlluDataFactory.createContact(orderer = false, phone = "3333"),
+                    ApplicationFactory.createContact(orderer = true, phone = "0000"),
+                    ApplicationFactory.createContact(orderer = false, phone = "1111"),
+                    ApplicationFactory.createContact(orderer = true, phone = "2222"),
+                    ApplicationFactory.createContact(orderer = false, phone = "3333"),
                 )
             )
 
@@ -217,7 +220,7 @@ class GdprJsonConverterTest {
     fun `getOrganisationFromCustomer returns organisation from organisation customers`(
         customerType: CustomerType,
     ) {
-        val customer = AlluDataFactory.createCompanyCustomer().copy(type = customerType)
+        val customer = ApplicationFactory.createCompanyCustomer().copy(type = customerType)
 
         val result = GdprJsonConverter.getOrganisationFromCustomer(customer)
 
@@ -229,7 +232,7 @@ class GdprJsonConverterTest {
     fun `getOrganisationFromCustomer with other customers returns null`(
         customerType: CustomerType,
     ) {
-        val customer = AlluDataFactory.createPersonCustomer().copy(type = customerType)
+        val customer = ApplicationFactory.createPersonCustomer().copy(type = customerType)
 
         assertThat(GdprJsonConverter.getOrganisationFromCustomer(customer)).isNull()
     }
@@ -245,18 +248,18 @@ class GdprJsonConverterTest {
     fun `getGdprInfosFromContacts with contacts returns gdpr infos of contacts`() {
         val contacts =
             listOf(
-                AlluDataFactory.createContact(),
-                AlluDataFactory.createContact(
+                ApplicationFactory.createContact(),
+                ApplicationFactory.createContact(
                     firstName = "Toinen",
                     lastName = "Testihenkilö",
                     email = "toinen@example.test"
                 ),
-                AlluDataFactory.createContact(
+                ApplicationFactory.createContact(
                     firstName = "Teppo",
                     lastName = "Toissijainen",
                     email = "toissijainen@example.test"
                 ),
-                AlluDataFactory.createContact(
+                ApplicationFactory.createContact(
                     firstName = TEPPO_TESTI.split(" ")[0],
                     lastName = TEPPO_TESTI.split(" ")[1],
                     email = "teppo@yksityinen.test"
@@ -293,7 +296,7 @@ class GdprJsonConverterTest {
 
     @Test
     fun `getGdprInfosFromApplicationContact without organisation returns gdpr info`() {
-        val contact = AlluDataFactory.createContact()
+        val contact = ApplicationFactory.createContact()
 
         val response = GdprJsonConverter.getGdprInfosFromApplicationContact(contact, null)
 
@@ -303,7 +306,7 @@ class GdprJsonConverterTest {
 
     @Test
     fun `getGdprInfosFromApplicationContact with organisation returns gdpr info`() {
-        val contact = AlluDataFactory.createContact()
+        val contact = ApplicationFactory.createContact()
 
         val response =
             GdprJsonConverter.getGdprInfosFromApplicationContact(contact, dnaGdprOrganisation())

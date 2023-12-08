@@ -9,12 +9,12 @@ import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withApplicationData
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomerContacts
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withPostalAddress
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withApplicationData
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomer
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomerContacts
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withPostalAddress
 import fi.hel.haitaton.hanke.isValidBusinessId
 import fi.hel.haitaton.hanke.touch
 import java.time.ZonedDateTime
@@ -33,7 +33,7 @@ class ApplicationValidatorTest {
 
     @Test
     fun `Correct application passes validation`() {
-        val application = AlluDataFactory.createApplication()
+        val application = ApplicationFactory.createApplication()
 
         assertThat(applicationValidator.isValid(application, null)).isTrue()
     }
@@ -41,32 +41,33 @@ class ApplicationValidatorTest {
     @Nested
     inner class AtMostOneOrderer {
         private val customerWithOneOrderer =
-            AlluDataFactory.createCompanyCustomer()
+            ApplicationFactory.createCompanyCustomer()
                 .withContacts(
-                    AlluDataFactory.createContact(orderer = true),
-                    AlluDataFactory.createContact(orderer = false),
+                    ApplicationFactory.createContact(orderer = true),
+                    ApplicationFactory.createContact(orderer = false),
                 )
 
         private val customerWithTwoOrderers =
-            AlluDataFactory.createCompanyCustomer()
+            ApplicationFactory.createCompanyCustomer()
                 .withContacts(
-                    AlluDataFactory.createContact(orderer = true),
-                    AlluDataFactory.createContact(orderer = true),
+                    ApplicationFactory.createContact(orderer = true),
+                    ApplicationFactory.createContact(orderer = true),
                 )
 
         private val customerWithNoOrderers =
-            AlluDataFactory.createCompanyCustomer()
+            ApplicationFactory.createCompanyCustomer()
                 .withContacts(
-                    AlluDataFactory.createContact(orderer = false),
-                    AlluDataFactory.createContact(orderer = false),
+                    ApplicationFactory.createContact(orderer = false),
+                    ApplicationFactory.createContact(orderer = false),
                 )
 
-        private val customerWithNoContacts = AlluDataFactory.createCompanyCustomer().withContacts()
+        private val customerWithNoContacts =
+            ApplicationFactory.createCompanyCustomer().withContacts()
 
         @Test
         fun `One orderer is allowed`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(
                         customerWithContacts = customerWithOneOrderer,
                     )
@@ -77,7 +78,7 @@ class ApplicationValidatorTest {
         @Test
         fun `Zero orderers is allowed`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(
                         customerWithContacts = customerWithNoOrderers,
                         contractorWithContacts = customerWithNoOrderers,
@@ -89,7 +90,7 @@ class ApplicationValidatorTest {
         @Test
         fun `Two orderers throws exception`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(
                         customerWithContacts = customerWithTwoOrderers,
                     )
@@ -101,7 +102,7 @@ class ApplicationValidatorTest {
         @Test
         fun `Two orderers across different roles throws exception`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(
                         customerWithContacts = customerWithOneOrderer,
                         contractorWithContacts = customerWithOneOrderer,
@@ -114,7 +115,7 @@ class ApplicationValidatorTest {
         @Test
         fun `No contacts at all is allowed`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(
                         customerWithContacts = customerWithNoContacts,
                         contractorWithContacts = customerWithNoContacts,
@@ -131,7 +132,7 @@ class ApplicationValidatorTest {
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class CableReportApplicationDataValidate {
 
-        private val baseAppData = AlluDataFactory.createCableReportApplicationData()
+        private val baseAppData = ApplicationFactory.createCableReportApplicationData()
 
         private fun notJustWhitespaceCases(content: String): Stream<Arguments> =
             Stream.of(
@@ -162,7 +163,8 @@ class ApplicationValidatorTest {
             applicationData: CableReportApplicationData
         ) {
             case.touch()
-            val application = AlluDataFactory.createApplication(applicationData = applicationData)
+            val application =
+                ApplicationFactory.createApplication(applicationData = applicationData)
 
             assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
@@ -172,7 +174,8 @@ class ApplicationValidatorTest {
         @MethodSource("emptyCases")
         fun `value can be empty`(case: String, applicationData: CableReportApplicationData) {
             case.touch()
-            val application = AlluDataFactory.createApplication(applicationData = applicationData)
+            val application =
+                ApplicationFactory.createApplication(applicationData = applicationData)
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
@@ -184,7 +187,8 @@ class ApplicationValidatorTest {
             applicationData: CableReportApplicationData
         ) {
             case.touch()
-            val application = AlluDataFactory.createApplication(applicationData = applicationData)
+            val application =
+                ApplicationFactory.createApplication(applicationData = applicationData)
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
@@ -192,22 +196,23 @@ class ApplicationValidatorTest {
         @Test
         fun `customerWithContacts is validated`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(
                         customerWithContacts =
-                            AlluDataFactory.createCompanyCustomer(name = " ").withContacts()
+                            ApplicationFactory.createCompanyCustomer(name = " ").withContacts()
                     )
 
             assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
         }
+
         @Test
         fun `contractorWithContacts is validated`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(
                         contractorWithContacts =
-                            AlluDataFactory.createCompanyCustomer(name = " ").withContacts()
+                            ApplicationFactory.createCompanyCustomer(name = " ").withContacts()
                     )
 
             assertFailure { applicationValidator.isValid(application, null) }
@@ -217,10 +222,10 @@ class ApplicationValidatorTest {
         @Test
         fun `representativeWithContacts is validated when not null`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(
                         representativeWithContacts =
-                            AlluDataFactory.createCompanyCustomer(name = " ").withContacts()
+                            ApplicationFactory.createCompanyCustomer(name = " ").withContacts()
                     )
 
             assertFailure { applicationValidator.isValid(application, null) }
@@ -230,7 +235,7 @@ class ApplicationValidatorTest {
         @Test
         fun `representativeWithContacts can be null`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(representativeWithContacts = null)
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
@@ -239,10 +244,10 @@ class ApplicationValidatorTest {
         @Test
         fun `propertyDeveloperWithContacts is validated when not null`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(
                         propertyDeveloperWithContacts =
-                            AlluDataFactory.createCompanyCustomer(name = " ").withContacts()
+                            ApplicationFactory.createCompanyCustomer(name = " ").withContacts()
                     )
 
             assertFailure { applicationValidator.isValid(application, null) }
@@ -252,7 +257,7 @@ class ApplicationValidatorTest {
         @Test
         fun `propertyDeveloperWithContacts can be null`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(propertyDeveloperWithContacts = null)
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
@@ -261,12 +266,12 @@ class ApplicationValidatorTest {
         @Test
         fun `invoicingCustomer is validated when not null`() {
             val application =
-                AlluDataFactory.createApplication(
+                ApplicationFactory.createApplication(
                     applicationData =
-                        AlluDataFactory.createCableReportApplicationData()
+                        ApplicationFactory.createCableReportApplicationData()
                             .copy(
                                 invoicingCustomer =
-                                    AlluDataFactory.createCompanyCustomer(name = " ")
+                                    ApplicationFactory.createCompanyCustomer(name = " ")
                             )
                 )
 
@@ -277,9 +282,9 @@ class ApplicationValidatorTest {
         @Test
         fun `invoicingCustomer can be null`() {
             val application =
-                AlluDataFactory.createApplication(
+                ApplicationFactory.createApplication(
                     applicationData =
-                        AlluDataFactory.createCableReportApplicationData()
+                        ApplicationFactory.createCableReportApplicationData()
                             .copy(invoicingCustomer = null)
                 )
 
@@ -298,7 +303,7 @@ class ApplicationValidatorTest {
             endTime: ZonedDateTime?
         ) {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(
                         startTime = startTime,
                         endTime = endTime,
@@ -310,7 +315,7 @@ class ApplicationValidatorTest {
         @Test
         fun `Start date before end date is allowed`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(
                         startTime = date,
                         endTime = date.plusDays(1),
@@ -322,7 +327,7 @@ class ApplicationValidatorTest {
         @Test
         fun `Start date after end date throws exception`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withApplicationData(
                         startTime = date.plusDays(1),
                         endTime = date,
@@ -336,7 +341,7 @@ class ApplicationValidatorTest {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class CustomerValidate {
-        private val baseCustomer = AlluDataFactory.createCompanyCustomer()
+        private val baseCustomer = ApplicationFactory.createCompanyCustomer()
 
         private fun notJustWhitespaceCases(content: String): Stream<Arguments> =
             Stream.of(
@@ -359,7 +364,7 @@ class ApplicationValidatorTest {
         fun `value should not be just whitespace`(case: String, customer: Customer) {
             case.touch()
             val application =
-                AlluDataFactory.createApplication().withCustomer(customer.withContacts())
+                ApplicationFactory.createApplication().withCustomer(customer.withContacts())
 
             assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
@@ -370,7 +375,7 @@ class ApplicationValidatorTest {
         fun `value can be empty`(case: String, customer: Customer) {
             case.touch()
             val application =
-                AlluDataFactory.createApplication().withCustomer(customer.withContacts())
+                ApplicationFactory.createApplication().withCustomer(customer.withContacts())
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
@@ -380,7 +385,7 @@ class ApplicationValidatorTest {
         fun `value can have text with whitespaces`(case: String, customer: Customer) {
             case.touch()
             val application =
-                AlluDataFactory.createApplication().withCustomer(customer.withContacts())
+                ApplicationFactory.createApplication().withCustomer(customer.withContacts())
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
@@ -388,7 +393,7 @@ class ApplicationValidatorTest {
         @Test
         fun `country can't be free text`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withCustomer(baseCustomer.copy(country = "Some country").withContacts())
 
             assertFailure { applicationValidator.isValid(application, null) }
@@ -398,7 +403,7 @@ class ApplicationValidatorTest {
         @Test
         fun `country can be two-letter country code`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withCustomer(baseCustomer.copy(country = "FI").withContacts())
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
@@ -407,7 +412,7 @@ class ApplicationValidatorTest {
         @Test
         fun `country is case-sensitive`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withCustomer(baseCustomer.copy(country = "fi").withContacts())
 
             assertFailure { applicationValidator.isValid(application, null) }
@@ -417,7 +422,7 @@ class ApplicationValidatorTest {
         @Test
         fun `country can't be three-letter country code`() {
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withCustomer(baseCustomer.copy(country = "FIN").withContacts())
 
             assertFailure { applicationValidator.isValid(application, null) }
@@ -429,9 +434,9 @@ class ApplicationValidatorTest {
             val validBusinessId = "2182805-0"
             assertThat(validBusinessId.isValidBusinessId()).isTrue()
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withCustomer(
-                        AlluDataFactory.createCompanyCustomer(registryKey = validBusinessId)
+                        ApplicationFactory.createCompanyCustomer(registryKey = validBusinessId)
                             .withContacts()
                     )
 
@@ -443,9 +448,9 @@ class ApplicationValidatorTest {
             val invalidBusinessId = "2182805-3"
             assertThat(invalidBusinessId.isValidBusinessId()).isFalse()
             val application =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withCustomer(
-                        AlluDataFactory.createCompanyCustomer(registryKey = invalidBusinessId)
+                        ApplicationFactory.createCompanyCustomer(registryKey = invalidBusinessId)
                             .withContacts()
                     )
 
@@ -457,7 +462,7 @@ class ApplicationValidatorTest {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class ContactValidate {
-        private val baseContact = AlluDataFactory.createContact()
+        private val baseContact = ApplicationFactory.createContact()
 
         private fun notJustWhitespaceCases(content: String): Stream<Arguments> =
             Stream.of(
@@ -477,7 +482,7 @@ class ApplicationValidatorTest {
         @MethodSource("justWhitespaceCases")
         fun `value should not be just whitespace`(case: String, contact: Contact) {
             case.touch()
-            val application = AlluDataFactory.createApplication().withCustomerContacts(contact)
+            val application = ApplicationFactory.createApplication().withCustomerContacts(contact)
 
             assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
@@ -487,7 +492,7 @@ class ApplicationValidatorTest {
         @MethodSource("emptyCases")
         fun `value can be empty`(case: String, contact: Contact) {
             case.touch()
-            val application = AlluDataFactory.createApplication().withCustomerContacts(contact)
+            val application = ApplicationFactory.createApplication().withCustomerContacts(contact)
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
@@ -496,7 +501,7 @@ class ApplicationValidatorTest {
         @MethodSource("textCases")
         fun `value can have text with whitespaces`(case: String, contact: Contact) {
             case.touch()
-            val application = AlluDataFactory.createApplication().withCustomerContacts(contact)
+            val application = ApplicationFactory.createApplication().withCustomerContacts(contact)
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
