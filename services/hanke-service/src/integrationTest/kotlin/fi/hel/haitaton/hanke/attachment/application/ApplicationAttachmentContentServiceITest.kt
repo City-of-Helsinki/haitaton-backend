@@ -8,9 +8,7 @@ import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.attachment.USERNAME
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import java.util.UUID
@@ -28,9 +26,6 @@ import org.springframework.test.context.ActiveProfiles
 @ExtendWith(MockFileClientExtension::class)
 class ApplicationAttachmentContentServiceITest(
     @Autowired private val attachmentContentService: ApplicationAttachmentContentService,
-    @Autowired private val fileClient: MockFileClient,
-    @Autowired
-    private val applicationAttachmentContentRepository: ApplicationAttachmentContentRepository,
     @Autowired private val applicationAttachmentFactory: ApplicationAttachmentFactory,
 ) : DatabaseTest() {
 
