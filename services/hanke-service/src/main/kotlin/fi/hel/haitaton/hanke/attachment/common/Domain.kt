@@ -1,11 +1,11 @@
 package fi.hel.haitaton.hanke.attachment.common
 
 import fi.hel.haitaton.hanke.allu.Attachment as AlluAttachment
-import fi.hel.haitaton.hanke.allu.AttachmentMetadata
+import fi.hel.haitaton.hanke.allu.AttachmentMetadata as AlluAttachmentMetadata
 import java.time.OffsetDateTime
 import java.util.UUID
 
-sealed interface Attachment {
+sealed interface AttachmentMetadata {
     val id: UUID
     val fileName: String
     val contentType: String
@@ -14,7 +14,7 @@ sealed interface Attachment {
     val blobLocation: String?
 }
 
-data class ApplicationAttachment(
+data class ApplicationAttachmentMetadata(
     override val id: UUID,
     override val fileName: String,
     override val contentType: String,
@@ -23,9 +23,9 @@ data class ApplicationAttachment(
     override val blobLocation: String?,
     val applicationId: Long,
     val attachmentType: ApplicationAttachmentType,
-) : Attachment {
-    fun toDto(): ApplicationAttachmentMetadata {
-        return ApplicationAttachmentMetadata(
+) : AttachmentMetadata {
+    fun toDto(): ApplicationAttachmentMetadataDto {
+        return ApplicationAttachmentMetadataDto(
             id = id,
             fileName = fileName,
             createdAt = createdAt,
@@ -38,7 +38,7 @@ data class ApplicationAttachment(
     fun toAlluAttachment(content: ByteArray): AlluAttachment {
         return AlluAttachment(
             metadata =
-                AttachmentMetadata(
+                AlluAttachmentMetadata(
                     id = null,
                     mimeType = contentType,
                     name = fileName,
@@ -48,3 +48,15 @@ data class ApplicationAttachment(
         )
     }
 }
+
+data class AttachmentContent(
+    val fileName: String,
+    val contentType: String,
+    @Suppress("ArrayInDataClass") val bytes: ByteArray
+)
+
+data class HankeAttachmentWithContent(
+    val id: UUID,
+    val hankeId: Int,
+    val content: AttachmentContent
+)

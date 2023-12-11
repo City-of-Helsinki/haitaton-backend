@@ -1,9 +1,9 @@
 package fi.hel.haitaton.hanke.attachment.application
 
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachment
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
@@ -23,15 +23,15 @@ class ApplicationAttachmentMetadataService(
     private val attachmentRepository: ApplicationAttachmentRepository,
 ) {
     @Transactional(readOnly = true)
-    fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadata> =
+    fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadataDto> =
         attachmentRepository.findByApplicationId(applicationId).map { it.toDto() }
 
     @Transactional(readOnly = true)
-    fun findAttachment(attachmentId: UUID): ApplicationAttachment =
+    fun findAttachment(attachmentId: UUID): ApplicationAttachmentMetadata =
         findAttachmentEntity(attachmentId).toDomain()
 
     @Transactional(readOnly = true)
-    fun findByApplicationId(applicationId: Long): List<ApplicationAttachment> =
+    fun findByApplicationId(applicationId: Long): List<ApplicationAttachmentMetadata> =
         attachmentRepository.findByApplicationId(applicationId).map { it.toDomain() }
 
     @Transactional
@@ -40,7 +40,7 @@ class ApplicationAttachmentMetadataService(
         contentType: String,
         attachmentType: ApplicationAttachmentType,
         applicationId: Long
-    ): ApplicationAttachment {
+    ): ApplicationAttachmentMetadata {
         val entity =
             ApplicationAttachmentEntity(
                 id = null,

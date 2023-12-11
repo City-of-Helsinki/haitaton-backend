@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.attachment.application
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentRepository
-import fi.hel.haitaton.hanke.attachment.common.Attachment
+import fi.hel.haitaton.hanke.attachment.common.AttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.DownloadNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.FileClient
@@ -23,7 +23,7 @@ class ApplicationAttachmentContentService(
         contentRepository.save(ApplicationAttachmentContentEntity(attachmentId, content))
     }
 
-    fun find(attachment: Attachment): ByteArray =
+    fun find(attachment: AttachmentMetadata): ByteArray =
         attachment.blobLocation?.let { readFromFile(it, attachment.id) }
             ?: readFromDatabase(attachment.id)
 

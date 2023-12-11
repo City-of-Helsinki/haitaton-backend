@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.allu
 
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachment
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import java.time.Duration.ofSeconds
 import java.time.ZonedDateTime
 import kotlinx.coroutines.CoroutineDispatcher
@@ -179,8 +179,8 @@ class CableReportService(
     /** Send many attachments in parallel. */
     fun addAttachments(
         alluApplicationId: Int,
-        attachments: List<ApplicationAttachment>,
-        getContent: (ApplicationAttachment) -> ByteArray,
+        attachments: List<ApplicationAttachmentMetadata>,
+        getContent: (ApplicationAttachmentMetadata) -> ByteArray,
     ) = runBlocking {
         val semaphore = Semaphore(properties.concurrentUploads)
         withContext(ioDispatcher) {

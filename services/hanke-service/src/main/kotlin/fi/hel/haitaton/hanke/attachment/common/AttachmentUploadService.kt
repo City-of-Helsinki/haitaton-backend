@@ -17,7 +17,7 @@ class AttachmentUploadService(
     fun uploadHankeAttachment(
         hankeTunnus: String,
         attachment: MultipartFile,
-    ): HankeAttachment {
+    ): HankeAttachmentMetadataDto {
         val hanke = hankeAttachmentService.hankeWithRoomForAttachment(hankeTunnus)
 
         val (filename, mediatype) = attachment.validNameAndType()

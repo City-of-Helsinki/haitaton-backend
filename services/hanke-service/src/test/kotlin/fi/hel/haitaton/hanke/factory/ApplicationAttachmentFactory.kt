@@ -7,11 +7,11 @@ import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachment
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
@@ -95,8 +95,8 @@ class ApplicationAttachmentFactory(
             createdAt: OffsetDateTime = CREATED_AT,
             attachmentType: ApplicationAttachmentType = MUU,
             applicationId: Long = AlluDataFactory.defaultApplicationId,
-        ): ApplicationAttachment =
-            ApplicationAttachment(
+        ): ApplicationAttachmentMetadata =
+            ApplicationAttachmentMetadata(
                 id = id,
                 fileName = fileName,
                 contentType = contentType,
@@ -135,8 +135,8 @@ class ApplicationAttachmentFactory(
             createdAt: OffsetDateTime = OffsetDateTime.now(),
             applicationId: Long = 1L,
             attachmentType: ApplicationAttachmentType = MUU,
-        ): ApplicationAttachmentMetadata =
-            ApplicationAttachmentMetadata(
+        ): ApplicationAttachmentMetadataDto =
+            ApplicationAttachmentMetadataDto(
                 id = attachmentId,
                 fileName = fileName,
                 createdByUserId = createdBy,

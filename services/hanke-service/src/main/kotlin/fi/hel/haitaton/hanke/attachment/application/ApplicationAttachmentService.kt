@@ -9,7 +9,7 @@ import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
@@ -32,7 +32,7 @@ class ApplicationAttachmentService(
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) {
-    fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadata> =
+    fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadataDto> =
         metadataService.getMetadataList(applicationId)
 
     fun getContent(attachmentId: UUID): AttachmentContent {
@@ -50,7 +50,7 @@ class ApplicationAttachmentService(
         applicationId: Long,
         attachmentType: ApplicationAttachmentType,
         attachment: MultipartFile
-    ): ApplicationAttachmentMetadata {
+    ): ApplicationAttachmentMetadataDto {
         logger.info {
             "Adding attachment to application, applicationId = $applicationId, " +
                 "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}, " +
