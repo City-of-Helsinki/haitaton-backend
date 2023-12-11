@@ -46,6 +46,10 @@ haitaton:
     issuer: ${HAITATON_GDPR_ISSUER:http://gdpr-api-tester:8888/}
     query-scope: ${HAITATON_GDPR_QUERY_SCOPE:haitaton.gdprquery}
     # For dev and test environments, enable the testdata controller for resetting data
+  profiili-api:
+    api-tokens-url: ${PROFIILI_API_TOKENS_URL:https://tunnistamo.test.hel.ninja/api-tokens/}
+    graph-ql-url: ${PROFIILI_GRAPHQL_URL:https://profile-api.test.hel.ninja/graphql/}
+    audience: ${PROFIILI_AUDIENCE:https://api.hel.fi/auth/helsinkiprofile}
   testdata:
     enabled: ${HAITATON_TESTDATA_ENABLED:false}
 
@@ -56,6 +60,10 @@ info:
 logging:
   level:
     liquibase: INFO
+    reactor:
+      netty:
+        http:
+          client: DEBUG
 
 # Actuator Management for Kubernetes. Separate HTTP port for probes.
 management:
