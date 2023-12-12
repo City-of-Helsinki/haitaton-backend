@@ -79,13 +79,23 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     }
 
     @Test
+    fun `getApplicationAttachments when application not found should return 404`() {
+        every { authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name) } throws
+            ApplicationNotFoundException(APPLICATION_ID)
+
+        get("/hakemukset/$APPLICATION_ID/liitteet").andExpect(status().isNotFound)
+
+        verifySequence { authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name) }
+    }
+
+    @Test
     fun `getApplicationAttachments when valid request should return metadata list`() {
         val data =
             (1..3).map { ApplicationAttachmentFactory.createMetadata(fileName = "${it}file.pdf") }
         every { authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name) } returns true
         every { applicationAttachmentService.getMetadataList(APPLICATION_ID) } returns data
         val result: List<ApplicationAttachmentMetadataDto> =
-            getMetadataList().andExpect(status().isOk).andReturnBody()
+            get("/hakemukset/$APPLICATION_ID/liitteet").andExpect(status().isOk).andReturnBody()
 
         assertThat(result).each { d ->
             d.transform { it.id }.isNotNull()
@@ -208,14 +218,11 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
     @Test
     @WithAnonymousUser
     fun `unauthorized without authenticated user`() {
-        getMetadataList().andExpectError(HAI0001)
+        get("/hakemukset/$APPLICATION_ID/liitteet").andExpectError(HAI0001)
         getAttachmentContent(resultType = APPLICATION_JSON).andExpectError(HAI0001)
         postAttachment().andExpectError(HAI0001)
         deleteAttachment().andExpectError(HAI0001)
     }
-
-    private fun getMetadataList(applicationId: Long = APPLICATION_ID): ResultActions =
-        get("/hakemukset/$applicationId/liitteet")
 
     private fun getAttachmentContent(
         applicationId: Long = APPLICATION_ID,

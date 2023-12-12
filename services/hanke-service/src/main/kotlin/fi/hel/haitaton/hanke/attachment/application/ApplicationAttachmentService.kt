@@ -32,6 +32,7 @@ class ApplicationAttachmentService(
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
 ) {
+    /** Authorization in controller throws exception if application ID is unknown. */
     fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadataDto> =
         metadataService.getMetadataList(applicationId)
 
