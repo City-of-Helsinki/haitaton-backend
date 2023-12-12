@@ -1,13 +1,17 @@
 package fi.hel.haitaton.hanke.attachment.application
 
+import assertk.all
+import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.each
 import assertk.assertions.endsWith
+import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isPresent
+import assertk.assertions.messageContains
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
@@ -29,6 +33,8 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.VALTAKIRJA
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
+import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
@@ -46,11 +52,14 @@ import io.mockk.every
 import io.mockk.justRun
 import io.mockk.verify
 import io.mockk.verifyOrder
+import java.util.UUID
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
@@ -115,23 +124,48 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         }
     }
 
-    @Test
-    fun `getContent when status is OK should succeed`() {
-        mockWebServer.enqueue(response(body(results = successResult())))
-        val application = initApplication().toApplication()
-        val file = testFile()
-        val attachment =
-            applicationAttachmentService.addAttachment(
-                applicationId = application.id!!,
-                attachmentType = VALTAKIRJA,
-                attachment = file
-            )
+    @Nested
+    inner class GetContent {
+        @Test
+        fun `throws exception when attachment not found`() {
+            val attachmentId = UUID.fromString("93b5c49d-918a-453d-a2bf-b918b47923c1")
 
-        val result = applicationAttachmentService.getContent(attachment.id)
+            val failure = assertFailure { applicationAttachmentService.getContent(attachmentId) }
 
-        assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-        assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
-        assertThat(result.bytes).isEqualTo(file.bytes)
+            failure.all {
+                hasClass(AttachmentNotFoundException::class)
+                messageContains(attachmentId.toString())
+            }
+        }
+
+        @Nested
+        inner class FromDb {
+            @Test
+            fun `returns the attachment content, filename and type`() {
+                val attachment = attachmentFactory.save().withDbContent().value
+
+                val result = applicationAttachmentService.getContent(attachmentId = attachment.id!!)
+
+                assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
+                assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
+                assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
+            }
+        }
+
+        @Nested
+        @ExtendWith(MockFileClientExtension::class)
+        inner class FromCloud {
+            @Test
+            fun `returns the attachment content, filename and type`() {
+                val attachment = attachmentFactory.save().withCloudContent().value
+
+                val result = applicationAttachmentService.getContent(attachmentId = attachment.id!!)
+
+                assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
+                assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
+                assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
+            }
+        }
     }
 
     @EnumSource(ApplicationAttachmentType::class)
@@ -164,7 +198,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(attachmentInDb.applicationId).isEqualTo(application.id)
         assertThat(attachmentInDb.attachmentType).isEqualTo(typeInput)
 
-        val content = attachmentContentService.find(result.id)
+        val content = attachmentContentService.find(attachmentInDb)
         assertThat(content).isEqualTo(DEFAULT_DATA)
 
         verify { cableReportService wasNot Called }
