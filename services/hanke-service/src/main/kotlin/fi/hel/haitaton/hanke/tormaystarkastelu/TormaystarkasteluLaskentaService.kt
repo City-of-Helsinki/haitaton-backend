@@ -132,15 +132,13 @@ class TormaystarkasteluLaskentaService(
 
     internal fun linjaautoliikenneluokittelu(geometriaIds: Set<Int>): Int {
         if (tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds)) {
-            return Linjaautoliikenneluokittelu
-                .KAMPPI_RAUTATIENTORI_MANNERHEIMINTIE_KAISANIEMENKATU_HAMEENTIE_TAI_YLI_20_VUOROA_RUUHKATUNNISSA
-                .value
+            return Linjaautoliikenneluokittelu.TARKEIMMAT_JOUKKOLIIKENNEKADUT.value
         }
 
         val bussireitit = tormaysService.getIntersectingBusRoutes(geometriaIds)
 
         val valueByRunkolinja =
-            bussireitit.maxOfOrNull { it.runkolinja.toLinjaautoliikenneluokittelu().value }
+            bussireitit.maxOfOrNull { it.runkolinja?.toLinjaautoliikenneluokittelu()?.value ?: 0 }
                 // bussireitit is empty
                 ?: return Linjaautoliikenneluokittelu.EI_VAIKUTA_LINJAAUTOLIIKENTEESEEN.value
 

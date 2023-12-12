@@ -79,7 +79,7 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
                             rs.getString(2),
                             rs.getInt(3),
                             rs.getInt(4),
-                            TormaystarkasteluBussiRunkolinja.valueOfRunkolinja(rs.getString(5))!!
+                            TormaystarkasteluBussiRunkolinja.valueOfRunkolinja(rs.getString(5))
                         )
                     },
                     *geometriaIds.toTypedArray()
@@ -157,7 +157,6 @@ enum class TormaystarkasteluKatuluokka(val value: Int, val katuluokka: String) {
 
 enum class TormaystarkasteluBussiRunkolinja(val runkolinja: String) {
     EI("no"),
-    LAHES("almost"),
     ON("yes");
 
     companion object {
@@ -168,9 +167,8 @@ enum class TormaystarkasteluBussiRunkolinja(val runkolinja: String) {
 
     fun toLinjaautoliikenneluokittelu(): Linjaautoliikenneluokittelu =
         when (this) {
-            ON -> Linjaautoliikenneluokittelu.RUNKOLINJA_TAI_ENINTAAN_20_VUOROA_RUUHKATUNNISSA
-            LAHES -> Linjaautoliikenneluokittelu.ENINTAAN_10_VUOROA_RUUHKATUNNISSA
-            EI -> Linjaautoliikenneluokittelu.EI_RUUHKAAIKANA
+            ON -> Linjaautoliikenneluokittelu.RUNKOLINJA
+            EI -> Linjaautoliikenneluokittelu.EI_VUOROJA_RUUHKAAIKANA
         }
 }
 
@@ -185,7 +183,7 @@ class TormaystarkasteluBussireitti(
     val reittiId: String,
     val suunta: Int,
     val vuoromaaraRuuhkatunnissa: Int,
-    val runkolinja: TormaystarkasteluBussiRunkolinja
+    val runkolinja: TormaystarkasteluBussiRunkolinja?
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

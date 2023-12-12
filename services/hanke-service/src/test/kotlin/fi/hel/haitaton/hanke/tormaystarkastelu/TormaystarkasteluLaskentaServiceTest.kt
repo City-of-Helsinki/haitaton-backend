@@ -437,7 +437,6 @@ internal class TormaystarkasteluLaskentaServiceTest {
         @ParameterizedTest
         @CsvSource(
             "ON,4",
-            "LAHES,3",
             "EI,2",
         )
         fun `returns classification based on trunk lines when there are zero rush hour buses`(

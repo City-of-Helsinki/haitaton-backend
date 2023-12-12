@@ -22,14 +22,10 @@ object RajaArvoLuokittelija {
 
     fun linjaautoliikenteenRuuhkavuoroluokka(countOfRushHourBuses: Int) =
         when {
-            countOfRushHourBuses > 20 ->
-                Linjaautoliikenneluokittelu
-                    .KAMPPI_RAUTATIENTORI_MANNERHEIMINTIE_KAISANIEMENKATU_HAMEENTIE_TAI_YLI_20_VUOROA_RUUHKATUNNISSA
-            countOfRushHourBuses > 10 ->
-                Linjaautoliikenneluokittelu.RUNKOLINJA_TAI_ENINTAAN_20_VUOROA_RUUHKATUNNISSA
-            countOfRushHourBuses > 0 ->
-                Linjaautoliikenneluokittelu.ENINTAAN_10_VUOROA_RUUHKATUNNISSA
-            countOfRushHourBuses == 0 -> Linjaautoliikenneluokittelu.EI_RUUHKAAIKANA
+            countOfRushHourBuses > 20 -> Linjaautoliikenneluokittelu.TARKEIMMAT_JOUKKOLIIKENNEKADUT
+            countOfRushHourBuses > 10 -> Linjaautoliikenneluokittelu.RUNKOLINJA
+            countOfRushHourBuses > 0 -> Linjaautoliikenneluokittelu.VUOROJA_RUUHKAAIKANA
+            countOfRushHourBuses == 0 -> Linjaautoliikenneluokittelu.EI_VUOROJA_RUUHKAAIKANA
             else -> Linjaautoliikenneluokittelu.EI_VAIKUTA_LINJAAUTOLIIKENTEESEEN
         }.value
 }
