@@ -1,15 +1,15 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankealueEntity
-import fi.hel.haitaton.hanke.Meluhaitta
-import fi.hel.haitaton.hanke.Polyhaitta
-import fi.hel.haitaton.hanke.Tarinahaitta
-import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.ZonedDateTime
 
 object HankealueFactory {

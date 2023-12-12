@@ -3,10 +3,8 @@ package fi.hel.haitaton.hanke.tormaystarkastelu
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
-import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
 import fi.hel.haitaton.hanke.TZ_UTC
-import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.geometriaIds
 import fi.hel.haitaton.hanke.factory.GeometriaFactory

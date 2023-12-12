@@ -2,8 +2,16 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
+import fi.hel.haitaton.hanke.domain.HankeStatus
+import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.HasId
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import jakarta.persistence.CascadeType
 import jakarta.persistence.CollectionTable
 import jakarta.persistence.ElementCollection
@@ -31,7 +39,7 @@ class HankeEntity(
     override val hankeTunnus: String,
     var nimi: String,
     var kuvaus: String? = null,
-    @Enumerated(EnumType.STRING) var vaihe: Vaihe? = null,
+    @Enumerated(EnumType.STRING) var vaihe: Hankevaihe? = null,
     var onYKTHanke: Boolean? = false,
     var version: Int? = 0,
     // NOTE: creatorUserId must be non-null for valid data, but to allow creating instances with

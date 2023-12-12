@@ -1,6 +1,14 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.domain.HankeStatus
+import fi.hel.haitaton.hanke.domain.Hankevaihe
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.LocalDateTime
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -55,7 +63,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHanke!!.status).isEqualTo(HankeStatus.DRAFT)
         assertThat(loadedHanke.nimi).isEqualTo("nimi")
         assertThat(loadedHanke.kuvaus).isEqualTo("kuvaus")
-        assertThat(loadedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
+        assertThat(loadedHanke.vaihe).isEqualTo(Hankevaihe.SUUNNITTELU)
         assertThat(loadedHanke.tyomaaKatuosoite).isEqualTo("katu 1")
         assertThat(loadedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         assertThat(loadedHanke.kaistaHaitta)
@@ -160,7 +168,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
             hankeTunnus = hankeTunnus,
             nimi = "nimi",
             kuvaus = "kuvaus",
-            vaihe = Vaihe.SUUNNITTELU,
+            vaihe = Hankevaihe.SUUNNITTELU,
             onYKTHanke = true,
             version = 1,
             createdByUserId = null,

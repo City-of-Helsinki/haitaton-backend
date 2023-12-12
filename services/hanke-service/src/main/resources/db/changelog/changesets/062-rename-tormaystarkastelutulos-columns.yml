@@ -3,6 +3,21 @@ databaseChangeLog:
       id: 062-rename-tormaystarkastelutulos-columns
       author: Teemu Hiltunen
       comment: Rename columns to be in-sync with updated specification
+      preConditions:
+        - onFail: MARK_RAN
+          and:
+            - columnExists:
+                tableName: tormaystarkastelutulos
+                columnName: perus
+            - columnExists:
+                tableName: tormaystarkastelutulos
+                columnName: pyoraily
+            - columnExists:
+                tableName: tormaystarkastelutulos
+                columnName: linjaauto
+            - columnExists:
+                tableName: tormaystarkastelutulos
+                columnName: raitiovaunu
       changes:
         - renameColumn:
             tableName: tormaystarkastelutulos

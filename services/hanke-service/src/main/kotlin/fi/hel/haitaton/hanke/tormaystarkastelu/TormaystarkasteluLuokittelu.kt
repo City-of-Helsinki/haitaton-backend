@@ -1,13 +1,54 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
-import fi.hel.haitaton.hanke.Luokittelu
-
 enum class LuokitteluType {
     HAITTA_AJAN_KESTO,
     VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN,
     AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS,
     KATULUOKKA,
     AUTOLIIKENTEEN_MAARA
+}
+
+interface Luokittelu {
+    val value: Int
+}
+
+/** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
+enum class VaikutusAutoliikenteenKaistamaariin(override val value: Int) : Luokittelu {
+    EI_VAIKUTA(1),
+    VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA(2),
+    VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA(3),
+    VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_KAHDELLA_AJOSUUNNALLA(4),
+    VAHENTAA_SAMANAIKAISESTI_USEITA_KAISTOJA_LIITTYMIEN_ERI_SUUNNILLA(5)
+}
+
+/** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
+enum class AutoliikenteenKaistavaikutustenPituus(override val value: Int) : Luokittelu {
+    EI_VAIKUTA_KAISTAJARJESTELYIHIN(1),
+    KAISTAVAIKUTUSTEN_PITUUS_ALLE_10_METRIA(2),
+    KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA(3),
+    KAISTAVAIKUTUSTEN_PITUUS_100_499_METRIA(4),
+    KAISTAVAIKUTUSTEN_PITUUS_500_METRIA_TAI_ENEMMAN(5)
+}
+
+/** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
+enum class Meluhaitta {
+    SATUNNAINEN_HAITTA,
+    LYHYTAIKAINEN_TOISTUVA_HAITTA,
+    PITKAKESTOINEN_TOISTUVA_HAITTA
+}
+
+/** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
+enum class Polyhaitta {
+    SATUNNAINEN_HAITTA,
+    LYHYTAIKAINEN_TOISTUVA_HAITTA,
+    PITKAKESTOINEN_TOISTUVA_HAITTA
+}
+
+/** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
+enum class Tarinahaitta {
+    SATUNNAINEN_HAITTA,
+    LYHYTAIKAINEN_TOISTUVA_HAITTA,
+    PITKAKESTOINEN_TOISTUVA_HAITTA
 }
 
 enum class HaittaAjanKestoLuokittelu(override val value: Int) : Luokittelu {

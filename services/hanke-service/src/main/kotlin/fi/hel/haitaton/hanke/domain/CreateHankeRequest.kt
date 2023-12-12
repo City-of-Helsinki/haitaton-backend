@@ -1,13 +1,11 @@
 package fi.hel.haitaton.hanke.domain
 
-import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
-import fi.hel.haitaton.hanke.Meluhaitta
-import fi.hel.haitaton.hanke.Polyhaitta
-import fi.hel.haitaton.hanke.Tarinahaitta
-import fi.hel.haitaton.hanke.TyomaaTyyppi
-import fi.hel.haitaton.hanke.Vaihe
-import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.Yhteyshenkilo
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
@@ -30,7 +28,7 @@ data class CreateHankeRequest(
     @field:Schema(
         description = "Current stage of the project. Required for the hanke to be published.",
     )
-    override val vaihe: Vaihe? = null,
+    override val vaihe: Hankevaihe? = null,
     @field:Schema(
         description =
             "Project owners, contact information. At least one is required for the hanke to be published.",

@@ -1,13 +1,13 @@
 package fi.hel.haitaton.hanke.domain
 
 import com.fasterxml.jackson.annotation.JsonView
-import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.ChangeLogView
-import fi.hel.haitaton.hanke.Meluhaitta
-import fi.hel.haitaton.hanke.Polyhaitta
-import fi.hel.haitaton.hanke.Tarinahaitta
-import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit

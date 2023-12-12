@@ -30,8 +30,11 @@ import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.SavedHankealue
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
@@ -71,6 +74,11 @@ import fi.hel.haitaton.hanke.test.Asserts.hasSingleGeometryWithCoordinates
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -194,7 +202,7 @@ class HankeServiceITests(
     @Test
     fun `create Hanke with full data set succeeds and returns a new domain object with the correct values`() {
         val request: CreateHankeRequest =
-            HankeFactory.createRequest(vaihe = Vaihe.SUUNNITTELU)
+            HankeFactory.createRequest(vaihe = Hankevaihe.SUUNNITTELU)
                 .withYhteystiedot()
                 .withHankealue()
                 .build()
@@ -224,7 +232,7 @@ class HankeServiceITests(
         assertThat(returnedHanke.kuvaus).isEqualTo(defaultKuvaus)
         assertThat(returnedHanke.alkuPvm).isEqualTo(expectedDateAlku)
         assertThat(returnedHanke.loppuPvm).isEqualTo(expectedDateLoppu)
-        assertThat(returnedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
+        assertThat(returnedHanke.vaihe).isEqualTo(Hankevaihe.SUUNNITTELU)
         assertThat(returnedHanke.tyomaaKatuosoite).isEqualTo("Testikatu 1")
         assertThat(returnedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         assertThat(returnedHanke.alueet[0].kaistaHaitta)
