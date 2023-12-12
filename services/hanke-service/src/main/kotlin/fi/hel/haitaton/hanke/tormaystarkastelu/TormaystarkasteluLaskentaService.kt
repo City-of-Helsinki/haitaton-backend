@@ -128,7 +128,7 @@ class TormaystarkasteluLaskentaService(
         }.value
 
     internal fun calculateLinjaautoliikenneindeksi(geometriaIds: Set<Int>): Float =
-        if (linjaautoliikenneluokittelu(geometriaIds) >= 3) 4.0f else 1.0f
+        linjaautoliikenneluokittelu(geometriaIds).toFloat()
 
     internal fun linjaautoliikenneluokittelu(geometriaIds: Set<Int>): Int {
         if (tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds)) {

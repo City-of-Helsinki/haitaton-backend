@@ -467,7 +467,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         assertThat(tulos).isNotNull()
         assertThat(tulos!!.liikennehaittaindeksi).isNotNull()
         assertThat(tulos.liikennehaittaindeksi.indeksi).isNotNull()
-        assertThat(tulos.liikennehaittaindeksi.indeksi).isEqualTo(4.0f)
+        assertThat(tulos.liikennehaittaindeksi.indeksi).isEqualTo(5.0f)
         assertThat(tulos.raitioliikenneindeksi).isEqualTo(3.0f)
 
         verifyAll {
