@@ -47,7 +47,7 @@ class ApplicationAttachmentService(
     @Transactional(readOnly = true)
     fun getContent(attachmentId: UUID): AttachmentContent {
         val attachment = findAttachment(attachmentId)
-        val content = attachmentContentService.find(attachmentId)
+        val content = attachmentContentService.find(attachment)
 
         return AttachmentContent(attachment.fileName, attachment.contentType, content)
     }
