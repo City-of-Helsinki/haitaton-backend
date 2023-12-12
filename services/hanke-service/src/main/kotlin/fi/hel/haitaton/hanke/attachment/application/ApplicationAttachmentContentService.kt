@@ -23,6 +23,12 @@ class ApplicationAttachmentContentService(
         contentRepository.save(ApplicationAttachmentContentEntity(attachmentId, content))
     }
 
+    fun delete(attachment: AttachmentMetadata) =
+        with(attachment) {
+            logger.info { "Deleting attachment $id if blob defined. Blob=$blobLocation." }
+            blobLocation?.let { fileClient.delete(Container.HAKEMUS_LIITTEET, it) }
+        }
+
     fun find(attachment: AttachmentMetadata): ByteArray =
         attachment.blobLocation?.let { readFromFile(it, attachment.id) }
             ?: readFromDatabase(attachment.id)

@@ -19,6 +19,7 @@ import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.hasInfected
 import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 
@@ -97,7 +98,9 @@ class ApplicationAttachmentService(
             throw ApplicationInAlluException(application.id, application.alluid)
         }
 
+        attachmentContentService.delete(attachment)
         metadataService.deleteAttachmentById(attachment.id)
+
         logger.info { "Deleted application attachment ${attachment.id}" }
     }
 
@@ -113,10 +116,8 @@ class ApplicationAttachmentService(
     }
 
     private fun findApplication(applicationId: Long): Application =
-        applicationRepository
-            .findById(applicationId)
-            .orElseThrow { ApplicationNotFoundException(applicationId) }
-            .toApplication()
+        applicationRepository.findByIdOrNull(applicationId)?.toApplication()
+            ?: throw ApplicationNotFoundException(applicationId)
 
     private fun scanAttachment(filename: String, content: ByteArray) {
         val scanResult = scanClient.scan(listOf(FileScanInput(filename, content)))
