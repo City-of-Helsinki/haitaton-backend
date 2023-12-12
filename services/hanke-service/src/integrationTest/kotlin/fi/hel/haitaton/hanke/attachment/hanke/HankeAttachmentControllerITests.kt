@@ -74,7 +74,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
 
     @Test
     fun `getMetadataList when valid request should return metadata list`() {
-        val data = (1..3).map { HankeAttachmentFactory.create(fileName = "${it}file.pdf") }
+        val data = (1..3).map { HankeAttachmentFactory.createDto(fileName = "${it}file.pdf") }
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
         every { hankeAttachmentService.getMetadataList(HANKE_TUNNUS) } returns data
 
@@ -110,7 +110,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
         val hanke = TestHankeIdentifier(1, HANKE_TUNNUS)
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name) } returns true
         every { attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file) } returns
-            HankeAttachmentFactory.create()
+            HankeAttachmentFactory.createDto()
 
         postAttachment(file = file).andExpect(status().isOk)
 

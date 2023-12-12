@@ -42,7 +42,7 @@ class ApplicationAttachmentContentServiceITest(
             val attachmentEntity =
                 ApplicationAttachmentFactory.createEntity(attachmentId, blobLocation = path)
 
-            val result = attachmentContentService.find(attachmentEntity)
+            val result = attachmentContentService.find(attachmentEntity.toDomain())
 
             assertThat(result).isEqualTo(bytes)
         }
@@ -52,7 +52,7 @@ class ApplicationAttachmentContentServiceITest(
             val attachmentEntity =
                 applicationAttachmentFactory.save(blobLocation = null).withDbContent(bytes).value
 
-            val result = attachmentContentService.find(attachmentEntity)
+            val result = attachmentContentService.find(attachmentEntity.toDomain())
 
             assertThat(result).isEqualTo(bytes)
         }

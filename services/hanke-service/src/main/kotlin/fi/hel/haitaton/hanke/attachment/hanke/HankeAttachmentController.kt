@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke.attachment.hanke
 
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadService
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachment
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -47,7 +47,7 @@ class HankeAttachmentController(
             ]
     )
     @PreAuthorize("@hankeAttachmentAuthorizer.authorizeHankeTunnus(#hankeTunnus,'VIEW')")
-    fun getMetadataList(@PathVariable hankeTunnus: String): List<HankeAttachment> {
+    fun getMetadataList(@PathVariable hankeTunnus: String): List<HankeAttachmentMetadataDto> {
         return hankeAttachmentService.getMetadataList(hankeTunnus)
     }
 
@@ -103,7 +103,7 @@ class HankeAttachmentController(
     fun postAttachment(
         @PathVariable hankeTunnus: String,
         @RequestParam("liite") attachment: MultipartFile,
-    ): HankeAttachment {
+    ): HankeAttachmentMetadataDto {
         logger.info {
             "Adding attachment to hanke, hankeTunnus = $hankeTunnus, " +
                 "attachment name = ${attachment.originalFilename}, size = ${attachment.bytes.size}, " +

@@ -18,7 +18,7 @@ import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.andExpectError
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
@@ -84,7 +84,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
             (1..3).map { ApplicationAttachmentFactory.createMetadata(fileName = "${it}file.pdf") }
         every { authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name) } returns true
         every { applicationAttachmentService.getMetadataList(APPLICATION_ID) } returns data
-        val result: List<ApplicationAttachmentMetadata> =
+        val result: List<ApplicationAttachmentMetadataDto> =
             getMetadataList().andExpect(status().isOk).andReturnBody()
 
         assertThat(result).each { d ->
@@ -128,7 +128,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         every { applicationAttachmentService.addAttachment(APPLICATION_ID, MUU, file) } returns
             ApplicationAttachmentFactory.createMetadata()
 
-        val result: ApplicationAttachmentMetadata =
+        val result: ApplicationAttachmentMetadataDto =
             postAttachment(file = file).andExpect(status().isOk).andReturnBody()
 
         with(result) {

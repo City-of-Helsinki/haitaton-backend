@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.attachment.application
 
 import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
 import io.swagger.v3.oas.annotations.Operation
@@ -47,7 +47,7 @@ class ApplicationAttachmentController(
     @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#applicationId, 'VIEW')")
     fun getApplicationAttachments(
         @PathVariable applicationId: Long
-    ): List<ApplicationAttachmentMetadata> {
+    ): List<ApplicationAttachmentMetadataDto> {
         return applicationAttachmentService.getMetadataList(applicationId)
     }
 
@@ -112,7 +112,7 @@ class ApplicationAttachmentController(
         @PathVariable applicationId: Long,
         @RequestParam("tyyppi") tyyppi: ApplicationAttachmentType,
         @RequestParam("liite") attachment: MultipartFile
-    ): ApplicationAttachmentMetadata {
+    ): ApplicationAttachmentMetadataDto {
         return applicationAttachmentService.addAttachment(applicationId, tyyppi, attachment)
     }
 

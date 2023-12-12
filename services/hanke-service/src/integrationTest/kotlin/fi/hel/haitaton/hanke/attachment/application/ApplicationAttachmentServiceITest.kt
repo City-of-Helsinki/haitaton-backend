@@ -14,18 +14,18 @@ import assertk.assertions.isPresent
 import assertk.assertions.messageContains
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
-import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.HANDLING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
-import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.body
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.LIIKENNEJARJESTELY
@@ -40,10 +40,9 @@ import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createAlluApplicationResponse
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
+import fi.hel.haitaton.hanke.test.Asserts.isSameInstantAs
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -64,7 +63,7 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
+import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 
@@ -78,9 +77,9 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     @Autowired private lateinit var applicationAttachmentService: ApplicationAttachmentService
     @Autowired private lateinit var attachmentContentService: ApplicationAttachmentContentService
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
+    @Autowired private lateinit var contentRepository: ApplicationAttachmentContentRepository
     @Autowired private lateinit var alluDataFactory: AlluDataFactory
     @Autowired private lateinit var attachmentFactory: ApplicationAttachmentFactory
-    @Autowired private lateinit var hankeFactory: HankeFactory
 
     private lateinit var mockWebServer: MockWebServer
 
@@ -93,23 +92,16 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
     @AfterEach
     fun tearDown() {
+        mockWebServer.shutdown()
         checkUnnecessaryStub()
         confirmVerified(cableReportService)
-        mockWebServer.shutdown()
     }
 
     @Test
     fun `getMetadataList should return related metadata list`() {
-        mockWebServer.enqueue(response(body(results = successResult())))
-        mockWebServer.enqueue(response(body(results = successResult())))
-        val application = initApplication().toApplication()
-        (1..2).forEach { _ ->
-            applicationAttachmentService.addAttachment(
-                applicationId = application.id!!,
-                attachmentType = MUU,
-                attachment = testFile()
-            )
-        }
+        val application = alluDataFactory.saveApplicationEntity(USERNAME)
+        attachmentFactory.save(application = application).withDbContent()
+        attachmentFactory.save(application = application).withDbContent()
 
         val result = applicationAttachmentService.getMetadataList(application.id!!)
 
@@ -118,7 +110,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
             d.transform { it.id }.isNotNull()
             d.transform { it.fileName }.endsWith("file.pdf")
             d.transform { it.createdByUserId }.isEqualTo(USERNAME)
-            d.transform { it.createdAt }.isRecent()
+            d.transform { it.createdAt }.isSameInstantAs(ApplicationAttachmentFactory.CREATED_AT)
             d.transform { it.applicationId }.isEqualTo(application.id)
             d.transform { it.attachmentType }.isEqualTo(MUU)
         }
@@ -147,7 +139,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 val result = applicationAttachmentService.getContent(attachmentId = attachment.id!!)
 
                 assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-                assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
+                assertThat(result.contentType).isEqualTo(MediaType.APPLICATION_PDF_VALUE)
                 assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
             }
         }
@@ -162,7 +154,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
                 val result = applicationAttachmentService.getContent(attachmentId = attachment.id!!)
 
                 assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-                assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
+                assertThat(result.contentType).isEqualTo(MediaType.APPLICATION_PDF_VALUE)
                 assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
             }
         }
@@ -172,7 +164,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     @ParameterizedTest
     fun `addAttachment when valid data should succeed`(typeInput: ApplicationAttachmentType) {
         mockWebServer.enqueue(response(body(results = successResult())))
-        val application = initApplication().toApplication()
+        val application = alluDataFactory.saveApplicationEntity(USERNAME)
 
         val result =
             applicationAttachmentService.addAttachment(
@@ -198,7 +190,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(attachmentInDb.applicationId).isEqualTo(application.id)
         assertThat(attachmentInDb.attachmentType).isEqualTo(typeInput)
 
-        val content = attachmentContentService.find(attachmentInDb)
+        val content = attachmentContentService.find(attachmentInDb.toDomain())
         assertThat(content).isEqualTo(DEFAULT_DATA)
 
         verify { cableReportService wasNot Called }
@@ -207,7 +199,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     @Test
     fun `addAttachment with special characters in filename sanitizes filename`() {
         mockWebServer.enqueue(response(body(results = successResult())))
-        val application = initApplication().toApplication()
+        val application = alluDataFactory.saveApplicationEntity(USERNAME)
 
         val result =
             applicationAttachmentService.addAttachment(
@@ -223,12 +215,13 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
     @Test
     fun `addAttachment when allowed attachment amount is reached should throw`() {
-        val application = initApplication()
+        val application = alluDataFactory.saveApplicationEntity(USERNAME)
         val attachments =
             (1..ALLOWED_ATTACHMENT_COUNT).map {
                 ApplicationAttachmentFactory.createEntity(applicationId = application.id!!)
             }
         applicationAttachmentRepository.saveAll(attachments)
+        mockWebServer.enqueue(response(body(results = successResult())))
 
         val exception =
             assertThrows<AttachmentLimitReachedException> {
@@ -247,7 +240,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
     @Test
     fun `addAttachment without content type should throw`() {
-        val application = initApplication()
+        val application = alluDataFactory.saveApplicationEntity(USERNAME)
 
         val exception =
             assertThrows<AttachmentInvalidException> {
@@ -266,12 +259,10 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     fun `addAttachment when allu handling has started should throw`() {
         val application =
             alluDataFactory
-                .saveApplicationEntity(username = USERNAME, hanke = hankeEntity()) {
-                    it.alluid = ALLU_ID
-                }
+                .saveApplicationEntity(username = USERNAME) { it.alluid = ALLU_ID }
                 .toApplication()
         every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-            createAlluApplicationResponse(status = HANDLING)
+            AlluDataFactory.createAlluApplicationResponse(status = HANDLING)
 
         val exception =
             assertThrows<ApplicationAlreadyProcessingException> {
@@ -296,13 +287,13 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         mockWebServer.enqueue(response(body(results = successResult())))
         val application =
             alluDataFactory
-                .saveApplicationEntity(username = USERNAME, hanke = hankeEntity()) {
+                .saveApplicationEntity(username = USERNAME) {
                     it.alluid = ALLU_ID
                     it.alluStatus = PENDING
                 }
                 .toApplication()
         every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-            createAlluApplicationResponse(status = status)
+            AlluDataFactory.createAlluApplicationResponse(status = status)
 
         applicationAttachmentService.addAttachment(
             applicationId = application.id!!,
@@ -331,7 +322,7 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
     @Test
     fun `addAttachment when type not supported should fail`() {
-        val application = initApplication().toApplication()
+        val application = alluDataFactory.saveApplicationEntity(USERNAME)
         val invalidFilename = "hello.html"
 
         val exception =
@@ -349,9 +340,40 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
     }
 
     @Test
+    fun `addAttachment when Allu upload fails should clean DB and throw`() {
+        mockWebServer.enqueue(response(body(results = successResult())))
+        val application =
+            alluDataFactory
+                .saveApplicationEntity(username = USERNAME) {
+                    it.alluid = ALLU_ID
+                    it.alluStatus = PENDING
+                }
+                .toApplication()
+        every { cableReportService.getApplicationInformation(ALLU_ID) } returns
+            AlluDataFactory.createAlluApplicationResponse(status = PENDING)
+        every { cableReportService.addAttachment(ALLU_ID, any()) } throws AlluException(listOf())
+
+        assertFailure {
+                applicationAttachmentService.addAttachment(
+                    applicationId = application.id!!,
+                    attachmentType = LIIKENNEJARJESTELY,
+                    attachment = testFile(),
+                )
+            }
+            .hasClass(AlluException::class)
+
+        assertThat(applicationAttachmentRepository.findAll()).isEmpty()
+        assertThat(contentRepository.findAll()).isEmpty()
+        verifyOrder {
+            cableReportService.getApplicationInformation(ALLU_ID)
+            cableReportService.addAttachment(ALLU_ID, any())
+        }
+    }
+
+    @Test
     fun `addAttachment when scan fails should throw`() {
         mockWebServer.enqueue(response(body(results = failResult())))
-        val application = initApplication().toApplication()
+        val application = alluDataFactory.saveApplicationEntity(USERNAME)
 
         val exception =
             assertThrows<AttachmentInvalidException> {
@@ -369,26 +391,18 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
 
     @Test
     fun `deleteAttachment when valid input should succeed`() {
-        mockWebServer.enqueue(response(body(results = successResult())))
-        val application = initApplication().toApplication()
-        val attachment =
-            applicationAttachmentService.addAttachment(
-                applicationId = application.id!!,
-                attachmentType = VALTAKIRJA,
-                attachment = testFile()
-            )
-        assertThat(applicationAttachmentRepository.findById(attachment.id)).isPresent()
+        val attachment = attachmentFactory.save().withDbContent().value
+        assertThat(applicationAttachmentRepository.findById(attachment.id!!)).isPresent()
 
-        applicationAttachmentService.deleteAttachment(attachment.id)
+        applicationAttachmentService.deleteAttachment(attachmentId = attachment.id!!)
 
-        assertThat(applicationAttachmentRepository.findById(attachment.id)).isEmpty()
+        assertThat(applicationAttachmentRepository.findById(attachment.id!!)).isEmpty()
     }
 
     @Test
     fun `deleteAttachment when application has been sent to Allu should throw`() {
-        mockWebServer.enqueue(response(body(results = successResult())))
-        val application = initApplication { it.alluid = ALLU_ID }
-        val attachment = attachmentFactory.saveAttachment(application.id!!)
+        val application = alluDataFactory.saveApplicationEntity(USERNAME) { it.alluid = ALLU_ID }
+        val attachment = attachmentFactory.save(application = application).withDbContent().value
 
         val exception =
             assertThrows<ApplicationInAlluException> {
@@ -403,13 +417,4 @@ class ApplicationAttachmentServiceITest : DatabaseTest() {
         assertThat(applicationAttachmentRepository.findById(attachment.id!!)).isPresent()
         verify { cableReportService wasNot Called }
     }
-
-    private fun initApplication(mutator: (ApplicationEntity) -> Unit = {}): ApplicationEntity =
-        alluDataFactory.saveApplicationEntity(
-            username = USERNAME,
-            hanke = hankeEntity(),
-            mutator = mutator
-        )
-
-    private fun hankeEntity(): HankeEntity = hankeFactory.saveEntity()
 }
