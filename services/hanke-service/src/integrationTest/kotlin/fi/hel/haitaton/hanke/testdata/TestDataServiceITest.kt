@@ -38,23 +38,26 @@ class TestDataServiceITest : DatabaseTest() {
 
         @Test
         fun `With applications resets their allu fields`() {
+            val applicationData = AlluDataFactory.createCableReportApplicationData()
             for (i in 1..4) {
                 val hanke = hankeFactory.saveEntity()
-                alluDataFactory.saveApplicationEntity(USERNAME, hanke) { application ->
-                    application.alluStatus = ApplicationStatus.values()[i + 4]
-                    application.alluid = i
-                    application.applicationIdentifier = "JS00$i"
-                    application.applicationData =
-                        application.applicationData.copy(pendingOnClient = false)
-                }
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = hanke,
+                    alluStatus = ApplicationStatus.entries[i + 4],
+                    alluId = i,
+                    applicationIdentifier = "JS00$i",
+                    applicationData = applicationData.copy(pendingOnClient = false),
+                )
 
-                alluDataFactory.saveApplicationEntity(USERNAME, hanke) { application ->
-                    application.alluStatus = null
-                    application.alluid = null
-                    application.applicationIdentifier = null
-                    application.applicationData =
-                        application.applicationData.copy(pendingOnClient = true)
-                }
+                alluDataFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke,
+                    alluStatus = null,
+                    alluId = null,
+                    applicationIdentifier = null,
+                    applicationData = applicationData.copy(pendingOnClient = true),
+                )
             }
 
             testDataService.unlinkApplicationsFromAllu()
