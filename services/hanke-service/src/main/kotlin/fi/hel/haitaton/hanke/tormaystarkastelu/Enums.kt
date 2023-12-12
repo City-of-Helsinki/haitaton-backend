@@ -1,15 +1,13 @@
 package fi.hel.haitaton.hanke.tormaystarkastelu
 
+import fi.hel.haitaton.hanke.Luokittelu
+
 enum class LuokitteluType {
     HAITTA_AJAN_KESTO,
     VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN,
     AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS,
     KATULUOKKA,
     AUTOLIIKENTEEN_MAARA
-}
-
-interface Luokittelu {
-    val value: Int
 }
 
 enum class HaittaAjanKestoLuokittelu(override val value: Int) : Luokittelu {

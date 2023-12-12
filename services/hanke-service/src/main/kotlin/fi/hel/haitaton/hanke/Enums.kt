@@ -1,16 +1,16 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.tormaystarkastelu.Luokittelu
-
 enum class HankeStatus {
     /** A hanke is a draft from its creation until all mandatory fields have been filled. */
     DRAFT,
+
     /**
      * A hanke goes public after all mandatory fields have been filled. This happens automatically
      * on any update. A public hanke has some info visible to everyone and applications can be added
      * to it.
      */
     PUBLIC,
+
     /**
      * After the end dates of all hankealue have passed, a hanke is considered finished. It's
      * anonymized and at least mostly hidden in the UI.
@@ -56,6 +56,10 @@ enum class TyomaaTyyppi {
     LUMENPUDOTUS,
     YLEISOTILAISUUS,
     VAIHTOLAVA
+}
+
+interface Luokittelu {
+    val value: Int
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
