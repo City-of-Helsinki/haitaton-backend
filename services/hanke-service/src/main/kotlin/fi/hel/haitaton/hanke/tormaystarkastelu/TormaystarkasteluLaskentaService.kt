@@ -17,17 +17,6 @@ class TormaystarkasteluLaskentaService(
     @Autowired private val tormaysService: TormaystarkasteluTormaysService
 ) {
 
-    companion object {
-        val autoliikenneindeksipainot =
-            mapOf(
-                Pair(LuokitteluType.HAITTA_AJAN_KESTO, 0.1f),
-                Pair(LuokitteluType.VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN, 0.25f),
-                Pair(LuokitteluType.AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS, 0.2f),
-                Pair(LuokitteluType.KATULUOKKA, 0.2f),
-                Pair(LuokitteluType.AUTOLIIKENTEEN_MAARA, 0.25f)
-            )
-    }
-
     fun calculateTormaystarkastelu(
         alueet: List<Hankealue>,
         geometriaIds: Set<Int>
@@ -131,10 +120,11 @@ class TormaystarkasteluLaskentaService(
     internal fun pyoraliikenneluokittelu(geometriaIds: Set<Int>): Int =
         when {
             tormaysService.anyIntersectsWithCyclewaysPriority(geometriaIds) ->
-                Pyoraliikenneluokittelu.PRIORISOITU_REITTI
+                Pyoraliikenneluokittelu
+                    .PRIORISOITU_REITTI_TAI_PRIORISOIDUN_REITIN_OSANA_TOIMIVA_KATU
             tormaysService.anyIntersectsWithCyclewaysMain(geometriaIds) ->
-                Pyoraliikenneluokittelu.PAAREITTI
-            else -> Pyoraliikenneluokittelu.EI_PYORAILUREITTI
+                Pyoraliikenneluokittelu.PAAREITTI_TAI_PAAREITIN_OSANA_TOIMIVA_KATU
+            else -> Pyoraliikenneluokittelu.EI_VAIKUTA_PYORALIIKENTEESEEN
         }.value
 
     internal fun calculateLinjaautoliikenneindeksi(geometriaIds: Set<Int>): Float =
@@ -142,7 +132,9 @@ class TormaystarkasteluLaskentaService(
 
     internal fun linjaautoliikenneluokittelu(geometriaIds: Set<Int>): Int {
         if (tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds)) {
-            return Linjaautoliikenneluokittelu.KAMPPI_RAUTATIENTORI.value
+            return Linjaautoliikenneluokittelu
+                .KAMPPI_RAUTATIENTORI_MANNERHEIMINTIE_KAISANIEMENKATU_HAMEENTIE_TAI_YLI_20_VUOROA_RUUHKATUNNISSA
+                .value
         }
 
         val bussireitit = tormaysService.getIntersectingBusRoutes(geometriaIds)
@@ -150,7 +142,7 @@ class TormaystarkasteluLaskentaService(
         val valueByRunkolinja =
             bussireitit.maxOfOrNull { it.runkolinja.toLinjaautoliikenneluokittelu().value }
                 // bussireitit is empty
-                ?: return Linjaautoliikenneluokittelu.EI_VAIKUTA.value
+                ?: return Linjaautoliikenneluokittelu.EI_VAIKUTA_LINJAAUTOLIIKENTEESEEN.value
 
         val countOfRushHourBuses = bussireitit.sumOf { it.vuoromaaraRuuhkatunnissa }
         val valueByRajaArvo =
@@ -165,9 +157,21 @@ class TormaystarkasteluLaskentaService(
     internal fun raitioliikenneluokittelu(geometriaIds: Set<Int>): Int =
         when {
             tormaysService.anyIntersectsWithTramLines(geometriaIds) ->
-                Raitioliikenneluokittelu.RAITIOTIELINJA
+                Raitioliikenneluokittelu.RAITIOTIEVERKON_RATAOSA_JOLLA_SAANNOLLISTA_LINJALIIKENNETTA
             tormaysService.anyIntersectsWithTramInfra(geometriaIds) ->
-                Raitioliikenneluokittelu.RAITIOTIEVERKON_RATAOSA
-            else -> Raitioliikenneluokittelu.EI_RAITIOTIETA
+                Raitioliikenneluokittelu
+                    .RAITIOTIEVERKON_RATAOSA_JOLLA_EI_SAANNOLLISTA_LINJALIIKENNETTA
+            else -> Raitioliikenneluokittelu.EI_TUNNISTETTUJA_RAITIOTIEKISKOJA
         }.value
+
+    companion object {
+        val autoliikenneindeksipainot =
+            mapOf(
+                Pair(LuokitteluType.HAITTA_AJAN_KESTO, 0.1f),
+                Pair(LuokitteluType.VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN, 0.25f),
+                Pair(LuokitteluType.AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS, 0.2f),
+                Pair(LuokitteluType.KATULUOKKA, 0.2f),
+                Pair(LuokitteluType.AUTOLIIKENTEEN_MAARA, 0.25f)
+            )
+    }
 }

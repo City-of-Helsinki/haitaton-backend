@@ -26,9 +26,9 @@ class HankealueEntity(
     var haittaLoppuPvm: LocalDate? = null,
     var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
     var kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
-    var meluHaitta: Haitta123? = null,
-    var polyHaitta: Haitta123? = null,
-    var tarinaHaitta: Haitta123? = null,
+    var meluHaitta: Meluhaitta? = null,
+    var polyHaitta: Polyhaitta? = null,
+    var tarinaHaitta: Tarinahaitta? = null,
     var nimi: String
 ) : HasId<Int> {
 

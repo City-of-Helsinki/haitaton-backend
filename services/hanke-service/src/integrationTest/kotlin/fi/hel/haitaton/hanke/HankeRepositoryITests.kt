@@ -40,11 +40,13 @@ internal class HankeRepositoryITests : DatabaseTest() {
         baseHankeEntity.tyomaaKatuosoite = "katu 1"
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
-        baseHankeEntity.kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.KAKSI
-        baseHankeEntity.kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.KOLME
-        baseHankeEntity.meluHaitta = Haitta123.YKSI
-        baseHankeEntity.polyHaitta = Haitta123.KAKSI
-        baseHankeEntity.tarinaHaitta = Haitta123.KOLME
+        baseHankeEntity.kaistaHaitta =
+            VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
+        baseHankeEntity.kaistaPituusHaitta =
+            AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA
+        baseHankeEntity.meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA
+        baseHankeEntity.polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA
+        baseHankeEntity.tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA
         hankeRepository.save(baseHankeEntity)
 
         val loadedHanke = hankeRepository.findByHankeTunnus("ABC-123")
@@ -56,12 +58,13 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
         assertThat(loadedHanke.tyomaaKatuosoite).isEqualTo("katu 1")
         assertThat(loadedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
-        assertThat(loadedHanke.kaistaHaitta).isEqualTo(VaikutusAutoliikenteenKaistamaariin.KAKSI)
+        assertThat(loadedHanke.kaistaHaitta)
+            .isEqualTo(VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA)
         assertThat(loadedHanke.kaistaPituusHaitta)
-            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.KOLME)
-        assertThat(loadedHanke.meluHaitta).isEqualTo(Haitta123.YKSI)
-        assertThat(loadedHanke.polyHaitta).isEqualTo(Haitta123.KAKSI)
-        assertThat(loadedHanke.tarinaHaitta).isEqualTo(Haitta123.KOLME)
+            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA)
+        assertThat(loadedHanke.meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_HAITTA)
+        assertThat(loadedHanke.polyHaitta).isEqualTo(Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA)
+        assertThat(loadedHanke.tarinaHaitta).isEqualTo(Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA)
     }
 
     @Test

@@ -1,7 +1,9 @@
 package fi.hel.haitaton.hanke.domain
 
 import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
-import fi.hel.haitaton.hanke.Haitta123
+import fi.hel.haitaton.hanke.Meluhaitta
+import fi.hel.haitaton.hanke.Polyhaitta
+import fi.hel.haitaton.hanke.Tarinahaitta
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
@@ -130,15 +132,15 @@ data class NewHankealue(
     @field:Schema(
         description = "Noise nuisance",
     )
-    override val meluHaitta: Haitta123? = null,
+    override val meluHaitta: Meluhaitta? = null,
     @field:Schema(
         description = "Dust nuisance",
     )
-    override val polyHaitta: Haitta123? = null,
+    override val polyHaitta: Polyhaitta? = null,
     @field:Schema(
         description = "Vibration nuisance",
     )
-    override val tarinaHaitta: Haitta123? = null,
+    override val tarinaHaitta: Tarinahaitta? = null,
     @field:Schema(
         description = "Area name, must not be null or empty",
     )

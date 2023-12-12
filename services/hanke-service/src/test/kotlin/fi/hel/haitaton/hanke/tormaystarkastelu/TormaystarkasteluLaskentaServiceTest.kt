@@ -26,7 +26,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvFileSource
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
 
@@ -48,7 +47,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
     }
 
     @ParameterizedTest(name = "Autoliikenneindeksi with default weights should be {0}")
-    @CsvFileSource(resources = ["autoliikenneindeksi-test.csv"], numLinesToSkip = 1)
+    @CsvSource("1.0,1,1,1,1,1", "1.9,1,2,2,2,2", "3.0,3,3,3,3,3", "3.9,3,4,4,4,4", "5.0,5,5,5,5,5")
     fun autoliikenneindeksiCalculatorTest(
         indeksi: Float,
         haittaAjanKesto: Int,
@@ -496,8 +495,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
                     geometriat = GeometriaFactory.create(),
                     haittaAlkuPvm = alkuPvm,
                     haittaLoppuPvm = alkuPvm.plusDays(7),
-                    kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.YKSI,
-                    kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.YKSI,
+                    kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.EI_VAIKUTA,
+                    kaistaPituusHaitta =
+                        AutoliikenteenKaistavaikutustenPituus.EI_VAIKUTA_KAISTAJARJESTELYIHIN,
                     nimi = "$HANKEALUE_DEFAULT_NAME 1"
                 )
             )

@@ -168,9 +168,12 @@ enum class TormaystarkasteluBussiRunkolinja(val runkolinja: String) {
 
     fun toLinjaautoliikenneluokittelu(): Linjaautoliikenneluokittelu =
         when (this) {
-            ON -> Linjaautoliikenneluokittelu.RUNKOLINJA
-            LAHES -> Linjaautoliikenneluokittelu.RUNKOLINJAMAINEN
-            EI -> Linjaautoliikenneluokittelu.PERUS
+            ON -> Linjaautoliikenneluokittelu.RUNKOLINJA_TAI_ENINTAAN_20_VUOROA_RUUHKAAIKANA
+            LAHES ->
+                Linjaautoliikenneluokittelu
+                    .RUNKOLINJAMAINEN_LINJA_TAI_ENINTAAN_10_VUOROA_RUUHKAAIKANA
+            EI ->
+                Linjaautoliikenneluokittelu.ENINTAAN_5_VUOROA_RUUHKAAIKANA_TAI_LINJOJA_MUUNA_AIKANA
         }
 }
 

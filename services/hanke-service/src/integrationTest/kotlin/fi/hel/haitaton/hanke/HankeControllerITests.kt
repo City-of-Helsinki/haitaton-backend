@@ -479,11 +479,13 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             val alue = SavedHankealue(nimi = "$HANKEALUE_DEFAULT_NAME 1")
             alue.haittaAlkuPvm = DateFactory.getStartDatetime()
             alue.haittaLoppuPvm = DateFactory.getEndDatetime()
-            alue.kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.KAKSI
-            alue.kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.NELJA
-            alue.meluHaitta = Haitta123.YKSI
-            alue.polyHaitta = Haitta123.KAKSI
-            alue.tarinaHaitta = Haitta123.KOLME
+            alue.kaistaHaitta =
+                VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
+            alue.kaistaPituusHaitta =
+                AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_100_499_METRIA
+            alue.meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA
+            alue.polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA
+            alue.tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA
             hankeToBeUpdated.alueet.add(alue)
             // Prepare the expected result/return
             // Note, "pvm" values should have become truncated to begin of the day
@@ -512,7 +514,11 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .andExpect(jsonPath("$.tyomaaKatuosoite").value("Testikatu 1"))
                 .andExpect(
                     jsonPath("$.alueet[0].kaistaHaitta")
-                        .value(VaikutusAutoliikenteenKaistamaariin.KAKSI.name)
+                        .value(
+                            VaikutusAutoliikenteenKaistamaariin
+                                .VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
+                                .name
+                        )
                 ) // Note, here as string, not the enum.
 
             verifySequence {

@@ -3,7 +3,9 @@ package fi.hel.haitaton.hanke.domain
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.ChangeLogView
-import fi.hel.haitaton.hanke.Haitta123
+import fi.hel.haitaton.hanke.Meluhaitta
+import fi.hel.haitaton.hanke.Polyhaitta
+import fi.hel.haitaton.hanke.Tarinahaitta
 import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import io.swagger.v3.oas.annotations.media.Schema
@@ -47,15 +49,15 @@ data class SavedHankealue(
     @field:Schema(
         description = "Noise nuisance",
     )
-    override var meluHaitta: Haitta123? = null,
+    override var meluHaitta: Meluhaitta? = null,
     @field:Schema(
         description = "Dust nuisance",
     )
-    override var polyHaitta: Haitta123? = null,
+    override var polyHaitta: Polyhaitta? = null,
     @field:Schema(
         description = "Vibration nuisance",
     )
-    override var tarinaHaitta: Haitta123? = null,
+    override var tarinaHaitta: Tarinahaitta? = null,
     @field:Schema(
         description = "Area name, must not be null or empty",
     )

@@ -228,12 +228,16 @@ class HankeServiceITests(
         assertThat(returnedHanke.tyomaaKatuosoite).isEqualTo("Testikatu 1")
         assertThat(returnedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         assertThat(returnedHanke.alueet[0].kaistaHaitta)
-            .isEqualTo(VaikutusAutoliikenteenKaistamaariin.KAKSI)
+            .isEqualTo(VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA)
         assertThat(returnedHanke.alueet[0].kaistaPituusHaitta)
-            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.NELJA)
-        assertThat(returnedHanke.alueet[0].meluHaitta).isEqualTo(Haitta123.YKSI)
-        assertThat(returnedHanke.alueet[0].polyHaitta).isEqualTo(Haitta123.KAKSI)
-        assertThat(returnedHanke.alueet[0].tarinaHaitta).isEqualTo(Haitta123.KOLME)
+            .isEqualTo(
+                AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_100_499_METRIA
+            )
+        assertThat(returnedHanke.alueet[0].meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_HAITTA)
+        assertThat(returnedHanke.alueet[0].polyHaitta)
+            .isEqualTo(Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA)
+        assertThat(returnedHanke.alueet[0].tarinaHaitta)
+            .isEqualTo(Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA)
         assertThat(returnedHanke.version).isZero
         assertThat(returnedHanke.createdAt).isNotNull
         assertThat(returnedHanke.createdAt!!.toEpochSecond() - currentDatetime.toEpochSecond())
@@ -952,11 +956,14 @@ class HankeServiceITests(
             HankealueFactory.create(
                 haittaAlkuPvm = alkuPvm,
                 haittaLoppuPvm = loppuPvm,
-                kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.KOLME,
-                kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.KOLME,
-                meluHaitta = Haitta123.YKSI,
-                polyHaitta = Haitta123.YKSI,
-                tarinaHaitta = Haitta123.YKSI,
+                kaistaHaitta =
+                    VaikutusAutoliikenteenKaistamaariin
+                        .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
+                kaistaPituusHaitta =
+                    AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA,
+                meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA,
+                polyHaitta = Polyhaitta.SATUNNAINEN_HAITTA,
+                tarinaHaitta = Tarinahaitta.SATUNNAINEN_HAITTA,
             )
         val request = HankeFactory.createRequest().withHankealue().withHankealue(hankealue).build()
 
@@ -968,11 +975,16 @@ class HankeServiceITests(
             .isEqualTo(alkuPvm.format(DateTimeFormatter.BASIC_ISO_DATE))
         assertThat(alue.haittaLoppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
             .isEqualTo(loppuPvm.format(DateTimeFormatter.BASIC_ISO_DATE))
-        assertThat(alue.kaistaHaitta).isEqualTo(VaikutusAutoliikenteenKaistamaariin.KOLME)
-        assertThat(alue.kaistaPituusHaitta).isEqualTo(AutoliikenteenKaistavaikutustenPituus.KOLME)
-        assertThat(alue.meluHaitta).isEqualTo(Haitta123.YKSI)
-        assertThat(alue.polyHaitta).isEqualTo(Haitta123.YKSI)
-        assertThat(alue.tarinaHaitta).isEqualTo(Haitta123.YKSI)
+        assertThat(alue.kaistaHaitta)
+            .isEqualTo(
+                VaikutusAutoliikenteenKaistamaariin
+                    .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA
+            )
+        assertThat(alue.kaistaPituusHaitta)
+            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA)
+        assertThat(alue.meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_HAITTA)
+        assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.SATUNNAINEN_HAITTA)
+        assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.SATUNNAINEN_HAITTA)
         assertThat(alue.geometriat).isNotNull
     }
 
@@ -1102,11 +1114,14 @@ class HankeServiceITests(
                 id = null,
                 haittaAlkuPvm = alkuPvm,
                 haittaLoppuPvm = loppuPvm,
-                kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.KOLME,
-                kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.KOLME,
-                meluHaitta = Haitta123.KOLME,
-                polyHaitta = Haitta123.KAKSI,
-                tarinaHaitta = Haitta123.YKSI,
+                kaistaHaitta =
+                    VaikutusAutoliikenteenKaistamaariin
+                        .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
+                kaistaPituusHaitta =
+                    AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA,
+                meluHaitta = Meluhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
+                polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
+                tarinaHaitta = Tarinahaitta.SATUNNAINEN_HAITTA,
             )
         createdHanke.alueet.add(hankealue)
 
@@ -1118,11 +1133,16 @@ class HankeServiceITests(
             .isEqualTo(alkuPvm.format(DateTimeFormatter.BASIC_ISO_DATE))
         assertThat(alue.haittaLoppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
             .isEqualTo(loppuPvm.format(DateTimeFormatter.BASIC_ISO_DATE))
-        assertThat(alue.kaistaHaitta).isEqualTo(VaikutusAutoliikenteenKaistamaariin.KOLME)
-        assertThat(alue.kaistaPituusHaitta).isEqualTo(AutoliikenteenKaistavaikutustenPituus.KOLME)
-        assertThat(alue.meluHaitta).isEqualTo(Haitta123.KOLME)
-        assertThat(alue.polyHaitta).isEqualTo(Haitta123.KAKSI)
-        assertThat(alue.tarinaHaitta).isEqualTo(Haitta123.YKSI)
+        assertThat(alue.kaistaHaitta)
+            .isEqualTo(
+                VaikutusAutoliikenteenKaistamaariin
+                    .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA
+            )
+        assertThat(alue.kaistaPituusHaitta)
+            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA)
+        assertThat(alue.meluHaitta).isEqualTo(Meluhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA)
+        assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA)
+        assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.SATUNNAINEN_HAITTA)
         assertThat(alue.geometriat).isNotNull
     }
 
@@ -1168,11 +1188,14 @@ class HankeServiceITests(
                 id = null,
                 haittaAlkuPvm = alkuPvm,
                 haittaLoppuPvm = loppuPvm,
-                kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.KOLME,
-                kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.KOLME,
-                meluHaitta = Haitta123.YKSI,
-                polyHaitta = Haitta123.KAKSI,
-                tarinaHaitta = Haitta123.KOLME,
+                kaistaHaitta =
+                    VaikutusAutoliikenteenKaistamaariin
+                        .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
+                kaistaPituusHaitta =
+                    AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA,
+                meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA,
+                polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
+                tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
             )
         val hanke = hankeFactory.createRequest().withHankealue().withHankealue(hankealue).save()
         assertThat(hanke.alueet).hasSize(2)
@@ -1188,11 +1211,16 @@ class HankeServiceITests(
             .isEqualTo(alkuPvm.format(DateTimeFormatter.BASIC_ISO_DATE))
         assertThat(alue.haittaLoppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE))
             .isEqualTo(loppuPvm.format(DateTimeFormatter.BASIC_ISO_DATE))
-        assertThat(alue.kaistaHaitta).isEqualTo(VaikutusAutoliikenteenKaistamaariin.KOLME)
-        assertThat(alue.kaistaPituusHaitta).isEqualTo(AutoliikenteenKaistavaikutustenPituus.KOLME)
-        assertThat(alue.meluHaitta).isEqualTo(Haitta123.YKSI)
-        assertThat(alue.polyHaitta).isEqualTo(Haitta123.KAKSI)
-        assertThat(alue.tarinaHaitta).isEqualTo(Haitta123.KOLME)
+        assertThat(alue.kaistaHaitta)
+            .isEqualTo(
+                VaikutusAutoliikenteenKaistamaariin
+                    .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA
+            )
+        assertThat(alue.kaistaPituusHaitta)
+            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA)
+        assertThat(alue.meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_HAITTA)
+        assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA)
+        assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA)
         assertThat(alue.geometriat).isNotNull
         val hankeFromDb = hankeService.loadHanke(hanke.hankeTunnus)
         assertThat(hankeFromDb?.alueet).hasSize(1)

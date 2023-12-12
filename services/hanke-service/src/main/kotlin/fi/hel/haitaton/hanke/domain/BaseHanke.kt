@@ -3,7 +3,9 @@ package fi.hel.haitaton.hanke.domain
 import com.fasterxml.jackson.annotation.JsonIgnore
 import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.ContactType
-import fi.hel.haitaton.hanke.Haitta123
+import fi.hel.haitaton.hanke.Meluhaitta
+import fi.hel.haitaton.hanke.Polyhaitta
+import fi.hel.haitaton.hanke.Tarinahaitta
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.Yhteyshenkilo
@@ -79,9 +81,9 @@ interface Hankealue {
     val geometriat: HasFeatures?
     val kaistaHaitta: VaikutusAutoliikenteenKaistamaariin?
     val kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus?
-    val meluHaitta: Haitta123?
-    val polyHaitta: Haitta123?
-    val tarinaHaitta: Haitta123?
+    val meluHaitta: Meluhaitta?
+    val polyHaitta: Polyhaitta?
+    val tarinaHaitta: Tarinahaitta?
     val nimi: String
 }
 

@@ -1,7 +1,9 @@
 package fi.hel.haitaton.hanke.domain
 
 import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
-import fi.hel.haitaton.hanke.Haitta123
+import fi.hel.haitaton.hanke.Meluhaitta
+import fi.hel.haitaton.hanke.Polyhaitta
+import fi.hel.haitaton.hanke.Tarinahaitta
 import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
@@ -40,9 +42,9 @@ data class PublicHankealue(
     var geometriat: PublicGeometriat? = null,
     var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
     var kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
-    var meluHaitta: Haitta123? = null,
-    var polyHaitta: Haitta123? = null,
-    var tarinaHaitta: Haitta123? = null,
+    var meluHaitta: Meluhaitta? = null,
+    var polyHaitta: Polyhaitta? = null,
+    var tarinaHaitta: Tarinahaitta? = null,
     var nimi: String,
 )
 

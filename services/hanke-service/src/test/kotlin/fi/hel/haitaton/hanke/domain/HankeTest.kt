@@ -4,8 +4,10 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
-import fi.hel.haitaton.hanke.Haitta123
+import fi.hel.haitaton.hanke.Meluhaitta
+import fi.hel.haitaton.hanke.Polyhaitta
 import fi.hel.haitaton.hanke.TZ_UTC
+import fi.hel.haitaton.hanke.Tarinahaitta
 import fi.hel.haitaton.hanke.VaikutusAutoliikenteenKaistamaariin
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -48,11 +50,14 @@ internal class HankeTest {
             HankealueFactory.create(
                 haittaAlkuPvm = b,
                 haittaLoppuPvm = d,
-                kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.KOLME,
-                kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.KOLME,
-                meluHaitta = Haitta123.KOLME,
-                polyHaitta = Haitta123.KOLME,
-                tarinaHaitta = Haitta123.KOLME,
+                kaistaHaitta =
+                    VaikutusAutoliikenteenKaistamaariin
+                        .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
+                kaistaPituusHaitta =
+                    AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA,
+                meluHaitta = Meluhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
+                polyHaitta = Polyhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
+                tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
             )
         hanke.alueet.add(hankealue)
 
