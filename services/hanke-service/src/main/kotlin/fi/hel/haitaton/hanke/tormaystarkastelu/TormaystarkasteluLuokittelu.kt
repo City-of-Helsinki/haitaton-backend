@@ -80,7 +80,7 @@ enum class Linjaautoliikenneluokittelu(override val value: Int) : Luokittelu {
     ENINTAAN_10_VUOROA_RUUHKATUNNISSA(3),
     EI_RUUHKAAIKANA(2),
     MAHDOLLINEN_POIKKEUSREITTI(1),
-    EI_VAIKUTA(0)
+    EI_VAIKUTA_LINJAAUTOLIIKENTEESEEN(0)
 }
 
 enum class Raitioliikenneluokittelu(override val value: Int) : Luokittelu {
