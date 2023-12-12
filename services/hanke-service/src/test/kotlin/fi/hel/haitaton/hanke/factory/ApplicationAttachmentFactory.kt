@@ -11,6 +11,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentEntit
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
@@ -85,6 +86,27 @@ class ApplicationAttachmentFactory(
 
         const val FILE_NAME = "file.pdf"
 
+        fun create(
+            id: UUID = defaultAttachmentId,
+            fileName: String = FILE_NAME,
+            contentType: String = APPLICATION_PDF_VALUE,
+            blobLocation: String? = null,
+            createdByUserId: String = USERNAME,
+            createdAt: OffsetDateTime = CREATED_AT,
+            attachmentType: ApplicationAttachmentType = MUU,
+            applicationId: Long = AlluDataFactory.defaultApplicationId,
+        ): ApplicationAttachmentMetadata =
+            ApplicationAttachmentMetadata(
+                id = id,
+                fileName = fileName,
+                contentType = contentType,
+                blobLocation = blobLocation,
+                createdByUserId = createdByUserId,
+                createdAt = createdAt,
+                attachmentType = attachmentType,
+                applicationId = applicationId,
+            )
+
         fun createEntity(
             id: UUID? = defaultAttachmentId,
             fileName: String = FILE_NAME,
@@ -113,8 +135,8 @@ class ApplicationAttachmentFactory(
             createdAt: OffsetDateTime = OffsetDateTime.now(),
             applicationId: Long = 1L,
             attachmentType: ApplicationAttachmentType = MUU,
-        ): ApplicationAttachmentMetadata =
-            ApplicationAttachmentMetadata(
+        ): ApplicationAttachmentMetadataDto =
+            ApplicationAttachmentMetadataDto(
                 id = attachmentId,
                 fileName = fileName,
                 createdByUserId = createdBy,

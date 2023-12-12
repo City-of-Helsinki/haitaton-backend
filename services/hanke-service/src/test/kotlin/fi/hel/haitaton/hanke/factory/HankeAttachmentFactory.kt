@@ -7,10 +7,10 @@ import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
 import fi.hel.haitaton.hanke.attachment.common.FileClient
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachment
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime
@@ -69,14 +69,14 @@ class HankeAttachmentFactory(
         val CONTENT_TYPE = MEDIA_TYPE.toString()
         val CREATED_AT: OffsetDateTime = OffsetDateTime.parse("2023-11-09T10:03:55+02:00")
 
-        fun create(
+        fun createDto(
             attachmentId: UUID = ApplicationAttachmentFactory.defaultAttachmentId,
             fileName: String = ApplicationAttachmentFactory.FILE_NAME,
             createdByUser: String = currentUserId(),
             createdAt: OffsetDateTime = OffsetDateTime.now(),
             hankeTunnus: String = "HAI-1234",
-        ): HankeAttachment =
-            HankeAttachment(
+        ): HankeAttachmentMetadataDto =
+            HankeAttachmentMetadataDto(
                 id = attachmentId,
                 fileName = fileName,
                 createdByUserId = createdByUser,

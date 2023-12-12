@@ -67,10 +67,10 @@ class AttachmentUploadServiceITest(
                 )
 
             assertThat(result).all {
-                prop(HankeAttachment::hankeTunnus).isEqualTo(hanke.hankeTunnus)
-                prop(HankeAttachment::createdAt).isRecent()
-                prop(HankeAttachment::createdByUserId).isEqualTo(USERNAME)
-                prop(HankeAttachment::fileName).isEqualTo(file.originalFilename)
+                prop(HankeAttachmentMetadataDto::hankeTunnus).isEqualTo(hanke.hankeTunnus)
+                prop(HankeAttachmentMetadataDto::createdAt).isRecent()
+                prop(HankeAttachmentMetadataDto::createdByUserId).isEqualTo(USERNAME)
+                prop(HankeAttachmentMetadataDto::fileName).isEqualTo(file.originalFilename)
             }
             val attachment = attachmentRepository.findById(result.id).orElseThrow()
             val blob = fileClient.download(Container.HANKE_LIITTEET, attachment.blobLocation!!)

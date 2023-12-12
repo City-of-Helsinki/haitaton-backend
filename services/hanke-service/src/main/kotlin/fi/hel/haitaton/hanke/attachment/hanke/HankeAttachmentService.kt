@@ -7,8 +7,8 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachment
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.currentUserId
 import java.time.OffsetDateTime
@@ -28,8 +28,8 @@ class HankeAttachmentService(
 ) {
 
     @Transactional(readOnly = true)
-    fun getMetadataList(hankeTunnus: String): List<HankeAttachment> =
-        findHanke(hankeTunnus).liitteet.map { it.toDomain() }
+    fun getMetadataList(hankeTunnus: String): List<HankeAttachmentMetadataDto> =
+        findHanke(hankeTunnus).liitteet.map { it.toDto() }
 
     @Transactional(readOnly = true)
     fun getContent(attachmentId: UUID): AttachmentContent {
@@ -45,7 +45,7 @@ class HankeAttachmentService(
         name: String,
         type: String,
         blobPath: String,
-    ): HankeAttachment {
+    ): HankeAttachmentMetadataDto {
         val hanke = findHanke(hankeTunnus).also { checkRoomForAttachment(it.id) }
 
         return attachmentRepository
@@ -60,7 +60,7 @@ class HankeAttachmentService(
                     hanke = hanke,
                 )
             )
-            .toDomain()
+            .toDto()
     }
 
     @Transactional

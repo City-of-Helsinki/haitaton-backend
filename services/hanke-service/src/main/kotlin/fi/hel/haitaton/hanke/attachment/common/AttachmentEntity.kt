@@ -1,8 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.common
 
 import fi.hel.haitaton.hanke.HankeEntity
-import fi.hel.haitaton.hanke.allu.Attachment
-import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -64,8 +62,8 @@ class HankeAttachmentEntity(
     blobLocation: String?,
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "hanke_id") var hanke: HankeEntity,
 ) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt, blobLocation) {
-    fun toDomain(): HankeAttachment {
-        return HankeAttachment(
+    fun toDto(): HankeAttachmentMetadataDto {
+        return HankeAttachmentMetadataDto(
             id = id!!,
             fileName = fileName,
             createdAt = createdAt,
@@ -105,8 +103,8 @@ class ApplicationAttachmentEntity(
     @Column(name = "attachment_type")
     var attachmentType: ApplicationAttachmentType,
 ) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt, blobLocation) {
-    fun toDto(): ApplicationAttachmentMetadata {
-        return ApplicationAttachmentMetadata(
+    fun toDto(): ApplicationAttachmentMetadataDto {
+        return ApplicationAttachmentMetadataDto(
             id = id!!,
             fileName = fileName,
             createdAt = createdAt,
@@ -116,18 +114,17 @@ class ApplicationAttachmentEntity(
         )
     }
 
-    fun toAlluAttachment(content: ByteArray): Attachment {
-        return Attachment(
-            metadata =
-                AttachmentMetadata(
-                    id = null,
-                    mimeType = contentType,
-                    name = fileName,
-                    description = null,
-                ),
-            file = content
+    fun toDomain(): ApplicationAttachmentMetadata =
+        ApplicationAttachmentMetadata(
+            id = id!!,
+            fileName = fileName,
+            contentType = contentType,
+            createdByUserId = createdByUserId,
+            createdAt = createdAt,
+            blobLocation = blobLocation,
+            applicationId = applicationId,
+            attachmentType = attachmentType,
         )
-    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
