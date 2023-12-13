@@ -4,7 +4,6 @@ import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
-import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
 import assertk.assertions.endsWith
 import assertk.assertions.hasClass
@@ -14,8 +13,10 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.messageContains
+import assertk.assertions.prop
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
@@ -23,14 +24,15 @@ import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
+import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeIdentifierFactory
+import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.junit.jupiter.api.Nested
@@ -38,6 +40,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
@@ -50,7 +53,6 @@ class HankeAttachmentServiceITests(
     @Autowired private val hankeAttachmentRepository: HankeAttachmentRepository,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val fileClient: MockFileClient,
-    @Autowired private val hankeAttachmentContentRepository: HankeAttachmentContentRepository,
     @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
 ) : DatabaseTest() {
 
@@ -87,7 +89,10 @@ class HankeAttachmentServiceITests(
     }
 
     @Nested
+    @ExtendWith(MockFileClientExtension::class)
     inner class GetContent {
+        private val path = "in/cloud"
+
         @Test
         fun `throws exception if attachment not found`() {
             val attachmentId = UUID.fromString("93b5c49d-918a-453d-a2bf-b918b47923c1")
@@ -100,35 +105,15 @@ class HankeAttachmentServiceITests(
             }
         }
 
-        @Nested
-        inner class FromDb {
-            @Test
-            fun `returns the attachment content, filename and content type`() {
-                val attachment = hankeAttachmentFactory.save().withDbContent().value
+        @Test
+        fun `returns the attachment content, filename and content type`() {
+            val attachment = hankeAttachmentFactory.save().withCloudContent(path).value
 
-                val result = hankeAttachmentService.getContent(attachment.id!!)
+            val result = hankeAttachmentService.getContent(attachment.id!!)
 
-                assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-                assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
-                assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
-            }
-        }
-
-        @Nested
-        @ExtendWith(MockFileClientExtension::class)
-        inner class FromCloud {
-            private val path = "in/cloud"
-
-            @Test
-            fun `returns the attachment content, filename and content type`() {
-                val attachment = hankeAttachmentFactory.save().withCloudContent(path).value
-
-                val result = hankeAttachmentService.getContent(attachment.id!!)
-
-                assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-                assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
-                assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
-            }
+            assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
+            assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
+            assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
         }
     }
 
@@ -147,19 +132,21 @@ class HankeAttachmentServiceITests(
                     blobPath = blobPath,
                 )
 
-            assertThat(result.id).isNotNull()
-            assertThat(result.createdByUserId).isEqualTo(USERNAME)
-            assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-            assertThat(result.createdAt).isNotNull()
-            assertThat(result.hankeTunnus).isEqualTo(hanke.hankeTunnus)
-
+            assertThat(result).all {
+                prop(HankeAttachmentMetadataDto::id).isNotNull()
+                prop(HankeAttachmentMetadataDto::createdByUserId).isEqualTo(USERNAME)
+                prop(HankeAttachmentMetadataDto::fileName).isEqualTo(FILE_NAME_PDF)
+                prop(HankeAttachmentMetadataDto::createdAt).isRecent()
+                prop(HankeAttachmentMetadataDto::hankeTunnus).isEqualTo(hanke.hankeTunnus)
+            }
             val attachments = hankeAttachmentRepository.findAll()
             assertThat(attachments).hasSize(1)
-            val attachmentInDb = attachments.first()
-            assertThat(attachmentInDb.createdByUserId).isEqualTo(USERNAME)
-            assertThat(attachmentInDb.fileName).isEqualTo(FILE_NAME_PDF)
-            assertThat(attachmentInDb.createdAt).isNotNull()
-            assertThat(attachmentInDb.blobLocation).isEqualTo(blobPath)
+            assertThat(attachments.first()).all {
+                prop(HankeAttachmentEntity::createdByUserId).isEqualTo(USERNAME)
+                prop(HankeAttachmentEntity::fileName).isEqualTo(FILE_NAME_PDF)
+                prop(HankeAttachmentEntity::createdAt).isRecent()
+                prop(HankeAttachmentEntity::blobLocation).isEqualTo(blobPath)
+            }
         }
 
         @Test
@@ -167,7 +154,7 @@ class HankeAttachmentServiceITests(
             val hanke = hankeFactory.saveEntity()
             (1..ALLOWED_ATTACHMENT_COUNT)
                 .map { HankeAttachmentFactory.createEntity(hanke = hanke) }
-                .let { hankeAttachmentRepository.saveAll(it) }
+                .let(hankeAttachmentRepository::saveAll)
 
             assertFailure {
                     hankeAttachmentService.saveAttachment(
@@ -209,8 +196,10 @@ class HankeAttachmentServiceITests(
 
             val result = hankeAttachmentService.hankeWithRoomForAttachment(hanke.hankeTunnus)
 
-            assertThat(result.id).isEqualTo(hanke.id)
-            assertThat(result.hankeTunnus).isEqualTo(hanke.hankeTunnus)
+            assertThat(result).all {
+                prop(HankeIdentifier::id).isEqualTo(hanke.id)
+                prop(HankeIdentifier::hankeTunnus).isEqualTo(hanke.hankeTunnus)
+            }
         }
 
         @Test
@@ -241,21 +230,6 @@ class HankeAttachmentServiceITests(
             failure.all {
                 hasClass(AttachmentNotFoundException::class)
                 messageContains(attachmentId.toString())
-            }
-        }
-
-        @Nested
-        inner class FromDb {
-            @Test
-            fun `deletes attachment and content when attachment exists`() {
-                val attachment = hankeAttachmentFactory.save().withDbContent().value
-                assertThat(hankeAttachmentRepository.findAll()).hasSize(1)
-                assertThat(hankeAttachmentContentRepository.findAll()).hasSize(1)
-
-                hankeAttachmentService.deleteAttachment(attachment.id!!)
-
-                assertThat(hankeAttachmentRepository.findAll()).isEmpty()
-                assertThat(hankeAttachmentContentRepository.findAll()).isEmpty()
             }
         }
 
@@ -298,16 +272,12 @@ class HankeAttachmentServiceITests(
             val hanke = hankeFactory.saveEntity()
             hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
             hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
-            hankeAttachmentFactory.save(hanke = hanke).withDbContent()
-            hankeAttachmentFactory.save(hanke = hanke).withDbContent()
-            assertThat(hankeAttachmentRepository.findAll()).hasSize(4)
-            assertThat(hankeAttachmentContentRepository.findAll()).hasSize(2)
+            assertThat(hankeAttachmentRepository.findAll()).hasSize(2)
             assertThat(fileClient.listBlobs(HANKE_LIITTEET)).hasSize(2)
 
             hankeAttachmentService.deleteAllAttachments(hanke)
 
             assertThat(hankeAttachmentRepository.findAll()).isEmpty()
-            assertThat(hankeAttachmentContentRepository.findAll()).isEmpty()
             assertThat(fileClient.listBlobs(HANKE_LIITTEET)).isEmpty()
         }
 
@@ -315,18 +285,13 @@ class HankeAttachmentServiceITests(
         fun `deletes attachments only from the specified hanke`() {
             val hanke = hankeFactory.saveEntity()
             hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
-            hankeAttachmentFactory.save(hanke = hanke).withDbContent()
-            val otherCloudAttachment = hankeAttachmentFactory.save().withCloudContent().value
-            val otherDbAttachment = hankeAttachmentFactory.save().withDbContent().value
+            val otherAttachment = hankeAttachmentFactory.save().withCloudContent().value
 
             hankeAttachmentService.deleteAllAttachments(hanke)
 
-            assertThat(hankeAttachmentRepository.findAll().map { it.id })
-                .containsExactlyInAnyOrder(otherCloudAttachment.id, otherDbAttachment.id)
-            assertThat(hankeAttachmentContentRepository.findAll().map { it.attachmentId })
-                .containsExactlyInAnyOrder(otherDbAttachment.id)
+            assertThat(hankeAttachmentRepository.findByIdOrNull(otherAttachment.id)).isNotNull()
             assertThat(fileClient.listBlobs(HANKE_LIITTEET).map { it.path })
-                .containsExactly(otherCloudAttachment.blobLocation)
+                .containsExactly(otherAttachment.blobLocation)
         }
     }
 }

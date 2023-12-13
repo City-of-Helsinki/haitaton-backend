@@ -3,21 +3,17 @@ package fi.hel.haitaton.hanke.attachment.hanke
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
-import assertk.assertions.first
+import assertk.assertions.containsExactly
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
-import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
-import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
-import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentEntity
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
@@ -28,7 +24,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.MediaType
+import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 
@@ -39,51 +35,35 @@ import org.springframework.test.context.ActiveProfiles
 class HankeAttachmentContentServiceITest(
     @Autowired private val attachmentContentService: HankeAttachmentContentService,
     @Autowired private val fileClient: MockFileClient,
-    @Autowired private val hankeAttachmentContentRepository: HankeAttachmentContentRepository,
-    @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
+    @Autowired private val attachmentFactory: HankeAttachmentFactory,
 ) : DatabaseTest() {
-
     private val hankeId = 1
     private val attachmentId = UUID.fromString("b820121e-ad54-4ab8-926a-c4a8193010b5")
-    private val path = "$hankeId/$attachmentId"
     private val bytes = "Test content. Sisältää myös skandeja.".toByteArray()
 
     @Nested
     inner class Delete {
         @Test
-        fun `deletes the content when blobLocation is specified`() {
-            hankeAttachmentFactory.saveContentToCloud(path, bytes = bytes)
-            val attachmentEntity =
-                HankeAttachmentFactory.createEntity(attachmentId, blobLocation = path)
+        fun `Should delete the specified attachment content`() {
+            val otherId = UUID.fromString("5824887b-ad50-48f8-bc08-0d5d3e8ba777")
+            val attachment1 = HankeAttachmentFactory.createEntity(attachmentId)
+            val attachment2 = HankeAttachmentFactory.createEntity(otherId)
+            attachmentFactory.saveContentToCloud(attachment1.blobLocation, bytes = bytes)
+            attachmentFactory.saveContentToCloud(attachment2.blobLocation, bytes = bytes)
 
-            attachmentContentService.delete(attachmentEntity)
+            attachmentContentService.delete(attachment1)
 
-            assertThat(fileClient.listBlobs(Container.HANKE_LIITTEET)).isEmpty()
+            val existingBlobs = fileClient.listBlobs(HANKE_LIITTEET).map { it.path }
+            assertThat(existingBlobs).containsExactly(attachment2.blobLocation)
         }
 
         @Test
-        fun `doesn't throw an error if content is missing`() {
-            val attachmentEntity =
-                HankeAttachmentFactory.createEntity(attachmentId, blobLocation = path)
+        fun `Should not throw an error even if content does not exist`() {
+            val attachment = HankeAttachmentFactory.createEntity(attachmentId)
 
-            attachmentContentService.delete(attachmentEntity)
+            attachmentContentService.delete(attachment)
 
-            assertThat(fileClient.listBlobs(Container.HANKE_LIITTEET)).isEmpty()
-        }
-
-        @Test
-        fun `doesn't do anything if blobLocation is not specified`() {
-            val attachmentEntity =
-                hankeAttachmentFactory.save(blobLocation = null).withDbContent(bytes).value
-
-            attachmentContentService.delete(attachmentEntity)
-
-            val blobs = hankeAttachmentContentRepository.findAll()
-            assertThat(blobs).hasSize(1)
-            assertThat(blobs)
-                .first()
-                .prop(HankeAttachmentContentEntity::attachmentId)
-                .isEqualTo(attachmentEntity.id)
+            assertThat(fileClient.listBlobs(HANKE_LIITTEET)).isEmpty()
         }
     }
 
@@ -94,7 +74,7 @@ class HankeAttachmentContentServiceITest(
             val blobLocation =
                 attachmentContentService.upload(
                     FILE_NAME_PDF,
-                    MediaType.APPLICATION_PDF,
+                    APPLICATION_PDF,
                     DEFAULT_DATA,
                     hankeId
                 )
@@ -106,64 +86,23 @@ class HankeAttachmentContentServiceITest(
     @Nested
     inner class Find {
         @Test
-        fun `returns the content when blobLocation is specified`() {
-            hankeAttachmentFactory.saveContentToCloud(path, bytes = bytes)
-            val attachmentEntity =
-                HankeAttachmentFactory.createEntity(attachmentId, blobLocation = path)
+        fun `Should return the requested content`() {
+            val attachment = HankeAttachmentFactory.createEntity(attachmentId)
+            val otherId = UUID.fromString("d8ead4d2-5888-441e-bc0f-c4da4b634b70")
+            val other = HankeAttachmentFactory.createEntity(otherId)
+            attachmentFactory.saveContentToCloud(attachment.blobLocation, bytes = bytes)
+            attachmentFactory.saveContentToCloud(other.blobLocation)
 
-            val result = attachmentContentService.find(attachmentEntity)
-
-            assertThat(result).isEqualTo(bytes)
-        }
-
-        @Test
-        fun `returns the content when blobLocation is not specified`() {
-            val attachmentEntity =
-                hankeAttachmentFactory.save(blobLocation = null).withDbContent(bytes).value
-
-            val result = attachmentContentService.find(attachmentEntity)
-
-            assertThat(result).isEqualTo(bytes)
-        }
-    }
-
-    @Nested
-    inner class ReadFromFile {
-
-        @Test
-        fun `returns the right content`() {
-            hankeAttachmentFactory.saveContentToCloud(path, bytes = bytes)
-
-            val result = attachmentContentService.readFromFile(path, attachmentId)
+            val result = attachmentContentService.find(attachment)
 
             assertThat(result).isEqualTo(bytes)
         }
 
         @Test
-        fun `throws AttachmentNotFoundException if attachment not found`() {
-            assertFailure { attachmentContentService.readFromFile(path, attachmentId) }
-                .all {
-                    hasClass(AttachmentNotFoundException::class)
-                    hasMessage("Attachment not found, id=$attachmentId")
-                }
-        }
-    }
+        fun `Should throw if attachment not found`() {
+            val attachment = HankeAttachmentFactory.createEntity(attachmentId)
 
-    @Nested
-    inner class ReadFromDatabase {
-        @Test
-        fun `returns the right content`() {
-            val attachmentId = hankeAttachmentFactory.save().value.id!!
-            hankeAttachmentFactory.saveContentToDb(attachmentId, bytes)
-
-            val result = attachmentContentService.readFromDatabase(attachmentId)
-
-            assertThat(result).isEqualTo(bytes)
-        }
-
-        @Test
-        fun `throws AttachmentNotFoundException if attachment not found`() {
-            assertFailure { attachmentContentService.readFromDatabase(attachmentId) }
+            assertFailure { attachmentContentService.find(attachment) }
                 .all {
                     hasClass(AttachmentNotFoundException::class)
                     hasMessage("Attachment not found, id=$attachmentId")

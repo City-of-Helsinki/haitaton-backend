@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 061-hanke-attachment-migration-cleanup
+      author: Niko Pitkonen
+      changes:
+        - addNotNullConstraint:
+            tableName: hanke_attachment
+            columnName: blob_location
+        - dropTable:
+            tableName: hanke_attachment_content
+

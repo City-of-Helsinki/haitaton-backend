@@ -33,9 +33,6 @@ abstract class AttachmentEntity(
 
     /** Creation timestamp. */
     @Column(name = "created_at", updatable = false, nullable = false) var createdAt: OffsetDateTime,
-
-    /** Location of the file in Azure Blob. */
-    @Column(name = "blob_location") var blobLocation: String?,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -59,18 +56,17 @@ class HankeAttachmentEntity(
     contentType: String,
     createdByUserId: String,
     createdAt: OffsetDateTime,
-    blobLocation: String?,
+    @Column(name = "blob_location") var blobLocation: String,
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "hanke_id") var hanke: HankeEntity,
-) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt, blobLocation) {
-    fun toDto(): HankeAttachmentMetadataDto {
-        return HankeAttachmentMetadataDto(
+) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt) {
+    fun toDto(): HankeAttachmentMetadataDto =
+        HankeAttachmentMetadataDto(
             id = id!!,
             fileName = fileName,
             createdAt = createdAt,
             hankeTunnus = hanke.hankeTunnus,
             createdByUserId = createdByUserId,
         )
-    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -97,14 +93,14 @@ class ApplicationAttachmentEntity(
     contentType: String,
     createdByUserId: String,
     createdAt: OffsetDateTime,
-    blobLocation: String?,
+    @Column(name = "blob_location") var blobLocation: String?,
     @Column(name = "application_id") var applicationId: Long,
     @Enumerated(EnumType.STRING)
     @Column(name = "attachment_type")
     var attachmentType: ApplicationAttachmentType,
-) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt, blobLocation) {
-    fun toDto(): ApplicationAttachmentMetadataDto {
-        return ApplicationAttachmentMetadataDto(
+) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt) {
+    fun toDto(): ApplicationAttachmentMetadataDto =
+        ApplicationAttachmentMetadataDto(
             id = id!!,
             fileName = fileName,
             createdAt = createdAt,
@@ -112,7 +108,6 @@ class ApplicationAttachmentEntity(
             applicationId = applicationId,
             attachmentType = attachmentType,
         )
-    }
 
     fun toDomain(): ApplicationAttachmentMetadata =
         ApplicationAttachmentMetadata(
@@ -152,8 +147,6 @@ interface HankeAttachmentRepository : JpaRepository<HankeAttachmentEntity, UUID>
 @Repository
 interface ApplicationAttachmentRepository : JpaRepository<ApplicationAttachmentEntity, UUID> {
     fun findByApplicationId(id: Long): List<ApplicationAttachmentEntity>
-
-    fun findByApplicationIdAndId(applicationId: Long, id: UUID): ApplicationAttachmentEntity?
 
     fun countByApplicationId(applicationId: Long): Int
 }

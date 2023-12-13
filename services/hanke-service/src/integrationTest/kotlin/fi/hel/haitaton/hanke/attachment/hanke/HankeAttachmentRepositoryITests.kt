@@ -15,16 +15,11 @@ import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.test.Asserts.isSameInstantAs
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.NullSource
-import org.junit.jupiter.params.provider.ValueSource
+import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.test.context.ActiveProfiles
-
-/** Consists of [HankeEntity.id] and a UUID. */
-private const val BLOB_LOCATION = "1/bcae2ff2-74e9-48d2-a8ed-e33a40652304"
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -33,12 +28,11 @@ class HankeAttachmentRepositoryITests : DatabaseTest() {
     @Autowired private lateinit var hankeFactory: HankeFactory
     @Autowired private lateinit var hankeAttachmentRepository: HankeAttachmentRepository
 
-    @NullSource
-    @ValueSource(strings = [BLOB_LOCATION])
-    @ParameterizedTest
-    fun `Should save and find hanke attachment with nullable blob location`(blobLocation: String?) {
+    @Test
+    fun `Should save and find hanke attachment with blob location`() {
         val hanke = hankeFactory.saveMinimal()
-        val saved = hankeAttachmentRepository.save(newAttachment(hanke, blobLocation))
+        val attachment = newAttachment(hanke)
+        val saved = hankeAttachmentRepository.save(attachment)
 
         val attachments = hankeAttachmentRepository.findAll()
 
@@ -51,15 +45,14 @@ class HankeAttachmentRepositoryITests : DatabaseTest() {
             prop(HankeAttachmentEntity::createdAt)
                 .isSameInstantAs(HankeAttachmentFactory.CREATED_AT)
             prop(HankeAttachmentEntity::hanke).isEqualTo(hanke)
-            prop(HankeAttachmentEntity::blobLocation).isEqualTo(blobLocation)
+            prop(HankeAttachmentEntity::blobLocation).isEqualTo(attachment.blobLocation)
         }
     }
 
-    fun newAttachment(hanke: HankeEntity, blobLocation: String?) =
+    fun newAttachment(hanke: HankeEntity) =
         HankeAttachmentFactory.createEntity(
             id = null,
             hanke = hanke,
             createdByUser = USERNAME,
-            blobLocation = blobLocation,
         )
 }

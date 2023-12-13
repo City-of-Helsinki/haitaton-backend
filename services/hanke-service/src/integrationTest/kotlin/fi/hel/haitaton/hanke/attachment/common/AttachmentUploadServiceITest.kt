@@ -73,7 +73,7 @@ class AttachmentUploadServiceITest(
                 prop(HankeAttachmentMetadataDto::fileName).isEqualTo(file.originalFilename)
             }
             val attachment = attachmentRepository.findById(result.id).orElseThrow()
-            val blob = fileClient.download(Container.HANKE_LIITTEET, attachment.blobLocation!!)
+            val blob = fileClient.download(Container.HANKE_LIITTEET, attachment.blobLocation)
             assertThat(blob.contentType.toString()).isEqualTo(file.contentType)
         }
 
