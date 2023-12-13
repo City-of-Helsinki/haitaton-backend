@@ -60,10 +60,6 @@ info:
 logging:
   level:
     liquibase: INFO
-    reactor:
-      netty:
-        http:
-          client: DEBUG
 
 # Actuator Management for Kubernetes. Separate HTTP port for probes.
 management:

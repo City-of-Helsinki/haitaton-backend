@@ -7,13 +7,11 @@ import mu.KotlinLogging
 import org.springframework.context.annotation.Profile
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.http.MediaType
-import org.springframework.http.client.reactive.ReactorClientHttpConnector
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.stereotype.Component
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.body
 import reactor.core.publisher.Mono
-import reactor.netty.http.client.HttpClient
 
 private val logger = KotlinLogging.logger {}
 
@@ -21,12 +19,9 @@ private val logger = KotlinLogging.logger {}
 @Profile("!test")
 class ProfiiliClient(
     private val properties: ProfiiliProperties,
-    webClientBuilder: WebClient.Builder
+    webClientBuilder: WebClient.Builder,
 ) {
-    private val webClient: WebClient =
-        webClientBuilder
-            .clientConnector(ReactorClientHttpConnector(HttpClient.create().wiretap(true)))
-            .build()
+    private val webClient: WebClient = webClientBuilder.build()
     private val myProfileGraphQl = MY_PROFILE_QUERY_FILE.getResourceAsText()
     private val myProfileQuery = GraphQlQuery(myProfileGraphQl, MY_PROFILE_OPERATION).toJsonString()
 
