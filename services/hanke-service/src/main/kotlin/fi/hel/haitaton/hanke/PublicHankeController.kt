@@ -40,7 +40,5 @@ class PublicHankeController(private val hankeService: HankeService) {
                 )
             ]
     )
-    fun getAll(): List<PublicHanke> {
-        return hankeService.loadPublicHanke().map { hankeToPublic(it) }
-    }
+    fun getAll(): List<PublicHanke> = hankeService.loadPublicHanke().map { hankeToPublic(it) }
 }
