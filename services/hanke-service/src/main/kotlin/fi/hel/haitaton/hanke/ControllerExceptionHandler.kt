@@ -179,7 +179,7 @@ class ControllerExceptionHandler {
         responseCode = "500"
     )
     fun throwable(ex: Throwable): HankeError {
-        logger.error { ex.message }
+        logger.error(ex) { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI0002
     }
