@@ -82,7 +82,6 @@ class ProfiiliClientITest {
 
         @Test
         fun `throws exception when API tokens not found`() {
-            clearMocks(securityContext)
             mockAccessToken()
             mockApiTokensApi.enqueue(MockResponse().setResponseCode(404))
 
@@ -98,7 +97,6 @@ class ProfiiliClientITest {
 
         @Test
         fun `throws exception when API tokens is empty`() {
-            clearMocks(securityContext)
             mockAccessToken()
             mockApiTokensApi.enqueueSuccess("{}")
 
@@ -114,7 +112,6 @@ class ProfiiliClientITest {
 
         @Test
         fun `throws exception when there's no API token for the correct audience`() {
-            clearMocks(securityContext)
             mockAccessToken()
             mockApiTokensApi.enqueueSuccess(mapOf("some-other-audience" to "some-other-token"))
 
@@ -130,7 +127,6 @@ class ProfiiliClientITest {
 
         @Test
         fun `calls the API token endpoint with correct url and headers`() {
-            clearMocks(securityContext)
             mockAccessToken()
             mockApiTokensApi.enqueueSuccess(mapOf("some-other-audience" to "some-other-token"))
 
@@ -148,7 +144,6 @@ class ProfiiliClientITest {
 
         @Test
         fun `throws exception when GraphQL request fails`() {
-            clearMocks(securityContext)
             mockAccessToken()
             mockApiToken()
             mockGraphQl.enqueue(MockResponse().setResponseCode(404))
@@ -181,7 +176,6 @@ class ProfiiliClientITest {
 
         @Test
         fun `returns null when user's profile doesn't have verified information`() {
-            clearMocks(securityContext)
             mockAccessToken()
             mockApiToken()
             mockGraphQl.enqueueSuccess(ProfiiliResponse(ProfiiliData(MyProfile(null))))
@@ -196,7 +190,6 @@ class ProfiiliClientITest {
 
         @Test
         fun `returns name when user's profile has verified information`() {
-            clearMocks(securityContext)
             mockAccessToken()
             mockApiToken()
             mockGraphQl.enqueueSuccess(
@@ -217,7 +210,6 @@ class ProfiiliClientITest {
 
         @Test
         fun `calls the GraphQL API with correct url and headers`() {
-            clearMocks(securityContext)
             mockAccessToken()
             mockApiToken()
             mockGraphQl.enqueueSuccess(
@@ -240,7 +232,6 @@ class ProfiiliClientITest {
 
         @Test
         fun `calls the GraphQL API with the correct body`() {
-            clearMocks(securityContext)
             mockAccessToken()
             mockApiToken()
             mockGraphQl.enqueueSuccess(
