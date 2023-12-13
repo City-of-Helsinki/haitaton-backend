@@ -25,7 +25,6 @@ import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
-import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
@@ -127,7 +126,6 @@ class HankeServiceITests(
     @Autowired private val hankekayttajaRepository: HankekayttajaRepository,
     @Autowired private val kayttajakutsuRepository: KayttajakutsuRepository,
     @Autowired private val hankeAttachmentRepository: HankeAttachmentRepository,
-    @Autowired private val hankeAttachmentContentRepository: HankeAttachmentContentRepository,
     @Autowired private val jdbcTemplate: JdbcTemplate,
     @Autowired private val fileClient: MockFileClient,
     @Autowired private val hankeFactory: HankeFactory,
@@ -1364,13 +1362,10 @@ class HankeServiceITests(
             val hanke = hankeFactory.saveEntity()
             hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
             hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
-            hankeAttachmentFactory.save(hanke = hanke).withDbContent()
-            hankeAttachmentFactory.save(hanke = hanke).withDbContent()
 
             hankeService.deleteHanke(hanke.hankeTunnus, USER_NAME)
 
             assertk.assertThat(hankeAttachmentRepository.findAll()).isEmpty()
-            assertk.assertThat(hankeAttachmentContentRepository.findAll()).isEmpty()
             assertk.assertThat(fileClient.listBlobs(HANKE_LIITTEET)).isEmpty()
         }
     }

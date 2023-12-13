@@ -12,11 +12,6 @@ data class HankeAttachmentBuilder(
     val attachmentRepository: HankeAttachmentRepository,
     val hankeAttachmentFactory: HankeAttachmentFactory
 ) {
-    fun withDbContent(bytes: ByteArray = DEFAULT_DATA): HankeAttachmentBuilder {
-        hankeAttachmentFactory.saveContentToDb(value.id!!, bytes)
-        return this
-    }
-
     fun withCloudContent(
         path: String = generateBlobPath(value.hanke.id),
         filename: String = FILE_NAME_PDF,

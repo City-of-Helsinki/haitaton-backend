@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.logging
 
 import assertk.assertThat
-import assertk.assertions.containsAll
+import assertk.assertions.containsAtLeast
 import assertk.assertions.containsExactlyInAnyOrder
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
@@ -84,7 +84,8 @@ internal class DisclosureLogServiceTest {
                 {"key":"sahkoposti","value":"teppo@example.test"},
                 {"key":"puhelin","value":"04012345678"}
               ]
-            }""".reformatJson()
+            }"""
+                .reformatJson()
         val expectedEntry =
             AuditLogEntryFactory.createReadEntry(
                 userId = PROFIILI_AUDIT_LOG_USERID,
@@ -310,7 +311,7 @@ internal class DisclosureLogServiceTest {
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
         assertThat(capturedLogs.captured)
-            .containsAll(
+            .containsAtLeast(
                 AuditLogEntryFactory.createReadEntryForContact(applicationId, firstContact, HAKIJA),
                 AuditLogEntryFactory.createReadEntryForContact(
                     applicationId,
@@ -436,7 +437,8 @@ internal class DisclosureLogServiceTest {
                   "applicationIdentifier": "$applicationIdentifier",
                   "applicationType": "CABLE_REPORT",
                   "hankeTunnus": "$hankeTunnus"
-                }""".reformatJson()
+                }"""
+                    .reformatJson()
             val expectedLog =
                 AuditLogEntryFactory.createReadEntry(
                     userId,

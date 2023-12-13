@@ -7,11 +7,6 @@ haitaton:
     updateInitialDelayMilliSeconds: ${ALLU_UPDATE_INITIAL_DELAY:60000}
     updateIntervalMilliSeconds: ${ALLU_UPDATE_INTERVAL:60000}
     username: ${ALLU_USERNAME:fake_user}
-  attachment-migration:
-    hanke:
-      enabled: ${HAITATON_ATTACHMENT_MIGRATION_HANKE_ENABLED:false}
-      initial-delay: ${HAITATON_ATTACHMENT_MIGRATION_HANKE_INITIAL_DELAY:10000}
-      interval: ${HAITATON_ATTACHMENT_MIGRATION_HANKE_INTERVAL:60000}
   azure:
     blob:
       connection-string: ${HAITATON_BLOB_CONNECTION_STRING:#{null}}

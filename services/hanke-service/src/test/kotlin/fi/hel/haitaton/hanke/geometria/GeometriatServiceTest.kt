@@ -5,7 +5,7 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
-import assertk.assertions.isNotSameAs
+import assertk.assertions.isNotSameInstanceAs
 import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.asJsonResource
@@ -56,7 +56,7 @@ internal class GeometriatServiceTest {
             prop(Geometriat::modifiedAt).isNotNull()
             prop(Geometriat::modifiedByUserId).isEqualTo(USERNAME)
             prop(Geometriat::featureCollection).isNotNull()
-            isNotSameAs(geometriat)
+            isNotSameInstanceAs(geometriat)
         }
     }
 
@@ -78,7 +78,7 @@ internal class GeometriatServiceTest {
             prop(Geometriat::modifiedAt).isNull()
             prop(Geometriat::modifiedByUserId).isNull()
             prop(Geometriat::featureCollection).isNotNull()
-            isNotSameAs(geometriat)
+            isNotSameInstanceAs(geometriat)
         }
     }
 
@@ -132,7 +132,7 @@ internal class GeometriatServiceTest {
             prop(Geometriat::featureCollection).isNotNull().all {
                 transform("features") { it.features }.isNotEmpty()
             }
-            isNotSameAs(geometriat)
+            isNotSameInstanceAs(geometriat)
         }
     }
 
@@ -154,7 +154,7 @@ internal class GeometriatServiceTest {
                 prop(Geometriat::createdByUserId).isEqualTo(USERNAME)
                 prop(Geometriat::modifiedAt).isNull()
                 prop(Geometriat::modifiedByUserId).isNull()
-                isNotSameAs(geometriat)
+                isNotSameInstanceAs(geometriat)
             }
         }
 
@@ -169,7 +169,7 @@ internal class GeometriatServiceTest {
             val savedHankeGeometria = service.createGeometriat(geometriat)
 
             assertThat(savedHankeGeometria).isNotNull().all {
-                isNotSameAs(geometriat)
+                isNotSameInstanceAs(geometriat)
                 prop(Geometriat::featureCollection).isEqualTo(geometriat.featureCollection)
             }
         }
