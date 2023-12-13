@@ -18,6 +18,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaAuthorizer
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.security.AccessRules
 import fi.hel.haitaton.hanke.testdata.TestDataService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
@@ -92,6 +93,8 @@ class IntegrationTestConfiguration {
     @Bean fun hankeAttachmentAuthorizer(): HankeAttachmentAuthorizer = mockk(relaxUnitFun = true)
 
     @Bean fun featureService(featureFlags: FeatureFlags) = FeatureService(featureFlags)
+
+    @Bean fun profiiliClient(): ProfiiliClient = mockk()
 
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {

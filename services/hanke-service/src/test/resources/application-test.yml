@@ -13,6 +13,9 @@ haitaton:
   features:
     hanke-editing: true
     user-management: true
+  profiili-api:
+    api-tokens-url: http://localhost:14678/api-tokens/
+    graph-ql-url: http://localhost:14678/graphql/
   testdata:
     enabled: true
 

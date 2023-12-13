@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.attachment.azure.Containers
 import fi.hel.haitaton.hanke.email.EmailProperties
 import fi.hel.haitaton.hanke.gdpr.GdprProperties
+import fi.hel.haitaton.hanke.profiili.ProfiiliProperties
 import io.netty.handler.ssl.SslContextBuilder
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory
 import kotlinx.coroutines.CoroutineDispatcher
@@ -24,6 +25,7 @@ import reactor.netty.http.client.HttpClient
     GdprProperties::class,
     FeatureFlags::class,
     AlluProperties::class,
+    ProfiiliProperties::class,
     EmailProperties::class,
     Containers::class,
 )
