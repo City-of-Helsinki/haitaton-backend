@@ -12,9 +12,9 @@ import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.andReturnBody
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomerContacts
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomerContacts
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
@@ -100,7 +100,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when applications exist should return applications for current user`() {
             every { applicationService.getAllApplicationsForUser(USERNAME) } returns
-                AlluDataFactory.createApplications(3)
+                ApplicationFactory.createApplications(3)
 
             get(BASE_URL)
                 .andExpect(status().isOk)
@@ -135,7 +135,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         fun `when application exists should return it`() {
             every { authorizer.authorizeApplicationId(id, VIEW.name) } returns true
             every { applicationService.getApplicationById(id) } returns
-                AlluDataFactory.createApplication(id = id, hankeTunnus = HANKE_TUNNUS)
+                ApplicationFactory.createApplication(id = id, hankeTunnus = HANKE_TUNNUS)
 
             get("$BASE_URL/$id")
                 .andExpect(status().isOk)
@@ -152,7 +152,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         fun `when application belongs to a hanke should return application with correct hankeTunnus`() {
             every { authorizer.authorizeApplicationId(id, VIEW.name) } returns true
             every { applicationService.getApplicationById(id) } returns
-                AlluDataFactory.createApplication(id = id, hankeTunnus = HANKE_TUNNUS)
+                ApplicationFactory.createApplication(id = id, hankeTunnus = HANKE_TUNNUS)
 
             get("$BASE_URL/$id")
                 .andExpect(status().isOk)
@@ -170,7 +170,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         @WithAnonymousUser
         fun `when unknown user should return 401`() {
-            post(BASE_URL, AlluDataFactory.createApplication(id = null))
+            post(BASE_URL, ApplicationFactory.createApplication(id = null))
                 .andExpect(status().isUnauthorized)
 
             verify { applicationService wasNot Called }
@@ -186,7 +186,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when valid application should create application`() {
             val newApplication =
-                AlluDataFactory.createApplication(id = null, hankeTunnus = HANKE_TUNNUS)
+                ApplicationFactory.createApplication(id = null, hankeTunnus = HANKE_TUNNUS)
             val createdApplication = newApplication.copy(id = 1234)
             every { authorizer.authorizeCreate(newApplication) } returns true
             every { applicationService.create(newApplication, USERNAME) } returns createdApplication
@@ -203,7 +203,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when missing application data type should return 400`() {
-            val application = AlluDataFactory.createApplication(id = null)
+            val application = ApplicationFactory.createApplication(id = null)
             val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
             (content.get("applicationData") as ObjectNode).remove("applicationType")
 
@@ -215,10 +215,10 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when end before start should return 400`() {
             val application =
-                AlluDataFactory.createApplication(
+                ApplicationFactory.createApplication(
                     id = null,
                     applicationData =
-                        AlluDataFactory.createCableReportApplicationData(
+                        ApplicationFactory.createCableReportApplicationData(
                             startTime = ZonedDateTime.now(),
                             endTime = ZonedDateTime.now().minusDays(1)
                         )
@@ -235,7 +235,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when missing application type should return 400`() {
-            val application = AlluDataFactory.createApplication(id = null)
+            val application = ApplicationFactory.createApplication(id = null)
             val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
             content.remove("applicationType")
 
@@ -249,13 +249,13 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when invalid y-tunnus should return 400`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                ApplicationFactory.createCableReportApplicationData(
                     customerWithContacts =
-                        AlluDataFactory.createCompanyCustomer(registryKey = "281192-937W")
+                        ApplicationFactory.createCompanyCustomer(registryKey = "281192-937W")
                             .withContacts()
                 )
             val application =
-                AlluDataFactory.createApplication(id = null, applicationData = applicationData)
+                ApplicationFactory.createApplication(id = null, applicationData = applicationData)
             every { authorizer.authorizeCreate(application) } returns true
 
             post(BASE_URL, application).andExpect(status().isBadRequest)
@@ -269,7 +269,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when application without hankeTunnus should return 400`() {
             val newApplication =
-                AlluDataFactory.createApplication(id = null, hankeTunnus = HANKE_TUNNUS)
+                ApplicationFactory.createApplication(id = null, hankeTunnus = HANKE_TUNNUS)
             val json = objectMapper.valueToTree<ObjectNode>(newApplication)
             json.remove("hankeTunnus")
             val text = json.asText()
@@ -279,7 +279,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when no hanke permission should return hanke not found 404`() {
             val newApplication =
-                AlluDataFactory.createApplication(id = null, hankeTunnus = HANKE_TUNNUS)
+                ApplicationFactory.createApplication(id = null, hankeTunnus = HANKE_TUNNUS)
             every { authorizer.authorizeCreate(newApplication) } throws
                 HankeNotFoundException(HANKE_TUNNUS)
 
@@ -293,7 +293,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     inner class CreateApplicationWithGeneratedHanke {
         @Test
         fun `when valid request should succeed and return 200`() {
-            val applicationInput = AlluDataFactory.cableReportWithoutHanke()
+            val applicationInput = ApplicationFactory.cableReportWithoutHanke()
             val mockCreatedApplication = applicationInput.toNewApplication(HANKE_TUNNUS)
             every { hankeService.generateHankeWithApplication(applicationInput, USERNAME) } returns
                 mockCreatedApplication
@@ -310,10 +310,10 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when invalid data should fail validation and return 400`() {
             val applicationInput =
-                AlluDataFactory.createApplication()
+                ApplicationFactory.createApplication()
                     .withCustomerContacts(
-                        AlluDataFactory.createContact(orderer = true),
-                        AlluDataFactory.createContact(orderer = true)
+                        ApplicationFactory.createContact(orderer = true),
+                        ApplicationFactory.createContact(orderer = true)
                     )
                     .toCableReportWithoutHanke()
 
@@ -339,7 +339,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         @WithAnonymousUser
         fun `when unknown user should return 401`() {
-            put("$BASE_URL/$id", AlluDataFactory.createApplication())
+            put("$BASE_URL/$id", ApplicationFactory.createApplication())
                 .andExpect(status().isUnauthorized)
 
             verify { applicationService wasNot Called }
@@ -355,10 +355,10 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when end before start should return 400`() {
             val application =
-                AlluDataFactory.createApplication(
+                ApplicationFactory.createApplication(
                     id = null,
                     applicationData =
-                        AlluDataFactory.createCableReportApplicationData(
+                        ApplicationFactory.createCableReportApplicationData(
                             startTime = ZonedDateTime.now(),
                             endTime = ZonedDateTime.now().minusDays(1)
                         )
@@ -379,13 +379,13 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when invalid y-tunnus should return 400`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                ApplicationFactory.createCableReportApplicationData(
                     customerWithContacts =
-                        AlluDataFactory.createCompanyCustomer(registryKey = "281192-937W")
+                        ApplicationFactory.createCompanyCustomer(registryKey = "281192-937W")
                             .withContacts()
                 )
             val application =
-                AlluDataFactory.createApplication(id = null, applicationData = applicationData)
+                ApplicationFactory.createApplication(id = null, applicationData = applicationData)
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
 
             put("$BASE_URL/$id", application).andExpect(status().isBadRequest)
@@ -398,7 +398,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when application exists should return application`() {
-            val application = AlluDataFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
+            val application = ApplicationFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
             every {
                 applicationService.updateApplicationData(id, application.applicationData, USERNAME)
@@ -416,7 +416,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when missing application data type should return 400`() {
-            val application = AlluDataFactory.createApplication()
+            val application = ApplicationFactory.createApplication()
             val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
             (content.get("applicationData") as ObjectNode).remove("applicationType")
 
@@ -427,7 +427,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when missing application type should return 400`() {
-            val application = AlluDataFactory.createApplication()
+            val application = ApplicationFactory.createApplication()
             val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
             content.remove("applicationType")
 
@@ -441,7 +441,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when missing required data should return 400`() {
             val mockErrorPaths = listOf("startTime", "customerWithContacts.customer.type")
-            val application = AlluDataFactory.createApplication()
+            val application = ApplicationFactory.createApplication()
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
             every {
                 applicationService.updateApplicationData(id, application.applicationData, USERNAME)
@@ -460,7 +460,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when no application should return 404`() {
-            val application = AlluDataFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
+            val application = ApplicationFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } throws
                 ApplicationNotFoundException(id)
 
@@ -471,7 +471,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when application no longer pending should return 409`() {
-            val application = AlluDataFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
+            val application = ApplicationFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
             every {
                 applicationService.updateApplicationData(id, application.applicationData, USERNAME)
@@ -498,7 +498,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when no request body should send application to Allu and return result`() {
-            val application = AlluDataFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
+            val application = ApplicationFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
             every { applicationService.sendApplication(id, USERNAME) } returns application
 
@@ -514,7 +514,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when request body is present should ignore it`() {
-            val application = AlluDataFactory.createApplication(id = id, alluid = 21)
+            val application = ApplicationFactory.createApplication(id = id, alluid = 21)
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
             every { applicationService.sendApplication(id, USERNAME) } returns application
 
@@ -532,7 +532,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when broken application body should ignore request body`() {
-            val application = AlluDataFactory.createApplication()
+            val application = ApplicationFactory.createApplication()
             val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
             (content.get("applicationData") as ObjectNode).remove("applicationType")
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
@@ -710,7 +710,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             every { applicationService.downloadDecision(id, USERNAME) } returns
                 Pair(applicationIdentifier, pdfBytes)
             every { applicationService.getApplicationById(id) } returns
-                AlluDataFactory.createApplication(applicationIdentifier = applicationIdentifier)
+                ApplicationFactory.createApplication(applicationIdentifier = applicationIdentifier)
 
             get("$BASE_URL/$id/paatos", resultType = APPLICATION_PDF)
                 .andExpect(status().isOk)
@@ -728,7 +728,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         fun `when decision exists should write access to audit log`() {
             val applicationIdentifier = "JS230001"
             val application =
-                AlluDataFactory.createApplication(applicationIdentifier = applicationIdentifier)
+                ApplicationFactory.createApplication(applicationIdentifier = applicationIdentifier)
             val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
             every { authorizer.authorizeApplicationId(id, VIEW.name) } returns true
             every { applicationService.downloadDecision(id, USERNAME) } returns

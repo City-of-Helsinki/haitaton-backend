@@ -29,7 +29,7 @@ class ApplicationAttachmentFactory(
     private val attachmentRepository: ApplicationAttachmentRepository,
     private val contentService: ApplicationAttachmentContentService,
     private val contentRepository: ApplicationAttachmentContentRepository,
-    private val alluDataFactory: AlluDataFactory,
+    private val applicationFactory: ApplicationFactory,
     private val fileClient: FileClient,
 ) {
     fun save(
@@ -40,7 +40,7 @@ class ApplicationAttachmentFactory(
         createdAt: OffsetDateTime = CREATED_AT,
         blobLocation: String? = null,
         attachmentType: ApplicationAttachmentType = MUU,
-        application: ApplicationEntity = alluDataFactory.saveApplicationEntity(USERNAME),
+        application: ApplicationEntity = applicationFactory.saveApplicationEntity(USERNAME),
     ): ApplicationAttachmentBuilder {
         val entity =
             attachmentRepository.save(
@@ -94,7 +94,7 @@ class ApplicationAttachmentFactory(
             createdByUserId: String = USERNAME,
             createdAt: OffsetDateTime = CREATED_AT,
             attachmentType: ApplicationAttachmentType = MUU,
-            applicationId: Long = AlluDataFactory.defaultApplicationId,
+            applicationId: Long = ApplicationFactory.DEFAULT_APPLICATION_ID,
         ): ApplicationAttachmentMetadata =
             ApplicationAttachmentMetadata(
                 id = id,
@@ -115,7 +115,7 @@ class ApplicationAttachmentFactory(
             createdByUserId: String = USERNAME,
             createdAt: OffsetDateTime = CREATED_AT,
             attachmentType: ApplicationAttachmentType = MUU,
-            applicationId: Long = AlluDataFactory.defaultApplicationId,
+            applicationId: Long = ApplicationFactory.DEFAULT_APPLICATION_ID,
         ): ApplicationAttachmentEntity =
             ApplicationAttachmentEntity(
                 id = id,

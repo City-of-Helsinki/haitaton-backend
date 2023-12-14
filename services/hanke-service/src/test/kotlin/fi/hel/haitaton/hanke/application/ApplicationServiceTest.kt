@@ -23,9 +23,10 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.email.EmailSenderService
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withCustomer
+import fi.hel.haitaton.hanke.factory.AlluFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
@@ -222,7 +223,7 @@ class ApplicationServiceTest {
             justRun { cableReportService.update(42, any()) }
             justRun { cableReportService.addAttachment(42, any()) }
             every { cableReportService.getApplicationInformation(42) } returns
-                AlluDataFactory.createAlluApplicationResponse()
+                AlluFactory.createAlluApplicationResponse()
             every { geometriatDao.validateGeometriat(any()) } returns null
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
             every { geometriatDao.calculateCombinedArea(any()) } returns 100f
@@ -267,7 +268,7 @@ class ApplicationServiceTest {
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.validateGeometriat(any()) } returns null
             every { cableReportService.getApplicationInformation(42) } returns
-                AlluDataFactory.createAlluApplicationResponse()
+                AlluFactory.createAlluApplicationResponse()
             every { applicationRepository.save(applicationEntity) } returns applicationEntity
             every { geometriatDao.calculateCombinedArea(any()) } returns 100f
             every { geometriatDao.calculateArea(any()) } returns 100f
@@ -342,7 +343,7 @@ class ApplicationServiceTest {
             every { cableReportService.create(any()) } returns 42
             justRun { cableReportService.addAttachment(42, any()) }
             every { cableReportService.getApplicationInformation(42) } returns
-                AlluDataFactory.createAlluApplicationResponse()
+                AlluFactory.createAlluApplicationResponse()
             every { geometriatDao.calculateCombinedArea(any()) } returns 100f
             every { geometriatDao.calculateArea(any()) } returns 100f
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
@@ -455,7 +456,7 @@ class ApplicationServiceTest {
             every { cableReportService.create(any()) } returns 852
             justRun { cableReportService.addAttachment(852, any()) }
             every { cableReportService.getApplicationInformation(852) } returns
-                AlluDataFactory.createAlluApplicationResponse(852)
+                AlluFactory.createAlluApplicationResponse(852)
             justRun { attachmentService.sendInitialAttachments(852, any()) }
             every { hankeKayttajaService.getKayttajaByUserId(1, USERNAME) } returns sender
             justRun { emailSenderService.sendApplicationNotificationEmail(any()) }
@@ -534,7 +535,7 @@ class ApplicationServiceTest {
             every { geometriatDao.calculateCombinedArea(any()) } returns 100f
             every { geometriatDao.calculateArea(any()) } returns 100f
             every { cableReportService.getApplicationInformation(42) } returns
-                AlluDataFactory.createAlluApplicationResponse()
+                AlluFactory.createAlluApplicationResponse()
             every { cableReportService.create(any()) } returns 42
             justRun { cableReportService.addAttachment(42, any()) }
             every { featureFlags.isDisabled(Feature.USER_MANAGEMENT) } returns true
@@ -565,7 +566,7 @@ class ApplicationServiceTest {
         private val alluid = 42
         private val applicationId = 13L
         private val hankeTunnus = "HAI23-1"
-        private val receiver = AlluDataFactory.teppoEmail
+        private val receiver = ApplicationFactory.TEPPO_EMAIL
         private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
         private val identifier = ApplicationHistoryFactory.defaultApplicationIdentifier
 
@@ -633,8 +634,8 @@ class ApplicationServiceTest {
             every { applicationRepository.getOneByAlluid(42) } returns
                 applicationEntityWithCustomer()
                     .withCustomer(
-                        AlluDataFactory.createCompanyCustomer()
-                            .withContacts(AlluDataFactory.createContact(orderer = false))
+                        ApplicationFactory.createCompanyCustomer()
+                            .withContacts(ApplicationFactory.createContact(orderer = false))
                     )
             every { applicationRepository.save(any()) } answers { firstArg() }
             every { statusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
@@ -658,9 +659,9 @@ class ApplicationServiceTest {
             every { applicationRepository.getOneByAlluid(42) } returns
                 applicationEntityWithCustomer()
                     .withCustomer(
-                        AlluDataFactory.createCompanyCustomer()
+                        ApplicationFactory.createCompanyCustomer()
                             .withContacts(
-                                AlluDataFactory.createContact(orderer = true, email = null)
+                                ApplicationFactory.createContact(orderer = true, email = null)
                             )
                     )
             every { applicationRepository.save(any()) } answers { firstArg() }
@@ -681,14 +682,14 @@ class ApplicationServiceTest {
         }
 
         private fun applicationEntityWithCustomer() =
-            AlluDataFactory.createApplicationEntity(
+            ApplicationFactory.createApplicationEntity(
                     id = applicationId,
                     alluid = alluid,
                     applicationIdentifier = identifier,
                     userId = "user",
                     hanke = HankeFactory.createMinimalEntity(id = 1, hankeTunnus = hankeTunnus),
                 )
-                .withCustomer(AlluDataFactory.createCompanyCustomerWithOrderer())
+                .withCustomer(ApplicationFactory.createCompanyCustomerWithOrderer())
 
         private fun historiesWithDecision() =
             listOf(
@@ -703,7 +704,7 @@ class ApplicationServiceTest {
     }
 
     private fun application(id: Long? = null) =
-        AlluDataFactory.createApplication(
+        ApplicationFactory.createApplication(
             id = id,
             applicationData = applicationData,
             hankeTunnus = HANKE_TUNNUS,
@@ -715,7 +716,7 @@ class ApplicationServiceTest {
         data: ApplicationData = applicationData,
         hanke: HankeEntity
     ) =
-        AlluDataFactory.createApplicationEntity(
+        ApplicationFactory.createApplicationEntity(
             id = id,
             alluid = alluId,
             userId = USERNAME,

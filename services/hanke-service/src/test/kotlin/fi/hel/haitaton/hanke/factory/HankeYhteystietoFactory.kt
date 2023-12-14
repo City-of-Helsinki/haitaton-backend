@@ -9,7 +9,7 @@ import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import java.time.ZonedDateTime
@@ -30,7 +30,7 @@ object HankeYhteystietoFactory {
     fun create(
         id: Int? = 1,
         nimi: String = "Teppo Testihenkilö",
-        email: String = teppoEmail,
+        email: String = TEPPO_EMAIL,
         tyyppi: YhteystietoTyyppi = YRITYS,
         ytunnus: String = defaultYtunnus,
         puhelinnumero: String = "04012345678",

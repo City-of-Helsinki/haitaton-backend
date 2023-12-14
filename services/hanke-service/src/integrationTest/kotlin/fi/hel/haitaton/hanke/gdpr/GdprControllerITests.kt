@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.gdpr
 
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -262,7 +262,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
 
         @Test
         fun `Returns 204 when information was found and deleted`() {
-            val applications = AlluDataFactory.createApplications(3)
+            val applications = ApplicationFactory.createApplications(3)
             every { gdprService.findApplicationsToDelete(USERID) } returns applications
 
             delete()
@@ -278,7 +278,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
 
         @Test
         fun `Doesn't remove anything if doing a dry run`() {
-            val applications = AlluDataFactory.createApplications(3)
+            val applications = ApplicationFactory.createApplications(3)
             every { gdprService.findApplicationsToDelete(USERID) } returns applications
 
             delete(true)
@@ -293,7 +293,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
         @ValueSource(booleans = [true, false])
         fun `Returns 403 and reasons if applications in handling`(dryRun: Boolean) {
             val applications =
-                AlluDataFactory.createApplications(2) { i, application ->
+                ApplicationFactory.createApplications(2) { i, application ->
                     application.copy(applicationIdentifier = "JS$i")
                 }
             every { gdprService.findApplicationsToDelete(USERID) } throws
