@@ -166,23 +166,15 @@ enum class TormaystarkasteluBussiRunkolinja(val runkolinja: String) {
         }
     }
 
-    fun toBussiLiikenneLuokittelu(): BussiLiikenneLuokittelu =
+    fun toLinjaautoliikenneluokittelu(): Linjaautoliikenneluokittelu =
         when (this) {
-            ON -> BussiLiikenneLuokittelu.RUNKOLINJA
-            LAHES -> BussiLiikenneLuokittelu.RUNKOLINJAMAINEN
-            EI -> BussiLiikenneLuokittelu.PERUS
+            ON -> Linjaautoliikenneluokittelu.RUNKOLINJA_TAI_ENINTAAN_20_VUOROA_RUUHKAAIKANA
+            LAHES ->
+                Linjaautoliikenneluokittelu
+                    .RUNKOLINJAMAINEN_LINJA_TAI_ENINTAAN_10_VUOROA_RUUHKAAIKANA
+            EI ->
+                Linjaautoliikenneluokittelu.ENINTAAN_5_VUOROA_RUUHKAAIKANA_TAI_LINJOJA_MUUNA_AIKANA
         }
-}
-
-enum class TormaystarkasteluRaitiotiekaistatyyppi(val value: Int, val kaistatyyppi: String) {
-    OMA(4, "dedicated"),
-    JAETTU(3, "mixed");
-
-    companion object {
-        fun valueOfKaistatyyppi(kaistatyyppi: String): TormaystarkasteluRaitiotiekaistatyyppi {
-            return entries.first { it.kaistatyyppi == kaistatyyppi }
-        }
-    }
 }
 
 /** There are two(2) separate traffic counts - one for radius of 15m and other for 30m */

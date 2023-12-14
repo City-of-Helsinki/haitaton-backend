@@ -1,6 +1,14 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.domain.HankeStatus
+import fi.hel.haitaton.hanke.domain.Hankevaihe
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.LocalDateTime
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -40,11 +48,13 @@ internal class HankeRepositoryITests : DatabaseTest() {
         baseHankeEntity.tyomaaKatuosoite = "katu 1"
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
-        baseHankeEntity.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
-        baseHankeEntity.kaistaPituusHaitta = KaistajarjestelynPituus.KOLME
-        baseHankeEntity.meluHaitta = Haitta13.YKSI
-        baseHankeEntity.polyHaitta = Haitta13.KAKSI
-        baseHankeEntity.tarinaHaitta = Haitta13.KOLME
+        baseHankeEntity.kaistaHaitta =
+            VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
+        baseHankeEntity.kaistaPituusHaitta =
+            AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA
+        baseHankeEntity.meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA
+        baseHankeEntity.polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA
+        baseHankeEntity.tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA
         hankeRepository.save(baseHankeEntity)
 
         val loadedHanke = hankeRepository.findByHankeTunnus("ABC-123")
@@ -53,15 +63,16 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHanke!!.status).isEqualTo(HankeStatus.DRAFT)
         assertThat(loadedHanke.nimi).isEqualTo("nimi")
         assertThat(loadedHanke.kuvaus).isEqualTo("kuvaus")
-        assertThat(loadedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
+        assertThat(loadedHanke.vaihe).isEqualTo(Hankevaihe.SUUNNITTELU)
         assertThat(loadedHanke.tyomaaKatuosoite).isEqualTo("katu 1")
         assertThat(loadedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
         assertThat(loadedHanke.kaistaHaitta)
-            .isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI)
-        assertThat(loadedHanke.kaistaPituusHaitta).isEqualTo(KaistajarjestelynPituus.KOLME)
-        assertThat(loadedHanke.meluHaitta).isEqualTo(Haitta13.YKSI)
-        assertThat(loadedHanke.polyHaitta).isEqualTo(Haitta13.KAKSI)
-        assertThat(loadedHanke.tarinaHaitta).isEqualTo(Haitta13.KOLME)
+            .isEqualTo(VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA)
+        assertThat(loadedHanke.kaistaPituusHaitta)
+            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA)
+        assertThat(loadedHanke.meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_HAITTA)
+        assertThat(loadedHanke.polyHaitta).isEqualTo(Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA)
+        assertThat(loadedHanke.tarinaHaitta).isEqualTo(Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA)
     }
 
     @Test
@@ -157,7 +168,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
             hankeTunnus = hankeTunnus,
             nimi = "nimi",
             kuvaus = "kuvaus",
-            vaihe = Vaihe.SUUNNITTELU,
+            vaihe = Hankevaihe.SUUNNITTELU,
             onYKTHanke = true,
             version = 1,
             createdByUserId = null,

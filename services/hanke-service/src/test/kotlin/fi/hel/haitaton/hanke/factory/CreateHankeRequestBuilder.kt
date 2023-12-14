@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
@@ -9,6 +8,7 @@ import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.NewGeometriat
 import fi.hel.haitaton.hanke.domain.NewHankealue
 import fi.hel.haitaton.hanke.domain.NewYhteystieto
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 
 data class CreateHankeRequestBuilder(
     private val hankeService: HankeService?,

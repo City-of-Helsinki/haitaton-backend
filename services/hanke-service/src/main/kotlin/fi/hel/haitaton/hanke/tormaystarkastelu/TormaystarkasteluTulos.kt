@@ -12,68 +12,66 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
-import kotlin.math.max
 
 @Schema(description = "Collision review result")
 data class TormaystarkasteluTulos(
     @JsonView(ChangeLogView::class)
-    @field:Schema(description = "Basic index result")
-    val perusIndeksi: Float,
+    @field:Schema(description = "Car traffic index result")
+    val autoliikenneindeksi: Float,
     //
     @field:Schema(description = "Cycling index result")
     @JsonView(ChangeLogView::class)
-    val pyorailyIndeksi: Float,
+    val pyoraliikenneindeksi: Float,
     //
-    @field:Schema(description = "Bus transport index result")
+    @field:Schema(description = "Local bus traffic index result")
     @JsonView(ChangeLogView::class)
-    val linjaautoIndeksi: Float,
+    val linjaautoliikenneindeksi: Float,
     //
-    @field:Schema(description = "Tram transport index result")
+    @field:Schema(description = "Tram traffic index result")
     @JsonView(ChangeLogView::class)
-    val raitiovaunuIndeksi: Float,
+    val raitioliikenneindeksi: Float,
 ) {
     @get:JsonView(ChangeLogView::class)
-    @delegate:Schema(
-        description =
-            "Public transport index result, worst of linjaautoIndeksi and raitiovaunuIndeksi"
-    )
-    val joukkoliikenneIndeksi: Float by lazy { max(linjaautoIndeksi, raitiovaunuIndeksi) }
-
-    @get:JsonView(ChangeLogView::class)
-    val liikennehaittaIndeksi: LiikennehaittaIndeksiType by lazy {
-        val max = maxOf(perusIndeksi, pyorailyIndeksi, linjaautoIndeksi, raitiovaunuIndeksi)
+    val liikennehaittaindeksi: LiikennehaittaindeksiType by lazy {
+        val max =
+            maxOf(
+                autoliikenneindeksi,
+                pyoraliikenneindeksi,
+                linjaautoliikenneindeksi,
+                raitioliikenneindeksi
+            )
         val type =
             when (max) {
-                linjaautoIndeksi -> IndeksiType.LINJAAUTOINDEKSI
-                raitiovaunuIndeksi -> IndeksiType.RAITIOVAUNUINDEKSI
-                perusIndeksi -> IndeksiType.PERUSINDEKSI
-                else -> IndeksiType.PYORAILYINDEKSI
+                linjaautoliikenneindeksi -> IndeksiType.LINJAAUTOLIIKENNEINDEKSI
+                raitioliikenneindeksi -> IndeksiType.RAITIOLIIKENNEINDEKSI
+                autoliikenneindeksi -> IndeksiType.AUTOLIIKENNEINDEKSI
+                else -> IndeksiType.PYORALIIKENNEINDEKSI
             }
-        LiikennehaittaIndeksiType(max, type)
+        LiikennehaittaindeksiType(max, type)
     }
 }
 
 @Schema(description = "Traffic nuisance index type")
-data class LiikennehaittaIndeksiType(
+data class LiikennehaittaindeksiType(
     @JsonView(ChangeLogView::class) val indeksi: Float,
     @JsonView(ChangeLogView::class) val tyyppi: IndeksiType
 )
 
 enum class IndeksiType {
-    PERUSINDEKSI,
-    PYORAILYINDEKSI,
-    LINJAAUTOINDEKSI,
-    RAITIOVAUNUINDEKSI,
+    AUTOLIIKENNEINDEKSI,
+    PYORALIIKENNEINDEKSI,
+    LINJAAUTOLIIKENNEINDEKSI,
+    RAITIOLIIKENNEINDEKSI,
 }
 
 @Entity
 @Table(name = "tormaystarkastelutulos")
 class TormaystarkasteluTulosEntity(
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Int = 0,
-    val perus: Float,
-    val pyoraily: Float,
-    val linjaauto: Float,
-    val raitiovaunu: Float,
+    val autoliikenne: Float,
+    val pyoraliikenne: Float,
+    val linjaautoliikenne: Float,
+    val raitioliikenne: Float,
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "hankeid")
     val hanke: HankeEntity,

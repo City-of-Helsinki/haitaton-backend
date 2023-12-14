@@ -3,14 +3,16 @@ package fi.hel.haitaton.hanke.domain
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
-import fi.hel.haitaton.hanke.Haitta13
-import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.TZ_UTC
-import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankealueFactory
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import org.assertj.core.api.Assertions
@@ -48,11 +50,13 @@ internal class HankeTest {
             HankealueFactory.create(
                 haittaAlkuPvm = b,
                 haittaLoppuPvm = d,
-                kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KOLME,
-                kaistaPituusHaitta = KaistajarjestelynPituus.KOLME,
-                meluHaitta = Haitta13.KOLME,
-                polyHaitta = Haitta13.KOLME,
-                tarinaHaitta = Haitta13.KOLME,
+                kaistaHaitta =
+                    VaikutusAutoliikenteenKaistamaariin
+                        .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
+                kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA,
+                meluHaitta = Meluhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
+                polyHaitta = Polyhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
+                tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
             )
         hanke.alueet.add(hankealue)
 

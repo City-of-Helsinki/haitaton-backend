@@ -2,17 +2,18 @@ package fi.hel.haitaton.hanke.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import fi.hel.haitaton.hanke.ContactType
-import fi.hel.haitaton.hanke.Haitta13
-import fi.hel.haitaton.hanke.KaistajarjestelynPituus
-import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
-import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
 
 interface BaseHanke : HasYhteystiedot {
     val nimi: String
-    val vaihe: Vaihe?
+    val vaihe: Hankevaihe?
     val alueet: List<Hankealue>?
     val tyomaaKatuosoite: String?
 }
@@ -77,11 +78,11 @@ interface Hankealue {
     val haittaAlkuPvm: ZonedDateTime?
     val haittaLoppuPvm: ZonedDateTime?
     val geometriat: HasFeatures?
-    val kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin?
-    val kaistaPituusHaitta: KaistajarjestelynPituus?
-    val meluHaitta: Haitta13?
-    val polyHaitta: Haitta13?
-    val tarinaHaitta: Haitta13?
+    val kaistaHaitta: VaikutusAutoliikenteenKaistamaariin?
+    val kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus?
+    val meluHaitta: Meluhaitta?
+    val polyHaitta: Polyhaitta?
+    val tarinaHaitta: Tarinahaitta?
     val nimi: String
 }
 
