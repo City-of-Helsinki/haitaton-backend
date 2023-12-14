@@ -116,7 +116,7 @@ class ApplicationAttachmentServiceITest(
         }
 
         @Test
-        fun `Return empty when application doesn't have attachments`() {
+        fun `Returns empty when application doesn't have attachments`() {
             val application = alluDataFactory.saveApplicationEntity(USERNAME)
 
             val result = attachmentService.getMetadataList(application.id!!)
