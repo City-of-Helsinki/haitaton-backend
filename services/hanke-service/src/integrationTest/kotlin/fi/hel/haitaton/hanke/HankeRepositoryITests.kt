@@ -50,8 +50,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
         baseHankeEntity.kaistaHaitta =
             VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
-        baseHankeEntity.kaistaPituusHaitta =
-            AutoliikenteenKaistavaikutustenPituus._10_99_METRIA
+        baseHankeEntity.kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus._10_99_METRIA
         baseHankeEntity.meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA
         baseHankeEntity.polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA
         baseHankeEntity.tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA

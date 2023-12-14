@@ -488,8 +488,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             alue.haittaLoppuPvm = DateFactory.getEndDatetime()
             alue.kaistaHaitta =
                 VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
-            alue.kaistaPituusHaitta =
-                AutoliikenteenKaistavaikutustenPituus._100_499_METRIA
+            alue.kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus._100_499_METRIA
             alue.meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA
             alue.polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA
             alue.tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA
