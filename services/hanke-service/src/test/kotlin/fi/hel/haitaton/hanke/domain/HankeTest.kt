@@ -54,7 +54,7 @@ internal class HankeTest {
                     VaikutusAutoliikenteenKaistamaariin
                         .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
                 kaistaPituusHaitta =
-                    AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA,
+                    AutoliikenteenKaistavaikutustenPituus._10_99_METRIA,
                 meluHaitta = Meluhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
                 polyHaitta = Polyhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
                 tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,

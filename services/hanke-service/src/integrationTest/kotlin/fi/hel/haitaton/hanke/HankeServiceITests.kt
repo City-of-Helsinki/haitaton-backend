@@ -239,7 +239,7 @@ class HankeServiceITests(
             .isEqualTo(VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA)
         assertThat(returnedHanke.alueet[0].kaistaPituusHaitta)
             .isEqualTo(
-                AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_100_499_METRIA
+                AutoliikenteenKaistavaikutustenPituus._100_499_METRIA
             )
         assertThat(returnedHanke.alueet[0].meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_HAITTA)
         assertThat(returnedHanke.alueet[0].polyHaitta)
@@ -968,7 +968,7 @@ class HankeServiceITests(
                     VaikutusAutoliikenteenKaistamaariin
                         .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
                 kaistaPituusHaitta =
-                    AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA,
+                    AutoliikenteenKaistavaikutustenPituus._10_99_METRIA,
                 meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA,
                 polyHaitta = Polyhaitta.SATUNNAINEN_HAITTA,
                 tarinaHaitta = Tarinahaitta.SATUNNAINEN_HAITTA,
@@ -989,7 +989,7 @@ class HankeServiceITests(
                     .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA
             )
         assertThat(alue.kaistaPituusHaitta)
-            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA)
+            .isEqualTo(AutoliikenteenKaistavaikutustenPituus._10_99_METRIA)
         assertThat(alue.meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_HAITTA)
         assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.SATUNNAINEN_HAITTA)
         assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.SATUNNAINEN_HAITTA)
@@ -1126,7 +1126,7 @@ class HankeServiceITests(
                     VaikutusAutoliikenteenKaistamaariin
                         .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
                 kaistaPituusHaitta =
-                    AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA,
+                    AutoliikenteenKaistavaikutustenPituus._10_99_METRIA,
                 meluHaitta = Meluhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
                 polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
                 tarinaHaitta = Tarinahaitta.SATUNNAINEN_HAITTA,
@@ -1147,7 +1147,7 @@ class HankeServiceITests(
                     .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA
             )
         assertThat(alue.kaistaPituusHaitta)
-            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA)
+            .isEqualTo(AutoliikenteenKaistavaikutustenPituus._10_99_METRIA)
         assertThat(alue.meluHaitta).isEqualTo(Meluhaitta.PITKAKESTOINEN_TOISTUVA_HAITTA)
         assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA)
         assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.SATUNNAINEN_HAITTA)
@@ -1200,7 +1200,7 @@ class HankeServiceITests(
                     VaikutusAutoliikenteenKaistamaariin
                         .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA,
                 kaistaPituusHaitta =
-                    AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA,
+                    AutoliikenteenKaistavaikutustenPituus._10_99_METRIA,
                 meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA,
                 polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
                 tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
@@ -1225,7 +1225,7 @@ class HankeServiceITests(
                     .VAHENTAA_SAMANAIKAISESTI_KAISTAN_KAHDELLA_AJOSUUNNALLA
             )
         assertThat(alue.kaistaPituusHaitta)
-            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA)
+            .isEqualTo(AutoliikenteenKaistavaikutustenPituus._10_99_METRIA)
         assertThat(alue.meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_HAITTA)
         assertThat(alue.polyHaitta).isEqualTo(Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA)
         assertThat(alue.tarinaHaitta).isEqualTo(Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA)

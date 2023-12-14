@@ -24,10 +24,10 @@ enum class VaikutusAutoliikenteenKaistamaariin(override val value: Int) : Luokit
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
 enum class AutoliikenteenKaistavaikutustenPituus(override val value: Int) : Luokittelu {
     EI_VAIKUTA_KAISTAJARJESTELYIHIN(1),
-    KAISTAVAIKUTUSTEN_PITUUS_ALLE_10_METRIA(2),
-    KAISTAVAIKUTUSTEN_PITUUS_10_99_METRIA(3),
-    KAISTAVAIKUTUSTEN_PITUUS_100_499_METRIA(4),
-    KAISTAVAIKUTUSTEN_PITUUS_500_METRIA_TAI_ENEMMAN(5)
+    ALLE_10_METRIA(2),
+    _10_99_METRIA(3),
+    _100_499_METRIA(4),
+    _500_METRIA_TAI_ENEMMAN(5)
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */

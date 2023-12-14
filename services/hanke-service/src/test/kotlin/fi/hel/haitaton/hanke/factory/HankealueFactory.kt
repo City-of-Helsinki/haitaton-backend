@@ -23,7 +23,7 @@ object HankealueFactory {
         kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? =
             VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
         kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? =
-            AutoliikenteenKaistavaikutustenPituus.KAISTAVAIKUTUSTEN_PITUUS_100_499_METRIA,
+            AutoliikenteenKaistavaikutustenPituus._100_499_METRIA,
         meluHaitta: Meluhaitta? = Meluhaitta.SATUNNAINEN_HAITTA,
         polyHaitta: Polyhaitta? = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
         tarinaHaitta: Tarinahaitta? = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
