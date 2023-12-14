@@ -24,10 +24,10 @@ enum class VaikutusAutoliikenteenKaistamaariin(override val value: Int) : Luokit
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
 enum class AutoliikenteenKaistavaikutustenPituus(override val value: Int) : Luokittelu {
     EI_VAIKUTA_KAISTAJARJESTELYIHIN(1),
-    ALLE_10_METRIA(2),
-    _10_99_METRIA(3),
-    _100_499_METRIA(4),
-    _500_METRIA_TAI_ENEMMAN(5)
+    PITUUS_ALLE_10_METRIA(2),
+    PITUUS_10_99_METRIA(3),
+    PITUUS_100_499_METRIA(4),
+    PITUUS_500_METRIA_TAI_ENEMMAN(5)
 }
 
 /** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
@@ -58,11 +58,11 @@ enum class HaittaAjanKestoLuokittelu(override val value: Int) : Luokittelu {
 }
 
 enum class Liikennemaaraluokittelu(override val value: Int) : Luokittelu {
-    _10000_TAI_ENEMMAN(5),
-    _5000_9999(4),
-    _1500_4999(3),
-    _500_1499(2),
-    ALLE_500(1),
+    LIIKENNEMAARA_10000_TAI_ENEMMAN(5),
+    LIIKENNEMAARA_5000_9999(4),
+    LIIKENNEMAARA_1500_4999(3),
+    LIIKENNEMAARA_500_1499(2),
+    LIIKENNEMAARA_ALLE_500(1),
     EI_LIIKENNETTA(0)
 }
 

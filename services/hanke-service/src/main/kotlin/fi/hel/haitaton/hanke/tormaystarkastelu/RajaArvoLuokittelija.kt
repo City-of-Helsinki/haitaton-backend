@@ -12,11 +12,11 @@ object RajaArvoLuokittelija {
 
     fun liikennemaaraluokka(volume: Int) =
         when {
-            volume >= 10000 -> Liikennemaaraluokittelu._10000_TAI_ENEMMAN
-            volume >= 5000 -> Liikennemaaraluokittelu._5000_9999
-            volume >= 1500 -> Liikennemaaraluokittelu._1500_4999
-            volume >= 500 -> Liikennemaaraluokittelu._500_1499
-            volume >= 1 -> Liikennemaaraluokittelu.ALLE_500
+            volume >= 10000 -> Liikennemaaraluokittelu.LIIKENNEMAARA_10000_TAI_ENEMMAN
+            volume >= 5000 -> Liikennemaaraluokittelu.LIIKENNEMAARA_5000_9999
+            volume >= 1500 -> Liikennemaaraluokittelu.LIIKENNEMAARA_1500_4999
+            volume >= 500 -> Liikennemaaraluokittelu.LIIKENNEMAARA_500_1499
+            volume >= 1 -> Liikennemaaraluokittelu.LIIKENNEMAARA_ALLE_500
             else -> Liikennemaaraluokittelu.EI_LIIKENNETTA
         }.value
 

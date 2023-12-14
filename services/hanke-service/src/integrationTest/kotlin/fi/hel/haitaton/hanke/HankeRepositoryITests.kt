@@ -50,7 +50,8 @@ internal class HankeRepositoryITests : DatabaseTest() {
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
         baseHankeEntity.kaistaHaitta =
             VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
-        baseHankeEntity.kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus._10_99_METRIA
+        baseHankeEntity.kaistaPituusHaitta =
+            AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA
         baseHankeEntity.meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA
         baseHankeEntity.polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA
         baseHankeEntity.tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA
@@ -68,7 +69,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHanke.kaistaHaitta)
             .isEqualTo(VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA)
         assertThat(loadedHanke.kaistaPituusHaitta)
-            .isEqualTo(AutoliikenteenKaistavaikutustenPituus._10_99_METRIA)
+            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA)
         assertThat(loadedHanke.meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_HAITTA)
         assertThat(loadedHanke.polyHaitta).isEqualTo(Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA)
         assertThat(loadedHanke.tarinaHaitta).isEqualTo(Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA)
