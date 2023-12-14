@@ -138,7 +138,7 @@ class TormaystarkasteluLaskentaService(
         val bussireitit = tormaysService.getIntersectingBusRoutes(geometriaIds)
 
         val valueByRunkolinja =
-            bussireitit.maxOfOrNull { it.runkolinja?.toLinjaautoliikenneluokittelu()?.value ?: 0 }
+            bussireitit.maxOfOrNull { it.runkolinja.toLinjaautoliikenneluokittelu().value }
                 // bussireitit is empty
                 ?: return Linjaautoliikenneluokittelu.EI_VAIKUTA_LINJAAUTOLIIKENTEESEEN.value
 

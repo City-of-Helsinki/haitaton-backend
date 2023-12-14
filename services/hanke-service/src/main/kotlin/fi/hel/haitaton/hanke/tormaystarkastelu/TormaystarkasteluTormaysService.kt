@@ -160,8 +160,11 @@ enum class TormaystarkasteluBussiRunkolinja(val runkolinja: String) {
     ON("yes");
 
     companion object {
-        fun valueOfRunkolinja(runkolinja: String): TormaystarkasteluBussiRunkolinja? {
+        fun valueOfRunkolinja(runkolinja: String): TormaystarkasteluBussiRunkolinja {
             return entries.find { it.runkolinja == runkolinja }
+                ?: throw IllegalArgumentException(
+                    "Unknown runkolinja value: $runkolinja. Only 'yes' and 'no' are allowed."
+                )
         }
     }
 
@@ -183,7 +186,7 @@ class TormaystarkasteluBussireitti(
     val reittiId: String,
     val suunta: Int,
     val vuoromaaraRuuhkatunnissa: Int,
-    val runkolinja: TormaystarkasteluBussiRunkolinja?
+    val runkolinja: TormaystarkasteluBussiRunkolinja
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
