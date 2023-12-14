@@ -46,8 +46,9 @@ import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.Asserts.isSameInstantAs
 import io.mockk.Called
@@ -84,7 +85,7 @@ class ApplicationAttachmentServiceITest(
     @Autowired private val attachmentService: ApplicationAttachmentService,
     @Autowired private val attachmentRepository: ApplicationAttachmentRepository,
     @Autowired private val contentRepository: ApplicationAttachmentContentRepository,
-    @Autowired private val alluDataFactory: AlluDataFactory,
+    @Autowired private val applicationFactory: ApplicationFactory,
     @Autowired private val attachmentFactory: ApplicationAttachmentFactory,
     @Autowired private val fileClient: MockFileClient,
 ) : DatabaseTest() {
@@ -117,7 +118,7 @@ class ApplicationAttachmentServiceITest(
 
         @Test
         fun `Returns empty when application doesn't have attachments`() {
-            val application = alluDataFactory.saveApplicationEntity(USERNAME)
+            val application = applicationFactory.saveApplicationEntity(USERNAME)
 
             val result = attachmentService.getMetadataList(application.id!!)
 
@@ -126,7 +127,7 @@ class ApplicationAttachmentServiceITest(
 
         @Test
         fun `Returns related metadata list`() {
-            val application = alluDataFactory.saveApplicationEntity(USERNAME)
+            val application = applicationFactory.saveApplicationEntity(USERNAME)
             attachmentFactory.save(application = application).withDbContent()
             attachmentFactory.save(application = application).withDbContent()
 
@@ -195,7 +196,7 @@ class ApplicationAttachmentServiceITest(
         @ParameterizedTest
         fun `Saves attachment and content to DB`(typeInput: ApplicationAttachmentType) {
             mockClamAv.enqueue(response(body(results = successResult())))
-            val application = alluDataFactory.saveApplicationEntity(USERNAME)
+            val application = applicationFactory.saveApplicationEntity(USERNAME)
 
             val result =
                 attachmentService.addAttachment(
@@ -233,7 +234,7 @@ class ApplicationAttachmentServiceITest(
         @Test
         fun `Sanitizes filenames with special characters`() {
             mockClamAv.enqueue(response(body(results = successResult())))
-            val application = alluDataFactory.saveApplicationEntity(USERNAME)
+            val application = applicationFactory.saveApplicationEntity(USERNAME)
 
             val result =
                 attachmentService.addAttachment(
@@ -249,7 +250,7 @@ class ApplicationAttachmentServiceITest(
 
         @Test
         fun `Throws exception when allowed attachment amount is reached`() {
-            val application = alluDataFactory.saveApplicationEntity(USERNAME)
+            val application = applicationFactory.saveApplicationEntity(USERNAME)
             val attachments =
                 (1..ALLOWED_ATTACHMENT_COUNT).map {
                     ApplicationAttachmentFactory.createEntity(applicationId = application.id!!)
@@ -275,7 +276,7 @@ class ApplicationAttachmentServiceITest(
 
         @Test
         fun `Throws exception without content type`() {
-            val application = alluDataFactory.saveApplicationEntity(USERNAME)
+            val application = applicationFactory.saveApplicationEntity(USERNAME)
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
@@ -294,9 +295,9 @@ class ApplicationAttachmentServiceITest(
         @Test
         fun `Throws exception when allu handling has started`() {
             val application =
-                alluDataFactory.saveApplicationEntity(username = USERNAME, alluId = ALLU_ID)
+                applicationFactory.saveApplicationEntity(username = USERNAME, alluId = ALLU_ID)
             every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-                AlluDataFactory.createAlluApplicationResponse(status = HANDLING)
+                AlluFactory.createAlluApplicationResponse(status = HANDLING)
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
@@ -321,13 +322,13 @@ class ApplicationAttachmentServiceITest(
             justRun { cableReportService.addAttachment(ALLU_ID, any()) }
             mockClamAv.enqueue(response(body(results = successResult())))
             val application =
-                alluDataFactory.saveApplicationEntity(
+                applicationFactory.saveApplicationEntity(
                     username = USERNAME,
                     alluId = ALLU_ID,
                     alluStatus = PENDING
                 )
             every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-                AlluDataFactory.createAlluApplicationResponse(status = status)
+                AlluFactory.createAlluApplicationResponse(status = status)
 
             attachmentService.addAttachment(
                 applicationId = application.id!!,
@@ -357,7 +358,7 @@ class ApplicationAttachmentServiceITest(
 
         @Test
         fun `Throws exception when file type is not supported`() {
-            val application = alluDataFactory.saveApplicationEntity(USERNAME)
+            val application = applicationFactory.saveApplicationEntity(USERNAME)
             val invalidFilename = "hello.html"
 
             val failure = assertFailure {
@@ -379,13 +380,13 @@ class ApplicationAttachmentServiceITest(
         fun `Clean DB and throws exception when Allu upload fails`() {
             mockClamAv.enqueue(response(body(results = successResult())))
             val application =
-                alluDataFactory.saveApplicationEntity(
+                applicationFactory.saveApplicationEntity(
                     username = USERNAME,
                     alluId = ALLU_ID,
                     alluStatus = PENDING
                 )
             every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-                AlluDataFactory.createAlluApplicationResponse(status = PENDING)
+                AlluFactory.createAlluApplicationResponse(status = PENDING)
             every { cableReportService.addAttachment(ALLU_ID, any()) } throws
                 AlluException(listOf())
 
@@ -409,7 +410,7 @@ class ApplicationAttachmentServiceITest(
         @Test
         fun `Throws exception when virus scan fails`() {
             mockClamAv.enqueue(response(body(results = failResult())))
-            val application = alluDataFactory.saveApplicationEntity(USERNAME)
+            val application = applicationFactory.saveApplicationEntity(USERNAME)
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
@@ -447,7 +448,7 @@ class ApplicationAttachmentServiceITest(
 
             @Test
             fun `Throws when application has been sent to Allu`() {
-                val application = alluDataFactory.saveApplicationEntity(USERNAME, alluId = ALLU_ID)
+                val application = applicationFactory.saveApplicationEntity(USERNAME, alluId = ALLU_ID)
                 val attachment =
                     attachmentFactory.save(application = application).withDbContent().value
 

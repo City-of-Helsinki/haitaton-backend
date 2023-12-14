@@ -10,8 +10,8 @@ import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.test.Asserts.isSameInstantAs
 import org.junit.jupiter.params.ParameterizedTest
@@ -28,7 +28,7 @@ private const val BLOB_LOCATION = "1/bcae2ff2-74e9-48d2-a8ed-e33a40652304"
 @SpringBootTest
 class ApplicationAttachmentRepositoryITests : DatabaseTest() {
 
-    @Autowired private lateinit var alluDataFactory: AlluDataFactory
+    @Autowired private lateinit var applicationFactory: ApplicationFactory
     @Autowired private lateinit var hankeFactory: HankeFactory
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
 
@@ -37,7 +37,7 @@ class ApplicationAttachmentRepositoryITests : DatabaseTest() {
     @ParameterizedTest
     fun `Should save and find hanke attachment with nullable blob location`(blobLocation: String?) {
         val hanke = hankeFactory.saveMinimal()
-        val application = alluDataFactory.saveApplicationEntity("User", hanke)
+        val application = applicationFactory.saveApplicationEntity("User", hanke)
         val saved =
             applicationAttachmentRepository.save(
                 ApplicationAttachmentFactory.createEntity(

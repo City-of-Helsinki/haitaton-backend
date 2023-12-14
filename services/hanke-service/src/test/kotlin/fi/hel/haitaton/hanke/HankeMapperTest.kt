@@ -11,7 +11,7 @@ import fi.hel.haitaton.hanke.ContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -62,7 +62,7 @@ class HankeMapperTest {
             HankeYhteystietoFactory.create(
                 id = id,
                 nimi = "$TEPPO_TESTI $type",
-                email = "$type.$teppoEmail",
+                email = "$type.$TEPPO_EMAIL",
                 tyyppi = YRITYS,
                 ytunnus = defaultYtunnus,
                 createdAt = hankeEntity.yhteystietoCreatedAt(type),

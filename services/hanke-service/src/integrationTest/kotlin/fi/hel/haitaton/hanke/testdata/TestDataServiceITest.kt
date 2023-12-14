@@ -8,7 +8,7 @@ import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -26,7 +26,7 @@ class TestDataServiceITest : DatabaseTest() {
 
     @Autowired private lateinit var testDataService: TestDataService
     @Autowired private lateinit var applicationRepository: ApplicationRepository
-    @Autowired private lateinit var alluDataFactory: AlluDataFactory
+    @Autowired private lateinit var applicationFactory: ApplicationFactory
     @Autowired private lateinit var hankeFactory: HankeFactory
 
     @Nested
@@ -38,10 +38,10 @@ class TestDataServiceITest : DatabaseTest() {
 
         @Test
         fun `With applications resets their allu fields`() {
-            val applicationData = AlluDataFactory.createCableReportApplicationData()
+            val applicationData = ApplicationFactory.createCableReportApplicationData()
             for (i in 1..4) {
                 val hanke = hankeFactory.saveEntity()
-                alluDataFactory.saveApplicationEntity(
+                applicationFactory.saveApplicationEntity(
                     USERNAME,
                     hanke = hanke,
                     alluStatus = ApplicationStatus.entries[i + 4],
@@ -50,7 +50,7 @@ class TestDataServiceITest : DatabaseTest() {
                     applicationData = applicationData.copy(pendingOnClient = false),
                 )
 
-                alluDataFactory.saveApplicationEntity(
+                applicationFactory.saveApplicationEntity(
                     USERNAME,
                     hanke,
                     alluStatus = null,

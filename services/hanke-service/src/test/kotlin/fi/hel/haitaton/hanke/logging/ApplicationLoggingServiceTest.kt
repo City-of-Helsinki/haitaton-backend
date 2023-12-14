@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke.logging
 
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import io.mockk.called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -32,7 +32,7 @@ internal class ApplicationLoggingServiceTest {
 
     @Test
     fun `logCreate creates audit log entry for created application`() {
-        val application = AlluDataFactory.createApplication(hankeTunnus = hankeTunnus)
+        val application = ApplicationFactory.createApplication(hankeTunnus = hankeTunnus)
 
         applicationLoggingService.logCreate(application, userId)
 
@@ -45,7 +45,7 @@ internal class ApplicationLoggingServiceTest {
                     Assertions.assertEquals(userId, entry.userId)
                     Assertions.assertEquals(UserRole.USER, entry.userRole)
                     Assertions.assertEquals(
-                        AlluDataFactory.defaultApplicationId.toString(),
+                        ApplicationFactory.DEFAULT_APPLICATION_ID.toString(),
                         entry.objectId
                     )
                     Assertions.assertEquals(ObjectType.APPLICATION, entry.objectType)
@@ -59,15 +59,15 @@ internal class ApplicationLoggingServiceTest {
     @Test
     fun `logUpdate creates audit log entry for updated hanke`() {
         val applicationBefore =
-            AlluDataFactory.createApplication(
+            ApplicationFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #1"),
+                    ApplicationFactory.createCableReportApplicationData(name = "Johtoselvitys #1"),
                 hankeTunnus = hankeTunnus,
             )
         val applicationAfter =
-            AlluDataFactory.createApplication(
+            ApplicationFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #2"),
+                    ApplicationFactory.createCableReportApplicationData(name = "Johtoselvitys #2"),
                 hankeTunnus = hankeTunnus,
             )
 
@@ -82,7 +82,7 @@ internal class ApplicationLoggingServiceTest {
                     Assertions.assertEquals(userId, entry.userId)
                     Assertions.assertEquals(UserRole.USER, entry.userRole)
                     Assertions.assertEquals(
-                        AlluDataFactory.defaultApplicationId.toString(),
+                        ApplicationFactory.DEFAULT_APPLICATION_ID.toString(),
                         entry.objectId
                     )
                     Assertions.assertEquals(ObjectType.APPLICATION, entry.objectType)
@@ -96,15 +96,15 @@ internal class ApplicationLoggingServiceTest {
     @Test
     fun `logUpdate doesn't create audit log entry if hanke not changed`() {
         val applicationBefore =
-            AlluDataFactory.createApplication(
+            ApplicationFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #1"),
+                    ApplicationFactory.createCableReportApplicationData(name = "Johtoselvitys #1"),
                 hankeTunnus = hankeTunnus,
             )
         val applicationAfter =
-            AlluDataFactory.createApplication(
+            ApplicationFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplicationData(name = "Johtoselvitys #1"),
+                    ApplicationFactory.createCableReportApplicationData(name = "Johtoselvitys #1"),
                 hankeTunnus = hankeTunnus,
             )
 

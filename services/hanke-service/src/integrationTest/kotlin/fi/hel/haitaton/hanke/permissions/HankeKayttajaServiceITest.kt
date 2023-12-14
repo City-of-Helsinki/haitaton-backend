@@ -31,18 +31,18 @@ import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.email.textBody
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.asianHoitajaCustomerContact
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createApplicationEntity
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createCableReportApplicationData
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createCompanyCustomer
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createContact
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.defaultApplicationIdentifier
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.hakijaCustomerContact
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.rakennuttajaCustomerContact
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.suorittajaCustomerContact
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContact
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_APPLICATION_IDENTIFIER
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.asianHoitajaCustomerContact
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplicationEntity
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationData
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCompanyCustomer
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createContact
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.hakijaCustomerContact
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.rakennuttajaCustomerContact
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.suorittajaCustomerContact
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContact
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.defaultNimi
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
@@ -150,7 +150,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
             assertThat(result).isNotNull().all {
                 prop(HankekayttajaEntity::id).isNotNull()
-                prop(HankekayttajaEntity::sahkoposti).isEqualTo(teppoEmail)
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(TEPPO_EMAIL)
                 prop(HankekayttajaEntity::etunimi).isEqualTo("Teppo")
                 prop(HankekayttajaEntity::sukunimi).isEqualTo("Testihenkilö")
                 prop(HankekayttajaEntity::puhelin).isEqualTo("04012345678")
@@ -287,7 +287,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 )
             val application =
                 createApplicationEntity(
-                    applicationIdentifier = defaultApplicationIdentifier,
+                    applicationIdentifier = DEFAULT_APPLICATION_IDENTIFIER,
                     applicationData = applicationData,
                     hanke = hanke
                 )
@@ -325,7 +325,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 )
             val application =
                 createApplicationEntity(
-                    applicationIdentifier = defaultApplicationIdentifier,
+                    applicationIdentifier = DEFAULT_APPLICATION_IDENTIFIER,
                     applicationData = applicationData,
                     hanke = hanke
                 )
@@ -365,7 +365,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val application =
                 createApplicationEntity(
                     hanke = hanke,
-                    applicationIdentifier = defaultApplicationIdentifier,
+                    applicationIdentifier = DEFAULT_APPLICATION_IDENTIFIER,
                     userId = USERNAME
                 )
 
@@ -395,7 +395,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val hanke = hankeFactory.saveGenerated(cableReportWithoutHanke, USERNAME)
             val applicationEntity =
                 applicationRepository.findAll().first().apply {
-                    applicationIdentifier = defaultApplicationIdentifier
+                    applicationIdentifier = DEFAULT_APPLICATION_IDENTIFIER
                 }
             val inviter = findKayttaja(hanke.id, KAYTTAJA_INPUT_HAKIJA.email)
 
@@ -449,7 +449,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 )
             val application =
                 createApplicationEntity(
-                    applicationIdentifier = defaultApplicationIdentifier,
+                    applicationIdentifier = DEFAULT_APPLICATION_IDENTIFIER,
                     applicationData = applicationData,
                     hanke = hanke
                 )
@@ -510,7 +510,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 )
             val application =
                 createApplicationEntity(
-                    applicationIdentifier = defaultApplicationIdentifier,
+                    applicationIdentifier = DEFAULT_APPLICATION_IDENTIFIER,
                     applicationData = applicationData,
                     hanke = hanke
                 )
@@ -574,7 +574,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 )
             val application =
                 createApplicationEntity(
-                    applicationIdentifier = defaultApplicationIdentifier,
+                    applicationIdentifier = DEFAULT_APPLICATION_IDENTIFIER,
                     applicationData = applicationData,
                     hanke = hanke
                 )
@@ -614,7 +614,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 )
             val application =
                 createApplicationEntity(
-                    applicationIdentifier = defaultApplicationIdentifier,
+                    applicationIdentifier = DEFAULT_APPLICATION_IDENTIFIER,
                     applicationData = applicationData,
                     hanke = hanke
                 )
@@ -729,7 +729,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
             val capturedEmails = greenMail.receivedMessages
             assertThat(capturedEmails).hasSize(4)
-            assertThat(capturedEmails).areValidHankeInvitations(TEPPO_TESTI, teppoEmail, hanke)
+            assertThat(capturedEmails).areValidHankeInvitations(TEPPO_TESTI, TEPPO_EMAIL, hanke)
             assertThat(capturedEmails)
                 .hasReceivers("yhteys-email1", "yhteys-email2", "yhteys-email3", "yhteys-email4")
         }

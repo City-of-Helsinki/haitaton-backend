@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -50,12 +50,14 @@ class ApplicationControllerTest {
     fun `getAll saves disclosure logs`() {
         val applications =
             listOf(
-                AlluDataFactory.createApplication(hankeTunnus = hankeTunnus),
-                AlluDataFactory.createApplication(
+                ApplicationFactory.createApplication(hankeTunnus = hankeTunnus),
+                ApplicationFactory.createApplication(
                     id = 2,
                     hankeTunnus = hankeTunnus,
                     applicationData =
-                        AlluDataFactory.createCableReportApplicationData(name = "Toinen selvitys")
+                        ApplicationFactory.createCableReportApplicationData(
+                            name = "Toinen selvitys"
+                        )
                 ),
             )
         every { applicationService.getAllApplicationsForUser(username) } returns applications
@@ -71,7 +73,7 @@ class ApplicationControllerTest {
     @Test
     fun `getById saves disclosure logs`() {
         val hankeTunnus = "HAI-1234"
-        val application = AlluDataFactory.createApplication(hankeTunnus = hankeTunnus)
+        val application = ApplicationFactory.createApplication(hankeTunnus = hankeTunnus)
         every { applicationService.getApplicationById(1) } returns application
 
         applicationController.getById(1)
@@ -86,7 +88,7 @@ class ApplicationControllerTest {
     fun `create saves disclosure logs`() {
         val hankeTunnus = "HAI-1234"
         val requestApplication =
-            AlluDataFactory.createApplication(id = null, hankeTunnus = hankeTunnus)
+            ApplicationFactory.createApplication(id = null, hankeTunnus = hankeTunnus)
         val createdApplication = requestApplication.copy(id = 1)
         every { applicationService.create(requestApplication, username) } returns createdApplication
 
@@ -101,7 +103,7 @@ class ApplicationControllerTest {
     @Test
     fun `update saves disclosure logs`() {
         val hankeTunnus = "HAI-1234"
-        val application = AlluDataFactory.createApplication(id = 1, hankeTunnus = hankeTunnus)
+        val application = ApplicationFactory.createApplication(id = 1, hankeTunnus = hankeTunnus)
         every {
             applicationService.updateApplicationData(1, application.applicationData, username)
         } returns application

@@ -78,7 +78,7 @@ class HankeFactory(
 
     fun saveGenerated(
         cableReportWithoutHanke: CableReportWithoutHanke =
-            AlluDataFactory.cableReportWithoutHanke(),
+            ApplicationFactory.cableReportWithoutHanke(),
         userId: String
     ): Hanke {
         val application = hankeService.generateHankeWithApplication(cableReportWithoutHanke, userId)
