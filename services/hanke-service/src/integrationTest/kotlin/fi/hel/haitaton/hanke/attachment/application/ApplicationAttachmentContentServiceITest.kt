@@ -3,12 +3,19 @@ package fi.hel.haitaton.hanke.attachment.application
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
+import assertk.assertions.containsExactly
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
+import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNull
+import assertk.assertions.isSuccess
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.attachment.USERNAME
+import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import java.util.UUID
@@ -27,6 +34,7 @@ import org.springframework.test.context.ActiveProfiles
 class ApplicationAttachmentContentServiceITest(
     @Autowired private val attachmentContentService: ApplicationAttachmentContentService,
     @Autowired private val applicationAttachmentFactory: ApplicationAttachmentFactory,
+    @Autowired private val fileClient: MockFileClient,
 ) : DatabaseTest() {
 
     private val applicationId = 1L
@@ -59,8 +67,36 @@ class ApplicationAttachmentContentServiceITest(
     }
 
     @Nested
-    inner class ReadFromFile {
+    inner class Delete {
+        @Test
+        fun `Deletes the content when blobLocation is specified`() {
+            val attachment = attachmentWithCloudContent()
+            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET).map { it.path })
+                .containsExactly(attachment.blobLocation!!)
 
+            attachmentContentService.delete(attachment)
+
+            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).isEmpty()
+        }
+
+        @Test
+        fun `Doesn't throw an error if content is missing`() {
+            val attachment = attachmentWithoutCloudContent().copy(blobLocation = "missing")
+
+            assertThat(runCatching { attachmentContentService.delete(attachment) }).isSuccess()
+        }
+
+        @Test
+        fun `Doesn't do anything if blobLocation is not specified`() {
+            val attachment = attachmentWithoutCloudContent()
+            assertThat(attachment.blobLocation).isNull()
+
+            assertThat(runCatching { attachmentContentService.delete(attachment) }).isSuccess()
+        }
+    }
+
+    @Nested
+    inner class ReadFromFile {
         @Test
         fun `returns the right content`() {
             applicationAttachmentFactory.saveContentToCloud(path, bytes = bytes)
@@ -101,4 +137,10 @@ class ApplicationAttachmentContentServiceITest(
                 }
         }
     }
+
+    fun attachmentWithCloudContent(id: UUID = attachmentId): ApplicationAttachmentMetadata =
+        applicationAttachmentFactory.save(id = id).withCloudContent().value.toDomain()
+
+    fun attachmentWithoutCloudContent(id: UUID = attachmentId): ApplicationAttachmentMetadata =
+        applicationAttachmentFactory.save(id = id).value.toDomain()
 }
