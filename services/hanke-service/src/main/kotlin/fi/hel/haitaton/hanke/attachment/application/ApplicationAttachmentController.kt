@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import java.util.UUID
+import mu.KotlinLogging
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -21,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
+
+private val logger = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/hakemukset/{applicationId}/liitteet")
@@ -142,6 +145,7 @@ class ApplicationAttachmentController(
         "@applicationAuthorizer.authorizeAttachment(#applicationId, #attachmentId, 'EDIT_APPLICATIONS')"
     )
     fun removeAttachment(@PathVariable applicationId: Long, @PathVariable attachmentId: UUID) {
+        logger.info { "Deleting attachment $attachmentId from application $applicationId." }
         return applicationAttachmentService.deleteAttachment(attachmentId)
     }
 }
