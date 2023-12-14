@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke
 import assertk.all
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.ContactType.MUU
 import fi.hel.haitaton.hanke.ContactType.OMISTAJA
@@ -53,7 +52,6 @@ class HankeMapperTest {
             prop(Hanke::tyomaaKatuosoite).isEqualTo(entity.tyomaaKatuosoite)
             prop(Hanke::tyomaaTyyppi).isEqualTo(entity.tyomaaTyyppi)
             prop(Hanke::alueet).isEqualTo(expectedAlueet(entity.id, entity.hankeTunnus))
-            prop(Hanke::permissions).isNull()
         }
     }
 

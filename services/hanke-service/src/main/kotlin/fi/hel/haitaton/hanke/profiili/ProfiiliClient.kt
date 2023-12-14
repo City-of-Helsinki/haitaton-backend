@@ -25,12 +25,13 @@ class ProfiiliClient(
     private val myProfileGraphQl = MY_PROFILE_QUERY_FILE.getResourceAsText()
     private val myProfileQuery = GraphQlQuery(myProfileGraphQl, MY_PROFILE_OPERATION).toJsonString()
 
-    fun getVerifiedName(securityContext: SecurityContext): Names? {
+    fun getVerifiedName(securityContext: SecurityContext): Names {
         logger.info { "Getting user's verified name from Profiili." }
         val apiToken = authenticate(securityContext)
         val profiiliData = queryForVerifiedName(apiToken, myProfileQuery)
         logger.info { "Got user's verified name from Profiili." }
         return profiiliData.data.myProfile?.verifiedPersonalInformation
+            ?: throw VerifiedNameNotFound("Verified name not found from profile.")
     }
 
     private fun queryForVerifiedName(apiToken: String, query: String): ProfiiliResponse {

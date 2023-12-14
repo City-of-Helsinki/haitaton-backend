@@ -295,7 +295,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         fun `when valid request should succeed and return 200`() {
             val applicationInput = ApplicationFactory.cableReportWithoutHanke()
             val mockCreatedApplication = applicationInput.toNewApplication(HANKE_TUNNUS)
-            every { hankeService.generateHankeWithApplication(applicationInput, USERNAME) } returns
+            every { hankeService.generateHankeWithApplication(applicationInput, any()) } returns
                 mockCreatedApplication
 
             val response: Application =
@@ -304,7 +304,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                     .andReturnBody()
 
             assertEquals(response, mockCreatedApplication)
-            verify { hankeService.generateHankeWithApplication(applicationInput, USERNAME) }
+            verify { hankeService.generateHankeWithApplication(applicationInput, any()) }
         }
 
         @Test

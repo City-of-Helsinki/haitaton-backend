@@ -48,7 +48,7 @@ class HankeAttachmentMetadataServiceITests(
     inner class GetMetadataList {
         @Test
         fun `getMetadataList should return related metadata list`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             (1..2).forEach { _ ->
                 hankeAttachmentRepository.save(
                     HankeAttachmentEntity(
@@ -80,7 +80,7 @@ class HankeAttachmentMetadataServiceITests(
     inner class SaveAttachment {
         @Test
         fun `Should return metadata of saved attachment`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
             val blobPath = blobPath(hanke.id)
 
             val result =
@@ -110,7 +110,7 @@ class HankeAttachmentMetadataServiceITests(
 
         @Test
         fun `Should throw if attachment amount is exceeded`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             (1..ALLOWED_ATTACHMENT_COUNT)
                 .map { HankeAttachmentFactory.createEntity(hanke = hanke) }
                 .let(hankeAttachmentRepository::saveAll)
@@ -151,7 +151,7 @@ class HankeAttachmentMetadataServiceITests(
     inner class HankeWithRoomForAttachment {
         @Test
         fun `When there is still room, should return hanke info`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
 
             val result =
                 hankeAttachmentMetadataService.hankeWithRoomForAttachment(hanke.hankeTunnus)
@@ -164,7 +164,7 @@ class HankeAttachmentMetadataServiceITests(
 
         @Test
         fun `When allowed attachment amount is exceeded should throw`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             val attachments =
                 (1..ALLOWED_ATTACHMENT_COUNT).map {
                     HankeAttachmentFactory.createEntity(hanke = hanke)

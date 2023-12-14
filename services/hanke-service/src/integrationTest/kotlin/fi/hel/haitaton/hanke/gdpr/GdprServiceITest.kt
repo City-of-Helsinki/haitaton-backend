@@ -51,7 +51,7 @@ class GdprServiceITest : DatabaseTest() {
 
         @Test
         fun `Returns null when user has no applications`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERID).saveEntity()
             applicationFactory.saveApplicationEntities(3, "Other User", hanke)
             val result = gdprService.findGdprInfo(USERID)
 
@@ -60,7 +60,7 @@ class GdprServiceITest : DatabaseTest() {
 
         @Test
         fun `Returns information for user's applications`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERID).saveEntity()
             applicationFactory.saveApplicationEntities(6, USERID, hanke) { i, application ->
                 if (i % 2 == 0) {
                     application.userId = "Other User"
@@ -114,7 +114,7 @@ class GdprServiceITest : DatabaseTest() {
 
         @Test
         fun `Returns empty list with no matching applications`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERID).saveEntity()
             applicationFactory.saveApplicationEntities(3, "Other user", hanke)
 
             val result = gdprService.findApplicationsToDelete(USERID)
@@ -124,7 +124,7 @@ class GdprServiceITest : DatabaseTest() {
 
         @Test
         fun `Returns applications when only pending applications`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERID).saveEntity()
             val statuses = listOf(null, ApplicationStatus.PENDING, ApplicationStatus.PENDING_CLIENT)
             val applications =
                 applicationFactory.saveApplicationEntities(3, USERID, hanke) { i, application ->
@@ -142,7 +142,7 @@ class GdprServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception when some applications are not pending`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERID).saveEntity()
             val statuses =
                 listOf(
                     ApplicationStatus.HANDLING,
@@ -175,7 +175,7 @@ class GdprServiceITest : DatabaseTest() {
     inner class DeleteApplications {
         @Test
         fun `Deletes all given applications`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERID).saveEntity()
             val applications =
                 applicationFactory
                     .saveApplicationEntities(6, USERID, hanke) { i, application ->

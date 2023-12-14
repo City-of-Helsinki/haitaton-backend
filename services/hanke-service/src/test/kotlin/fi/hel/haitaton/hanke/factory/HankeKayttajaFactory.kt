@@ -104,6 +104,14 @@ class HankeKayttajaFactory(
         private const val PEKKA = "Pekka Peruskäyttäjä"
         private const val PEKKA_EMAIL = "pekka@peruskäyttäjä.test"
 
+        val KAYTTAJA_INPUT_TEPPO =
+            HankekayttajaInput(
+                "Teppo",
+                "Testihenkilö",
+                ApplicationFactory.TEPPO_EMAIL,
+                "04012345678",
+            )
+
         val KAYTTAJA_INPUT_HAKIJA =
             HankekayttajaInput(
                 "Henri",

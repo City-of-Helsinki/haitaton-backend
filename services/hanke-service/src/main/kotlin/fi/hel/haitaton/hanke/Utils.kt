@@ -63,6 +63,8 @@ fun getCurrentTimeUTCAsLocalTime(): LocalDateTime = getCurrentTimeUTC().toLocalD
 
 fun currentUserId(): String = SecurityContextHolder.getContext().authentication.name
 
+fun SecurityContext.userId(): String = authentication.name
+
 data class UserInfo(
     val email: String?,
     val name: String?,
