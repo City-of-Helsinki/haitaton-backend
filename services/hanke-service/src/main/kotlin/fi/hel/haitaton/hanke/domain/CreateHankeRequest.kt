@@ -1,11 +1,11 @@
 package fi.hel.haitaton.hanke.domain
 
-import fi.hel.haitaton.hanke.Haitta13
-import fi.hel.haitaton.hanke.KaistajarjestelynPituus
-import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
-import fi.hel.haitaton.hanke.TyomaaTyyppi
-import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.Yhteyshenkilo
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
@@ -28,7 +28,7 @@ data class CreateHankeRequest(
     @field:Schema(
         description = "Current stage of the project. Required for the hanke to be published.",
     )
-    override val vaihe: Vaihe? = null,
+    override val vaihe: Hankevaihe? = null,
     @field:Schema(
         description =
             "Project owners, contact information. At least one is required for the hanke to be published.",
@@ -122,23 +122,23 @@ data class NewHankealue(
     @field:Schema(
         description = "Street lane hindrance value and explanation",
     )
-    override val kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
+    override val kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
     @field:Schema(
         description = "Street lane hindrance length",
     )
-    override val kaistaPituusHaitta: KaistajarjestelynPituus? = null,
+    override val kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
     @field:Schema(
         description = "Noise nuisance",
     )
-    override val meluHaitta: Haitta13? = null,
+    override val meluHaitta: Meluhaitta? = null,
     @field:Schema(
         description = "Dust nuisance",
     )
-    override val polyHaitta: Haitta13? = null,
+    override val polyHaitta: Polyhaitta? = null,
     @field:Schema(
         description = "Vibration nuisance",
     )
-    override val tarinaHaitta: Haitta13? = null,
+    override val tarinaHaitta: Tarinahaitta? = null,
     @field:Schema(
         description = "Area name, must not be null or empty",
     )

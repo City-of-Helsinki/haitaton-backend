@@ -99,10 +99,10 @@ class HankealueService(
     ): TormaystarkasteluTulosEntity? =
         tormaystarkasteluService.calculateTormaystarkastelu(alueet, geometriaIds)?.let {
             TormaystarkasteluTulosEntity(
-                perus = it.perusIndeksi,
-                pyoraily = it.pyorailyIndeksi,
-                linjaauto = it.linjaautoIndeksi,
-                raitiovaunu = it.raitiovaunuIndeksi,
+                autoliikenne = it.autoliikenneindeksi,
+                pyoraliikenne = it.pyoraliikenneindeksi,
+                linjaautoliikenne = it.linjaautoliikenneindeksi,
+                raitioliikenne = it.raitioliikenneindeksi,
                 hanke = hanke
             )
         }

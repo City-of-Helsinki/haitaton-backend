@@ -5,6 +5,8 @@ import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeStatus
+import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.NewYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.geometriat
@@ -43,6 +45,7 @@ class HankeControllerTest {
     class TestConfiguration {
         // makes validation happen here in unit test as well
         @Bean fun bean(): MethodValidationPostProcessor = MethodValidationPostProcessor()
+
         @Bean fun hankeService(): HankeService = mockk()
 
         @Bean fun permissionService(): PermissionService = mockk()
@@ -52,6 +55,7 @@ class HankeControllerTest {
         @Bean fun hankeAuthorizer(): HankeAuthorizer = mockk(relaxUnitFun = true)
 
         val featureFlags = FeatureFlags(mapOf(Pair(Feature.HANKE_EDITING, true)))
+
         @Bean fun featureService(): FeatureService = FeatureService(featureFlags)
 
         @Bean
@@ -94,7 +98,7 @@ class HankeControllerTest {
                     true,
                     "Mannerheimintien remontti remonttinen",
                     HankeFactory.defaultKuvaus,
-                    Vaihe.OHJELMOINTI,
+                    Hankevaihe.OHJELMOINTI,
                     1,
                     "Risto",
                     getCurrentTimeUTC(),
@@ -124,7 +128,7 @@ class HankeControllerTest {
                     true,
                     "Mannerheimintien remontti remonttinen",
                     HankeFactory.defaultKuvaus,
-                    Vaihe.OHJELMOINTI,
+                    Hankevaihe.OHJELMOINTI,
                     1,
                     "Risto",
                     getCurrentTimeUTC(),
@@ -138,7 +142,7 @@ class HankeControllerTest {
                     true,
                     "Hämeenlinnanväylän uudistus",
                     HankeFactory.defaultKuvaus,
-                    Vaihe.SUUNNITTELU,
+                    Hankevaihe.SUUNNITTELU,
                     1,
                     "Paavo",
                     getCurrentTimeUTC(),
@@ -170,7 +174,7 @@ class HankeControllerTest {
                 nimi = "hankkeen nimi",
                 kuvaus = HankeFactory.defaultKuvaus,
                 onYKTHanke = false,
-                vaihe = Vaihe.SUUNNITTELU,
+                vaihe = Hankevaihe.SUUNNITTELU,
                 version = 1,
                 createdBy = "Tiina",
                 createdAt = getCurrentTimeUTC(),
@@ -216,7 +220,7 @@ class HankeControllerTest {
                 nimi = "",
                 kuvaus = "",
                 onYKTHanke = false,
-                vaihe = Vaihe.OHJELMOINTI,
+                vaihe = Hankevaihe.OHJELMOINTI,
                 version = 1,
                 createdBy = "",
                 createdAt = null,
@@ -244,7 +248,7 @@ class HankeControllerTest {
                 nimi = "hankkeen nimi",
                 kuvaus = HankeFactory.defaultKuvaus,
                 onYKTHanke = false,
-                vaihe = Vaihe.OHJELMOINTI,
+                vaihe = Hankevaihe.OHJELMOINTI,
                 omistajat =
                     arrayListOf(
                         NewYhteystieto(

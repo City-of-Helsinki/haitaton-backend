@@ -4,12 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankeIdentifier
-import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.NotInChangeLogView
-import fi.hel.haitaton.hanke.TyomaaTyyppi
-import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.permissions.PermissionCode
-import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
@@ -48,7 +44,7 @@ data class Hanke(
     @field:Schema(
         description = "Current stage of the project. Required for the hanke to be published."
     )
-    override var vaihe: Vaihe?,
+    override var vaihe: Hankevaihe?,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Version, set by the service.")
@@ -139,14 +135,68 @@ data class Hanke(
     @field:Schema(description = "Collision review result, set by the service.")
     var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
 
-    @JsonView(NotInChangeLogView::class)
-    fun getLiikennehaittaindeksi(): LiikennehaittaIndeksiType? =
-        tormaystarkasteluTulos?.liikennehaittaIndeksi
-
     fun toLogString(): String {
         return toString()
     }
 
     override fun extractYhteystiedot(): List<HankeYhteystieto> =
         listOfNotNull(omistajat, rakennuttajat, toteuttajat, muut).flatten()
+}
+
+enum class HankeStatus {
+    /** A hanke is a draft from its creation until all mandatory fields have been filled. */
+    DRAFT,
+
+    /**
+     * A hanke goes public after all mandatory fields have been filled. This happens automatically
+     * on any update. A public hanke has some info visible to everyone and applications can be added
+     * to it.
+     */
+    PUBLIC,
+
+    /**
+     * After the end dates of all hankealue have passed, a hanke is considered finished. It's
+     * anonymized and at least mostly hidden in the UI.
+     */
+    ENDED,
+}
+
+enum class Hankevaihe {
+    OHJELMOINTI,
+    SUUNNITTELU,
+    RAKENTAMINEN
+}
+
+enum class TyomaaTyyppi {
+    VESI,
+    VIEMARI,
+    SADEVESI,
+    SAHKO,
+    TIETOLIIKENNE,
+    LIIKENNEVALO,
+    ULKOVALAISTUS,
+    KAAPPITYO,
+    KAUKOLAMPO,
+    KAUKOKYLMA,
+    KAASUJOHTO,
+    KISKOTYO,
+    MUU,
+    KADUNRAKENNUS,
+    KADUN_KUNNOSSAPITO,
+    KIINTEISTOLIITTYMA,
+    SULKU_TAI_KAIVO,
+    UUDISRAKENNUS,
+    SANEERAUS,
+    AKILLINEN_VIKAKORJAUS,
+    VIHERTYO,
+    RUNKOLINJA,
+    NOSTOTYO,
+    MUUTTO,
+    PYSAKKITYO,
+    KIINTEISTOREMONTTI,
+    ULKOMAINOS,
+    KUVAUKSET,
+    LUMENPUDOTUS,
+    YLEISOTILAISUUS,
+    VAIHTOLAVA
 }

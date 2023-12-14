@@ -8,16 +8,14 @@ import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.HankeStatus
-import fi.hel.haitaton.hanke.HankeStatus.DRAFT
 import fi.hel.haitaton.hanke.HanketunnusService
-import fi.hel.haitaton.hanke.TyomaaTyyppi
-import fi.hel.haitaton.hanke.Vaihe
-import fi.hel.haitaton.hanke.Vaihe.SUUNNITTELU
 import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.Hankevaihe
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createEntity
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
@@ -40,7 +38,7 @@ class HankeFactory(
      */
     fun save(
         nimi: String = defaultNimi,
-        vaihe: Vaihe? = Vaihe.OHJELMOINTI,
+        vaihe: Hankevaihe? = Hankevaihe.OHJELMOINTI,
         tyomaaKatuosoite: String? = null,
         tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
     ) =
@@ -61,7 +59,7 @@ class HankeFactory(
      */
     fun saveEntity(
         nimi: String = defaultNimi,
-        vaihe: Vaihe? = Vaihe.OHJELMOINTI,
+        vaihe: Hankevaihe? = Hankevaihe.OHJELMOINTI,
     ): HankeEntity {
         val hanke = save(nimi, vaihe)
         return hankeRepository.getReferenceById(hanke.id)
@@ -91,7 +89,7 @@ class HankeFactory(
         nimi: String = defaultNimi,
         onYKTHanke: Boolean? = true,
         kuvaus: String? = defaultKuvaus,
-        vaihe: Vaihe? = Vaihe.OHJELMOINTI,
+        vaihe: Hankevaihe? = Hankevaihe.OHJELMOINTI,
         tyomaaKatuosoite: String? = null,
         tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
     ) =
@@ -128,11 +126,11 @@ class HankeFactory(
             id: Int = defaultId,
             hankeTunnus: String = defaultHankeTunnus,
             nimi: String = defaultNimi,
-            vaihe: Vaihe? = Vaihe.OHJELMOINTI,
+            vaihe: Hankevaihe? = Hankevaihe.OHJELMOINTI,
             version: Int? = 1,
             createdBy: String? = defaultUser,
             createdAt: ZonedDateTime? = DateFactory.getStartDatetime(),
-            hankeStatus: HankeStatus = DRAFT,
+            hankeStatus: HankeStatus = HankeStatus.DRAFT,
         ): Hanke =
             Hanke(
                 id,
@@ -159,11 +157,11 @@ class HankeFactory(
         fun createEntity(mockId: Int = 1): HankeEntity =
             HankeEntity(
                     id = mockId,
-                    status = DRAFT,
+                    status = HankeStatus.DRAFT,
                     hankeTunnus = defaultHankeTunnus,
                     nimi = defaultNimi,
                     kuvaus = defaultKuvaus,
-                    vaihe = SUUNNITTELU,
+                    vaihe = Hankevaihe.SUUNNITTELU,
                     onYKTHanke = true,
                     version = 0,
                     createdByUserId = defaultUser,
@@ -196,7 +194,7 @@ class HankeFactory(
             nimi: String = defaultNimi,
             onYKTHanke: Boolean? = true,
             kuvaus: String? = defaultKuvaus,
-            vaihe: Vaihe? = Vaihe.OHJELMOINTI,
+            vaihe: Hankevaihe? = Hankevaihe.OHJELMOINTI,
             tyomaaKatuosoite: String? = null,
             tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
         ): CreateHankeRequestBuilder =
@@ -241,17 +239,17 @@ class HankeFactory(
         }
 
         fun Hanke.withTormaystarkasteluTulos(
-            perusIndeksi: Float = 1f,
-            pyorailyIndeksi: Float = 1f,
-            linjaautoIndeksi: Float = 1f,
-            raitiovaunuIndeksi: Float = 1f,
+            autoliikenneindeksi: Float = 1f,
+            pyoraliikenneindeksi: Float = 1f,
+            linjaautoliikenneindeksi: Float = 1f,
+            raitioliikenneindeksi: Float = 1f,
         ): Hanke {
             this.tormaystarkasteluTulos =
                 TormaystarkasteluTulos(
-                    perusIndeksi,
-                    pyorailyIndeksi,
-                    linjaautoIndeksi,
-                    raitiovaunuIndeksi,
+                    autoliikenneindeksi,
+                    pyoraliikenneindeksi,
+                    linjaautoliikenneindeksi,
+                    raitioliikenneindeksi,
                 )
             return this
         }
@@ -434,10 +432,10 @@ class HankeFactory(
         ): TormaystarkasteluTulosEntity =
             TormaystarkasteluTulosEntity(
                 id = id,
-                perus = 1.25f,
-                pyoraily = 2.5f,
-                linjaauto = 3.75f,
-                raitiovaunu = 3.75f,
+                autoliikenne = 1.25f,
+                pyoraliikenne = 2.5f,
+                linjaautoliikenne = 3.75f,
+                raitioliikenne = 3.75f,
                 hanke = hankeEntity,
             )
     }
