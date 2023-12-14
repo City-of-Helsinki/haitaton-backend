@@ -14,8 +14,10 @@ import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasFeatures
+import fi.hel.haitaton.hanke.zonedDateTime
 import jakarta.mail.internet.MimeMessage
 import java.time.Duration
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZonedDateTime
 import java.time.temporal.TemporalAmount
@@ -39,6 +41,9 @@ object Asserts {
             val now = ZonedDateTime.now()
             assertThat(actual).isBetween(now.minus(offset), now)
         }
+
+    fun Assert<LocalDateTime>.isRecentUTC(offset: TemporalAmount = Duration.ofMinutes(1)) =
+        prop(LocalDateTime::zonedDateTime).isRecentZDT(offset)
 
     fun Assert<OffsetDateTime>.isSameInstantAs(expected: OffsetDateTime) {
         this.prop(OffsetDateTime::toInstant).isEqualTo(expected.toInstant())

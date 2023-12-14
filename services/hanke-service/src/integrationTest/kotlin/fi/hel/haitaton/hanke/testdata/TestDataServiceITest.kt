@@ -40,7 +40,7 @@ class TestDataServiceITest : DatabaseTest() {
         fun `With applications resets their allu fields`() {
             val applicationData = ApplicationFactory.createCableReportApplicationData()
             for (i in 1..4) {
-                val hanke = hankeFactory.saveEntity()
+                val hanke = hankeFactory.builder(USERNAME).saveEntity()
                 applicationFactory.saveApplicationEntity(
                     USERNAME,
                     hanke = hanke,

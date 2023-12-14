@@ -11,13 +11,6 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaari
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
 
-interface BaseHanke : HasYhteystiedot {
-    val nimi: String
-    val vaihe: Hankevaihe?
-    val alueet: List<Hankealue>?
-    val tyomaaKatuosoite: String?
-}
-
 interface HasYhteystiedot {
     val omistajat: List<Yhteystieto>?
     val rakennuttajat: List<Yhteystieto>?

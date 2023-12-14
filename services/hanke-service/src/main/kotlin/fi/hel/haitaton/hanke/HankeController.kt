@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.validation.ValidCreateHankeRequest
 import fi.hel.haitaton.hanke.validation.ValidHanke
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
@@ -20,6 +21,8 @@ import jakarta.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.CurrentSecurityContext
+import org.springframework.security.core.context.SecurityContext
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -147,9 +150,7 @@ A valid new hanke must comply with the restrictions in Hanke schema definition.
 
 When Hanke is created:
 1. A unique Hanke tunnus is created.
-2. The status of the created hanke is set automatically:
-    - PUBLIC (i.e. visible to everyone) if all mandatory fields are filled.
-    - DRAFT if all mandatory fields are not filled.
+2. The status of the hanke is set as DRAFT.
 """
     )
     @ApiResponses(
@@ -168,10 +169,13 @@ When Hanke is created:
             ]
     )
     @PreAuthorize("@featureService.isEnabled('HANKE_EDITING')")
-    fun createHanke(@ValidHanke @RequestBody request: CreateHankeRequest): Hanke {
+    fun createHanke(
+        @ValidCreateHankeRequest @RequestBody request: CreateHankeRequest,
+        @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext
+    ): Hanke {
         logger.info { "Creating Hanke..." }
 
-        val createdHanke = hankeService.createHanke(request)
+        val createdHanke = hankeService.createHanke(request, securityContext)
 
         disclosureLogService.saveDisclosureLogsForHanke(createdHanke, currentUserId())
         logger.info { "Created Hanke ${createdHanke.hankeTunnus}." }

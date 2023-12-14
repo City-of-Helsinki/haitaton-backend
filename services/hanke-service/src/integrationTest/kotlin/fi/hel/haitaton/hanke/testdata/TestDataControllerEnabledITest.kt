@@ -7,6 +7,7 @@ import assertk.assertions.prop
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
+import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
@@ -90,15 +91,6 @@ class TestDataControllerEnabledITest(@Autowired override val mockMvc: MockMvc) :
         }
 
         @Test
-        fun `returns 404 when user has no verified names`() {
-            every { profiiliClient.getVerifiedName(any()) } returns null
-
-            get(url).andExpect(MockMvcResultMatchers.status().isNotFound)
-
-            verifyAll { profiiliClient.getVerifiedName(any()) }
-        }
-
-        @Test
         fun `returns 404 when profiili client throws expected exception`() {
             every { profiiliClient.getVerifiedName(any()) } throws
                 VerifiedNameNotFound("Because of reasons.")
@@ -119,16 +111,15 @@ class TestDataControllerEnabledITest(@Autowired override val mockMvc: MockMvc) :
 
         @Test
         fun `returns verified names`() {
-            every { profiiliClient.getVerifiedName(any()) } returns
-                Names("Anssi-Matti", "Apuhärmä", "Anssi")
+            every { profiiliClient.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
 
             val names: Names =
                 get(url).andExpect(MockMvcResultMatchers.status().isOk).andReturnBody()
 
             assertThat(names).all {
-                prop(Names::firstName).isEqualTo("Anssi-Matti")
-                prop(Names::lastName).isEqualTo("Apuhärmä")
-                prop(Names::givenName).isEqualTo("Anssi")
+                prop(Names::firstName).isEqualTo(ProfiiliFactory.DEFAULT_FIRST_NAME)
+                prop(Names::lastName).isEqualTo(ProfiiliFactory.DEFAULT_LAST_NAME)
+                prop(Names::givenName).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
             }
             verifyAll { profiiliClient.getVerifiedName(any()) }
         }

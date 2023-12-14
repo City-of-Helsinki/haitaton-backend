@@ -60,7 +60,7 @@ class HankeAttachmentServiceITests(
     inner class GetMetadataList {
         @Test
         fun `getMetadataList should return related metadata list`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             (1..2).forEach { _ ->
                 hankeAttachmentRepository.save(
                     HankeAttachmentEntity(
@@ -121,7 +121,7 @@ class HankeAttachmentServiceITests(
     inner class SaveAttachment {
         @Test
         fun `Should return metadata of saved attachment`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
             val blobPath = blobPath(hanke.id)
 
             val result =
@@ -151,7 +151,7 @@ class HankeAttachmentServiceITests(
 
         @Test
         fun `Should throw if attachment amount is exceeded`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             (1..ALLOWED_ATTACHMENT_COUNT)
                 .map { HankeAttachmentFactory.createEntity(hanke = hanke) }
                 .let(hankeAttachmentRepository::saveAll)
@@ -192,7 +192,7 @@ class HankeAttachmentServiceITests(
     inner class HankeWithRoomForAttachment {
         @Test
         fun `When there is still room, should return hanke info`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
 
             val result = hankeAttachmentService.hankeWithRoomForAttachment(hanke.hankeTunnus)
 
@@ -204,7 +204,7 @@ class HankeAttachmentServiceITests(
 
         @Test
         fun `When allowed attachment amount is exceeded should throw`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             val attachments =
                 (1..ALLOWED_ATTACHMENT_COUNT).map {
                     HankeAttachmentFactory.createEntity(hanke = hanke)
@@ -262,14 +262,14 @@ class HankeAttachmentServiceITests(
 
         @Test
         fun `does not throw exception when hanke has no attachments`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
 
             hankeAttachmentService.deleteAllAttachments(hanke)
         }
 
         @Test
         fun `deletes all attachments and their contents from hanke`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
             hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
             assertThat(hankeAttachmentRepository.findAll()).hasSize(2)
@@ -283,7 +283,7 @@ class HankeAttachmentServiceITests(
 
         @Test
         fun `deletes attachments only from the specified hanke`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
             val otherAttachment = hankeAttachmentFactory.save().withCloudContent().value
 

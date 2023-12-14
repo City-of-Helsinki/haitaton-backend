@@ -70,7 +70,6 @@ class TestDataController(
         @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext
     ): Names {
         return profiiliClient.getVerifiedName(securityContext)
-            ?: throw VerifiedNameNotFound("Verified name not found from profile.")
     }
 
     @ExceptionHandler(VerifiedNameNotFound::class)

@@ -28,7 +28,7 @@ class HankeAttachmentFactory(
         contentType: String = CONTENT_TYPE,
         createdByUser: String = USERNAME,
         createdAt: OffsetDateTime = CREATED_AT,
-        hanke: HankeEntity = hankeFactory.saveEntity()
+        hanke: HankeEntity = hankeFactory.builder(USERNAME).saveEntity()
     ): HankeAttachmentBuilder {
         val entity =
             attachmentRepository.save(

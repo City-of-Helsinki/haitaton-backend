@@ -63,6 +63,8 @@ fun getCurrentTimeUTCAsLocalTime(): LocalDateTime = getCurrentTimeUTC().toLocalD
 
 fun currentUserId(): String = SecurityContextHolder.getContext().authentication.name
 
+fun SecurityContext.userId(): String = authentication.name
+
 data class UserInfo(
     val email: String?,
     val name: String?,
@@ -137,4 +139,9 @@ fun String?.isValidBusinessId(): Boolean {
         logger.warn { "Check digit doesn't match." }
         false
     }
+}
+
+fun <T, C : Collection<T>> C.inspect(f: (T) -> Unit): C {
+    this.forEach(f)
+    return this
 }

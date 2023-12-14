@@ -57,7 +57,7 @@ class AttachmentUploadServiceITest(
         @Test
         fun `Should upload blob and return saved metadata`() {
             mockClamAv.enqueue(response(body(results = successResult())))
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).create()
             val file = testFile()
 
             val result =
@@ -80,7 +80,7 @@ class AttachmentUploadServiceITest(
         @Test
         fun `Should throw when infected file is encountered`() {
             mockClamAv.enqueue(response(body(results = failResult())))
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).create()
 
             assertFailure {
                     attachmentUploadService.uploadHankeAttachment(
