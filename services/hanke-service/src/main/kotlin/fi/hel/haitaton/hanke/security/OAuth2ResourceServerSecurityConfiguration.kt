@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.core.annotation.Order
+import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator
@@ -56,8 +57,8 @@ class OAuth2ResourceServerSecurityConfiguration(
     fun gdprFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .securityMatcher("/gdpr-api/**")
-            .authorizeHttpRequests { authorize -> authorize.anyRequest().authenticated() }
-            .oauth2ResourceServer { resourceServer -> resourceServer.jwt() }
+            .authorizeHttpRequests { it.anyRequest().authenticated() }
+            .oauth2ResourceServer { it.jwt(Customizer.withDefaults()) }
         return http.build()
     }
 
