@@ -73,12 +73,25 @@ enum class Pyoraliikenneluokittelu(override val value: Int) : Luokittelu {
 }
 
 enum class Linjaautoliikenneluokittelu(override val value: Int) : Luokittelu {
-    KAMPPI_RAUTATIENTORI_MANNERHEIMINTIE_KAISANIEMENKATU_HAMEENTIE_TAI_YLI_20_VUOROA_RUUHKATUNNISSA(
-        5
-    ),
-    RUNKOLINJA_TAI_ENINTAAN_20_VUOROA_RUUHKAAIKANA(4),
-    RUNKOLINJAMAINEN_LINJA_TAI_ENINTAAN_10_VUOROA_RUUHKAAIKANA(3),
-    ENINTAAN_5_VUOROA_RUUHKAAIKANA_TAI_LINJOJA_MUUNA_AIKANA(2),
+    /**
+     * Kamppi-Rautatientori -alue, Mannerheimintie, Kaisaniemenkatu, Hämeentie or over 20 buses in
+     * rush hour
+     */
+    TARKEIMMAT_JOUKKOLIIKENNEKADUT(5),
+
+    /** Trunk line (runkolinja) or max 20 buses in rush hour */
+    RUNKOLINJA(4),
+
+    /** At most 10 buses in rush hour */
+    VUOROJA_RUUHKAAIKANA(3),
+
+    /** Bus traffic outside rush hours */
+    EI_VUOROJA_RUUHKAAIKANA(2),
+
+    /** No regular bus traffic but possibly a detour route */
+    MAHDOLLINEN_POIKKEUSREITTI(1),
+
+    /** No regular bus traffic */
     EI_VAIKUTA_LINJAAUTOLIIKENTEESEEN(0)
 }
 
