@@ -402,8 +402,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         @ParameterizedTest
         @CsvSource(
             "0,2",
-            "4,2",
-            "5,3",
+            "1,3",
             "10,3",
             "11,4",
             "20,4",
@@ -438,14 +437,13 @@ internal class TormaystarkasteluLaskentaServiceTest {
         @ParameterizedTest
         @CsvSource(
             "ON,4",
-            "LAHES,3",
             "EI,2",
         )
-        fun `returns classification based on trunk lines when there are just a few buses`(
+        fun `returns classification based on trunk lines when there are zero rush hour buses`(
             runkolinja: TormaystarkasteluBussiRunkolinja,
             expectedResult: Int
         ) {
-            val busLines = setOf(TormaystarkasteluBussireitti("", 0, 2, runkolinja))
+            val busLines = setOf(TormaystarkasteluBussireitti("", 0, 0, runkolinja))
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns false
             every { tormaysService.getIntersectingBusRoutes(geometriat) } returns busLines
 
@@ -469,7 +467,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         assertThat(tulos).isNotNull()
         assertThat(tulos!!.liikennehaittaindeksi).isNotNull()
         assertThat(tulos.liikennehaittaindeksi.indeksi).isNotNull()
-        assertThat(tulos.liikennehaittaindeksi.indeksi).isEqualTo(4.0f)
+        assertThat(tulos.liikennehaittaindeksi.indeksi).isEqualTo(5.0f)
         assertThat(tulos.raitioliikenneindeksi).isEqualTo(3.0f)
 
         verifyAll {

@@ -128,13 +128,11 @@ class TormaystarkasteluLaskentaService(
         }.value
 
     internal fun calculateLinjaautoliikenneindeksi(geometriaIds: Set<Int>): Float =
-        if (linjaautoliikenneluokittelu(geometriaIds) >= 3) 4.0f else 1.0f
+        linjaautoliikenneluokittelu(geometriaIds).toFloat()
 
     internal fun linjaautoliikenneluokittelu(geometriaIds: Set<Int>): Int {
         if (tormaysService.anyIntersectsCriticalBusRoutes(geometriaIds)) {
-            return Linjaautoliikenneluokittelu
-                .KAMPPI_RAUTATIENTORI_MANNERHEIMINTIE_KAISANIEMENKATU_HAMEENTIE_TAI_YLI_20_VUOROA_RUUHKATUNNISSA
-                .value
+            return Linjaautoliikenneluokittelu.TARKEIMMAT_JOUKKOLIIKENNEKADUT.value
         }
 
         val bussireitit = tormaysService.getIntersectingBusRoutes(geometriaIds)

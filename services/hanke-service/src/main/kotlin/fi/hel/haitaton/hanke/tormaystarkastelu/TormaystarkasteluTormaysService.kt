@@ -79,7 +79,7 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
                             rs.getString(2),
                             rs.getInt(3),
                             rs.getInt(4),
-                            TormaystarkasteluBussiRunkolinja.valueOfRunkolinja(rs.getString(5))!!
+                            TormaystarkasteluBussiRunkolinja.valueOfRunkolinja(rs.getString(5))
                         )
                     },
                     *geometriaIds.toTypedArray()
@@ -157,23 +157,21 @@ enum class TormaystarkasteluKatuluokka(val value: Int, val katuluokka: String) {
 
 enum class TormaystarkasteluBussiRunkolinja(val runkolinja: String) {
     EI("no"),
-    LAHES("almost"),
     ON("yes");
 
     companion object {
-        fun valueOfRunkolinja(runkolinja: String): TormaystarkasteluBussiRunkolinja? {
+        fun valueOfRunkolinja(runkolinja: String): TormaystarkasteluBussiRunkolinja {
             return entries.find { it.runkolinja == runkolinja }
+                ?: throw IllegalArgumentException(
+                    "Unknown runkolinja value: $runkolinja. Only 'yes' and 'no' are allowed."
+                )
         }
     }
 
     fun toLinjaautoliikenneluokittelu(): Linjaautoliikenneluokittelu =
         when (this) {
-            ON -> Linjaautoliikenneluokittelu.RUNKOLINJA_TAI_ENINTAAN_20_VUOROA_RUUHKAAIKANA
-            LAHES ->
-                Linjaautoliikenneluokittelu
-                    .RUNKOLINJAMAINEN_LINJA_TAI_ENINTAAN_10_VUOROA_RUUHKAAIKANA
-            EI ->
-                Linjaautoliikenneluokittelu.ENINTAAN_5_VUOROA_RUUHKAAIKANA_TAI_LINJOJA_MUUNA_AIKANA
+            ON -> Linjaautoliikenneluokittelu.RUNKOLINJA
+            EI -> Linjaautoliikenneluokittelu.EI_VUOROJA_RUUHKAAIKANA
         }
 }
 
