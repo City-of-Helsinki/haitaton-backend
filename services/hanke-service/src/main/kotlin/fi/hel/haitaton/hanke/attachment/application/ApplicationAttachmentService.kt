@@ -154,4 +154,14 @@ class ApplicationAttachmentService(
     }
 
     private fun isInAllu(application: Application): Boolean = application.alluid != null
+    fun deleteAllByApplicationId(applicationId: Long?) {
+        if (applicationId == null) {
+            logger.info { "Application ID is null, cannot delete attachments." }
+            return
+        }
+        logger.info { "Deleting all attachments for application $applicationId" }
+        metadataService.findByApplicationId(applicationId).forEach {
+            deleteAttachment(it.id)
+        }
+    }
 }

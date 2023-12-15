@@ -340,6 +340,7 @@ class ApplicationService(
             }
 
             logger.info { "Deleting application, id=$id, alluid=$alluid userid=$userId" }
+            attachmentService.deleteAllByApplicationId(id)
             applicationRepository.delete(this)
             applicationLoggingService.logDelete(toApplication(), userId)
             logger.info { "Application deleted, id=$id, alluid=$alluid userid=$userId" }
