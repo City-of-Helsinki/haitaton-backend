@@ -4,11 +4,6 @@ import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
-import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
-import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
-import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
-import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
-import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.LocalDateTime
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -43,18 +38,11 @@ internal class HankeRepositoryITests : DatabaseTest() {
     }
 
     @Test
-    fun `basic fields, tyomaa and haitat fields can be round-trip saved and loaded`() {
+    fun `basic fields and tyomaa fields can be round-trip saved and loaded`() {
         val baseHankeEntity = createBaseHankeEntity("ABC-123")
         baseHankeEntity.tyomaaKatuosoite = "katu 1"
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
-        baseHankeEntity.kaistaHaitta =
-            VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
-        baseHankeEntity.kaistaPituusHaitta =
-            AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA
-        baseHankeEntity.meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA
-        baseHankeEntity.polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA
-        baseHankeEntity.tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA
         hankeRepository.save(baseHankeEntity)
 
         val loadedHanke = hankeRepository.findByHankeTunnus("ABC-123")
@@ -66,13 +54,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHanke.vaihe).isEqualTo(Hankevaihe.SUUNNITTELU)
         assertThat(loadedHanke.tyomaaKatuosoite).isEqualTo("katu 1")
         assertThat(loadedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
-        assertThat(loadedHanke.kaistaHaitta)
-            .isEqualTo(VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA)
-        assertThat(loadedHanke.kaistaPituusHaitta)
-            .isEqualTo(AutoliikenteenKaistavaikutustenPituus.PITUUS_10_99_METRIA)
-        assertThat(loadedHanke.meluHaitta).isEqualTo(Meluhaitta.SATUNNAINEN_HAITTA)
-        assertThat(loadedHanke.polyHaitta).isEqualTo(Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA)
-        assertThat(loadedHanke.tarinaHaitta).isEqualTo(Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA)
     }
 
     @Test

@@ -153,3 +153,5 @@ databaseChangeLog:
       file: db/changelog/changesets/061-hanke-attachment-migration-cleanup.yml
   - include:
       file: db/changelog/changesets/062-rename-tormaystarkastelutulos-columns.yml
+  - include:
+      file: db/changelog/changesets/063-drop-haitta-columns-from-hanke.yml

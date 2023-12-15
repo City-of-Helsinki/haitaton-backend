@@ -6,12 +6,7 @@ import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.HasId
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
-import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
-import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
-import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
-import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
-import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import jakarta.persistence.CascadeType
 import jakarta.persistence.CollectionTable
 import jakarta.persistence.ElementCollection
@@ -86,15 +81,6 @@ class HankeEntity(
     @CollectionTable(name = "hanketyomaatyyppi", joinColumns = [JoinColumn(name = "hankeid")])
     @Enumerated(EnumType.STRING)
     var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
-
-    // --------------- Hankkeen haitat -------------------
-    // These five fields have generic string values, so can just as well store them with the ordinal
-    // number.
-    var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null
-    var kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null
-    var meluHaitta: Meluhaitta? = null
-    var polyHaitta: Polyhaitta? = null
-    var tarinaHaitta: Tarinahaitta? = null
 
     // Made bidirectional relation mainly to allow cascaded delete.
     @OneToMany(
