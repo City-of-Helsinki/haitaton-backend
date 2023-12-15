@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 063-drop-haitta-columns-from-hanke
+      author: Teemu Hiltunen
+      comment: Drop haitta columns from hanke
+      changes:
+        - dropColumn:
+            tableName: hanke
+            columnName: kaistahaitta
+        - dropColumn:
+            tableName: hanke
+            columnName: kaistapituushaitta
+        - dropColumn:
+            tableName: hanke
+            columnName: meluhaitta
+        - dropColumn:
+            tableName: hanke
+            columnName: polyhaitta
+        - dropColumn:
+            tableName: hanke
+            columnName: tarinahaitta
