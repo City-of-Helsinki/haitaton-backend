@@ -30,6 +30,6 @@ data class NewUserRequest(
     )
     val puhelinnumero: String,
 ) {
-    fun toDomain(): HankekayttajaInput =
+    fun toHankekayttajaInput(): HankekayttajaInput =
         HankekayttajaInput(etunimi, sukunimi, sahkoposti, puhelinnumero)
 }

@@ -71,7 +71,7 @@ class HankeKayttajaService(
                 hanke.hankeTunnus,
                 hanke.nimi,
                 inviter,
-                request.toDomain(),
+                request.toHankekayttajaInput(),
                 currentUserId
             )
             .toDto()
