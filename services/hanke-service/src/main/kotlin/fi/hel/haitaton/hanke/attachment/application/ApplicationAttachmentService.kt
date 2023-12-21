@@ -104,6 +104,12 @@ class ApplicationAttachmentService(
         logger.info { "Deleted application attachment ${attachment.id}" }
     }
 
+    fun deleteAllAttachments(application: Application) {
+        attachmentContentService.deleteAllForApplication(application.id!!)
+        metadataService.deleteAllAttachments(application.id)
+        logger.info { "Deleted all attachments from application ${application.id}" }
+    }
+
     fun sendInitialAttachments(alluId: Int, applicationId: Long) {
         logger.info { "Sending initial attachments for application, alluid=$alluId" }
         val attachments = metadataService.findByApplicationId(applicationId)
@@ -154,14 +160,4 @@ class ApplicationAttachmentService(
     }
 
     private fun isInAllu(application: Application): Boolean = application.alluid != null
-    fun deleteAllByApplicationId(applicationId: Long?) {
-        if (applicationId == null) {
-            logger.info { "Application ID is null, cannot delete attachments." }
-            return
-        }
-        logger.info { "Deleting all attachments for application $applicationId" }
-        metadataService.findByApplicationId(applicationId).forEach {
-            deleteAttachment(it.id)
-        }
-    }
 }

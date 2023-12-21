@@ -60,6 +60,11 @@ class ApplicationAttachmentMetadataService(
         attachmentRepository.deleteById(attachmentId)
     }
 
+    @Transactional
+    fun deleteAllAttachments(id: Long) {
+        attachmentRepository.deleteByApplicationId(id)
+    }
+
     @Transactional(readOnly = true)
     fun ensureRoomForAttachment(applicationId: Long) {
         if (attachmentAmountReached(applicationId)) {

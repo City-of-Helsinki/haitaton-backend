@@ -25,7 +25,7 @@ data class ApplicationAttachmentBuilder(
     ): ApplicationAttachmentBuilder {
         this.value.blobLocation = path
         attachmentRepository.save(value)
-        applicationAttachmentFactory.saveContentToCloud(path, filename, mediaType, bytes)
+        applicationAttachmentFactory.saveContent(path, filename, mediaType, bytes)
         return this
     }
 }

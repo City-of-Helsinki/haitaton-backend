@@ -58,10 +58,17 @@ class ApplicationAttachmentFactory(
         return ApplicationAttachmentBuilder(entity, attachmentRepository, this)
     }
 
-    fun saveAttachment(applicationId: Long): ApplicationAttachmentEntity {
+    fun saveAttachmentToDb(applicationId: Long): ApplicationAttachmentEntity {
         val attachment = attachmentRepository.save(createEntity(applicationId = applicationId))
         contentService.save(attachment.id!!, DUMMY_DATA)
         return attachment
+    }
+
+    fun saveAttachment(applicationId: Long): ApplicationAttachmentEntity {
+        val applicationAttachmentEntity = createEntity(applicationId = applicationId)
+        ApplicationAttachmentBuilder(applicationAttachmentEntity, attachmentRepository, this)
+            .withCloudContent()
+        return applicationAttachmentEntity
     }
 
     fun saveContentToDb(attachmentId: UUID, bytes: ByteArray): ApplicationAttachmentContentEntity {
@@ -69,7 +76,7 @@ class ApplicationAttachmentFactory(
         return contentRepository.save(entity)
     }
 
-    fun saveContentToCloud(
+    fun saveContent(
         path: String,
         filename: String = FILE_NAME_PDF,
         mediaType: MediaType = MEDIA_TYPE,

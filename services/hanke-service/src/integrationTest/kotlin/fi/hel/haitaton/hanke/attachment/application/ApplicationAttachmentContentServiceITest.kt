@@ -46,7 +46,7 @@ class ApplicationAttachmentContentServiceITest(
     inner class Find {
         @Test
         fun `returns the content when blobLocation is specified`() {
-            applicationAttachmentFactory.saveContentToCloud(path, bytes = bytes)
+            applicationAttachmentFactory.saveContent(path, bytes = bytes)
             val attachmentEntity =
                 ApplicationAttachmentFactory.createEntity(attachmentId, blobLocation = path)
 
@@ -99,7 +99,7 @@ class ApplicationAttachmentContentServiceITest(
     inner class ReadFromFile {
         @Test
         fun `returns the right content`() {
-            applicationAttachmentFactory.saveContentToCloud(path, bytes = bytes)
+            applicationAttachmentFactory.saveContent(path, bytes = bytes)
 
             val result = attachmentContentService.readFromFile(path, attachmentId)
 

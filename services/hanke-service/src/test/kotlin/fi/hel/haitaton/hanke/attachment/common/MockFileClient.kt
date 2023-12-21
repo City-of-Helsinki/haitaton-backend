@@ -62,6 +62,12 @@ class MockFileClient : FileClient {
     }
 
     fun listBlobs(container: Container): List<TestFile> = fileMap[container]!!.values.toList()
+
+    override fun exists(container: Container, path: String): Boolean =
+        fileMap[container]!!.containsKey(path)
+
+    override fun existsByPrefix(container: Container, prefix: String): Boolean =
+        fileMap[container]!!.keys.any { it.startsWith(prefix) }
 }
 
 data class TestFile(
