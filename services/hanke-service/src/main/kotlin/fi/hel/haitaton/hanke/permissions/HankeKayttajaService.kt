@@ -50,6 +50,34 @@ class HankeKayttajaService(
     }
 
     @Transactional
+    fun createNewUser(
+        request: NewUserRequest,
+        hanke: Hanke,
+        currentUserId: String
+    ): HankeKayttajaDto {
+        if (
+            hankekayttajaRepository
+                .findByHankeId(hanke.id)
+                .map { it.sahkoposti }
+                .contains(request.sahkoposti)
+        ) {
+            throw UserAlreadyExistsException(hanke, request.sahkoposti)
+        }
+
+        val inviter = getKayttajaByUserId(hanke.id, currentUserId)
+
+        return createKutsuAndKayttaja(
+                hanke.id,
+                hanke.hankeTunnus,
+                hanke.nimi,
+                inviter,
+                request.toDomain(),
+                currentUserId
+            )
+            .toDto()
+    }
+
+    @Transactional
     fun saveNewTokensFromApplication(
         application: ApplicationEntity,
         hankeId: Int,
@@ -287,7 +315,7 @@ class HankeKayttajaService(
         inviter: HankekayttajaEntity?,
         kayttaja: HankekayttajaInput,
         currentUserId: String
-    ) {
+    ): HankekayttajaEntity {
         val newHankeUser =
             createKayttaja(
                 currentUserId = currentUserId,
@@ -298,6 +326,7 @@ class HankeKayttajaService(
         val kutsuEntity = createKutsu(newHankeUser, currentUserId)
         newHankeUser.kayttajakutsu = kutsuEntity
         sendHankeInvitation(hankeTunnus, hankeNimi, inviter, newHankeUser)
+        return newHankeUser
     }
 
     private fun updateKayttooikeustaso(
@@ -434,6 +463,11 @@ class HankeKayttajaService(
     private fun hankeExistingEmails(hankeId: Int, emails: List<String>): List<String> =
         hankekayttajaRepository.findByHankeIdAndSahkopostiIn(hankeId, emails).map { it.sahkoposti }
 }
+
+class UserAlreadyExistsException(hankeIdentifier: HankeIdentifier, sahkoposti: String) :
+    RuntimeException(
+        "Hankekayttaja with that email was already present in the hanke. sahkoposti=$sahkoposti ${hankeIdentifier.logString()} "
+    )
 
 class HankeKayttajaNotFoundException(kayttajaId: UUID) :
     RuntimeException("HankeKayttaja was not found with ID: $kayttajaId")

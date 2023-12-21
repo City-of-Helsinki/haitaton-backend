@@ -19,6 +19,9 @@ haitaton:
   testdata:
     enabled: true
 
+#Disable sentry in tests by setting DSN to empty.
+sentry.dsn:
+
 spring:
   jpa:
     show-sql: false

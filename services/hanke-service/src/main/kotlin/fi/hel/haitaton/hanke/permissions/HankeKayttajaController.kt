@@ -119,6 +119,38 @@ class HankeKayttajaController(
         return HankeKayttajaResponse(users)
     }
 
+    @PostMapping("/hankkeet/{hankeTunnus}/kayttajat")
+    @Operation(
+        summary = "Add a user for the hanke.",
+        description =
+            "Add a new user for the hanke. Adds an invitation with viewing permissions. Sends an invitation email to them.",
+    )
+    @ApiResponse(
+        description = "The user that was added",
+        responseCode = "200",
+    )
+    @ApiResponse(
+        description = "Hanke not found",
+        responseCode = "404",
+        content = [Content(schema = Schema(implementation = HankeError::class))],
+    )
+    @ApiResponse(
+        description = "User with duplicate email",
+        responseCode = "409",
+        content = [Content(schema = Schema(implementation = HankeError::class))],
+    )
+    @PreAuthorize(
+        "@featureService.isEnabled('USER_MANAGEMENT') && " +
+            "@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'CREATE_USER')"
+    )
+    fun createNewUser(
+        @ValidHanke @RequestBody request: NewUserRequest,
+        @PathVariable hankeTunnus: String
+    ): HankeKayttajaDto {
+        val hanke = hankeService.loadHanke(hankeTunnus)!!
+        return hankeKayttajaService.createNewUser(request, hanke, currentUserId())
+    }
+
     @PutMapping("/hankkeet/{hankeTunnus}/kayttajat")
     @Operation(
         summary = "Update permissions of the listed users.",
@@ -293,6 +325,14 @@ of the token and link will be reset.
         val hankeTunnus: String,
         val hankeNimi: String,
     )
+
+    @ExceptionHandler(UserAlreadyExistsException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun userAlreadyExistsException(ex: UserAlreadyExistsException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4006
+    }
 
     @ExceptionHandler(MissingAdminPermissionException::class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
