@@ -189,7 +189,8 @@ class ApplicationAuthorizerITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
             val hanke2 = hankeFactory.saveMinimal()
             val application2 = applicationFactory.saveApplicationEntity(USERNAME, hanke2)
-            val attachment = applicationAttachmentFactory.saveAttachmentToDb(application2.id!!)
+            val attachment =
+                applicationAttachmentFactory.save(application = application2).withDbContent().value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
             assertFailure {
@@ -205,7 +206,8 @@ class ApplicationAuthorizerITest(
         fun `returns true if the attachment is found, it belongs to the application and the user has the correct permission`() {
             val hanke = hankeFactory.saveMinimal()
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
-            val attachment = applicationAttachmentFactory.saveAttachmentToDb(application.id!!)
+            val attachment =
+                applicationAttachmentFactory.save(application = application).withDbContent().value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
             assertThat(authorizer.authorizeAttachment(application.id!!, attachment.id!!, VIEW.name))

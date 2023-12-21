@@ -40,8 +40,10 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
-import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService.Companion.prefix
+import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.email.EmailSenderService.Companion.translations
@@ -144,8 +146,6 @@ class ApplicationServiceITest : DatabaseTest() {
     @Autowired private lateinit var cableReportServiceAllu: CableReportService
 
     @Autowired private lateinit var applicationRepository: ApplicationRepository
-    @Autowired
-    private lateinit var applicationAttachmentContentService: ApplicationAttachmentContentService
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
     @Autowired private lateinit var hankeRepository: HankeRepository
     @Autowired private lateinit var alluStatusRepository: AlluStatusRepository
@@ -157,6 +157,8 @@ class ApplicationServiceITest : DatabaseTest() {
     @Autowired private lateinit var applicationFactory: ApplicationFactory
     @Autowired private lateinit var attachmentFactory: ApplicationAttachmentFactory
     @Autowired private lateinit var hankeFactory: HankeFactory
+
+    @Autowired private lateinit var fileClient: MockFileClient
 
     companion object {
         @JvmField
@@ -1300,7 +1302,7 @@ class ApplicationServiceITest : DatabaseTest() {
                     hanke = initializedHanke(),
                     applicationData = mockApplicationDataWithArea()
                 )
-            attachmentFactory.saveAttachmentToDb(application.id!!)
+            attachmentFactory.save(application = application).withDbContent()
             val applicationData = application.applicationData as CableReportApplicationData
             val pendingApplicationData = applicationData.copy(pendingOnClient = false)
             val expectedAlluRequest = pendingApplicationData.toAlluData(HANKE_TUNNUS)
@@ -1370,7 +1372,7 @@ class ApplicationServiceITest : DatabaseTest() {
                     hanke = initializedHanke(),
                     applicationData = mockApplicationDataWithArea()
                 )
-            attachmentFactory.saveAttachmentToDb(application.id!!)
+            attachmentFactory.save(application = application).withDbContent()
             val applicationData = application.applicationData as CableReportApplicationData
             val pendingApplicationData = applicationData.copy(pendingOnClient = false)
             val expectedAlluRequest = pendingApplicationData.toAlluData(HANKE_TUNNUS)
@@ -1423,25 +1425,20 @@ class ApplicationServiceITest : DatabaseTest() {
             val hanke = hankeFactory.saveMinimal()
             val application =
                 applicationFactory.saveApplicationEntity(USERNAME, hanke = hanke, alluId = null)
-            // assert that application is saved to database
             assertThat(applicationRepository.findAll()).hasSize(1)
-            val attachment1 = attachmentFactory.saveAttachment(application.id!!)
-            val attachment2 = attachmentFactory.saveAttachment(application.id!!)
-            // assert that attachments are saved to cloud
-            assertTrue(applicationAttachmentContentService.exists(attachment1.blobLocation!!))
-            assertTrue(applicationAttachmentContentService.exists(attachment2.blobLocation!!))
-            // assert that attachment metadata is saved to database
+            attachmentFactory.save(application = application).withCloudContent()
+            attachmentFactory.save(application = application).withCloudContent()
+            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))
+                .hasSize(2)
             assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
                 .hasSize(2)
 
             applicationService.delete(application.id!!, USERNAME)
 
-            // assert that application is deleted from database
             assertThat(applicationRepository.findAll()).isEmpty()
             verify { cableReportServiceAllu wasNot Called }
-            // assert that attachments are deleted from cloud
-            assertFalse(applicationAttachmentContentService.existsForApplication(application.id!!))
-            // assert that attachment metadata is deleted from database
+            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))
+                .isEmpty()
             assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
                 .isEmpty()
         }
@@ -1555,16 +1552,13 @@ class ApplicationServiceITest : DatabaseTest() {
             val hanke = hankeFactory.saveMinimal(generated = true)
             val application =
                 applicationFactory.saveApplicationEntity(USERNAME, hanke = hanke, alluId = null)
-            // assert that application is saved to database
             assertThat(applicationRepository.findAll()).hasSize(1)
-            val attachment1 = attachmentFactory.saveAttachment(application.id!!)
-            val attachment2 = attachmentFactory.saveAttachment(application.id!!)
-            // assert that attachment metadata is saved to database
+            attachmentFactory.save(application = application).withCloudContent()
+            attachmentFactory.save(application = application).withCloudContent()
             assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
                 .hasSize(2)
-            // assert that attachments are saved to cloud
-            assertTrue(applicationAttachmentContentService.exists(attachment1.blobLocation!!))
-            assertTrue(applicationAttachmentContentService.exists(attachment2.blobLocation!!))
+            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))
+                .hasSize(2)
 
             val result =
                 applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id!!, USERNAME)
@@ -1572,9 +1566,8 @@ class ApplicationServiceITest : DatabaseTest() {
             assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
             assertThat(applicationRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
-            // assert that all attachments are deleted from cloud
-            assertFalse(applicationAttachmentContentService.existsForApplication(application.id!!))
-            // assert that attachment metadata is deleted from database
+            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))
+                .isEmpty()
             assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
                 .isEmpty()
         }

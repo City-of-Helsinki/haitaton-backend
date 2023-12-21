@@ -13,6 +13,8 @@ data class ApplicationAttachmentBuilder(
     val applicationAttachmentFactory: ApplicationAttachmentFactory
 ) {
     fun withDbContent(bytes: ByteArray = DEFAULT_DATA): ApplicationAttachmentBuilder {
+        this.value.blobLocation = null
+        attachmentRepository.save(value)
         applicationAttachmentFactory.saveContentToDb(value.id!!, bytes)
         return this
     }
@@ -25,7 +27,7 @@ data class ApplicationAttachmentBuilder(
     ): ApplicationAttachmentBuilder {
         this.value.blobLocation = path
         attachmentRepository.save(value)
-        applicationAttachmentFactory.saveContent(path, filename, mediaType, bytes)
+        applicationAttachmentFactory.saveContentToCloud(path, filename, mediaType, bytes)
         return this
     }
 }

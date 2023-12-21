@@ -53,11 +53,6 @@ class ApplicationAttachmentContentService(
                 throw AttachmentNotFoundException(attachmentId)
             }
 
-    fun exists(location: String): Boolean = fileClient.exists(Container.HAKEMUS_LIITTEET, location)
-
-    fun existsForApplication(applicationId: Long): Boolean =
-        fileClient.existsByPrefix(Container.HAKEMUS_LIITTEET, prefix(applicationId))
-
     companion object {
         fun generateBlobPath(applicationId: Long) =
             "${prefix(applicationId)}${UUID.randomUUID()}"
@@ -70,6 +65,6 @@ class ApplicationAttachmentContentService(
          * Used to distinguish the attachments of different applications from each other in the
          * cloud storage and to enable deleting all of them at once.
          */
-        private fun prefix(applicationId: Long): String = "$applicationId/"
+        fun prefix(applicationId: Long): String = "$applicationId/"
     }
 }

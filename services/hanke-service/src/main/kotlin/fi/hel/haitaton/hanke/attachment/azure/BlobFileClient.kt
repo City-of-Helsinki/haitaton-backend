@@ -106,12 +106,6 @@ class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Container
         }
     }
 
-    override fun exists(container: Container, path: String): Boolean =
-        getContainerClient(container).getBlobClient(path).exists()
-
-    override fun existsByPrefix(container: Container, prefix: String): Boolean =
-        getContainerClient(container).listBlobsByHierarchy(prefix).any()
-
     private fun getContainerClient(container: Container) =
         when (container) {
             Container.HAKEMUS_LIITTEET -> hakemusAttachmentClient

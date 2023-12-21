@@ -20,10 +20,6 @@ interface FileClient {
     fun delete(container: Container, path: String): Boolean
 
     fun deleteAllByPrefix(container: Container, prefix: String)
-
-    fun exists(container: Container, path: String): Boolean
-
-    fun existsByPrefix(container: Container, prefix: String): Boolean
 }
 
 data class DownloadResponse(
