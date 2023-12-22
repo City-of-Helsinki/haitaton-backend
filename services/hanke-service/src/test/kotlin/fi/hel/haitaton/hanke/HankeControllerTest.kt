@@ -3,15 +3,11 @@ package fi.hel.haitaton.hanke
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
-import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.Hankevaihe
-import fi.hel.haitaton.hanke.domain.NewYhteystieto
-import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.geometriat
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.toHankeYhteystieto
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -238,54 +234,5 @@ class HankeControllerTest {
             .withMessageContaining("updateHanke.hanke.nimi: " + HankeError.HAI1002.toString())
 
         verify { disclosureLogService wasNot Called }
-    }
-
-    // sending of sub types
-    @Test
-    fun `test that create with listOfOmistaja can be sent to controller and is responded with 200`() {
-        val request =
-            CreateHankeRequest(
-                nimi = "hankkeen nimi",
-                kuvaus = HankeFactory.defaultKuvaus,
-                onYKTHanke = false,
-                vaihe = Hankevaihe.OHJELMOINTI,
-                omistajat =
-                    arrayListOf(
-                        NewYhteystieto(
-                            nimi = "Pekka Pekkanen",
-                            email = "pekka@pekka.fi",
-                            puhelinnumero = "3212312",
-                            organisaatioNimi = "Kaivuri ja mies",
-                            osasto = null,
-                            rooli = null,
-                            tyyppi = YKSITYISHENKILO,
-                            alikontaktit =
-                                listOf(
-                                    Yhteyshenkilo(
-                                        "Ali",
-                                        "Kontakti",
-                                        "ali.kontakti@meili.com",
-                                        "050-3789354"
-                                    )
-                                ),
-                        )
-                    )
-            )
-        val mockedHanke = HankeFactory.create(id = 12, hankeTunnus = "JOKU12", nimi = request.nimi)
-        mockedHanke.omistajat =
-            mutableListOf(request.omistajat!![0].toHankeYhteystieto().copy(id = 1))
-        every { hankeService.createHanke(request) }.returns(mockedHanke)
-
-        val response: Hanke = hankeController.createHanke(request)
-
-        assertThat(response).isNotNull
-        assertThat(response.id).isEqualTo(12)
-        assertThat(response.hankeTunnus).isEqualTo("JOKU12")
-        assertThat(response.nimi).isEqualTo("hankkeen nimi")
-        assertThat(response.omistajat).isNotNull
-        assertThat(response.omistajat).hasSize(1)
-        assertThat(response.omistajat[0].id).isEqualTo(1)
-        assertThat(response.omistajat[0].nimi).isEqualTo("Pekka Pekkanen")
-        verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
     }
 }

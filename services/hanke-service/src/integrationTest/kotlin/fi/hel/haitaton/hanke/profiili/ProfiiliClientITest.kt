@@ -12,10 +12,10 @@ import assertk.assertions.prop
 import com.fasterxml.jackson.module.kotlin.readValue
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.accessToken
+import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
-import io.mockk.clearMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.mockk
@@ -160,15 +160,17 @@ class ProfiiliClientITest {
         }
 
         @Test
-        fun `returns null when user doesn't have a profile`() {
-            clearMocks(securityContext)
+        fun `throws exception when user doesn't have a profile`() {
             mockAccessToken()
             mockApiToken()
             mockGraphQl.enqueueSuccess(ProfiiliResponse(ProfiiliData(null)))
 
-            val response = profiiliClient.getVerifiedName(securityContext)
+            val failure = assertFailure { profiiliClient.getVerifiedName(securityContext) }
 
-            assertThat(response).isNull()
+            failure.all {
+                hasClass(VerifiedNameNotFound::class)
+                messageContains("Verified name not found from profile.")
+            }
             assertThat(mockApiTokensApi.requestCount).isEqualTo(1)
             assertThat(mockGraphQl.requestCount).isEqualTo(1)
             verify { securityContext.authentication }
@@ -180,9 +182,12 @@ class ProfiiliClientITest {
             mockApiToken()
             mockGraphQl.enqueueSuccess(ProfiiliResponse(ProfiiliData(MyProfile(null))))
 
-            val response = profiiliClient.getVerifiedName(securityContext)
+            val failure = assertFailure { profiiliClient.getVerifiedName(securityContext) }
 
-            assertThat(response).isNull()
+            failure.all {
+                hasClass(VerifiedNameNotFound::class)
+                messageContains("Verified name not found from profile.")
+            }
             assertThat(mockApiTokensApi.requestCount).isEqualTo(1)
             assertThat(mockGraphQl.requestCount).isEqualTo(1)
             verify { securityContext.authentication }
@@ -193,15 +198,15 @@ class ProfiiliClientITest {
             mockAccessToken()
             mockApiToken()
             mockGraphQl.enqueueSuccess(
-                ProfiiliResponse(ProfiiliData(MyProfile(Names("Antti-Matti", "Alahärmä", "Antti"))))
+                ProfiiliResponse(ProfiiliData(MyProfile(ProfiiliFactory.DEFAULT_NAMES)))
             )
 
             val response = profiiliClient.getVerifiedName(securityContext)
 
             assertThat(response).isNotNull().all {
-                prop(Names::firstName).isEqualTo("Antti-Matti")
-                prop(Names::lastName).isEqualTo("Alahärmä")
-                prop(Names::givenName).isEqualTo("Antti")
+                prop(Names::firstName).isEqualTo(ProfiiliFactory.DEFAULT_FIRST_NAME)
+                prop(Names::lastName).isEqualTo(ProfiiliFactory.DEFAULT_LAST_NAME)
+                prop(Names::givenName).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
             }
             assertThat(mockApiTokensApi.requestCount).isEqualTo(1)
             assertThat(mockGraphQl.requestCount).isEqualTo(1)
@@ -213,7 +218,7 @@ class ProfiiliClientITest {
             mockAccessToken()
             mockApiToken()
             mockGraphQl.enqueueSuccess(
-                ProfiiliResponse(ProfiiliData(MyProfile(Names("Antti-Matti", "Alahärmä", "Antti"))))
+                ProfiiliResponse(ProfiiliData(MyProfile(ProfiiliFactory.DEFAULT_NAMES)))
             )
 
             profiiliClient.getVerifiedName(securityContext)

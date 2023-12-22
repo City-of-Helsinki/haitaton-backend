@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
@@ -16,10 +17,10 @@ import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.validation.HankePublicValidator
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
+import org.springframework.security.core.context.SecurityContext
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -69,64 +70,11 @@ class HankeService(
     @Transactional
     fun createHanke(
         request: CreateHankeRequest,
-        founder: HankekayttajaInput? = null,
-        generated: Boolean = false,
+        securityContext: SecurityContext,
     ): Hanke {
-        val userId = currentUserId()
+        val entity = createNewEntity(request.nimi, false, securityContext.userId())
 
-        val entity: HankeEntity = createEntityFromCreateRequest(request, generated, userId)
-
-        val loggingEntryHolder = prepareLogging(entity)
-        copyYhteystietosToEntity(request, entity, userId, loggingEntryHolder, mutableMapOf())
-
-        calculateTormaystarkastelu(
-            request.alueet ?: listOf(),
-            entity.alueet.mapNotNull { it.geometriat }.toSet(),
-            entity
-        )
-        entity.status = decideNewHankeStatus(entity)
-
-        val savedHankeEntity = hankeRepository.save(entity)
-        postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
-
-        return createHankeDomainObjectFromEntity(savedHankeEntity).also {
-            initAccessForCreatedHanke(it, founder, userId)
-            hankeLoggingService.logCreate(it, userId)
-        }
-    }
-
-    private fun createEntityFromCreateRequest(
-        request: CreateHankeRequest,
-        generated: Boolean,
-        currentUserId: String
-    ): HankeEntity {
-        val hanketunnus = hanketunnusService.newHanketunnus()
-
-        val entity =
-            HankeEntity(
-                hankeTunnus = hanketunnus,
-                nimi = request.nimi,
-                generated = generated,
-            )
-
-        // Set audit fields
-        entity.version = 0
-        entity.createdByUserId = currentUserId
-        entity.createdAt = getCurrentTimeUTCAsLocalTime()
-        entity.modifiedByUserId = null
-        entity.modifiedAt = null
-
-        entity.onYKTHanke = request.onYKTHanke
-        entity.kuvaus = request.kuvaus
-        entity.vaihe = request.vaihe
-        entity.tyomaaKatuosoite = request.tyomaaKatuosoite
-        entity.tyomaaTyyppi = (request.tyomaaTyyppi ?: setOf()).toMutableSet()
-
-        request.alueet?.let {
-            entity.alueet.addAll(hankealueService.createAlueetFromCreateRequest(it, entity))
-        }
-
-        return entity
+        return saveCreatedHanke(entity, request.perustaja, securityContext)
     }
 
     /**
@@ -135,11 +83,14 @@ class HankeService(
     @Transactional
     fun generateHankeWithApplication(
         cableReport: CableReportWithoutHanke,
-        userId: String
+        securityContext: SecurityContext,
     ): Application {
         logger.info { "Generating Hanke from CableReport." }
-        val hanke = generateHankeFrom(cableReport)
-        return applicationService.create(cableReport.toNewApplication(hanke.hankeTunnus), userId)
+        val hanke = generateHankeFrom(cableReport, securityContext)
+        return applicationService.create(
+            cableReport.toNewApplication(hanke.hankeTunnus),
+            securityContext.userId()
+        )
     }
 
     @Transactional
@@ -214,11 +165,11 @@ class HankeService(
 
     private fun initAccessForCreatedHanke(
         hanke: Hanke,
-        hankeFounder: HankekayttajaInput?,
-        userId: String
+        perustaja: HankePerustaja,
+        securityContext: SecurityContext,
     ) {
-        hankeKayttajaService.addHankeFounder(hanke.id, hankeFounder, userId)
-        hankeKayttajaService.saveNewTokensFromHanke(hanke, userId)
+        hankeKayttajaService.addHankeFounder(hanke.id, perustaja, securityContext)
+        hankeKayttajaService.saveNewTokensFromHanke(hanke, securityContext.userId())
     }
 
     private fun calculateTormaystarkastelu(
@@ -736,6 +687,35 @@ class HankeService(
         loggingEntryHolder.saveLogEntries(hankeLoggingService)
     }
 
+    private fun saveCreatedHanke(
+        entity: HankeEntity,
+        perustaja: HankePerustaja,
+        securityContext: SecurityContext,
+    ): Hanke {
+        val savedHankeEntity = hankeRepository.save(entity)
+
+        return createHankeDomainObjectFromEntity(savedHankeEntity).also {
+            initAccessForCreatedHanke(it, perustaja, securityContext)
+            hankeLoggingService.logCreate(it, securityContext.userId())
+        }
+    }
+
+    private fun createNewEntity(
+        nimi: String,
+        generated: Boolean,
+        currentUserId: String,
+    ): HankeEntity =
+        HankeEntity(
+            hankeTunnus = hanketunnusService.newHanketunnus(),
+            nimi = nimi,
+            onYKTHanke = null,
+            generated = generated,
+            status = HankeStatus.DRAFT,
+            version = 0,
+            createdByUserId = currentUserId,
+            createdAt = getCurrentTimeUTCAsLocalTime(),
+        )
+
     /**
      * Autogenerated hanke based on application data.
      * - Generated flag true.
@@ -743,18 +723,26 @@ class HankeService(
      * - HankeFounder generated from application data orderer.
      * - Hankealueet are created from the application areas.
      */
-    private fun generateHankeFrom(cableReportWithoutHanke: CableReportWithoutHanke): Hanke =
+    private fun generateHankeFrom(
+        cableReportWithoutHanke: CableReportWithoutHanke,
+        securityContext: SecurityContext,
+    ): Hanke =
         with(cableReportWithoutHanke) {
-            val hankealueet = HankealueService.createHankealueetFromCableReport(applicationData)
-            return createHanke(
-                request =
-                    CreateHankeRequest(
-                        nimi = limitHankeName(applicationData.name),
-                        alueet = hankealueet,
-                    ),
-                founder = applicationData.ordererAsFounder(),
-                generated = true,
+            val alueet = HankealueService.createHankealueetFromCableReport(applicationData)
+            val nimi = limitHankeName(applicationData.name)
+            val perustaja = applicationData.ordererAsFounder()
+
+            val entity = createNewEntity(nimi, true, securityContext.userId())
+
+            entity.alueet.addAll(hankealueService.createAlueetFromCreateRequest(alueet, entity))
+
+            calculateTormaystarkastelu(
+                alueet,
+                entity.alueet.mapNotNull { alue -> alue.geometriat }.toSet(),
+                entity
             )
+
+            return saveCreatedHanke(entity, perustaja, securityContext)
         }
 
     private fun limitHankeName(name: String): String =
@@ -767,6 +755,6 @@ class HankeService(
             name
         }
 
-    private fun CableReportApplicationData.ordererAsFounder(): HankekayttajaInput =
-        findOrderer()?.toHankekayttajaInput() ?: throw HankeArgumentException("Orderer not found.")
+    private fun CableReportApplicationData.ordererAsFounder(): HankePerustaja =
+        findOrderer()?.toHankePerustaja() ?: throw HankeArgumentException("Orderer not found.")
 }

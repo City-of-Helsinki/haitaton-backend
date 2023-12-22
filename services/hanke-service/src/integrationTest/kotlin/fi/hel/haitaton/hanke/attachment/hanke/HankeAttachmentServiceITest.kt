@@ -77,7 +77,7 @@ class HankeAttachmentServiceITest(
     inner class GetMetadataList {
         @Test
         fun `getMetadataList should return related metadata list`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.saveMinimal()
             (1..2).forEach { _ ->
                 hankeAttachmentFactory.save(
                     fileName = FILE_NAME_PDF,
@@ -102,7 +102,7 @@ class HankeAttachmentServiceITest(
         @Test
         fun `Should upload blob and return saved metadata`() {
             mockClamAv.enqueue(response(body(results = successResult())))
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.saveMinimal()
             val file = testFile()
 
             val result =
@@ -125,7 +125,7 @@ class HankeAttachmentServiceITest(
         @Test
         fun `Should throw when infected file is encountered`() {
             mockClamAv.enqueue(response(body(results = failResult())))
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
 
             assertFailure {
                     hankeAttachmentService.uploadHankeAttachment(
@@ -207,14 +207,14 @@ class HankeAttachmentServiceITest(
 
         @Test
         fun `does not throw exception when hanke has no attachments`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.saveMinimal()
 
             hankeAttachmentService.deleteAllAttachments(hanke)
         }
 
         @Test
         fun `deletes all attachments and their contents from hanke`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.saveMinimal()
             hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
             hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
             assertThat(attachmentRepository.findAll()).hasSize(2)
@@ -228,7 +228,7 @@ class HankeAttachmentServiceITest(
 
         @Test
         fun `deletes attachments only from the specified hanke`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.saveMinimal()
             hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
             val otherAttachment = hankeAttachmentFactory.save().withCloudContent().value
 

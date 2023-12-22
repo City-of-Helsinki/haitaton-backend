@@ -4,13 +4,11 @@ import assertk.assertThat
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
-import fi.hel.haitaton.hanke.HankeArgumentException
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import java.util.stream.Stream
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
@@ -95,12 +93,6 @@ class ContactTest {
         val allContacts = applicationData.customersWithContacts().flatMap { it.contacts }
         assertThat(allContacts).hasSize(2)
         assertThat(result).isNull()
-    }
-
-    @ParameterizedTest
-    @MethodSource("invalidFounderContacts")
-    fun `toHankeFounder when invalid contact input should throw`(contact: Contact) {
-        assertThrows<HankeArgumentException> { contact.toHankeFounder() }
     }
 
     @ParameterizedTest

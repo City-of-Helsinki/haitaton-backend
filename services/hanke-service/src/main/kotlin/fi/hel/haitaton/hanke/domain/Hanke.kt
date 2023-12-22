@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.NotInChangeLogView
-import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
@@ -31,7 +30,7 @@ data class Hanke(
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Name of the project, must not be blank.")
-    override var nimi: String,
+    var nimi: String,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(
@@ -44,7 +43,7 @@ data class Hanke(
     @field:Schema(
         description = "Current stage of the project. Required for the hanke to be published."
     )
-    override var vaihe: Hankevaihe?,
+    var vaihe: Hankevaihe?,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Version, set by the service.")
@@ -73,7 +72,7 @@ data class Hanke(
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Indicates if Hanke data is generated, set by the service.")
     var generated: Boolean = false,
-) : BaseHanke, HasYhteystiedot, HankeIdentifier {
+) : HasYhteystiedot, HankeIdentifier {
 
     // --------------- Yhteystiedot -----------------
     @JsonView(NotInChangeLogView::class)
@@ -104,7 +103,7 @@ data class Hanke(
         description = "Work site street address. Required for the hanke to be published.",
         maxLength = 2000
     )
-    override var tyomaaKatuosoite: String? = null
+    var tyomaaKatuosoite: String? = null
 
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Work site types. Not required for the hanke to be published.")
@@ -121,11 +120,7 @@ data class Hanke(
         description =
             "Hanke areas data. At least one alue is required for the hanke to be published."
     )
-    override var alueet = mutableListOf<SavedHankealue>()
-
-    @JsonView(NotInChangeLogView::class)
-    @field:Schema(description = "Permission codes of the project.")
-    var permissions: List<PermissionCode>? = null
+    var alueet = mutableListOf<SavedHankealue>()
 
     /** Number of days between haittaAlkuPvm and haittaLoppuPvm (incl. both days) */
     val haittaAjanKestoDays: Int?

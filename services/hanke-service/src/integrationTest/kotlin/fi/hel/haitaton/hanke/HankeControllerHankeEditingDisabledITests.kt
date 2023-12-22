@@ -29,7 +29,7 @@ class HankeControllerHankeEditingDisabledITests(@Autowired override val mockMvc:
 
     @Test
     fun `post hanke when hanke editing is disabled should return 404`() {
-        post(BASE_URL, HankeFactory.create())
+        post(BASE_URL, HankeFactory.createRequest())
             .andExpect(MockMvcResultMatchers.status().isNotFound)
             .andExpect(hankeError(HankeError.HAI0004))
     }

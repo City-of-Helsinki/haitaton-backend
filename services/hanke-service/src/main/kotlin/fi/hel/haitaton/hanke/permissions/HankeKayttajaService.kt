@@ -6,11 +6,15 @@ import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.HankeInvitationData
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
+import fi.hel.haitaton.hanke.profiili.ProfiiliClient
+import fi.hel.haitaton.hanke.userId
 import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.security.core.context.SecurityContext
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -25,6 +29,7 @@ class HankeKayttajaService(
     private val featureFlags: FeatureFlags,
     private val logService: HankeKayttajaLoggingService,
     private val emailSenderService: EmailSenderService,
+    private val profiiliClient: ProfiiliClient,
 ) {
     @Transactional(readOnly = true)
     fun getKayttajatByHankeId(hankeId: Int): List<HankeKayttajaDto> =
@@ -137,22 +142,38 @@ class HankeKayttajaService(
     }
 
     @Transactional
-    fun addHankeFounder(hankeId: Int, hankeFounder: HankekayttajaInput?, currentUserId: String) {
+    fun addHankeFounder(
+        hankeId: Int,
+        hankePerustaja: HankePerustaja,
+        securityContext: SecurityContext
+    ) {
         val permissionEntity =
-            permissionService.create(hankeId, currentUserId, Kayttooikeustaso.KAIKKI_OIKEUDET)
+            permissionService.create(
+                hankeId,
+                securityContext.userId(),
+                Kayttooikeustaso.KAIKKI_OIKEUDET
+            )
 
         if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
             return
         }
-        hankeFounder?.let {
-            logger.info { "Saving user for Hanke founder." }
-            createFounderKayttaja(
-                currentUserId = currentUserId,
-                hankeId = hankeId,
-                founder = hankeFounder,
-                permission = permissionEntity,
+
+        val names = profiiliClient.getVerifiedName(securityContext)
+        val kayttaja =
+            HankekayttajaInput(
+                names.givenName,
+                names.lastName,
+                hankePerustaja.sahkoposti,
+                hankePerustaja.puhelinnumero
             )
-        }
+
+        logger.info { "Saving user for Hanke founder." }
+        createFounderKayttaja(
+            currentUserId = securityContext.userId(),
+            hankeId = hankeId,
+            founder = kayttaja,
+            permission = permissionEntity,
+        )
     }
 
     @Transactional

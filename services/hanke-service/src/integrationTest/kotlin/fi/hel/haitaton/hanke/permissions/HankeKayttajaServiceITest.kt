@@ -28,8 +28,6 @@ import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_APPLICATION_IDENTIFIER
@@ -45,12 +43,14 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.suorittajaCust
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.defaultNimi
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUSTAJA
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_TEPPO
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.kayttajaInput
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
+import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.factory.identifier
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
@@ -59,6 +59,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.UserRole
+import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.test.Asserts.hasReceivers
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.auditEvent
@@ -69,13 +70,18 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.toChangeLogJsonString
+import fi.hel.haitaton.hanke.userId
+import io.mockk.every
+import io.mockk.mockk
 import jakarta.mail.internet.MimeMessage
 import java.util.UUID
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 
@@ -99,6 +105,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
     @Autowired private lateinit var applicationRepository: ApplicationRepository
 
+    @Autowired private lateinit var profiiliClient: ProfiiliClient
+
     companion object {
         @JvmField
         @RegisterExtension
@@ -111,18 +119,22 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     inner class GetKayttajatByHankeId {
         @Test
         fun `Returns users from correct hanke only`() {
-            val hankeToFind = hankeFactory.createRequest().withYhteystiedot().save()
-            hankeFactory.createRequest().withYhteystiedot().save()
+            val hankeToFind = hankeFactory.builder(USERNAME).withYhteystiedot().save()
+            hankeFactory.builder(USERNAME).withYhteystiedot().save()
 
             val result: List<HankeKayttajaDto> =
                 hankeKayttajaService.getKayttajatByHankeId(hankeToFind.id)
 
-            assertThat(result).hasSize(4)
+            assertThat(result).hasSize(5)
+            val correctIds = hankeKayttajaRepository.findByHankeId(hankeToFind.id).map { it.id }
+            assertThat(result).each { dto ->
+                dto.prop(HankeKayttajaDto::id).isIn(*correctIds.toTypedArray())
+            }
         }
 
         @Test
         fun `Returns data matching to the saved entity`() {
-            val hanke = hankeFactory.createRequest().withGeneratedOmistaja(1).save()
+            val hanke = hankeFactory.builder(USERNAME).withPerustaja(KAYTTAJA_INPUT_HAKIJA).create()
 
             val result: List<HankeKayttajaDto> =
                 hankeKayttajaService.getKayttajatByHankeId(hanke.id)
@@ -134,8 +146,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 assertThat(id).isEqualTo(entity.id)
                 assertThat(nimi).isEqualTo(entity.fullName())
                 assertThat(sahkoposti).isEqualTo(entity.sahkoposti)
-                assertThat(kayttooikeustaso).isEqualTo(entity.kayttajakutsu!!.kayttooikeustaso)
-                assertThat(tunnistautunut).isEqualTo(false)
+                assertThat(kayttooikeustaso).isEqualTo(entity.permission!!.kayttooikeustaso)
+                assertThat(tunnistautunut).isEqualTo(true)
             }
         }
     }
@@ -144,17 +156,17 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     inner class GetKayttajaByUserId {
         @Test
         fun `When user exists should return current hanke user`() {
-            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
+            val hanke = hankeFactory.builder(USERNAME).create()
 
             val result: HankekayttajaEntity? =
                 hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)
 
             assertThat(result).isNotNull().all {
                 prop(HankekayttajaEntity::id).isNotNull()
-                prop(HankekayttajaEntity::sahkoposti).isEqualTo(TEPPO_EMAIL)
-                prop(HankekayttajaEntity::etunimi).isEqualTo("Teppo")
-                prop(HankekayttajaEntity::sukunimi).isEqualTo("Testihenkilö")
-                prop(HankekayttajaEntity::puhelin).isEqualTo("04012345678")
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(DEFAULT_HANKE_PERUSTAJA.sahkoposti)
+                prop(HankekayttajaEntity::etunimi).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(ProfiiliFactory.DEFAULT_LAST_NAME)
+                prop(HankekayttajaEntity::puhelin).isEqualTo(DEFAULT_HANKE_PERUSTAJA.puhelinnumero)
                 prop(HankekayttajaEntity::permission)
                     .isNotNull()
                     .prop(PermissionEntity::kayttooikeustaso)
@@ -176,7 +188,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `When no related permission should return null`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).create()
+            hankeKayttajaRepository.deleteAll()
             permissionRepository.deleteAll()
 
             val result: HankekayttajaEntity? =
@@ -187,7 +200,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `When no kayttaja should return null`() {
-            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
+            val hanke = hankeFactory.builder(USERNAME).save()
             val hankeId = hanke.id
             val createdKayttaja = hankeKayttajaService.getKayttajaByUserId(hankeId, USERNAME)!!
             hankeKayttajaRepository.deleteById(createdKayttaja.id)
@@ -201,15 +214,24 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Nested
     inner class AddHankeFounder {
-        private val founder = HankeFactory.defaultHankeFounder
+        private val founder = HankeFactory.DEFAULT_HANKE_PERUSTAJA
+        private val securityContext = mockk<SecurityContext>()
+        private val founderFullName =
+            "${ProfiiliFactory.DEFAULT_NAMES.givenName} ${ProfiiliFactory.DEFAULT_NAMES.lastName}"
+
+        @BeforeEach
+        fun setUp() {
+            every { securityContext.userId() } returns USERNAME
+            every { profiiliClient.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
+        }
 
         @Test
         fun `Saves kayttaja with correct permission and other data`() {
-            val hankeEntity = hankeFactory.saveEntity()
+            val hankeEntity = hankeFactory.saveMinimal()
             val savedHankeId = hankeEntity.id
             assertThat(hankeKayttajaRepository.findAll()).isEmpty()
 
-            hankeKayttajaService.addHankeFounder(savedHankeId, founder, USERNAME)
+            hankeKayttajaService.addHankeFounder(savedHankeId, founder, securityContext)
 
             val kayttajaEntity =
                 hankeKayttajaRepository.findAll().also { assertThat(it).hasSize(1) }.first()
@@ -222,19 +244,20 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                     prop(PermissionEntity::hankeId).isEqualTo(savedHankeId)
                     prop(PermissionEntity::userId).isEqualTo(USERNAME)
                 }
-                assertThat(sahkoposti).isEqualTo(founder.email)
-                assertThat(etunimi).isEqualTo(founder.etunimi)
-                assertThat(sukunimi).isEqualTo(founder.sukunimi)
+                assertThat(sahkoposti).isEqualTo(founder.sahkoposti)
+                assertThat(puhelin).isEqualTo(founder.puhelinnumero)
+                assertThat(etunimi).isEqualTo(ProfiiliFactory.DEFAULT_NAMES.givenName)
+                assertThat(sukunimi).isEqualTo(ProfiiliFactory.DEFAULT_NAMES.lastName)
             }
         }
 
         @Test
         fun `Writes user and token to audit log`() {
-            val hankeEntity = hankeFactory.saveEntity()
+            val hankeEntity = hankeFactory.saveMinimal()
             val savedHankeId = hankeEntity.id
             auditLogRepository.deleteAll()
 
-            hankeKayttajaService.addHankeFounder(savedHankeId, founder, USERNAME)
+            hankeKayttajaService.addHankeFounder(savedHankeId, founder, securityContext)
 
             val (kayttajaEntries, tunnisteEntries) =
                 auditLogRepository
@@ -253,8 +276,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                         prop(HankeKayttaja::hankeId).isEqualTo(savedHankeId)
                         prop(HankeKayttaja::kayttajaTunnisteId).isNull()
                         prop(HankeKayttaja::permissionId).isNotNull()
-                        prop(HankeKayttaja::nimi).isEqualTo(founder.fullName())
-                        prop(HankeKayttaja::sahkoposti).isEqualTo(founder.email)
+                        prop(HankeKayttaja::nimi).isEqualTo(founderFullName)
+                        prop(HankeKayttaja::sahkoposti).isEqualTo(founder.sahkoposti)
                     }
                 }
             }
@@ -283,7 +306,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `throws exception when there is a pre-existing user with the same email`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
             kayttajaFactory.saveUserAndToken(hanke.id, kayttajaInput = kayttajaInput(email = email))
 
             val failure = assertFailure {
@@ -300,7 +323,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `returns information about the created user`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
 
             val result = hankeKayttajaService.createNewUser(request, hanke, USERNAME)
 
@@ -317,7 +340,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `creates a new hankekayttaja`() {
-            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
+            val hanke = hankeFactory.builder(USERNAME).save()
             val inviter = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
 
             val result = hankeKayttajaService.createNewUser(request, hanke, USERNAME)
@@ -337,7 +360,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `creates a new invitation when caller has a hankekayttaja`() {
-            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
+            val hanke = hankeFactory.builder(USERNAME).save()
 
             val result = hankeKayttajaService.createNewUser(request, hanke, USERNAME)
 
@@ -354,7 +377,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `sends invitation email when caller has a hankekayttaja`() {
-            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
+            val hanke = hankeFactory.builder(USERNAME).save()
             val inviter = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
 
             hankeKayttajaService.createNewUser(request, hanke, USERNAME)
@@ -372,7 +395,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `creates a new invitation even when current user doesn't have a hankekayttaja`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.saveMinimalHanke()
             assertThat(hankeKayttajaRepository.findAll()).isEmpty()
 
             val result = hankeKayttajaService.createNewUser(request, hanke, USERNAME)
@@ -392,7 +415,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `doesn't send invitation email when caller doesn't have a hankekayttaja`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.saveMinimalHanke()
             assertThat(hankeKayttajaRepository.findAll()).isEmpty()
 
             hankeKayttajaService.createNewUser(request, hanke, USERNAME)
@@ -405,7 +428,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     inner class SaveNewTokensFromApplication {
         @Test
         fun `Does nothing if application has no contacts`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.saveMinimal()
             val applicationData =
                 createCableReportApplicationData(
                     customerWithContacts = createCompanyCustomer().withContacts(),
@@ -433,7 +456,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `With different contact emails creates tokens for them all`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.saveMinimal()
             val applicationData =
                 createCableReportApplicationData(
                     customerWithContacts =
@@ -487,7 +510,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `When no sender info should skip invitations`() {
-            val hanke = hankeFactory.saveMinimal(nimi = defaultNimi)
+            val hanke = hankeFactory.saveMinimal(nimi = HankeFactory.defaultNimi)
             val application =
                 createApplicationEntity(
                     hanke = hanke,
@@ -516,11 +539,13 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                     representativeWithContacts = asianHoitajaCustomerContact,
                     propertyDeveloperWithContacts = rakennuttajaCustomerContact
                 )
-            val cableReportWithoutHanke =
-                CableReportWithoutHanke(ApplicationType.CABLE_REPORT, applicationData)
-            val hanke = hankeFactory.saveGenerated(cableReportWithoutHanke, USERNAME)
+            val (application, hanke) =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withPerustaja(KAYTTAJA_INPUT_HAKIJA)
+                    .saveAsGenerated(applicationData)
             val applicationEntity =
-                applicationRepository.findAll().first().apply {
+                applicationRepository.getReferenceById(application.id!!).apply {
                     applicationIdentifier = DEFAULT_APPLICATION_IDENTIFIER
                 }
             val inviter = findKayttaja(hanke.id, KAYTTAJA_INPUT_HAKIJA.email)
@@ -553,7 +578,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `With non-unique contact emails creates only the unique ones`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.saveMinimal()
             val applicationData =
                 createCableReportApplicationData(
                     customerWithContacts =
@@ -600,7 +625,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `With pre-existing tokens creates only new ones`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.saveMinimal()
             kayttajaFactory.saveUserAndToken(
                 hankeId = hanke.id,
                 kayttajaInput =
@@ -664,7 +689,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `With pre-existing permissions creates only new ones`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.saveMinimal()
             kayttajaFactory.saveUserAndPermission(
                 hankeId = hanke.id,
                 kayttaja =
@@ -732,7 +757,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Writes new users and tokens to audit log`() {
-            val hanke = hankeFactory.saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             val applicationData =
                 createCableReportApplicationData(
                     customerWithContacts = createCompanyCustomer().withContact(email = "email1"),
@@ -823,13 +848,13 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `With pre-existing permissions does not create duplicate`() {
-            val hanke = hankeFactory.save()
             val yhteystieto = HankeYhteystietoFactory.create()
             val contact = yhteystieto.alikontaktit[0]
-            kayttajaFactory.saveUserAndPermission(
-                hankeId = hanke.id,
-                kayttaja = contact.toHankekayttajaInput()!!,
-            )
+            val hanke =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withPerustaja(contact.toHankekayttajaInput()!!)
+                    .create()
             auditLogRepository.deleteAll()
 
             hankeKayttajaService.saveNewTokensFromHanke(
@@ -848,7 +873,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Sends emails for new hanke users`() {
-            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
+            val hanke = hankeFactory.builder(USERNAME).withPerustaja(KAYTTAJA_INPUT_TEPPO).save()
             val hankeWithYhteystiedot = hanke.withYhteystiedot() // 4 sub contacts
 
             hankeKayttajaService.saveNewTokensFromHanke(hankeWithYhteystiedot, USERNAME)
@@ -865,7 +890,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     inner class UpdatePermissions {
         @Test
         fun `Doesn't throw any exceptions with no updates`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val updates = mapOf<UUID, Kayttooikeustaso>()
 
             hankeKayttajaService.updatePermissions(hankeIdentifier, updates, false, USERNAME)
@@ -873,7 +898,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Updates kayttooikeustaso to permission if it exists`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja = kayttajaFactory.saveUserAndPermission(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
@@ -888,7 +913,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Writes permission update to audit log`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja = kayttajaFactory.saveUserAndPermission(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
             auditLogRepository.deleteAll()
@@ -920,7 +945,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Updates kayttooikeustaso to tunniste if permission doesn't exist`() {
-            val hankehankeIdentifier = hankeFactory.save().identifier()
+            val hankehankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja = kayttajaFactory.saveUserAndToken(hankehankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
@@ -935,7 +960,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Writes tunniste update to audit log`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja = kayttajaFactory.saveUserAndToken(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
             auditLogRepository.deleteAll()
@@ -966,7 +991,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Updates kayttooikeustaso to only permission if both permission and tunniste exist`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
             val kayttaja =
                 kayttajaFactory.saveUserAndPermission(
                     hanke.id,
@@ -993,7 +1018,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception if changing the user's own permission`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
                 kayttajaFactory.saveUserAndPermission(
                     hankeIdentifier.id,
@@ -1019,7 +1044,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Throws exception if given a non-existing Kayttaja Id`() {
             val missingId = UUID.fromString("b4f4872d-ac5a-43e0-b0bc-79d7d56d238e")
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val updates = mapOf(missingId to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
@@ -1039,8 +1064,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception if given Kayttaja from another Hanke`() {
-            val hanke1 = hankeFactory.save().identifier()
-            val hanke2 = hankeFactory.save().identifier()
+            val hanke1 = hankeFactory.builder(USERNAME).save().identifier()
+            val hanke2 = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja = kayttajaFactory.saveUserAndPermission(hanke2.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
@@ -1056,7 +1081,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception if the kayttaja to update has neither permission nor tunniste`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja = kayttajaFactory.saveUser(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
@@ -1076,7 +1101,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception without admin permission if the kayttaja to update has KAIKKI_OIKEUDET in permission`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
                 kayttajaFactory.saveUserAndPermission(
                     hankeIdentifier.id,
@@ -1100,7 +1125,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception without admin permission if the kayttaja to update has KAIKKI_OIKEUDET in tunniste`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
                 kayttajaFactory.saveUserAndToken(
                     hankeIdentifier.id,
@@ -1124,7 +1149,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Succeeds with admin permission when the kayttaja to update has KAIKKI_OIKEUDET in permission`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
                 kayttajaFactory.saveUserAndPermission(
                     hankeIdentifier.id,
@@ -1143,7 +1168,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Succeeds with with admin permission when the kayttaja to update has KAIKKI_OIKEUDET in tunniste`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
                 kayttajaFactory.saveUserAndToken(
                     hankeIdentifier.id,
@@ -1162,7 +1187,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception without admin permission if updating to KAIKKI_OIKEUDET`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja = kayttajaFactory.saveUserAndToken(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.KAIKKI_OIKEUDET)
 
@@ -1182,7 +1207,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Succeeds with with admin permission if updating to KAIKKI_OIKEUDET`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja = kayttajaFactory.saveUserAndToken(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.KAIKKI_OIKEUDET)
 
@@ -1197,38 +1222,35 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throw exception if trying to demote the last KAIKKI_OIKEUDET kayttaja`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
-            permissionRepository.deleteAll()
+            val hanke = hankeFactory.saveMinimal()
             val kayttaja =
                 kayttajaFactory.saveUserAndPermission(
-                    hankeIdentifier.id,
+                    hanke.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
                 )
             kayttajaFactory.saveUserAndPermission(
-                hankeIdentifier.id,
+                hanke.id,
                 kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS,
                 kayttaja = kayttajaInput(email = "hankemuokkaus")
             )
             kayttajaFactory.saveUserAndPermission(
-                hankeIdentifier.id,
+                hanke.id,
                 kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI,
                 kayttaja = kayttajaInput(email = "hakemusasiointi")
             )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
-            assertFailure {
-                    hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
-                }
+            assertFailure { hankeKayttajaService.updatePermissions(hanke, updates, true, USERNAME) }
                 .all {
                     hasClass(NoAdminRemainingException::class)
-                    messageContains(hankeIdentifier.id.toString())
-                    messageContains(hankeIdentifier.hankeTunnus)
+                    messageContains(hanke.id.toString())
+                    messageContains(hanke.hankeTunnus)
                 }
         }
 
         @Test
         fun `Don't throw an exception if an anonymous user still has KAIKKI_OIKEUDET`() {
-            val hankeIdentifier = hankeFactory.save().identifier()
+            val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             hankeKayttajaRepository.deleteAll()
             permissionRepository.deleteAll()
             permissionService.create(hankeIdentifier.id, USERNAME, Kayttooikeustaso.KAIKKI_OIKEUDET)
@@ -1265,7 +1287,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `throws an exception if the user already has a permission for the hanke kayttaja`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
             val kayttaja =
                 kayttajaFactory.saveUserAndPermission(
                     hanke.id,
@@ -1284,7 +1306,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `throws an exception if the user has a permission for the hanke from elsewhere`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
             val kayttaja = kayttajaFactory.saveUserAndToken(hanke.id, tunniste = tunniste)
             val permission =
                 permissionService.create(
@@ -1304,7 +1326,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `throws an exception if another user already has a permission for the hanke kayttaja`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
             val kayttaja = kayttajaFactory.saveUserAndPermission(hanke.id, userId = "Other user")
             kayttajaFactory.addToken(kayttaja)
 
@@ -1320,7 +1342,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Creates a permission`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
             kayttajaFactory.saveUserAndToken(hanke.id, tunniste = tunniste)
 
             hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
@@ -1334,7 +1356,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Removes the user token`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
             kayttajaFactory.saveUserAndToken(hanke.id, tunniste = tunniste)
 
             hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
@@ -1344,7 +1366,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Writes the token removal to audit logs`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
             kayttajaFactory.saveUserAndToken(hanke.id, tunniste = tunniste)
             auditLogRepository.deleteAll()
 

@@ -38,7 +38,6 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus.HANDLING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationType.CABLE_REPORT
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
 import fi.hel.haitaton.hanke.domain.Hankealue
@@ -49,7 +48,6 @@ import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.asianHoitajaCustomerContact
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.cableReportWithoutHanke
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplication
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplicationArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplicationEntity
@@ -176,7 +174,7 @@ class ApplicationServiceITest : DatabaseTest() {
         @Test
         fun `when valid input should create and audit log entry`() {
             TestUtils.addMockedRequestIp()
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
 
             val application =
                 applicationService.create(
@@ -299,7 +297,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when application area is outside hankealue should throw`() {
-            val hanke = hankeFactory.createRequest().withHankealue().save()
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
             val cableReportApplicationData =
                 createCableReportApplicationData(areas = listOf(havisAmanda))
             val newApplication =
@@ -327,7 +325,7 @@ class ApplicationServiceITest : DatabaseTest() {
         @Test
         fun `when valid input should audit log`() {
             TestUtils.addMockedRequestIp()
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
             val application =
                 applicationService.create(
                     createApplication(
@@ -498,12 +496,11 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when hanke was generated should skip area inside hanke check`() {
-            val initialApplication =
-                hankeService.generateHankeWithApplication(cableReportWithoutHanke(), USERNAME)
+            val (initialApplication, hanke) =
+                hankeFactory.builder(USERNAME).saveAsGenerated(createCableReportApplicationData())
             assertThat(initialApplication.applicationData.areas).isNotNull().hasSize(1)
-            val hankeId = hankeService.findIdentifier(initialApplication.hankeTunnus)
             val newGeometry: Polygon = GeometriaFactory.thirdPolygon
-            assertThat(geometriatDao.isInsideHankeAlueet(hankeId!!.id, newGeometry)).isFalse()
+            assertThat(geometriatDao.isInsideHankeAlueet(hanke.id, newGeometry)).isFalse()
             val newApplicationData =
                 createCableReportApplicationData(
                     pendingOnClient = true,
@@ -527,11 +524,8 @@ class ApplicationServiceITest : DatabaseTest() {
                 createCableReportApplicationData(areas = null)
                     .withArea("First area", GeometriaFactory.polygon)
                     .withArea("Second area", GeometriaFactory.secondPolygon)
-            val initialApplication =
-                hankeService.generateHankeWithApplication(
-                    cableReportWithoutHanke(initialApplicationData),
-                    USERNAME,
-                )
+            val (initialApplication, _) =
+                hankeFactory.builder(USERNAME).saveAsGenerated(initialApplicationData)
             val newApplicationData =
                 createCableReportApplicationData(areas = null)
                     .withArea("New area", GeometriaFactory.thirdPolygon)
@@ -543,9 +537,9 @@ class ApplicationServiceITest : DatabaseTest() {
                     USERNAME
                 )
 
-            val hanke = hankeService.loadHanke(response.hankeTunnus)!!
-            assertThat(hanke.alueet).hasSize(1)
-            assertThat(hanke.alueet).first().all {
+            val updatedHanke = hankeService.loadHanke(response.hankeTunnus)!!
+            assertThat(updatedHanke.alueet).hasSize(1)
+            assertThat(updatedHanke.alueet).first().all {
                 prop(Hankealue::nimi).isEqualTo("Hankealue 1")
                 hasSingleGeometryWithCoordinates(GeometriaFactory.thirdPolygon)
             }
@@ -634,11 +628,11 @@ class ApplicationServiceITest : DatabaseTest() {
                     customerWithContacts = hakijaCustomerContact,
                     contractorWithContacts = suorittajaCustomerContact,
                 )
-            val application =
-                hankeService.generateHankeWithApplication(
-                    CableReportWithoutHanke(CABLE_REPORT, cableReport),
-                    USERNAME,
-                )
+            val (application, hanke) =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withPerustaja(KAYTTAJA_INPUT_HAKIJA)
+                    .saveAsGenerated(cableReport)
             setAlluFields(applicationRepository.findById(application.id!!).orElseThrow())
             justRun { cableReportServiceAllu.update(21, any()) }
             every { cableReportServiceAllu.getApplicationInformation(any()) } returns
@@ -656,7 +650,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
             val capturedNotifications = getApplicationNotifications()
             assertThat(capturedNotifications)
-                .areValid(application.applicationType, application.hankeTunnus)
+                .areValid(application.applicationType, hanke.hankeTunnus)
             assertThat(capturedNotifications.toTypedArray())
                 .hasReceivers(
                     "new.mail@foo.fi",
@@ -943,7 +937,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `when application area outside hankealue should throw`() {
-            val hanke = hankeFactory.createRequest().withHankealue().save()
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
             val hankeEntity = hankeRepository.getReferenceById(hanke.id)
             val application =
                 applicationFactory.saveApplicationEntity(USERNAME, hanke = hankeEntity, alluId = 21)
@@ -1066,8 +1060,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `Skips the area inside hanke check with a generated hanke`() {
-            val initialApplication =
-                hankeService.generateHankeWithApplication(cableReportWithoutHanke(), USERNAME)
+            val (initialApplication, _) = hankeFactory.builder(USERNAME).saveAsGenerated()
             assertFalse(initialApplication.applicationData.areas.isNullOrEmpty())
             val alluIdMock = 123
             every { cableReportServiceAllu.create(any()) } returns alluIdMock
@@ -1125,15 +1118,11 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `Saves user tokens from application contacts`() {
-            val cableReport =
-                cableReportWithoutHanke(
-                    createCableReportApplicationData(
-                        customerWithContacts = hakijaCustomerContact,
-                    )
+            val data =
+                createCableReportApplicationData(
+                    customerWithContacts = hakijaCustomerContact,
                 )
-            val application = hankeService.generateHankeWithApplication(cableReport, USERNAME)
-            val data = application.applicationData as CableReportApplicationData
-            val hanke = hankeRepository.findOneByHankeTunnus(application.hankeTunnus)!!
+            val (application, hanke) = hankeFactory.builder(USERNAME).saveAsGenerated(data)
             val pending = data.copy(pendingOnClient = false).toAlluData(hanke.hankeTunnus)
             every { cableReportServiceAllu.create(pending) } returns 26
             justRun { cableReportServiceAllu.addAttachment(26, any()) }
@@ -1179,11 +1168,11 @@ class ApplicationServiceITest : DatabaseTest() {
                     representativeWithContacts = asianHoitajaCustomerContact,
                     propertyDeveloperWithContacts = rakennuttajaCustomerContact
                 )
-            val application =
-                hankeService.generateHankeWithApplication(
-                    CableReportWithoutHanke(CABLE_REPORT, cableReportData),
-                    USERNAME,
-                )
+            val (application, hanke) =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withPerustaja(KAYTTAJA_INPUT_HAKIJA)
+                    .saveAsGenerated(cableReportData)
             every { cableReportServiceAllu.create(any()) } returns 26
             every { cableReportServiceAllu.getApplicationInformation(any()) } returns
                 createAlluApplicationResponse(26)
@@ -1193,8 +1182,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
             val capturedEmails = getApplicationNotifications()
             assertThat(capturedEmails).hasSize(3) // 4 contacts, but one is the sender
-            assertThat(capturedEmails)
-                .areValid(application.applicationType, application.hankeTunnus)
+            assertThat(capturedEmails).areValid(application.applicationType, hanke.hankeTunnus)
             verifySequence {
                 cableReportServiceAllu.create(any())
                 cableReportServiceAllu.addAttachment(any(), any())
@@ -1281,7 +1269,7 @@ class ApplicationServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws an exception when application area is outside hankealue`() {
-            val hanke = hankeFactory.createRequest().withHankealue().save()
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().save()
             val hankeEntity = hankeRepository.getReferenceById(hanke.id)
             val application =
                 applicationFactory.saveApplicationEntity(
@@ -1438,7 +1426,7 @@ class ApplicationServiceITest : DatabaseTest() {
         @Test
         fun `when deleted should audit log for deleted application`() {
             TestUtils.addMockedRequestIp()
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
             val application =
                 applicationService.create(
                     createApplication(
