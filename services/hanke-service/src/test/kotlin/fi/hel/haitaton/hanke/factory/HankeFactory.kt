@@ -44,6 +44,21 @@ class HankeFactory(
 
     fun saveSeveralMinimal(n: Int): List<HankeEntity> = (1..n).map { saveMinimal() }
 
+    /**
+     * Save a minimal hanke, i.e. a hanke without any extra information and without any attached
+     * users or contacts.
+     *
+     * Return the hanke as a domain entity for convenience.
+     */
+    fun saveMinimalHanke(
+        hankeTunnus: String = hanketunnusService.newHanketunnus(),
+        nimi: String = defaultNimi,
+        generated: Boolean = false,
+    ): Hanke {
+        saveMinimal(hankeTunnus, nimi, generated)
+        return hankeService.loadHanke(hankeTunnus)!!
+    }
+
     fun builder(userId: String): HankeBuilder {
         val hanke =
             create(

@@ -306,7 +306,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `throws exception when there is a pre-existing user with the same email`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
             kayttajaFactory.saveUserAndToken(hanke.id, kayttajaInput = kayttajaInput(email = email))
 
             val failure = assertFailure {
@@ -323,7 +323,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `returns information about the created user`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.builder(USERNAME).save()
 
             val result = hankeKayttajaService.createNewUser(request, hanke, USERNAME)
 
@@ -340,7 +340,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `creates a new hankekayttaja`() {
-            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
+            val hanke = hankeFactory.builder(USERNAME).save()
             val inviter = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
 
             val result = hankeKayttajaService.createNewUser(request, hanke, USERNAME)
@@ -360,7 +360,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `creates a new invitation when caller has a hankekayttaja`() {
-            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
+            val hanke = hankeFactory.builder(USERNAME).save()
 
             val result = hankeKayttajaService.createNewUser(request, hanke, USERNAME)
 
@@ -377,7 +377,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `sends invitation email when caller has a hankekayttaja`() {
-            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
+            val hanke = hankeFactory.builder(USERNAME).save()
             val inviter = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
 
             hankeKayttajaService.createNewUser(request, hanke, USERNAME)
@@ -395,7 +395,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `creates a new invitation even when current user doesn't have a hankekayttaja`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.saveMinimalHanke()
             assertThat(hankeKayttajaRepository.findAll()).isEmpty()
 
             val result = hankeKayttajaService.createNewUser(request, hanke, USERNAME)
@@ -415,7 +415,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `doesn't send invitation email when caller doesn't have a hankekayttaja`() {
-            val hanke = hankeFactory.save()
+            val hanke = hankeFactory.saveMinimalHanke()
             assertThat(hankeKayttajaRepository.findAll()).isEmpty()
 
             hankeKayttajaService.createNewUser(request, hanke, USERNAME)
