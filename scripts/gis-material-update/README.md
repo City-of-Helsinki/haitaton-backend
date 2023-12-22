@@ -122,6 +122,7 @@ Where `<source>` is currently one of:
 - `maka_autoliikennemaarat` - Traffic volumes (car traffic)
 - `cycle_infra` - Cycle infra (local file)
 - `central_business_area` - Helsinki city "kantakaupunki"
+- `liikennevaylat` - Helsinki city street classes
 
 Data files are downloaded to `./haitaton-downloads` -directory.
 
@@ -322,6 +323,43 @@ haitaton-gis-output
 Output files (names configured in `config.yaml`)
 
 - tormays_central_business_areas.gpkg
+
+### `liikennevaylat`
+
+Prerequisite: 
+- `central_business_area` material fetched
+- `ylre_katuosat` material fetched
+- `liikennevaylat` material fetched
+- `central_business_area` material processed
+- `ylre_katuosat` material processed
+
+In gis-material-update/.env file there need to be following secrets:
+
+```sh
+HELSINKI_EXTRANET_USERNAME=
+HELSINKI_EXTRANET_PASSWORD=
+```
+These secrets can be found from Azure Key vault or from OpenShift secrets (haitaton-secret).
+
+Docker example run (ensure that image build and file copying is
+already performed as instructed above):
+
+```sh
+docker-compose up -d gis-db
+docker-compose run --rm gis-fetch liikennevaylat central_business_area ylre_katuosat
+docker-compose run --rm gis-process central_business_area ylre_katuosat
+docker-compose run --rm gis-process liikennevaylat
+docker-compose stop gis-db
+```
+Above actions take some time (approx 20 minutes).
+
+Processed GIS material is available in:
+haitaton-gis-output
+
+Output files (names configured in `config.yaml`)
+
+- street_classes.gpkg
+- tormays_street_classes_polys.gpkg
 
 # Run tests
 

@@ -63,12 +63,20 @@ cycle_infra:
   buffer:
     - 20
 liikennevaylat:
-  addr: "/local_data/liikennevaylat.gpkg"
+  addr: "WFS:https://$HELSINKI_EXTRANET_USERNAME:$HELSINKI_EXTRANET_PASSWORD@kartta.hel.fi/ws/geoserver/helsinki/wfs"
+  layer: "helsinki:Liikennevaylat_kehitys"
   local_file: "liikennevaylat.gpkg"
   target_file: "street_classes.gpkg"
   target_buffer_file: "tormays_street_classes_polys.gpkg"
-  buffer:
-    - 20
+  extra_args: "-nlt CONVERT_TO_LINEAR"
+  tormays_table_org: "street_classes_lines"
+  tormays_table_temp: "tormays_street_classes_polys_temp"
+  buffer_class_values:
+    paakatu_tai_moottorivayla: 20
+    alueellinen_kokoojakatu: 20
+    paikallinen_kokoojakatu: 20
+    kantakaupungin_asuntokatu_huoltovayla_tai_muu_vahaliikenteinen_katu: 10
+    asuntokatu_huoltovayla_tai_muu_vahaliikenteinen_katu: 10
 central_business_area:
   addr: "WFS:https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:Piirijako_pienalue"
@@ -82,7 +90,6 @@ common:
 # pyynnöstä toimitetut
 bussiliikenne_kriittinen:
 pienalueet_kantakaupunki_yleiskaava:
-# liikennevaylat:
 
 local_development:
   database:
@@ -93,7 +100,7 @@ local_development:
     database: haitaton
   storage:
     download_dir: "haitaton-downloads"
-    output_dir: "haitaton-local-gis-output"
+    output_dir: "haitaton-gis-output"
 
 local_docker_development:
   database:
