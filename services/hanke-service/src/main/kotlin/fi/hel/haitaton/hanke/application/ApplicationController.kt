@@ -5,10 +5,12 @@ import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.userId
 import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
 import fi.hel.haitaton.hanke.validation.ValidApplication
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -21,6 +23,8 @@ import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.CurrentSecurityContext
+import org.springframework.security.core.context.SecurityContext
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
@@ -125,11 +129,11 @@ class ApplicationController(
             ]
     )
     fun createWithGeneratedHanke(
-        @ValidApplication @RequestBody cableReport: CableReportWithoutHanke
+        @ValidApplication @RequestBody cableReport: CableReportWithoutHanke,
+        @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext,
     ): Application {
-        val userId = currentUserId()
-        return hankeService.generateHankeWithApplication(cableReport, userId).also {
-            disclosureLogService.saveDisclosureLogsForApplication(it, userId)
+        return hankeService.generateHankeWithApplication(cableReport, securityContext).also {
+            disclosureLogService.saveDisclosureLogsForApplication(it, securityContext.userId())
         }
     }
 

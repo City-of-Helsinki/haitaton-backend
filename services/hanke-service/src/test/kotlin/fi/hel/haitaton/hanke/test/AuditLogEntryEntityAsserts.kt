@@ -35,6 +35,9 @@ object AuditLogEntryEntityAsserts {
     fun Assert<AuditLogEvent>.hasUserActor(userId: String) =
         prop(AuditLogEvent::actor).isUser(userId)
 
+    fun Assert<AuditLogEvent>.hasMockedIp(ipAddress: String = TestUtils.mockedIp) =
+        prop(AuditLogEvent::actor).prop(AuditLogActor::ipAddress).isEqualTo(ipAddress)
+
     fun Assert<AuditLogEvent>.withTarget(body: Assert<AuditLogTarget>.() -> Unit) =
         prop(AuditLogEvent::target).all(body)
 
@@ -69,6 +72,7 @@ object AuditLogEntryEntityAsserts {
         prop(AuditLogEntryEntity::createdAt).isRecent()
         prop(AuditLogEntryEntity::id).isNotNull()
         auditEvent {
+            prop(AuditLogEvent::appVersion).isEqualTo("1")
             prop(AuditLogEvent::status).isEqualTo(Status.SUCCESS)
             prop(AuditLogEvent::operation).isEqualTo(operation)
             prop(AuditLogEvent::dateTime).isRecent()

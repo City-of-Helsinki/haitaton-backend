@@ -9,16 +9,17 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.HanketunnusService
-import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createEntity
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
-import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
+import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
+import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.ZonedDateTime
@@ -27,43 +28,10 @@ import org.springframework.stereotype.Component
 @Component
 class HankeFactory(
     private val hankeService: HankeService,
+    private val profiiliClient: ProfiiliClient,
     private val hanketunnusService: HanketunnusService,
     private val hankeRepository: HankeRepository,
 ) {
-
-    /**
-     * Create a new hanke and save it to database.
-     *
-     * Needs a mock user set up, since `hankeService.createHanke` calls currentUserId() directly.
-     */
-    fun save(
-        nimi: String = defaultNimi,
-        vaihe: Hankevaihe? = Hankevaihe.OHJELMOINTI,
-        tyomaaKatuosoite: String? = null,
-        tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
-    ) =
-        hankeService.createHanke(
-            CreateHankeRequest(
-                nimi = nimi,
-                vaihe = vaihe,
-                tyomaaKatuosoite = tyomaaKatuosoite,
-                tyomaaTyyppi = tyomaaTyyppi,
-            )
-        )
-
-    /**
-     * Save a new hanke using HankeService. Then get it as an entity.
-     *
-     * The service method creates a hankeTunnus and does other initialization, so we want to run it,
-     * even though we want to return the entity, not the domain object.
-     */
-    fun saveEntity(
-        nimi: String = defaultNimi,
-        vaihe: Hankevaihe? = Hankevaihe.OHJELMOINTI,
-    ): HankeEntity {
-        val hanke = save(nimi, vaihe)
-        return hankeRepository.getReferenceById(hanke.id)
-    }
 
     fun saveMinimal(
         hankeTunnus: String = hanketunnusService.newHanketunnus(),
@@ -76,32 +44,38 @@ class HankeFactory(
 
     fun saveSeveralMinimal(n: Int): List<HankeEntity> = (1..n).map { saveMinimal() }
 
-    fun saveGenerated(
-        cableReportWithoutHanke: CableReportWithoutHanke =
-            ApplicationFactory.cableReportWithoutHanke(),
-        userId: String
+    /**
+     * Save a minimal hanke, i.e. a hanke without any extra information and without any attached
+     * users or contacts.
+     *
+     * Return the hanke as a domain entity for convenience.
+     */
+    fun saveMinimalHanke(
+        hankeTunnus: String = hanketunnusService.newHanketunnus(),
+        nimi: String = defaultNimi,
+        generated: Boolean = false,
     ): Hanke {
-        val application = hankeService.generateHankeWithApplication(cableReportWithoutHanke, userId)
-        return hankeService.loadHanke(application.hankeTunnus)!!
+        saveMinimal(hankeTunnus, nimi, generated)
+        return hankeService.loadHanke(hankeTunnus)!!
     }
 
-    fun createRequest(
-        nimi: String = defaultNimi,
-        onYKTHanke: Boolean? = true,
-        kuvaus: String? = defaultKuvaus,
-        vaihe: Hankevaihe? = Hankevaihe.OHJELMOINTI,
-        tyomaaKatuosoite: String? = null,
-        tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
-    ) =
-        Companion.createRequest(
-                nimi,
-                onYKTHanke,
-                kuvaus,
-                vaihe,
-                tyomaaKatuosoite,
-                tyomaaTyyppi,
+    fun builder(userId: String): HankeBuilder {
+        val hanke =
+            create(
+                nimi = defaultNimi,
+                kuvaus = defaultKuvaus,
+                vaihe = Hankevaihe.OHJELMOINTI,
             )
-            .copy(hankeService = hankeService)
+        return HankeBuilder(
+            hanke,
+            DEFAULT_HANKE_PERUSTAJA,
+            userId,
+            DEFAULT_NAMES,
+            hankeService,
+            hankeRepository,
+            profiiliClient,
+        )
+    }
 
     companion object {
 
@@ -110,8 +84,9 @@ class HankeFactory(
         const val defaultKuvaus = "lorem ipsum dolor sit amet..."
         const val defaultId = 123
         const val defaultUser = "Risto"
-        val defaultHankeFounder =
-            HankekayttajaInput("Pertti", "Perustaja", "foo@bar.com", "0401234567")
+        val DEFAULT_HANKE_PERUSTAJA = HankePerustaja("pertti@perustaja.test", "0401234567")
+
+        fun builder() = HankeBuilder(create(), DEFAULT_HANKE_PERUSTAJA, defaultUser)
 
         /**
          * Create a simple Hanke with test values. The default values can be overridden with named
@@ -126,6 +101,7 @@ class HankeFactory(
             id: Int = defaultId,
             hankeTunnus: String = defaultHankeTunnus,
             nimi: String = defaultNimi,
+            kuvaus: String? = defaultKuvaus,
             vaihe: Hankevaihe? = Hankevaihe.OHJELMOINTI,
             version: Int? = 1,
             createdBy: String? = defaultUser,
@@ -133,18 +109,18 @@ class HankeFactory(
             hankeStatus: HankeStatus = HankeStatus.DRAFT,
         ): Hanke =
             Hanke(
-                id,
-                hankeTunnus,
-                true,
-                nimi,
-                defaultKuvaus,
-                vaihe,
-                version,
-                createdBy,
-                createdAt,
-                null,
-                null,
-                hankeStatus,
+                id = id,
+                hankeTunnus = hankeTunnus,
+                onYKTHanke = true,
+                nimi = nimi,
+                kuvaus = kuvaus,
+                vaihe = vaihe,
+                version = version,
+                createdBy = createdBy,
+                createdAt = createdAt,
+                modifiedBy = null,
+                modifiedAt = null,
+                status = hankeStatus,
             )
 
         fun createMinimalEntity(
@@ -192,23 +168,8 @@ class HankeFactory(
 
         fun createRequest(
             nimi: String = defaultNimi,
-            onYKTHanke: Boolean? = true,
-            kuvaus: String? = defaultKuvaus,
-            vaihe: Hankevaihe? = Hankevaihe.OHJELMOINTI,
-            tyomaaKatuosoite: String? = null,
-            tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
-        ): CreateHankeRequestBuilder =
-            CreateHankeRequestBuilder(
-                null,
-                CreateHankeRequest(
-                    nimi = nimi,
-                    onYKTHanke = onYKTHanke,
-                    kuvaus = kuvaus,
-                    vaihe = vaihe,
-                    tyomaaKatuosoite = tyomaaKatuosoite,
-                    tyomaaTyyppi = tyomaaTyyppi
-                )
-            )
+            perustaja: HankePerustaja = DEFAULT_HANKE_PERUSTAJA
+        ): CreateHankeRequest = CreateHankeRequest(nimi, perustaja)
 
         /**
          * Add a hankealue with haitat to a test Hanke.
