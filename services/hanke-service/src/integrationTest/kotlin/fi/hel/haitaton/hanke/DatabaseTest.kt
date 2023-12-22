@@ -35,6 +35,7 @@ abstract class DatabaseTest {
                     ),
                     "/docker-entrypoint-initdb.d/HEL-GIS-data-test.sql"
                 )
+                .withReuse(true)
 
         init {
             postgresContainer.start()
