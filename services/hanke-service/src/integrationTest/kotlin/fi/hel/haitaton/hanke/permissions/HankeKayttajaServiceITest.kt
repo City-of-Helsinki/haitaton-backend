@@ -15,6 +15,7 @@ import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
 import assertk.assertions.isIn
 import assertk.assertions.isNotEqualTo
 import assertk.assertions.isNotNull
@@ -272,6 +273,131 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                     }
                 }
             }
+        }
+    }
+
+    @Nested
+    inner class CreateNewUser {
+        private val email = "joku@sahkoposti.test"
+        private val request = NewUserRequest("Joku", "Jokunen", email, "0508889999")
+
+        @Test
+        fun `throws exception when there is a pre-existing user with the same email`() {
+            val hanke = hankeFactory.save()
+            kayttajaFactory.saveUserAndToken(hanke.id, kayttajaInput = kayttajaInput(email = email))
+
+            val failure = assertFailure {
+                hankeKayttajaService.createNewUser(request, hanke, USERNAME)
+            }
+
+            failure.all {
+                hasClass(UserAlreadyExistsException::class)
+                messageContains(hanke.id.toString())
+                messageContains(hanke.hankeTunnus)
+                messageContains(email)
+            }
+        }
+
+        @Test
+        fun `returns information about the created user`() {
+            val hanke = hankeFactory.save()
+
+            val result = hankeKayttajaService.createNewUser(request, hanke, USERNAME)
+
+            assertThat(result).all {
+                prop(HankeKayttajaDto::id).isNotNull()
+                prop(HankeKayttajaDto::sahkoposti).isEqualTo(email)
+                prop(HankeKayttajaDto::etunimi).isEqualTo("Joku")
+                prop(HankeKayttajaDto::sukunimi).isEqualTo("Jokunen")
+                prop(HankeKayttajaDto::nimi).isEqualTo("Joku Jokunen")
+                prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
+                prop(HankeKayttajaDto::tunnistautunut).isFalse()
+            }
+        }
+
+        @Test
+        fun `creates a new hankekayttaja`() {
+            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
+            val inviter = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+
+            val result = hankeKayttajaService.createNewUser(request, hanke, USERNAME)
+
+            assertThat(hankeKayttajaRepository.getReferenceById(result.id)).all {
+                prop(HankekayttajaEntity::hankeId).isEqualTo(hanke.id)
+                prop(HankekayttajaEntity::etunimi).isEqualTo("Joku")
+                prop(HankekayttajaEntity::sukunimi).isEqualTo("Jokunen")
+                prop(HankekayttajaEntity::puhelin).isEqualTo("0508889999")
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(email)
+                prop(HankekayttajaEntity::kutsuttuEtunimi).isEqualTo("Joku")
+                prop(HankekayttajaEntity::kutsuttuSukunimi).isEqualTo("Jokunen")
+                prop(HankekayttajaEntity::permission).isNull()
+                prop(HankekayttajaEntity::kutsujaId).isEqualTo(inviter.id)
+            }
+        }
+
+        @Test
+        fun `creates a new invitation when caller has a hankekayttaja`() {
+            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
+
+            val result = hankeKayttajaService.createNewUser(request, hanke, USERNAME)
+
+            assertThat(hankeKayttajaRepository.getReferenceById(result.id))
+                .prop(HankekayttajaEntity::kayttajakutsu)
+                .isNotNull()
+                .all {
+                    prop(KayttajakutsuEntity::tunniste).matches(Regex(kayttajaTunnistePattern))
+                    prop(KayttajakutsuEntity::createdAt).isRecent()
+                    prop(KayttajakutsuEntity::kayttooikeustaso)
+                        .isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
+                }
+        }
+
+        @Test
+        fun `sends invitation email when caller has a hankekayttaja`() {
+            val hanke = hankeFactory.saveGenerated(userId = USERNAME)
+            val inviter = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+
+            hankeKayttajaService.createNewUser(request, hanke, USERNAME)
+
+            val capturedEmails = greenMail.receivedMessages
+            assertThat(capturedEmails).hasSize(1)
+            assertThat(capturedEmails.first())
+                .isValidHankeInvitation(
+                    inviter.fullName(),
+                    inviter.sahkoposti,
+                    hanke.nimi,
+                    hanke.hankeTunnus
+                )
+        }
+
+        @Test
+        fun `creates a new invitation even when current user doesn't have a hankekayttaja`() {
+            val hanke = hankeFactory.save()
+            assertThat(hankeKayttajaRepository.findAll()).isEmpty()
+
+            val result = hankeKayttajaService.createNewUser(request, hanke, USERNAME)
+
+            assertThat(hankeKayttajaRepository.getReferenceById(result.id)).all {
+                prop(HankekayttajaEntity::hankeId).isEqualTo(hanke.id)
+                prop(HankekayttajaEntity::permission).isNull()
+                prop(HankekayttajaEntity::kutsujaId).isNull()
+                prop(HankekayttajaEntity::kayttajakutsu).isNotNull().all {
+                    prop(KayttajakutsuEntity::tunniste).matches(Regex(kayttajaTunnistePattern))
+                    prop(KayttajakutsuEntity::createdAt).isRecent()
+                    prop(KayttajakutsuEntity::kayttooikeustaso)
+                        .isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
+                }
+            }
+        }
+
+        @Test
+        fun `doesn't send invitation email when caller doesn't have a hankekayttaja`() {
+            val hanke = hankeFactory.save()
+            assertThat(hankeKayttajaRepository.findAll()).isEmpty()
+
+            hankeKayttajaService.createNewUser(request, hanke, USERNAME)
+
+            assertThat(greenMail.receivedMessages).isEmpty()
         }
     }
 

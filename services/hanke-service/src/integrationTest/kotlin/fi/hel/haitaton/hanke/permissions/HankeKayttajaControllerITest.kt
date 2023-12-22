@@ -242,7 +242,9 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             assertThat(response.kayttajat).hasSize(3)
             with(response.kayttajat.first()) {
                 assertThat(id).isNotNull()
-                assertThat(nimi).isEqualTo("test name1")
+                assertThat(etunimi).isEqualTo("test1")
+                assertThat(sukunimi).isEqualTo("name1")
+                assertThat(nimi).isEqualTo("test1 name1")
                 assertThat(sahkoposti).isEqualTo("email.1.address.com")
                 assertThat(tunnistautunut).isEqualTo(false)
             }
@@ -275,6 +277,79 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         }
 
         private fun getHankeKayttajat(): ResultActions = get("/hankkeet/$HANKE_TUNNUS/kayttajat")
+    }
+
+    @Nested
+    inner class CreateNewUser {
+        private val url = "/hankkeet/$HANKE_TUNNUS/kayttajat"
+        private val email = "joku@sahkoposti.test"
+        private val request = NewUserRequest("Joku", "Jokunen", email, "0508889999")
+
+        @Test
+        @WithAnonymousUser
+        fun `Returns 401 when unauthorized token`() {
+            post(url).andExpect(status().isUnauthorized)
+        }
+
+        @Test
+        fun `Returns 400 with no request`() {
+            post(url).andExpect(status().isBadRequest)
+        }
+
+        @Test
+        fun `Returns 404 when hanke is not found or lacking permission to that hanke`() {
+            every {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.CREATE_USER.name)
+            } throws HankeNotFoundException(HANKE_TUNNUS)
+
+            post(url, request).andExpect(status().isNotFound)
+
+            verify {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.CREATE_USER.name)
+            }
+        }
+
+        @Test
+        fun `Returns 409 when duplicate user already exists`() {
+            every {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.CREATE_USER.name)
+            } returns true
+            val hanke = HankeFactory.create()
+            every { hankeService.loadHanke(HANKE_TUNNUS) } returns hanke
+            every { hankeKayttajaService.createNewUser(request, hanke, USERNAME) } throws
+                UserAlreadyExistsException(hanke, email)
+
+            post(url, request)
+                .andExpect(status().isConflict)
+                .andExpect(hankeError(HankeError.HAI4006))
+
+            verifySequence {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.CREATE_USER.name)
+                hankeService.loadHanke(HANKE_TUNNUS)
+                hankeKayttajaService.createNewUser(request, hanke, USERNAME)
+            }
+        }
+
+        @Test
+        fun `Returns information about the created user`() {
+            every {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.CREATE_USER.name)
+            } returns true
+            val hanke = HankeFactory.create()
+            every { hankeService.loadHanke(HANKE_TUNNUS) } returns hanke
+            val dto = HankeKayttajaFactory.createDto()
+            every { hankeKayttajaService.createNewUser(request, hanke, USERNAME) } returns dto
+
+            val response =
+                post(url, request).andExpect(status().isOk).andReturnBody<HankeKayttajaDto>()
+
+            assertThat(response).isEqualTo(dto)
+            verifySequence {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.CREATE_USER.name)
+                hankeService.loadHanke(HANKE_TUNNUS)
+                hankeKayttajaService.createNewUser(request, hanke, USERNAME)
+            }
+        }
     }
 
     @Nested

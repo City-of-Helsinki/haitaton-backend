@@ -30,6 +30,8 @@ data class HankeKayttajaResponse(
 data class HankeKayttajaDto(
     @field:Schema(description = "Id, set by the service") val id: UUID,
     @field:Schema(description = "Email address") val sahkoposti: String,
+    @field:Schema(description = "First name") val etunimi: String,
+    @field:Schema(description = "Last name") val sukunimi: String,
     @field:Schema(description = "Full name") val nimi: String,
     @field:Schema(description = "Access level in Hanke") val kayttooikeustaso: Kayttooikeustaso?,
     @field:Schema(description = "Has user logged in to view Hanke") val tunnistautunut: Boolean,
@@ -76,6 +78,8 @@ class HankekayttajaEntity(
         HankeKayttajaDto(
             id = id,
             sahkoposti = sahkoposti,
+            etunimi = etunimi,
+            sukunimi = sukunimi,
             nimi = fullName(),
             kayttooikeustaso = deriveKayttooikeustaso(),
             tunnistautunut = permission != null,
