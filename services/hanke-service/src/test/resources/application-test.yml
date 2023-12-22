@@ -24,6 +24,9 @@ haitaton:
 sentry.dsn:
 
 spring:
+  datasource:
+    hikari:
+      connection-timeout: 500
   jpa:
     show-sql: false
   mail:
