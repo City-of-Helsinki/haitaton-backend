@@ -170,15 +170,18 @@ class HankeKayttajaFactory(
                 kayttajakutsu = kutsu
             )
 
+        fun createDto(i: Int = 1, tunnistautunut: Boolean = false) =
+            HankeKayttajaDto(
+                id = UUID.randomUUID(),
+                sahkoposti = "email.$i.address.com",
+                etunimi = "test$i",
+                sukunimi = "name$i",
+                nimi = "test$i name$i",
+                kayttooikeustaso = KATSELUOIKEUS,
+                tunnistautunut = tunnistautunut
+            )
+
         fun generateHankeKayttajat(amount: Int = 3): List<HankeKayttajaDto> =
-            (1..amount).map {
-                HankeKayttajaDto(
-                    id = UUID.randomUUID(),
-                    sahkoposti = "email.$it.address.com",
-                    nimi = "test name$it",
-                    kayttooikeustaso = KATSELUOIKEUS,
-                    tunnistautunut = it % 2 == 0
-                )
-            }
+            (1..amount).map { createDto(it, it % 2 == 0) }
     }
 }

@@ -48,6 +48,7 @@ enum class HankeError(val errorMessage: String) {
     HAI4003("Permission data conflict"),
     HAI4004("Kayttajatunniste not found"),
     HAI4005("Could not verify user identity"),
+    HAI4006("Duplicate hankekayttaja"),
     ;
 
     val errorCode: String

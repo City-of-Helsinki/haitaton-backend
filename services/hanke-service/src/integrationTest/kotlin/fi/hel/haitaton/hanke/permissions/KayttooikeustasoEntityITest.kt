@@ -33,6 +33,7 @@ class KayttooikeustasoEntityITest : DatabaseTest() {
                         PermissionCode.EDIT_APPLICATIONS,
                         PermissionCode.MODIFY_APPLICATION_PERMISSIONS,
                         PermissionCode.RESEND_INVITATION,
+                        PermissionCode.CREATE_USER,
                     )
                 ),
                 Arguments.of(
@@ -41,6 +42,7 @@ class KayttooikeustasoEntityITest : DatabaseTest() {
                         PermissionCode.VIEW,
                         PermissionCode.EDIT,
                         PermissionCode.RESEND_INVITATION,
+                        PermissionCode.CREATE_USER,
                     )
                 ),
                 Arguments.of(
@@ -49,6 +51,7 @@ class KayttooikeustasoEntityITest : DatabaseTest() {
                         PermissionCode.VIEW,
                         PermissionCode.EDIT_APPLICATIONS,
                         PermissionCode.RESEND_INVITATION,
+                        PermissionCode.CREATE_USER,
                     )
                 ),
                 Arguments.of(Kayttooikeustaso.KATSELUOIKEUS, listOf(PermissionCode.VIEW)),
