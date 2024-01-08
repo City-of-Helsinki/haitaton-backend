@@ -10,9 +10,9 @@ import warnings
 from modules.config import Config
 from modules.gis_processing import GisProcessor
 
-# Select only following route_type values:
-# 0 = Tram, Streetcar, Light rail. Any light rail or street level system within a metropolitan area
-# 900 = Tram Service
+# Select only following route_type values(HSL):
+# 0 = Urban tram
+# 900 = Light rail
 
 TRAM_ROUTE_TYPE = [0, 900]
 
