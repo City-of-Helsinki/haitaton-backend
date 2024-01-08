@@ -10,8 +10,11 @@ import warnings
 from modules.config import Config
 from modules.gis_processing import GisProcessor
 
-TRAM_ROUTE_TYPE = 0
+# Select only following route_type values:
+# 0 = Tram, Streetcar, Light rail. Any light rail or street level system within a metropolitan area
+# 900 = Tram Service
 
+TRAM_ROUTE_TYPE = [0, 900]
 
 class TramLines(GisProcessor):
     """Process tram lines, i.e. schedule information."""
@@ -29,7 +32,7 @@ class TramLines(GisProcessor):
         """Pick tram trips from schedule data."""
         feed = self._feed
         tram_routes = (
-            feed.routes[feed.routes.route_type == TRAM_ROUTE_TYPE]
+            feed.routes[feed.routes.route_type.isin(TRAM_ROUTE_TYPE)]
             .route_id.unique()
             .tolist()
         )
@@ -79,6 +82,18 @@ class TramLines(GisProcessor):
         # buffer lines
         target_lines_polys = self._process_result_lines.copy()
         target_lines_polys["geometry"] = target_lines_polys.buffer(buffers[0])
+
+        # Only intersecting routes to Helsinki area are important
+        # read Helsinki geographical region and reproject
+        try:
+            helsinki_region_polygon = gpd.read_file(
+                filename=self._cfg.local_file("hki")
+            ).to_crs(self._cfg.crs())
+        except Exception as e:
+            print("Area polygon file not found!")
+            raise e
+        
+        target_lines_polys = gpd.clip(target_lines_polys, helsinki_region_polygon)
 
         # save to instance
         self._process_result_polygons = target_lines_polys
