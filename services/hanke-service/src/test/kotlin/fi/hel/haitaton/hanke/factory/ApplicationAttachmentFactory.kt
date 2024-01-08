@@ -5,7 +5,6 @@ import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
-import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentRepository
@@ -27,7 +26,6 @@ import org.springframework.stereotype.Component
 @Component
 class ApplicationAttachmentFactory(
     private val attachmentRepository: ApplicationAttachmentRepository,
-    private val contentService: ApplicationAttachmentContentService,
     private val contentRepository: ApplicationAttachmentContentRepository,
     private val applicationFactory: ApplicationFactory,
     private val fileClient: FileClient,
@@ -56,12 +54,6 @@ class ApplicationAttachmentFactory(
                 )
             )
         return ApplicationAttachmentBuilder(entity, attachmentRepository, this)
-    }
-
-    fun saveAttachment(applicationId: Long): ApplicationAttachmentEntity {
-        val attachment = attachmentRepository.save(createEntity(applicationId = applicationId))
-        contentService.save(attachment.id!!, DUMMY_DATA)
-        return attachment
     }
 
     fun saveContentToDb(attachmentId: UUID, bytes: ByteArray): ApplicationAttachmentContentEntity {

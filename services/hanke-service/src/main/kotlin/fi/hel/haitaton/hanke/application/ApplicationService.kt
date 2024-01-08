@@ -327,8 +327,8 @@ class ApplicationService(
         return currentStatus in listOf(PENDING, PENDING_CLIENT)
     }
 
-    private fun cancelAndDelete(application: ApplicationEntity, userId: String) =
-        with(application) {
+    private fun cancelAndDelete(applicationEntity: ApplicationEntity, userId: String) =
+        with(applicationEntity) {
             val alluId = alluid
             if (alluId == null) {
                 logger.info { "Application not sent to Allu yet, simply deleting it. id=$id" }
@@ -340,8 +340,10 @@ class ApplicationService(
             }
 
             logger.info { "Deleting application, id=$id, alluid=$alluid userid=$userId" }
+            val application = toApplication()
+            attachmentService.deleteAllAttachments(application)
             applicationRepository.delete(this)
-            applicationLoggingService.logDelete(toApplication(), userId)
+            applicationLoggingService.logDelete(application, userId)
             logger.info { "Application deleted, id=$id, alluid=$alluid userid=$userId" }
         }
 

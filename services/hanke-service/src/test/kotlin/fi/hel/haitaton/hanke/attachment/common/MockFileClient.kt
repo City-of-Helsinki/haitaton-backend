@@ -62,6 +62,9 @@ class MockFileClient : FileClient {
     }
 
     fun listBlobs(container: Container): List<TestFile> = fileMap[container]!!.values.toList()
+
+    fun list(container: Container, prefix: String): List<String> =
+        fileMap[container]!!.keys.filter { it.startsWith(prefix) }
 }
 
 data class TestFile(
