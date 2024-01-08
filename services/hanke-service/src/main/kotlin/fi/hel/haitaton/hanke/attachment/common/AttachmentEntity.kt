@@ -157,9 +157,11 @@ interface HankeAttachmentRepository : JpaRepository<HankeAttachmentEntity, UUID>
 
 @Repository
 interface ApplicationAttachmentRepository : JpaRepository<ApplicationAttachmentEntity, UUID> {
-    fun findByApplicationId(id: Long): List<ApplicationAttachmentEntity>
+    fun findByApplicationId(applicationId: Long): List<ApplicationAttachmentEntity>
 
     fun countByApplicationId(applicationId: Long): Int
+
+    fun deleteByApplicationId(applicationId: Long)
 }
 
 enum class ApplicationAttachmentType {

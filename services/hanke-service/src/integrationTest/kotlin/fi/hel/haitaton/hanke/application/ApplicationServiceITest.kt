@@ -40,6 +40,11 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.asUtc
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService.Companion.prefix
+import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.common.MockFileClient
+import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.email.EmailSenderService.Companion.translations
 import fi.hel.haitaton.hanke.email.textBody
@@ -112,6 +117,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
@@ -131,6 +137,7 @@ private val dataWithoutAreas = createCableReportApplicationData(areas = listOf()
 @SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
+@ExtendWith(MockFileClientExtension::class)
 class ApplicationServiceITest : DatabaseTest() {
 
     @Autowired private lateinit var applicationService: ApplicationService
@@ -139,6 +146,7 @@ class ApplicationServiceITest : DatabaseTest() {
     @Autowired private lateinit var cableReportServiceAllu: CableReportService
 
     @Autowired private lateinit var applicationRepository: ApplicationRepository
+    @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
     @Autowired private lateinit var hankeRepository: HankeRepository
     @Autowired private lateinit var alluStatusRepository: AlluStatusRepository
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
@@ -149,6 +157,8 @@ class ApplicationServiceITest : DatabaseTest() {
     @Autowired private lateinit var applicationFactory: ApplicationFactory
     @Autowired private lateinit var attachmentFactory: ApplicationAttachmentFactory
     @Autowired private lateinit var hankeFactory: HankeFactory
+
+    @Autowired private lateinit var fileClient: MockFileClient
 
     companion object {
         @JvmField
@@ -1292,7 +1302,7 @@ class ApplicationServiceITest : DatabaseTest() {
                     hanke = initializedHanke(),
                     applicationData = mockApplicationDataWithArea()
                 )
-            attachmentFactory.saveAttachment(application.id!!)
+            attachmentFactory.save(application = application).withDbContent()
             val applicationData = application.applicationData as CableReportApplicationData
             val pendingApplicationData = applicationData.copy(pendingOnClient = false)
             val expectedAlluRequest = pendingApplicationData.toAlluData(HANKE_TUNNUS)
@@ -1362,7 +1372,7 @@ class ApplicationServiceITest : DatabaseTest() {
                     hanke = initializedHanke(),
                     applicationData = mockApplicationDataWithArea()
                 )
-            attachmentFactory.saveAttachment(application.id!!)
+            attachmentFactory.save(application = application).withDbContent()
             val applicationData = application.applicationData as CableReportApplicationData
             val pendingApplicationData = applicationData.copy(pendingOnClient = false)
             val expectedAlluRequest = pendingApplicationData.toAlluData(HANKE_TUNNUS)
@@ -1411,16 +1421,26 @@ class ApplicationServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `when application not in Allu should delete application`() {
+        fun `when application not in Allu should delete application and all its attachments`() {
             val hanke = hankeFactory.saveMinimal()
             val application =
                 applicationFactory.saveApplicationEntity(USERNAME, hanke = hanke, alluId = null)
             assertThat(applicationRepository.findAll()).hasSize(1)
+            attachmentFactory.save(application = application).withCloudContent()
+            attachmentFactory.save(application = application).withCloudContent()
+            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))
+                .hasSize(2)
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
+                .hasSize(2)
 
             applicationService.delete(application.id!!, USERNAME)
 
             assertThat(applicationRepository.findAll()).isEmpty()
             verify { cableReportServiceAllu wasNot Called }
+            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))
+                .isEmpty()
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
+                .isEmpty()
         }
 
         @Test
@@ -1525,6 +1545,31 @@ class ApplicationServiceITest : DatabaseTest() {
             verify { cableReportServiceAllu wasNot Called }
             val auditLogEntry = auditLogRepository.findByType(ObjectType.HANKE).first()
             assertThat(auditLogEntry).isSuccess(Operation.DELETE) { hasUserActor(USERNAME) }
+        }
+
+        @Test
+        fun `when deleting orphaned application all its attachments are also deleted`() {
+            val hanke = hankeFactory.saveMinimal(generated = true)
+            val application =
+                applicationFactory.saveApplicationEntity(USERNAME, hanke = hanke, alluId = null)
+            assertThat(applicationRepository.findAll()).hasSize(1)
+            attachmentFactory.save(application = application).withCloudContent()
+            attachmentFactory.save(application = application).withCloudContent()
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
+                .hasSize(2)
+            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))
+                .hasSize(2)
+
+            val result =
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id!!, USERNAME)
+
+            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hankeRepository.findAll()).isEmpty()
+            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))
+                .isEmpty()
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
+                .isEmpty()
         }
 
         @Test

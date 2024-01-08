@@ -104,6 +104,12 @@ class ApplicationAttachmentService(
         logger.info { "Deleted application attachment ${attachment.id}" }
     }
 
+    fun deleteAllAttachments(application: Application) {
+        attachmentContentService.deleteAllForApplication(application.id!!)
+        metadataService.deleteAllAttachments(application.id)
+        logger.info { "Deleted all attachments from application ${application.id}" }
+    }
+
     fun sendInitialAttachments(alluId: Int, applicationId: Long) {
         logger.info { "Sending initial attachments for application, alluid=$alluId" }
         val attachments = metadataService.findByApplicationId(applicationId)
