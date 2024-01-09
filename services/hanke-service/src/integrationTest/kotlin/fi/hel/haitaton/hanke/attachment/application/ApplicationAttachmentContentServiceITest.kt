@@ -74,7 +74,7 @@ class ApplicationAttachmentContentServiceITest(
             assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET).map { it.path })
                 .containsExactly(attachment.blobLocation!!)
 
-            attachmentContentService.delete(attachment)
+            attachmentContentService.delete(attachment.blobLocation!!)
 
             assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).isEmpty()
         }
@@ -83,7 +83,8 @@ class ApplicationAttachmentContentServiceITest(
         fun `Doesn't throw an error if content is missing`() {
             val attachment = attachmentWithoutCloudContent().copy(blobLocation = "missing")
 
-            assertThat(runCatching { attachmentContentService.delete(attachment) }).isSuccess()
+            assertThat(runCatching { attachmentContentService.delete(attachment.blobLocation!!) })
+                .isSuccess()
         }
 
         @Test
@@ -91,7 +92,8 @@ class ApplicationAttachmentContentServiceITest(
             val attachment = attachmentWithoutCloudContent()
             assertThat(attachment.blobLocation).isNull()
 
-            assertThat(runCatching { attachmentContentService.delete(attachment) }).isSuccess()
+            assertThat(runCatching { attachmentContentService.delete(attachment.blobLocation) })
+                .isSuccess()
         }
     }
 

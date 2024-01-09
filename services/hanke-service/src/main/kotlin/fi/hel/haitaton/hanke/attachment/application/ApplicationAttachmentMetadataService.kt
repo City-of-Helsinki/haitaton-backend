@@ -38,6 +38,7 @@ class ApplicationAttachmentMetadataService(
     fun create(
         filename: String,
         contentType: String,
+        blobLocation: String,
         attachmentType: ApplicationAttachmentType,
         applicationId: Long
     ): ApplicationAttachmentMetadata {
@@ -46,7 +47,7 @@ class ApplicationAttachmentMetadataService(
                 id = null,
                 fileName = filename,
                 contentType = contentType,
-                blobLocation = null,
+                blobLocation = blobLocation,
                 createdByUserId = currentUserId(),
                 createdAt = OffsetDateTime.now(),
                 attachmentType = attachmentType,
