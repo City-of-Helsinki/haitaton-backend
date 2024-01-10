@@ -121,7 +121,8 @@ class ApplicationAttachmentService(
         }
 
         metadataService.deleteAttachmentById(attachment.id)
-        attachmentContentService.delete(attachment.blobLocation)
+        attachment.blobLocation?.let { attachmentContentService.delete(it) }
+            ?: logger.warn { "Attachment ${attachment.id} has no blob content" }
 
         logger.info {
             "Deleted attachment metadata ${attachment.id} and content ${attachment.blobLocation} from application ${application.id}"
@@ -129,8 +130,8 @@ class ApplicationAttachmentService(
     }
 
     fun deleteAllAttachments(application: Application) {
-        attachmentContentService.deleteAllForApplication(application.id!!)
-        metadataService.deleteAllAttachments(application.id)
+        metadataService.deleteAllAttachments(application.id!!)
+        attachmentContentService.deleteAllForApplication(application.id)
         logger.info { "Deleted all attachments from application ${application.id}" }
     }
 

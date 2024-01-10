@@ -13,9 +13,9 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isPresent
-import assertk.assertions.isTrue
 import assertk.assertions.messageContains
 import assertk.assertions.prop
+import assertk.assertions.startsWith
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.allu.AlluException
@@ -224,7 +224,7 @@ class ApplicationAttachmentServiceITest(
             assertThat(attachmentInDb.createdAt).isRecent()
             assertThat(attachmentInDb.applicationId).isEqualTo(application.id)
             assertThat(attachmentInDb.attachmentType).isEqualTo(typeInput)
-            assertThat(attachmentInDb.blobLocation!!.startsWith("${application.id!!}/")).isTrue()
+            assertThat(attachmentInDb.blobLocation).isNotNull().startsWith("${application.id!!}/")
 
             val content = fileClient.download(HAKEMUS_LIITTEET, attachmentInDb.blobLocation!!)
             assertThat(content)

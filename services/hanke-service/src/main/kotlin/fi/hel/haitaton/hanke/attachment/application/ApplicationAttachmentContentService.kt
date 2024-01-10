@@ -30,13 +30,7 @@ class ApplicationAttachmentContentService(
         return blobPath
     }
 
-    fun delete(blobPath: String?) {
-        if (blobPath == null) {
-            logger.info { "Blob path is null, nothing to delete" }
-            return
-        }
-        fileClient.delete(Container.HAKEMUS_LIITTEET, blobPath)
-    }
+    fun delete(blobPath: String): Boolean = fileClient.delete(Container.HAKEMUS_LIITTEET, blobPath)
 
     fun deleteAllForApplication(applicationId: Long) {
         fileClient.deleteAllByPrefix(Container.HAKEMUS_LIITTEET, prefix(applicationId))
