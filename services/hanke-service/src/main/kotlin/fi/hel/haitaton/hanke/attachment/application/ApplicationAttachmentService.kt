@@ -67,8 +67,10 @@ class ApplicationAttachmentService(
         scanAttachment(filename, attachment.bytes)
         metadataService.ensureRoomForAttachment(applicationId)
 
+        logger.info { "Saving attachment content for application $applicationId" }
         val blobPath =
             attachmentContentService.save(filename, contentType, applicationId, attachment.bytes)
+        logger.info { "Saving attachment metadata for application $applicationId" }
         val newAttachment =
             try {
                 metadataService.create(
@@ -80,10 +82,9 @@ class ApplicationAttachmentService(
                 )
             } catch (e: Exception) {
                 logger.error(e) {
-                    "Attachment metadata creation failed, deleting attachment content $blobPath"
+                    "Attachment metadata save failed, deleting attachment content $blobPath"
                 }
                 attachmentContentService.delete(blobPath)
-                logger.info { "Deleted attachment content $blobPath" }
                 throw e
             }
 
@@ -92,13 +93,14 @@ class ApplicationAttachmentService(
                 val alluAttachment =
                     AlluAttachment(contentType.toString(), filename, attachment.bytes)
                 cableReportService.addAttachment(it, alluAttachment)
+                logger.info {
+                    "Cable report ${application.alluid} sent for application $applicationId"
+                }
             }
         } catch (e: Exception) {
             logger.error(e) { "Allu upload failed, deleting attachment." }
             metadataService.deleteAttachmentById(newAttachment.id)
-            logger.info { "Deleted attachment metadata ${newAttachment.id}" }
             attachmentContentService.delete(blobPath)
-            logger.info { "Deleted attachment content $blobPath" }
             throw e
         }
 
@@ -120,16 +122,16 @@ class ApplicationAttachmentService(
             throw ApplicationInAlluException(application.id, application.alluid)
         }
 
+        logger.info { "Deleting attachment metadata ${attachment.id}" }
         metadataService.deleteAttachmentById(attachment.id)
+        logger.info { "Deleting attachment content at ${attachment.blobLocation}" }
         attachment.blobLocation?.let { attachmentContentService.delete(it) }
-            ?: logger.warn { "Attachment ${attachment.id} has no blob content" }
-
-        logger.info {
-            "Deleted attachment metadata ${attachment.id} and content ${attachment.blobLocation} from application ${application.id}"
-        }
+            ?: logger.info { "Attachment ${attachment.id} has no blob path set" }
+        logger.info { "Deleted attachment $attachmentId from application ${application.id}" }
     }
 
     fun deleteAllAttachments(application: Application) {
+        logger.info { "Deleting all attachments from application ${application.id}" }
         metadataService.deleteAllAttachments(application.id!!)
         attachmentContentService.deleteAllForApplication(application.id)
         logger.info { "Deleted all attachments from application ${application.id}" }

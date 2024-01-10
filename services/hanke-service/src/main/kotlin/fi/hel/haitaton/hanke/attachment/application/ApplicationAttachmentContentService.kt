@@ -27,13 +27,22 @@ class ApplicationAttachmentContentService(
     ): String {
         val blobPath = generateBlobPath(applicationId)
         fileClient.upload(Container.HAKEMUS_LIITTEET, blobPath, filename, contentType, content)
+        logger.info { "Attachment content saved to $blobPath" }
         return blobPath
     }
 
-    fun delete(blobPath: String): Boolean = fileClient.delete(Container.HAKEMUS_LIITTEET, blobPath)
+    fun delete(blobPath: String): Boolean =
+        fileClient.delete(Container.HAKEMUS_LIITTEET, blobPath).also {
+            if (it) {
+                logger.info { "Attachment content at $blobPath deleted" }
+            } else {
+                logger.warn { "Attachment content at $blobPath not found" }
+            }
+        }
 
     fun deleteAllForApplication(applicationId: Long) {
         fileClient.deleteAllByPrefix(Container.HAKEMUS_LIITTEET, prefix(applicationId))
+        logger.info { "Deleted all attachment content from application $applicationId" }
     }
 
     fun find(attachment: AttachmentMetadata): ByteArray =
