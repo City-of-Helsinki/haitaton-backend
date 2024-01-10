@@ -105,6 +105,13 @@ sh copy-files.sh
 After active development phase it might be more practical to handle file
 copying in `Dockerfile`s and avoid explicit copying.
 
+Fill out following secrets in gis-material-update/.env:
+
+```sh
+HELSINKI_EXTRANET_USERNAME=
+HELSINKI_EXTRANET_PASSWORD=
+```
+
 ## Run data fetch
 
 ```
@@ -325,13 +332,6 @@ Output files (names configured in `config.yaml`)
 - tormays_central_business_areas.gpkg
 
 ### `liikennevaylat`
-
-Fill out following secrets in gis-material-update/.env:
-
-```sh
-HELSINKI_EXTRANET_USERNAME=
-HELSINKI_EXTRANET_PASSWORD=
-```
 
 Prerequisite: 
 - `central_business_area` material fetched
