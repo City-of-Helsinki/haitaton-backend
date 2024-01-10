@@ -260,14 +260,14 @@ Output files (names configured in `config.yaml`)
 
 ### `tram_lines`
 
-Prerequisite: fetched `hsl` -material.
+Prerequisite: fetched `hsl` and `hki` -materials.
 
 Docker example run (ensure that image build and file copying is
 already performed as instructed above):
 
 ```sh
 docker-compose up -d gis-db
-docker-compose run --rm gis-fetch hsl
+docker-compose run --rm gis-fetch hki hsl
 docker-compose run --rm gis-process tram_lines
 docker-compose stop gis-db
 ```
