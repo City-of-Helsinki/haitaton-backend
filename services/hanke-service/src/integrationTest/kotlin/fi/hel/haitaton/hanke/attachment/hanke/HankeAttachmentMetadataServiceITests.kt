@@ -74,6 +74,7 @@ class HankeAttachmentMetadataServiceITests(
                 d.transform { it.createdByUserId }.isEqualTo(USERNAME)
                 d.transform { it.createdAt }.isNotNull()
                 d.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
+                d.transform { it.contentType }.isEqualTo(APPLICATION_PDF_VALUE)
                 d.transform { it.size }.isEqualTo(DEFAULT_SIZE)
             }
         }
@@ -101,6 +102,7 @@ class HankeAttachmentMetadataServiceITests(
                 prop(HankeAttachmentMetadataDto::fileName).isEqualTo(FILE_NAME_PDF)
                 prop(HankeAttachmentMetadataDto::createdAt).isRecent()
                 prop(HankeAttachmentMetadataDto::hankeTunnus).isEqualTo(hanke.hankeTunnus)
+                prop(HankeAttachmentMetadataDto::contentType).isEqualTo(APPLICATION_PDF_VALUE)
                 prop(HankeAttachmentMetadataDto::size).isEqualTo(DEFAULT_SIZE)
             }
             val attachments = hankeAttachmentRepository.findAll()
@@ -110,6 +112,7 @@ class HankeAttachmentMetadataServiceITests(
                 prop(HankeAttachmentEntity::fileName).isEqualTo(FILE_NAME_PDF)
                 prop(HankeAttachmentEntity::createdAt).isRecent()
                 prop(HankeAttachmentEntity::blobLocation).isEqualTo(blobPath)
+                prop(HankeAttachmentEntity::contentType).isEqualTo(APPLICATION_PDF_VALUE)
                 prop(HankeAttachmentEntity::size).isEqualTo(DEFAULT_SIZE)
             }
         }

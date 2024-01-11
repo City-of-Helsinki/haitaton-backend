@@ -45,7 +45,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.repository.findByIdOrNull
-import org.springframework.http.MediaType
+import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 
@@ -82,7 +82,7 @@ class HankeAttachmentServiceITest(
             (1..2).forEach { _ ->
                 hankeAttachmentFactory.save(
                     fileName = FILE_NAME_PDF,
-                    contentType = MediaType.APPLICATION_PDF_VALUE,
+                    contentType = APPLICATION_PDF_VALUE,
                     size = DEFAULT_SIZE,
                     hanke = hanke,
                 )
@@ -95,6 +95,7 @@ class HankeAttachmentServiceITest(
                 d.transform { it.id }.isNotNull()
                 d.transform { it.fileName }.endsWith(FILE_NAME_PDF)
                 d.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
+                d.transform { it.contentType }.isEqualTo(APPLICATION_PDF_VALUE)
                 d.transform { it.size }.isEqualTo(DEFAULT_SIZE)
             }
         }
@@ -119,6 +120,7 @@ class HankeAttachmentServiceITest(
                 prop(HankeAttachmentMetadataDto::createdAt).isRecent()
                 prop(HankeAttachmentMetadataDto::createdByUserId).isEqualTo(USERNAME)
                 prop(HankeAttachmentMetadataDto::fileName).isEqualTo(file.originalFilename)
+                prop(HankeAttachmentMetadataDto::contentType).isEqualTo(file.contentType)
                 prop(HankeAttachmentMetadataDto::size).isEqualTo(file.size)
             }
             val attachment = attachmentRepository.findById(result.id).orElseThrow()
@@ -169,7 +171,7 @@ class HankeAttachmentServiceITest(
             val result = hankeAttachmentService.getContent(attachment.id!!)
 
             assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-            assertThat(result.contentType).isEqualTo(MediaType.APPLICATION_PDF_VALUE)
+            assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
             assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
         }
     }
