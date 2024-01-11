@@ -72,6 +72,11 @@ cycle_infra)
 hki|ylre_katualueet|ylre_katuosat|maka_autoliikennemaarat|osm|helsinki_osm_lines|central_business_area)
     ogr2ogr -progress -f GPKG "$local_file" ${extra_args:+$extra_args} ${extra_quoted_args:+"$extra_quoted_args"} "$addr" "$layer"
     ;;
+# plain WFS fetch with authentication
+liikennevaylat)
+    addr_with_authentication=$(echo $addr | sed -E 's/\$\$([A-Z]+)\$\$/${\1}/g' | envsubst)
+    ogr2ogr -progress -f GPKG "$local_file" ${extra_args:+$extra_args} ${extra_quoted_args:+"$extra_quoted_args"} "$addr_with_authentication" "$layer"
+    ;;
 *)
     echo "Not supported"
     return 1
