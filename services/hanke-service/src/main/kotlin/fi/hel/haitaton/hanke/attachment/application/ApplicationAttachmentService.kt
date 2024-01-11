@@ -20,6 +20,7 @@ import fi.hel.haitaton.hanke.attachment.common.hasInfected
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 
@@ -62,27 +63,50 @@ class ApplicationAttachmentService(
         val application = findApplication(applicationId)
 
         ensureApplicationIsPending(application)
-        val contentType = ensureContentTypeIsSet(attachment.contentType)
+        val contentType = ensureContentTypeIsValid(attachment.contentType)
         scanAttachment(filename, attachment.bytes)
         metadataService.ensureRoomForAttachment(applicationId)
 
+        logger.info { "Saving attachment content for application $applicationId" }
+        val blobPath =
+            attachmentContentService.save(filename, contentType, applicationId, attachment.bytes)
+        logger.info { "Saving attachment metadata for application $applicationId" }
         val newAttachment =
-            metadataService.create(filename, contentType, attachmentType, applicationId)
-        attachmentContentService.save(newAttachment.id, attachment.bytes)
+            try {
+                metadataService.create(
+                    filename,
+                    contentType.toString(),
+                    blobPath,
+                    attachmentType,
+                    applicationId
+                )
+            } catch (e: Exception) {
+                logger.error(e) {
+                    "Attachment metadata save failed, deleting attachment content $blobPath"
+                }
+                attachmentContentService.delete(blobPath)
+                throw e
+            }
 
         try {
             application.alluid?.let {
-                val alluAttachment = AlluAttachment(contentType, filename, attachment.bytes)
+                val alluAttachment =
+                    AlluAttachment(contentType.toString(), filename, attachment.bytes)
                 cableReportService.addAttachment(it, alluAttachment)
+                logger.info {
+                    "Cable report ${application.alluid} sent for application $applicationId"
+                }
             }
         } catch (e: Exception) {
-            logger.error(e) { "Allu upload failed, deleting attachment from DB." }
-            // No Blob upload yet, content will be deleted by SQL cascade
+            logger.error(e) { "Allu upload failed, deleting attachment." }
             metadataService.deleteAttachmentById(newAttachment.id)
+            attachmentContentService.delete(blobPath)
             throw e
         }
 
-        logger.info { "Added attachment ${newAttachment.id} to application $applicationId" }
+        logger.info {
+            "Added attachment metadata ${newAttachment.id} and content $blobPath for application $applicationId"
+        }
         return newAttachment.toDto()
     }
 
@@ -98,15 +122,18 @@ class ApplicationAttachmentService(
             throw ApplicationInAlluException(application.id, application.alluid)
         }
 
-        attachmentContentService.delete(attachment)
+        logger.info { "Deleting attachment metadata ${attachment.id}" }
         metadataService.deleteAttachmentById(attachment.id)
-
-        logger.info { "Deleted application attachment ${attachment.id}" }
+        logger.info { "Deleting attachment content at ${attachment.blobLocation}" }
+        attachment.blobLocation?.let { attachmentContentService.delete(it) }
+            ?: logger.info { "Attachment ${attachment.id} has no blob path set" }
+        logger.info { "Deleted attachment $attachmentId from application ${application.id}" }
     }
 
     fun deleteAllAttachments(application: Application) {
-        attachmentContentService.deleteAllForApplication(application.id!!)
-        metadataService.deleteAllAttachments(application.id)
+        logger.info { "Deleting all attachments from application ${application.id}" }
+        metadataService.deleteAllAttachments(application.id!!)
+        attachmentContentService.deleteAllForApplication(application.id)
         logger.info { "Deleted all attachments from application ${application.id}" }
     }
 
@@ -139,8 +166,9 @@ class ApplicationAttachmentService(
         }
     }
 
-    private fun ensureContentTypeIsSet(contentType: String?): String =
-        contentType ?: throw AttachmentInvalidException("Content-type was not set")
+    private fun ensureContentTypeIsValid(contentType: String?): MediaType =
+        contentType?.let { MediaType.parseMediaType(it) }
+            ?: throw AttachmentInvalidException("Content-type was not set")
 
     /** Application considered pending if no alluId or status null, pending, or pending_client. */
     private fun isPending(alluId: Int?, alluStatus: ApplicationStatus?): Boolean {

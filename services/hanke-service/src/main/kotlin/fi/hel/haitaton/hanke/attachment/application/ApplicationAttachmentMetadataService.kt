@@ -38,6 +38,7 @@ class ApplicationAttachmentMetadataService(
     fun create(
         filename: String,
         contentType: String,
+        blobLocation: String,
         attachmentType: ApplicationAttachmentType,
         applicationId: Long
     ): ApplicationAttachmentMetadata {
@@ -46,23 +47,27 @@ class ApplicationAttachmentMetadataService(
                 id = null,
                 fileName = filename,
                 contentType = contentType,
-                blobLocation = null,
+                blobLocation = blobLocation,
                 createdByUserId = currentUserId(),
                 createdAt = OffsetDateTime.now(),
                 attachmentType = attachmentType,
                 applicationId = applicationId,
             )
-        return attachmentRepository.save(entity).toDomain()
+        return attachmentRepository.save(entity).toDomain().also {
+            logger.info { "Saved attachment metadata ${it.id} for application $applicationId" }
+        }
     }
 
     @Transactional
     fun deleteAttachmentById(attachmentId: UUID) {
         attachmentRepository.deleteById(attachmentId)
+        logger.info { "Deleted attachment metadata $attachmentId" }
     }
 
     @Transactional
     fun deleteAllAttachments(id: Long) {
         attachmentRepository.deleteByApplicationId(id)
+        logger.info { "Deleted all attachment metadata for application $id" }
     }
 
     @Transactional(readOnly = true)

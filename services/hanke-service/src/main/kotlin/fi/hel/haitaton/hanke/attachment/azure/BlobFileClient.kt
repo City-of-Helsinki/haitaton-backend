@@ -104,6 +104,7 @@ class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Container
         batchClient.deleteBlobs(blobUrls, DeleteSnapshotsOptionType.INCLUDE).forEach {
             logger.info { "Deleted blob ${it.request.url} with status ${it.statusCode}" }
         }
+        logger.info { "Deleted all Blobs from container $container with prefix $prefix" }
     }
 
     private fun getContainerClient(container: Container) =

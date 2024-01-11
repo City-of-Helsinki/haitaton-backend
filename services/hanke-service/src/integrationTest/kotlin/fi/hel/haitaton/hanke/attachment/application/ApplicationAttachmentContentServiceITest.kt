@@ -8,8 +8,8 @@ import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
-import assertk.assertions.isNull
-import assertk.assertions.isSuccess
+import assertk.assertions.isFalse
+import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
@@ -74,24 +74,23 @@ class ApplicationAttachmentContentServiceITest(
             assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET).map { it.path })
                 .containsExactly(attachment.blobLocation!!)
 
-            attachmentContentService.delete(attachment)
+            val deleted = attachmentContentService.delete(attachment.blobLocation!!)
 
+            assertThat(deleted).isTrue()
             assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).isEmpty()
         }
 
         @Test
-        fun `Doesn't throw an error if content is missing`() {
-            val attachment = attachmentWithoutCloudContent().copy(blobLocation = "missing")
+        fun `Nothing is deleted if content is missing`() {
+            val attachment = attachmentWithCloudContent()
+            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET).map { it.path })
+                .containsExactly(attachment.blobLocation!!)
 
-            assertThat(runCatching { attachmentContentService.delete(attachment) }).isSuccess()
-        }
+            val deleted = attachmentContentService.delete("missing")
 
-        @Test
-        fun `Doesn't do anything if blobLocation is not specified`() {
-            val attachment = attachmentWithoutCloudContent()
-            assertThat(attachment.blobLocation).isNull()
-
-            assertThat(runCatching { attachmentContentService.delete(attachment) }).isSuccess()
+            assertThat(deleted).isFalse()
+            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET).map { it.path })
+                .containsExactly(attachment.blobLocation!!)
         }
     }
 
