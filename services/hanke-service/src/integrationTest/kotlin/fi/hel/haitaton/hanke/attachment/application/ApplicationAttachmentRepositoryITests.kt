@@ -7,6 +7,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
@@ -55,6 +56,7 @@ class ApplicationAttachmentRepositoryITests : DatabaseTest() {
                 .isEqualTo(ApplicationAttachmentFactory.FILE_NAME)
             prop(ApplicationAttachmentEntity::contentType)
                 .isEqualTo(MediaType.APPLICATION_PDF_VALUE)
+            prop(ApplicationAttachmentEntity::size).isEqualTo(DEFAULT_SIZE)
             prop(ApplicationAttachmentEntity::createdByUserId).isEqualTo(USERNAME)
             prop(ApplicationAttachmentEntity::createdAt)
                 .isSameInstantAs(ApplicationAttachmentFactory.CREATED_AT)

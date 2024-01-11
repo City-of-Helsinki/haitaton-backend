@@ -16,6 +16,7 @@ import assertk.assertions.messageContains
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
+import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.azure.Container
@@ -82,6 +83,7 @@ class HankeAttachmentServiceITest(
                 hankeAttachmentFactory.save(
                     fileName = FILE_NAME_PDF,
                     contentType = MediaType.APPLICATION_PDF_VALUE,
+                    size = DEFAULT_SIZE,
                     hanke = hanke,
                 )
             }
@@ -93,6 +95,7 @@ class HankeAttachmentServiceITest(
                 d.transform { it.id }.isNotNull()
                 d.transform { it.fileName }.endsWith(FILE_NAME_PDF)
                 d.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
+                d.transform { it.size }.isEqualTo(DEFAULT_SIZE)
             }
         }
     }
@@ -116,6 +119,7 @@ class HankeAttachmentServiceITest(
                 prop(HankeAttachmentMetadataDto::createdAt).isRecent()
                 prop(HankeAttachmentMetadataDto::createdByUserId).isEqualTo(USERNAME)
                 prop(HankeAttachmentMetadataDto::fileName).isEqualTo(file.originalFilename)
+                prop(HankeAttachmentMetadataDto::size).isEqualTo(file.size)
             }
             val attachment = attachmentRepository.findById(result.id).orElseThrow()
             val blob = fileClient.download(Container.HANKE_LIITTEET, attachment.blobLocation)

@@ -27,6 +27,9 @@ abstract class AttachmentEntity(
     /** File type, e.g. application/pdf. */
     @Column(name = "content_type") var contentType: String,
 
+    /** Size in bytes. */
+    @Column(name = "size") var size: Long,
+
     /** Person who uploaded this attachment. */
     @Column(name = "created_by_user_id", updatable = false, nullable = false)
     var createdByUserId: String,
@@ -54,15 +57,18 @@ class HankeAttachmentEntity(
     id: UUID?,
     fileName: String,
     contentType: String,
+    size: Long,
     createdByUserId: String,
     createdAt: OffsetDateTime,
     @Column(name = "blob_location") var blobLocation: String,
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "hanke_id") var hanke: HankeEntity,
-) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt) {
+) : AttachmentEntity(id, fileName, contentType, size, createdByUserId, createdAt) {
     fun toDto(): HankeAttachmentMetadataDto =
         HankeAttachmentMetadataDto(
             id = id!!,
             fileName = fileName,
+            contentType = contentType,
+            size = size,
             createdAt = createdAt,
             hankeTunnus = hanke.hankeTunnus,
             createdByUserId = createdByUserId,
@@ -73,6 +79,7 @@ class HankeAttachmentEntity(
             id!!,
             fileName,
             contentType,
+            size,
             createdByUserId,
             createdAt,
             blobLocation,
@@ -102,6 +109,7 @@ class ApplicationAttachmentEntity(
     id: UUID?,
     fileName: String,
     contentType: String,
+    size: Long,
     createdByUserId: String,
     createdAt: OffsetDateTime,
     @Column(name = "blob_location") var blobLocation: String?,
@@ -109,15 +117,17 @@ class ApplicationAttachmentEntity(
     @Enumerated(EnumType.STRING)
     @Column(name = "attachment_type")
     var attachmentType: ApplicationAttachmentType,
-) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt) {
+) : AttachmentEntity(id, fileName, contentType, size, createdByUserId, createdAt) {
     fun toDto(): ApplicationAttachmentMetadataDto =
         ApplicationAttachmentMetadataDto(
             id = id!!,
             fileName = fileName,
+            contentType = contentType,
+            size = size,
+            attachmentType = attachmentType,
             createdAt = createdAt,
             createdByUserId = createdByUserId,
             applicationId = applicationId,
-            attachmentType = attachmentType,
         )
 
     fun toDomain(): ApplicationAttachmentMetadata =
@@ -125,11 +135,12 @@ class ApplicationAttachmentEntity(
             id = id!!,
             fileName = fileName,
             contentType = contentType,
+            size = size,
+            attachmentType = attachmentType,
             createdByUserId = createdByUserId,
             createdAt = createdAt,
             blobLocation = blobLocation,
             applicationId = applicationId,
-            attachmentType = attachmentType,
         )
 
     override fun equals(other: Any?): Boolean {

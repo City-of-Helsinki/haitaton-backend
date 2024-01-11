@@ -8,6 +8,7 @@ import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
@@ -41,6 +42,7 @@ class HankeAttachmentRepositoryITests : DatabaseTest() {
             prop(HankeAttachmentEntity::id).isNotNull().isEqualTo(saved.id)
             prop(HankeAttachmentEntity::fileName).isEqualTo(ApplicationAttachmentFactory.FILE_NAME)
             prop(HankeAttachmentEntity::contentType).isEqualTo(APPLICATION_PDF_VALUE)
+            prop(HankeAttachmentEntity::size).isEqualTo(DEFAULT_SIZE)
             prop(HankeAttachmentEntity::createdByUserId).isEqualTo(USERNAME)
             prop(HankeAttachmentEntity::createdAt)
                 .isSameInstantAs(HankeAttachmentFactory.CREATED_AT)
