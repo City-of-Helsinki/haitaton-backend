@@ -76,6 +76,7 @@ class ApplicationAttachmentService(
                 metadataService.create(
                     filename,
                     contentType.toString(),
+                    attachment.size,
                     blobPath,
                     attachmentType,
                     applicationId

@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
+import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
@@ -27,13 +28,14 @@ class HankeAttachmentFactory(
         id: UUID? = null,
         fileName: String = FILE_NAME_PDF,
         contentType: String = CONTENT_TYPE,
+        size: Long = SIZE,
         createdByUser: String = USERNAME,
         createdAt: OffsetDateTime = CREATED_AT,
         hanke: HankeEntity = hankeFactory.builder(USERNAME).saveEntity()
     ): HankeAttachmentBuilder {
         val entity =
             attachmentRepository.save(
-                createEntity(id, fileName, contentType, createdByUser, createdAt, hanke)
+                createEntity(id, fileName, contentType, size, createdByUser, createdAt, hanke)
             )
         return HankeAttachmentBuilder(entity, attachmentRepository, this)
     }
@@ -50,13 +52,15 @@ class HankeAttachmentFactory(
     companion object {
 
         val MEDIA_TYPE = MediaType.APPLICATION_PDF
-        val CONTENT_TYPE = MEDIA_TYPE.toString()
+        const val CONTENT_TYPE = MediaType.APPLICATION_PDF_VALUE
+        val SIZE = DEFAULT_SIZE
         val CREATED_AT: OffsetDateTime = OffsetDateTime.parse("2023-11-09T10:03:55+02:00")
 
         fun create(
             attachmentId: UUID = ApplicationAttachmentFactory.defaultAttachmentId,
             fileName: String = ApplicationAttachmentFactory.FILE_NAME,
             contentType: String = CONTENT_TYPE,
+            size: Long = SIZE,
             blobLocation: String = HankeAttachmentContentService.generateBlobPath(42),
             createdByUser: String = currentUserId(),
             createdAt: OffsetDateTime = OffsetDateTime.now(),
@@ -66,6 +70,7 @@ class HankeAttachmentFactory(
                 id = attachmentId,
                 fileName = fileName,
                 contentType = contentType,
+                size = size,
                 blobLocation = blobLocation,
                 createdByUserId = createdByUser,
                 createdAt = createdAt,
@@ -75,6 +80,8 @@ class HankeAttachmentFactory(
         fun createDto(
             attachmentId: UUID = ApplicationAttachmentFactory.defaultAttachmentId,
             fileName: String = ApplicationAttachmentFactory.FILE_NAME,
+            contentType: String = CONTENT_TYPE,
+            size: Long = SIZE,
             createdByUser: String = currentUserId(),
             createdAt: OffsetDateTime = OffsetDateTime.now(),
             hankeTunnus: String = "HAI-1234",
@@ -82,6 +89,8 @@ class HankeAttachmentFactory(
             HankeAttachmentMetadataDto(
                 id = attachmentId,
                 fileName = fileName,
+                contentType = contentType,
+                size = size,
                 createdByUserId = createdByUser,
                 createdAt = createdAt,
                 hankeTunnus = hankeTunnus,
@@ -91,6 +100,7 @@ class HankeAttachmentFactory(
             id: UUID? = null,
             fileName: String = FILE_NAME_PDF,
             contentType: String = CONTENT_TYPE,
+            size: Long = SIZE,
             createdByUser: String = USERNAME,
             createdAt: OffsetDateTime = CREATED_AT,
             hanke: HankeEntity = HankeFactory.createMinimalEntity()
@@ -99,6 +109,7 @@ class HankeAttachmentFactory(
                 id = id,
                 fileName = fileName,
                 contentType = contentType,
+                size = size,
                 createdByUserId = createdByUser,
                 createdAt = createdAt,
                 blobLocation = HankeAttachmentContentService.generateBlobPath(hanke.id),
