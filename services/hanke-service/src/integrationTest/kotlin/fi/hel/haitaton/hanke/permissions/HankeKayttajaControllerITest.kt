@@ -226,6 +226,52 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     }
 
     @Nested
+    inner class GetHankeKayttaja {
+        private val kayttajaId = HankeKayttajaFactory.KAYTTAJA_ID
+        private val kayttaja = HankeKayttajaFactory.createDto(id = kayttajaId)
+        private val url = "/kayttajat/$kayttajaId"
+
+        @Test
+        fun `returns 400 when id is not uuid`() {
+            get("/kayttajat/not-uuid").andExpect(status().isBadRequest)
+        }
+
+        @Test
+        fun `returns 404 when authorization fails`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, "VIEW") } throws
+                HankeKayttajaNotFoundException(kayttajaId)
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI4001))
+
+            verify { authorizer.authorizeKayttajaId(kayttajaId, "VIEW") }
+        }
+
+        @Test
+        fun `returns user information and writes to disclosure log`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, "VIEW") } returns true
+            every { hankeKayttajaService.getKayttaja(kayttajaId) } returns kayttaja
+
+            val response: HankeKayttajaDto = get(url).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).all {
+                prop(HankeKayttajaDto::id).isEqualTo(kayttajaId)
+                prop(HankeKayttajaDto::sahkoposti).isEqualTo("email.1.address.com")
+                prop(HankeKayttajaDto::etunimi).isEqualTo("test1")
+                prop(HankeKayttajaDto::sukunimi).isEqualTo("name1")
+                prop(HankeKayttajaDto::nimi).isEqualTo("test1 name1")
+                prop(HankeKayttajaDto::puhelinnumero).isEqualTo("0405551111")
+                prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
+                prop(HankeKayttajaDto::tunnistautunut).isEqualTo(false)
+            }
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, "VIEW")
+                hankeKayttajaService.getKayttaja(kayttajaId)
+                disclosureLogService.saveDisclosureLogsForHankeKayttaja(kayttaja, USERNAME)
+            }
+        }
+    }
+
+    @Nested
     inner class GetHankeKayttajat {
 
         @Test

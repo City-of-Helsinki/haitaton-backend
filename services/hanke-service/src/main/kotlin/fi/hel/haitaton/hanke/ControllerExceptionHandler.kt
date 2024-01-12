@@ -18,6 +18,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 
 private val logger = KotlinLogging.logger {}
 
@@ -86,6 +87,15 @@ class ControllerExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
     fun illegalArgumentException(ex: IllegalArgumentException): HankeError {
+        logger.error(ex) { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI0003
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun methodArgumentTypeMismatchException(ex: MethodArgumentTypeMismatchException): HankeError {
         logger.error(ex) { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI0003

@@ -62,12 +62,13 @@ object AuditLogEntryFactory {
             objectBefore = CustomerWithRole(role, customer).toJsonString()
         )
 
+    fun createReadEntryForHankeKayttaja(kayttaja: HankeKayttajaDto): AuditLogEntry =
+        createReadEntry(
+            objectId = kayttaja.id,
+            objectType = ObjectType.HANKE_KAYTTAJA,
+            objectBefore = kayttaja.toJsonString()
+        )
+
     fun createReadEntryForHankeKayttajat(kayttajat: List<HankeKayttajaDto>): List<AuditLogEntry> =
-        kayttajat.map {
-            createReadEntry(
-                objectId = it.id,
-                objectType = ObjectType.HANKE_KAYTTAJA,
-                objectBefore = it.toJsonString()
-            )
-        }
+        kayttajat.map { createReadEntryForHankeKayttaja(it) }
 }

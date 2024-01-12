@@ -116,6 +116,54 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     }
 
     @Nested
+    inner class GetKayttaja {
+        @Test
+        fun `Throws exception when kayttaja not found`() {
+            val id = UUID.fromString("a278f4f0-4ef2-4b25-b5ab-4cee66e73146")
+
+            val failure = assertFailure { hankeKayttajaService.getKayttaja(id) }
+
+            failure.all {
+                hasClass(HankeKayttajaNotFoundException::class)
+                messageContains(id.toString())
+            }
+        }
+
+        @Test
+        fun `Returns kayttaja when it exists`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val kayttajaEntity = kayttajaFactory.saveUserAndPermission(hanke.id)
+
+            val response = hankeKayttajaService.getKayttaja(kayttajaEntity.id)
+
+            assertThat(response).all {
+                prop(HankeKayttajaDto::id).isEqualTo(kayttajaEntity.id)
+                prop(HankeKayttajaDto::sahkoposti).isEqualTo(HankeKayttajaFactory.KAKE_EMAIL)
+                prop(HankeKayttajaDto::etunimi).isEqualTo(HankeKayttajaFactory.KAKE)
+                prop(HankeKayttajaDto::sukunimi).isEqualTo(HankeKayttajaFactory.KATSELIJA)
+                prop(HankeKayttajaDto::nimi)
+                    .isEqualTo("${HankeKayttajaFactory.KAKE} ${HankeKayttajaFactory.KATSELIJA}")
+                prop(HankeKayttajaDto::puhelinnumero).isEqualTo(HankeKayttajaFactory.KAKE_PUHELIN)
+                prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
+                prop(HankeKayttajaDto::tunnistautunut).isEqualTo(true)
+            }
+        }
+
+        @Test
+        fun `Returns unidentified kayttaja when it exists`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val kayttajaEntity = kayttajaFactory.saveUserAndToken(hanke.id)
+
+            val response = hankeKayttajaService.getKayttaja(kayttajaEntity.id)
+
+            assertThat(response).all {
+                prop(HankeKayttajaDto::id).isEqualTo(kayttajaEntity.id)
+                prop(HankeKayttajaDto::tunnistautunut).isEqualTo(false)
+            }
+        }
+    }
+
+    @Nested
     inner class GetKayttajatByHankeId {
         @Test
         fun `Returns users from correct hanke only`() {

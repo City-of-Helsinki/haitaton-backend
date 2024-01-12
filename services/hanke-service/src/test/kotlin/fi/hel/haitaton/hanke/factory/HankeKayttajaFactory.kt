@@ -17,11 +17,6 @@ import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.stereotype.Component
 
-private const val KAKE = "Kake"
-private const val KATSELIJA = "Katselija"
-private const val KAKE_EMAIL = "kake@katselu.test"
-private const val KAKE_PUHELIN = "0501234567"
-
 @Component
 class HankeKayttajaFactory(
     private val hankeKayttajaRepository: HankekayttajaRepository,
@@ -101,6 +96,11 @@ class HankeKayttajaFactory(
     companion object {
         val KAYTTAJA_ID = UUID.fromString("639870ab-533d-4172-8e97-e5b93a275514")
 
+        const val KAKE = "Kake"
+        const val KATSELIJA = "Katselija"
+        const val KAKE_EMAIL = "kake@katselu.test"
+        const val KAKE_PUHELIN = "0501234567"
+
         private const val PEKKA = "Pekka Peruskäyttäjä"
         private const val PEKKA_EMAIL = "pekka@peruskäyttäjä.test"
 
@@ -178,9 +178,9 @@ class HankeKayttajaFactory(
                 kayttajakutsu = kutsu
             )
 
-        fun createDto(i: Int = 1, tunnistautunut: Boolean = false) =
+        fun createDto(i: Int = 1, tunnistautunut: Boolean = false, id: UUID = UUID.randomUUID()) =
             HankeKayttajaDto(
-                id = UUID.randomUUID(),
+                id = id,
                 sahkoposti = "email.$i.address.com",
                 etunimi = "test$i",
                 sukunimi = "name$i",
