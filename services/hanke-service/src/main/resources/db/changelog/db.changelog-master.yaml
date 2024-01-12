@@ -159,3 +159,5 @@ databaseChangeLog:
       file: db/changelog/changesets/064-add-create-user-permission-code.sql
   - include:
       file: db/changelog/changesets/065-add-attachment-sizes.sql
+  - include:
+      file: db/changelog/changesets/066-drop-default-content-type-value-from-attachments.yml
