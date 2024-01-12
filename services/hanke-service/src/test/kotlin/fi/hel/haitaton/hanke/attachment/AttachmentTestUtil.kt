@@ -26,7 +26,7 @@ val DUMMY_DATA = "ABC".toByteArray()
 val DEFAULT_DATA by lazy {
     "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
 }
-const val DEFAULT_SIZE = 18959L
+val DEFAULT_SIZE by lazy { DEFAULT_DATA.size.toLong() }
 
 fun testFile(
     fileParam: String = FILE_PARAM,
