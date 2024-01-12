@@ -15,10 +15,11 @@ data class HankeAttachmentBuilder(
     fun withCloudContent(
         path: String = generateBlobPath(value.hanke.id),
         filename: String = FILE_NAME_PDF,
-        mediaType: MediaType = HankeAttachmentFactory.MEDIA_TYPE,
+        mediaType: MediaType = MediaType.APPLICATION_PDF,
         bytes: ByteArray = DEFAULT_DATA
     ): HankeAttachmentBuilder {
         this.value.blobLocation = path
+        this.value.size = bytes.size.toLong()
         attachmentRepository.save(value)
         hankeAttachmentFactory.saveContentToCloud(path, filename, mediaType, bytes)
         return this

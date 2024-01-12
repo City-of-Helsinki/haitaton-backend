@@ -37,6 +37,7 @@ class HankeAttachmentMetadataService(
         hankeTunnus: String,
         name: String,
         type: String,
+        size: Long,
         blobPath: String,
     ): HankeAttachmentMetadataDto {
         val hanke = findHanke(hankeTunnus).also { checkRoomForAttachment(it.id) }
@@ -47,6 +48,7 @@ class HankeAttachmentMetadataService(
                     id = null,
                     fileName = name,
                     contentType = type,
+                    size = size,
                     createdAt = OffsetDateTime.now(),
                     createdByUserId = currentUserId(),
                     blobLocation = blobPath,

@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
+import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
@@ -34,6 +35,7 @@ class ApplicationAttachmentFactory(
         id: UUID? = null,
         fileName: String = FILE_NAME_PDF,
         contentType: String = CONTENT_TYPE,
+        size: Long = DEFAULT_SIZE,
         createdByUser: String = USERNAME,
         createdAt: OffsetDateTime = CREATED_AT,
         blobLocation: String? = null,
@@ -46,6 +48,7 @@ class ApplicationAttachmentFactory(
                     id,
                     fileName,
                     contentType,
+                    size,
                     blobLocation,
                     createdByUser,
                     createdAt,
@@ -82,6 +85,7 @@ class ApplicationAttachmentFactory(
             id: UUID = defaultAttachmentId,
             fileName: String = FILE_NAME,
             contentType: String = APPLICATION_PDF_VALUE,
+            size: Long = DEFAULT_SIZE,
             blobLocation: String? = null,
             createdByUserId: String = USERNAME,
             createdAt: OffsetDateTime = CREATED_AT,
@@ -92,6 +96,7 @@ class ApplicationAttachmentFactory(
                 id = id,
                 fileName = fileName,
                 contentType = contentType,
+                size = size,
                 blobLocation = blobLocation,
                 createdByUserId = createdByUserId,
                 createdAt = createdAt,
@@ -103,6 +108,7 @@ class ApplicationAttachmentFactory(
             id: UUID? = defaultAttachmentId,
             fileName: String = FILE_NAME,
             contentType: String = APPLICATION_PDF_VALUE,
+            size: Long = DEFAULT_SIZE,
             blobLocation: String? = null,
             createdByUserId: String = USERNAME,
             createdAt: OffsetDateTime = CREATED_AT,
@@ -113,6 +119,7 @@ class ApplicationAttachmentFactory(
                 id = id,
                 fileName = fileName,
                 contentType = contentType,
+                size = size,
                 blobLocation = blobLocation,
                 createdByUserId = createdByUserId,
                 createdAt = createdAt,
@@ -123,6 +130,8 @@ class ApplicationAttachmentFactory(
         fun createMetadata(
             attachmentId: UUID = defaultAttachmentId,
             fileName: String = FILE_NAME,
+            contentType: String = APPLICATION_PDF_VALUE,
+            size: Long = DEFAULT_SIZE,
             createdBy: String = currentUserId(),
             createdAt: OffsetDateTime = OffsetDateTime.now(),
             applicationId: Long = 1L,
@@ -131,10 +140,12 @@ class ApplicationAttachmentFactory(
             ApplicationAttachmentMetadataDto(
                 id = attachmentId,
                 fileName = fileName,
+                contentType = contentType,
+                size = size,
+                attachmentType = attachmentType,
                 createdByUserId = createdBy,
                 createdAt = createdAt,
                 applicationId = applicationId,
-                attachmentType = attachmentType
             )
 
         fun createContent(

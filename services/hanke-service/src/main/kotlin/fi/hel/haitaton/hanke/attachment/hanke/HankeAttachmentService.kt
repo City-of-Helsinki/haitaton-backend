@@ -52,6 +52,7 @@ class HankeAttachmentService(
                 hankeTunnus = hanke.hankeTunnus,
                 name = filename,
                 type = mediatype.toString(),
+                size = attachment.size,
                 blobPath = blobPath,
             )
             .also { logger.info { "Added attachment ${it.id} to hanke ${hanke.hankeTunnus}" } }

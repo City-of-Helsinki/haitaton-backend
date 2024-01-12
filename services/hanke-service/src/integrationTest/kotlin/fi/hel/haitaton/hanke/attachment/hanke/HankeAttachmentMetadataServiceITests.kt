@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
@@ -55,6 +56,7 @@ class HankeAttachmentMetadataServiceITests(
                         id = null,
                         fileName = FILE_NAME_PDF,
                         contentType = APPLICATION_PDF_VALUE,
+                        size = DEFAULT_SIZE,
                         createdByUserId = USERNAME,
                         createdAt = OffsetDateTime.now(),
                         blobLocation = "${hanke.id}/${UUID.randomUUID()}",
@@ -72,6 +74,8 @@ class HankeAttachmentMetadataServiceITests(
                 d.transform { it.createdByUserId }.isEqualTo(USERNAME)
                 d.transform { it.createdAt }.isNotNull()
                 d.transform { it.hankeTunnus }.isEqualTo(hanke.hankeTunnus)
+                d.transform { it.contentType }.isEqualTo(APPLICATION_PDF_VALUE)
+                d.transform { it.size }.isEqualTo(DEFAULT_SIZE)
             }
         }
     }
@@ -88,6 +92,7 @@ class HankeAttachmentMetadataServiceITests(
                     hankeTunnus = hanke.hankeTunnus,
                     name = FILE_NAME_PDF,
                     type = APPLICATION_PDF_VALUE,
+                    size = DEFAULT_SIZE,
                     blobPath = blobPath,
                 )
 
@@ -97,6 +102,8 @@ class HankeAttachmentMetadataServiceITests(
                 prop(HankeAttachmentMetadataDto::fileName).isEqualTo(FILE_NAME_PDF)
                 prop(HankeAttachmentMetadataDto::createdAt).isRecent()
                 prop(HankeAttachmentMetadataDto::hankeTunnus).isEqualTo(hanke.hankeTunnus)
+                prop(HankeAttachmentMetadataDto::contentType).isEqualTo(APPLICATION_PDF_VALUE)
+                prop(HankeAttachmentMetadataDto::size).isEqualTo(DEFAULT_SIZE)
             }
             val attachments = hankeAttachmentRepository.findAll()
             assertThat(attachments).hasSize(1)
@@ -105,6 +112,8 @@ class HankeAttachmentMetadataServiceITests(
                 prop(HankeAttachmentEntity::fileName).isEqualTo(FILE_NAME_PDF)
                 prop(HankeAttachmentEntity::createdAt).isRecent()
                 prop(HankeAttachmentEntity::blobLocation).isEqualTo(blobPath)
+                prop(HankeAttachmentEntity::contentType).isEqualTo(APPLICATION_PDF_VALUE)
+                prop(HankeAttachmentEntity::size).isEqualTo(DEFAULT_SIZE)
             }
         }
 
@@ -120,6 +129,7 @@ class HankeAttachmentMetadataServiceITests(
                         hanke.hankeTunnus,
                         FILE_NAME_PDF,
                         APPLICATION_PDF_VALUE,
+                        DEFAULT_SIZE,
                         blobPath(hanke.id),
                     )
                 }
@@ -136,6 +146,7 @@ class HankeAttachmentMetadataServiceITests(
                         hankeTunnus = "HAI-123",
                         name = FILE_NAME_PDF,
                         type = APPLICATION_PDF_VALUE,
+                        size = DEFAULT_SIZE,
                         blobPath = blobPath(123)
                     )
                 }

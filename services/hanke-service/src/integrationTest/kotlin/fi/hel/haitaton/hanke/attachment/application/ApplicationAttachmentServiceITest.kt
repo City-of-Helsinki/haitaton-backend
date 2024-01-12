@@ -26,6 +26,7 @@ import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
+import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
@@ -72,6 +73,7 @@ import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
+import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 
@@ -138,6 +140,9 @@ class ApplicationAttachmentServiceITest(
             assertThat(result).each {
                 it.prop(ApplicationAttachmentMetadataDto::id).isNotNull()
                 it.prop(ApplicationAttachmentMetadataDto::fileName).endsWith("file.pdf")
+                it.prop(ApplicationAttachmentMetadataDto::contentType)
+                    .isEqualTo(APPLICATION_PDF_VALUE)
+                it.prop(ApplicationAttachmentMetadataDto::size).isEqualTo(DEFAULT_SIZE)
                 it.prop(ApplicationAttachmentMetadataDto::createdByUserId).isEqualTo(USERNAME)
                 it.prop(ApplicationAttachmentMetadataDto::createdAt)
                     .isSameInstantAs(ApplicationAttachmentFactory.CREATED_AT)
@@ -211,6 +216,8 @@ class ApplicationAttachmentServiceITest(
             assertThat(result.id).isNotNull()
             assertThat(result.createdByUserId).isEqualTo(USERNAME)
             assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
+            assertThat(result.contentType).isEqualTo(MediaType.APPLICATION_PDF_VALUE)
+            assertThat(result.size).isEqualTo(DEFAULT_SIZE)
             assertThat(result.createdAt).isRecent()
             assertThat(result.applicationId).isEqualTo(application.id)
             assertThat(result.attachmentType).isEqualTo(typeInput)
@@ -221,6 +228,8 @@ class ApplicationAttachmentServiceITest(
             assertThat(attachmentInDb.id).isEqualTo(result.id)
             assertThat(attachmentInDb.createdByUserId).isEqualTo(USERNAME)
             assertThat(attachmentInDb.fileName).isEqualTo(FILE_NAME_PDF)
+            assertThat(attachmentInDb.contentType).isEqualTo(MediaType.APPLICATION_PDF_VALUE)
+            assertThat(attachmentInDb.size).isEqualTo(DEFAULT_SIZE)
             assertThat(attachmentInDb.createdAt).isRecent()
             assertThat(attachmentInDb.applicationId).isEqualTo(application.id)
             assertThat(attachmentInDb.attachmentType).isEqualTo(typeInput)

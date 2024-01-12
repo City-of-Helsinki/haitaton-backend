@@ -14,6 +14,7 @@ import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.attachment.APPLICATION_ID
+import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
@@ -104,6 +105,8 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
             d.transform { it.createdAt }.isNotNull()
             d.transform { it.applicationId }.isEqualTo(APPLICATION_ID)
             d.transform { it.attachmentType }.isEqualTo(MUU)
+            d.transform { it.contentType }.isEqualTo(APPLICATION_PDF_VALUE)
+            d.transform { it.size }.isEqualTo(DEFAULT_SIZE)
         }
         verifySequence {
             authorizer.authorizeApplicationId(APPLICATION_ID, VIEW.name)

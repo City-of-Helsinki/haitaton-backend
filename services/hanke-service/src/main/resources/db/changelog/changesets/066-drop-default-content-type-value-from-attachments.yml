@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 066-drop-default-content-type-value-from-attachments
+      author: Teemu Hiltunen
+      comment: Drop default value from content_type column in application_attachment and hanke_attachment tables
+      changes:
+        - dropDefaultValue:
+            tableName: application_attachment
+            columnName: content_type
+        - dropDefaultValue:
+            tableName: hanke_attachment
+            columnName: content_type
