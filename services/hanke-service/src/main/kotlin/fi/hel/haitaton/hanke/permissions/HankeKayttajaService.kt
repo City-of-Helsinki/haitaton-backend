@@ -14,6 +14,7 @@ import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.userId
 import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -31,6 +32,11 @@ class HankeKayttajaService(
     private val emailSenderService: EmailSenderService,
     private val profiiliClient: ProfiiliClient,
 ) {
+    @Transactional(readOnly = true)
+    fun getKayttaja(kayttajaId: UUID): HankeKayttajaDto =
+        hankekayttajaRepository.findByIdOrNull(kayttajaId)?.toDto()
+            ?: throw HankeKayttajaNotFoundException(kayttajaId)
+
     @Transactional(readOnly = true)
     fun getKayttajatByHankeId(hankeId: Int): List<HankeKayttajaDto> =
         hankekayttajaRepository.findByHankeId(hankeId).map { it.toDto() }

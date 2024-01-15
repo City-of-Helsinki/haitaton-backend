@@ -57,7 +57,7 @@ class HankeKayttajaAuthorizerITest(
         @Test
         fun `throws exception if user doesn't have the required permission for the hanke`() {
             val hankeId = hankeFactory.saveMinimal().id
-            val kayttajaId = hankeKayttajaFactory.saveUserAndPermission(hankeId).id
+            val kayttajaId = hankeKayttajaFactory.saveIdentifiedUser(hankeId).id
             permissionService.create(hankeId, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
             assertFailure { authorizer.authorizeKayttajaId(kayttajaId, PermissionCode.EDIT.name) }
@@ -70,7 +70,7 @@ class HankeKayttajaAuthorizerITest(
         @Test
         fun `return true if user has the required permission for the hanke`() {
             val hankeId = hankeFactory.saveMinimal().id
-            val kayttajaId = hankeKayttajaFactory.saveUserAndPermission(hankeId).id
+            val kayttajaId = hankeKayttajaFactory.saveIdentifiedUser(hankeId).id
             permissionService.create(hankeId, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertThat(authorizer.authorizeKayttajaId(kayttajaId, PermissionCode.EDIT.name))

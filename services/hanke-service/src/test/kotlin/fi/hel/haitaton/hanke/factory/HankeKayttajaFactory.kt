@@ -17,11 +17,6 @@ import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.stereotype.Component
 
-private const val KAKE = "Kake"
-private const val KATSELIJA = "Katselija"
-private const val KAKE_EMAIL = "kake@katselu.test"
-private const val KAKE_PUHELIN = "0501234567"
-
 @Component
 class HankeKayttajaFactory(
     private val hankeKayttajaRepository: HankekayttajaRepository,
@@ -29,9 +24,12 @@ class HankeKayttajaFactory(
     private val kayttajakutsuRepository: KayttajakutsuRepository
 ) {
 
-    fun saveUserAndToken(
+    fun saveUnidentifiedUser(
         hankeId: Int,
-        kayttajaInput: HankekayttajaInput = kayttajaInput(),
+        etunimi: String = KAKE,
+        sukunimi: String = KATSELIJA,
+        sahkoposti: String = KAKE_EMAIL,
+        puhelin: String = KAKE_PUHELIN,
         kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
         tunniste: String = "existing",
     ): HankekayttajaEntity =
@@ -39,38 +37,50 @@ class HankeKayttajaFactory(
             hankeKayttaja =
                 saveUser(
                     hankeId = hankeId,
-                    kayttajaInput = kayttajaInput,
+                    etunimi = etunimi,
+                    sukunimi = sukunimi,
+                    sahkoposti = sahkoposti,
+                    puhelin = puhelin,
                     permissionEntity = null,
                 ),
             tunniste = tunniste,
             kayttooikeustaso = kayttooikeustaso,
         )
 
-    fun saveUserAndPermission(
+    fun saveIdentifiedUser(
         hankeId: Int,
-        kayttaja: HankekayttajaInput = kayttajaInput(),
+        etunimi: String = KAKE,
+        sukunimi: String = KATSELIJA,
+        sahkoposti: String = KAKE_EMAIL,
+        puhelin: String = KAKE_PUHELIN,
         kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
         userId: String = "fake id",
     ): HankekayttajaEntity =
         saveUser(
             hankeId = hankeId,
-            kayttajaInput = kayttaja,
+            etunimi = etunimi,
+            sukunimi = sukunimi,
+            sahkoposti = sahkoposti,
+            puhelin = puhelin,
             permissionEntity = permissionService.create(hankeId, userId, kayttooikeustaso),
         )
 
     fun saveUser(
         hankeId: Int,
-        kayttajaInput: HankekayttajaInput = kayttajaInput(),
+        etunimi: String = KAKE,
+        sukunimi: String = KATSELIJA,
+        sahkoposti: String = KAKE_EMAIL,
+        puhelin: String = KAKE_PUHELIN,
         permissionEntity: PermissionEntity? = null,
         kayttajakutsuEntity: KayttajakutsuEntity? = null,
     ): HankekayttajaEntity =
         hankeKayttajaRepository.save(
             HankekayttajaEntity(
                 hankeId = hankeId,
-                etunimi = kayttajaInput.etunimi,
-                sukunimi = kayttajaInput.sukunimi,
-                sahkoposti = kayttajaInput.email,
-                puhelin = kayttajaInput.puhelin,
+                etunimi = etunimi,
+                sukunimi = sukunimi,
+                sahkoposti = sahkoposti,
+                puhelin = puhelin,
                 permission = permissionEntity,
                 kayttajakutsu = kayttajakutsuEntity,
             )
@@ -100,6 +110,11 @@ class HankeKayttajaFactory(
 
     companion object {
         val KAYTTAJA_ID = UUID.fromString("639870ab-533d-4172-8e97-e5b93a275514")
+
+        const val KAKE = "Kake"
+        const val KATSELIJA = "Katselija"
+        const val KAKE_EMAIL = "kake@katselu.test"
+        const val KAKE_PUHELIN = "0501234567"
 
         private const val PEKKA = "Pekka Peruskäyttäjä"
         private const val PEKKA_EMAIL = "pekka@peruskäyttäjä.test"
@@ -144,13 +159,6 @@ class HankeKayttajaFactory(
                 "0401234564",
             )
 
-        fun kayttajaInput(
-            etunimi: String = KAKE,
-            sukunimi: String = KATSELIJA,
-            email: String = KAKE_EMAIL,
-            puhelin: String = KAKE_PUHELIN,
-        ) = HankekayttajaInput(etunimi, sukunimi, email, puhelin)
-
         fun create(
             id: UUID = KAYTTAJA_ID,
             hankeId: Int = HankeFactory.defaultId,
@@ -163,24 +171,27 @@ class HankeKayttajaFactory(
         fun createEntity(
             id: UUID = KAYTTAJA_ID,
             hankeId: Int = HankeFactory.defaultId,
-            kayttaja: HankekayttajaInput = kayttajaInput(),
+            etunimi: String = KAKE,
+            sukunimi: String = KATSELIJA,
+            sahkoposti: String = KAKE_EMAIL,
+            puhelin: String = KAKE_PUHELIN,
             permission: PermissionEntity? = null,
             kutsu: KayttajakutsuEntity? = null,
         ): HankekayttajaEntity =
             HankekayttajaEntity(
                 id = id,
                 hankeId = hankeId,
-                etunimi = kayttaja.etunimi,
-                sukunimi = kayttaja.sukunimi,
-                sahkoposti = kayttaja.email,
-                puhelin = kayttaja.puhelin,
+                etunimi = etunimi,
+                sukunimi = sukunimi,
+                sahkoposti = sahkoposti,
+                puhelin = puhelin,
                 permission = permission,
                 kayttajakutsu = kutsu
             )
 
-        fun createDto(i: Int = 1, tunnistautunut: Boolean = false) =
+        fun createDto(i: Int = 1, tunnistautunut: Boolean = false, id: UUID = UUID.randomUUID()) =
             HankeKayttajaDto(
-                id = UUID.randomUUID(),
+                id = id,
                 sahkoposti = "email.$i.address.com",
                 etunimi = "test$i",
                 sukunimi = "name$i",

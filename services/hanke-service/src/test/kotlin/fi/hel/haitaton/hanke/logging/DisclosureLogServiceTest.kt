@@ -182,6 +182,16 @@ internal class DisclosureLogServiceTest {
     }
 
     @Test
+    fun `saveDisclosureLogsForHankeKayttaja saves audit logs`() {
+        val hankeKayttaja = HankeKayttajaFactory.createDto()
+        val expectedLogs = AuditLogEntryFactory.createReadEntryForHankeKayttaja(hankeKayttaja)
+
+        disclosureLogService.saveDisclosureLogsForHankeKayttaja(hankeKayttaja, userId)
+
+        verify { auditLogService.createAll(listOf(expectedLogs)) }
+    }
+
+    @Test
     fun `saveDisclosureLogsForHankeKayttajat saves audit logs`() {
         val hankeKayttajat = HankeKayttajaFactory.generateHankeKayttajat(amount = 2)
         val expectedLogs = AuditLogEntryFactory.createReadEntryForHankeKayttajat(hankeKayttajat)
