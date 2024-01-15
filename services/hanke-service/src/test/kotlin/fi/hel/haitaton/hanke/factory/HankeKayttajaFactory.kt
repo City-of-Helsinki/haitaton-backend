@@ -185,6 +185,7 @@ class HankeKayttajaFactory(
                 etunimi = "test$i",
                 sukunimi = "name$i",
                 nimi = "test$i name$i",
+                puhelinnumero = "040555$i$i$i$i",
                 kayttooikeustaso = KATSELUOIKEUS,
                 tunnistautunut = tunnistautunut
             )

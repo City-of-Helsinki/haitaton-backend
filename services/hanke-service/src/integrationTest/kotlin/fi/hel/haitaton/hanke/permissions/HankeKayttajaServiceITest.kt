@@ -144,7 +144,10 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val dto: HankeKayttajaDto = result.first().also { assertThat(result).hasSize(1) }
             with(dto) {
                 assertThat(id).isEqualTo(entity.id)
+                assertThat(etunimi).isEqualTo(entity.etunimi)
+                assertThat(sukunimi).isEqualTo(entity.sukunimi)
                 assertThat(nimi).isEqualTo(entity.fullName())
+                assertThat(puhelinnumero).isEqualTo(entity.puhelin)
                 assertThat(sahkoposti).isEqualTo(entity.sahkoposti)
                 assertThat(kayttooikeustaso).isEqualTo(entity.permission!!.kayttooikeustaso)
                 assertThat(tunnistautunut).isEqualTo(true)
@@ -333,6 +336,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 prop(HankeKayttajaDto::etunimi).isEqualTo("Joku")
                 prop(HankeKayttajaDto::sukunimi).isEqualTo("Jokunen")
                 prop(HankeKayttajaDto::nimi).isEqualTo("Joku Jokunen")
+                prop(HankeKayttajaDto::puhelinnumero).isEqualTo("0508889999")
                 prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
                 prop(HankeKayttajaDto::tunnistautunut).isFalse()
             }

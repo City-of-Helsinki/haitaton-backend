@@ -32,7 +32,10 @@ data class HankeKayttajaDto(
     @field:Schema(description = "Email address") val sahkoposti: String,
     @field:Schema(description = "First name") val etunimi: String,
     @field:Schema(description = "Last name") val sukunimi: String,
-    @field:Schema(description = "Full name") val nimi: String,
+    @Deprecated("Use etunimi and sukunimi instead.")
+    @field:Schema(description = "Full name", deprecated = true)
+    val nimi: String,
+    @field:Schema(description = "Phone number") val puhelinnumero: String,
     @field:Schema(description = "Access level in Hanke") val kayttooikeustaso: Kayttooikeustaso?,
     @field:Schema(description = "Has user logged in to view Hanke") val tunnistautunut: Boolean,
 )
@@ -81,6 +84,7 @@ class HankekayttajaEntity(
             etunimi = etunimi,
             sukunimi = sukunimi,
             nimi = fullName(),
+            puhelinnumero = puhelin,
             kayttooikeustaso = deriveKayttooikeustaso(),
             tunnistautunut = permission != null,
         )
