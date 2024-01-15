@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeYhteystietoEntity
-import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
@@ -18,14 +17,6 @@ object HankeYhteystietoFactory {
 
     const val defaultYtunnus = "1817548-2"
 
-    val DEFAULT_ALIKONTAKTI =
-        Yhteyshenkilo(
-            "Ali",
-            "Kontakti",
-            "ali.kontakti@meili.com",
-            "050-4567890",
-        )
-
     /** Create a test yhteystieto with values in all fields. */
     fun create(
         id: Int? = 1,
@@ -36,7 +27,6 @@ object HankeYhteystietoFactory {
         puhelinnumero: String = "04012345678",
         createdAt: ZonedDateTime? = getCurrentTimeUTC(),
         modifiedAt: ZonedDateTime? = getCurrentTimeUTC(),
-        alikontaktit: List<Yhteyshenkilo> = listOf(DEFAULT_ALIKONTAKTI),
     ): HankeYhteystieto {
         return HankeYhteystieto(
             id = id,
@@ -52,7 +42,6 @@ object HankeYhteystietoFactory {
             modifiedBy = "test7358",
             modifiedAt = modifiedAt,
             rooli = "Isännöitsijä",
-            alikontaktit = alikontaktit,
         )
     }
 
@@ -73,7 +62,6 @@ object HankeYhteystietoFactory {
                 organisaatioNimi = organisaatioNimi,
                 osasto = osasto,
                 rooli = rooli,
-                yhteyshenkilot = alikontaktit,
                 dataLocked = false,
                 dataLockInfo = "info",
                 createdByUserId = createdBy,
@@ -94,20 +82,11 @@ object HankeYhteystietoFactory {
             nimi = "etu$i suku$i",
             email = "email$i",
             ytunnus = defaultYtunnus,
-            puhelinnumero = "010$i$i$i$i$i$i$i",
+            puhelinnumero = dummyPhoneNumber(i),
             organisaatioNimi = "org$i",
             osasto = "osasto$i",
             rooli = "Isännöitsijä$i",
             tyyppi = YHTEISO,
-            alikontaktit =
-                listOf(
-                    Yhteyshenkilo(
-                        sukunimi = "yhteys-suku$i",
-                        etunimi = "yhteys-etu$i",
-                        email = "yhteys-email$i",
-                        puhelinnumero = dummyPhoneNumber(i),
-                    )
-                )
         )
     }
 

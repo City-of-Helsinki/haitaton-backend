@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.domain
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.NotInChangeLogView
-import fi.hel.haitaton.hanke.Yhteyshenkilo
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
 
@@ -27,11 +26,6 @@ data class HankeYhteystieto(
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Contact email address")
     override var email: String,
-
-    // Optional subcontacts (person)
-    @JsonView(ChangeLogView::class)
-    @field:Schema(description = "Sub-contacts, i.e. contacts of this contact")
-    override var alikontaktit: List<Yhteyshenkilo> = emptyList(),
 
     // Optional
     @JsonView(ChangeLogView::class)

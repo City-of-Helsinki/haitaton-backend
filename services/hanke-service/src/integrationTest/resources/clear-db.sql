@@ -10,6 +10,7 @@ TRUNCATE TABLE
     hankealue,
     hankegeometria,
     hanketyomaatyyppi,
+    hankeyhteyshenkilo,
     hankeyhteystieto,
     int_lock,
     kayttajakutsu,

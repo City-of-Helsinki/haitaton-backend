@@ -5,7 +5,6 @@ import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.contains
-import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.containsMatch
 import assertk.assertions.each
@@ -31,7 +30,6 @@ import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_APPLICATION_IDENTIFIER
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.asianHoitajaCustomerContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplicationEntity
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationData
@@ -44,14 +42,11 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUSTAJA
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
-import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_TEPPO
-import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
-import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.factory.identifier
+import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
@@ -166,17 +161,19 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     inner class GetKayttajatByHankeId {
         @Test
         fun `Returns users from correct hanke only`() {
-            val hankeToFind = hankeFactory.builder(USERNAME).withYhteystiedot().save()
-            hankeFactory.builder(USERNAME).withYhteystiedot().save()
+            val hankeToFind = hankeFactory.builder(USERNAME).save().id
+            kayttajaFactory.saveUnidentifiedUser(hankeToFind)
+            kayttajaFactory.saveUnidentifiedUser(hankeToFind, sahkoposti = "toinen@sahko.posti")
+            val otherHanke = hankeFactory.builder(USERNAME).save().id
+            kayttajaFactory.saveUnidentifiedUser(otherHanke)
+            kayttajaFactory.saveUnidentifiedUser(otherHanke, sahkoposti = "toinen@sahko.posti")
 
             val result: List<HankeKayttajaDto> =
-                hankeKayttajaService.getKayttajatByHankeId(hankeToFind.id)
+                hankeKayttajaService.getKayttajatByHankeId(hankeToFind)
 
-            assertThat(result).hasSize(5)
-            val correctIds = hankeKayttajaRepository.findByHankeId(hankeToFind.id).map { it.id }
-            assertThat(result).each { dto ->
-                dto.prop(HankeKayttajaDto::id).isIn(*correctIds.toTypedArray())
-            }
+            assertThat(result).hasSize(3)
+            val correctIds = hankeKayttajaRepository.findByHankeId(hankeToFind).map { it.id }
+            assertThat(result.map { it.id }).hasSameElementsAs(correctIds)
         }
 
         @Test
@@ -828,104 +825,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     }
 
     @Nested
-    inner class SaveNewTokensFromHanke {
-        @Test
-        fun `Does nothing if hanke has no contacts`() {
-            hankeKayttajaService.saveNewTokensFromHanke(HankeFactory.create(), USERNAME)
-
-            assertThat(kayttajakutsuRepository.findAll()).isEmpty()
-            assertThat(hankeKayttajaRepository.findAll()).isEmpty()
-        }
-
-        @Test
-        fun `Creates tokens for unique ones`() {
-            val hankeEntity = hankeFactory.saveMinimal()
-            val hanke =
-                HankeFactory.create(id = hankeEntity.id, hankeTunnus = hankeEntity.hankeTunnus)
-                    .withYhteystiedot(
-                        // each has a duplicate
-                        omistajat = listOf(1, 1),
-                        rakennuttajat = listOf(2, 2),
-                        toteuttajat = listOf(3, 3),
-                        muut = listOf(4, 4)
-                    )
-            assertThat(hanke.extractYhteystiedot()).hasSize(8)
-
-            hankeKayttajaService.saveNewTokensFromHanke(hanke, USERNAME)
-
-            val tunnisteet: List<KayttajakutsuEntity> = kayttajakutsuRepository.findAll()
-            val kayttajat: List<HankekayttajaEntity> = hankeKayttajaRepository.findAll()
-            assertThat(tunnisteet).hasSize(4) // 4 yhteyshenkilo subcontacts.
-            assertThat(kayttajat).hasSize(4)
-            assertThat(tunnisteet).areValid()
-            assertThat(kayttajat).areValid(hanke.id)
-        }
-
-        @Test
-        fun `Writes new users and tokens to audit log`() {
-            val hankeEntity = hankeFactory.saveMinimal()
-            val hanke =
-                HankeFactory.create(id = hankeEntity.id, hankeTunnus = hankeEntity.hankeTunnus)
-                    .withYhteystiedot(
-                        // each has a duplicate
-                        omistajat = listOf(1, 1),
-                        rakennuttajat = listOf(2, 2),
-                        toteuttajat = listOf(3, 3),
-                        muut = listOf(4, 4)
-                    )
-            auditLogRepository.deleteAll()
-
-            hankeKayttajaService.saveNewTokensFromHanke(hanke, USERNAME)
-
-            assertThat(auditLogRepository.findAll()).all {
-                hasSize(8)
-                each { it.auditEvent().hasUserActor(USERNAME) }
-                exactly(4) { it.hasTargetType(ObjectType.HANKE_KAYTTAJA) }
-                exactly(4) { it.hasTargetType(ObjectType.KAYTTAJA_TUNNISTE) }
-            }
-        }
-
-        @Test
-        fun `With pre-existing permissions does not create duplicate`() {
-            val yhteystieto = HankeYhteystietoFactory.create()
-            val contact = yhteystieto.alikontaktit[0]
-            val hanke =
-                hankeFactory
-                    .builder(USERNAME)
-                    .withPerustaja(contact.toHankekayttajaInput()!!)
-                    .create()
-            auditLogRepository.deleteAll()
-
-            hankeKayttajaService.saveNewTokensFromHanke(
-                hanke.apply { this.omistajat.add(yhteystieto) },
-                USERNAME
-            )
-
-            val tunnisteet = kayttajakutsuRepository.findAll()
-            assertThat(tunnisteet).isEmpty()
-            assertThat(tunnisteet).areValid()
-            val kayttajat = hankeKayttajaRepository.findAll()
-            assertThat(kayttajat).hasSize(1)
-            assertThat(kayttajat.map { it.sahkoposti }).containsExactly(contact.email)
-            assertThat(auditLogRepository.findAll()).isEmpty()
-        }
-
-        @Test
-        fun `Sends emails for new hanke users`() {
-            val hanke = hankeFactory.builder(USERNAME).withPerustaja(KAYTTAJA_INPUT_TEPPO).save()
-            val hankeWithYhteystiedot = hanke.withYhteystiedot() // 4 sub contacts
-
-            hankeKayttajaService.saveNewTokensFromHanke(hankeWithYhteystiedot, USERNAME)
-
-            val capturedEmails = greenMail.receivedMessages
-            assertThat(capturedEmails).hasSize(4)
-            assertThat(capturedEmails).areValidHankeInvitations(TEPPO_TESTI, TEPPO_EMAIL, hanke)
-            assertThat(capturedEmails)
-                .hasReceivers("yhteys-email1", "yhteys-email2", "yhteys-email3", "yhteys-email4")
-        }
-    }
-
-    @Nested
     inner class UpdatePermissions {
         @Test
         fun `Doesn't throw any exceptions with no updates`() {
@@ -1534,15 +1433,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         t.prop(KayttajakutsuEntity::hankekayttaja).isNotNull()
     }
 
-    private fun Assert<List<HankekayttajaEntity>>.areValid(hankeId: Int?) = each { k ->
-        k.prop(HankekayttajaEntity::id).isNotNull()
-        k.prop(HankekayttajaEntity::fullName).isIn(*expectedNames)
-        k.prop(HankekayttajaEntity::sahkoposti).isIn(*expectedEmails)
-        k.prop(HankekayttajaEntity::hankeId).isEqualTo(hankeId)
-        k.prop(HankekayttajaEntity::permission).isNull()
-        k.prop(HankekayttajaEntity::kayttajakutsu).isNotNull()
-    }
-
     private fun Assert<Array<MimeMessage>>.areValidHankeInvitations(
         inviterName: String,
         inviterEmail: String,
@@ -1563,20 +1453,4 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             contains("hankkeelle $hankeNimi ($hankeTunnus)")
         }
     }
-
-    private val expectedNames =
-        arrayOf(
-            "yhteys-etu1 yhteys-suku1",
-            "yhteys-etu2 yhteys-suku2",
-            "yhteys-etu3 yhteys-suku3",
-            "yhteys-etu4 yhteys-suku4",
-        )
-
-    private val expectedEmails =
-        arrayOf(
-            "yhteys-email1",
-            "yhteys-email2",
-            "yhteys-email3",
-            "yhteys-email4",
-        )
 }

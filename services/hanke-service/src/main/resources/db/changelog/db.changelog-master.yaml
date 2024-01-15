@@ -161,3 +161,5 @@ databaseChangeLog:
       file: db/changelog/changesets/065-add-attachment-sizes.sql
   - include:
       file: db/changelog/changesets/066-drop-default-content-type-value-from-attachments.yml
+  - include:
+      file: db/changelog/changesets/067-create-hankeyhteyshenkilo-table.sql

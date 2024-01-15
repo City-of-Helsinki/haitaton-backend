@@ -8,7 +8,6 @@ import mu.KotlinLogging
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.core.OAuth2AccessToken
-import org.springframework.security.oauth2.core.user.DefaultOAuth2User
 
 private val logger = KotlinLogging.logger {}
 
@@ -64,25 +63,6 @@ fun getCurrentTimeUTCAsLocalTime(): LocalDateTime = getCurrentTimeUTC().toLocalD
 fun currentUserId(): String = SecurityContextHolder.getContext().authentication.name
 
 fun SecurityContext.userId(): String = authentication.name
-
-data class UserInfo(
-    val email: String?,
-    val name: String?,
-    val givenName: String?,
-    val familyName: String?
-)
-
-fun currentUserInfo(): UserInfo? =
-    when (val principal = SecurityContextHolder.getContext().authentication.principal) {
-        is DefaultOAuth2User ->
-            UserInfo(
-                email = principal.attributes["email"]?.toString(),
-                name = principal.attributes["name"]?.toString(),
-                givenName = principal.attributes["given_name"]?.toString(),
-                familyName = principal.attributes["family_name"]?.toString(),
-            )
-        else -> null
-    }
 
 fun SecurityContext.accessToken(): String? =
     when (val token = this.authentication.credentials) {
