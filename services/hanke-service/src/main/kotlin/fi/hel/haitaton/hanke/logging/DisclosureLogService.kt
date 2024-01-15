@@ -118,6 +118,10 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         )
     }
 
+    fun saveDisclosureLogsForHankeKayttaja(hankeKayttaja: HankeKayttajaDto, userId: String) {
+        saveDisclosureLogsForHankeKayttajat(listOf(hankeKayttaja), userId)
+    }
+
     fun saveDisclosureLogsForHankeKayttajat(
         hankeKayttajat: List<HankeKayttajaDto>,
         userId: String

@@ -84,6 +84,33 @@ class HankeKayttajaController(
         return WhoamiResponse(hankeKayttaja?.id, permission.kayttooikeustasoEntity)
     }
 
+    @GetMapping("/kayttajat/{kayttajaId}")
+    @Operation(
+        summary = "Get a Hanke user",
+        description = "Returns a single user and their Hanke related information."
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "User info", responseCode = "200"),
+                ApiResponse(
+                    description = "Invalid UUID",
+                    responseCode = "400",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+                ApiResponse(
+                    description = "Hanke or user not found",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+            ]
+    )
+    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'VIEW')")
+    fun getHankeKayttaja(@PathVariable kayttajaId: UUID): HankeKayttajaDto =
+        hankeKayttajaService.getKayttaja(kayttajaId).also {
+            disclosureLogService.saveDisclosureLogsForHankeKayttaja(it, currentUserId())
+        }
+
     @GetMapping("/hankkeet/{hankeTunnus}/kayttajat")
     @Operation(
         summary = "Get Hanke users",
