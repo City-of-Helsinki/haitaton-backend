@@ -48,7 +48,6 @@ import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_TEPPO
-import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.kayttajaInput
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
@@ -132,7 +131,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Returns kayttaja when it exists`() {
             val hanke = hankeFactory.builder(USERNAME).save()
-            val kayttajaEntity = kayttajaFactory.saveUserAndPermission(hanke.id)
+            val kayttajaEntity = kayttajaFactory.saveIdentifiedUser(hanke.id)
 
             val response = hankeKayttajaService.getKayttaja(kayttajaEntity.id)
 
@@ -152,7 +151,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Returns unidentified kayttaja when it exists`() {
             val hanke = hankeFactory.builder(USERNAME).save()
-            val kayttajaEntity = kayttajaFactory.saveUserAndToken(hanke.id)
+            val kayttajaEntity = kayttajaFactory.saveUnidentifiedUser(hanke.id)
 
             val response = hankeKayttajaService.getKayttaja(kayttajaEntity.id)
 
@@ -358,7 +357,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `throws exception when there is a pre-existing user with the same email`() {
             val hanke = hankeFactory.builder(USERNAME).save()
-            kayttajaFactory.saveUserAndToken(hanke.id, kayttajaInput = kayttajaInput(email = email))
+            kayttajaFactory.saveUnidentifiedUser(hanke.id, sahkoposti = email)
 
             val failure = assertFailure {
                 hankeKayttajaService.createNewUser(request, hanke, USERNAME)
@@ -678,23 +677,17 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `With pre-existing tokens creates only new ones`() {
             val hanke = hankeFactory.saveMinimal()
-            kayttajaFactory.saveUserAndToken(
+            kayttajaFactory.saveUnidentifiedUser(
                 hankeId = hanke.id,
-                kayttajaInput =
-                    kayttajaInput(
-                        etunimi = "Existing",
-                        sukunimi = "User",
-                        email = "email1",
-                    )
+                etunimi = "Existing",
+                sukunimi = "User",
+                sahkoposti = "email1",
             )
-            kayttajaFactory.saveUserAndToken(
+            kayttajaFactory.saveUnidentifiedUser(
                 hankeId = hanke.id,
-                kayttajaInput =
-                    kayttajaInput(
-                        etunimi = "Other",
-                        sukunimi = "User",
-                        email = "email4",
-                    )
+                etunimi = "Other",
+                sukunimi = "User",
+                sahkoposti = "email4",
             )
             val applicationData =
                 createCableReportApplicationData(
@@ -742,23 +735,17 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `With pre-existing permissions creates only new ones`() {
             val hanke = hankeFactory.saveMinimal()
-            kayttajaFactory.saveUserAndPermission(
+            kayttajaFactory.saveIdentifiedUser(
                 hankeId = hanke.id,
-                kayttaja =
-                    kayttajaInput(
-                        etunimi = "Existing",
-                        sukunimi = "User",
-                        email = "email1",
-                    )
+                etunimi = "Existing",
+                sukunimi = "User",
+                sahkoposti = "email1",
             )
-            kayttajaFactory.saveUserAndPermission(
+            kayttajaFactory.saveIdentifiedUser(
                 hankeId = hanke.id,
-                kayttaja =
-                    kayttajaInput(
-                        etunimi = "Other",
-                        sukunimi = "User",
-                        email = "email4",
-                    )
+                etunimi = "Other",
+                sukunimi = "User",
+                sahkoposti = "email4",
             )
             val applicationData =
                 createCableReportApplicationData(
@@ -951,7 +938,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Updates kayttooikeustaso to permission if it exists`() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
-            val kayttaja = kayttajaFactory.saveUserAndPermission(hankeIdentifier.id)
+            val kayttaja = kayttajaFactory.saveIdentifiedUser(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             hankeKayttajaService.updatePermissions(hankeIdentifier, updates, false, USERNAME)
@@ -966,7 +953,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Writes permission update to audit log`() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
-            val kayttaja = kayttajaFactory.saveUserAndPermission(hankeIdentifier.id)
+            val kayttaja = kayttajaFactory.saveIdentifiedUser(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
             auditLogRepository.deleteAll()
 
@@ -998,7 +985,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Updates kayttooikeustaso to tunniste if permission doesn't exist`() {
             val hankehankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
-            val kayttaja = kayttajaFactory.saveUserAndToken(hankehankeIdentifier.id)
+            val kayttaja = kayttajaFactory.saveUnidentifiedUser(hankehankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             hankeKayttajaService.updatePermissions(hankehankeIdentifier, updates, false, USERNAME)
@@ -1013,7 +1000,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Writes tunniste update to audit log`() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
-            val kayttaja = kayttajaFactory.saveUserAndToken(hankeIdentifier.id)
+            val kayttaja = kayttajaFactory.saveUnidentifiedUser(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
             auditLogRepository.deleteAll()
 
@@ -1045,14 +1032,11 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `Updates kayttooikeustaso to only permission if both permission and tunniste exist`() {
             val hanke = hankeFactory.builder(USERNAME).save()
             val kayttaja =
-                kayttajaFactory.saveUserAndPermission(
+                kayttajaFactory.saveIdentifiedUser(
                     hanke.id,
-                    kayttaja =
-                        kayttajaInput(
-                            etunimi = "Kolmas",
-                            sukunimi = "Kehveli",
-                            email = "kolmas@kehveli.test"
-                        )
+                    etunimi = "Kolmas",
+                    sukunimi = "Kehveli",
+                    sahkoposti = "kolmas@kehveli.test"
                 )
             kayttajaFactory.addToken(kayttaja, "token for both", Kayttooikeustaso.KATSELUOIKEUS)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
@@ -1072,7 +1056,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `Throws exception if changing the user's own permission`() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
-                kayttajaFactory.saveUserAndPermission(
+                kayttajaFactory.saveIdentifiedUser(
                     hankeIdentifier.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKIEN_MUOKKAUS,
                     userId = USERNAME
@@ -1118,7 +1102,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `Throws exception if given Kayttaja from another Hanke`() {
             val hanke1 = hankeFactory.builder(USERNAME).save().identifier()
             val hanke2 = hankeFactory.builder(USERNAME).save().identifier()
-            val kayttaja = kayttajaFactory.saveUserAndPermission(hanke2.id)
+            val kayttaja = kayttajaFactory.saveIdentifiedUser(hanke2.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
@@ -1155,7 +1139,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `Throws exception without admin permission if the kayttaja to update has KAIKKI_OIKEUDET in permission`() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
-                kayttajaFactory.saveUserAndPermission(
+                kayttajaFactory.saveIdentifiedUser(
                     hankeIdentifier.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
                 )
@@ -1179,7 +1163,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `Throws exception without admin permission if the kayttaja to update has KAIKKI_OIKEUDET in tunniste`() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
-                kayttajaFactory.saveUserAndToken(
+                kayttajaFactory.saveUnidentifiedUser(
                     hankeIdentifier.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
                 )
@@ -1203,7 +1187,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `Succeeds with admin permission when the kayttaja to update has KAIKKI_OIKEUDET in permission`() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
-                kayttajaFactory.saveUserAndPermission(
+                kayttajaFactory.saveIdentifiedUser(
                     hankeIdentifier.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
                 )
@@ -1222,7 +1206,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `Succeeds with with admin permission when the kayttaja to update has KAIKKI_OIKEUDET in tunniste`() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja =
-                kayttajaFactory.saveUserAndToken(
+                kayttajaFactory.saveUnidentifiedUser(
                     hankeIdentifier.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
                 )
@@ -1240,7 +1224,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Throws exception without admin permission if updating to KAIKKI_OIKEUDET`() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
-            val kayttaja = kayttajaFactory.saveUserAndToken(hankeIdentifier.id)
+            val kayttaja = kayttajaFactory.saveUnidentifiedUser(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.KAIKKI_OIKEUDET)
 
             assertFailure {
@@ -1260,7 +1244,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Succeeds with with admin permission if updating to KAIKKI_OIKEUDET`() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
-            val kayttaja = kayttajaFactory.saveUserAndToken(hankeIdentifier.id)
+            val kayttaja = kayttajaFactory.saveUnidentifiedUser(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.KAIKKI_OIKEUDET)
 
             hankeKayttajaService.updatePermissions(hankeIdentifier, updates, true, USERNAME)
@@ -1276,19 +1260,19 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `Throw exception if trying to demote the last KAIKKI_OIKEUDET kayttaja`() {
             val hanke = hankeFactory.saveMinimal()
             val kayttaja =
-                kayttajaFactory.saveUserAndPermission(
+                kayttajaFactory.saveIdentifiedUser(
                     hanke.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
                 )
-            kayttajaFactory.saveUserAndPermission(
+            kayttajaFactory.saveIdentifiedUser(
                 hanke.id,
                 kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS,
-                kayttaja = kayttajaInput(email = "hankemuokkaus")
+                sahkoposti = "hankemuokkaus",
             )
-            kayttajaFactory.saveUserAndPermission(
+            kayttajaFactory.saveIdentifiedUser(
                 hanke.id,
                 kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI,
-                kayttaja = kayttajaInput(email = "hakemusasiointi")
+                sahkoposti = "hakemusasiointi",
             )
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
 
@@ -1307,7 +1291,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             permissionRepository.deleteAll()
             permissionService.create(hankeIdentifier.id, USERNAME, Kayttooikeustaso.KAIKKI_OIKEUDET)
             val kayttaja =
-                kayttajaFactory.saveUserAndPermission(
+                kayttajaFactory.saveIdentifiedUser(
                     hankeIdentifier.id,
                     kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
                 )
@@ -1341,7 +1325,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         fun `throws an exception if the user already has a permission for the hanke kayttaja`() {
             val hanke = hankeFactory.builder(USERNAME).save()
             val kayttaja =
-                kayttajaFactory.saveUserAndPermission(
+                kayttajaFactory.saveIdentifiedUser(
                     hanke.id,
                     userId = newUserId,
                 )
@@ -1359,7 +1343,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `throws an exception if the user has a permission for the hanke from elsewhere`() {
             val hanke = hankeFactory.builder(USERNAME).save()
-            val kayttaja = kayttajaFactory.saveUserAndToken(hanke.id, tunniste = tunniste)
+            val kayttaja = kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
             val permission =
                 permissionService.create(
                     userId = newUserId,
@@ -1379,7 +1363,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `throws an exception if another user already has a permission for the hanke kayttaja`() {
             val hanke = hankeFactory.builder(USERNAME).save()
-            val kayttaja = kayttajaFactory.saveUserAndPermission(hanke.id, userId = "Other user")
+            val kayttaja = kayttajaFactory.saveIdentifiedUser(hanke.id, userId = "Other user")
             kayttajaFactory.addToken(kayttaja)
 
             assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, "existing") }
@@ -1395,7 +1379,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Creates a permission`() {
             val hanke = hankeFactory.builder(USERNAME).save()
-            kayttajaFactory.saveUserAndToken(hanke.id, tunniste = tunniste)
+            kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
 
             hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
 
@@ -1409,7 +1393,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Removes the user token`() {
             val hanke = hankeFactory.builder(USERNAME).save()
-            kayttajaFactory.saveUserAndToken(hanke.id, tunniste = tunniste)
+            kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
 
             hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
 
@@ -1419,7 +1403,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Writes the token removal to audit logs`() {
             val hanke = hankeFactory.builder(USERNAME).save()
-            kayttajaFactory.saveUserAndToken(hanke.id, tunniste = tunniste)
+            kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
             auditLogRepository.deleteAll()
 
             hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
@@ -1458,7 +1442,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Throws exception if kayttaja already has permission`() {
             val hanke = hankeFactory.saveMinimal()
-            val kayttaja = kayttajaFactory.saveUserAndPermission(hanke.id)
+            val kayttaja = kayttajaFactory.saveIdentifiedUser(hanke.id)
 
             assertFailure { hankeKayttajaService.resendInvitation(kayttaja.id, USERNAME) }
                 .all {
@@ -1472,10 +1456,10 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Creates a new tunniste if kayttaja doesn't have one`() {
             val hanke = hankeFactory.saveMinimal(nimi = "Hanke")
-            kayttajaFactory.saveUserAndPermission(
+            kayttajaFactory.saveIdentifiedUser(
                 hankeId = hanke.id,
                 userId = USERNAME,
-                kayttaja = kayttajaInput(email = dummyEmail)
+                sahkoposti = dummyEmail,
             )
             val kayttaja = kayttajaFactory.saveUser(hanke.id)
             assertThat(kayttajakutsuRepository.findAll()).isEmpty()
@@ -1490,12 +1474,12 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `If kayttaja has a tunniste recreates it and deletes the old one `() {
             val hanke = hankeFactory.saveMinimal(nimi = "Hanke")
-            kayttajaFactory.saveUserAndPermission(
+            kayttajaFactory.saveIdentifiedUser(
                 hankeId = hanke.id,
                 userId = USERNAME,
-                kayttaja = kayttajaInput(email = dummyEmail)
+                sahkoposti = dummyEmail,
             )
-            val kayttaja = kayttajaFactory.saveUserAndToken(hanke.id)
+            val kayttaja = kayttajaFactory.saveUnidentifiedUser(hanke.id)
             assertThat(kayttajakutsuRepository.findAll()).hasSize(1)
             val tunnisteId = kayttaja.kayttajakutsu!!.id
             val tunniste = kayttaja.kayttajakutsu!!.tunniste
@@ -1514,10 +1498,12 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Sends the invitation email`() {
             val hanke = hankeFactory.saveMinimal(nimi = "Hanke")
-            kayttajaFactory.saveUserAndPermission(
+            kayttajaFactory.saveIdentifiedUser(
                 hanke.id,
                 userId = USERNAME,
-                kayttaja = kayttajaInput("Current", "User", dummyEmail),
+                etunimi = "Current",
+                sukunimi = "User",
+                sahkoposti = dummyEmail,
             )
             val kayttaja = kayttajaFactory.saveUser(hanke.id)
 

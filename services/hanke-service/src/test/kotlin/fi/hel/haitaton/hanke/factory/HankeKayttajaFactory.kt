@@ -24,9 +24,12 @@ class HankeKayttajaFactory(
     private val kayttajakutsuRepository: KayttajakutsuRepository
 ) {
 
-    fun saveUserAndToken(
+    fun saveUnidentifiedUser(
         hankeId: Int,
-        kayttajaInput: HankekayttajaInput = kayttajaInput(),
+        etunimi: String = KAKE,
+        sukunimi: String = KATSELIJA,
+        sahkoposti: String = KAKE_EMAIL,
+        puhelin: String = KAKE_PUHELIN,
         kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
         tunniste: String = "existing",
     ): HankekayttajaEntity =
@@ -34,38 +37,50 @@ class HankeKayttajaFactory(
             hankeKayttaja =
                 saveUser(
                     hankeId = hankeId,
-                    kayttajaInput = kayttajaInput,
+                    etunimi = etunimi,
+                    sukunimi = sukunimi,
+                    sahkoposti = sahkoposti,
+                    puhelin = puhelin,
                     permissionEntity = null,
                 ),
             tunniste = tunniste,
             kayttooikeustaso = kayttooikeustaso,
         )
 
-    fun saveUserAndPermission(
+    fun saveIdentifiedUser(
         hankeId: Int,
-        kayttaja: HankekayttajaInput = kayttajaInput(),
+        etunimi: String = KAKE,
+        sukunimi: String = KATSELIJA,
+        sahkoposti: String = KAKE_EMAIL,
+        puhelin: String = KAKE_PUHELIN,
         kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
         userId: String = "fake id",
     ): HankekayttajaEntity =
         saveUser(
             hankeId = hankeId,
-            kayttajaInput = kayttaja,
+            etunimi = etunimi,
+            sukunimi = sukunimi,
+            sahkoposti = sahkoposti,
+            puhelin = puhelin,
             permissionEntity = permissionService.create(hankeId, userId, kayttooikeustaso),
         )
 
     fun saveUser(
         hankeId: Int,
-        kayttajaInput: HankekayttajaInput = kayttajaInput(),
+        etunimi: String = KAKE,
+        sukunimi: String = KATSELIJA,
+        sahkoposti: String = KAKE_EMAIL,
+        puhelin: String = KAKE_PUHELIN,
         permissionEntity: PermissionEntity? = null,
         kayttajakutsuEntity: KayttajakutsuEntity? = null,
     ): HankekayttajaEntity =
         hankeKayttajaRepository.save(
             HankekayttajaEntity(
                 hankeId = hankeId,
-                etunimi = kayttajaInput.etunimi,
-                sukunimi = kayttajaInput.sukunimi,
-                sahkoposti = kayttajaInput.email,
-                puhelin = kayttajaInput.puhelin,
+                etunimi = etunimi,
+                sukunimi = sukunimi,
+                sahkoposti = sahkoposti,
+                puhelin = puhelin,
                 permission = permissionEntity,
                 kayttajakutsu = kayttajakutsuEntity,
             )
@@ -144,13 +159,6 @@ class HankeKayttajaFactory(
                 "0401234564",
             )
 
-        fun kayttajaInput(
-            etunimi: String = KAKE,
-            sukunimi: String = KATSELIJA,
-            email: String = KAKE_EMAIL,
-            puhelin: String = KAKE_PUHELIN,
-        ) = HankekayttajaInput(etunimi, sukunimi, email, puhelin)
-
         fun create(
             id: UUID = KAYTTAJA_ID,
             hankeId: Int = HankeFactory.defaultId,
@@ -163,17 +171,20 @@ class HankeKayttajaFactory(
         fun createEntity(
             id: UUID = KAYTTAJA_ID,
             hankeId: Int = HankeFactory.defaultId,
-            kayttaja: HankekayttajaInput = kayttajaInput(),
+            etunimi: String = KAKE,
+            sukunimi: String = KATSELIJA,
+            sahkoposti: String = KAKE_EMAIL,
+            puhelin: String = KAKE_PUHELIN,
             permission: PermissionEntity? = null,
             kutsu: KayttajakutsuEntity? = null,
         ): HankekayttajaEntity =
             HankekayttajaEntity(
                 id = id,
                 hankeId = hankeId,
-                etunimi = kayttaja.etunimi,
-                sukunimi = kayttaja.sukunimi,
-                sahkoposti = kayttaja.email,
-                puhelin = kayttaja.puhelin,
+                etunimi = etunimi,
+                sukunimi = sukunimi,
+                sahkoposti = sahkoposti,
+                puhelin = puhelin,
                 permission = permission,
                 kayttajakutsu = kutsu
             )
