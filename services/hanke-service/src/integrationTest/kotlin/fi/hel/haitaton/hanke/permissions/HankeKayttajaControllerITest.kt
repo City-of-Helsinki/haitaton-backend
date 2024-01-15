@@ -245,6 +245,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 assertThat(etunimi).isEqualTo("test1")
                 assertThat(sukunimi).isEqualTo("name1")
                 assertThat(nimi).isEqualTo("test1 name1")
+                assertThat(puhelinnumero).isEqualTo("0405551111")
                 assertThat(sahkoposti).isEqualTo("email.1.address.com")
                 assertThat(tunnistautunut).isEqualTo(false)
             }
