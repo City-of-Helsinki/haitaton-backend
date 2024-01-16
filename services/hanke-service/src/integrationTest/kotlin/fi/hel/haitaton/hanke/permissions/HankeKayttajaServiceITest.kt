@@ -46,7 +46,6 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.factory.identifier
-import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
@@ -161,19 +160,20 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     inner class GetKayttajatByHankeId {
         @Test
         fun `Returns users from correct hanke only`() {
-            val hankeToFind = hankeFactory.builder(USERNAME).save().id
-            kayttajaFactory.saveUnidentifiedUser(hankeToFind)
-            kayttajaFactory.saveUnidentifiedUser(hankeToFind, sahkoposti = "toinen@sahko.posti")
+            val hankeToFind = hankeFactory.builder(USERNAME).saveEntity()
+            val founder = hankeKayttajaRepository.findAll().first().id
+            val user1 = kayttajaFactory.saveUnidentifiedUser(hankeToFind.id).id
+            val user2 =
+                kayttajaFactory.saveUnidentifiedUser(hankeToFind.id, sahkoposti = "toinen").id
             val otherHanke = hankeFactory.builder(USERNAME).save().id
             kayttajaFactory.saveUnidentifiedUser(otherHanke)
             kayttajaFactory.saveUnidentifiedUser(otherHanke, sahkoposti = "toinen@sahko.posti")
 
             val result: List<HankeKayttajaDto> =
-                hankeKayttajaService.getKayttajatByHankeId(hankeToFind)
+                hankeKayttajaService.getKayttajatByHankeId(hankeToFind.id)
 
             assertThat(result).hasSize(3)
-            val correctIds = hankeKayttajaRepository.findByHankeId(hankeToFind).map { it.id }
-            assertThat(result.map { it.id }).hasSameElementsAs(correctIds)
+            assertThat(result.map { it.id }).containsExactlyInAnyOrder(founder, user1, user2)
         }
 
         @Test

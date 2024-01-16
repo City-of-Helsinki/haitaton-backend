@@ -3,8 +3,6 @@ package fi.hel.haitaton.hanke
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
-import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
-import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -20,7 +18,6 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import java.time.LocalDateTime
-import java.util.UUID
 
 enum class ContactType {
     OMISTAJA,
@@ -137,21 +134,4 @@ class HankeYhteystietoEntity(
             rooli = rooli,
             tyyppi = tyyppi,
         )
-}
-
-@Schema(description = "Contact person")
-data class Yhteyshenkilo(
-    @field:Schema(description = "Id of the HankeKayttaja") val id: UUID,
-    @field:Schema(description = "First name") val etunimi: String,
-    @field:Schema(description = "Last name") val sukunimi: String,
-    @field:Schema(description = "Email address") val email: String,
-    @field:Schema(description = "Phone number") val puhelinnumero: String,
-) {
-    fun fullName(): String = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
-
-    fun toHankekayttajaInput(): HankekayttajaInput? =
-        if (missingData()) null else HankekayttajaInput(etunimi, sukunimi, email, puhelinnumero)
-
-    private fun missingData(): Boolean =
-        listOf(etunimi, sukunimi, email, puhelinnumero).any { it.isBlank() }
 }
