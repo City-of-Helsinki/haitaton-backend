@@ -161,6 +161,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         @Test
         fun `Returns users from correct hanke only`() {
             val hankeToFind = hankeFactory.builder(USERNAME).saveEntity()
+            assertThat(hankeKayttajaRepository.findAll()).hasSize(1)
             val founder = hankeKayttajaRepository.findAll().first().id
             val user1 = kayttajaFactory.saveUnidentifiedUser(hankeToFind.id).id
             val user2 =
@@ -172,7 +173,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val result: List<HankeKayttajaDto> =
                 hankeKayttajaService.getKayttajatByHankeId(hankeToFind.id)
 
-            assertThat(result).hasSize(3)
             assertThat(result.map { it.id }).containsExactlyInAnyOrder(founder, user1, user2)
         }
 
