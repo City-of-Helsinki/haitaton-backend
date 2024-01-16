@@ -9,6 +9,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import java.util.UUID
+import org.springframework.data.jpa.repository.JpaRepository
 
 @Entity
 @Table(name = "hankeyhteyshenkilo")
@@ -30,3 +31,5 @@ class HankeYhteyshenkiloEntity(
             hankeKayttaja.puhelin,
         )
 }
+
+interface HankeYhteyshenkiloRepository : JpaRepository<HankeYhteyshenkiloEntity, UUID> {}

@@ -7,7 +7,12 @@ import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withMuuYhteystieto
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withOmistaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withToteuttaja
+import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -26,6 +31,7 @@ import io.mockk.justRun
 import io.mockk.verifySequence
 import java.time.temporal.ChronoUnit
 import org.geojson.FeatureCollection
+import org.hamcrest.Matchers.containsInAnyOrder
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -174,6 +180,55 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 disclosureLogService.saveDisclosureLogsForHanke(hanke, "test")
             }
         }
+
+        @Test
+        fun `Returns hankeyhteystiedot and hankeyhteyshenkilot when present`() {
+            val hanke =
+                HankeFactory.create(hankeTunnus = HANKE_TUNNUS)
+                    .withOmistaja(1, 1, HankeYhteyshenkiloFactory.create(1))
+                    .withRakennuttaja(2, 2, HankeYhteyshenkiloFactory.create(2))
+                    .withToteuttaja(
+                        3,
+                        3,
+                        HankeYhteyshenkiloFactory.create(3),
+                        HankeYhteyshenkiloFactory.create(5),
+                        HankeYhteyshenkiloFactory.create(6)
+                    )
+                    .withMuuYhteystieto(4, 4, HankeYhteyshenkiloFactory.create(4))
+            every { hankeService.loadHanke(HANKE_TUNNUS) }.returns(hanke)
+            every {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
+            } returns true
+
+            get(url)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("omistajat.length()").value(1))
+                .andExpect(jsonPath("omistajat[0].yhteyshenkilot.length()").value(1))
+                .andExpect(jsonPath("omistajat[0].yhteyshenkilot[0].etunimi").value("Etu1"))
+                .andExpect(jsonPath("omistajat[0].yhteyshenkilot[0].id").isString)
+                .andExpect(jsonPath("rakennuttajat.length()").value(1))
+                .andExpect(jsonPath("rakennuttajat[0].yhteyshenkilot.length()").value(1))
+                .andExpect(jsonPath("rakennuttajat[0].yhteyshenkilot[0].etunimi").value("Etu2"))
+                .andExpect(jsonPath("rakennuttajat[0].yhteyshenkilot[0].id").isString)
+                .andExpect(jsonPath("toteuttajat.length()").value(1))
+                .andExpect(jsonPath("toteuttajat[0].yhteyshenkilot.length()").value(3))
+                .andExpect(
+                    jsonPath(
+                        "toteuttajat[0].yhteyshenkilot[*].etunimi",
+                        containsInAnyOrder("Etu3", "Etu5", "Etu6"),
+                    )
+                )
+                .andExpect(jsonPath("muut.length()").value(1))
+                .andExpect(jsonPath("muut[0].yhteyshenkilot.length()").value(1))
+                .andExpect(jsonPath("muut[0].yhteyshenkilot[0].etunimi").value("Etu4"))
+                .andExpect(jsonPath("muut[0].yhteyshenkilot[0].id").isString)
+
+            verifySequence {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
+                hankeService.loadHanke(HANKE_TUNNUS)
+                disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME)
+            }
+        }
     }
 
     @Nested
@@ -260,6 +315,41 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .andExpect(jsonPath("$[1].id").value(hankeIds[1]))
                 .andExpect(jsonPath("$[0].alueet[0].geometriat.id").value(1))
                 .andExpect(jsonPath("$[1].alueet[0].geometriat.id").value(2))
+
+            verifySequence {
+                permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
+                hankeService.loadHankkeetByIds(hankeIds)
+                disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME)
+            }
+        }
+
+        @Test
+        fun `Returns hankeyhteystiedot and hankeyhteyshenkilot when present`() {
+            val hankeIds = listOf(122, 144)
+            val hankkeet =
+                hankeIds.map { id ->
+                    HankeFactory.create(hankeTunnus = HANKE_TUNNUS)
+                        .withOmistaja(id, id, HankeYhteyshenkiloFactory.create(id))
+                }
+            every { hankeService.loadHankkeetByIds(hankeIds) }.returns(hankkeet)
+            every { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
+                .returns(hankeIds)
+
+            get(url)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("\$.length()").value(2))
+                .andExpect(jsonPath("\$.[0].omistajat.length()").value(1))
+                .andExpect(jsonPath("\$.[0].omistajat[0].yhteyshenkilot.length()").value(1))
+                .andExpect(
+                    jsonPath("\$.[0].omistajat[0].yhteyshenkilot[0].etunimi").value("Etu122")
+                )
+                .andExpect(jsonPath("\$.[0].omistajat[0].yhteyshenkilot[0].id").isString)
+                .andExpect(jsonPath("\$.[1].omistajat.length()").value(1))
+                .andExpect(jsonPath("\$.[1].omistajat[0].yhteyshenkilot.length()").value(1))
+                .andExpect(
+                    jsonPath("\$.[1].omistajat[0].yhteyshenkilot[0].etunimi").value("Etu144")
+                )
+                .andExpect(jsonPath("\$.[1].omistajat[0].yhteyshenkilot[0].id").isString)
 
             verifySequence {
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)

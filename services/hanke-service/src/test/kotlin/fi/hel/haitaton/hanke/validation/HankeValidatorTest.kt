@@ -14,7 +14,7 @@ import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
-import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.DEFAULT_YTUNNUS
 import fi.hel.haitaton.hanke.factory.modify
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -243,7 +243,7 @@ class HankeValidatorTest {
     fun `when tyyppi is yksityishenkilo and ytunnus is not null should not return ok`() {
         val hanke =
             HankeFactory.create().withYhteystiedot().apply {
-                omistajat = omistajat.modify(ytunnus = defaultYtunnus, tyyppi = YKSITYISHENKILO)
+                omistajat = omistajat.modify(ytunnus = DEFAULT_YTUNNUS, tyyppi = YKSITYISHENKILO)
             }
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()

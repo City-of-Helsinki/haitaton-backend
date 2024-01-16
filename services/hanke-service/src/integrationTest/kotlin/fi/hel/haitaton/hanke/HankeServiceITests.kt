@@ -37,6 +37,8 @@ import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
+import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
+import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withArea
@@ -46,13 +48,14 @@ import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUSTAJA
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedRakennuttaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withOmistaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
-import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
+import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.logging.AuditLogEntryEntity
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
@@ -61,9 +64,10 @@ import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
+import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.KayttajakutsuRepository
-import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso.KAIKKI_OIKEUDET
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionEntity
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -205,6 +209,40 @@ class HankeServiceITests(
             val response = hankeService.loadHankeById(hanke.id)
 
             assertk.assertThat(response).isNotNull().prop(Hanke::id).isEqualTo(hanke.id)
+        }
+
+        @Test
+        fun `returns yhteystiedot and yhteyshenkilot if they're present`() {
+            val entity =
+                hankeFactory.builder(USER_NAME).saveWithYhteystiedot {
+                    omistaja(kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    rakennuttaja(kayttooikeustaso = Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
+                    toteuttaja(kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI)
+                    muuYhteystieto()
+                }
+
+            val hanke = hankeService.loadHankeById(entity.id)!!
+
+            assertk.assertThat(hanke.omistajat).hasSize(1)
+            assertk.assertThat(hanke.omistajat.first()).all {
+                hasDefaultInfo()
+                hasOneYhteyshenkilo(HankeKayttajaFactory.KAYTTAJA_INPUT_HAKIJA)
+            }
+            assertk.assertThat(hanke.rakennuttajat).hasSize(1)
+            assertk.assertThat(hanke.rakennuttajat.first()).all {
+                hasDefaultInfo()
+                hasOneYhteyshenkilo(HankeKayttajaFactory.KAYTTAJA_INPUT_RAKENNUTTAJA)
+            }
+            assertk.assertThat(hanke.toteuttajat).hasSize(1)
+            assertk.assertThat(hanke.toteuttajat.first()).all {
+                hasDefaultInfo()
+                hasOneYhteyshenkilo(HankeKayttajaFactory.KAYTTAJA_INPUT_SUORITTAJA)
+            }
+            assertk.assertThat(hanke.muut).hasSize(1)
+            assertk.assertThat(hanke.muut.first()).all {
+                hasDefaultInfo()
+                hasOneYhteyshenkilo(HankeKayttajaFactory.KAYTTAJA_INPUT_ASIANHOITAJA)
+            }
         }
     }
 
@@ -430,7 +468,7 @@ class HankeServiceITests(
         // Setup Hanke with one Yhteystieto:
         val hanke = hankeFactory.builder(USER_NAME).withGeneratedOmistaja(1).save()
         val ytid = hanke.omistajat[0].id!!
-        hanke.withGeneratedOmistaja(2) { id = null }.withGeneratedRakennuttaja(3) { id = null }
+        hanke.withOmistaja(i = 2, id = null).withRakennuttaja(i = 3, id = null)
 
         val result = hankeService.updateHanke(hanke)
 
@@ -911,7 +949,7 @@ class HankeServiceITests(
                 prop(HankekayttajaEntity::permission)
                     .isNotNull()
                     .prop(PermissionEntity::kayttooikeustaso)
-                    .isEqualTo(KAIKKI_OIKEUDET)
+                    .isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
                 prop(HankekayttajaEntity::kayttajakutsu).isNull() // no token for creator
                 prop(HankekayttajaEntity::kutsujaId).isNull() // no inviter for creator
                 prop(HankekayttajaEntity::kutsuttuEtunimi).isNull() // no name in invitation
@@ -1559,12 +1597,13 @@ class HankeServiceITests(
           "id":$id,
           "nimi":"etu$i suku$i",
           "email":"email$i",
-          "ytunnus": $defaultYtunnus,
+          "ytunnus": ${HankeYhteystietoFactory.DEFAULT_YTUNNUS},
           "puhelinnumero":"010$i$i$i$i$i$i$i",
           "organisaatioNimi":"org$i",
           "osasto":"osasto$i",
           "rooli": "Isännöitsijä$i",
-          "tyyppi": "YHTEISO"
+          "tyyppi": "YHTEISO",
+          "yhteyshenkilot": []
         }"""
 
     /**
@@ -1609,5 +1648,35 @@ class HankeServiceITests(
         every { securityContext.userId() } returns USER_NAME
         every { profiiliClient.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
         return securityContext
+    }
+
+    private fun assertk.Assert<HankeYhteystieto>.hasDefaultInfo() {
+        prop(HankeYhteystieto::nimi).isEqualTo(TEPPO_TESTI)
+        prop(HankeYhteystieto::email).isEqualTo(ApplicationFactory.TEPPO_EMAIL)
+        prop(HankeYhteystieto::tyyppi).isEqualTo(YhteystietoTyyppi.YRITYS)
+        prop(HankeYhteystieto::ytunnus).isEqualTo(HankeYhteystietoFactory.DEFAULT_YTUNNUS)
+        prop(HankeYhteystieto::puhelinnumero).isEqualTo("04012345678")
+        prop(HankeYhteystieto::organisaatioNimi).isEqualTo("Organisaatio")
+        prop(HankeYhteystieto::osasto).isEqualTo("Osasto")
+        prop(HankeYhteystieto::createdBy).isEqualTo("test7358")
+        prop(HankeYhteystieto::createdAt).isRecentZDT()
+        prop(HankeYhteystieto::modifiedBy).isNull()
+        prop(HankeYhteystieto::modifiedAt).isNull()
+        prop(HankeYhteystieto::rooli).isEqualTo("Isännöitsijä")
+    }
+
+    private fun assertk.Assert<HankeYhteystieto>.hasOneYhteyshenkilo(
+        hankekayttajaInput: HankekayttajaInput
+    ) {
+        prop(HankeYhteystieto::yhteyshenkilot).all {
+            hasSize(1)
+            first().all {
+                prop(Yhteyshenkilo::id).isNotNull()
+                prop(Yhteyshenkilo::etunimi).isEqualTo(hankekayttajaInput.etunimi)
+                prop(Yhteyshenkilo::sukunimi).isEqualTo(hankekayttajaInput.sukunimi)
+                prop(Yhteyshenkilo::email).isEqualTo(hankekayttajaInput.email)
+                prop(Yhteyshenkilo::puhelinnumero).isEqualTo(hankekayttajaInput.puhelin)
+            }
+        }
     }
 }

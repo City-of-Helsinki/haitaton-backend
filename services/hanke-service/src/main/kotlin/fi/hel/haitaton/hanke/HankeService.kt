@@ -48,13 +48,13 @@ class HankeService(
         } ?: throw HankeNotFoundException(hankeTunnus)
 
     @Transactional(readOnly = true)
-    fun loadHanke(hankeTunnus: String) =
+    fun loadHanke(hankeTunnus: String): Hanke? =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let {
             createHankeDomainObjectFromEntity(it)
         }
 
     @Transactional(readOnly = true)
-    fun loadPublicHanke() =
+    fun loadPublicHanke(): List<Hanke> =
         hankeRepository.findAllByStatus(HankeStatus.PUBLIC).map {
             createHankeDomainObjectFromEntity(it)
         }
@@ -517,25 +517,7 @@ class HankeService(
         if (validYhteystieto) {
             // ... it is valid, so create a new Yhteystieto
             val hankeYhtEntity =
-                HankeYhteystietoEntity(
-                    contactType = contactType,
-                    nimi = hankeYht.nimi,
-                    email = hankeYht.email,
-                    ytunnus = hankeYht.ytunnus,
-                    puhelinnumero = hankeYht.puhelinnumero,
-                    organisaatioNimi = hankeYht.organisaatioNimi,
-                    osasto = hankeYht.osasto,
-                    rooli = hankeYht.rooli,
-                    tyyppi = hankeYht.tyyppi,
-                    dataLocked = false,
-                    dataLockInfo = null,
-                    createdByUserId = userid,
-                    createdAt = getCurrentTimeUTCAsLocalTime(),
-                    modifiedByUserId = null,
-                    modifiedAt = null,
-                    id = null, // will be set by the database
-                    hanke = hankeEntity // reference back to parent hanke
-                )
+                HankeYhteystietoEntity.fromDomain(hankeYht, contactType, userid, hankeEntity)
             hankeEntity.addYhteystieto(hankeYhtEntity)
             // Logging of creating new yhteystietos is done after the hanke gets saved.
         } else {
