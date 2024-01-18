@@ -9,6 +9,7 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService.Companion.generateBlobPath
 import fi.hel.haitaton.hanke.attachment.azure.Container
@@ -29,7 +30,6 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
@@ -68,10 +68,9 @@ class ApplicationAttachmentMigratorITest(
 
         @Test
         fun `Should return un-migrated content when there are any`() {
-            val attachment = attachmentFactory.save().withDbContent().value
+            val attachment = attachmentFactory.save().withDbContent(DEFAULT_DATA).value
             assertThat(attachmentRepository.findAll()).hasSize(1)
             assertThat(contentRepository.findAll()).hasSize(1)
-            val content = contentRepository.findByIdOrNull(attachment.id!!)!!
             assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).isEmpty()
 
             val attachmentWithContent = attachmentMigrator.findAttachmentWithDatabaseContent()
@@ -83,7 +82,7 @@ class ApplicationAttachmentMigratorITest(
                 prop(ApplicationAttachmentWithContent::content).all {
                     prop(AttachmentContent::fileName).isEqualTo(attachment.fileName)
                     prop(AttachmentContent::contentType).isEqualTo(attachment.contentType)
-                    prop(AttachmentContent::bytes).isEqualTo(content.content)
+                    prop(AttachmentContent::bytes).isEqualTo(DEFAULT_DATA)
                 }
             }
         }
@@ -104,9 +103,9 @@ class ApplicationAttachmentMigratorITest(
             assertThat(attachmentRepository.findAll()).hasSize(1)
             assertThat(contentRepository.findAll()).hasSize(1)
             assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).hasSize(1)
-            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET).first()).all {
-                prop(TestFile::path).isEqualTo(blobPath)
-            }
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET).first())
+                .prop(TestFile::path)
+                .isEqualTo(blobPath)
         }
     }
 
@@ -137,9 +136,9 @@ class ApplicationAttachmentMigratorITest(
             attachmentMigrator.setBlobPathAndCleanup(attachment.id!!, blobPath)
 
             assertThat(attachmentRepository.findAll()).hasSize(1)
-            assertThat(attachmentRepository.getReferenceById(attachment.id!!)).all {
-                prop(ApplicationAttachmentEntity::blobLocation).isEqualTo(blobPath)
-            }
+            assertThat(attachmentRepository.getReferenceById(attachment.id!!))
+                .prop(ApplicationAttachmentEntity::blobLocation)
+                .isEqualTo(blobPath)
             assertThat(contentRepository.findAll()).isEmpty()
         }
     }
