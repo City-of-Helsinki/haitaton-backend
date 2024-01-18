@@ -1,11 +1,15 @@
 package fi.hel.haitaton.hanke.permissions
 
+import fi.hel.haitaton.hanke.HankeYhteyshenkiloEntity
 import fi.hel.haitaton.hanke.domain.HasId
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.FetchType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
+import jakarta.persistence.OneToMany
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.util.UUID
@@ -76,6 +80,13 @@ class HankekayttajaEntity(
 
     /** Identifier of the inviter. */
     @Column(name = "kutsuja_id") val kutsujaId: UUID? = null,
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        mappedBy = "hankeKayttaja",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    var yhteyshenkilot: MutableList<HankeYhteyshenkiloEntity> = mutableListOf(),
 ) {
     fun toDto(): HankeKayttajaDto =
         HankeKayttajaDto(

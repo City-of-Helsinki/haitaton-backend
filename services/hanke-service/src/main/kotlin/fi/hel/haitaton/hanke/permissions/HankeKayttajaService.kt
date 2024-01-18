@@ -120,34 +120,6 @@ class HankeKayttajaService(
     }
 
     @Transactional
-    fun saveNewTokensFromHanke(hanke: Hanke, userId: String) {
-        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
-            return
-        }
-        logger.info {
-            "Creating users and user tokens for hanke ${hanke.id}, hankeTunnus=${hanke.hankeTunnus}}"
-        }
-
-        val kayttajaInput =
-            hanke
-                .extractYhteystiedot()
-                .flatMap { it.alikontaktit }
-                .mapNotNull { it.toHankekayttajaInput() }
-
-        val inviter = getKayttajaByUserId(hanke.id, userId)
-        filterNewKayttajas(hanke.id, kayttajaInput).forEach {
-            createKutsuAndKayttaja(
-                hankeId = hanke.id,
-                hankeTunnus = hanke.hankeTunnus,
-                hankeNimi = hanke.nimi,
-                inviter = inviter,
-                kayttaja = it,
-                currentUserId = userId,
-            )
-        }
-    }
-
-    @Transactional
     fun addHankeFounder(
         hankeId: Int,
         hankePerustaja: HankePerustaja,

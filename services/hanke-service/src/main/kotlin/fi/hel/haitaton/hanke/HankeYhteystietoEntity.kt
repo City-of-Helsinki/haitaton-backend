@@ -3,22 +3,21 @@ package fi.hel.haitaton.hanke
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
-import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
-import io.hypersistence.utils.hibernate.type.json.JsonType
-import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType.STRING
 import jakarta.persistence.Enumerated
+import jakarta.persistence.FetchType
 import jakarta.persistence.FetchType.EAGER
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType.IDENTITY
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import java.time.LocalDateTime
-import org.hibernate.annotations.Type
 
 enum class ContactType {
     OMISTAJA,
@@ -42,9 +41,6 @@ class HankeYhteystietoEntity(
     @JsonView(ChangeLogView::class) var organisaatioNimi: String? = null,
     @JsonView(ChangeLogView::class) var osasto: String? = null,
     @JsonView(ChangeLogView::class) var rooli: String? = null,
-    @Type(JsonType::class)
-    @Column(columnDefinition = "jsonb")
-    var yhteyshenkilot: List<Yhteyshenkilo> = listOf(),
 
     /** For contacts with tyyppi other than YKSITYISHENKILO. */
     @JsonView(ChangeLogView::class) @Column(name = "y_tunnus") var ytunnus: String? = null,
@@ -65,6 +61,13 @@ class HankeYhteystietoEntity(
     @ManyToOne(fetch = EAGER)
     @JoinColumn(name = "hankeid")
     var hanke: HankeEntity? = null,
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        mappedBy = "hankeYhteystieto",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    var yhteyshenkilot: MutableList<HankeYhteyshenkiloEntity> = mutableListOf(),
 ) {
 
     fun toDomain(): HankeYhteystieto =
@@ -73,7 +76,6 @@ class HankeYhteystietoEntity(
             nimi = nimi,
             email = email,
             ytunnus = ytunnus,
-            alikontaktit = yhteyshenkilot,
             puhelinnumero = puhelinnumero,
             organisaatioNimi = organisaatioNimi,
             osasto = osasto,
@@ -132,20 +134,4 @@ class HankeYhteystietoEntity(
             rooli = rooli,
             tyyppi = tyyppi,
         )
-}
-
-@Schema(description = "Contact person")
-data class Yhteyshenkilo(
-    @field:Schema(description = "First name") val etunimi: String,
-    @field:Schema(description = "Last name") val sukunimi: String,
-    @field:Schema(description = "Email address") val email: String,
-    @field:Schema(description = "Phone number") val puhelinnumero: String,
-) {
-    fun fullName(): String = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
-
-    fun toHankekayttajaInput(): HankekayttajaInput? =
-        if (missingData()) null else HankekayttajaInput(etunimi, sukunimi, email, puhelinnumero)
-
-    private fun missingData(): Boolean =
-        listOf(etunimi, sukunimi, email, puhelinnumero).any { it.isBlank() }
 }

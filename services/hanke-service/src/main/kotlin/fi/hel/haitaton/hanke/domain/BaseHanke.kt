@@ -2,7 +2,6 @@ package fi.hel.haitaton.hanke.domain
 
 import com.fasterxml.jackson.annotation.JsonIgnore
 import fi.hel.haitaton.hanke.ContactType
-import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
@@ -34,7 +33,6 @@ interface Yhteystieto : HasId<Int?> {
     override val id: Int?
     val nimi: String
     val email: String
-    val alikontaktit: List<Yhteyshenkilo>
     val puhelinnumero: String?
     val organisaatioNimi: String?
     val osasto: String?

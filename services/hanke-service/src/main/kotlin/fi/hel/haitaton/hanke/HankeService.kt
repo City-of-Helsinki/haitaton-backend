@@ -131,7 +131,6 @@ class HankeService(
         postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
         return createHankeDomainObjectFromEntity(entity).also {
-            hankeKayttajaService.saveNewTokensFromHanke(it, userId)
             hankeLoggingService.logUpdate(hankeBeforeUpdate, it, userId)
         }
     }
@@ -162,15 +161,6 @@ class HankeService(
             logger.info { "Hakemus ${it.id} has alluStatus ${it.alluStatus}" }
             !applicationService.isStillPending(it.alluid, it.alluStatus)
         }
-
-    private fun initAccessForCreatedHanke(
-        hanke: Hanke,
-        perustaja: HankePerustaja,
-        securityContext: SecurityContext,
-    ) {
-        hankeKayttajaService.addHankeFounder(hanke.id, perustaja, securityContext)
-        hankeKayttajaService.saveNewTokensFromHanke(hanke, securityContext.userId())
-    }
 
     private fun calculateTormaystarkastelu(
         alueet: List<Hankealue>,
@@ -316,7 +306,7 @@ class HankeService(
     }
 
     private fun findAndLogAffectedBlockedYhteystietos(
-        incomingYts: MutableList<HankeYhteystieto>,
+        incomingYts: List<HankeYhteystieto>,
         tempLockedExistingYts: MutableMap<Int, HankeYhteystietoEntity>,
         loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder,
         userid: String
@@ -544,7 +534,6 @@ class HankeService(
                     modifiedByUserId = null,
                     modifiedAt = null,
                     id = null, // will be set by the database
-                    yhteyshenkilot = hankeYht.alikontaktit,
                     hanke = hankeEntity // reference back to parent hanke
                 )
             hankeEntity.addYhteystieto(hankeYhtEntity)
@@ -583,7 +572,6 @@ class HankeService(
                 existingYT.email = hankeYht.email
                 existingYT.ytunnus = hankeYht.ytunnus
                 existingYT.puhelinnumero = hankeYht.puhelinnumero
-                existingYT.yhteyshenkilot = hankeYht.alikontaktit
                 hankeYht.organisaatioNimi?.let {
                     existingYT.organisaatioNimi = hankeYht.organisaatioNimi
                 }
@@ -634,7 +622,6 @@ class HankeService(
         if (incoming.puhelinnumero != existing.puhelinnumero) return false
         if (incoming.organisaatioNimi != existing.organisaatioNimi) return false
         if (incoming.osasto != existing.osasto) return false
-        if (incoming.alikontaktit != existing.yhteyshenkilot) return false
         return true
     }
 
@@ -693,9 +680,9 @@ class HankeService(
         securityContext: SecurityContext,
     ): Hanke {
         val savedHankeEntity = hankeRepository.save(entity)
+        hankeKayttajaService.addHankeFounder(savedHankeEntity.id, perustaja, securityContext)
 
         return createHankeDomainObjectFromEntity(savedHankeEntity).also {
-            initAccessForCreatedHanke(it, perustaja, securityContext)
             hankeLoggingService.logCreate(it, securityContext.userId())
         }
     }
