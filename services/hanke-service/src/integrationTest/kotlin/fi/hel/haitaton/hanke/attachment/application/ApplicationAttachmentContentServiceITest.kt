@@ -139,7 +139,4 @@ class ApplicationAttachmentContentServiceITest(
 
     fun attachmentWithCloudContent(id: UUID = attachmentId): ApplicationAttachmentMetadata =
         applicationAttachmentFactory.save(id = id).withCloudContent().value.toDomain()
-
-    fun attachmentWithoutCloudContent(id: UUID = attachmentId): ApplicationAttachmentMetadata =
-        applicationAttachmentFactory.save(id = id).value.toDomain()
 }

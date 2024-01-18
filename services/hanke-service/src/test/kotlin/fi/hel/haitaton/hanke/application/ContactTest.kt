@@ -104,15 +104,6 @@ class ContactTest {
     }
 
     companion object {
-        @JvmStatic
-        fun invalidFounderContacts(): Stream<Contact> =
-            listOf(
-                    CONTACT.copy(firstName = null, lastName = null),
-                    CONTACT.copy(firstName = "", lastName = ""),
-                    CONTACT.copy(email = null),
-                    CONTACT.copy(email = "")
-                )
-                .stream()
 
         @JvmStatic
         fun invalidHankeKayttajaContacts(): Stream<Contact> =

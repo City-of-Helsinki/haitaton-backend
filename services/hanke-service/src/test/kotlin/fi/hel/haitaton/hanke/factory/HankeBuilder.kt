@@ -65,10 +65,7 @@ data class HankeBuilder(
     }
 
     /** Save the entity with [save], and - for convenience - get the saved entity from DB. */
-    fun saveEntity(): HankeEntity {
-        save()
-        return hankeRepository!!.getReferenceById(save().id)
-    }
+    fun saveEntity(): HankeEntity = hankeRepository!!.getReferenceById(save().id)
 
     /**
      * Save a standalone cable report application from this hanke with the given application data.
