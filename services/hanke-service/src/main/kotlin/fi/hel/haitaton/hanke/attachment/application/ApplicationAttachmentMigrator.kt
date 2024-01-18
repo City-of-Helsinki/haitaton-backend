@@ -28,7 +28,7 @@ class ApplicationAttachmentMigrator(
     /** Find an attachment that is not yet migrated, i.e. still has content in the db. */
     @Transactional(readOnly = true)
     fun findAttachmentWithDatabaseContent(): ApplicationAttachmentWithContent? {
-        val amount = attachmentAmountToMigrate()
+        val amount = contentRepository.count()
         if (amount == 0L) {
             return null
         }
@@ -76,11 +76,6 @@ class ApplicationAttachmentMigrator(
     fun revertMigration(blobPath: String) {
         fileClient.delete(Container.HAKEMUS_LIITTEET, blobPath)
     }
-
-    private fun attachmentAmountToMigrate() =
-        contentRepository.count().also {
-            logger.info { "There are un-migrated application attachments left, count = $it" }
-        }
 
     /** An attachment with its content in database. */
     private fun pickForMigration():
