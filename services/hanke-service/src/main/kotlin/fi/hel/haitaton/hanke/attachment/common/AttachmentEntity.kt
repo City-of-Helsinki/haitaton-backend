@@ -170,7 +170,7 @@ interface HankeAttachmentRepository : JpaRepository<HankeAttachmentEntity, UUID>
 interface ApplicationAttachmentRepository : JpaRepository<ApplicationAttachmentEntity, UUID> {
     fun findByApplicationId(applicationId: Long): List<ApplicationAttachmentEntity>
 
-    fun findByBlobLocationIsNull(): List<ApplicationAttachmentEntity>
+    fun findFirstByBlobLocationIsNull(): ApplicationAttachmentEntity?
 
     fun countByApplicationId(applicationId: Long): Int
 

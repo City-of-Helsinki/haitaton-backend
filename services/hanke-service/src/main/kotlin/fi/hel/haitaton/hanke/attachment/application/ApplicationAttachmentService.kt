@@ -17,12 +17,10 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.hasInfected
-import fi.hel.haitaton.hanke.configuration.LockService
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
-import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
 
@@ -35,54 +33,7 @@ class ApplicationAttachmentService(
     private val applicationRepository: ApplicationRepository,
     private val attachmentContentService: ApplicationAttachmentContentService,
     private val scanClient: FileScanClient,
-    private val lockService: LockService,
-    private val contentTransferService: ApplicationAttachmentContentTransferService,
 ) {
-
-    internal val lockName = "applicationAttachmentBlobTransfer"
-
-    @Scheduled(
-        fixedDelayString = "\${haitaton.application.attachments.blobTransferIntervalMilliSeconds}",
-        initialDelayString =
-            "\${haitaton.application.attachments.blobTransferInitialDelayMilliSeconds}"
-    )
-    fun transferAttachmentContentToBlobStorage() {
-        logger.info(
-            "Trying to obtain lock $lockName to start transferring application attachment content from database to Azure Blob Storage."
-        )
-        lockService.doIfUnlocked(lockName) { transferAttachmentContent() }
-    }
-
-    private fun transferAttachmentContent() {
-        logger.info {
-            "Starting to transfer application attachment content from database to Azure Blob Storage"
-        }
-        contentTransferService.nextTransferableAttachment()?.let { attachmentEntity ->
-            val blobPath = contentTransferService.transferToBlob(attachmentEntity)
-            logger.info {
-                "Saved attachment content for attachment ${attachmentEntity.id} to blob $blobPath"
-            }
-            try {
-                contentTransferService.cleanUpDatabase(attachmentEntity, blobPath)
-                logger.info {
-                    "Updated attachment ${attachmentEntity.id} metadata and removed attachment content from db"
-                }
-            } catch (e: Exception) {
-                logger.error(e) {
-                    "Updating attachment ${attachmentEntity.id} metadata failed, deleting attachment content blob $blobPath"
-                }
-                attachmentContentService.delete(blobPath)
-                throw e
-            }
-            logger.info {
-                "Transferred attachment ${attachmentEntity.id} content from database to Azure Blob Storage"
-            }
-        }
-            ?: logger.info {
-                "All application attachment content has been transferred from database to Azure Blob Storage"
-            }
-    }
-
     /** Authorization in controller throws exception if application ID is unknown. */
     fun getMetadataList(applicationId: Long): List<ApplicationAttachmentMetadataDto> =
         metadataService.getMetadataList(applicationId)

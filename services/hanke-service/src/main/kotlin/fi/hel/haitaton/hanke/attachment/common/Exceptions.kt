@@ -10,5 +10,5 @@ class AttachmentInvalidException(str: String) :
 
 class AttachmentNotFoundException(id: UUID?) : RuntimeException("Attachment not found, id=$id")
 
-class AttachmentContentNotFoundException(id: UUID?) :
+class AttachmentContentNotFoundException(id: UUID) :
     RuntimeException("Attachment content not found, id=$id")

@@ -12,7 +12,6 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
-import assertk.assertions.isNull
 import assertk.assertions.isPresent
 import assertk.assertions.messageContains
 import assertk.assertions.prop
@@ -515,70 +514,6 @@ class ApplicationAttachmentServiceITest(
 
                 assertThat(attachmentRepository.findAll()).isEmpty()
                 assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).isEmpty()
-            }
-        }
-    }
-
-    @Nested
-    inner class TransferAttachmentToBlobStorage {
-
-        @Test
-        fun `does nothing if all content has been transferred`() {
-            val attachment = attachmentFactory.save().withCloudContent().value
-            assertThat(attachmentRepository.findAll()).hasSize(1)
-            assertThat(contentRepository.findAll()).isEmpty()
-            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).hasSize(1)
-            attachmentRepository.findById(attachment.id!!).get().apply {
-                assertThat(blobLocation).isNotNull()
-                assertThat(blobLocation!!).startsWith("${attachment.applicationId}/")
-            }
-
-            attachmentService.transferAttachmentContentToBlobStorage()
-
-            assertThat(attachmentRepository.findAll()).hasSize(1)
-            assertThat(contentRepository.findAll()).isEmpty()
-            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).hasSize(1)
-            attachmentRepository.findById(attachment.id!!).get().apply {
-                assertThat(blobLocation).isNotNull()
-                assertThat(blobLocation!!).startsWith("${attachment.applicationId}/")
-            }
-        }
-
-        @Test
-        fun `transfers content to blob and updates database`() {
-            val attachment = attachmentFactory.save().withDbContent().value
-            assertThat(attachmentRepository.findAll()).hasSize(1)
-            assertThat(contentRepository.findAll()).hasSize(1)
-            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).isEmpty()
-
-            attachmentService.transferAttachmentContentToBlobStorage()
-
-            assertThat(attachmentRepository.findAll()).hasSize(1)
-            assertThat(contentRepository.findAll()).isEmpty()
-            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).hasSize(1)
-            attachmentRepository.findById(attachment.id!!).get().apply {
-                assertThat(blobLocation).isNotNull()
-                assertThat(blobLocation!!).startsWith("${attachment.applicationId}/")
-            }
-        }
-
-        @Test
-        fun `aborts if content is missing in database`() {
-            val attachment = attachmentFactory.save().value
-            assertThat(attachmentRepository.findAll()).hasSize(1)
-            assertThat(contentRepository.findAll()).isEmpty()
-            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).isEmpty()
-            attachmentRepository.findById(attachment.id!!).get().apply {
-                assertThat(blobLocation).isNull()
-            }
-
-            attachmentService.transferAttachmentContentToBlobStorage()
-
-            assertThat(attachmentRepository.findAll()).hasSize(1)
-            assertThat(contentRepository.findAll()).isEmpty()
-            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).isEmpty()
-            attachmentRepository.findById(attachment.id!!).get().apply {
-                assertThat(blobLocation).isNull()
             }
         }
     }
