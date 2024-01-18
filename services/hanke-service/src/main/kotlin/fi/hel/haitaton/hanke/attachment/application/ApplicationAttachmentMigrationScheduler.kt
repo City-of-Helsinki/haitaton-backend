@@ -47,6 +47,9 @@ class ApplicationAttachmentMigrationScheduler(
         }
         try {
             applicationAttachmentMigrator.setBlobPathAndCleanup(attachment.id, blobPath)
+            logger.info {
+                "Attachment migration database cleanup completed, id = ${attachment.id}, blobPath = $blobPath"
+            }
         } catch (e: Exception) {
             logger.error(e) {
                 "Error while setting blob path and cleaning up database, id = ${attachment.id}, blobPath = $blobPath"
@@ -56,9 +59,6 @@ class ApplicationAttachmentMigrationScheduler(
                 "Deleted migrated blob content for attachment, id = ${attachment.id}, blobPath = $blobPath"
             }
             throw e
-        }
-        logger.info {
-            "Attachment migration database cleanup completed, id = ${attachment.id}, blobPath = $blobPath"
         }
         logger.info {
             "Application attachment migrated to blob successfully, id = ${attachment.id}, blobPath = $blobPath"
