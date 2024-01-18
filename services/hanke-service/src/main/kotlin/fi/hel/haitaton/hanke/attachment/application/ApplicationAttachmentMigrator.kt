@@ -28,26 +28,22 @@ class ApplicationAttachmentMigrator(
     /** Find an attachment that is not yet migrated, i.e. still has content in the db. */
     @Transactional(readOnly = true)
     fun findAttachmentWithDatabaseContent(): ApplicationAttachmentWithContent? {
-        return attachmentAmountToMigrate().let {
-            if (it == 0L) {
-                return null
-            }
-            logger.info {
-                logger.info { "There are un-migrated application attachments left, count = $it" }
-            }
-            pickForMigration().let { (attachmentEntity, contentEntity) ->
-                ApplicationAttachmentWithContent(
-                    id = attachmentEntity.id!!,
-                    applicationId = attachmentEntity.applicationId,
-                    content =
-                        AttachmentContent(
-                            fileName = attachmentEntity.fileName,
-                            contentType = attachmentEntity.contentType,
-                            bytes = contentEntity.content,
-                        ),
-                )
-            }
+        val amount = attachmentAmountToMigrate()
+        if (amount == 0L) {
+            return null
         }
+        logger.info { "There are un-migrated application attachments left, count = $amount" }
+        val (attachmentEntity, contentEntity) = pickForMigration()
+        return ApplicationAttachmentWithContent(
+            id = attachmentEntity.id!!,
+            applicationId = attachmentEntity.applicationId,
+            content =
+                AttachmentContent(
+                    fileName = attachmentEntity.fileName,
+                    contentType = attachmentEntity.contentType,
+                    bytes = contentEntity.content,
+                ),
+        )
     }
 
     /** Moves content to cloud, returns the created blob path. */
@@ -86,10 +82,7 @@ class ApplicationAttachmentMigrator(
             logger.info { "There are un-migrated application attachments left, count = $it" }
         }
 
-    /**
-     * An attachment with its content. Content references attachment data. Thus, the relation must
-     * exist.
-     */
+    /** An attachment with its content in database. */
     private fun pickForMigration():
         Pair<ApplicationAttachmentEntity, ApplicationAttachmentContentEntity> {
         val attachmentEntity =

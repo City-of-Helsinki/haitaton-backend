@@ -15,8 +15,7 @@ import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
 import io.mockk.mockk
-import io.mockk.verify
-import io.mockk.verifyOrder
+import io.mockk.verifySequence
 import java.util.UUID
 import java.util.concurrent.locks.Lock
 import org.junit.jupiter.api.AfterEach
@@ -59,12 +58,10 @@ class ApplicationAttachmentMigrationSchedulerTest {
 
             scheduler.scheduleMigrate()
 
-            verifyOrder {
+            verifySequence {
                 jdbcLockRegistry.obtain(LOCK_NAME)
                 migrator.findAttachmentWithDatabaseContent()
             }
-            verify(exactly = 0) { migrator.migrate(any()) }
-            verify(exactly = 0) { migrator.setBlobPathAndCleanup(any(), any()) }
         }
 
         @Test
@@ -85,7 +82,7 @@ class ApplicationAttachmentMigrationSchedulerTest {
 
             scheduler.scheduleMigrate()
 
-            verifyOrder {
+            verifySequence {
                 jdbcLockRegistry.obtain(LOCK_NAME)
                 migrator.findAttachmentWithDatabaseContent()
                 migrator.migrate(attachmentWithContent)
@@ -104,12 +101,10 @@ class ApplicationAttachmentMigrationSchedulerTest {
 
             scheduler.scheduleMigrate()
 
-            verifyOrder {
+            verifySequence {
                 jdbcLockRegistry.obtain(LOCK_NAME)
                 migrator.findAttachmentWithDatabaseContent()
             }
-            verify(exactly = 0) { migrator.migrate(any()) }
-            verify(exactly = 0) { migrator.setBlobPathAndCleanup(any(), any()) }
         }
 
         @Test
@@ -129,12 +124,11 @@ class ApplicationAttachmentMigrationSchedulerTest {
 
             scheduler.scheduleMigrate()
 
-            verifyOrder {
+            verifySequence {
                 jdbcLockRegistry.obtain(LOCK_NAME)
                 migrator.findAttachmentWithDatabaseContent()
                 migrator.migrate(attachmentWithContent)
             }
-            verify(exactly = 0) { migrator.setBlobPathAndCleanup(any(), any()) }
         }
 
         @Test
@@ -161,7 +155,7 @@ class ApplicationAttachmentMigrationSchedulerTest {
 
             scheduler.scheduleMigrate()
 
-            verifyOrder {
+            verifySequence {
                 jdbcLockRegistry.obtain(LOCK_NAME)
                 migrator.findAttachmentWithDatabaseContent()
                 migrator.migrate(attachmentWithContent)
@@ -176,7 +170,7 @@ class ApplicationAttachmentMigrationSchedulerTest {
 
             scheduler.scheduleMigrate()
 
-            verifyOrder {
+            verifySequence {
                 jdbcLockRegistry.obtain(LOCK_NAME)
                 migrator wasNot Called
             }
@@ -189,14 +183,12 @@ class ApplicationAttachmentMigrationSchedulerTest {
 
             scheduler.scheduleMigrate()
 
-            verifyOrder {
+            verifySequence {
                 jdbcLockRegistry.obtain(LOCK_NAME)
                 lock.tryLock()
                 migrator.findAttachmentWithDatabaseContent()
                 lock.unlock()
             }
-            verify(exactly = 0) { migrator.migrate(any()) }
-            verify(exactly = 0) { migrator.setBlobPathAndCleanup(any(), any()) }
         }
     }
 
