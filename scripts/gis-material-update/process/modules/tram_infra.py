@@ -9,7 +9,7 @@ from modules.gis_processing import GisProcessor
 # tram = Urban tram
 # light_rail = Light rail
 
-TRAM_TYPE = ["tram", "light_rail"]
+TRAM_TYPES = ["tram", "light_rail"]
 
 def dict_values_to_list(d: dict) -> dict:
     """Transform dict values to list."""
@@ -45,7 +45,7 @@ class TramInfra(GisProcessor):
             lambda r: other_tag_to_dict(r.other_tags), axis=1
         )
         lines_with_tags_tram_index = lines_with_tags.apply(
-            lambda r: any(tag_value in r.tag_dict.get("railway", []) for tag_value in TRAM_TYPE), axis=1
+            lambda r: any(tag_value in r.tag_dict.get("railway", []) for tag_value in TRAM_TYPES), axis=1
         )
         tram_lines = lines_with_tags[lines_with_tags_tram_index]
 
