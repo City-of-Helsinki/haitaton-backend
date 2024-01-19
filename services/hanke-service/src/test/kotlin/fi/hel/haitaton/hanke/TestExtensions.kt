@@ -10,6 +10,7 @@ import jakarta.mail.internet.MimeMessage
 import java.nio.charset.StandardCharsets
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
+import java.util.UUID
 import org.junit.jupiter.api.Assertions
 import org.springframework.test.web.servlet.ResultActions
 
@@ -48,6 +49,13 @@ fun OffsetDateTime.asUtc(): OffsetDateTime = this.withOffsetSameInstant(ZoneOffs
 fun GreenMailExtension.firstReceivedMessage(): MimeMessage {
     Assertions.assertEquals(1, receivedMessages.size)
     return receivedMessages[0]
+}
+
+/** Creates a deterministic but "unpredictable" UUID from an int seed. */
+fun Int.toUUID(): UUID {
+    val bytes = ByteArray(4)
+    for (i in 0..3) bytes[i] = (this shr (i * 8)).toByte()
+    return UUID.nameUUIDFromBytes(bytes)
 }
 
 inline fun <reified T> Assert<Collection<T>>.hasSameElementsAs(elements: List<T>) =

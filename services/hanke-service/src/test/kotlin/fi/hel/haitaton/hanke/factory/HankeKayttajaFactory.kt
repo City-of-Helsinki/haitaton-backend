@@ -65,6 +65,20 @@ class HankeKayttajaFactory(
             permissionEntity = permissionService.create(hankeId, userId, kayttooikeustaso),
         )
 
+    fun saveIdentifiedUser(
+        hankeId: Int,
+        input: HankekayttajaInput,
+        kayttooikeustaso: Kayttooikeustaso,
+    ): HankekayttajaEntity =
+        saveIdentifiedUser(
+            hankeId = hankeId,
+            etunimi = input.etunimi,
+            sukunimi = input.sukunimi,
+            sahkoposti = input.email,
+            puhelin = input.puhelin,
+            kayttooikeustaso = kayttooikeustaso
+        )
+
     fun saveUser(
         hankeId: Int,
         etunimi: String = KAKE,

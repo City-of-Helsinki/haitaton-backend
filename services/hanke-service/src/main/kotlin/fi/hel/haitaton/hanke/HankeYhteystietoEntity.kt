@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.Yhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
@@ -18,6 +19,7 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import java.time.LocalDateTime
+import org.springframework.data.jpa.repository.JpaRepository
 
 enum class ContactType {
     OMISTAJA,
@@ -85,6 +87,7 @@ class HankeYhteystietoEntity(
             createdBy = createdByUserId,
             modifiedAt = modifiedAt?.zonedDateTime(),
             modifiedBy = modifiedByUserId,
+            yhteyshenkilot = yhteyshenkilot.map { it.toDomain() },
         )
 
     // Must consider both id and all non-audit fields for correct operations in certain collections
@@ -134,4 +137,32 @@ class HankeYhteystietoEntity(
             rooli = rooli,
             tyyppi = tyyppi,
         )
+
+    companion object {
+        fun fromDomain(
+            hankeYht: Yhteystieto,
+            contactType: ContactType,
+            createdByUserId: String,
+            hankeEntity: HankeEntity,
+        ) =
+            HankeYhteystietoEntity(
+                contactType = contactType,
+                nimi = hankeYht.nimi,
+                email = hankeYht.email,
+                ytunnus = hankeYht.ytunnus,
+                puhelinnumero = hankeYht.puhelinnumero,
+                organisaatioNimi = hankeYht.organisaatioNimi,
+                osasto = hankeYht.osasto,
+                rooli = hankeYht.rooli,
+                tyyppi = hankeYht.tyyppi,
+                dataLocked = false,
+                dataLockInfo = null,
+                createdByUserId = createdByUserId,
+                createdAt = getCurrentTimeUTCAsLocalTime(),
+                id = hankeYht.id,
+                hanke = hankeEntity, // reference back to parent hanke
+            )
+    }
 }
+
+interface HankeYhteystietoRepository : JpaRepository<HankeYhteystietoEntity, Int> {}

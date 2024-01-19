@@ -14,8 +14,8 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory.withYhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
-import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import java.time.ZonedDateTime
@@ -58,14 +58,16 @@ class HankeMapperTest {
     private fun expectedYhteystieto(hankeEntity: HankeEntity, type: ContactType, id: Int) =
         mutableListOf(
             HankeYhteystietoFactory.create(
-                id = id,
-                nimi = "$TEPPO_TESTI $type",
-                email = "$type.$TEPPO_EMAIL",
-                tyyppi = YRITYS,
-                ytunnus = defaultYtunnus,
-                createdAt = hankeEntity.yhteystietoCreatedAt(type),
-                modifiedAt = hankeEntity.yhteystietoModifiedAt(type),
-            )
+                    id = id,
+                    nimi = "$TEPPO_TESTI $type",
+                    email = "$type.$TEPPO_EMAIL",
+                    tyyppi = YRITYS,
+                    ytunnus = HankeYhteystietoFactory.DEFAULT_YTUNNUS,
+                    createdAt = hankeEntity.yhteystietoCreatedAt(type),
+                    modifiedAt = hankeEntity.yhteystietoModifiedAt(type),
+                )
+                .withYhteyshenkilo(id * 2)
+                .withYhteyshenkilo(id * 2 + 1)
         )
 
     private fun HankeEntity.yhteystietoCreatedAt(contactType: ContactType) =

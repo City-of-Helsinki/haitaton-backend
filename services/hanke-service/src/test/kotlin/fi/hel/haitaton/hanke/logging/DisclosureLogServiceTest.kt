@@ -15,9 +15,9 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withApplicatio
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedRakennuttaja
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedToteuttaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withOmistaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withToteuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
@@ -155,10 +155,7 @@ internal class DisclosureLogServiceTest {
         val hankkeet =
             listOf(
                 HankeFactory.create().withYhteystiedot(),
-                HankeFactory.create()
-                    .withGeneratedOmistaja(5)
-                    .withGeneratedRakennuttaja(6)
-                    .withGeneratedToteuttaja(7)
+                HankeFactory.create().withOmistaja(5).withRakennuttaja(6).withToteuttaja(7)
             )
         val expectedLogs = hankkeet.flatMap { AuditLogEntryFactory.createReadEntriesForHanke(it) }
 
