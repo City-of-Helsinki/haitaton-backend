@@ -69,7 +69,7 @@ class ApplicationAttachmentService(
 
         logger.info { "Saving attachment content for application $applicationId" }
         val blobPath =
-            attachmentContentService.save(filename, contentType, applicationId, attachment.bytes)
+            attachmentContentService.upload(filename, contentType, attachment.bytes, applicationId)
         logger.info { "Saving attachment metadata for application $applicationId" }
         val newAttachment =
             try {
@@ -126,8 +126,7 @@ class ApplicationAttachmentService(
         logger.info { "Deleting attachment metadata ${attachment.id}" }
         metadataService.deleteAttachmentById(attachment.id)
         logger.info { "Deleting attachment content at ${attachment.blobLocation}" }
-        attachment.blobLocation?.let { attachmentContentService.delete(it) }
-            ?: logger.info { "Attachment ${attachment.id} has no blob path set" }
+        attachmentContentService.delete(attachment.blobLocation)
         logger.info { "Deleted attachment $attachmentId from application ${application.id}" }
     }
 

@@ -15,15 +15,11 @@ import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.test.Asserts.isSameInstantAs
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.NullSource
-import org.junit.jupiter.params.provider.ValueSource
+import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
-
-private const val BLOB_LOCATION = "1/bcae2ff2-74e9-48d2-a8ed-e33a40652304"
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -33,17 +29,14 @@ class ApplicationAttachmentRepositoryITests : DatabaseTest() {
     @Autowired private lateinit var hankeFactory: HankeFactory
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
 
-    @NullSource
-    @ValueSource(strings = [BLOB_LOCATION])
-    @ParameterizedTest
-    fun `Should save and find hanke attachment with nullable blob location`(blobLocation: String?) {
+    @Test
+    fun `Should save and find hanke attachment with nullable blob location`() {
         val hanke = hankeFactory.saveMinimal()
         val application = applicationFactory.saveApplicationEntity("User", hanke)
         val saved =
             applicationAttachmentRepository.save(
                 ApplicationAttachmentFactory.createEntity(
                     applicationId = application.id!!,
-                    blobLocation = blobLocation,
                 )
             )
 
@@ -60,7 +53,7 @@ class ApplicationAttachmentRepositoryITests : DatabaseTest() {
             prop(ApplicationAttachmentEntity::createdAt)
                 .isSameInstantAs(ApplicationAttachmentFactory.CREATED_AT)
             prop(ApplicationAttachmentEntity::applicationId).isEqualTo(application.id)
-            prop(ApplicationAttachmentEntity::blobLocation).isEqualTo(blobLocation)
+            prop(ApplicationAttachmentEntity::blobLocation).isEqualTo(saved.blobLocation)
         }
     }
 }

@@ -1,6 +1,5 @@
 TRUNCATE TABLE
     application_attachment,
-    application_attachment_content,
     applications,
     audit_logs,
     geometriat,
