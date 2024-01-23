@@ -1,5 +1,8 @@
 package fi.hel.haitaton.hanke
 
+import assertk.assertions.hasSize
+import assertk.assertions.isNotNull
+import assertk.assertions.prop
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
@@ -134,10 +137,11 @@ internal class HankeRepositoryITests : DatabaseTest() {
 
         hankeRepository.save(loadedHanke)
 
-        val loadedHanke2 = hankeRepository.findByHankeTunnus("ABC-124")
-        assertThat(loadedHanke2).isNotNull
-        assertThat(loadedHanke2!!.listOfHankeYhteystieto).isNotNull
-        assertThat(loadedHanke2.listOfHankeYhteystieto).hasSize(1)
+        assertk
+            .assertThat(hankeRepository.findByHankeTunnus("ABC-124"))
+            .isNotNull()
+            .prop(HankeEntity::listOfHankeYhteystieto)
+            .hasSize(1)
     }
 
     private fun createBaseHankeEntity(hankeTunnus: String) =

@@ -15,6 +15,7 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isPresent
 import assertk.assertions.messageContains
 import assertk.assertions.prop
+import assertk.assertions.single
 import assertk.assertions.startsWith
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
@@ -32,6 +33,7 @@ import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentRepository
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
@@ -223,19 +225,22 @@ class ApplicationAttachmentServiceITest(
             assertThat(result.attachmentType).isEqualTo(typeInput)
 
             val attachments = attachmentRepository.findAll()
-            assertThat(attachments).hasSize(1)
-            val attachmentInDb = attachments.first()
-            assertThat(attachmentInDb.id).isEqualTo(result.id)
-            assertThat(attachmentInDb.createdByUserId).isEqualTo(USERNAME)
-            assertThat(attachmentInDb.fileName).isEqualTo(FILE_NAME_PDF)
-            assertThat(attachmentInDb.contentType).isEqualTo(MediaType.APPLICATION_PDF_VALUE)
-            assertThat(attachmentInDb.size).isEqualTo(DEFAULT_SIZE)
-            assertThat(attachmentInDb.createdAt).isRecent()
-            assertThat(attachmentInDb.applicationId).isEqualTo(application.id)
-            assertThat(attachmentInDb.attachmentType).isEqualTo(typeInput)
-            assertThat(attachmentInDb.blobLocation).isNotNull().startsWith("${application.id!!}/")
+            assertThat(attachments).single().all {
+                prop(ApplicationAttachmentEntity::id).isEqualTo(result.id)
+                prop(ApplicationAttachmentEntity::createdByUserId).isEqualTo(USERNAME)
+                prop(ApplicationAttachmentEntity::fileName).isEqualTo(FILE_NAME_PDF)
+                prop(ApplicationAttachmentEntity::contentType)
+                    .isEqualTo(MediaType.APPLICATION_PDF_VALUE)
+                prop(ApplicationAttachmentEntity::size).isEqualTo(DEFAULT_SIZE)
+                prop(ApplicationAttachmentEntity::createdAt).isRecent()
+                prop(ApplicationAttachmentEntity::applicationId).isEqualTo(application.id)
+                prop(ApplicationAttachmentEntity::attachmentType).isEqualTo(typeInput)
+                prop(ApplicationAttachmentEntity::blobLocation)
+                    .isNotNull()
+                    .startsWith("${application.id!!}/")
+            }
 
-            val content = fileClient.download(HAKEMUS_LIITTEET, attachmentInDb.blobLocation!!)
+            val content = fileClient.download(HAKEMUS_LIITTEET, attachments.first().blobLocation!!)
             assertThat(content)
                 .isNotNull()
                 .prop(DownloadResponse::content)

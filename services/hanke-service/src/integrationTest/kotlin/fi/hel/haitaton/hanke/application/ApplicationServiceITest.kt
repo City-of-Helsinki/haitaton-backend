@@ -8,17 +8,19 @@ import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
 import assertk.assertions.extracting
-import assertk.assertions.first
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isIn
+import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isPresent
+import assertk.assertions.isTrue
 import assertk.assertions.matches
 import assertk.assertions.prop
+import assertk.assertions.single
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
@@ -74,10 +76,9 @@ import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
+import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
-import fi.hel.haitaton.hanke.logging.Status
-import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.KayttajakutsuEntity
@@ -91,6 +92,7 @@ import fi.hel.haitaton.hanke.test.Asserts.hasSingleGeometryWithCoordinates
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
 import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
@@ -197,29 +199,19 @@ class ApplicationServiceITest : DatabaseTest() {
                 )
 
             val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
-            assertThat(applicationLogs).hasSize(1)
-            val logEntry = applicationLogs[0]
-            assertThat(logEntry::isSent).isFalse()
-            assertThat(logEntry::createdAt).isRecent()
-            val event = logEntry.message.auditEvent
-            assertThat(event::dateTime).isRecent()
-            assertThat(event::operation).isEqualTo(Operation.CREATE)
-            assertThat(event::status).isEqualTo(Status.SUCCESS)
-            assertThat(event::failureDescription).isNull()
-            assertThat(event::appVersion).isEqualTo("1")
-            assertThat(event.actor::userId).isEqualTo(USERNAME)
-            assertThat(event.actor::role).isEqualTo(UserRole.USER)
-            assertThat(event.actor::ipAddress).isEqualTo(TestUtils.mockedIp)
-            assertThat(event.target::id).isEqualTo(application.id?.toString())
-            assertThat(event.target::type).isEqualTo(ObjectType.APPLICATION)
-            assertThat(event.target::objectBefore).isNull()
             val expectedObject =
                 expectedLogObject(application.id, null, hankeTunnus = hanke.hankeTunnus)
-            JSONAssert.assertEquals(
-                expectedObject,
-                event.target.objectAfter,
-                JSONCompareMode.NON_EXTENSIBLE
-            )
+            assertThat(applicationLogs).single().isSuccess(Operation.CREATE) {
+                hasUserActor(USERNAME, TestUtils.mockedIp)
+                withTarget {
+                    prop(AuditLogTarget::id).isEqualTo(application.id?.toString())
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.APPLICATION)
+                    prop(AuditLogTarget::objectBefore).isNull()
+                    prop(AuditLogTarget::objectAfter).given {
+                        JSONAssert.assertEquals(expectedObject, it, JSONCompareMode.NON_EXTENSIBLE)
+                    }
+                }
+            }
             verify { cableReportServiceAllu wasNot Called }
         }
 
@@ -250,13 +242,15 @@ class ApplicationServiceITest : DatabaseTest() {
             assertTrue(response.applicationData.pendingOnClient)
             assertTrue(cableReportApplicationData.pendingOnClient)
             val savedApplications = applicationRepository.findAll()
-            assertThat(savedApplications).hasSize(1)
-            val savedApplication = savedApplications[0]
-            assertEquals(response.id, savedApplication.id)
-            assertEquals(null, savedApplication.alluid)
-            assertEquals(newApplication.applicationType, savedApplication.applicationType)
-            assertEquals(newApplication.applicationData, savedApplication.applicationData)
-            assertTrue(savedApplication.applicationData.pendingOnClient)
+            assertThat(savedApplications).single().all {
+                prop(ApplicationEntity::id).isEqualTo(response.id)
+                prop(ApplicationEntity::alluid).isNull()
+                prop(ApplicationEntity::applicationType).isEqualTo(newApplication.applicationType)
+                prop(ApplicationEntity::applicationData).all {
+                    isEqualTo(newApplication.applicationData)
+                    prop(ApplicationData::pendingOnClient).isTrue()
+                }
+            }
             verify { cableReportServiceAllu wasNot Called }
         }
 
@@ -355,40 +349,23 @@ class ApplicationServiceITest : DatabaseTest() {
             )
 
             val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
-            assertThat(applicationLogs).hasSize(1)
-            val logEntry = applicationLogs[0]
-            assertThat(logEntry::isSent).isFalse()
-            assertThat(logEntry::createdAt).isRecent()
-            val event = logEntry.message.auditEvent
-            assertThat(event::dateTime).isRecent()
-            assertThat(event::operation).isEqualTo(Operation.UPDATE)
-            assertThat(event::status).isEqualTo(Status.SUCCESS)
-            assertThat(event::failureDescription).isNull()
-            assertThat(event::appVersion).isEqualTo("1")
-            assertThat(event.actor::userId).isEqualTo(USERNAME)
-            assertThat(event.actor::role).isEqualTo(UserRole.USER)
-            assertThat(event.actor::ipAddress).isEqualTo(TestUtils.mockedIp)
-            assertThat(event.target::id).isEqualTo(application.id?.toString())
-            assertThat(event.target::type).isEqualTo(ObjectType.APPLICATION)
-            val expectedObjectBefore =
+            val expectedBefore =
                 expectedLogObject(application.id, null, hankeTunnus = hanke.hankeTunnus)
-            JSONAssert.assertEquals(
-                expectedObjectBefore,
-                event.target.objectBefore,
-                JSONCompareMode.NON_EXTENSIBLE
-            )
-            val expectedObjectAfter =
-                expectedLogObject(
-                    application.id,
-                    null,
-                    "Modified application",
-                    hankeTunnus = hanke.hankeTunnus
-                )
-            JSONAssert.assertEquals(
-                expectedObjectAfter,
-                event.target.objectAfter,
-                JSONCompareMode.NON_EXTENSIBLE
-            )
+            val expectedAfter =
+                expectedLogObject(application.id, null, "Modified application", hanke.hankeTunnus)
+            assertThat(applicationLogs).single().isSuccess(Operation.UPDATE) {
+                hasUserActor(USERNAME, TestUtils.mockedIp)
+                withTarget {
+                    prop(AuditLogTarget::id).isEqualTo(application.id?.toString())
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.APPLICATION)
+                    prop(AuditLogTarget::objectBefore).given {
+                        JSONAssert.assertEquals(expectedBefore, it, JSONCompareMode.NON_EXTENSIBLE)
+                    }
+                    prop(AuditLogTarget::objectAfter).given {
+                        JSONAssert.assertEquals(expectedAfter, it, JSONCompareMode.NON_EXTENSIBLE)
+                    }
+                }
+            }
             verify { cableReportServiceAllu wasNot Called }
         }
 
@@ -548,8 +525,7 @@ class ApplicationServiceITest : DatabaseTest() {
                 )
 
             val updatedHanke = hankeService.loadHanke(response.hankeTunnus)!!
-            assertThat(updatedHanke.alueet).hasSize(1)
-            assertThat(updatedHanke.alueet).first().all {
+            assertThat(updatedHanke.alueet).single().all {
                 prop(Hankealue::nimi).isEqualTo("Hankealue 1")
                 hasSingleGeometryWithCoordinates(GeometriaFactory.thirdPolygon)
             }
@@ -580,13 +556,12 @@ class ApplicationServiceITest : DatabaseTest() {
             assertEquals(null, response.alluid)
             assertEquals(application.applicationType, response.applicationType)
             assertEquals(newApplicationData, response.applicationData)
-            val savedApplications = applicationRepository.findAll()
-            assertThat(savedApplications).hasSize(1)
-            val savedApplication = savedApplications[0]
-            assertEquals(response.id, savedApplication.id)
-            assertEquals(null, savedApplication.alluid)
-            assertEquals(application.applicationType, savedApplication.applicationType)
-            assertEquals(newApplicationData, savedApplication.applicationData)
+            assertThat(applicationRepository.findAll()).single().all {
+                prop(ApplicationEntity::id).isEqualTo(response.id)
+                prop(ApplicationEntity::alluid).isNull()
+                prop(ApplicationEntity::applicationType).isEqualTo(application.applicationType)
+                prop(ApplicationEntity::applicationData).isEqualTo(newApplicationData)
+            }
             verify { cableReportServiceAllu wasNot Called }
         }
 
@@ -787,11 +762,10 @@ class ApplicationServiceITest : DatabaseTest() {
 
             assertEquals(21, response.alluid)
             assertEquals(newApplicationData, response.applicationData)
-            val savedApplications = applicationRepository.findAll()
-            assertThat(savedApplications).hasSize(1)
-            val savedApplication = savedApplications[0]
-            assertEquals(21, savedApplication.alluid)
-            assertEquals(newApplicationData, savedApplication.applicationData)
+            assertThat(applicationRepository.findAll()).single().all {
+                prop(ApplicationEntity::alluid).isEqualTo(21)
+                prop(ApplicationEntity::applicationData).isEqualTo(newApplicationData)
+            }
             verifyOrder {
                 cableReportServiceAllu.getApplicationInformation(21)
                 cableReportServiceAllu.update(21, newApplicationData.toAlluData(HANKE_TUNNUS))
@@ -832,12 +806,11 @@ class ApplicationServiceITest : DatabaseTest() {
                 exception.message
             )
             val savedApplications = applicationRepository.findAll()
-            assertThat(savedApplications).hasSize(1)
-            val savedApplication = savedApplications[0]
-            assertEquals(21, savedApplication.alluid)
-            assertEquals(application.applicationData, savedApplication.applicationData)
-            verify { cableReportServiceAllu.getApplicationInformation(21) }
-            verify(exactly = 0) { cableReportServiceAllu.update(any(), any()) }
+            assertThat(savedApplications).single().all {
+                prop(ApplicationEntity::alluid).isEqualTo(21)
+                prop(ApplicationEntity::applicationData).isEqualTo(application.applicationData)
+            }
+            verifySequence { cableReportServiceAllu.getApplicationInformation(21) }
         }
 
         @Test
@@ -906,15 +879,13 @@ class ApplicationServiceITest : DatabaseTest() {
                 )
             }
 
-            val savedApplications = applicationRepository.findAll()
-            assertThat(savedApplications).hasSize(1)
-            val savedApplication = savedApplications[0]
-            assertEquals(
-                ApplicationFactory.DEFAULT_APPLICATION_NAME,
-                (savedApplication.applicationData as CableReportApplicationData).name
-            )
-            verify { cableReportServiceAllu.getApplicationInformation(21) }
-            verify(exactly = 0) { cableReportServiceAllu.update(any(), any()) }
+            assertThat(applicationRepository.findAll())
+                .single()
+                .prop(ApplicationEntity::applicationData)
+                .isInstanceOf(CableReportApplicationData::class)
+                .prop(CableReportApplicationData::name)
+                .isEqualTo(ApplicationFactory.DEFAULT_APPLICATION_NAME)
+            verifySequence { cableReportServiceAllu.getApplicationInformation(21) }
         }
 
         @Test
@@ -1142,8 +1113,7 @@ class ApplicationServiceITest : DatabaseTest() {
             applicationService.sendApplication(application.id!!, USERNAME)
 
             val kutsut = kayttajakutsuRepository.findAll()
-            assertThat(kutsut).hasSize(1)
-            assertThat(kutsut.first()).all {
+            assertThat(kutsut).single().all {
                 prop(KayttajakutsuEntity::kayttooikeustaso).isEqualTo(KATSELUOIKEUS)
                 prop(KayttajakutsuEntity::createdAt).isRecent()
                 prop(KayttajakutsuEntity::tunniste).matches(Regex(kayttajaTunnistePattern))
@@ -1462,29 +1432,19 @@ class ApplicationServiceITest : DatabaseTest() {
             applicationService.delete(application.id!!, USERNAME)
 
             val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
-            assertThat(applicationLogs).hasSize(1)
-            val logEntry = applicationLogs[0]
-            assertThat(logEntry::isSent).isFalse()
-            assertThat(logEntry::createdAt).isRecent()
-            val event = logEntry.message.auditEvent
-            assertThat(event::dateTime).isRecent()
-            assertThat(event::operation).isEqualTo(Operation.DELETE)
-            assertThat(event::status).isEqualTo(Status.SUCCESS)
-            assertThat(event::failureDescription).isNull()
-            assertThat(event::appVersion).isEqualTo("1")
-            assertThat(event.actor::userId).isEqualTo(USERNAME)
-            assertThat(event.actor::role).isEqualTo(UserRole.USER)
-            assertThat(event.actor::ipAddress).isEqualTo(TestUtils.mockedIp)
-            assertThat(event.target::id).isEqualTo(application.id?.toString())
-            assertThat(event.target::type).isEqualTo(ObjectType.APPLICATION)
             val expectedObject =
                 expectedLogObject(application.id, null, hankeTunnus = hanke.hankeTunnus)
-            JSONAssert.assertEquals(
-                expectedObject,
-                event.target.objectBefore,
-                JSONCompareMode.NON_EXTENSIBLE
-            )
-            assertThat(event.target::objectAfter).isNull()
+            assertThat(applicationLogs).single().isSuccess(Operation.DELETE) {
+                hasUserActor(USERNAME, TestUtils.mockedIp)
+                withTarget {
+                    prop(AuditLogTarget::id).isEqualTo(application.id?.toString())
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.APPLICATION)
+                    prop(AuditLogTarget::objectBefore).given {
+                        JSONAssert.assertEquals(expectedObject, it, JSONCompareMode.NON_EXTENSIBLE)
+                    }
+                    prop(AuditLogTarget::objectAfter).isNull()
+                }
+            }
             verify { cableReportServiceAllu wasNot Called }
         }
 

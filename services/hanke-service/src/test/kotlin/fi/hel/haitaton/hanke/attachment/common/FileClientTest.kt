@@ -6,7 +6,6 @@ import assertk.assertThat
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
 import assertk.assertions.extracting
-import assertk.assertions.first
 import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
@@ -15,6 +14,7 @@ import assertk.assertions.isFalse
 import assertk.assertions.isTrue
 import assertk.assertions.messageContains
 import assertk.assertions.prop
+import assertk.assertions.single
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.azure.UnexpectedSubdirectoryException
 import fi.hel.haitaton.hanke.hasSameElementsAs
@@ -42,9 +42,7 @@ abstract class FileClientTest {
         fun `uploads the file to the correct path`(path: String) {
             fileClient.upload(container, path, "test.txt", MediaType.TEXT_PLAIN, testContent)
 
-            val attachments = listBlobs()
-            assertThat(attachments).hasSize(1)
-            assertThat(attachments).first().prop(TestFile::path).isEqualTo(path)
+            assertThat(listBlobs()).single().prop(TestFile::path).isEqualTo(path)
         }
 
         @ParameterizedTest
@@ -58,10 +56,8 @@ abstract class FileClientTest {
                 testContent
             )
 
-            val blobs = listBlobs()
-            assertThat(blobs).hasSize(1)
-            assertThat(blobs)
-                .first()
+            assertThat(listBlobs())
+                .single()
                 .prop(TestFile::contentDisposition)
                 .isEqualTo("attachment; filename=$originalFileName")
         }
@@ -73,9 +69,7 @@ abstract class FileClientTest {
 
             fileClient.upload(container, "test/test.txt", "test.txt", mediaType, testContent)
 
-            val blobs = listBlobs()
-            assertThat(blobs).hasSize(1)
-            assertThat(blobs).first().prop(TestFile::contentType).isEqualTo(mediaType)
+            assertThat(listBlobs()).single().prop(TestFile::contentType).isEqualTo(mediaType)
         }
 
         @Test
@@ -103,9 +97,7 @@ abstract class FileClientTest {
 
             fileClient.upload(container, path, newFilename, newMediaType, newContent)
 
-            val blobs = listBlobs()
-            assertThat(blobs).hasSize(1)
-            assertThat(blobs).first().all {
+            assertThat(listBlobs()).single().all {
                 prop(TestFile::path).isEqualTo(path)
                 prop(TestFile::contentDisposition).isEqualTo("attachment; filename=$newFilename")
                 prop(TestFile::contentType).isEqualTo(newMediaType)
@@ -120,9 +112,7 @@ abstract class FileClientTest {
             val path = "test/test.txt"
             fileClient.upload(container, path, "test.txt", MediaType.TEXT_PLAIN, testContent)
 
-            val attachments = listBlobs(container)
-            assertThat(attachments).hasSize(1)
-            assertThat(attachments).first().prop(TestFile::path).isEqualTo(path)
+            assertThat(listBlobs(container)).single().prop(TestFile::path).isEqualTo(path)
             assertThat(listBlobsFromOtherContainers(container)).isEmpty()
         }
     }
