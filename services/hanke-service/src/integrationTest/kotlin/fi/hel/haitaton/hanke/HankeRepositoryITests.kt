@@ -1,5 +1,8 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.domain.HankeStatus
+import fi.hel.haitaton.hanke.domain.Hankevaihe
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
 import java.time.LocalDateTime
 import org.assertj.core.api.Assertions.assertThat
@@ -35,16 +38,11 @@ internal class HankeRepositoryITests : DatabaseTest() {
     }
 
     @Test
-    fun `basic fields, tyomaa and haitat fields can be round-trip saved and loaded`() {
+    fun `basic fields and tyomaa fields can be round-trip saved and loaded`() {
         val baseHankeEntity = createBaseHankeEntity("ABC-123")
         baseHankeEntity.tyomaaKatuosoite = "katu 1"
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.VESI)
         baseHankeEntity.tyomaaTyyppi.add(TyomaaTyyppi.MUU)
-        baseHankeEntity.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
-        baseHankeEntity.kaistaPituusHaitta = KaistajarjestelynPituus.KOLME
-        baseHankeEntity.meluHaitta = Haitta13.YKSI
-        baseHankeEntity.polyHaitta = Haitta13.KAKSI
-        baseHankeEntity.tarinaHaitta = Haitta13.KOLME
         hankeRepository.save(baseHankeEntity)
 
         val loadedHanke = hankeRepository.findByHankeTunnus("ABC-123")
@@ -53,15 +51,9 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHanke!!.status).isEqualTo(HankeStatus.DRAFT)
         assertThat(loadedHanke.nimi).isEqualTo("nimi")
         assertThat(loadedHanke.kuvaus).isEqualTo("kuvaus")
-        assertThat(loadedHanke.vaihe).isEqualTo(Vaihe.SUUNNITTELU)
+        assertThat(loadedHanke.vaihe).isEqualTo(Hankevaihe.SUUNNITTELU)
         assertThat(loadedHanke.tyomaaKatuosoite).isEqualTo("katu 1")
         assertThat(loadedHanke.tyomaaTyyppi).contains(TyomaaTyyppi.VESI, TyomaaTyyppi.MUU)
-        assertThat(loadedHanke.kaistaHaitta)
-            .isEqualTo(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI)
-        assertThat(loadedHanke.kaistaPituusHaitta).isEqualTo(KaistajarjestelynPituus.KOLME)
-        assertThat(loadedHanke.meluHaitta).isEqualTo(Haitta13.YKSI)
-        assertThat(loadedHanke.polyHaitta).isEqualTo(Haitta13.KAKSI)
-        assertThat(loadedHanke.tarinaHaitta).isEqualTo(Haitta13.KOLME)
     }
 
     @Test
@@ -95,8 +87,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHankeYhteystietoEntity1.modifiedByUserId).isEqualTo("11")
         assertThat(loadedHankeYhteystietoEntity1.modifiedAt).isEqualTo(datetime())
         assertThat(loadedHankeYhteystietoEntity1.tyyppi).isEqualTo(YRITYS)
-        assertThat(loadedHankeYhteystietoEntity1.yhteyshenkilot)
-            .hasSameElementsAs(listOf(createYhteyshenkilo()))
+        assertThat(loadedHankeYhteystietoEntity1.yhteyshenkilot).isEmpty()
         assertThat(loadedHankeYhteystietoEntity1.hanke).isSameAs(loadedHanke)
         assertThat(loadedHankeYhteystietoEntity2).isNotNull
         assertThat(loadedHankeYhteystietoEntity2.nimi).isEqualTo("Etu2 Suku2")
@@ -108,8 +99,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHankeYhteystietoEntity2.createdAt).isEqualTo(datetime())
         assertThat(loadedHankeYhteystietoEntity2.modifiedByUserId).isEqualTo("22")
         assertThat(loadedHankeYhteystietoEntity2.modifiedAt).isEqualTo(datetime())
-        assertThat(loadedHankeYhteystietoEntity2.yhteyshenkilot)
-            .hasSameElementsAs(listOf(createYhteyshenkilo()))
+        assertThat(loadedHankeYhteystietoEntity2.yhteyshenkilot).isEmpty()
         assertThat(loadedHankeYhteystietoEntity3).isNotNull
         assertThat(loadedHankeYhteystietoEntity3.nimi).isEqualTo("Etu3 Suku3")
         assertThat(loadedHankeYhteystietoEntity3.email).isEqualTo("email3")
@@ -120,8 +110,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
         assertThat(loadedHankeYhteystietoEntity3.createdAt).isEqualTo(datetime())
         assertThat(loadedHankeYhteystietoEntity3.modifiedByUserId).isEqualTo("33")
         assertThat(loadedHankeYhteystietoEntity3.modifiedAt).isEqualTo(datetime())
-        assertThat(loadedHankeYhteystietoEntity3.yhteyshenkilot)
-            .hasSameElementsAs(listOf(createYhteyshenkilo()))
+        assertThat(loadedHankeYhteystietoEntity3.yhteyshenkilot).isEmpty()
     }
 
     @Test
@@ -157,7 +146,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
             hankeTunnus = hankeTunnus,
             nimi = "nimi",
             kuvaus = "kuvaus",
-            vaihe = Vaihe.SUUNNITTELU,
+            vaihe = Hankevaihe.SUUNNITTELU,
             onYKTHanke = true,
             version = 1,
             createdByUserId = null,
@@ -184,7 +173,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
             modifiedByUserId = "11",
             modifiedAt = datetime(),
             id = null,
-            yhteyshenkilot = listOf(createYhteyshenkilo()),
             tyyppi = YRITYS,
             hanke = baseHankeEntity,
         )
@@ -204,7 +192,6 @@ internal class HankeRepositoryITests : DatabaseTest() {
             modifiedByUserId = "22",
             modifiedAt = datetime(),
             id = null,
-            yhteyshenkilot = listOf(createYhteyshenkilo()),
             tyyppi = YRITYS,
             hanke = baseHankeEntity,
         )
@@ -224,11 +211,7 @@ internal class HankeRepositoryITests : DatabaseTest() {
             modifiedByUserId = "33",
             modifiedAt = datetime(),
             id = null,
-            yhteyshenkilot = listOf(createYhteyshenkilo()),
             tyyppi = YRITYS,
             hanke = baseHankeEntity,
         )
-
-    private fun createYhteyshenkilo() =
-        Yhteyshenkilo("Ali", "Kontakti", "ali.kontakti@testi.com", "050-3785641")
 }

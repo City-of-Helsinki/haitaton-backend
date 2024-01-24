@@ -79,7 +79,7 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
                             rs.getString(2),
                             rs.getInt(3),
                             rs.getInt(4),
-                            TormaystarkasteluBussiRunkolinja.valueOfRunkolinja(rs.getString(5))!!
+                            TormaystarkasteluBussiRunkolinja.valueOfRunkolinja(rs.getString(5))
                         )
                     },
                     *geometriaIds.toTypedArray()
@@ -157,32 +157,22 @@ enum class TormaystarkasteluKatuluokka(val value: Int, val katuluokka: String) {
 
 enum class TormaystarkasteluBussiRunkolinja(val runkolinja: String) {
     EI("no"),
-    LAHES("almost"),
     ON("yes");
 
     companion object {
-        fun valueOfRunkolinja(runkolinja: String): TormaystarkasteluBussiRunkolinja? {
+        fun valueOfRunkolinja(runkolinja: String): TormaystarkasteluBussiRunkolinja {
             return entries.find { it.runkolinja == runkolinja }
+                ?: throw IllegalArgumentException(
+                    "Unknown runkolinja value: $runkolinja. Only 'yes' and 'no' are allowed."
+                )
         }
     }
 
-    fun toBussiLiikenneLuokittelu(): BussiLiikenneLuokittelu =
+    fun toLinjaautoliikenneluokittelu(): Linjaautoliikenneluokittelu =
         when (this) {
-            ON -> BussiLiikenneLuokittelu.RUNKOLINJA
-            LAHES -> BussiLiikenneLuokittelu.RUNKOLINJAMAINEN
-            EI -> BussiLiikenneLuokittelu.PERUS
+            ON -> Linjaautoliikenneluokittelu.RUNKOLINJA
+            EI -> Linjaautoliikenneluokittelu.EI_VUOROJA_RUUHKAAIKANA
         }
-}
-
-enum class TormaystarkasteluRaitiotiekaistatyyppi(val value: Int, val kaistatyyppi: String) {
-    OMA(4, "dedicated"),
-    JAETTU(3, "mixed");
-
-    companion object {
-        fun valueOfKaistatyyppi(kaistatyyppi: String): TormaystarkasteluRaitiotiekaistatyyppi {
-            return entries.first { it.kaistatyyppi == kaistatyyppi }
-        }
-    }
 }
 
 /** There are two(2) separate traffic counts - one for radius of 15m and other for 30m */

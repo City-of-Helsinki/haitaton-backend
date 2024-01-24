@@ -9,7 +9,7 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
-import assertk.assertions.isNotSameAs
+import assertk.assertions.isNotSameInstanceAs
 import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DATABASE_TIMESTAMP_FORMAT
@@ -55,7 +55,7 @@ internal class GeometriatServiceITest : DatabaseTest() {
         // they must be picked from the created hanke-instance.
         val hankeTunnus =
             hankeFactory
-                .createRequest()
+                .builder("test")
                 .withHankealue(HankealueFactory.createMinimal(geometriat = geometriat))
                 .save()
                 .hankeTunnus
@@ -164,7 +164,7 @@ internal class GeometriatServiceITest : DatabaseTest() {
                 prop(Geometriat::featureCollection).isNotNull().all {
                     transform("features") { it.features }.isNotEmpty()
                 }
-                isNotSameAs(geometriat)
+                isNotSameInstanceAs(geometriat)
             }
         }
 
@@ -176,7 +176,7 @@ internal class GeometriatServiceITest : DatabaseTest() {
 
             val savedGeometriat = geometriatService.getGeometriat(result.id!!)
             assertThat(savedGeometriat).isNotNull().all {
-                isNotSameAs(geometriat)
+                isNotSameInstanceAs(geometriat)
                 transform("points") { getPoints(it) }
                     .all {
                         hasSize(2)

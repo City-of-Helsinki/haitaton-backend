@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke
 import assertk.all
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.ContactType.MUU
 import fi.hel.haitaton.hanke.ContactType.OMISTAJA
@@ -11,12 +10,12 @@ import fi.hel.haitaton.hanke.ContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.ContactType.TOTEUTTAJA
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory.withYhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
-import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import java.time.ZonedDateTime
@@ -53,21 +52,22 @@ class HankeMapperTest {
             prop(Hanke::tyomaaKatuosoite).isEqualTo(entity.tyomaaKatuosoite)
             prop(Hanke::tyomaaTyyppi).isEqualTo(entity.tyomaaTyyppi)
             prop(Hanke::alueet).isEqualTo(expectedAlueet(entity.id, entity.hankeTunnus))
-            prop(Hanke::permissions).isNull()
         }
     }
 
     private fun expectedYhteystieto(hankeEntity: HankeEntity, type: ContactType, id: Int) =
         mutableListOf(
             HankeYhteystietoFactory.create(
-                id = id,
-                nimi = "$TEPPO_TESTI $type",
-                email = "$type.$teppoEmail",
-                tyyppi = YRITYS,
-                ytunnus = defaultYtunnus,
-                createdAt = hankeEntity.yhteystietoCreatedAt(type),
-                modifiedAt = hankeEntity.yhteystietoModifiedAt(type),
-            )
+                    id = id,
+                    nimi = "$TEPPO_TESTI $type",
+                    email = "$type.$TEPPO_EMAIL",
+                    tyyppi = YRITYS,
+                    ytunnus = HankeYhteystietoFactory.DEFAULT_YTUNNUS,
+                    createdAt = hankeEntity.yhteystietoCreatedAt(type),
+                    modifiedAt = hankeEntity.yhteystietoModifiedAt(type),
+                )
+                .withYhteyshenkilo(id * 2)
+                .withYhteyshenkilo(id * 2 + 1)
         )
 
     private fun HankeEntity.yhteystietoCreatedAt(contactType: ContactType) =

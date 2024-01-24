@@ -4,12 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankeIdentifier
-import fi.hel.haitaton.hanke.HankeStatus
 import fi.hel.haitaton.hanke.NotInChangeLogView
-import fi.hel.haitaton.hanke.TyomaaTyyppi
-import fi.hel.haitaton.hanke.Vaihe
-import fi.hel.haitaton.hanke.permissions.PermissionCode
-import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.ZonedDateTime
@@ -35,7 +30,7 @@ data class Hanke(
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Name of the project, must not be blank.")
-    override var nimi: String,
+    var nimi: String,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(
@@ -48,7 +43,7 @@ data class Hanke(
     @field:Schema(
         description = "Current stage of the project. Required for the hanke to be published."
     )
-    override var vaihe: Vaihe?,
+    var vaihe: Hankevaihe?,
     //
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Version, set by the service.")
@@ -77,7 +72,7 @@ data class Hanke(
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Indicates if Hanke data is generated, set by the service.")
     var generated: Boolean = false,
-) : BaseHanke, HasYhteystiedot, HankeIdentifier {
+) : HasYhteystiedot, HankeIdentifier {
 
     // --------------- Yhteystiedot -----------------
     @JsonView(NotInChangeLogView::class)
@@ -108,7 +103,7 @@ data class Hanke(
         description = "Work site street address. Required for the hanke to be published.",
         maxLength = 2000
     )
-    override var tyomaaKatuosoite: String? = null
+    var tyomaaKatuosoite: String? = null
 
     @JsonView(ChangeLogView::class)
     @field:Schema(description = "Work site types. Not required for the hanke to be published.")
@@ -125,11 +120,7 @@ data class Hanke(
         description =
             "Hanke areas data. At least one alue is required for the hanke to be published."
     )
-    override var alueet = mutableListOf<SavedHankealue>()
-
-    @JsonView(NotInChangeLogView::class)
-    @field:Schema(description = "Permission codes of the project.")
-    var permissions: List<PermissionCode>? = null
+    var alueet = mutableListOf<SavedHankealue>()
 
     /** Number of days between haittaAlkuPvm and haittaLoppuPvm (incl. both days) */
     val haittaAjanKestoDays: Int?
@@ -139,14 +130,68 @@ data class Hanke(
     @field:Schema(description = "Collision review result, set by the service.")
     var tormaystarkasteluTulos: TormaystarkasteluTulos? = null
 
-    @JsonView(NotInChangeLogView::class)
-    fun getLiikennehaittaindeksi(): LiikennehaittaIndeksiType? =
-        tormaystarkasteluTulos?.liikennehaittaIndeksi
-
     fun toLogString(): String {
         return toString()
     }
 
     override fun extractYhteystiedot(): List<HankeYhteystieto> =
         listOfNotNull(omistajat, rakennuttajat, toteuttajat, muut).flatten()
+}
+
+enum class HankeStatus {
+    /** A hanke is a draft from its creation until all mandatory fields have been filled. */
+    DRAFT,
+
+    /**
+     * A hanke goes public after all mandatory fields have been filled. This happens automatically
+     * on any update. A public hanke has some info visible to everyone and applications can be added
+     * to it.
+     */
+    PUBLIC,
+
+    /**
+     * After the end dates of all hankealue have passed, a hanke is considered finished. It's
+     * anonymized and at least mostly hidden in the UI.
+     */
+    ENDED,
+}
+
+enum class Hankevaihe {
+    OHJELMOINTI,
+    SUUNNITTELU,
+    RAKENTAMINEN
+}
+
+enum class TyomaaTyyppi {
+    VESI,
+    VIEMARI,
+    SADEVESI,
+    SAHKO,
+    TIETOLIIKENNE,
+    LIIKENNEVALO,
+    ULKOVALAISTUS,
+    KAAPPITYO,
+    KAUKOLAMPO,
+    KAUKOKYLMA,
+    KAASUJOHTO,
+    KISKOTYO,
+    MUU,
+    KADUNRAKENNUS,
+    KADUN_KUNNOSSAPITO,
+    KIINTEISTOLIITTYMA,
+    SULKU_TAI_KAIVO,
+    UUDISRAKENNUS,
+    SANEERAUS,
+    AKILLINEN_VIKAKORJAUS,
+    VIHERTYO,
+    RUNKOLINJA,
+    NOSTOTYO,
+    MUUTTO,
+    PYSAKKITYO,
+    KIINTEISTOREMONTTI,
+    ULKOMAINOS,
+    KUVAUKSET,
+    LUMENPUDOTUS,
+    YLEISOTILAISUUS,
+    VAIHTOLAVA
 }

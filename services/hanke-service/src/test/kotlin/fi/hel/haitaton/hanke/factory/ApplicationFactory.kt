@@ -1,9 +1,7 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.HankeEntity
-import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationArea
@@ -19,26 +17,26 @@ import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.factory.UserContactFactory.asianhoitajaContact
-import fi.hel.haitaton.hanke.factory.UserContactFactory.hakijaContact
-import fi.hel.haitaton.hanke.factory.UserContactFactory.rakennuttajaContact
-import fi.hel.haitaton.hanke.factory.UserContactFactory.suorittajaContact
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_RAKENNUTTAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_SUORITTAJA
 import java.time.ZonedDateTime
 import org.geojson.Polygon
-import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.stereotype.Component
 
 const val TEPPO_TESTI = "Teppo Testihenkilö"
 
 @Component
-class AlluDataFactory(
+class ApplicationFactory(
     private val applicationRepository: ApplicationRepository,
+    private val hankeFactory: HankeFactory,
 ) {
     companion object {
-        const val defaultApplicationId: Long = 1
-        const val defaultApplicationName: String = "Johtoselvityksen oletusnimi"
-        const val defaultApplicationIdentifier: String = "JS230014"
-        const val teppoEmail = "teppo@example.test"
+        const val DEFAULT_APPLICATION_ID: Long = 1
+        const val DEFAULT_APPLICATION_NAME: String = "Johtoselvityksen oletusnimi"
+        const val DEFAULT_APPLICATION_IDENTIFIER: String = "JS230014"
+        const val TEPPO_EMAIL = "teppo@example.test"
         val expectedRecipients =
             arrayOf(
                 "timo.tyonsuorittaja@mail.com",
@@ -57,7 +55,7 @@ class AlluDataFactory(
             type: CustomerType? = CustomerType.PERSON,
             name: String = TEPPO_TESTI,
             country: String = "FI",
-            email: String? = teppoEmail,
+            email: String? = TEPPO_EMAIL,
             phone: String? = "04012345678",
             registryKey: String? = "281192-937W",
             ovt: String? = null,
@@ -119,7 +117,7 @@ class AlluDataFactory(
         fun Customer.withContact(
             firstName: String? = "Teppo",
             lastName: String? = "Testihenkilö",
-            email: String? = teppoEmail,
+            email: String? = TEPPO_EMAIL,
             phone: String? = "04012345678",
             orderer: Boolean = false,
         ) = withContacts(createContact(firstName, lastName, email, phone, orderer))
@@ -127,7 +125,7 @@ class AlluDataFactory(
         fun createContact(
             firstName: String? = "Teppo",
             lastName: String? = "Testihenkilö",
-            email: String? = teppoEmail,
+            email: String? = TEPPO_EMAIL,
             phone: String? = "04012345678",
             orderer: Boolean = false
         ) = Contact(firstName, lastName, email, phone, orderer)
@@ -139,7 +137,7 @@ class AlluDataFactory(
         ): ApplicationArea = ApplicationArea(name, geometry)
 
         fun Application.withApplicationData(
-            name: String = defaultApplicationName,
+            name: String = DEFAULT_APPLICATION_NAME,
             areas: List<ApplicationArea>? = listOf(createApplicationArea()),
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
@@ -173,7 +171,7 @@ class AlluDataFactory(
             )
 
         fun createCableReportApplicationData(
-            name: String = defaultApplicationName,
+            name: String = DEFAULT_APPLICATION_NAME,
             areas: List<ApplicationArea>? = listOf(createApplicationArea()),
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
@@ -264,7 +262,7 @@ class AlluDataFactory(
                         hankeTunnus = "HAI-1234",
                         applicationData =
                             createCableReportApplicationData(
-                                name = "$defaultApplicationName #$i",
+                                name = "$DEFAULT_APPLICATION_NAME #$i",
                                 customerWithContacts =
                                     createCompanyCustomer(name = "Customer #$i")
                                         .withContacts(
@@ -307,45 +305,13 @@ class AlluDataFactory(
                 hanke = hanke,
             )
 
-        fun createAlluApplicationResponse(
-            id: Int = 42,
-            status: ApplicationStatus = ApplicationStatus.PENDING
-        ) =
-            AlluApplicationResponse(
-                id = id,
-                name = defaultApplicationName,
-                applicationId = defaultApplicationIdentifier,
-                status = status,
-                startTime = DateFactory.getStartDatetime(),
-                endTime = DateFactory.getEndDatetime(),
-                owner = null,
-                kindsWithSpecifiers = mapOf(),
-                terms = null,
-                customerReference = null,
-                surveyRequired = false
-            )
-
-        fun createAttachmentMetadata(
-            id: Int? = null,
-            mimeType: String = APPLICATION_PDF_VALUE,
-            name: String = "file.pdf",
-            description: String = "Test description."
-        ) =
-            AttachmentMetadata(
-                id = id,
-                mimeType = mimeType,
-                name = name,
-                description = description,
-            )
-
         val hakijaCustomerContact: CustomerWithContacts =
-            with(hakijaContact) {
-                val (firstName, lastName) = name.split(" ")
+            with(KAYTTAJA_INPUT_HAKIJA) {
                 createCompanyCustomer()
                     .withContacts(
                         createContact(
-                            firstName = firstName,
-                            lastName = lastName,
+                            firstName = etunimi,
+                            lastName = sukunimi,
                             email = email,
                             orderer = true
                         )
@@ -353,13 +319,12 @@ class AlluDataFactory(
             }
 
         val suorittajaCustomerContact: CustomerWithContacts =
-            with(suorittajaContact) {
-                val (firstName, lastName) = name.split(" ")
+            with(KAYTTAJA_INPUT_SUORITTAJA) {
                 createCompanyCustomer()
                     .withContacts(
                         createContact(
-                            firstName = firstName,
-                            lastName = lastName,
+                            firstName = etunimi,
+                            lastName = sukunimi,
                             email = email,
                             orderer = false
                         )
@@ -367,13 +332,12 @@ class AlluDataFactory(
             }
 
         val asianHoitajaCustomerContact: CustomerWithContacts =
-            with(asianhoitajaContact) {
-                val (firstName, lastName) = name.split(" ")
+            with(KAYTTAJA_INPUT_ASIANHOITAJA) {
                 createCompanyCustomer()
                     .withContacts(
                         createContact(
-                            firstName = firstName,
-                            lastName = lastName,
+                            firstName = etunimi,
+                            lastName = sukunimi,
                             email = email,
                             orderer = false
                         )
@@ -381,13 +345,12 @@ class AlluDataFactory(
             }
 
         val rakennuttajaCustomerContact: CustomerWithContacts =
-            with(rakennuttajaContact) {
-                val (firstName, lastName) = name.split(" ")
+            with(KAYTTAJA_INPUT_RAKENNUTTAJA) {
                 createCompanyCustomer()
                     .withContacts(
                         createContact(
-                            firstName = firstName,
-                            lastName = lastName,
+                            firstName = etunimi,
+                            lastName = sukunimi,
                             email = email,
                             orderer = false
                         )
@@ -401,23 +364,24 @@ class AlluDataFactory(
      */
     fun saveApplicationEntity(
         username: String,
-        hanke: HankeEntity,
-        mapper: (ApplicationEntity) -> ApplicationEntity = { it },
-        application: Application = createApplication(),
-        mutator: (ApplicationEntity) -> Unit = {},
+        hanke: HankeEntity = hankeFactory.saveMinimal(),
+        alluId: Int? = null,
+        alluStatus: ApplicationStatus? = null,
+        applicationIdentifier: String? = null,
+        applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
+        applicationData: ApplicationData = createCableReportApplicationData(),
     ): ApplicationEntity {
         val applicationEntity =
             ApplicationEntity(
                 id = null,
-                alluid = application.alluid,
-                alluStatus = null,
-                applicationIdentifier = application.applicationIdentifier,
-                username,
-                application.applicationType,
-                application.applicationData,
-                hanke,
+                alluid = alluId,
+                alluStatus = alluStatus,
+                applicationIdentifier = applicationIdentifier,
+                userId = username,
+                applicationType = applicationType,
+                applicationData = applicationData,
+                hanke = hanke,
             )
-        mutator(applicationEntity)
         return applicationRepository.save(applicationEntity)
     }
 

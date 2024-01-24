@@ -12,7 +12,7 @@ import assertk.assertions.prop
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.configuration.Configuration.Companion.webClientWithLargeBuffer
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.getResourceAsBytes
@@ -83,10 +83,7 @@ class CableReportServiceITests {
         addStubbedLoginResponse()
         val alluId = 123
         val metadata =
-            AlluDataFactory.createAttachmentMetadata(
-                mimeType = contentType,
-                name = "file.$extension"
-            )
+            AlluFactory.createAttachmentMetadata(mimeType = contentType, name = "file.$extension")
         val file = "test file content".toByteArray()
         val attachment = Attachment(metadata, file)
         val mockResponse = MockResponse().setResponseCode(200)
@@ -107,7 +104,7 @@ class CableReportServiceITests {
         addStubbedLoginResponse()
         val alluId = 123
         val file = "test file content".toByteArray()
-        val attachment = ApplicationAttachmentFactory.createEntity(applicationId = 123456)
+        val attachment = ApplicationAttachmentFactory.create(applicationId = 123456)
         val mockResponse = MockResponse().setResponseCode(200)
         (1..3).forEach { _ -> mockWebServer.enqueue(mockResponse) }
         val attachments = listOf(attachment, attachment, attachment)

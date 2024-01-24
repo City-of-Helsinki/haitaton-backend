@@ -16,7 +16,7 @@ import fi.hel.haitaton.hanke.COORDINATE_SYSTEM_URN
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts as AlluCustomerWithContacts
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
 import org.geojson.Polygon
 import org.junit.jupiter.api.Nested
@@ -34,7 +34,7 @@ internal class ApplicationDataMapperTest {
 
         @Test
         fun `toAlluData when cable report should map fields correctly`() {
-            val input = AlluDataFactory.createCableReportApplicationData()
+            val input = ApplicationFactory.createCableReportApplicationData()
 
             val result = ApplicationDataMapper.toAlluData(HANKE_TUNNUS, input)
 
@@ -67,7 +67,7 @@ internal class ApplicationDataMapperTest {
             expectedSuffix: String
         ) {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(rockExcavation = rockExcavation)
+                ApplicationFactory.createCableReportApplicationData(rockExcavation = rockExcavation)
 
             val alluData = ApplicationDataMapper.toAlluData(HANKE_TUNNUS, applicationData)
 
@@ -112,7 +112,7 @@ internal class ApplicationDataMapperTest {
         @Test
         fun `uses areas if they are present`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                ApplicationFactory.createCableReportApplicationData(
                     areas = listOf(ApplicationArea(areaName, polygon)),
                 )
 
@@ -126,7 +126,7 @@ internal class ApplicationDataMapperTest {
 
         @Test
         fun `throws exception if areas are not present`() {
-            val applicationData = AlluDataFactory.createCableReportApplicationData(areas = null)
+            val applicationData = ApplicationFactory.createCableReportApplicationData(areas = null)
 
             val exception =
                 assertThrows<AlluDataException> {
@@ -142,7 +142,7 @@ internal class ApplicationDataMapperTest {
         @Test
         fun `forms geometries from all areas`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                ApplicationFactory.createCableReportApplicationData(
                     areas =
                         listOf(
                             ApplicationArea(areaName, polygon),
@@ -167,7 +167,7 @@ internal class ApplicationDataMapperTest {
         @Test
         fun `remove crs from the geometries`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                ApplicationFactory.createCableReportApplicationData(
                     areas = listOf(ApplicationArea(areaName, polygon))
                 )
             assertThat(polygon.crs).isNotNull()
@@ -181,7 +181,7 @@ internal class ApplicationDataMapperTest {
         @Test
         fun `add crs to the geometry collection`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                ApplicationFactory.createCableReportApplicationData(
                     areas = listOf(ApplicationArea(areaName, polygon))
                 )
 
@@ -196,7 +196,7 @@ internal class ApplicationDataMapperTest {
             val polygon: Polygon = "/fi/hel/haitaton/hanke/geometria/polygon.json".asJsonResource()
             polygon.crs = polygon.crs.apply { this.properties["name"] = "InvalidCode" }
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                ApplicationFactory.createCableReportApplicationData(
                     areas = listOf(ApplicationArea(areaName, polygon))
                 )
 

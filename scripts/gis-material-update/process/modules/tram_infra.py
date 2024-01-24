@@ -5,6 +5,11 @@ from sqlalchemy import create_engine, text
 from modules.config import Config
 from modules.gis_processing import GisProcessor
 
+# Select only following tag values:
+# tram = Urban tram
+# light_rail = Light rail
+
+TRAM_TYPES = ["tram", "light_rail"]
 
 def dict_values_to_list(d: dict) -> dict:
     """Transform dict values to list."""
@@ -40,7 +45,7 @@ class TramInfra(GisProcessor):
             lambda r: other_tag_to_dict(r.other_tags), axis=1
         )
         lines_with_tags_tram_index = lines_with_tags.apply(
-            lambda r: r.tag_dict.get("railway") == "tram", axis=1
+            lambda r: any(tag_value in r.tag_dict.get("railway", []) for tag_value in TRAM_TYPES), axis=1
         )
         tram_lines = lines_with_tags[lines_with_tags_tram_index]
 
@@ -63,6 +68,18 @@ class TramInfra(GisProcessor):
         # buffer lines
         target_infra_polys = self._process_result_lines.copy()
         target_infra_polys["geometry"] = target_infra_polys.buffer(buffers[0])
+
+        # Only intersecting objects to Helsinki area are important
+        # read Helsinki geographical region and reproject
+        try:
+            helsinki_region_polygon = gpd.read_file(
+                filename=self._cfg.local_file("hki")
+            ).to_crs(self._cfg.crs())
+        except Exception as e:
+            print("Area polygon file not found!")
+            raise e
+        
+        target_infra_polys = gpd.clip(target_infra_polys, helsinki_region_polygon)
 
         # save to instance
         self._process_result_polygons = target_infra_polys

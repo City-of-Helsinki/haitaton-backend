@@ -3,28 +3,28 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeYhteystietoEntity
-import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YHTEISO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YRITYS
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.teppoEmail
-import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.DEFAULT_YTUNNUS
 import fi.hel.haitaton.hanke.getCurrentTimeUTC
 import java.time.ZonedDateTime
 
 object HankeYhteystietoFactory {
 
-    const val defaultYtunnus = "1817548-2"
+    const val DEFAULT_YTUNNUS = "1817548-2"
 
     /** Create a test yhteystieto with values in all fields. */
     fun create(
         id: Int? = 1,
         nimi: String = "Teppo Testihenkilö",
-        email: String = teppoEmail,
+        email: String = TEPPO_EMAIL,
         tyyppi: YhteystietoTyyppi = YRITYS,
-        ytunnus: String = defaultYtunnus,
+        ytunnus: String = DEFAULT_YTUNNUS,
         puhelinnumero: String = "04012345678",
         createdAt: ZonedDateTime? = getCurrentTimeUTC(),
         modifiedAt: ZonedDateTime? = getCurrentTimeUTC(),
@@ -43,63 +43,64 @@ object HankeYhteystietoFactory {
             modifiedBy = "test7358",
             modifiedAt = modifiedAt,
             rooli = "Isännöitsijä",
-            alikontaktit =
-                listOf(Yhteyshenkilo("Ali", "Kontakti", "ali.kontakti@meili.com", "050-4567890"))
+            yhteyshenkilot = listOf(),
         )
     }
 
     fun createEntity(
-        id: Int? = 1,
+        id: Int = 1,
         contactType: ContactType,
         hanke: HankeEntity
     ): HankeYhteystietoEntity =
-        with(create(id = id)) {
+        with(create()) {
             HankeYhteystietoEntity(
-                id = id,
-                contactType = contactType,
-                nimi = "$nimi $contactType",
-                email = "$contactType.$email",
-                tyyppi = tyyppi,
-                ytunnus = ytunnus,
-                puhelinnumero = puhelinnumero,
-                organisaatioNimi = organisaatioNimi,
-                osasto = osasto,
-                rooli = rooli,
-                yhteyshenkilot = alikontaktit,
-                dataLocked = false,
-                dataLockInfo = "info",
-                createdByUserId = createdBy,
-                createdAt = createdAt?.toLocalDateTime(),
-                modifiedByUserId = modifiedBy,
-                modifiedAt = modifiedAt?.toLocalDateTime(),
-                hanke = hanke,
-            )
+                    id = id,
+                    contactType = contactType,
+                    nimi = "$nimi $contactType",
+                    email = "$contactType.$email",
+                    tyyppi = tyyppi,
+                    ytunnus = ytunnus,
+                    puhelinnumero = puhelinnumero,
+                    organisaatioNimi = organisaatioNimi,
+                    osasto = osasto,
+                    rooli = rooli,
+                    dataLocked = false,
+                    dataLockInfo = "info",
+                    createdByUserId = createdBy,
+                    createdAt = createdAt?.toLocalDateTime(),
+                    modifiedByUserId = modifiedBy,
+                    modifiedAt = modifiedAt?.toLocalDateTime(),
+                    hanke = hanke,
+                )
+                .apply {
+                    yhteyshenkilot =
+                        mutableListOf(
+                            HankeYhteyshenkiloFactory.createEntity(id * 2, this),
+                            HankeYhteyshenkiloFactory.createEntity(id * 2 + 1, this)
+                        )
+                }
         }
 
     /**
      * Create a new Yhteystieto with values differentiated by the given integer. The audit and id
      * fields are left null.
      */
-    fun createDifferentiated(i: Int, id: Int? = i): HankeYhteystieto {
+    fun createDifferentiated(
+        i: Int,
+        id: Int? = i,
+        yhteyshenkilot: List<Yhteyshenkilo> = listOf()
+    ): HankeYhteystieto {
         return HankeYhteystieto(
             id = id,
             nimi = "etu$i suku$i",
             email = "email$i",
-            ytunnus = defaultYtunnus,
-            puhelinnumero = "010$i$i$i$i$i$i$i",
+            ytunnus = DEFAULT_YTUNNUS,
+            puhelinnumero = dummyPhoneNumber(i),
             organisaatioNimi = "org$i",
             osasto = "osasto$i",
             rooli = "Isännöitsijä$i",
             tyyppi = YHTEISO,
-            alikontaktit =
-                listOf(
-                    Yhteyshenkilo(
-                        sukunimi = "yhteys-suku$i",
-                        etunimi = "yhteys-etu$i",
-                        email = "yhteys-email$i",
-                        puhelinnumero = dummyPhoneNumber(i),
-                    )
-                )
+            yhteyshenkilot = yhteyshenkilot,
         )
     }
 
@@ -119,6 +120,6 @@ object HankeYhteystietoFactory {
 }
 
 fun MutableList<HankeYhteystieto>.modify(
-    ytunnus: String? = defaultYtunnus,
+    ytunnus: String? = DEFAULT_YTUNNUS,
     tyyppi: YhteystietoTyyppi? = YRITYS
 ) = map { it.copy(ytunnus = ytunnus, tyyppi = tyyppi) }.toMutableList()

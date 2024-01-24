@@ -1,7 +1,7 @@
 package fi.hel.haitaton.hanke.logging
 
 import assertk.assertThat
-import assertk.assertions.containsAll
+import assertk.assertions.containsAtLeast
 import assertk.assertions.containsExactlyInAnyOrder
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
@@ -10,14 +10,14 @@ import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withApplicationData
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withApplicationData
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedOmistaja
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedRakennuttaja
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withGeneratedToteuttaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withOmistaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withToteuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
@@ -84,7 +84,8 @@ internal class DisclosureLogServiceTest {
                 {"key":"sahkoposti","value":"teppo@example.test"},
                 {"key":"puhelin","value":"04012345678"}
               ]
-            }""".reformatJson()
+            }"""
+                .reformatJson()
         val expectedEntry =
             AuditLogEntryFactory.createReadEntry(
                 userId = PROFIILI_AUDIT_LOG_USERID,
@@ -154,10 +155,7 @@ internal class DisclosureLogServiceTest {
         val hankkeet =
             listOf(
                 HankeFactory.create().withYhteystiedot(),
-                HankeFactory.create()
-                    .withGeneratedOmistaja(5)
-                    .withGeneratedRakennuttaja(6)
-                    .withGeneratedToteuttaja(7)
+                HankeFactory.create().withOmistaja(5).withRakennuttaja(6).withToteuttaja(7)
             )
         val expectedLogs = hankkeet.flatMap { AuditLogEntryFactory.createReadEntriesForHanke(it) }
 
@@ -181,6 +179,16 @@ internal class DisclosureLogServiceTest {
     }
 
     @Test
+    fun `saveDisclosureLogsForHankeKayttaja saves audit logs`() {
+        val hankeKayttaja = HankeKayttajaFactory.createDto()
+        val expectedLogs = AuditLogEntryFactory.createReadEntryForHankeKayttaja(hankeKayttaja)
+
+        disclosureLogService.saveDisclosureLogsForHankeKayttaja(hankeKayttaja, userId)
+
+        verify { auditLogService.createAll(listOf(expectedLogs)) }
+    }
+
+    @Test
     fun `saveDisclosureLogsForHankeKayttajat saves audit logs`() {
         val hankeKayttajat = HankeKayttajaFactory.generateHankeKayttajat(amount = 2)
         val expectedLogs = AuditLogEntryFactory.createReadEntryForHankeKayttajat(hankeKayttajat)
@@ -200,13 +208,13 @@ internal class DisclosureLogServiceTest {
     @Test
     fun `saveDisclosureLogsForApplication with company customers and no contacts does nothing`() {
         val customerWithoutContacts =
-            AlluDataFactory.createCompanyCustomer(name = "First").withContacts()
+            ApplicationFactory.createCompanyCustomer(name = "First").withContacts()
         val contractorWithoutContacts =
-            AlluDataFactory.createCompanyCustomer(name = "Second").withContacts()
+            ApplicationFactory.createCompanyCustomer(name = "Second").withContacts()
         val application =
-            AlluDataFactory.createApplication(
+            ApplicationFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplicationData(
+                    ApplicationFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
                         contractorWithContacts = contractorWithoutContacts
                     ),
@@ -221,14 +229,14 @@ internal class DisclosureLogServiceTest {
     @Test
     fun `saveDisclosureLogsForApplication doesn't save entries for blank contacts`() {
         val customerWithoutContacts =
-            AlluDataFactory.createCompanyCustomer(name = "First").withContacts()
+            ApplicationFactory.createCompanyCustomer(name = "First").withContacts()
         val contractorWithoutContacts =
-            AlluDataFactory.createCompanyCustomer(name = "Second")
+            ApplicationFactory.createCompanyCustomer(name = "Second")
                 .withContacts(Contact("", "", "", ""))
         val application =
-            AlluDataFactory.createApplication(
+            ApplicationFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplicationData(
+                    ApplicationFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
                         contractorWithContacts = contractorWithoutContacts
                     ),
@@ -248,9 +256,9 @@ internal class DisclosureLogServiceTest {
         val customerWithoutContacts = CustomerWithContacts(blankCustomer, listOf())
         val contractorWithoutContacts = CustomerWithContacts(blankCustomerWithCountry, listOf())
         val application =
-            AlluDataFactory.createApplication(
+            ApplicationFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplicationData(
+                    ApplicationFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
                         contractorWithContacts = contractorWithoutContacts
                     ),
@@ -265,11 +273,11 @@ internal class DisclosureLogServiceTest {
     @Test
     fun `saveDisclosureLogsForApplication with identical person customers logs every instance`() {
         val customerWithoutContacts =
-            CustomerWithContacts(AlluDataFactory.createPersonCustomer(), listOf())
+            CustomerWithContacts(ApplicationFactory.createPersonCustomer(), listOf())
         val application =
-            AlluDataFactory.createApplication(
+            ApplicationFactory.createApplication(
                 applicationData =
-                    AlluDataFactory.createCableReportApplicationData(
+                    ApplicationFactory.createCableReportApplicationData(
                         customerWithContacts = customerWithoutContacts,
                         contractorWithContacts = customerWithoutContacts,
                     ),
@@ -295,11 +303,11 @@ internal class DisclosureLogServiceTest {
     @Test
     fun `saveDisclosureLogsForApplication with contacts logs contacts`() {
         val applicationId = 41L
-        val cableReportApplication = AlluDataFactory.createCableReportApplicationData()
+        val cableReportApplication = ApplicationFactory.createCableReportApplicationData()
         val firstContact = cableReportApplication.customerWithContacts.contacts[0]
         val secondContact = cableReportApplication.contractorWithContacts.contacts[0]
         val application =
-            AlluDataFactory.createApplication(
+            ApplicationFactory.createApplication(
                 id = applicationId,
                 applicationData = cableReportApplication,
                 hankeTunnus = hankeTunnus
@@ -310,7 +318,7 @@ internal class DisclosureLogServiceTest {
         disclosureLogService.saveDisclosureLogsForApplication(application, userId)
 
         assertThat(capturedLogs.captured)
-            .containsAll(
+            .containsAtLeast(
                 AuditLogEntryFactory.createReadEntryForContact(applicationId, firstContact, HAKIJA),
                 AuditLogEntryFactory.createReadEntryForContact(
                     applicationId,
@@ -325,7 +333,7 @@ internal class DisclosureLogServiceTest {
     @EnumSource(Status::class)
     fun `saveDisclosureLogsForAllu saves logs with the given status`(expectedStatus: Status) {
         val applicationId = 41L
-        val cableReportApplication = AlluDataFactory.createCableReportApplicationData()
+        val cableReportApplication = ApplicationFactory.createCableReportApplicationData()
         val firstContact = cableReportApplication.customerWithContacts.contacts[0]
         val secondContact = cableReportApplication.contractorWithContacts.contacts[0]
         val expectedLogs =
@@ -355,8 +363,9 @@ internal class DisclosureLogServiceTest {
     @Test
     fun `saveDisclosureLogsForApplications logs customers and contacts from all applications while ignoring duplicates`() {
         val contacts =
-            (1..8).map { AlluDataFactory.createContact(firstName = "Contact", lastName = "$it") }
-        val customers = (1..4).map { AlluDataFactory.createPersonCustomer(name = "Customer $it") }
+            (1..8).map { ApplicationFactory.createContact(firstName = "Contact", lastName = "$it") }
+        val customers =
+            (1..4).map { ApplicationFactory.createPersonCustomer(name = "Customer $it") }
         val customersWithContacts =
             customers.withIndex().map { (i, customer) ->
                 CustomerWithContacts(
@@ -366,12 +375,12 @@ internal class DisclosureLogServiceTest {
             }
         val applications =
             listOf(
-                AlluDataFactory.createApplication(id = 1, hankeTunnus = hankeTunnus)
+                ApplicationFactory.createApplication(id = 1, hankeTunnus = hankeTunnus)
                     .withApplicationData(
                         customerWithContacts = customersWithContacts[0],
                         contractorWithContacts = customersWithContacts[1],
                     ),
-                AlluDataFactory.createApplication(id = 2, hankeTunnus = hankeTunnus)
+                ApplicationFactory.createApplication(id = 2, hankeTunnus = hankeTunnus)
                     .withApplicationData(
                         customerWithContacts = customersWithContacts[2],
                         contractorWithContacts = customersWithContacts[3],
@@ -421,7 +430,7 @@ internal class DisclosureLogServiceTest {
             val alluStatus = ApplicationStatus.DECISION
             val applicationIdentifier = "JS2300050-2"
             val application =
-                AlluDataFactory.createApplication(
+                ApplicationFactory.createApplication(
                     id = applicationId,
                     alluid = alluId,
                     alluStatus = alluStatus,
@@ -436,7 +445,8 @@ internal class DisclosureLogServiceTest {
                   "applicationIdentifier": "$applicationIdentifier",
                   "applicationType": "CABLE_REPORT",
                   "hankeTunnus": "$hankeTunnus"
-                }""".reformatJson()
+                }"""
+                    .reformatJson()
             val expectedLog =
                 AuditLogEntryFactory.createReadEntry(
                     userId,

@@ -8,10 +8,10 @@ haitaton:
     updateIntervalMilliSeconds: ${ALLU_UPDATE_INTERVAL:60000}
     username: ${ALLU_USERNAME:fake_user}
   attachment-migration:
-    hanke:
-      enabled: ${HAITATON_ATTACHMENT_MIGRATION_HANKE_ENABLED:false}
-      initial-delay: ${HAITATON_ATTACHMENT_MIGRATION_HANKE_INITIAL_DELAY:10000}
-      interval: ${HAITATON_ATTACHMENT_MIGRATION_HANKE_INTERVAL:60000}
+    application:
+      enabled: ${HAITATON_ATTACHMENT_MIGRATION_APPLICATION_ENABLED:false}
+      interval: ${HAITATON_ATTACHMENT_MIGRATION_APPLICATION_INTERVAL:60000}
+      initial-delay: ${HAITATON_ATTACHMENT_MIGRATION_APPLICATION_INITIAL_DELAY:60000}
   azure:
     blob:
       connection-string: ${HAITATON_BLOB_CONNECTION_STRING:#{null}}
@@ -46,6 +46,10 @@ haitaton:
     issuer: ${HAITATON_GDPR_ISSUER:http://gdpr-api-tester:8888/}
     query-scope: ${HAITATON_GDPR_QUERY_SCOPE:haitaton.gdprquery}
     # For dev and test environments, enable the testdata controller for resetting data
+  profiili-api:
+    api-tokens-url: ${PROFIILI_API_TOKENS_URL:https://tunnistamo.test.hel.ninja/api-tokens/}
+    graph-ql-url: ${PROFIILI_GRAPHQL_URL:https://profile-api.test.hel.ninja/graphql/}
+    audience: ${PROFIILI_AUDIENCE:https://api.hel.fi/auth/helsinkiprofile}
   testdata:
     enabled: ${HAITATON_TESTDATA_ENABLED:false}
 

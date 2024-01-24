@@ -4,9 +4,7 @@ import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
-import fi.hel.haitaton.hanke.KaistajarjestelynPituus
 import fi.hel.haitaton.hanke.TZ_UTC
-import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.geometriaIds
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
@@ -26,7 +24,6 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.CsvFileSource
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
 
@@ -47,9 +44,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
         confirmVerified(tormaysService)
     }
 
-    @ParameterizedTest(name = "Perusindeksi with default weights should be {0}")
-    @CsvFileSource(resources = ["perusindeksi-test.csv"], numLinesToSkip = 1)
-    fun perusIndeksiCalculatorTest(
+    @ParameterizedTest(name = "Autoliikenneindeksi with default weights should be {0}")
+    @CsvSource("1.0,1,1,1,1,1", "1.9,1,2,2,2,2", "3.0,3,3,3,3,3", "3.9,3,4,4,4,4", "5.0,5,5,5,5,5")
+    fun autoliikenneindeksiCalculatorTest(
         indeksi: Float,
         haittaAjanKesto: Int,
         todennakoinenHaittaPaaAjoratojenKaistajarjestelyihin: Int,
@@ -60,18 +57,19 @@ internal class TormaystarkasteluLaskentaServiceTest {
         val luokittelu =
             mapOf(
                 LuokitteluType.HAITTA_AJAN_KESTO to haittaAjanKesto,
-                LuokitteluType.TODENNAKOINEN_HAITTA_PAAAJORATOJEN_KAISTAJARJESTELYIHIN to
+                LuokitteluType.VAIKUTUS_AUTOLIIKENTEEN_KAISTAMAARIIN to
                     todennakoinenHaittaPaaAjoratojenKaistajarjestelyihin,
-                LuokitteluType.KAISTAJARJESTELYN_PITUUS to kaistajarjestelynPituus,
+                LuokitteluType.AUTOLIIKENTEEN_KAISTAVAIKUTUSTEN_PITUUS to kaistajarjestelynPituus,
                 LuokitteluType.KATULUOKKA to katuluokka,
-                LuokitteluType.LIIKENNEMAARA to liikennemaara
+                LuokitteluType.AUTOLIIKENTEEN_MAARA to liikennemaara
             )
-        val perusindeksi = laskentaService.calculatePerusIndeksiFromLuokittelu(luokittelu)
-        assertThat(perusindeksi).isEqualTo(indeksi)
+        val autoliikenneindeksi =
+            laskentaService.calculateAutoliikenneindeksiFromLuokittelu(luokittelu)
+        assertThat(autoliikenneindeksi).isEqualTo(indeksi)
     }
 
     @Nested
-    inner class KatuluokkaLuokittelu {
+    inner class Katuluokkaluokittelu {
         // The parameter is only used to call mocks
         val geometriat = setOf<Int>()
 
@@ -107,7 +105,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
                         tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriat)
                     } returns null
 
-                    val result = laskentaService.katuluokkaLuokittelu(geometriat)
+                    val result = laskentaService.katuluokkaluokittelu(geometriat)
 
                     assertThat(result).isEqualTo(0)
                     verify { tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriat) }
@@ -122,7 +120,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
                         tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriat)
                     } returns ylreClass.value
 
-                    val result = laskentaService.katuluokkaLuokittelu(geometriat)
+                    val result = laskentaService.katuluokkaluokittelu(geometriat)
 
                     assertThat(result).isEqualTo(ylreClass.value)
                     verify { tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriat) }
@@ -138,7 +136,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
                     tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat)
                 } returns streetClass.value
 
-                val result = laskentaService.katuluokkaLuokittelu(geometriat)
+                val result = laskentaService.katuluokkaluokittelu(geometriat)
 
                 assertThat(result).isEqualTo(streetClass.value)
                 verify { tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat) }
@@ -163,7 +161,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
                     tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriat)
                 } returns null
 
-                val result = laskentaService.katuluokkaLuokittelu(geometriat)
+                val result = laskentaService.katuluokkaluokittelu(geometriat)
 
                 assertThat(result).isEqualTo(0)
                 verify { tormaysService.maxIntersectingYleinenkatualueKatuluokka(geometriat) }
@@ -181,7 +179,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
                     tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat)
                 } returns null
 
-                val result = laskentaService.katuluokkaLuokittelu(geometriat)
+                val result = laskentaService.katuluokkaluokittelu(geometriat)
 
                 assertThat(result).isEqualTo(ylreClass.value)
                 verify {
@@ -202,7 +200,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
                     tormaysService.maxIntersectingLiikenteellinenKatuluokka(geometriat)
                 } returns streetClass.value
 
-                val result = laskentaService.katuluokkaLuokittelu(geometriat)
+                val result = laskentaService.katuluokkaluokittelu(geometriat)
 
                 assertThat(result).isEqualTo(streetClass.value)
                 verify {
@@ -214,13 +212,13 @@ internal class TormaystarkasteluLaskentaServiceTest {
     }
 
     @Nested
-    inner class LiikennemaaraLuokittelu {
+    inner class Liikennemaaraluokittelu {
         // The parameter is only used to call mocks
         val geometriat = setOf<Int>()
 
         @Test
         fun `returns 0 when street class is 0`() {
-            val result = laskentaService.liikennemaaraLuokittelu(geometriat, 0)
+            val result = laskentaService.liikennemaaraluokittelu(geometriat, 0)
 
             assertThat(result).isEqualTo(0)
         }
@@ -229,7 +227,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         fun `uses small radius for traffic amounts when street class is 3`() {
             every { tormaysService.maxLiikennemaara(geometriat, RADIUS_15) } returns 1500
 
-            val result = laskentaService.liikennemaaraLuokittelu(geometriat, 3)
+            val result = laskentaService.liikennemaaraluokittelu(geometriat, 3)
 
             assertThat(result).isEqualTo(3)
             verify { tormaysService.maxLiikennemaara(geometriat, RADIUS_15) }
@@ -239,7 +237,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         fun `uses large radius for traffic amounts when street class is 4`() {
             every { tormaysService.maxLiikennemaara(geometriat, RADIUS_30) } returns 1500
 
-            val result = laskentaService.liikennemaaraLuokittelu(geometriat, 4)
+            val result = laskentaService.liikennemaaraluokittelu(geometriat, 4)
 
             assertThat(result).isEqualTo(3)
             verify { tormaysService.maxLiikennemaara(geometriat, RADIUS_30) }
@@ -249,7 +247,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         fun `returns 0 if there is no traffic`() {
             every { tormaysService.maxLiikennemaara(geometriat, RADIUS_15) } returns null
 
-            val result = laskentaService.liikennemaaraLuokittelu(geometriat, 1)
+            val result = laskentaService.liikennemaaraluokittelu(geometriat, 1)
 
             assertThat(result).isEqualTo(0)
             verify { tormaysService.maxLiikennemaara(geometriat, RADIUS_15) }
@@ -276,7 +274,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         ) {
             every { tormaysService.maxLiikennemaara(geometriat, RADIUS_15) } returns volume
 
-            val result = laskentaService.liikennemaaraLuokittelu(geometriat, 1)
+            val result = laskentaService.liikennemaaraluokittelu(geometriat, 1)
 
             assertThat(result).isEqualTo(expectedResult)
             verify { tormaysService.maxLiikennemaara(geometriat, RADIUS_15) }
@@ -284,7 +282,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
     }
 
     @Nested
-    inner class PyorailyLuokittelu {
+    inner class Pyoraliikenneluokittelu {
         // The parameter is only used to call mocks
         val geometriat = setOf<Int>()
 
@@ -292,7 +290,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         fun `returns 5 when intersect with priority route`() {
             every { tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) } returns true
 
-            val result = laskentaService.pyorailyLuokittelu(geometriat)
+            val result = laskentaService.pyoraliikenneluokittelu(geometriat)
 
             assertThat(result).isEqualTo(5)
             verify { tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) }
@@ -303,7 +301,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) } returns false
             every { tormaysService.anyIntersectsWithCyclewaysMain(geometriat) } returns true
 
-            val result = laskentaService.pyorailyLuokittelu(geometriat)
+            val result = laskentaService.pyoraliikenneluokittelu(geometriat)
 
             assertThat(result).isEqualTo(4)
             verifyAll {
@@ -317,7 +315,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsWithCyclewaysPriority(geometriat) } returns false
             every { tormaysService.anyIntersectsWithCyclewaysMain(geometriat) } returns false
 
-            val result = laskentaService.pyorailyLuokittelu(geometriat)
+            val result = laskentaService.pyoraliikenneluokittelu(geometriat)
 
             assertThat(result).isEqualTo(0)
             verifyAll {
@@ -328,7 +326,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
     }
 
     @Nested
-    inner class RaitiotieLuokittelu {
+    inner class Raitioliikenneluokittelu {
         // The parameter is only used to call mocks
         val geometriat = setOf<Int>()
 
@@ -336,9 +334,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
         fun `returns 5 when intersects with a tram line`() {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns true
 
-            val result = laskentaService.calculateRaitiotieIndeksi(geometriat)
+            val result = laskentaService.raitioliikenneluokittelu(geometriat)
 
-            assertThat(result).isEqualTo(5.0f)
+            assertThat(result).isEqualTo(5)
             verify { tormaysService.anyIntersectsWithTramLines(geometriat) }
             verify(exactly = 0) { tormaysService.anyIntersectsWithTramInfra(geometriat) }
         }
@@ -348,9 +346,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns false
             every { tormaysService.anyIntersectsWithTramInfra(geometriat) } returns true
 
-            val result = laskentaService.calculateRaitiotieIndeksi(geometriat)
+            val result = laskentaService.raitioliikenneluokittelu(geometriat)
 
-            assertThat(result).isEqualTo(3.0f)
+            assertThat(result).isEqualTo(3)
             verifyAll {
                 tormaysService.anyIntersectsWithTramLines(geometriat)
                 tormaysService.anyIntersectsWithTramInfra(geometriat)
@@ -362,9 +360,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsWithTramLines(geometriat) } returns false
             every { tormaysService.anyIntersectsWithTramInfra(geometriat) } returns false
 
-            val result = laskentaService.calculateRaitiotieIndeksi(geometriat)
+            val result = laskentaService.raitioliikenneluokittelu(geometriat)
 
-            assertThat(result).isEqualTo(0.0f)
+            assertThat(result).isEqualTo(0)
             verifyAll {
                 tormaysService.anyIntersectsWithTramLines(geometriat)
                 tormaysService.anyIntersectsWithTramInfra(geometriat)
@@ -373,7 +371,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
     }
 
     @Nested
-    inner class BussiLuokittelu {
+    inner class Linjaautoliikenneluokittelu {
         // The parameter is only used to call mocks
         val geometriat = setOf<Int>()
 
@@ -381,7 +379,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         fun `returns 5 when intersects with critical bus routes`() {
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns true
 
-            val result = laskentaService.bussiLuokittelu(geometriat)
+            val result = laskentaService.linjaautoliikenneluokittelu(geometriat)
 
             assertThat(result).isEqualTo(5)
             verify { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) }
@@ -392,7 +390,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns false
             every { tormaysService.getIntersectingBusRoutes(geometriat) } returns setOf()
 
-            val result = laskentaService.bussiLuokittelu(geometriat)
+            val result = laskentaService.linjaautoliikenneluokittelu(geometriat)
 
             assertThat(result).isEqualTo(0)
             verifyAll {
@@ -404,8 +402,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
         @ParameterizedTest
         @CsvSource(
             "0,2",
-            "4,2",
-            "5,3",
+            "1,3",
             "10,3",
             "11,4",
             "20,4",
@@ -428,7 +425,7 @@ internal class TormaystarkasteluLaskentaServiceTest {
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns false
             every { tormaysService.getIntersectingBusRoutes(geometriat) } returns busLines
 
-            val result = laskentaService.bussiLuokittelu(geometriat)
+            val result = laskentaService.linjaautoliikenneluokittelu(geometriat)
 
             assertThat(result).isEqualTo(expectedResult)
             verifyAll {
@@ -440,18 +437,17 @@ internal class TormaystarkasteluLaskentaServiceTest {
         @ParameterizedTest
         @CsvSource(
             "ON,4",
-            "LAHES,3",
             "EI,2",
         )
-        fun `returns classification based on trunk lines when there are just a few buses`(
+        fun `returns classification based on trunk lines when there are zero rush hour buses`(
             runkolinja: TormaystarkasteluBussiRunkolinja,
             expectedResult: Int
         ) {
-            val busLines = setOf(TormaystarkasteluBussireitti("", 0, 2, runkolinja))
+            val busLines = setOf(TormaystarkasteluBussireitti("", 0, 0, runkolinja))
             every { tormaysService.anyIntersectsCriticalBusRoutes(geometriat) } returns false
             every { tormaysService.getIntersectingBusRoutes(geometriat) } returns busLines
 
-            val result = laskentaService.bussiLuokittelu(geometriat)
+            val result = laskentaService.linjaautoliikenneluokittelu(geometriat)
 
             assertThat(result).isEqualTo(expectedResult)
             verifyAll {
@@ -469,10 +465,10 @@ internal class TormaystarkasteluLaskentaServiceTest {
         val tulos = laskentaService.calculateTormaystarkastelu(alueet, geometriaIds)
 
         assertThat(tulos).isNotNull()
-        assertThat(tulos!!.liikennehaittaIndeksi).isNotNull()
-        assertThat(tulos.liikennehaittaIndeksi.indeksi).isNotNull()
-        assertThat(tulos.liikennehaittaIndeksi.indeksi).isEqualTo(4.0f)
-        assertThat(tulos.raitiovaunuIndeksi).isEqualTo(3.0f)
+        assertThat(tulos!!.liikennehaittaindeksi).isNotNull()
+        assertThat(tulos.liikennehaittaindeksi.indeksi).isNotNull()
+        assertThat(tulos.liikennehaittaindeksi.indeksi).isEqualTo(5.0f)
+        assertThat(tulos.raitioliikenneindeksi).isEqualTo(3.0f)
 
         verifyAll {
             tormaysService.anyIntersectsYleinenKatuosa(geometriaIds)
@@ -495,8 +491,9 @@ internal class TormaystarkasteluLaskentaServiceTest {
                     geometriat = GeometriaFactory.create(),
                     haittaAlkuPvm = alkuPvm,
                     haittaLoppuPvm = alkuPvm.plusDays(7),
-                    kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.YKSI,
-                    kaistaPituusHaitta = KaistajarjestelynPituus.YKSI,
+                    kaistaHaitta = VaikutusAutoliikenteenKaistamaariin.EI_VAIKUTA,
+                    kaistaPituusHaitta =
+                        AutoliikenteenKaistavaikutustenPituus.EI_VAIKUTA_KAISTAJARJESTELYIHIN,
                     nimi = "$HANKEALUE_DEFAULT_NAME 1"
                 )
             )

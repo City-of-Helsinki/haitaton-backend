@@ -95,6 +95,18 @@ class Config:
         """Return buffer value list from configuration."""
         return self._cfg.get(item, {}).get("buffer")
 
+    def tormays_table_org(self, item: str) -> str:
+        """Return buffer value list from configuration."""
+        return self._cfg.get(item, {}).get("tormays_table_org")
+
+    def tormays_table_temp(self, item: str) -> str:
+        """Return buffer value list from configuration."""
+        return self._cfg.get(item, {}).get("tormays_table_temp")
+
+    def buffer_class_values(self, item: str) -> list[int]:
+        """Return buffer value list from configuration."""
+        return self._cfg.get(item, {}).get("buffer_class_values")
+
     def pg_conn_uri(self, deployment: str = None) -> str:
         """Return PostgreSQL connection URI
 

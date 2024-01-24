@@ -12,7 +12,6 @@ import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.andExpectError
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
-import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadService
 import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.TestHankeIdentifier
@@ -58,7 +57,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired private lateinit var hankeAttachmentService: HankeAttachmentService
-    @Autowired private lateinit var attachmentUploadService: AttachmentUploadService
     @Autowired private lateinit var authorizer: HankeAttachmentAuthorizer
 
     @BeforeEach
@@ -74,7 +72,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
 
     @Test
     fun `getMetadataList when valid request should return metadata list`() {
-        val data = (1..3).map { HankeAttachmentFactory.create(fileName = "${it}file.pdf") }
+        val data = (1..3).map { HankeAttachmentFactory.createDto(fileName = "${it}file.pdf") }
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
         every { hankeAttachmentService.getMetadataList(HANKE_TUNNUS) } returns data
 
@@ -109,14 +107,14 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
         val file = testFile()
         val hanke = TestHankeIdentifier(1, HANKE_TUNNUS)
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name) } returns true
-        every { attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file) } returns
-            HankeAttachmentFactory.create()
+        every { hankeAttachmentService.uploadHankeAttachment(hanke.hankeTunnus, file) } returns
+            HankeAttachmentFactory.createDto()
 
         postAttachment(file = file).andExpect(status().isOk)
 
         verifyOrder {
             authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name)
-            attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file)
+            hankeAttachmentService.uploadHankeAttachment(hanke.hankeTunnus, file)
         }
     }
 
@@ -125,14 +123,14 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
         val file = testFile()
         val hanke = TestHankeIdentifier(1, HANKE_TUNNUS)
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name) } returns true
-        every { attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file) } throws
+        every { hankeAttachmentService.uploadHankeAttachment(hanke.hankeTunnus, file) } throws
             AttachmentInvalidException("Something went wrong")
 
         postAttachment(file = file).andExpect(status().isBadRequest)
 
         verifyOrder {
             authorizer.authorizeHankeTunnus(HANKE_TUNNUS, EDIT.name)
-            attachmentUploadService.uploadHankeAttachment(hanke.hankeTunnus, file)
+            hankeAttachmentService.uploadHankeAttachment(hanke.hankeTunnus, file)
         }
     }
 

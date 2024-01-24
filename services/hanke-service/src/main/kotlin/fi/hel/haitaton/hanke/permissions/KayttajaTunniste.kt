@@ -29,30 +29,30 @@ data class KayttajaTunniste(
 ) : HasId<UUID>
 
 @Entity
-@Table(name = "kayttaja_tunniste")
-class KayttajaTunnisteEntity(
+@Table(name = "kayttajakutsu")
+class KayttajakutsuEntity(
     @Id val id: UUID = UUID.randomUUID(),
     val tunniste: String,
     @Column(name = "created_at") val createdAt: OffsetDateTime,
     @Enumerated(EnumType.STRING) var kayttooikeustaso: Kayttooikeustaso,
     @OneToOne
-    @JoinColumn(name = "hanke_kayttaja_id", updatable = false, nullable = false, unique = true)
-    val hankeKayttaja: HankeKayttajaEntity,
+    @JoinColumn(name = "hankekayttaja_id", updatable = false, nullable = false, unique = true)
+    val hankekayttaja: HankekayttajaEntity,
 ) {
 
-    fun toDomain() = KayttajaTunniste(id, tunniste, createdAt, kayttooikeustaso, hankeKayttaja.id)
+    fun toDomain() = KayttajaTunniste(id, tunniste, createdAt, kayttooikeustaso, hankekayttaja.id)
 
     companion object {
         private const val tokenLength: Int = 24
         private val charPool: List<Char> = ('a'..'z') + ('A'..'Z') + ('0'..'9')
         private val secureRandom: SecureRandom = SecureRandom()
 
-        fun create(hankeKayttaja: HankeKayttajaEntity) =
-            KayttajaTunnisteEntity(
+        fun create(hankeKayttaja: HankekayttajaEntity) =
+            KayttajakutsuEntity(
                 tunniste = randomToken(),
                 createdAt = getCurrentTimeUTC().toOffsetDateTime(),
                 kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
-                hankeKayttaja = hankeKayttaja
+                hankekayttaja = hankeKayttaja
             )
 
         private fun randomToken(): String =
@@ -65,6 +65,6 @@ class KayttajaTunnisteEntity(
 }
 
 @Repository
-interface KayttajaTunnisteRepository : JpaRepository<KayttajaTunnisteEntity, UUID> {
-    fun findByTunniste(tunniste: String): KayttajaTunnisteEntity?
+interface KayttajakutsuRepository : JpaRepository<KayttajakutsuEntity, UUID> {
+    fun findByTunniste(tunniste: String): KayttajakutsuEntity?
 }

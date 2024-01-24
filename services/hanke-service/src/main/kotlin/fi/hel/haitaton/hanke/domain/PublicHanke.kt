@@ -1,13 +1,12 @@
 package fi.hel.haitaton.hanke.domain
 
-import fi.hel.haitaton.hanke.Haitta13
-import fi.hel.haitaton.hanke.KaistajarjestelynPituus
-import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
-import fi.hel.haitaton.hanke.TyomaaTyyppi
-import fi.hel.haitaton.hanke.Vaihe
 import fi.hel.haitaton.hanke.geometria.Geometriat
-import fi.hel.haitaton.hanke.tormaystarkastelu.LiikennehaittaIndeksiType
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.ZonedDateTime
 import org.geojson.FeatureCollection
 
@@ -39,11 +38,11 @@ data class PublicHankealue(
     var haittaAlkuPvm: ZonedDateTime? = null,
     var haittaLoppuPvm: ZonedDateTime? = null,
     var geometriat: PublicGeometriat? = null,
-    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
-    var kaistaPituusHaitta: KaistajarjestelynPituus? = null,
-    var meluHaitta: Haitta13? = null,
-    var polyHaitta: Haitta13? = null,
-    var tarinaHaitta: Haitta13? = null,
+    var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
+    var kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
+    var meluHaitta: Meluhaitta? = null,
+    var polyHaitta: Polyhaitta? = null,
+    var tarinaHaitta: Tarinahaitta? = null,
     var nimi: String,
 )
 
@@ -54,9 +53,8 @@ data class PublicHanke(
     val kuvaus: String,
     val alkuPvm: ZonedDateTime,
     val loppuPvm: ZonedDateTime,
-    val vaihe: Vaihe,
+    val vaihe: Hankevaihe,
     val tyomaaTyyppi: MutableSet<TyomaaTyyppi>,
-    val liikennehaittaindeksi: LiikennehaittaIndeksiType,
     val tormaystarkasteluTulos: TormaystarkasteluTulos,
     val omistajat: List<PublicHankeYhteystieto>,
     val alueet: List<PublicHankealue>,
@@ -93,7 +91,6 @@ fun hankeToPublic(hanke: Hanke): PublicHanke {
         hanke.loppuPvm!!,
         hanke.vaihe!!,
         hanke.tyomaaTyyppi,
-        hanke.getLiikennehaittaindeksi()!!,
         hanke.tormaystarkasteluTulos!!,
         omistajat,
         alueet,

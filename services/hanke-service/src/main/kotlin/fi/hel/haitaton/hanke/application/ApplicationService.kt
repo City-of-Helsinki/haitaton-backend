@@ -27,8 +27,8 @@ import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
@@ -327,8 +327,8 @@ class ApplicationService(
         return currentStatus in listOf(PENDING, PENDING_CLIENT)
     }
 
-    private fun cancelAndDelete(application: ApplicationEntity, userId: String) =
-        with(application) {
+    private fun cancelAndDelete(applicationEntity: ApplicationEntity, userId: String) =
+        with(applicationEntity) {
             val alluId = alluid
             if (alluId == null) {
                 logger.info { "Application not sent to Allu yet, simply deleting it. id=$id" }
@@ -340,8 +340,10 @@ class ApplicationService(
             }
 
             logger.info { "Deleting application, id=$id, alluid=$alluid userid=$userId" }
+            val application = toApplication()
+            attachmentService.deleteAllAttachments(application)
             applicationRepository.delete(this)
-            applicationLoggingService.logDelete(toApplication(), userId)
+            applicationLoggingService.logDelete(application, userId)
             logger.info { "Application deleted, id=$id, alluid=$alluid userid=$userId" }
         }
 
@@ -399,7 +401,7 @@ class ApplicationService(
     private fun provideAccess(
         application: ApplicationEntity,
         hanke: HankeEntity,
-        currentKayttaja: HankeKayttajaEntity?,
+        currentKayttaja: HankekayttajaEntity?,
         currentUserId: String,
         emailRecipients: Set<String>,
     ) {
@@ -427,7 +429,7 @@ class ApplicationService(
         hankeTunnus: String,
         applicationIdentifier: String,
         applicationType: ApplicationType,
-        currentKayttaja: HankeKayttajaEntity?,
+        currentKayttaja: HankekayttajaEntity?,
         recipientEmail: String,
     ) {
         logger.info { "Sending Application notification." }
@@ -439,7 +441,7 @@ class ApplicationService(
 
         emailSenderService.sendApplicationNotificationEmail(
             ApplicationNotificationData(
-                senderName = currentKayttaja.nimi,
+                senderName = currentKayttaja.fullName(),
                 senderEmail = currentKayttaja.sahkoposti,
                 recipientEmail = recipientEmail,
                 hankeTunnus = hankeTunnus,

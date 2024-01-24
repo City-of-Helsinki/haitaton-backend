@@ -1,12 +1,16 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.factory.KayttajaTunnisteFactory.TUNNISTE_ID
+import fi.hel.haitaton.hanke.factory.PermissionFactory.PERMISSION_ID
 import fi.hel.haitaton.hanke.permissions.HankeKayttaja
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaEntity
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaRepository
-import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteEntity
-import fi.hel.haitaton.hanke.permissions.KayttajaTunnisteRepository
+import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
+import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
+import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
+import fi.hel.haitaton.hanke.permissions.KayttajakutsuEntity
+import fi.hel.haitaton.hanke.permissions.KayttajakutsuRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso.KATSELUOIKEUS
 import fi.hel.haitaton.hanke.permissions.PermissionEntity
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import java.time.OffsetDateTime
@@ -15,116 +19,195 @@ import org.springframework.stereotype.Component
 
 @Component
 class HankeKayttajaFactory(
-    private val hankeKayttajaRepository: HankeKayttajaRepository,
+    private val hankeKayttajaRepository: HankekayttajaRepository,
     private val permissionService: PermissionService,
-    private val kayttajaTunnisteRepository: KayttajaTunnisteRepository
+    private val kayttajakutsuRepository: KayttajakutsuRepository
 ) {
 
-    fun saveUserAndToken(
+    fun saveUnidentifiedUser(
         hankeId: Int,
-        nimi: String = "Kake Katselija",
-        sahkoposti: String = "kake@katselu.test",
-        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+        etunimi: String = KAKE,
+        sukunimi: String = KATSELIJA,
+        sahkoposti: String = KAKE_EMAIL,
+        puhelin: String = KAKE_PUHELIN,
+        kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
         tunniste: String = "existing",
-    ): HankeKayttajaEntity =
-        addToken(saveUser(hankeId, nimi, sahkoposti, null), tunniste, kayttooikeustaso)
+    ): HankekayttajaEntity =
+        addToken(
+            hankeKayttaja =
+                saveUser(
+                    hankeId = hankeId,
+                    etunimi = etunimi,
+                    sukunimi = sukunimi,
+                    sahkoposti = sahkoposti,
+                    puhelin = puhelin,
+                    permissionEntity = null,
+                ),
+            tunniste = tunniste,
+            kayttooikeustaso = kayttooikeustaso,
+        )
 
-    fun saveUserAndPermission(
+    fun saveIdentifiedUser(
         hankeId: Int,
-        nimi: String = "Kake Katselija",
-        sahkoposti: String = "kake@katselu.test",
-        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+        etunimi: String = KAKE,
+        sukunimi: String = KATSELIJA,
+        sahkoposti: String = KAKE_EMAIL,
+        puhelin: String = KAKE_PUHELIN,
+        kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
         userId: String = "fake id",
-    ): HankeKayttajaEntity {
-        val permissionEntity = permissionService.create(hankeId, userId, kayttooikeustaso)
+    ): HankekayttajaEntity =
+        saveUser(
+            hankeId = hankeId,
+            etunimi = etunimi,
+            sukunimi = sukunimi,
+            sahkoposti = sahkoposti,
+            puhelin = puhelin,
+            permissionEntity = permissionService.create(hankeId, userId, kayttooikeustaso),
+        )
 
-        return saveUser(hankeId, nimi, sahkoposti, permissionEntity)
-    }
+    fun saveIdentifiedUser(
+        hankeId: Int,
+        input: HankekayttajaInput,
+        kayttooikeustaso: Kayttooikeustaso,
+    ): HankekayttajaEntity =
+        saveIdentifiedUser(
+            hankeId = hankeId,
+            etunimi = input.etunimi,
+            sukunimi = input.sukunimi,
+            sahkoposti = input.email,
+            puhelin = input.puhelin,
+            kayttooikeustaso = kayttooikeustaso
+        )
 
     fun saveUser(
         hankeId: Int,
-        nimi: String = "Kake Katselija",
-        sahkoposti: String = "kake@katselu.test",
+        etunimi: String = KAKE,
+        sukunimi: String = KATSELIJA,
+        sahkoposti: String = KAKE_EMAIL,
+        puhelin: String = KAKE_PUHELIN,
         permissionEntity: PermissionEntity? = null,
-        kayttajaTunniste: KayttajaTunnisteEntity? = null,
-    ): HankeKayttajaEntity {
-        return hankeKayttajaRepository.save(
-            HankeKayttajaEntity(
+        kayttajakutsuEntity: KayttajakutsuEntity? = null,
+    ): HankekayttajaEntity =
+        hankeKayttajaRepository.save(
+            HankekayttajaEntity(
                 hankeId = hankeId,
-                nimi = nimi,
+                etunimi = etunimi,
+                sukunimi = sukunimi,
                 sahkoposti = sahkoposti,
+                puhelin = puhelin,
                 permission = permissionEntity,
-                kayttajaTunniste = kayttajaTunniste,
+                kayttajakutsu = kayttajakutsuEntity,
             )
         )
-    }
 
     fun addToken(
-        hankeKayttaja: HankeKayttajaEntity,
+        hankeKayttaja: HankekayttajaEntity,
         tunniste: String = "existing",
-        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
-    ): HankeKayttajaEntity {
-        hankeKayttaja.kayttajaTunniste = hankeKayttaja.saveToken(tunniste, kayttooikeustaso)
+        kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
+    ): HankekayttajaEntity {
+        hankeKayttaja.kayttajakutsu = hankeKayttaja.saveToken(tunniste, kayttooikeustaso)
         return hankeKayttajaRepository.save(hankeKayttaja)
     }
 
-    private fun HankeKayttajaEntity.saveToken(
+    private fun HankekayttajaEntity.saveToken(
         tunniste: String = "existing",
-        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+        kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
     ) =
-        kayttajaTunnisteRepository.save(
-            KayttajaTunnisteEntity(
+        kayttajakutsuRepository.save(
+            KayttajakutsuEntity(
                 tunniste = tunniste,
                 createdAt = OffsetDateTime.parse("2023-03-31T15:41:21Z"),
                 kayttooikeustaso = kayttooikeustaso,
-                hankeKayttaja = this,
+                hankekayttaja = this,
             )
         )
 
     companion object {
         val KAYTTAJA_ID = UUID.fromString("639870ab-533d-4172-8e97-e5b93a275514")
-        const val HANKE_ID = 14
-        const val NIMI = "Pekka Peruskäyttäjä"
-        const val SAHKOPOSTI = "pekka@peruskäyttäjä.test"
-        val PERMISSION_ID = PermissionFactory.PERMISSION_ID
-        val TUNNISTE_ID = KayttajaTunnisteFactory.TUNNISTE_ID
+
+        const val KAKE = "Kake"
+        const val KATSELIJA = "Katselija"
+        const val KAKE_EMAIL = "kake@katselu.test"
+        const val KAKE_PUHELIN = "0501234567"
+
+        private const val PEKKA = "Pekka Peruskäyttäjä"
+        private const val PEKKA_EMAIL = "pekka@peruskäyttäjä.test"
+
+        val KAYTTAJA_INPUT_HAKIJA =
+            HankekayttajaInput(
+                "Henri",
+                "Hakija",
+                "henri.hakija@mail.com",
+                "0401234567",
+            )
+
+        val KAYTTAJA_INPUT_RAKENNUTTAJA =
+            HankekayttajaInput(
+                "Rane",
+                "Rakennuttaja",
+                "rane.rakennuttaja@mail.com",
+                "0401234566",
+            )
+
+        val KAYTTAJA_INPUT_ASIANHOITAJA =
+            HankekayttajaInput(
+                "Anssi",
+                "Asianhoitaja",
+                "anssi.asianhoitaja@mail.com",
+                "0401234565",
+            )
+
+        val KAYTTAJA_INPUT_SUORITTAJA =
+            HankekayttajaInput(
+                "Timo",
+                "Työnsuorittaja",
+                "timo.tyonsuorittaja@mail.com",
+                "0401234564",
+            )
 
         fun create(
             id: UUID = KAYTTAJA_ID,
-            hankeId: Int = HANKE_ID,
-            nimi: String = NIMI,
-            sahkoposti: String = SAHKOPOSTI,
+            hankeId: Int = HankeFactory.defaultId,
+            nimi: String = PEKKA,
+            sahkoposti: String = PEKKA_EMAIL,
             permissionId: Int? = PERMISSION_ID,
-            kayttajaTunnisteId: UUID? = TUNNISTE_ID,
-        ): HankeKayttaja =
-            HankeKayttaja(id, hankeId, nimi, sahkoposti, permissionId, kayttajaTunnisteId)
+            kutsuId: UUID? = TUNNISTE_ID,
+        ): HankeKayttaja = HankeKayttaja(id, hankeId, nimi, sahkoposti, permissionId, kutsuId)
 
         fun createEntity(
             id: UUID = KAYTTAJA_ID,
-            hankeId: Int = HANKE_ID,
-            nimi: String = NIMI,
-            sahkoposti: String = SAHKOPOSTI,
+            hankeId: Int = HankeFactory.defaultId,
+            etunimi: String = KAKE,
+            sukunimi: String = KATSELIJA,
+            sahkoposti: String = KAKE_EMAIL,
+            puhelin: String = KAKE_PUHELIN,
             permission: PermissionEntity? = null,
-            kayttajaTunniste: KayttajaTunnisteEntity? = null,
-        ): HankeKayttajaEntity =
-            HankeKayttajaEntity(
-                id,
-                hankeId,
-                nimi,
-                sahkoposti,
+            kutsu: KayttajakutsuEntity? = null,
+        ): HankekayttajaEntity =
+            HankekayttajaEntity(
+                id = id,
+                hankeId = hankeId,
+                etunimi = etunimi,
+                sukunimi = sukunimi,
+                sahkoposti = sahkoposti,
+                puhelin = puhelin,
                 permission = permission,
-                kayttajaTunniste = kayttajaTunniste
+                kayttajakutsu = kutsu
+            )
+
+        fun createDto(i: Int = 1, tunnistautunut: Boolean = false, id: UUID = UUID.randomUUID()) =
+            HankeKayttajaDto(
+                id = id,
+                sahkoposti = "email.$i.address.com",
+                etunimi = "test$i",
+                sukunimi = "name$i",
+                nimi = "test$i name$i",
+                puhelinnumero = "040555$i$i$i$i",
+                kayttooikeustaso = KATSELUOIKEUS,
+                tunnistautunut = tunnistautunut
             )
 
         fun generateHankeKayttajat(amount: Int = 3): List<HankeKayttajaDto> =
-            (1..amount).map {
-                HankeKayttajaDto(
-                    id = UUID.randomUUID(),
-                    sahkoposti = "email.$it.address.com",
-                    nimi = "test name$it",
-                    kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
-                    tunnistautunut = it % 2 == 0
-                )
-            }
+            (1..amount).map { createDto(it, it % 2 == 0) }
     }
 }

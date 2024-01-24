@@ -1,8 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.common
 
 import fi.hel.haitaton.hanke.HankeEntity
-import fi.hel.haitaton.hanke.allu.Attachment
-import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -29,15 +27,15 @@ abstract class AttachmentEntity(
     /** File type, e.g. application/pdf. */
     @Column(name = "content_type") var contentType: String,
 
+    /** Size in bytes. */
+    @Column(name = "size") var size: Long,
+
     /** Person who uploaded this attachment. */
     @Column(name = "created_by_user_id", updatable = false, nullable = false)
     var createdByUserId: String,
 
     /** Creation timestamp. */
     @Column(name = "created_at", updatable = false, nullable = false) var createdAt: OffsetDateTime,
-
-    /** Location of the file in Azure Blob. */
-    @Column(name = "blob_location") var blobLocation: String?,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -59,20 +57,34 @@ class HankeAttachmentEntity(
     id: UUID?,
     fileName: String,
     contentType: String,
+    size: Long,
     createdByUserId: String,
     createdAt: OffsetDateTime,
-    blobLocation: String?,
+    @Column(name = "blob_location") var blobLocation: String,
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "hanke_id") var hanke: HankeEntity,
-) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt, blobLocation) {
-    fun toDomain(): HankeAttachment {
-        return HankeAttachment(
+) : AttachmentEntity(id, fileName, contentType, size, createdByUserId, createdAt) {
+    fun toDto(): HankeAttachmentMetadataDto =
+        HankeAttachmentMetadataDto(
             id = id!!,
             fileName = fileName,
+            contentType = contentType,
+            size = size,
             createdAt = createdAt,
             hankeTunnus = hanke.hankeTunnus,
             createdByUserId = createdByUserId,
         )
-    }
+
+    fun toDomain(): HankeAttachmentMetadata =
+        HankeAttachmentMetadata(
+            id!!,
+            fileName,
+            contentType,
+            size,
+            createdByUserId,
+            createdAt,
+            blobLocation,
+            hanke.id,
+        )
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -97,37 +109,39 @@ class ApplicationAttachmentEntity(
     id: UUID?,
     fileName: String,
     contentType: String,
+    size: Long,
     createdByUserId: String,
     createdAt: OffsetDateTime,
-    blobLocation: String?,
+    @Column(name = "blob_location") var blobLocation: String?,
     @Column(name = "application_id") var applicationId: Long,
     @Enumerated(EnumType.STRING)
     @Column(name = "attachment_type")
     var attachmentType: ApplicationAttachmentType,
-) : AttachmentEntity(id, fileName, contentType, createdByUserId, createdAt, blobLocation) {
-    fun toDto(): ApplicationAttachmentMetadata {
-        return ApplicationAttachmentMetadata(
+) : AttachmentEntity(id, fileName, contentType, size, createdByUserId, createdAt) {
+    fun toDto(): ApplicationAttachmentMetadataDto =
+        ApplicationAttachmentMetadataDto(
             id = id!!,
             fileName = fileName,
+            contentType = contentType,
+            size = size,
+            attachmentType = attachmentType,
             createdAt = createdAt,
             createdByUserId = createdByUserId,
             applicationId = applicationId,
-            attachmentType = attachmentType,
         )
-    }
 
-    fun toAlluAttachment(content: ByteArray): Attachment {
-        return Attachment(
-            metadata =
-                AttachmentMetadata(
-                    id = null,
-                    mimeType = contentType,
-                    name = fileName,
-                    description = null,
-                ),
-            file = content
+    fun toDomain(): ApplicationAttachmentMetadata =
+        ApplicationAttachmentMetadata(
+            id = id!!,
+            fileName = fileName,
+            contentType = contentType,
+            size = size,
+            attachmentType = attachmentType,
+            createdByUserId = createdByUserId,
+            createdAt = createdAt,
+            blobLocation = blobLocation,
+            applicationId = applicationId,
         )
-    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -154,11 +168,13 @@ interface HankeAttachmentRepository : JpaRepository<HankeAttachmentEntity, UUID>
 
 @Repository
 interface ApplicationAttachmentRepository : JpaRepository<ApplicationAttachmentEntity, UUID> {
-    fun findByApplicationId(id: Long): List<ApplicationAttachmentEntity>
+    fun findByApplicationId(applicationId: Long): List<ApplicationAttachmentEntity>
 
-    fun findByApplicationIdAndId(applicationId: Long, id: UUID): ApplicationAttachmentEntity?
+    fun findFirstByBlobLocationIsNull(): ApplicationAttachmentEntity?
 
     fun countByApplicationId(applicationId: Long): Int
+
+    fun deleteByApplicationId(applicationId: Long)
 }
 
 enum class ApplicationAttachmentType {

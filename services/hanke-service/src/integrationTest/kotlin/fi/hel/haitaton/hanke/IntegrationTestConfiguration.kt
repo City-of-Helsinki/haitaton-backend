@@ -2,9 +2,10 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationService
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
-import fi.hel.haitaton.hanke.attachment.common.AttachmentUploadService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentAuthorizer
+import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentMetadataService
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
@@ -17,6 +18,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaAuthorizer
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.security.AccessRules
 import fi.hel.haitaton.hanke.testdata.TestDataService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
@@ -74,7 +76,9 @@ class IntegrationTestConfiguration {
 
     @Bean fun hankeAttachmentService(): HankeAttachmentService = mockk()
 
-    @Bean fun attachmentUploadService(): AttachmentUploadService = mockk()
+    @Bean fun hankeAttachmentMetadataService(): HankeAttachmentMetadataService = mockk()
+
+    @Bean fun applicationAttachmentMetadataService(): ApplicationAttachmentMetadataService = mockk()
 
     @Bean fun applicationAttachmentService(): ApplicationAttachmentService = mockk()
 
@@ -89,6 +93,8 @@ class IntegrationTestConfiguration {
     @Bean fun hankeAttachmentAuthorizer(): HankeAttachmentAuthorizer = mockk(relaxUnitFun = true)
 
     @Bean fun featureService(featureFlags: FeatureFlags) = FeatureService(featureFlags)
+
+    @Bean fun profiiliClient(): ProfiiliClient = mockk()
 
     @EventListener
     fun onApplicationEvent(event: ContextRefreshedEvent) {
