@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.attachment.common
 
+import com.azure.core.implementation.http.rest.UrlEscapers
 import com.azure.core.util.BinaryData
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import org.springframework.http.MediaType
@@ -20,6 +21,10 @@ interface FileClient {
     fun delete(container: Container, path: String): Boolean
 
     fun deleteAllByPrefix(container: Container, prefix: String)
+
+    fun encodeFilename(filename: String): String {
+        return UrlEscapers.PATH_ESCAPER.escape(filename)
+    }
 }
 
 data class DownloadResponse(

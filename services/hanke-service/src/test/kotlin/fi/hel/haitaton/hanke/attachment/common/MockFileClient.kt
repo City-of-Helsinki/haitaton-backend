@@ -40,7 +40,7 @@ class MockFileClient : FileClient {
                 path,
                 contentType,
                 content.size,
-                "attachment; filename=$originalFilename",
+                "attachment; filename*=UTF-8''${encodeFilename(originalFilename)}",
                 BinaryData.fromBytes(content)
             )
     }
