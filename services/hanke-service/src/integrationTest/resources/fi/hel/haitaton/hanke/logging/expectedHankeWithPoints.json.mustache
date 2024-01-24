@@ -85,25 +85,24 @@
         },
         "version": {{geometriaVersion}}
       },
-      "kaistaHaitta": "KAKSI",
-      "kaistaPituusHaitta": "NELJA",
-      "meluHaitta": "YKSI",
-      "polyHaitta": "KAKSI",
-      "tarinaHaitta": "KOLME",
+      "kaistaHaitta": "VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA",
+      "kaistaPituusHaitta": "PITUUS_100_499_METRIA",
+      "meluHaitta": "SATUNNAINEN_HAITTA",
+      "polyHaitta": "LYHYTAIKAINEN_TOISTUVA_HAITTA",
+      "tarinaHaitta": "PITKAKESTOINEN_TOISTUVA_HAITTA",
       "nimi": {{#alueNimi}}"{{alueNimi}}"{{/alueNimi}}{{^alueNimi}}null{{/alueNimi}}
     }
 {{/alueId}}
   ],
 {{#tormaystarkasteluTulos}}
   "tormaystarkasteluTulos": {
-    "perusIndeksi": 1.4,
-    "pyorailyIndeksi": 1.0,
-    "linjaautoIndeksi": 1.0,
-    "raitiovaunuIndeksi": 0.0,
-    "joukkoliikenneIndeksi": 1.0,
-    "liikennehaittaIndeksi": {
+    "autoliikenneindeksi": 1.4,
+    "pyoraliikenneindeksi": 1.0,
+    "linjaautoliikenneindeksi": 0.0,
+    "raitioliikenneindeksi": 0.0,
+    "liikennehaittaindeksi": {
       "indeksi": 1.4,
-      "tyyppi": "PERUSINDEKSI"
+      "tyyppi": "AUTOLIIKENNEINDEKSI"
     }
   }
 {{/tormaystarkasteluTulos}}

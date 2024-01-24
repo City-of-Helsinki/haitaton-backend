@@ -2,8 +2,10 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
+import fi.hel.haitaton.hanke.domain.HankeStatus
+import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.HasId
-import fi.hel.haitaton.hanke.tormaystarkastelu.Luokittelu
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import jakarta.persistence.CascadeType
 import jakarta.persistence.CollectionTable
@@ -23,91 +25,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 
-enum class HankeStatus {
-    /** A hanke is a draft from its creation until all mandatory fields have been filled. */
-    DRAFT,
-    /**
-     * A hanke goes public after all mandatory fields have been filled. This happens automatically
-     * on any update. A public hanke has some info visible to everyone and applications can be added
-     * to it.
-     */
-    PUBLIC,
-    /**
-     * After the end dates of all hankealue have passed, a hanke is considered finished. It's
-     * anonymized and at least mostly hidden in the UI.
-     */
-    ENDED,
-}
-
-enum class Vaihe {
-    OHJELMOINTI,
-    SUUNNITTELU,
-    RAKENTAMINEN
-}
-
-enum class TyomaaTyyppi {
-    VESI,
-    VIEMARI,
-    SADEVESI,
-    SAHKO,
-    TIETOLIIKENNE,
-    LIIKENNEVALO,
-    ULKOVALAISTUS,
-    KAAPPITYO,
-    KAUKOLAMPO,
-    KAUKOKYLMA,
-    KAASUJOHTO,
-    KISKOTYO,
-    MUU,
-    KADUNRAKENNUS,
-    KADUN_KUNNOSSAPITO,
-    KIINTEISTOLIITTYMA,
-    SULKU_TAI_KAIVO,
-    UUDISRAKENNUS,
-    SANEERAUS,
-    AKILLINEN_VIKAKORJAUS,
-    VIHERTYO,
-    RUNKOLINJA,
-    NOSTOTYO,
-    MUUTTO,
-    PYSAKKITYO,
-    KIINTEISTOREMONTTI,
-    ULKOMAINOS,
-    KUVAUKSET,
-    LUMENPUDOTUS,
-    YLEISOTILAISUUS,
-    VAIHTOLAVA
-}
-
-/** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
-enum class TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin(
-    override val value: Int,
-    override val explanation: String
-) : Luokittelu {
-    YKSI(1, "Ei vaikuta"),
-    KAKSI(2, "Vähentää kaistan yhdellä ajosuunnalla"),
-    KOLME(3, "Vähentää samanaikaisesti kaistan kahdella ajosuunnalla"),
-    NELJA(4, "Vähentää samanaikaisesti useita kaistoja kahdella ajosuunnalla"),
-    VIISI(5, "Vähentää samanaikaisesti useita kaistoja liittymien eri suunnilla")
-}
-
-/** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
-enum class KaistajarjestelynPituus(override val value: Int, override val explanation: String) :
-    Luokittelu {
-    YKSI(1, "Ei tarvita"),
-    KAKSI(2, "Enintään 10 m"),
-    KOLME(3, "11 - 100 m"),
-    NELJA(4, "101 - 500 m"),
-    VIISI(5, "Yli 500 m")
-}
-
-/** NOTE Järjestys täytyy olla pienimmästä suurimpaan */
-enum class Haitta13 {
-    YKSI,
-    KAKSI,
-    KOLME
-}
-
 // Build-time plugins will open the class and add no-arg constructor for @Entity classes.
 
 @Entity
@@ -117,7 +34,7 @@ class HankeEntity(
     override val hankeTunnus: String,
     var nimi: String,
     var kuvaus: String? = null,
-    @Enumerated(EnumType.STRING) var vaihe: Vaihe? = null,
+    @Enumerated(EnumType.STRING) var vaihe: Hankevaihe? = null,
     var onYKTHanke: Boolean? = false,
     var version: Int? = 0,
     // NOTE: creatorUserId must be non-null for valid data, but to allow creating instances with
@@ -164,15 +81,6 @@ class HankeEntity(
     @CollectionTable(name = "hanketyomaatyyppi", joinColumns = [JoinColumn(name = "hankeid")])
     @Enumerated(EnumType.STRING)
     var tyomaaTyyppi: MutableSet<TyomaaTyyppi> = mutableSetOf()
-
-    // --------------- Hankkeen haitat -------------------
-    // These five fields have generic string values, so can just as well store them with the ordinal
-    // number.
-    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null
-    var kaistaPituusHaitta: KaistajarjestelynPituus? = null
-    var meluHaitta: Haitta13? = null
-    var polyHaitta: Haitta13? = null
-    var tarinaHaitta: Haitta13? = null
 
     // Made bidirectional relation mainly to allow cascaded delete.
     @OneToMany(

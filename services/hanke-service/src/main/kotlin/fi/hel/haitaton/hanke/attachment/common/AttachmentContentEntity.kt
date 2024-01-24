@@ -22,24 +22,11 @@ abstract class AttachmentContentEntity(
 )
 
 @Entity
-@Table(name = "hanke_attachment_content")
-class HankeAttachmentContentEntity(
-    attachmentId: UUID,
-    content: ByteArray,
-) : AttachmentContentEntity(attachmentId, content)
-
-@Entity
 @Table(name = "application_attachment_content")
 class ApplicationAttachmentContentEntity(
     attachmentId: UUID,
     content: ByteArray,
 ) : AttachmentContentEntity(attachmentId, content)
-
-@Repository
-interface HankeAttachmentContentRepository : JpaRepository<HankeAttachmentContentEntity, UUID> {
-
-    fun findFirstBy(): HankeAttachmentContentEntity?
-}
 
 @Repository
 interface ApplicationAttachmentContentRepository :

@@ -1,30 +1,37 @@
 package fi.hel.haitaton.hanke
 
-import assertk.assertThat
-import assertk.assertions.isEqualTo
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
-import fi.hel.haitaton.hanke.domain.CreateHankeRequest
+import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.SavedHankealue
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withMuuYhteystieto
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withOmistaja
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withTormaystarkasteluTulos
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withToteuttaja
+import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.IndeksiType
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.justRun
-import io.mockk.slot
 import io.mockk.verifySequence
 import java.time.temporal.ChronoUnit
 import org.geojson.FeatureCollection
+import org.hamcrest.Matchers.containsInAnyOrder
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -122,17 +129,17 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
         @Test
         fun `Returns tormaystarkastelutulos with the hanke if it has been calculated`() {
-            val perus = 4.3f
-            val pyoraily = 2.1f
-            val linjaauto = 1.4f
-            val raitiovaunu = 3f
+            val autoliikenneindeksi = 4.3f
+            val pyoraliikenneindeksi = 2.1f
+            val linjaautoliikenneindeksi = 1.4f
+            val raitioliikenneindeksi = 3f
             val hanke =
                 HankeFactory.create(hankeTunnus = HANKE_TUNNUS)
                     .withTormaystarkasteluTulos(
-                        perusIndeksi = perus,
-                        pyorailyIndeksi = pyoraily,
-                        linjaautoIndeksi = linjaauto,
-                        raitiovaunuIndeksi = raitiovaunu
+                        autoliikenneindeksi = autoliikenneindeksi,
+                        pyoraliikenneindeksi = pyoraliikenneindeksi,
+                        linjaautoliikenneindeksi = linjaautoliikenneindeksi,
+                        raitioliikenneindeksi = raitioliikenneindeksi
                     )
             every { hankeService.loadHanke(HANKE_TUNNUS) }.returns(hanke)
             every {
@@ -141,27 +148,85 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             get(url)
                 .andExpect(status().isOk)
-                .andExpect(jsonPath("tormaystarkasteluTulos.perusIndeksi").value(perus))
-                .andExpect(jsonPath("tormaystarkasteluTulos.pyorailyIndeksi").value(pyoraily))
-                .andExpect(jsonPath("tormaystarkasteluTulos.linjaautoIndeksi").value(linjaauto))
-                .andExpect(jsonPath("tormaystarkasteluTulos.raitiovaunuIndeksi").value(raitiovaunu))
                 .andExpect(
-                    // In this case, raitiovaunu > linjaauto
-                    jsonPath("tormaystarkasteluTulos.joukkoliikenneIndeksi").value(raitiovaunu)
-                )
-                // In this case, perusIndeksi has the highest value
-                .andExpect(
-                    jsonPath("tormaystarkasteluTulos.liikennehaittaIndeksi.indeksi").value(perus)
+                    jsonPath("tormaystarkasteluTulos.autoliikenneindeksi")
+                        .value(autoliikenneindeksi)
                 )
                 .andExpect(
-                    jsonPath("tormaystarkasteluTulos.liikennehaittaIndeksi.tyyppi")
-                        .value(IndeksiType.PERUSINDEKSI.name)
+                    jsonPath("tormaystarkasteluTulos.pyoraliikenneindeksi")
+                        .value(pyoraliikenneindeksi)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.linjaautoliikenneindeksi")
+                        .value(linjaautoliikenneindeksi)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.raitioliikenneindeksi")
+                        .value(raitioliikenneindeksi)
+                )
+                // In this case, autoliikenneindeksi has the highest value
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.liikennehaittaindeksi.indeksi")
+                        .value(autoliikenneindeksi)
+                )
+                .andExpect(
+                    jsonPath("tormaystarkasteluTulos.liikennehaittaindeksi.tyyppi")
+                        .value(IndeksiType.AUTOLIIKENNEINDEKSI.name)
                 )
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
                 hankeService.loadHanke(HANKE_TUNNUS)
                 disclosureLogService.saveDisclosureLogsForHanke(hanke, "test")
+            }
+        }
+
+        @Test
+        fun `Returns hankeyhteystiedot and hankeyhteyshenkilot when present`() {
+            val hanke =
+                HankeFactory.create(hankeTunnus = HANKE_TUNNUS)
+                    .withOmistaja(1, 1, HankeYhteyshenkiloFactory.create(1))
+                    .withRakennuttaja(2, 2, HankeYhteyshenkiloFactory.create(2))
+                    .withToteuttaja(
+                        3,
+                        3,
+                        HankeYhteyshenkiloFactory.create(3),
+                        HankeYhteyshenkiloFactory.create(5),
+                        HankeYhteyshenkiloFactory.create(6)
+                    )
+                    .withMuuYhteystieto(4, 4, HankeYhteyshenkiloFactory.create(4))
+            every { hankeService.loadHanke(HANKE_TUNNUS) }.returns(hanke)
+            every {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
+            } returns true
+
+            get(url)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("omistajat.length()").value(1))
+                .andExpect(jsonPath("omistajat[0].yhteyshenkilot.length()").value(1))
+                .andExpect(jsonPath("omistajat[0].yhteyshenkilot[0].etunimi").value("Etu1"))
+                .andExpect(jsonPath("omistajat[0].yhteyshenkilot[0].id").isString)
+                .andExpect(jsonPath("rakennuttajat.length()").value(1))
+                .andExpect(jsonPath("rakennuttajat[0].yhteyshenkilot.length()").value(1))
+                .andExpect(jsonPath("rakennuttajat[0].yhteyshenkilot[0].etunimi").value("Etu2"))
+                .andExpect(jsonPath("rakennuttajat[0].yhteyshenkilot[0].id").isString)
+                .andExpect(jsonPath("toteuttajat.length()").value(1))
+                .andExpect(jsonPath("toteuttajat[0].yhteyshenkilot.length()").value(3))
+                .andExpect(
+                    jsonPath(
+                        "toteuttajat[0].yhteyshenkilot[*].etunimi",
+                        containsInAnyOrder("Etu3", "Etu5", "Etu6"),
+                    )
+                )
+                .andExpect(jsonPath("muut.length()").value(1))
+                .andExpect(jsonPath("muut[0].yhteyshenkilot.length()").value(1))
+                .andExpect(jsonPath("muut[0].yhteyshenkilot[0].etunimi").value("Etu4"))
+                .andExpect(jsonPath("muut[0].yhteyshenkilot[0].id").isString)
+
+            verifySequence {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
+                hankeService.loadHanke(HANKE_TUNNUS)
+                disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME)
             }
         }
     }
@@ -242,7 +307,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .returns(hankeIds)
 
             // we check that we get the two hankeTunnus and geometriat we expect
-            get("$url/?geometry=true")
+            get("$url?geometry=true")
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$[0].hankeTunnus").value(HANKE_TUNNUS))
                 .andExpect(jsonPath("$[1].hankeTunnus").value("hanketunnus2"))
@@ -250,6 +315,41 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .andExpect(jsonPath("$[1].id").value(hankeIds[1]))
                 .andExpect(jsonPath("$[0].alueet[0].geometriat.id").value(1))
                 .andExpect(jsonPath("$[1].alueet[0].geometriat.id").value(2))
+
+            verifySequence {
+                permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
+                hankeService.loadHankkeetByIds(hankeIds)
+                disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME)
+            }
+        }
+
+        @Test
+        fun `Returns hankeyhteystiedot and hankeyhteyshenkilot when present`() {
+            val hankeIds = listOf(122, 144)
+            val hankkeet =
+                hankeIds.map { id ->
+                    HankeFactory.create(hankeTunnus = HANKE_TUNNUS)
+                        .withOmistaja(id, id, HankeYhteyshenkiloFactory.create(id))
+                }
+            every { hankeService.loadHankkeetByIds(hankeIds) }.returns(hankkeet)
+            every { permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW) }
+                .returns(hankeIds)
+
+            get(url)
+                .andExpect(status().isOk)
+                .andExpect(jsonPath("\$.length()").value(2))
+                .andExpect(jsonPath("\$.[0].omistajat.length()").value(1))
+                .andExpect(jsonPath("\$.[0].omistajat[0].yhteyshenkilot.length()").value(1))
+                .andExpect(
+                    jsonPath("\$.[0].omistajat[0].yhteyshenkilot[0].etunimi").value("Etu122")
+                )
+                .andExpect(jsonPath("\$.[0].omistajat[0].yhteyshenkilot[0].id").isString)
+                .andExpect(jsonPath("\$.[1].omistajat.length()").value(1))
+                .andExpect(jsonPath("\$.[1].omistajat[0].yhteyshenkilot.length()").value(1))
+                .andExpect(
+                    jsonPath("\$.[1].omistajat[0].yhteyshenkilot[0].etunimi").value("Etu144")
+                )
+                .andExpect(jsonPath("\$.[1].omistajat[0].yhteyshenkilot[0].id").isString)
 
             verifySequence {
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
@@ -318,7 +418,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
         @Test
         fun `With known hanketunnus return applications`() {
-            val applications = AlluDataFactory.createApplications(5)
+            val applications = ApplicationFactory.createApplications(5)
             every { hankeService.getHankeApplications(HANKE_TUNNUS) } returns applications
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
@@ -343,7 +443,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
         @Test
         @WithAnonymousUser
         fun `Without authenticated user return unauthorized (401)`() {
-            post(url, HankeFactory.createRequest().build())
+            post(url, HankeFactory.createRequest())
                 .andExpect(SecurityMockMvcResultMatchers.unauthenticated())
                 .andExpect(status().isUnauthorized)
                 .andExpect(hankeError(HankeError.HAI0001))
@@ -351,7 +451,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
         @Test
         fun `Add Hanke and return it with newly created hankeTunnus`() {
-            val hankeToBeCreated = HankeFactory.createRequest().build()
+            val request = HankeFactory.createRequest()
             val hankeId = 1
             val createdHanke =
                 HankeFactory.create(
@@ -361,51 +461,38 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                     createdBy = USERNAME,
                     createdAt = getCurrentTimeUTC(),
                 )
-            every { hankeService.createHanke(any()) }.returns(createdHanke)
+            every { hankeService.createHanke(request, any()) }.returns(createdHanke)
 
-            post(url, hankeToBeCreated)
+            post(url, request)
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.hankeTunnus").value(HANKE_TUNNUS))
                 .andExpect(content().json(createdHanke.toJsonString()))
 
             verifySequence {
-                hankeService.createHanke(any())
+                hankeService.createHanke(request, any())
                 disclosureLogService.saveDisclosureLogsForHanke(createdHanke, USERNAME)
             }
         }
 
         @Test
-        fun `Accepts all Hanke fields, but ignores ones it doesn't need`() {
-            val hanke = HankeFactory.create().withYhteystiedot { id = 49 }.withHankealue()
-            val serviceParameter = slot<CreateHankeRequest>()
-            every { hankeService.createHanke(capture(serviceParameter)) }.returns(hanke)
+        fun `Returns 400 when request has missing data`() {
+            val request = HankeFactory.createRequest(nimi = "")
 
-            post(url, hanke).andExpect(status().isOk)
-
-            val expectedParameter =
-                HankeFactory.createRequest()
-                    // There's no separate DTO for Hankealue, so they might contain IDs and audit
-                    // fields. These are ignored in the service, however.
-                    .withHankealue(hanke.alueet[0])
-                    .withYhteystiedot()
-                    .build()
-            assertThat(serviceParameter.captured).isEqualTo(expectedParameter)
-            verifySequence {
-                hankeService.createHanke(any())
-                disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME)
-            }
+            post(url, request)
+                .andExpect(status().isBadRequest)
+                .andExpect(hankeError(HankeError.HAI1002))
         }
 
         @Test
         fun `exception in Hanke creation causes a 500 Internal Server Error response with specific HankeError`() {
-            val request = HankeFactory.createRequest().build()
-            every { hankeService.createHanke(any()) } throws RuntimeException("Some error")
+            val request = HankeFactory.createRequest()
+            every { hankeService.createHanke(request, any()) } throws RuntimeException("Some error")
 
             post(url, request)
                 .andExpect(status().isInternalServerError)
                 .andExpect(hankeError(HankeError.HAI0002))
 
-            verifySequence { hankeService.createHanke(any()) }
+            verifySequence { hankeService.createHanke(request, any()) }
         }
     }
 
@@ -470,11 +557,12 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             val alue = SavedHankealue(nimi = "$HANKEALUE_DEFAULT_NAME 1")
             alue.haittaAlkuPvm = DateFactory.getStartDatetime()
             alue.haittaLoppuPvm = DateFactory.getEndDatetime()
-            alue.kaistaHaitta = TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI
-            alue.kaistaPituusHaitta = KaistajarjestelynPituus.NELJA
-            alue.meluHaitta = Haitta13.YKSI
-            alue.polyHaitta = Haitta13.KAKSI
-            alue.tarinaHaitta = Haitta13.KOLME
+            alue.kaistaHaitta =
+                VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
+            alue.kaistaPituusHaitta = AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA
+            alue.meluHaitta = Meluhaitta.SATUNNAINEN_HAITTA
+            alue.polyHaitta = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA
+            alue.tarinaHaitta = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA
             hankeToBeUpdated.alueet.add(alue)
             // Prepare the expected result/return
             // Note, "pvm" values should have become truncated to begin of the day
@@ -503,7 +591,11 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 .andExpect(jsonPath("$.tyomaaKatuosoite").value("Testikatu 1"))
                 .andExpect(
                     jsonPath("$.alueet[0].kaistaHaitta")
-                        .value(TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI.name)
+                        .value(
+                            VaikutusAutoliikenteenKaistamaariin
+                                .VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA
+                                .name
+                        )
                 ) // Note, here as string, not the enum.
 
             verifySequence {

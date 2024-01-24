@@ -1,0 +1,98 @@
+databaseChangeLog:
+  - changeSet:
+      id: 059-hankekayttaja-changes
+      author: Niko Pitkonen
+      changes:
+        # Empty tables
+        - delete:
+            tableName: hanke_kayttaja
+        - delete:
+            tableName: kayttaja_tunniste
+        # Remove column
+        - dropColumn:
+            tableName: hanke_kayttaja
+            columns:
+              - column:
+                  name: nimi
+        - dropForeignKeyConstraint:
+            baseTableName: kayttaja_tunniste
+            constraintName: fk_kayttajatunniste_hankekayttaja
+        - dropColumn:
+            tableName: kayttaja_tunniste
+            columns:
+              - column:
+                  name: hanke_kayttaja_id
+        # Rename tables
+        - renameTable:
+            oldTableName: hanke_kayttaja
+            newTableName: hankekayttaja
+        - renameTable:
+            oldTableName: kayttaja_tunniste
+            newTableName: kayttajakutsu
+        # Add new columns
+        - addColumn:
+            tableName: hankekayttaja
+            columns:
+              - column:
+                  name: etunimi
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: sukunimi
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: puhelin
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: kutsuttu_etunimi
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: kutsuttu_sukunimi
+                  type: text
+                  constraints:
+                    nullable: true
+              - column:
+                  name: kutsuja_id
+                  type: UUID
+                  constraints:
+                    nullable: true
+                    foreignKeyName: fk_hankekayttaja_id
+                    references: hankekayttaja(id)
+              - column:
+                  name: created_at
+                  type: timestamp
+                  constraints:
+                    nullable: false
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  constraints:
+                    nullable: true
+        - addColumn:
+            tableName: kayttajakutsu
+            columns:
+              - column:
+                  name: hankekayttaja_id
+                  type: UUID
+                  constraints:
+                    nullable: false
+              - column:
+                  name: updated_at
+                  type: timestamp
+                  constraints:
+                    nullable: true
+        - addForeignKeyConstraint:
+            baseTableName: kayttajakutsu
+            baseColumnNames: hankekayttaja_id
+            constraintName: fk_kayttajakutsu_hankekayttaja
+            referencedTableName: hankekayttaja
+            referencedColumnNames: id
+            onDelete: CASCADE

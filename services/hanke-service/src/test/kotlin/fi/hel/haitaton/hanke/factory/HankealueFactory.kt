@@ -1,13 +1,15 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
-import fi.hel.haitaton.hanke.Haitta13
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankealueEntity
-import fi.hel.haitaton.hanke.KaistajarjestelynPituus
-import fi.hel.haitaton.hanke.TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.ZonedDateTime
 
 object HankealueFactory {
@@ -18,12 +20,13 @@ object HankealueFactory {
         haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
         haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
         geometriat: Geometriat? = GeometriaFactory.create(),
-        kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? =
-            TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin.KAKSI,
-        kaistaPituusHaitta: KaistajarjestelynPituus? = KaistajarjestelynPituus.NELJA,
-        meluHaitta: Haitta13? = Haitta13.YKSI,
-        polyHaitta: Haitta13? = Haitta13.KAKSI,
-        tarinaHaitta: Haitta13? = Haitta13.KOLME,
+        kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? =
+            VaikutusAutoliikenteenKaistamaariin.VAHENTAA_KAISTAN_YHDELLA_AJOSUUNNALLA,
+        kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? =
+            AutoliikenteenKaistavaikutustenPituus.PITUUS_100_499_METRIA,
+        meluHaitta: Meluhaitta? = Meluhaitta.SATUNNAINEN_HAITTA,
+        polyHaitta: Polyhaitta? = Polyhaitta.LYHYTAIKAINEN_TOISTUVA_HAITTA,
+        tarinaHaitta: Tarinahaitta? = Tarinahaitta.PITKAKESTOINEN_TOISTUVA_HAITTA,
         nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
     ): SavedHankealue {
         return SavedHankealue(
@@ -47,11 +50,11 @@ object HankealueFactory {
         haittaAlkuPvm: ZonedDateTime? = DateFactory.getStartDatetime(),
         haittaLoppuPvm: ZonedDateTime? = DateFactory.getEndDatetime(),
         geometriat: Geometriat? = null,
-        kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
-        kaistaPituusHaitta: KaistajarjestelynPituus? = null,
-        meluHaitta: Haitta13? = null,
-        polyHaitta: Haitta13? = null,
-        tarinaHaitta: Haitta13? = null,
+        kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
+        kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
+        meluHaitta: Meluhaitta? = null,
+        polyHaitta: Polyhaitta? = null,
+        tarinaHaitta: Tarinahaitta? = null,
         nimi: String = "$HANKEALUE_DEFAULT_NAME 1",
     ): SavedHankealue {
         return SavedHankealue(

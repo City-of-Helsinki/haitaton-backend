@@ -1,0 +1,9 @@
+query MyProfileQuery {
+  myProfile {
+    verifiedPersonalInformation {
+      firstName
+      lastName
+      givenName
+    }
+  }
+}

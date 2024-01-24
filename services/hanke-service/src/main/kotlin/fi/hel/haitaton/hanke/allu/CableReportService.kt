@@ -1,10 +1,9 @@
 package fi.hel.haitaton.hanke.allu
 
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import java.time.Duration.ofSeconds
 import java.time.ZonedDateTime
-import java.util.UUID
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -180,8 +179,8 @@ class CableReportService(
     /** Send many attachments in parallel. */
     fun addAttachments(
         alluApplicationId: Int,
-        attachments: List<ApplicationAttachmentEntity>,
-        getContent: (UUID) -> ByteArray,
+        attachments: List<ApplicationAttachmentMetadata>,
+        getContent: (ApplicationAttachmentMetadata) -> ByteArray,
     ) = runBlocking {
         val semaphore = Semaphore(properties.concurrentUploads)
         withContext(ioDispatcher) {
@@ -189,7 +188,7 @@ class CableReportService(
             attachments.forEach {
                 launch {
                     semaphore.withPermit {
-                        val content = getContent(it.id!!)
+                        val content = getContent(it)
                         postAttachment(alluApplicationId, token, it.toAlluAttachment(content))
                     }
                 }
@@ -369,7 +368,7 @@ class CableReportService(
             .headers { it.setBearerAuth(token) }
             .body(BodyInserters.fromMultipartData(multipartData))
             .retrieve()
-            .bodyToMono<Void>()
+            .bodyToMono<Unit>()
             .timeout(attachmentUploadTimeout)
             .doOnError(WebClientResponseException::class.java) {
                 logError("Error uploading attachment to Allu", it)
@@ -397,7 +396,16 @@ data class LoginInfo(val username: String, val password: String)
 data class Attachment(
     val metadata: AttachmentMetadata,
     @Suppress("ArrayInDataClass") val file: ByteArray
-)
+) {
+    constructor(
+        contentType: String,
+        fileName: String,
+        content: ByteArray
+    ) : this(
+        AttachmentMetadata(id = null, mimeType = contentType, name = fileName, description = null),
+        content
+    )
+}
 
 class AlluException(val errors: List<ErrorInfo>) : RuntimeException()
 

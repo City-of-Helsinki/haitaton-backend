@@ -9,8 +9,8 @@ import assertk.assertions.messageContains
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -32,7 +32,7 @@ private const val USERNAME = "test7358"
 @WithMockUser(USERNAME)
 class ApplicationAuthorizerITest(
     @Autowired private val authorizer: ApplicationAuthorizer,
-    @Autowired private val alluDataFactory: AlluDataFactory,
+    @Autowired private val applicationFactory: ApplicationFactory,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val permissionService: PermissionService,
     @Autowired private val applicationAttachmentFactory: ApplicationAttachmentFactory,
@@ -54,7 +54,7 @@ class ApplicationAuthorizerITest(
         @Test
         fun `throws exception if user doesn't have a permission for the hanke`() {
             val hanke = hankeFactory.saveMinimal()
-            val application = alluDataFactory.saveApplicationEntity(USERNAME, hanke)
+            val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
             assertFailure { authorizer.authorizeApplicationId(application.id!!, VIEW.name) }
                 .all {
@@ -66,7 +66,7 @@ class ApplicationAuthorizerITest(
         @Test
         fun `throws exception if user doesn't have the required permission`() {
             val hanke = hankeFactory.saveMinimal()
-            val application = alluDataFactory.saveApplicationEntity(USERNAME, hanke)
+            val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
@@ -81,7 +81,7 @@ class ApplicationAuthorizerITest(
         @Test
         fun `returns true if user has the required permission`() {
             val hanke = hankeFactory.saveMinimal()
-            val application = alluDataFactory.saveApplicationEntity(USERNAME, hanke)
+            val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertThat(authorizer.authorizeApplicationId(application.id!!, VIEW.name)).isTrue()
@@ -94,7 +94,7 @@ class ApplicationAuthorizerITest(
 
         @Test
         fun `throws exception if hanketunnus not found`() {
-            val application = AlluDataFactory.createApplication(hankeTunnus = hankeTunnus)
+            val application = ApplicationFactory.createApplication(hankeTunnus = hankeTunnus)
 
             assertFailure { authorizer.authorizeCreate(application) }
                 .all {
@@ -106,7 +106,7 @@ class ApplicationAuthorizerITest(
         @Test
         fun `throws exception if user doesn't have EDIT_APPLICATIONS permission`() {
             val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
-            val application = AlluDataFactory.createApplication(hankeTunnus = hankeTunnus)
+            val application = ApplicationFactory.createApplication(hankeTunnus = hankeTunnus)
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure { authorizer.authorizeCreate(application) }
@@ -119,7 +119,7 @@ class ApplicationAuthorizerITest(
         @Test
         fun `returns true if user has EDIT_APPLICATIONS permission`() {
             val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
-            val application = AlluDataFactory.createApplication(hankeTunnus = hankeTunnus)
+            val application = ApplicationFactory.createApplication(hankeTunnus = hankeTunnus)
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
 
             assertThat(authorizer.authorizeCreate(application)).isTrue()
@@ -142,7 +142,7 @@ class ApplicationAuthorizerITest(
         @Test
         fun `throws exception if user doesn't have any permission for the hanke`() {
             val hanke = hankeFactory.saveMinimal()
-            val application = alluDataFactory.saveApplicationEntity(USERNAME, hanke)
+            val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
             assertFailure {
                     authorizer.authorizeAttachment(application.id!!, attachmentId, VIEW.name)
@@ -157,7 +157,7 @@ class ApplicationAuthorizerITest(
         fun `throws exception if user doesn't have the required permission for the hanke`() {
             val hanke = hankeFactory.saveMinimal()
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
-            val application = alluDataFactory.saveApplicationEntity(USERNAME, hanke)
+            val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
             assertFailure {
                     authorizer.authorizeAttachment(application.id!!, attachmentId, EDIT.name)
@@ -172,7 +172,7 @@ class ApplicationAuthorizerITest(
         fun `throws exception if the attachment is not found`() {
             val hanke = hankeFactory.saveMinimal()
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
-            val application = alluDataFactory.saveApplicationEntity(USERNAME, hanke)
+            val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
             assertFailure {
                     authorizer.authorizeAttachment(application.id!!, attachmentId, VIEW.name)
@@ -186,10 +186,11 @@ class ApplicationAuthorizerITest(
         @Test
         fun `throws exception if the attachment belongs to another application`() {
             val hanke = hankeFactory.saveMinimal()
-            val application = alluDataFactory.saveApplicationEntity(USERNAME, hanke)
+            val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
             val hanke2 = hankeFactory.saveMinimal()
-            val application2 = alluDataFactory.saveApplicationEntity(USERNAME, hanke2)
-            val attachment = applicationAttachmentFactory.saveAttachment(application2.id!!)
+            val application2 = applicationFactory.saveApplicationEntity(USERNAME, hanke2)
+            val attachment =
+                applicationAttachmentFactory.save(application = application2).withDbContent().value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
             assertFailure {
@@ -204,8 +205,9 @@ class ApplicationAuthorizerITest(
         @Test
         fun `returns true if the attachment is found, it belongs to the application and the user has the correct permission`() {
             val hanke = hankeFactory.saveMinimal()
-            val application = alluDataFactory.saveApplicationEntity(USERNAME, hanke)
-            val attachment = applicationAttachmentFactory.saveAttachment(application.id!!)
+            val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
+            val attachment =
+                applicationAttachmentFactory.save(application = application).withDbContent().value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
             assertThat(authorizer.authorizeAttachment(application.id!!, attachment.id!!, VIEW.name))

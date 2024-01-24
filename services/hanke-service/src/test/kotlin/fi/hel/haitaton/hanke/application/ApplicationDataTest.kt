@@ -3,11 +3,11 @@ package fi.hel.haitaton.hanke.application
 import assertk.assertThat
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.isEmpty
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.UserContactFactory.asianhoitajaContact
-import fi.hel.haitaton.hanke.factory.UserContactFactory.hakijaContact
-import fi.hel.haitaton.hanke.factory.UserContactFactory.rakennuttajaContact
-import fi.hel.haitaton.hanke.factory.UserContactFactory.suorittajaContact
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_RAKENNUTTAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_SUORITTAJA
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.NullAndEmptySource
@@ -23,10 +23,10 @@ class ApplicationDataTest {
 
         assertThat(result)
             .containsExactlyInAnyOrder(
-                hakijaContact.email,
-                suorittajaContact.email,
-                asianhoitajaContact.email,
-                rakennuttajaContact.email,
+                KAYTTAJA_INPUT_HAKIJA.email,
+                KAYTTAJA_INPUT_SUORITTAJA.email,
+                KAYTTAJA_INPUT_ASIANHOITAJA.email,
+                KAYTTAJA_INPUT_RAKENNUTTAJA.email,
             )
     }
 
@@ -34,46 +34,53 @@ class ApplicationDataTest {
     fun `contactPersonEmails when not all types present should return existing`() {
         val applicationData =
             cableReport(
-                customer = AlluDataFactory.hakijaCustomerContact,
-                contractor = AlluDataFactory.suorittajaCustomerContact,
+                customer = ApplicationFactory.hakijaCustomerContact,
+                contractor = ApplicationFactory.suorittajaCustomerContact,
                 representative = null,
                 developer = null,
             )
 
         val result = applicationData.contactPersonEmails()
 
-        assertThat(result).containsExactlyInAnyOrder(hakijaContact.email, suorittajaContact.email)
+        assertThat(result)
+            .containsExactlyInAnyOrder(KAYTTAJA_INPUT_HAKIJA.email, KAYTTAJA_INPUT_SUORITTAJA.email)
     }
 
     @Test
     fun `contactPersonEmails when duplicate emails does not provide duplicates as output`() {
         val applicationData =
             cableReport(
-                customer = AlluDataFactory.hakijaCustomerContact.plusContact(hakijaContact.email),
+                customer =
+                    ApplicationFactory.hakijaCustomerContact.plusContact(
+                        KAYTTAJA_INPUT_HAKIJA.email
+                    ),
                 contractor =
-                    AlluDataFactory.suorittajaCustomerContact.plusContact(suorittajaContact.email),
-                representative = AlluDataFactory.hakijaCustomerContact,
-                developer = AlluDataFactory.suorittajaCustomerContact,
+                    ApplicationFactory.suorittajaCustomerContact.plusContact(
+                        KAYTTAJA_INPUT_SUORITTAJA.email
+                    ),
+                representative = ApplicationFactory.hakijaCustomerContact,
+                developer = ApplicationFactory.suorittajaCustomerContact,
             )
 
         val result = applicationData.contactPersonEmails()
 
-        assertThat(result).containsExactlyInAnyOrder(hakijaContact.email, suorittajaContact.email)
+        assertThat(result)
+            .containsExactlyInAnyOrder(KAYTTAJA_INPUT_HAKIJA.email, KAYTTAJA_INPUT_SUORITTAJA.email)
     }
 
     @Test
     fun `contactPersonEmails when omit present filters out given contact`() {
         val applicationData =
             cableReport(
-                customer = AlluDataFactory.hakijaCustomerContact,
-                contractor = AlluDataFactory.suorittajaCustomerContact,
+                customer = ApplicationFactory.hakijaCustomerContact,
+                contractor = ApplicationFactory.suorittajaCustomerContact,
                 representative = null,
                 developer = null,
             )
 
-        val result = applicationData.contactPersonEmails(omit = suorittajaContact.email)
+        val result = applicationData.contactPersonEmails(omit = KAYTTAJA_INPUT_SUORITTAJA.email)
 
-        assertThat(result).containsExactlyInAnyOrder(hakijaContact.email)
+        assertThat(result).containsExactlyInAnyOrder(KAYTTAJA_INPUT_HAKIJA.email)
     }
 
     @Test
@@ -84,10 +91,10 @@ class ApplicationDataTest {
 
         assertThat(result)
             .containsExactlyInAnyOrder(
-                hakijaContact.email,
-                suorittajaContact.email,
-                asianhoitajaContact.email,
-                rakennuttajaContact.email,
+                KAYTTAJA_INPUT_HAKIJA.email,
+                KAYTTAJA_INPUT_SUORITTAJA.email,
+                KAYTTAJA_INPUT_ASIANHOITAJA.email,
+                KAYTTAJA_INPUT_RAKENNUTTAJA.email,
             )
     }
 
@@ -99,8 +106,8 @@ class ApplicationDataTest {
     ) {
         val applicationData =
             cableReport(
-                customer = AlluDataFactory.hakijaCustomerContact.modifyContactEmail(email),
-                contractor = AlluDataFactory.suorittajaCustomerContact.modifyContactEmail(email),
+                customer = ApplicationFactory.hakijaCustomerContact.modifyContactEmail(email),
+                contractor = ApplicationFactory.suorittajaCustomerContact.modifyContactEmail(email),
                 representative = null,
                 developer = null,
             )
@@ -111,12 +118,12 @@ class ApplicationDataTest {
     }
 
     private fun cableReport(
-        customer: CustomerWithContacts = AlluDataFactory.hakijaCustomerContact,
-        contractor: CustomerWithContacts = AlluDataFactory.suorittajaCustomerContact,
-        representative: CustomerWithContacts? = AlluDataFactory.asianHoitajaCustomerContact,
-        developer: CustomerWithContacts? = AlluDataFactory.rakennuttajaCustomerContact,
+        customer: CustomerWithContacts = ApplicationFactory.hakijaCustomerContact,
+        contractor: CustomerWithContacts = ApplicationFactory.suorittajaCustomerContact,
+        representative: CustomerWithContacts? = ApplicationFactory.asianHoitajaCustomerContact,
+        developer: CustomerWithContacts? = ApplicationFactory.rakennuttajaCustomerContact,
     ) =
-        AlluDataFactory.createCableReportApplicationData(
+        ApplicationFactory.createCableReportApplicationData(
             customerWithContacts = customer,
             contractorWithContacts = contractor,
             representativeWithContacts = representative,
@@ -126,6 +133,6 @@ class ApplicationDataTest {
     private fun CustomerWithContacts.modifyContactEmail(email: String?) =
         copy(contacts = contacts.map { it.copy(email = email) })
 
-    private fun CustomerWithContacts.plusContact(email: String = AlluDataFactory.teppoEmail) =
-        copy(contacts = contacts + AlluDataFactory.createContact(email = email))
+    private fun CustomerWithContacts.plusContact(email: String = ApplicationFactory.TEPPO_EMAIL) =
+        copy(contacts = contacts + ApplicationFactory.createContact(email = email))
 }

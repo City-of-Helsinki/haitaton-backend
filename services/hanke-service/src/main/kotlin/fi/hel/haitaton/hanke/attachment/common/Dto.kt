@@ -3,31 +3,23 @@ package fi.hel.haitaton.hanke.attachment.common
 import java.time.OffsetDateTime
 import java.util.UUID
 
-data class HankeAttachment(
+data class HankeAttachmentMetadataDto(
     val id: UUID,
     val fileName: String,
+    val contentType: String,
+    val size: Long,
     val createdByUserId: String,
     val createdAt: OffsetDateTime,
     val hankeTunnus: String,
 )
 
-data class ApplicationAttachmentMetadata(
+data class ApplicationAttachmentMetadataDto(
     val id: UUID,
     val fileName: String,
+    val contentType: String,
+    val size: Long,
+    val attachmentType: ApplicationAttachmentType,
     val createdByUserId: String,
     val createdAt: OffsetDateTime,
     val applicationId: Long,
-    val attachmentType: ApplicationAttachmentType,
-)
-
-data class AttachmentContent(
-    val fileName: String,
-    val contentType: String,
-    @Suppress("ArrayInDataClass") val bytes: ByteArray
-)
-
-data class HankeAttachmentWithContent(
-    val id: UUID,
-    val hankeId: Int,
-    val content: AttachmentContent
 )

@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.validation
 
-import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.SavedHankealue
@@ -69,11 +68,4 @@ object HankePublicValidator {
             .andWhen(yhteystieto.tyyppi == YKSITYISHENKILO) {
                 validateTrue(yhteystieto.ytunnus == null, "$path.ytunnus")
             }
-            .andAllIn(yhteystieto.alikontaktit, "alikontaktit", ::validateAlikontakti)
-
-    private fun validateAlikontakti(yhteyshenkilo: Yhteyshenkilo, path: String): ValidationResult =
-        validate { notBlank(yhteyshenkilo.etunimi, "$path.etunimi") }
-            .and { notBlank(yhteyshenkilo.sukunimi, "$path.sukunimi") }
-            .and { notBlank(yhteyshenkilo.email, "$path.email") }
-            .and { notBlank(yhteyshenkilo.puhelinnumero, "$path.puhelinnumero") }
 }

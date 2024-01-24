@@ -37,6 +37,9 @@ services:
     build:
       context: .
       dockerfile: fetch/Dockerfile
+    environment:
+      HELSINKI_EXTRANET_USERNAME: ${HELSINKI_EXTRANET_USERNAME}
+      HELSINKI_EXTRANET_PASSWORD: ${HELSINKI_EXTRANET_PASSWORD}
     volumes:
       - ./data:/local_data
       - haitaton_gis_prepare:/haitaton-gis

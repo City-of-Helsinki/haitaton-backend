@@ -9,11 +9,11 @@ import org.springframework.stereotype.Component
 class HankeKayttajaAuthorizer(
     permissionService: PermissionService,
     hankeRepository: HankeRepository,
-    private val hankeKayttajaRepository: HankeKayttajaRepository,
+    private val hankekayttajaRepository: HankekayttajaRepository,
 ) : Authorizer(permissionService, hankeRepository) {
 
     fun authorizeKayttajaId(hankeKayttajaId: UUID, permissionCode: PermissionCode): Boolean {
-        val hankeId = hankeKayttajaRepository.findByIdOrNull(hankeKayttajaId)?.hankeId
+        val hankeId = hankekayttajaRepository.findByIdOrNull(hankeKayttajaId)?.hankeId
         authorize(hankeId, permissionCode) { HankeKayttajaNotFoundException(hankeKayttajaId) }
         return true
     }

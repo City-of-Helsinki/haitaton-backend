@@ -9,14 +9,12 @@ import fi.hel.haitaton.hanke.MAXIMUM_DATE
 import fi.hel.haitaton.hanke.MAXIMUM_HANKE_ALUE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_HANKE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_TYOMAAKATUOSOITE_LENGTH
-import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.defaultNimi
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
-import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.defaultYtunnus
+import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.DEFAULT_YTUNNUS
 import fi.hel.haitaton.hanke.factory.modify
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -72,13 +70,6 @@ class HankeValidatorTest {
         val hanke = HankeFactory.create()
 
         assertThat(hankeValidator.isValid(hanke, context)).isTrue()
-    }
-
-    @Test
-    fun `succeeds for minimal draft hanke request`() {
-        val hankeRequest = CreateHankeRequest(nimi = defaultNimi)
-
-        assertThat(hankeValidator.isValid(hankeRequest, context)).isTrue()
     }
 
     @Test
@@ -252,7 +243,7 @@ class HankeValidatorTest {
     fun `when tyyppi is yksityishenkilo and ytunnus is not null should not return ok`() {
         val hanke =
             HankeFactory.create().withYhteystiedot().apply {
-                omistajat = omistajat.modify(ytunnus = defaultYtunnus, tyyppi = YKSITYISHENKILO)
+                omistajat = omistajat.modify(ytunnus = DEFAULT_YTUNNUS, tyyppi = YKSITYISHENKILO)
             }
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()

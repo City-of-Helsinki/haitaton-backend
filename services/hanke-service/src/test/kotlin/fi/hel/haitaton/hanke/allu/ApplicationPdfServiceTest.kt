@@ -7,9 +7,9 @@ import assertk.assertions.doesNotContain
 import com.lowagie.text.pdf.PdfReader
 import com.lowagie.text.pdf.parser.PdfTextExtractor
 import fi.hel.haitaton.hanke.application.ApplicationArea
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.createPostalAddress
-import fi.hel.haitaton.hanke.factory.AlluDataFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createPostalAddress
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import java.time.ZonedDateTime
 import org.geojson.Polygon
 import org.junit.jupiter.api.Nested
@@ -21,7 +21,7 @@ internal class ApplicationPdfServiceTest {
     inner class CreatePdf {
         @Test
         fun `created PDF contains title and section headers`() {
-            val applicationData = AlluDataFactory.createCableReportApplicationData()
+            val applicationData = ApplicationFactory.createCableReportApplicationData()
 
             val pdfData = ApplicationPdfService.createPdf(applicationData, 1f, listOf())
 
@@ -31,7 +31,7 @@ internal class ApplicationPdfServiceTest {
 
         @Test
         fun `created PDF contains headers for basic information`() {
-            val applicationData = AlluDataFactory.createCableReportApplicationData()
+            val applicationData = ApplicationFactory.createCableReportApplicationData()
 
             val pdfData = ApplicationPdfService.createPdf(applicationData, 614f, listOf())
 
@@ -47,13 +47,13 @@ internal class ApplicationPdfServiceTest {
         @Test
         fun `created PDF contains basic information`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                ApplicationFactory.createCableReportApplicationData(
                         postalAddress = createPostalAddress(),
                         workDescription = "Työn kuvaus kirjoitetaan tähän.",
                         customerWithContacts =
-                            AlluDataFactory.createCompanyCustomer()
+                            ApplicationFactory.createCompanyCustomer()
                                 .withContacts(
-                                    AlluDataFactory.createContact(
+                                    ApplicationFactory.createContact(
                                         "Teppo Tilaaja",
                                         "teppo@tilaajat.info",
                                         "0406584321",
@@ -72,7 +72,7 @@ internal class ApplicationPdfServiceTest {
 
             val pdfText = getPdfAsText(pdfData)
             assertThat(pdfText).all {
-                contains(AlluDataFactory.defaultApplicationName)
+                contains(ApplicationFactory.DEFAULT_APPLICATION_NAME)
                 contains("Katu 1")
                 contains("00100")
                 contains("Helsinki")
@@ -102,7 +102,7 @@ internal class ApplicationPdfServiceTest {
         @Test
         fun `created PDF doesn't have this work involves fields if none are selected`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData()
+                ApplicationFactory.createCableReportApplicationData()
                     .copy(
                         constructionWork = false,
                         maintenanceWork = false,
@@ -122,7 +122,7 @@ internal class ApplicationPdfServiceTest {
 
         @Test
         fun `created PDF contains headers for area information`() {
-            val applicationData = AlluDataFactory.createCableReportApplicationData()
+            val applicationData = ApplicationFactory.createCableReportApplicationData()
 
             val pdfData = ApplicationPdfService.createPdf(applicationData, 614f, listOf())
 
@@ -137,7 +137,7 @@ internal class ApplicationPdfServiceTest {
         @Test
         fun `created PDF contains area information`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                ApplicationFactory.createCableReportApplicationData(
                     startTime = ZonedDateTime.parse("2022-11-17T22:00:00.000Z"),
                     endTime = ZonedDateTime.parse("2022-11-28T21:59:59.999Z"),
                     areas =
@@ -167,21 +167,21 @@ internal class ApplicationPdfServiceTest {
         @Test
         fun `contains headers for contact information`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                ApplicationFactory.createCableReportApplicationData(
                     customerWithContacts =
-                        AlluDataFactory.createCompanyCustomer()
-                            .withContacts(AlluDataFactory.createContact()),
+                        ApplicationFactory.createCompanyCustomer()
+                            .withContacts(ApplicationFactory.createContact()),
                     contractorWithContacts =
-                        AlluDataFactory.createCompanyCustomer()
+                        ApplicationFactory.createCompanyCustomer()
                             .withContacts(
-                                AlluDataFactory.createContact(),
+                                ApplicationFactory.createContact(),
                             ),
                     representativeWithContacts =
-                        AlluDataFactory.createPersonCustomer().withContacts(),
+                        ApplicationFactory.createPersonCustomer().withContacts(),
                     propertyDeveloperWithContacts =
-                        AlluDataFactory.createCompanyCustomer()
+                        ApplicationFactory.createCompanyCustomer()
                             .withContacts(
-                                AlluDataFactory.createContact(),
+                                ApplicationFactory.createContact(),
                             ),
                 )
 
@@ -199,14 +199,14 @@ internal class ApplicationPdfServiceTest {
         @Test
         fun `doesn't contain headers for missing optional contacts`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                ApplicationFactory.createCableReportApplicationData(
                     customerWithContacts =
-                        AlluDataFactory.createCompanyCustomer()
-                            .withContacts(AlluDataFactory.createContact()),
+                        ApplicationFactory.createCompanyCustomer()
+                            .withContacts(ApplicationFactory.createContact()),
                     contractorWithContacts =
-                        AlluDataFactory.createCompanyCustomer()
+                        ApplicationFactory.createCompanyCustomer()
                             .withContacts(
-                                AlluDataFactory.createContact(),
+                                ApplicationFactory.createContact(),
                             ),
                     representativeWithContacts = null,
                     propertyDeveloperWithContacts = null,
@@ -225,22 +225,22 @@ internal class ApplicationPdfServiceTest {
         @Test
         fun `created PDF contains contact information`() {
             val applicationData =
-                AlluDataFactory.createCableReportApplicationData(
+                ApplicationFactory.createCableReportApplicationData(
                     customerWithContacts =
-                        AlluDataFactory.createCompanyCustomer(
+                        ApplicationFactory.createCompanyCustomer(
                                 name = "Company Ltd",
                                 registryKey = "1054713-0",
                                 email = "info@company.test",
                                 phone = "050123456789",
                             )
                             .withContacts(
-                                AlluDataFactory.createContact(
+                                ApplicationFactory.createContact(
                                     firstName = "Cole Contact",
                                     lastName = "",
                                     email = "cole@company.test",
                                     phone = "050987654321",
                                 ),
-                                AlluDataFactory.createContact(
+                                ApplicationFactory.createContact(
                                     firstName = "Seth",
                                     lastName = "Secondary",
                                     email = "seth@company.test",
@@ -248,14 +248,14 @@ internal class ApplicationPdfServiceTest {
                                 ),
                             ),
                     contractorWithContacts =
-                        AlluDataFactory.createCompanyCustomer(
+                        ApplicationFactory.createCompanyCustomer(
                                 name = "Contractor Inc.",
                                 registryKey = "0156555-6",
                                 email = "info@contractor.test",
                                 phone = "0509999999",
                             )
                             .withContacts(
-                                AlluDataFactory.createContact(
+                                ApplicationFactory.createContact(
                                     firstName = "Cody",
                                     lastName = "Contractor",
                                     email = "cody@contractor.test",
@@ -264,7 +264,7 @@ internal class ApplicationPdfServiceTest {
                                 ),
                             ),
                     representativeWithContacts =
-                        AlluDataFactory.createPersonCustomer(
+                        ApplicationFactory.createPersonCustomer(
                                 name = "Reynold Representative",
                                 registryKey = "281192-937W",
                                 email = "reynold@company.test",
@@ -272,14 +272,14 @@ internal class ApplicationPdfServiceTest {
                             )
                             .withContacts(),
                     propertyDeveloperWithContacts =
-                        AlluDataFactory.createCompanyCustomer(
+                        ApplicationFactory.createCompanyCustomer(
                                 name = "Developer Inc.",
                                 registryKey = "8545758-6",
                                 email = "info@developer.test",
                                 phone = "0508888888",
                             )
                             .withContacts(
-                                AlluDataFactory.createContact(
+                                ApplicationFactory.createContact(
                                     firstName = "Denise",
                                     lastName = "Developer",
                                     email = "denise@developer.test",

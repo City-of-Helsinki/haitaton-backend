@@ -8,19 +8,20 @@ import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.HankeStatus
-import fi.hel.haitaton.hanke.HankeStatus.DRAFT
+import fi.hel.haitaton.hanke.HankeYhteyshenkiloRepository
+import fi.hel.haitaton.hanke.HankeYhteystietoRepository
 import fi.hel.haitaton.hanke.HanketunnusService
-import fi.hel.haitaton.hanke.TyomaaTyyppi
-import fi.hel.haitaton.hanke.Vaihe
-import fi.hel.haitaton.hanke.Vaihe.SUUNNITTELU
-import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
-import fi.hel.haitaton.hanke.domain.HankeFounder
+import fi.hel.haitaton.hanke.domain.HankePerustaja
+import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
-import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory.createEntity
+import fi.hel.haitaton.hanke.domain.Hankevaihe
+import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
+import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
+import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
+import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.ZonedDateTime
@@ -29,43 +30,13 @@ import org.springframework.stereotype.Component
 @Component
 class HankeFactory(
     private val hankeService: HankeService,
+    private val profiiliClient: ProfiiliClient,
     private val hanketunnusService: HanketunnusService,
     private val hankeRepository: HankeRepository,
+    private val hankeYhteystietoRepository: HankeYhteystietoRepository,
+    private val hankeYhteyshenkiloRepository: HankeYhteyshenkiloRepository,
+    private val hankeKayttajaFactory: HankeKayttajaFactory,
 ) {
-
-    /**
-     * Create a new hanke and save it to database.
-     *
-     * Needs a mock user set up, since `hankeService.createHanke` calls currentUserId() directly.
-     */
-    fun save(
-        nimi: String = defaultNimi,
-        vaihe: Vaihe? = Vaihe.OHJELMOINTI,
-        tyomaaKatuosoite: String? = null,
-        tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
-    ) =
-        hankeService.createHanke(
-            CreateHankeRequest(
-                nimi = nimi,
-                vaihe = vaihe,
-                tyomaaKatuosoite = tyomaaKatuosoite,
-                tyomaaTyyppi = tyomaaTyyppi,
-            )
-        )
-
-    /**
-     * Save a new hanke using HankeService. Then get it as an entity.
-     *
-     * The service method creates a hankeTunnus and does other initialization, so we want to run it,
-     * even though we want to return the entity, not the domain object.
-     */
-    fun saveEntity(
-        nimi: String = defaultNimi,
-        vaihe: Vaihe? = Vaihe.OHJELMOINTI,
-    ): HankeEntity {
-        val hanke = save(nimi, vaihe)
-        return hankeRepository.getReferenceById(hanke.id)
-    }
 
     fun saveMinimal(
         hankeTunnus: String = hanketunnusService.newHanketunnus(),
@@ -78,32 +49,41 @@ class HankeFactory(
 
     fun saveSeveralMinimal(n: Int): List<HankeEntity> = (1..n).map { saveMinimal() }
 
-    fun saveGenerated(
-        cableReportWithoutHanke: CableReportWithoutHanke =
-            AlluDataFactory.cableReportWithoutHanke(),
-        userId: String
+    /**
+     * Save a minimal hanke, i.e. a hanke without any extra information and without any attached
+     * users or contacts.
+     *
+     * Return the hanke as a domain entity for convenience.
+     */
+    fun saveMinimalHanke(
+        hankeTunnus: String = hanketunnusService.newHanketunnus(),
+        nimi: String = defaultNimi,
+        generated: Boolean = false,
     ): Hanke {
-        val application = hankeService.generateHankeWithApplication(cableReportWithoutHanke, userId)
-        return hankeService.loadHanke(application.hankeTunnus)!!
+        saveMinimal(hankeTunnus, nimi, generated)
+        return hankeService.loadHanke(hankeTunnus)!!
     }
 
-    fun createRequest(
-        nimi: String = defaultNimi,
-        onYKTHanke: Boolean? = true,
-        kuvaus: String? = defaultKuvaus,
-        vaihe: Vaihe? = Vaihe.OHJELMOINTI,
-        tyomaaKatuosoite: String? = null,
-        tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
-    ) =
-        Companion.createRequest(
-                nimi,
-                onYKTHanke,
-                kuvaus,
-                vaihe,
-                tyomaaKatuosoite,
-                tyomaaTyyppi,
+    fun builder(userId: String): HankeBuilder {
+        val hanke =
+            create(
+                nimi = defaultNimi,
+                kuvaus = defaultKuvaus,
+                vaihe = Hankevaihe.OHJELMOINTI,
             )
-            .copy(hankeService = hankeService)
+        return HankeBuilder(
+            hanke,
+            DEFAULT_HANKE_PERUSTAJA,
+            userId,
+            DEFAULT_NAMES,
+            hankeService,
+            hankeRepository,
+            profiiliClient,
+            hankeKayttajaFactory,
+            hankeYhteystietoRepository,
+            hankeYhteyshenkiloRepository,
+        )
+    }
 
     companion object {
 
@@ -112,7 +92,7 @@ class HankeFactory(
         const val defaultKuvaus = "lorem ipsum dolor sit amet..."
         const val defaultId = 123
         const val defaultUser = "Risto"
-        val defaultHankeFounder = HankeFounder("Pertti Perustaja", "foo@bar.com")
+        val DEFAULT_HANKE_PERUSTAJA = HankePerustaja("pertti@perustaja.test", "0401234567")
 
         /**
          * Create a simple Hanke with test values. The default values can be overridden with named
@@ -127,25 +107,26 @@ class HankeFactory(
             id: Int = defaultId,
             hankeTunnus: String = defaultHankeTunnus,
             nimi: String = defaultNimi,
-            vaihe: Vaihe? = Vaihe.OHJELMOINTI,
+            kuvaus: String? = defaultKuvaus,
+            vaihe: Hankevaihe? = Hankevaihe.OHJELMOINTI,
             version: Int? = 1,
             createdBy: String? = defaultUser,
             createdAt: ZonedDateTime? = DateFactory.getStartDatetime(),
-            hankeStatus: HankeStatus = DRAFT,
+            hankeStatus: HankeStatus = HankeStatus.DRAFT,
         ): Hanke =
             Hanke(
-                id,
-                hankeTunnus,
-                true,
-                nimi,
-                defaultKuvaus,
-                vaihe,
-                version,
-                createdBy,
-                createdAt,
-                null,
-                null,
-                hankeStatus,
+                id = id,
+                hankeTunnus = hankeTunnus,
+                onYKTHanke = true,
+                nimi = nimi,
+                kuvaus = kuvaus,
+                vaihe = vaihe,
+                version = version,
+                createdBy = createdBy,
+                createdAt = createdAt,
+                modifiedBy = null,
+                modifiedAt = null,
+                status = hankeStatus,
             )
 
         fun createMinimalEntity(
@@ -158,11 +139,11 @@ class HankeFactory(
         fun createEntity(mockId: Int = 1): HankeEntity =
             HankeEntity(
                     id = mockId,
-                    status = DRAFT,
+                    status = HankeStatus.DRAFT,
                     hankeTunnus = defaultHankeTunnus,
                     nimi = defaultNimi,
                     kuvaus = defaultKuvaus,
-                    vaihe = SUUNNITTELU,
+                    vaihe = Hankevaihe.SUUNNITTELU,
                     onYKTHanke = true,
                     version = 0,
                     createdByUserId = defaultUser,
@@ -174,10 +155,10 @@ class HankeFactory(
                 .apply {
                     listOfHankeYhteystieto =
                         mutableListOf(
-                            createEntity(id = 1, contactType = OMISTAJA, hanke = this),
-                            createEntity(id = 2, contactType = TOTEUTTAJA, hanke = this),
-                            createEntity(id = 3, contactType = RAKENNUTTAJA, hanke = this),
-                            createEntity(id = 4, contactType = MUU, hanke = this)
+                            HankeYhteystietoFactory.createEntity(1, OMISTAJA, this),
+                            HankeYhteystietoFactory.createEntity(2, TOTEUTTAJA, this),
+                            HankeYhteystietoFactory.createEntity(3, RAKENNUTTAJA, this),
+                            HankeYhteystietoFactory.createEntity(4, MUU, this)
                         )
                     alueet =
                         mutableListOf(createHankeAlueEntity(mockId = mockId, hankeEntity = this))
@@ -193,23 +174,8 @@ class HankeFactory(
 
         fun createRequest(
             nimi: String = defaultNimi,
-            onYKTHanke: Boolean? = true,
-            kuvaus: String? = defaultKuvaus,
-            vaihe: Vaihe? = Vaihe.OHJELMOINTI,
-            tyomaaKatuosoite: String? = null,
-            tyomaaTyyppi: Set<TyomaaTyyppi>? = null,
-        ): CreateHankeRequestBuilder =
-            CreateHankeRequestBuilder(
-                null,
-                CreateHankeRequest(
-                    nimi = nimi,
-                    onYKTHanke = onYKTHanke,
-                    kuvaus = kuvaus,
-                    vaihe = vaihe,
-                    tyomaaKatuosoite = tyomaaKatuosoite,
-                    tyomaaTyyppi = tyomaaTyyppi
-                )
-            )
+            perustaja: HankePerustaja = DEFAULT_HANKE_PERUSTAJA
+        ): CreateHankeRequest = CreateHankeRequest(nimi, perustaja)
 
         /**
          * Add a hankealue with haitat to a test Hanke.
@@ -240,17 +206,17 @@ class HankeFactory(
         }
 
         fun Hanke.withTormaystarkasteluTulos(
-            perusIndeksi: Float = 1f,
-            pyorailyIndeksi: Float = 1f,
-            linjaautoIndeksi: Float = 1f,
-            raitiovaunuIndeksi: Float = 1f,
+            autoliikenneindeksi: Float = 1f,
+            pyoraliikenneindeksi: Float = 1f,
+            linjaautoliikenneindeksi: Float = 1f,
+            raitioliikenneindeksi: Float = 1f,
         ): Hanke {
             this.tormaystarkasteluTulos =
                 TormaystarkasteluTulos(
-                    perusIndeksi,
-                    pyorailyIndeksi,
-                    linjaautoIndeksi,
-                    raitiovaunuIndeksi,
+                    autoliikenneindeksi,
+                    pyoraliikenneindeksi,
+                    linjaautoliikenneindeksi,
+                    raitioliikenneindeksi,
                 )
             return this
         }
@@ -297,135 +263,39 @@ class HankeFactory(
             return this
         }
 
-        /**
-         * Add a number of omistaja to a hanke. Generates the yhteystiedot with
-         * [HankeYhteystietoFactory.createDifferentiated] using the given ints for differentiating
-         * the yhteystiedot from each other.
-         *
-         * Example:
-         * ```
-         * HankeFactory.create().withGeneratedOmistajat(listOf(1,2))
-         * ```
-         */
-        fun Hanke.withGeneratedOmistajat(
-            ids: List<Int>,
-            mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke {
-            omistajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
+        fun Hanke.withOmistaja(i: Int, id: Int? = i, vararg yhteyshenkilo: Yhteyshenkilo): Hanke {
+            omistajat.add(
+                HankeYhteystietoFactory.createDifferentiated(i, id, yhteyshenkilo.toList())
+            )
             return this
         }
 
-        /**
-         * Same as [Hanke.withGeneratedOmistajat] but using varargs instead of a list.
-         *
-         * Example:
-         * ```
-         * HankeFactory.create().withGeneratedOmistajat(1,2)
-         * ```
-         */
-        fun Hanke.withGeneratedOmistajat(
-            vararg ids: Int,
-            mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke = withGeneratedOmistajat(ids.toList(), mutator)
-
-        /**
-         * Same as [Hanke.withGeneratedOmistajat] but adds a single omistaja.
-         *
-         * Example:
-         * ```
-         * HankeFactory.create().withGeneratedOmistaja(1)
-         * ```
-         */
-        fun Hanke.withGeneratedOmistaja(id: Int, mutator: HankeYhteystieto.() -> Unit = {}): Hanke =
-            withGeneratedOmistajat(listOf(id), mutator)
-
-        /**
-         * Add a number of rakennuttaja to a hanke. Generates the yhteystiedot with
-         * [HankeYhteystietoFactory.createDifferentiated] using the given ints for differentiating
-         * the yhteystiedot from each other.
-         *
-         * Example:
-         * ```
-         * HankeFactory.create().withGeneratedRakennuttajat(listOf(1,2))
-         * ```
-         */
-        fun Hanke.withGeneratedRakennuttajat(
-            ids: List<Int>,
-            mutator: HankeYhteystieto.() -> Unit = {}
+        fun Hanke.withRakennuttaja(
+            i: Int,
+            id: Int? = i,
+            vararg yhteyshenkilo: Yhteyshenkilo
         ): Hanke {
-            rakennuttajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
+            rakennuttajat.add(
+                HankeYhteystietoFactory.createDifferentiated(i, id, yhteyshenkilo.toList())
+            )
             return this
         }
 
-        /**
-         * Same as [Hanke.withGeneratedRakennuttajat] but using varargs instead of a list.
-         *
-         * Example:
-         * ```
-         * HankeFactory.create().withGeneratedRakennuttajat(1,2)
-         * ```
-         */
-        fun Hanke.withGeneratedRakennuttajat(
-            vararg ids: Int,
-            mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke = withGeneratedRakennuttajat(ids.toList(), mutator)
-
-        /**
-         * Same as [Hanke.withGeneratedRakennuttajat] but adds a single rakennuttaja.
-         *
-         * Example:
-         * ```
-         * HankeFactory.create().withGeneratedRakennuttaja(1)
-         * ```
-         */
-        fun Hanke.withGeneratedRakennuttaja(
-            id: Int,
-            mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke = withGeneratedRakennuttajat(listOf(id), mutator)
-
-        /**
-         * Add a number of toteuttaja to a hanke. Generates the yhteystiedot with
-         * [HankeYhteystietoFactory.createDifferentiated] using the given ints for differentiating
-         * the yhteystiedot from each other.
-         *
-         * Example:
-         * ```
-         * HankeFactory.create().withGeneratedToteuttajat(listOf(1,2))
-         * ```
-         */
-        fun Hanke.withGeneratedToteuttajat(
-            ids: List<Int>,
-            mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke {
-            toteuttajat.addAll(HankeYhteystietoFactory.createDifferentiated(ids, mutator))
+        fun Hanke.withToteuttaja(i: Int, id: Int? = i, vararg yhteyshenkilo: Yhteyshenkilo): Hanke {
+            toteuttajat.add(
+                HankeYhteystietoFactory.createDifferentiated(i, id, yhteyshenkilo.toList())
+            )
             return this
         }
 
-        /**
-         * Same as [Hanke.withGeneratedToteuttajat] but using varargs instead of a list.
-         *
-         * Example:
-         * ```
-         * HankeFactory.create().withGeneratedToteuttajat(1,2)
-         * ```
-         */
-        fun Hanke.withGeneratedToteuttajat(
-            vararg ids: Int,
-            mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke = withGeneratedToteuttajat(ids.toList(), mutator)
-
-        /**
-         * Same as [Hanke.withGeneratedToteuttajat] but adds a single toteuttaja.
-         *
-         * Example:
-         * ```
-         * HankeFactory.create().withGeneratedToteuttaja(1)
-         * ```
-         */
-        fun Hanke.withGeneratedToteuttaja(
-            id: Int,
-            mutator: HankeYhteystieto.() -> Unit = {}
-        ): Hanke = withGeneratedToteuttajat(listOf(id), mutator)
+        fun Hanke.withMuuYhteystieto(
+            i: Int,
+            id: Int? = i,
+            vararg yhteyshenkilo: Yhteyshenkilo
+        ): Hanke {
+            muut.add(HankeYhteystietoFactory.createDifferentiated(i, id, yhteyshenkilo.toList()))
+            return this
+        }
 
         private fun tormaysTarkastelu(
             id: Int = 1,
@@ -433,10 +303,10 @@ class HankeFactory(
         ): TormaystarkasteluTulosEntity =
             TormaystarkasteluTulosEntity(
                 id = id,
-                perus = 1.25f,
-                pyoraily = 2.5f,
-                linjaauto = 3.75f,
-                raitiovaunu = 3.75f,
+                autoliikenne = 1.25f,
+                pyoraliikenne = 2.5f,
+                linjaautoliikenne = 3.75f,
+                raitioliikenne = 3.75f,
                 hanke = hankeEntity,
             )
     }

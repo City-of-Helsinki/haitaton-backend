@@ -5,7 +5,6 @@ import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.isEqualTo
 import assertk.assertions.isGreaterThanOrEqualTo
-import fi.hel.haitaton.hanke.Yhteyshenkilo
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -193,34 +192,6 @@ class HankePublicValidatorTest {
         val result = validateHankeHasMandatoryFields(completeHanke())
 
         assertTrue(result.isOk())
-    }
-
-    @Test
-    fun `when alikontaktit empty should return ok`() {
-        val hanke = completeHanke().apply { omistajat.first().apply { alikontaktit = emptyList() } }
-
-        val result = validateHankeHasMandatoryFields(hanke)
-
-        assertTrue(result.isOk())
-    }
-
-    @Test
-    fun `when alikontaktit missing data should return not ok`() {
-        val hanke =
-            completeHanke().apply {
-                omistajat.first().apply { alikontaktit = listOf(Yhteyshenkilo("", "", "", "")) }
-            }
-
-        val result = validateHankeHasMandatoryFields(hanke)
-
-        assertFalse(result.isOk())
-        assertThat(result.errorPaths())
-            .containsExactlyInAnyOrder(
-                "alikontaktit[0].etunimi",
-                "alikontaktit[0].sukunimi",
-                "alikontaktit[0].email",
-                "alikontaktit[0].puhelinnumero"
-            )
     }
 
     @Test

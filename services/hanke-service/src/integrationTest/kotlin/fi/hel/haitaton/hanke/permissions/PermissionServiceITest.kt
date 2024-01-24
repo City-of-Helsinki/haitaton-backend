@@ -109,7 +109,7 @@ class PermissionServiceITest : DatabaseTest() {
 
         @Test
         fun `Should find all users permissions`() {
-            val firstHanke = hankeFactory.saveGenerated(userId = CURRENT_USER)
+            val firstHanke = hankeFactory.builder(CURRENT_USER).save()
             val secondHanke =
                 hankeFactory.saveMinimal().permit(privilege = Kayttooikeustaso.KATSELUOIKEUS)
             hankeFactory.saveMinimal().permit(username) // someone else

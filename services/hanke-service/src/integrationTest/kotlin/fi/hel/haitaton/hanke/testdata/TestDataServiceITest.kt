@@ -8,7 +8,7 @@ import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.factory.AlluDataFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -26,7 +26,7 @@ class TestDataServiceITest : DatabaseTest() {
 
     @Autowired private lateinit var testDataService: TestDataService
     @Autowired private lateinit var applicationRepository: ApplicationRepository
-    @Autowired private lateinit var alluDataFactory: AlluDataFactory
+    @Autowired private lateinit var applicationFactory: ApplicationFactory
     @Autowired private lateinit var hankeFactory: HankeFactory
 
     @Nested
@@ -38,23 +38,26 @@ class TestDataServiceITest : DatabaseTest() {
 
         @Test
         fun `With applications resets their allu fields`() {
+            val applicationData = ApplicationFactory.createCableReportApplicationData()
             for (i in 1..4) {
-                val hanke = hankeFactory.saveEntity()
-                alluDataFactory.saveApplicationEntity(USERNAME, hanke) { application ->
-                    application.alluStatus = ApplicationStatus.values()[i + 4]
-                    application.alluid = i
-                    application.applicationIdentifier = "JS00$i"
-                    application.applicationData =
-                        application.applicationData.copy(pendingOnClient = false)
-                }
+                val hanke = hankeFactory.builder(USERNAME).saveEntity()
+                applicationFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke = hanke,
+                    alluStatus = ApplicationStatus.entries[i + 4],
+                    alluId = i,
+                    applicationIdentifier = "JS00$i",
+                    applicationData = applicationData.copy(pendingOnClient = false),
+                )
 
-                alluDataFactory.saveApplicationEntity(USERNAME, hanke) { application ->
-                    application.alluStatus = null
-                    application.alluid = null
-                    application.applicationIdentifier = null
-                    application.applicationData =
-                        application.applicationData.copy(pendingOnClient = true)
-                }
+                applicationFactory.saveApplicationEntity(
+                    USERNAME,
+                    hanke,
+                    alluStatus = null,
+                    alluId = null,
+                    applicationIdentifier = null,
+                    applicationData = applicationData.copy(pendingOnClient = true),
+                )
             }
 
             testDataService.unlinkApplicationsFromAllu()

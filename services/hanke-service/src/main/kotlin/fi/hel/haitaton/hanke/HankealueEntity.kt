@@ -1,6 +1,11 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.domain.HasId
+import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
+import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Polyhaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
+import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
@@ -24,11 +29,11 @@ class HankealueEntity(
     var geometriat: Int? = null,
     var haittaAlkuPvm: LocalDate? = null,
     var haittaLoppuPvm: LocalDate? = null,
-    var kaistaHaitta: TodennakoinenHaittaPaaAjoRatojenKaistajarjestelyihin? = null,
-    var kaistaPituusHaitta: KaistajarjestelynPituus? = null,
-    var meluHaitta: Haitta13? = null,
-    var polyHaitta: Haitta13? = null,
-    var tarinaHaitta: Haitta13? = null,
+    var kaistaHaitta: VaikutusAutoliikenteenKaistamaariin? = null,
+    var kaistaPituusHaitta: AutoliikenteenKaistavaikutustenPituus? = null,
+    var meluHaitta: Meluhaitta? = null,
+    var polyHaitta: Polyhaitta? = null,
+    var tarinaHaitta: Tarinahaitta? = null,
     var nimi: String
 ) : HasId<Int> {
 

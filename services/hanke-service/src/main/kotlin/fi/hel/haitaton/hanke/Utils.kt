@@ -5,7 +5,9 @@ import java.time.LocalDateTime
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import mu.KotlinLogging
+import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.core.context.SecurityContextHolder
+import org.springframework.security.oauth2.core.OAuth2AccessToken
 
 private val logger = KotlinLogging.logger {}
 
@@ -59,6 +61,14 @@ fun LocalDateTime.zonedDateTime(): ZonedDateTime = ZonedDateTime.of(this, TZ_UTC
 fun getCurrentTimeUTCAsLocalTime(): LocalDateTime = getCurrentTimeUTC().toLocalDateTime()
 
 fun currentUserId(): String = SecurityContextHolder.getContext().authentication.name
+
+fun SecurityContext.userId(): String = authentication.name
+
+fun SecurityContext.accessToken(): String? =
+    when (val token = this.authentication.credentials) {
+        is OAuth2AccessToken -> token.tokenValue
+        else -> null
+    }
 
 /**
  * Valid business id (y-tunnus) requirements:
