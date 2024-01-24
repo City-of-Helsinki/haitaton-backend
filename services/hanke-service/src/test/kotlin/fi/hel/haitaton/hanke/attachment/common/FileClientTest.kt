@@ -21,6 +21,7 @@ import fi.hel.haitaton.hanke.hasSameElementsAs
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.EnumSource
 import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.http.MediaType
@@ -48,8 +49,15 @@ abstract class FileClientTest {
         }
 
         @ParameterizedTest
-        @ValueSource(strings = ["test.txt", "other.txt", "file.pdf"])
-        fun `uploads a file with the correct content disposition`(originalFileName: String) {
+        @CsvSource(
+            "test.txt,test.txt",
+            "åäö.txt,%C3%A5%C3%A4%C3%B6.txt",
+            "1 2 3 €.pdf,1%202%203%20%E2%82%AC.pdf"
+        )
+        fun `uploads a file with the correct content disposition`(
+            originalFileName: String,
+            encodedFileName: String
+        ) {
             fileClient.upload(
                 container,
                 "test/$originalFileName",
@@ -63,7 +71,7 @@ abstract class FileClientTest {
             assertThat(blobs)
                 .first()
                 .prop(TestFile::contentDisposition)
-                .isEqualTo("attachment; filename=$originalFileName")
+                .isEqualTo("attachment; filename*=UTF-8''$encodedFileName")
         }
 
         @ParameterizedTest
@@ -107,7 +115,8 @@ abstract class FileClientTest {
             assertThat(blobs).hasSize(1)
             assertThat(blobs).first().all {
                 prop(TestFile::path).isEqualTo(path)
-                prop(TestFile::contentDisposition).isEqualTo("attachment; filename=$newFilename")
+                prop(TestFile::contentDisposition)
+                    .isEqualTo("attachment; filename*=UTF-8''$newFilename")
                 prop(TestFile::contentType).isEqualTo(newMediaType)
             }
             val content = fileClient.download(container, path).content.toBytes()

@@ -51,7 +51,8 @@ class BlobFileClient(blobServiceClient: BlobServiceClient, containers: Container
         val options = BlobParallelUploadOptions(BinaryData.fromBytes(content))
         options.headers = BlobHttpHeaders()
         options.headers.setContentType(contentType.toString())
-        options.headers.setContentDisposition("attachment; filename=$originalFilename")
+        val contentDisposition = "attachment; filename*=UTF-8''${encodeFilename(originalFilename)}"
+        options.headers.setContentDisposition(contentDisposition)
         getContainerClient(container).getBlobClient(path).uploadWithResponse(options, null, null)
         logger.info { "Uploaded Blob to container $container with path $path" }
     }
