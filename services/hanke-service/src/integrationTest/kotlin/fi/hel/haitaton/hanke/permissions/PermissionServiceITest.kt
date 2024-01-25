@@ -3,13 +3,13 @@ package fi.hel.haitaton.hanke.permissions
 import assertk.all
 import assertk.assertThat
 import assertk.assertions.containsExactly
-import assertk.assertions.first
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.prop
+import assertk.assertions.single
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeService
@@ -170,9 +170,7 @@ class PermissionServiceITest : DatabaseTest() {
 
             val result = permissionService.create(hankeId, username, Kayttooikeustaso.KATSELUOIKEUS)
 
-            val permissions = permissionRepository.findAll()
-            assertThat(permissions).hasSize(1)
-            assertThat(permissions).first().all {
+            assertThat(permissionRepository.findAll()).single().all {
                 prop(PermissionEntity::id).isEqualTo(result.id)
                 prop(PermissionEntity::hankeId).isEqualTo(hankeId)
                 prop(PermissionEntity::userId).isEqualTo(username)
@@ -188,8 +186,6 @@ class PermissionServiceITest : DatabaseTest() {
             val permission =
                 permissionService.create(hankeId, username, Kayttooikeustaso.KATSELUOIKEUS)
 
-            val logs = auditLogRepository.findAll()
-            assertThat(logs).hasSize(1)
             val expectedObject =
                 Permission(
                     id = permission.id,
@@ -197,7 +193,7 @@ class PermissionServiceITest : DatabaseTest() {
                     hankeId = hankeId,
                     kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
                 )
-            assertThat(logs).first().auditEvent {
+            assertThat(auditLogRepository.findAll()).single().auditEvent {
                 withTarget {
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.PERMISSION)
                     hasId(permission.id)
@@ -225,9 +221,7 @@ class PermissionServiceITest : DatabaseTest() {
                 username,
             )
 
-            val permissions = permissionRepository.findAll()
-            assertThat(permissions).hasSize(1)
-            assertThat(permissions).first().all {
+            assertThat(permissionRepository.findAll()).single().all {
                 prop(PermissionEntity::id).isEqualTo(permission.id)
                 prop(PermissionEntity::hankeId).isEqualTo(hankeId)
                 prop(PermissionEntity::userId).isEqualTo(username)
@@ -248,8 +242,6 @@ class PermissionServiceITest : DatabaseTest() {
                 CURRENT_USER,
             )
 
-            val logs = auditLogRepository.findAll()
-            assertThat(logs).hasSize(1)
             val expectedObject =
                 Permission(
                     id = permission.id,
@@ -257,7 +249,7 @@ class PermissionServiceITest : DatabaseTest() {
                     hankeId = hankeId,
                     kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
                 )
-            assertThat(logs).first().isSuccess(Operation.UPDATE) {
+            assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.UPDATE) {
                 withTarget {
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.PERMISSION)
                     hasId(permission.id)

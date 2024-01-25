@@ -12,12 +12,15 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.prop
+import assertk.assertions.single
 import fi.hel.haitaton.hanke.COORDINATE_SYSTEM_URN
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts as AlluCustomerWithContacts
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
+import org.geojson.GeoJsonObject
 import org.geojson.Polygon
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -174,8 +177,7 @@ internal class ApplicationDataMapperTest {
 
             val geometry = ApplicationDataMapper.getGeometry(applicationData)
 
-            assertThat(geometry.geometries).hasSize(1)
-            assertThat(geometry.geometries[0].crs).isNull()
+            assertThat(geometry.geometries).single().prop(GeoJsonObject::getCrs).isNull()
         }
 
         @Test

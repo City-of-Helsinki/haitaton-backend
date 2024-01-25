@@ -1,17 +1,16 @@
 package fi.hel.haitaton.hanke.test
 
 import assertk.Assert
-import assertk.all
 import assertk.assertions.contains
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.extracting
 import assertk.assertions.first
-import assertk.assertions.hasSize
 import assertk.assertions.isBetween
 import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.prop
+import assertk.assertions.single
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasFeatures
 import fi.hel.haitaton.hanke.zonedDateTime
@@ -61,10 +60,9 @@ object Asserts {
             .isNotNull()
             .prop(HasFeatures::featureCollection)
             .isNotNull()
-            .all {
-                prop(FeatureCollection::getFeatures).hasSize(1)
-                prop(FeatureCollection::getFeatures).first().hasSameCoordinatesAs(other)
-            }
+            .prop(FeatureCollection::getFeatures)
+            .single()
+            .hasSameCoordinatesAs(other)
     }
 
     fun Assert<Array<MimeMessage>>.hasReceivers(vararg receivers: String?) {
