@@ -12,6 +12,7 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.prop
+import assertk.assertions.single
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeIdentifier
@@ -105,9 +106,7 @@ class HankeAttachmentMetadataServiceITests(
                 prop(HankeAttachmentMetadataDto::contentType).isEqualTo(APPLICATION_PDF_VALUE)
                 prop(HankeAttachmentMetadataDto::size).isEqualTo(DEFAULT_SIZE)
             }
-            val attachments = hankeAttachmentRepository.findAll()
-            assertThat(attachments).hasSize(1)
-            assertThat(attachments.first()).all {
+            assertThat(hankeAttachmentRepository.findAll()).single().all {
                 prop(HankeAttachmentEntity::createdByUserId).isEqualTo(USERNAME)
                 prop(HankeAttachmentEntity::fileName).isEqualTo(FILE_NAME_PDF)
                 prop(HankeAttachmentEntity::createdAt).isRecent()

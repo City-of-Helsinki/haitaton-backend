@@ -1,5 +1,14 @@
 package fi.hel.haitaton.hanke
 
+import assertk.all
+import assertk.assertFailure
+import assertk.assertThat
+import assertk.assertions.hasClass
+import assertk.assertions.isEmpty
+import assertk.assertions.isEqualTo
+import assertk.assertions.isNotEmpty
+import assertk.assertions.isNotNull
+import assertk.assertions.messageContains
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.configuration.FeatureService
@@ -17,8 +26,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import jakarta.validation.ConstraintViolationException
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -109,8 +116,8 @@ class HankeControllerTest {
 
         val response = hankeController.getHankeByTunnus(mockedHankeTunnus)
 
-        assertThat(response).isNotNull
-        assertThat(response.nimi).isNotEmpty
+        assertThat(response).isNotNull()
+        assertThat(response.nimi).isNotEmpty()
         verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
     }
 
@@ -187,7 +194,7 @@ class HankeControllerTest {
         // Actual call
         val response: Hanke = hankeController.updateHanke(partialHanke, hanketunnus)
 
-        assertThat(response).isNotNull
+        assertThat(response).isNotNull()
         assertThat(response.nimi).isEqualTo("hankkeen nimi")
         verify { disclosureLogService.saveDisclosureLogsForHanke(any(), eq(username)) }
     }
@@ -200,11 +207,14 @@ class HankeControllerTest {
             .returns(true)
         every { hankeAuthorizer.authorizeHankeTunnus("wrong", PermissionCode.EDIT) } returns true
 
-        assertThatExceptionOfType(HankeArgumentException::class.java)
-            .isThrownBy { hankeController.updateHanke(hankeUpdate, "wrong") }
-            .withMessageContaining(
+        val failure = assertFailure { hankeController.updateHanke(hankeUpdate, "wrong") }
+
+        failure.all {
+            hasClass(HankeArgumentException::class)
+            messageContains(
                 "Hanketunnus mismatch. (In payload=${hankeUpdate.hankeTunnus}, In path=wrong)"
             )
+        }
     }
 
     @Test
@@ -228,11 +238,12 @@ class HankeControllerTest {
         every { hankeService.loadHanke("id123") }.returns(HankeFactory.create())
         every { hankeService.updateHanke(partialHanke) }.returns(partialHanke)
 
-        // Actual call
-        assertThatExceptionOfType(ConstraintViolationException::class.java)
-            .isThrownBy { hankeController.updateHanke(partialHanke, "id123") }
-            .withMessageContaining("updateHanke.hanke.nimi: " + HankeError.HAI1002.toString())
+        val failure = assertFailure { hankeController.updateHanke(partialHanke, "id123") }
 
+        failure.all {
+            hasClass(ConstraintViolationException::class)
+            messageContains("updateHanke.hanke.nimi: " + HankeError.HAI1002.toString())
+        }
         verify { disclosureLogService wasNot Called }
     }
 }

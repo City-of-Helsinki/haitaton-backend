@@ -9,7 +9,6 @@ import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.containsMatch
 import assertk.assertions.each
 import assertk.assertions.exactly
-import assertk.assertions.first
 import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
@@ -22,6 +21,7 @@ import assertk.assertions.isNull
 import assertk.assertions.matches
 import assertk.assertions.messageContains
 import assertk.assertions.prop
+import assertk.assertions.single
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
@@ -51,7 +51,6 @@ import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
-import fi.hel.haitaton.hanke.logging.UserRole
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.test.Asserts.hasReceivers
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
@@ -185,16 +184,16 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
             val entity: HankekayttajaEntity =
                 hankeKayttajaRepository.findAll().also { assertThat(it).hasSize(1) }.first()
-            val dto: HankeKayttajaDto = result.first().also { assertThat(result).hasSize(1) }
-            with(dto) {
-                assertThat(id).isEqualTo(entity.id)
-                assertThat(etunimi).isEqualTo(entity.etunimi)
-                assertThat(sukunimi).isEqualTo(entity.sukunimi)
-                assertThat(nimi).isEqualTo(entity.fullName())
-                assertThat(puhelinnumero).isEqualTo(entity.puhelin)
-                assertThat(sahkoposti).isEqualTo(entity.sahkoposti)
-                assertThat(kayttooikeustaso).isEqualTo(entity.permission!!.kayttooikeustaso)
-                assertThat(tunnistautunut).isEqualTo(true)
+            assertThat(result).single().all {
+                prop(HankeKayttajaDto::id).isEqualTo(entity.id)
+                prop(HankeKayttajaDto::etunimi).isEqualTo(entity.etunimi)
+                prop(HankeKayttajaDto::sukunimi).isEqualTo(entity.sukunimi)
+                prop(HankeKayttajaDto::nimi).isEqualTo(entity.fullName())
+                prop(HankeKayttajaDto::puhelinnumero).isEqualTo(entity.puhelin)
+                prop(HankeKayttajaDto::sahkoposti).isEqualTo(entity.sahkoposti)
+                prop(HankeKayttajaDto::kayttooikeustaso)
+                    .isEqualTo(entity.permission!!.kayttooikeustaso)
+                prop(HankeKayttajaDto::tunnistautunut).isEqualTo(true)
             }
         }
     }
@@ -280,21 +279,21 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
             hankeKayttajaService.addHankeFounder(savedHankeId, founder, securityContext)
 
-            val kayttajaEntity =
-                hankeKayttajaRepository.findAll().also { assertThat(it).hasSize(1) }.first()
-            with(kayttajaEntity) {
-                assertThat(id).isNotNull()
-                assertThat(hankeId).isEqualTo(savedHankeId)
-                assertThat(permission).isNotNull().all {
+            assertThat(hankeKayttajaRepository.findAll()).single().all {
+                prop(HankekayttajaEntity::id).isNotNull()
+                prop(HankekayttajaEntity::hankeId).isEqualTo(savedHankeId)
+                prop(HankekayttajaEntity::permission).isNotNull().all {
                     prop(PermissionEntity::kayttooikeustaso)
                         .isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
                     prop(PermissionEntity::hankeId).isEqualTo(savedHankeId)
                     prop(PermissionEntity::userId).isEqualTo(USERNAME)
                 }
-                assertThat(sahkoposti).isEqualTo(founder.sahkoposti)
-                assertThat(puhelin).isEqualTo(founder.puhelinnumero)
-                assertThat(etunimi).isEqualTo(ProfiiliFactory.DEFAULT_NAMES.givenName)
-                assertThat(sukunimi).isEqualTo(ProfiiliFactory.DEFAULT_NAMES.lastName)
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(founder.sahkoposti)
+                prop(HankekayttajaEntity::puhelin).isEqualTo(founder.puhelinnumero)
+                prop(HankekayttajaEntity::etunimi)
+                    .isEqualTo(ProfiiliFactory.DEFAULT_NAMES.givenName)
+                prop(HankekayttajaEntity::sukunimi)
+                    .isEqualTo(ProfiiliFactory.DEFAULT_NAMES.lastName)
             }
         }
 
@@ -311,8 +310,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                     .findAll()
                     .also { assertThat(it).hasSize(2) }
                     .partition { it.message.auditEvent.target.type == ObjectType.HANKE_KAYTTAJA }
-            assertThat(kayttajaEntries).hasSize(1)
-            assertThat(kayttajaEntries).first().isSuccess(Operation.CREATE) {
+            assertThat(kayttajaEntries).single().isSuccess(Operation.CREATE) {
                 hasUserActor(USERNAME)
                 withTarget {
                     prop(AuditLogTarget::id).isNotNull()
@@ -328,8 +326,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                     }
                 }
             }
-            assertThat(tunnisteEntries).hasSize(1)
-            assertThat(tunnisteEntries).first().isSuccess(Operation.CREATE) {
+            assertThat(tunnisteEntries).single().isSuccess(Operation.CREATE) {
                 hasUserActor(USERNAME)
                 withTarget {
                     prop(AuditLogTarget::id).isNotNull()
@@ -859,26 +856,21 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             hankeKayttajaService.updatePermissions(hankeIdentifier, updates, false, USERNAME)
 
             val logs = auditLogRepository.findAll()
-            assertThat(logs).hasSize(1)
-            assertThat(logs)
-                .first()
-                .transform { it.message.auditEvent }
-                .all {
-                    transform { it.target.type }.isEqualTo(ObjectType.PERMISSION)
-                    transform { it.target.id }.isEqualTo(kayttaja.permission?.id.toString())
-                    transform { it.operation }.isEqualTo(Operation.UPDATE)
-                    transform { it.actor.role }.isEqualTo(UserRole.USER)
-                    transform { it.actor.userId }.isEqualTo(USERNAME)
+            assertThat(logs).single().isSuccess(Operation.UPDATE) {
+                hasUserActor(USERNAME)
+                withTarget {
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.PERMISSION)
                     val permission = kayttaja.permission!!.toDomain()
-                    transform { it.target.objectBefore }
-                        .isEqualTo(permission.toChangeLogJsonString())
-                    transform { it.target.objectAfter }
+                    hasId(permission.id)
+                    prop(AuditLogTarget::objectBefore).isEqualTo(permission.toChangeLogJsonString())
+                    prop(AuditLogTarget::objectAfter)
                         .isEqualTo(
                             permission
                                 .copy(kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS)
                                 .toChangeLogJsonString()
                         )
                 }
+            }
         }
 
         @Test
@@ -908,8 +900,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val logs = auditLogRepository.findAll()
             val expectedTunniste =
                 kayttaja.kayttajakutsu!!.toDomain().copy(hankeKayttajaId = kayttaja.id)
-            assertThat(logs).hasSize(1)
-            assertThat(logs).first().auditEvent().all {
+            assertThat(logs).single().auditEvent().all {
                 withTarget {
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.KAYTTAJA_TUNNISTE)
                     hasId(kayttaja.kayttajakutsu!!.id)
@@ -1311,8 +1302,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 auditLogRepository.findAll().filter {
                     it.message.auditEvent.target.type == ObjectType.KAYTTAJA_TUNNISTE
                 }
-            assertThat(logs).hasSize(1)
-            assertThat(logs).first().isSuccess(Operation.DELETE) {
+            assertThat(logs).single().isSuccess(Operation.DELETE) {
                 hasUserActor(newUserId)
                 withTarget {
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.KAYTTAJA_TUNNISTE)
@@ -1365,9 +1355,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
             hankeKayttajaService.resendInvitation(kayttaja.id, USERNAME)
 
-            val tunnisteet = kayttajakutsuRepository.findAll()
-            assertThat(tunnisteet).hasSize(1)
-            assertThat(tunnisteet).first().hasKayttajaWithId(kayttaja.id)
+            assertThat(kayttajakutsuRepository.findAll()).single().hasKayttajaWithId(kayttaja.id)
         }
 
         @Test
@@ -1385,9 +1373,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
             hankeKayttajaService.resendInvitation(kayttaja.id, USERNAME)
 
-            val tunnisteet = kayttajakutsuRepository.findAll()
-            assertThat(tunnisteet).hasSize(1)
-            assertThat(tunnisteet).first().all {
+            assertThat(kayttajakutsuRepository.findAll()).single().all {
                 hasKayttajaWithId(kayttaja.id)
                 prop(KayttajakutsuEntity::id).isNotEqualTo(tunnisteId)
                 prop(KayttajakutsuEntity::tunniste).isNotEqualTo(tunniste)
