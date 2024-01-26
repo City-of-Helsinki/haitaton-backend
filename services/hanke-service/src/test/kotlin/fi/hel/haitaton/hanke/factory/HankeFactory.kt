@@ -153,7 +153,7 @@ class HankeFactory(
                     generated = false,
                 )
                 .apply {
-                    listOfHankeYhteystieto =
+                    yhteystiedot =
                         mutableListOf(
                             HankeYhteystietoFactory.createEntity(1, OMISTAJA, this),
                             HankeYhteystietoFactory.createEntity(2, TOTEUTTAJA, this),
