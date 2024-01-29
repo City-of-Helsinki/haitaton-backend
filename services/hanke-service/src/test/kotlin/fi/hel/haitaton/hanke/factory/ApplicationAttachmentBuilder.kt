@@ -12,22 +12,16 @@ data class ApplicationAttachmentBuilder(
     val attachmentRepository: ApplicationAttachmentRepository,
     val applicationAttachmentFactory: ApplicationAttachmentFactory
 ) {
-    fun withDbContent(bytes: ByteArray = DEFAULT_DATA): ApplicationAttachmentBuilder {
-        this.value.blobLocation = null
-        attachmentRepository.save(value)
-        applicationAttachmentFactory.saveContentToDb(value.id!!, bytes)
-        return this
-    }
-
-    fun withCloudContent(
+    fun withContent(
         path: String = generateBlobPath(value.applicationId),
         filename: String = FILE_NAME_PDF,
-        mediaType: MediaType = ApplicationAttachmentFactory.MEDIA_TYPE,
+        mediaType: MediaType = MediaType.APPLICATION_PDF,
         bytes: ByteArray = DEFAULT_DATA
     ): ApplicationAttachmentBuilder {
         this.value.blobLocation = path
+        this.value.size = bytes.size.toLong()
         attachmentRepository.save(value)
-        applicationAttachmentFactory.saveContentToCloud(path, filename, mediaType, bytes)
+        applicationAttachmentFactory.saveContent(path, filename, mediaType, bytes)
         return this
     }
 }

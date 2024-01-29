@@ -8,6 +8,7 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.single
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
@@ -181,17 +182,14 @@ class GdprJsonConverterTest {
 
         val result = GdprJsonConverter.getCreatorInfoFromApplication(applicationData)
 
-        assertThat(result).hasSize(1)
-        val expectedInfos =
-            arrayOf(
-                GdprInfo(
-                    name = TEPPO_TESTI,
-                    phone = "04012345678",
-                    email = "teppo@dna.test",
-                    organisation = GdprOrganisation(name = "Dna", registryKey = "3766028-0"),
-                ),
+        val expectedInfo =
+            GdprInfo(
+                name = TEPPO_TESTI,
+                phone = "04012345678",
+                email = "teppo@dna.test",
+                organisation = GdprOrganisation(name = "Dna", registryKey = "3766028-0"),
             )
-        assertThat(result).containsExactlyInAnyOrder(*expectedInfos)
+        assertThat(result).single().isEqualTo(expectedInfo)
     }
 
     @Test

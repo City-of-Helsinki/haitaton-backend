@@ -8,22 +8,23 @@ import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
-import assertk.assertions.isFalse
-import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
+import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
-import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
+import fi.hel.haitaton.hanke.test.Asserts.isValidBlobLocation
 import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 
@@ -33,110 +34,80 @@ import org.springframework.test.context.ActiveProfiles
 @ExtendWith(MockFileClientExtension::class)
 class ApplicationAttachmentContentServiceITest(
     @Autowired private val attachmentContentService: ApplicationAttachmentContentService,
-    @Autowired private val applicationAttachmentFactory: ApplicationAttachmentFactory,
+    @Autowired private val attachmentFactory: ApplicationAttachmentFactory,
     @Autowired private val fileClient: MockFileClient,
 ) : DatabaseTest() {
 
     private val applicationId = 1L
     private val attachmentId = UUID.fromString("b820121e-ad54-4ab8-926a-c4a8193010b5")
-    private val path = "$applicationId/$attachmentId"
     private val bytes = "Test content. Sisältää myös skandeja.".toByteArray()
-
-    @Nested
-    inner class Find {
-        @Test
-        fun `returns the content when blobLocation is specified`() {
-            applicationAttachmentFactory.saveContentToCloud(path, bytes = bytes)
-            val attachmentEntity =
-                ApplicationAttachmentFactory.createEntity(attachmentId, blobLocation = path)
-
-            val result = attachmentContentService.find(attachmentEntity.toDomain())
-
-            assertThat(result).isEqualTo(bytes)
-        }
-
-        @Test
-        fun `returns the content when blobLocation is not specified`() {
-            val attachmentEntity =
-                applicationAttachmentFactory.save(blobLocation = null).withDbContent(bytes).value
-
-            val result = attachmentContentService.find(attachmentEntity.toDomain())
-
-            assertThat(result).isEqualTo(bytes)
-        }
-    }
 
     @Nested
     inner class Delete {
         @Test
-        fun `Deletes the content when blobLocation is specified`() {
-            val attachment = attachmentWithCloudContent()
-            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET).map { it.path })
-                .containsExactly(attachment.blobLocation!!)
+        fun `Should delete the specified attachment content`() {
+            val otherId = UUID.fromString("5824887b-ad50-48f8-bc08-0d5d3e8ba777")
+            val attachment1 = ApplicationAttachmentFactory.createEntity(attachmentId)
+            val attachment2 = ApplicationAttachmentFactory.createEntity(otherId)
+            attachmentFactory.saveContent(attachment1.blobLocation, bytes = bytes)
+            attachmentFactory.saveContent(attachment2.blobLocation, bytes = bytes)
 
-            val deleted = attachmentContentService.delete(attachment.blobLocation!!)
+            attachmentContentService.delete(attachment1.blobLocation)
 
-            assertThat(deleted).isTrue()
-            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).isEmpty()
+            val existingBlobs = fileClient.listBlobs(Container.HAKEMUS_LIITTEET).map { it.path }
+            assertThat(existingBlobs).containsExactly(attachment2.blobLocation)
         }
 
         @Test
-        fun `Nothing is deleted if content is missing`() {
-            val attachment = attachmentWithCloudContent()
-            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET).map { it.path })
-                .containsExactly(attachment.blobLocation!!)
+        fun `Should not throw an error even if content does not exist`() {
+            val attachment = ApplicationAttachmentFactory.createEntity(attachmentId)
 
-            val deleted = attachmentContentService.delete("missing")
+            attachmentContentService.delete(attachment.blobLocation)
 
-            assertThat(deleted).isFalse()
-            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET).map { it.path })
-                .containsExactly(attachment.blobLocation!!)
+            assertThat(fileClient.listBlobs(Container.HAKEMUS_LIITTEET)).isEmpty()
         }
     }
 
     @Nested
-    inner class ReadFromFile {
+    inner class Upload {
         @Test
-        fun `returns the right content`() {
-            applicationAttachmentFactory.saveContentToCloud(path, bytes = bytes)
+        fun `Should return location of uploaded blob`() {
+            val blobLocation =
+                attachmentContentService.upload(
+                    FILE_NAME_PDF,
+                    MediaType.APPLICATION_PDF,
+                    DEFAULT_DATA,
+                    applicationId
+                )
 
-            val result = attachmentContentService.readFromFile(path, attachmentId)
+            assertThat(blobLocation).isValidBlobLocation(applicationId)
+        }
+    }
+
+    @Nested
+    inner class Find {
+        @Test
+        fun `Should return the requested content`() {
+            val attachment = ApplicationAttachmentFactory.createEntity(attachmentId)
+            val otherId = UUID.fromString("d8ead4d2-5888-441e-bc0f-c4da4b634b70")
+            val other = ApplicationAttachmentFactory.createEntity(otherId)
+            attachmentFactory.saveContent(attachment.blobLocation, bytes = bytes)
+            attachmentFactory.saveContent(other.blobLocation)
+
+            val result = attachmentContentService.find(attachment.toDomain())
 
             assertThat(result).isEqualTo(bytes)
         }
 
         @Test
-        fun `throws AttachmentNotFoundException if attachment not found`() {
-            assertFailure { attachmentContentService.readFromFile(path, attachmentId) }
+        fun `Should throw if attachment not found`() {
+            val attachment = ApplicationAttachmentFactory.createEntity(attachmentId)
+
+            assertFailure { attachmentContentService.find(attachment.toDomain()) }
                 .all {
                     hasClass(AttachmentNotFoundException::class)
                     hasMessage("Attachment not found, id=$attachmentId")
                 }
         }
     }
-
-    @Nested
-    inner class ReadFromDatabase {
-        @Test
-        fun `returns the right content`() {
-            val attachmentId = applicationAttachmentFactory.save().value.id!!
-            applicationAttachmentFactory.saveContentToDb(attachmentId, bytes)
-
-            val result = attachmentContentService.readFromDatabase(attachmentId)
-
-            assertThat(result).isEqualTo(bytes)
-        }
-
-        @Test
-        fun `throws AttachmentNotFoundException if attachment not found`() {
-            assertFailure { attachmentContentService.readFromDatabase(attachmentId) }
-                .all {
-                    hasClass(AttachmentNotFoundException::class)
-                    hasMessage("Attachment not found, id=$attachmentId")
-                }
-        }
-    }
-
-    fun attachmentWithCloudContent(id: UUID = attachmentId): ApplicationAttachmentMetadata =
-        applicationAttachmentFactory.save(id = id).withCloudContent().value.toDomain()
 }
