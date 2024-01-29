@@ -228,7 +228,7 @@ class HankeServiceITests(
 
             assertThat(hanke.omistajat.single()).all {
                 hasDefaultInfo()
-                hasOneYhteyshenkilo(HankeKayttajaFactory.KAYTTAJA_INPUT_HAKIJA)
+                hasOneYhteyshenkilo(HankeKayttajaFactory.KAYTTAJA_INPUT_OMISTAJA)
             }
             assertThat(hanke.rakennuttajat.single()).all {
                 hasDefaultInfo()

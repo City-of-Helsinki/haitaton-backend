@@ -25,6 +25,7 @@ import assertk.assertions.single
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
+import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.domain.Hanke
@@ -43,7 +44,13 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.DEFAULT_HANKE_PERUSTAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_MUU
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_OMISTAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_PERUSTAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_RAKENNUTTAJA
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_SUORITTAJA
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.factory.identifier
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
@@ -177,7 +184,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Returns data matching to the saved entity`() {
-            val hanke = hankeFactory.builder(USERNAME).withPerustaja(KAYTTAJA_INPUT_HAKIJA).create()
+            val hanke =
+                hankeFactory.builder(USERNAME).withPerustaja(KAYTTAJA_INPUT_PERUSTAJA).create()
 
             val result: List<HankeKayttajaDto> =
                 hankeKayttajaService.getKayttajatByHankeId(hanke.id)
@@ -194,6 +202,45 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 prop(HankeKayttajaDto::kayttooikeustaso)
                     .isEqualTo(entity.permission!!.kayttooikeustaso)
                 prop(HankeKayttajaDto::tunnistautunut).isEqualTo(true)
+            }
+        }
+
+        @Test
+        fun `Returns correct roles for the users`() {
+            val hanke =
+                hankeFactory
+                    .builder(USERNAME)
+                    .withPerustaja(KAYTTAJA_INPUT_PERUSTAJA)
+                    .saveWithYhteystiedot {
+                        omistaja()
+                            .rakennuttaja()
+                            .toteuttaja()
+                            .toteuttaja(toteuttaja = KAYTTAJA_INPUT_RAKENNUTTAJA)
+                            .muuYhteystieto(KAYTTAJA_INPUT_ASIANHOITAJA)
+                            .muuYhteystieto(KAYTTAJA_INPUT_MUU)
+                    }
+            val expectedRoles =
+                mapOf(
+                    Pair(KAYTTAJA_INPUT_OMISTAJA.email, arrayOf(ContactType.OMISTAJA)),
+                    Pair(
+                        KAYTTAJA_INPUT_RAKENNUTTAJA.email,
+                        arrayOf(ContactType.RAKENNUTTAJA, ContactType.TOTEUTTAJA)
+                    ),
+                    Pair(KAYTTAJA_INPUT_SUORITTAJA.email, arrayOf(ContactType.TOTEUTTAJA)),
+                    Pair(KAYTTAJA_INPUT_ASIANHOITAJA.email, arrayOf(ContactType.MUU)),
+                    Pair(KAYTTAJA_INPUT_MUU.email, arrayOf(ContactType.MUU))
+                )
+
+            val result: List<HankeKayttajaDto> =
+                hankeKayttajaService.getKayttajatByHankeId(hanke.id)
+
+            assertThat(result).hasSize(6) // one is the founder
+            result.forEach {
+                if (it.sahkoposti == KAYTTAJA_INPUT_PERUSTAJA.email) {
+                    assertThat(it.roolit).isEmpty() // founder has no roles
+                } else {
+                    assertThat(it.roolit).containsExactlyInAnyOrder(*expectedRoles[it.sahkoposti]!!)
+                }
             }
         }
     }
@@ -260,7 +307,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Nested
     inner class AddHankeFounder {
-        private val founder = HankeFactory.DEFAULT_HANKE_PERUSTAJA
+        private val founder = DEFAULT_HANKE_PERUSTAJA
         private val securityContext = mockk<SecurityContext>()
         private val founderFullName =
             "${ProfiiliFactory.DEFAULT_NAMES.givenName} ${ProfiiliFactory.DEFAULT_NAMES.lastName}"

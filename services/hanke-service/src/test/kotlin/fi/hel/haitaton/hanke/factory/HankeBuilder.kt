@@ -94,7 +94,7 @@ data class HankeBuilder(
         return Pair(application, hanke)
     }
 
-    fun saveWithYhteystiedot(f: HankeYhteystietoBuilder.() -> Unit): HankeEntity {
+    fun saveWithYhteystiedot(f: HankeYhteystietoBuilder.() -> Unit): Hanke {
         val entity = saveEntity()
         val builder =
             HankeYhteystietoBuilder(
@@ -106,7 +106,7 @@ data class HankeBuilder(
                 hankeYhteyshenkiloRepository,
             )
         builder.f()
-        return entity
+        return hankeService.loadHanke(entity.hankeTunnus)!!
     }
 
     fun withYhteystiedot(): HankeBuilder = applyToHanke {
@@ -171,8 +171,8 @@ data class HankeYhteystietoBuilder(
     private val hankeYhteyshenkiloRepository: HankeYhteyshenkiloRepository,
 ) {
     fun omistaja(
-        omistaja: HankekayttajaInput = HankeKayttajaFactory.KAYTTAJA_INPUT_HAKIJA,
-        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS
+        omistaja: HankekayttajaInput = HankeKayttajaFactory.KAYTTAJA_INPUT_OMISTAJA,
+        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
     ): HankeYhteystietoBuilder {
         yhteystieto(ContactType.OMISTAJA, omistaja, kayttooikeustaso)
         return this
@@ -208,7 +208,11 @@ data class HankeYhteystietoBuilder(
         kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
     ): HankeYhteystietoBuilder {
         val kayttaja =
-            hankeKayttajaFactory.saveIdentifiedUser(hankeEntity.id, kayttajaInput, kayttooikeustaso)
+            hankeKayttajaFactory.findOrSaveIdentifiedUser(
+                hankeEntity.id,
+                kayttajaInput,
+                kayttooikeustaso
+            )
         val yhteystieto = HankeYhteystietoFactory.create(id = null)
         val yhteystietoEntity =
             HankeYhteystietoEntity.fromDomain(yhteystieto, tyyppi, userId, hankeEntity).let {
