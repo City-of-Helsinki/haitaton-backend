@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 069-application-attachment-migration-cleanup
+      author: Teemu Hiltunen
+      changes:
+        - addNotNullConstraint:
+            tableName: application_attachment
+            columnName: blob_location
+        - dropTable:
+            tableName: application_attachment_content

@@ -2,10 +2,10 @@ package fi.hel.haitaton.hanke.attachment.hanke
 
 import assertk.all
 import assertk.assertThat
-import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.prop
+import assertk.assertions.single
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
@@ -37,8 +37,7 @@ class HankeAttachmentRepositoryITests : DatabaseTest() {
 
         val attachments = hankeAttachmentRepository.findAll()
 
-        assertThat(attachments).hasSize(1)
-        assertThat(attachments.first()).all {
+        assertThat(attachments).single().all {
             prop(HankeAttachmentEntity::id).isNotNull().isEqualTo(saved.id)
             prop(HankeAttachmentEntity::fileName).isEqualTo(ApplicationAttachmentFactory.FILE_NAME)
             prop(HankeAttachmentEntity::contentType).isEqualTo(APPLICATION_PDF_VALUE)

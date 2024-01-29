@@ -15,7 +15,6 @@ import fi.hel.haitaton.hanke.tormaystarkastelu.Tarinahaitta
 import fi.hel.haitaton.hanke.tormaystarkastelu.VaikutusAutoliikenteenKaistamaariin
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
@@ -64,7 +63,7 @@ internal class HankeTest {
         val aFormatted = a.format(DateTimeFormatter.BASIC_ISO_DATE)
         val loppuPvm = hanke.loppuPvm!!.format(DateTimeFormatter.BASIC_ISO_DATE)
         val dFormatted = d.format(DateTimeFormatter.BASIC_ISO_DATE)
-        Assertions.assertThat(alkuPvm).isEqualTo(aFormatted)
-        Assertions.assertThat(loppuPvm).isEqualTo(dFormatted)
+        assertThat(alkuPvm).isEqualTo(aFormatted)
+        assertThat(loppuPvm).isEqualTo(dFormatted)
     }
 }

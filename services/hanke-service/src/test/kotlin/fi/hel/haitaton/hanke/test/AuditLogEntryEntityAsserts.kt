@@ -35,6 +35,12 @@ object AuditLogEntryEntityAsserts {
     fun Assert<AuditLogEvent>.hasUserActor(userId: String) =
         prop(AuditLogEvent::actor).isUser(userId)
 
+    fun Assert<AuditLogEvent>.hasUserActor(userId: String, ipAddress: String) =
+        prop(AuditLogEvent::actor).all {
+            isUser(userId)
+            prop(AuditLogActor::ipAddress).isEqualTo(ipAddress)
+        }
+
     fun Assert<AuditLogEvent>.hasMockedIp(ipAddress: String = TestUtils.mockedIp) =
         prop(AuditLogEvent::actor).prop(AuditLogActor::ipAddress).isEqualTo(ipAddress)
 

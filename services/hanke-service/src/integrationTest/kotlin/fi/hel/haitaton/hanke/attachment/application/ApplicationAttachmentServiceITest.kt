@@ -15,6 +15,7 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isPresent
 import assertk.assertions.messageContains
 import assertk.assertions.prop
+import assertk.assertions.single
 import assertk.assertions.startsWith
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
@@ -31,7 +32,7 @@ import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
 import fi.hel.haitaton.hanke.attachment.body
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentRepository
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
@@ -72,7 +73,6 @@ import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.http.MediaType
 import org.springframework.http.MediaType.APPLICATION_PDF_VALUE
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
@@ -86,7 +86,6 @@ class ApplicationAttachmentServiceITest(
     @Autowired private val cableReportService: CableReportService,
     @Autowired private val attachmentService: ApplicationAttachmentService,
     @Autowired private val attachmentRepository: ApplicationAttachmentRepository,
-    @Autowired private val contentRepository: ApplicationAttachmentContentRepository,
     @Autowired private val applicationFactory: ApplicationFactory,
     @Autowired private val attachmentFactory: ApplicationAttachmentFactory,
     @Autowired private val fileClient: MockFileClient,
@@ -131,8 +130,8 @@ class ApplicationAttachmentServiceITest(
         @Test
         fun `Returns related metadata list`() {
             val application = applicationFactory.saveApplicationEntity(USERNAME)
-            attachmentFactory.save(application = application).withDbContent()
-            attachmentFactory.save(application = application).withDbContent()
+            attachmentFactory.save(application = application).withContent()
+            attachmentFactory.save(application = application).withContent()
 
             val result = attachmentService.getMetadataList(application.id!!)
 
@@ -170,12 +169,12 @@ class ApplicationAttachmentServiceITest(
         inner class FromDb {
             @Test
             fun `Returns the attachment content, filename and type`() {
-                val attachment = attachmentFactory.save().withDbContent().value
+                val attachment = attachmentFactory.save().withContent().value
 
                 val result = attachmentService.getContent(attachmentId = attachment.id!!)
 
                 assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-                assertThat(result.contentType).isEqualTo(MediaType.APPLICATION_PDF_VALUE)
+                assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
                 assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
             }
         }
@@ -185,12 +184,12 @@ class ApplicationAttachmentServiceITest(
         inner class FromCloud {
             @Test
             fun `Returns the attachment content, filename and type`() {
-                val attachment = attachmentFactory.save().withCloudContent().value
+                val attachment = attachmentFactory.save().withContent().value
 
                 val result = attachmentService.getContent(attachmentId = attachment.id!!)
 
                 assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-                assertThat(result.contentType).isEqualTo(MediaType.APPLICATION_PDF_VALUE)
+                assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
                 assertThat(result.bytes).isEqualTo(DEFAULT_DATA)
             }
         }
@@ -216,26 +215,29 @@ class ApplicationAttachmentServiceITest(
             assertThat(result.id).isNotNull()
             assertThat(result.createdByUserId).isEqualTo(USERNAME)
             assertThat(result.fileName).isEqualTo(FILE_NAME_PDF)
-            assertThat(result.contentType).isEqualTo(MediaType.APPLICATION_PDF_VALUE)
+            assertThat(result.contentType).isEqualTo(APPLICATION_PDF_VALUE)
             assertThat(result.size).isEqualTo(DEFAULT_SIZE)
             assertThat(result.createdAt).isRecent()
             assertThat(result.applicationId).isEqualTo(application.id)
             assertThat(result.attachmentType).isEqualTo(typeInput)
 
             val attachments = attachmentRepository.findAll()
-            assertThat(attachments).hasSize(1)
-            val attachmentInDb = attachments.first()
-            assertThat(attachmentInDb.id).isEqualTo(result.id)
-            assertThat(attachmentInDb.createdByUserId).isEqualTo(USERNAME)
-            assertThat(attachmentInDb.fileName).isEqualTo(FILE_NAME_PDF)
-            assertThat(attachmentInDb.contentType).isEqualTo(MediaType.APPLICATION_PDF_VALUE)
-            assertThat(attachmentInDb.size).isEqualTo(DEFAULT_SIZE)
-            assertThat(attachmentInDb.createdAt).isRecent()
-            assertThat(attachmentInDb.applicationId).isEqualTo(application.id)
-            assertThat(attachmentInDb.attachmentType).isEqualTo(typeInput)
-            assertThat(attachmentInDb.blobLocation).isNotNull().startsWith("${application.id!!}/")
+            assertThat(attachments).single().all {
+                prop(ApplicationAttachmentEntity::id).isEqualTo(result.id)
+                prop(ApplicationAttachmentEntity::createdByUserId).isEqualTo(USERNAME)
+                prop(ApplicationAttachmentEntity::fileName).isEqualTo(FILE_NAME_PDF)
+                prop(ApplicationAttachmentEntity::contentType).isEqualTo(APPLICATION_PDF_VALUE)
+                prop(ApplicationAttachmentEntity::size).isEqualTo(DEFAULT_SIZE)
+                prop(ApplicationAttachmentEntity::createdAt).isRecent()
+                prop(ApplicationAttachmentEntity::applicationId).isEqualTo(application.id)
+                prop(ApplicationAttachmentEntity::attachmentType).isEqualTo(typeInput)
+                prop(ApplicationAttachmentEntity::blobLocation)
+                    .isNotNull()
+                    .startsWith("${application.id!!}/")
+            }
 
-            val content = fileClient.download(HAKEMUS_LIITTEET, attachmentInDb.blobLocation!!)
+            val content = fileClient.download(HAKEMUS_LIITTEET, attachments.first().blobLocation)
+
             assertThat(content)
                 .isNotNull()
                 .prop(DownloadResponse::content)
@@ -465,7 +467,7 @@ class ApplicationAttachmentServiceITest(
                 val application =
                     applicationFactory.saveApplicationEntity(USERNAME, alluId = ALLU_ID)
                 val attachment =
-                    attachmentFactory.save(application = application).withDbContent().value
+                    attachmentFactory.save(application = application).withContent().value
 
                 val failure = assertFailure {
                     attachmentService.deleteAttachment(attachmentId = attachment.id!!)
@@ -481,31 +483,10 @@ class ApplicationAttachmentServiceITest(
                 assertThat(attachmentRepository.findById(attachment.id!!)).isPresent()
                 verify { cableReportService wasNot Called }
             }
-        }
-
-        @Nested
-        inner class FromDb {
-            @Test
-            fun `Deletes attachment and content when attachment exists`() {
-                val attachment = attachmentFactory.save().withDbContent().value
-                assertThat(attachmentRepository.findAll()).hasSize(1)
-                assertThat(contentRepository.findAll()).hasSize(1)
-
-                attachmentService.deleteAttachment(attachment.id!!)
-
-                assertThat(attachmentRepository.findAll()).isEmpty()
-                assertThat(contentRepository.findAll()).isEmpty()
-            }
-        }
-
-        @Nested
-        @ExtendWith(MockFileClientExtension::class)
-        inner class FromCloud {
-            private val path = "in/cloud"
 
             @Test
             fun `Deletes attachment and content when attachment exists`() {
-                val attachment = attachmentFactory.save().withCloudContent(path).value
+                val attachment = attachmentFactory.save().withContent().value
                 assertThat(attachmentRepository.findAll()).hasSize(1)
                 assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET).map { it.path })
                     .containsExactly(attachment.blobLocation)

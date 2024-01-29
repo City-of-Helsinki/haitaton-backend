@@ -166,7 +166,7 @@ class HankeAttachmentServiceITest(
         @Test
         fun `returns the attachment content, filename and content type`() {
             val path = "in/cloud"
-            val attachment = hankeAttachmentFactory.save().withCloudContent(path).value
+            val attachment = hankeAttachmentFactory.save().withContent(path).value
 
             val result = hankeAttachmentService.getContent(attachment.id!!)
 
@@ -193,7 +193,7 @@ class HankeAttachmentServiceITest(
         @Test
         fun `deletes attachment and content when attachment exists`() {
             val path = "in/cloud"
-            val attachment = hankeAttachmentFactory.save().withCloudContent(path).value
+            val attachment = hankeAttachmentFactory.save().withContent(path).value
             assertThat(attachmentRepository.findAll()).hasSize(1)
             assertThat(fileClient.listBlobs(Container.HANKE_LIITTEET)).hasSize(1)
 
@@ -221,8 +221,8 @@ class HankeAttachmentServiceITest(
         @Test
         fun `deletes all attachments and their contents from hanke`() {
             val hanke = hankeFactory.saveMinimal()
-            hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
-            hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
+            hankeAttachmentFactory.save(hanke = hanke).withContent()
+            hankeAttachmentFactory.save(hanke = hanke).withContent()
             assertThat(attachmentRepository.findAll()).hasSize(2)
             assertThat(fileClient.listBlobs(Container.HANKE_LIITTEET)).hasSize(2)
 
@@ -235,8 +235,8 @@ class HankeAttachmentServiceITest(
         @Test
         fun `deletes attachments only from the specified hanke`() {
             val hanke = hankeFactory.saveMinimal()
-            hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
-            val otherAttachment = hankeAttachmentFactory.save().withCloudContent().value
+            hankeAttachmentFactory.save(hanke = hanke).withContent()
+            val otherAttachment = hankeAttachmentFactory.save().withContent().value
 
             hankeAttachmentService.deleteAllAttachments(hanke)
 

@@ -190,7 +190,7 @@ class ApplicationAuthorizerITest(
             val hanke2 = hankeFactory.saveMinimal()
             val application2 = applicationFactory.saveApplicationEntity(USERNAME, hanke2)
             val attachment =
-                applicationAttachmentFactory.save(application = application2).withDbContent().value
+                applicationAttachmentFactory.save(application = application2).withContent().value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
             assertFailure {
@@ -207,7 +207,7 @@ class ApplicationAuthorizerITest(
             val hanke = hankeFactory.saveMinimal()
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
             val attachment =
-                applicationAttachmentFactory.save(application = application).withDbContent().value
+                applicationAttachmentFactory.save(application = application).withContent().value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
             assertThat(authorizer.authorizeAttachment(application.id!!, attachment.id!!, VIEW.name))
