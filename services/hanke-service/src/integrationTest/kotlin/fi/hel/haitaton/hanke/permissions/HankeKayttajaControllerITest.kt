@@ -2,12 +2,14 @@ package fi.hel.haitaton.hanke.permissions
 
 import assertk.all
 import assertk.assertThat
+import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.prop
+import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeNotFoundException
@@ -277,7 +279,16 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         @Test
         fun `With valid request returns users of given hanke and logs audit`() {
             val hanke = HankeFactory.create()
-            val testData = HankeKayttajaFactory.generateHankeKayttajat()
+            val testData =
+                listOf(
+                    HankeKayttajaFactory.createHankeKayttaja(
+                        1,
+                        ContactType.OMISTAJA,
+                        ContactType.MUU
+                    ),
+                    HankeKayttajaFactory.createHankeKayttaja(2),
+                    HankeKayttajaFactory.createHankeKayttaja(3),
+                )
             every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
             every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hanke.identifier()
             every { hankeKayttajaService.getKayttajatByHankeId(hanke.id) } returns testData
@@ -294,6 +305,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 assertThat(puhelinnumero).isEqualTo("0405551111")
                 assertThat(sahkoposti).isEqualTo("email.1.address.com")
                 assertThat(tunnistautunut).isEqualTo(false)
+                assertThat(roolit).containsExactlyInAnyOrder(ContactType.OMISTAJA, ContactType.MUU)
             }
             assertThat(response.kayttajat).hasSameElementsAs(testData)
             verifyOrder {

@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.permissions
 
+import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeYhteyshenkiloEntity
 import fi.hel.haitaton.hanke.domain.HasId
 import io.swagger.v3.oas.annotations.media.Schema
@@ -41,6 +42,7 @@ data class HankeKayttajaDto(
     val nimi: String,
     @field:Schema(description = "Phone number") val puhelinnumero: String,
     @field:Schema(description = "Access level in Hanke") val kayttooikeustaso: Kayttooikeustaso?,
+    @field:Schema(description = "User roles in Hanke") val roolit: List<ContactType>,
     @field:Schema(description = "Has user logged in to view Hanke") val tunnistautunut: Boolean,
 )
 
@@ -97,6 +99,7 @@ class HankekayttajaEntity(
             nimi = fullName(),
             puhelinnumero = puhelin,
             kayttooikeustaso = deriveKayttooikeustaso(),
+            roolit = deriveRoolit(),
             tunnistautunut = permission != null,
         )
 
@@ -118,6 +121,14 @@ class HankekayttajaEntity(
      */
     fun deriveKayttooikeustaso(): Kayttooikeustaso? =
         permission?.kayttooikeustaso ?: kayttajakutsu?.kayttooikeustaso
+
+    /**
+     * Roles of the user are derived from the related [HankeYhteyshenkiloEntity]s. If there are no
+     * related [HankeYhteyshenkiloEntity]s, the user has no roles. This means that the user is not a
+     * contact person in any of the Hanke contacts.
+     */
+    private fun deriveRoolit(): List<ContactType> =
+        yhteyshenkilot.map { it.hankeYhteystieto.contactType }
 
     fun fullName() = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
 }

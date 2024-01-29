@@ -190,7 +190,7 @@ internal class DisclosureLogServiceTest {
 
     @Test
     fun `saveDisclosureLogsForHankeKayttajat saves audit logs`() {
-        val hankeKayttajat = HankeKayttajaFactory.generateHankeKayttajat(amount = 2)
+        val hankeKayttajat = HankeKayttajaFactory.createHankeKayttajat(amount = 2)
         val expectedLogs = AuditLogEntryFactory.createReadEntryForHankeKayttajat(hankeKayttajat)
 
         disclosureLogService.saveDisclosureLogsForHankeKayttajat(hankeKayttajat, userId)
