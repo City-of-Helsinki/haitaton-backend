@@ -1272,7 +1272,7 @@ class ApplicationServiceITest : DatabaseTest() {
                     hanke = initializedHanke(),
                     applicationData = mockApplicationDataWithArea()
                 )
-            attachmentFactory.save(application = application).withDbContent()
+            attachmentFactory.save(application = application).withContent()
             val applicationData = application.applicationData as CableReportApplicationData
             val pendingApplicationData = applicationData.copy(pendingOnClient = false)
             val expectedAlluRequest = pendingApplicationData.toAlluData(HANKE_TUNNUS)
@@ -1342,7 +1342,7 @@ class ApplicationServiceITest : DatabaseTest() {
                     hanke = initializedHanke(),
                     applicationData = mockApplicationDataWithArea()
                 )
-            attachmentFactory.save(application = application).withDbContent()
+            attachmentFactory.save(application = application).withContent()
             val applicationData = application.applicationData as CableReportApplicationData
             val pendingApplicationData = applicationData.copy(pendingOnClient = false)
             val expectedAlluRequest = pendingApplicationData.toAlluData(HANKE_TUNNUS)
@@ -1396,8 +1396,8 @@ class ApplicationServiceITest : DatabaseTest() {
             val application =
                 applicationFactory.saveApplicationEntity(USERNAME, hanke = hanke, alluId = null)
             assertThat(applicationRepository.findAll()).hasSize(1)
-            attachmentFactory.save(application = application).withCloudContent()
-            attachmentFactory.save(application = application).withCloudContent()
+            attachmentFactory.save(application = application).withContent()
+            attachmentFactory.save(application = application).withContent()
             assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))
                 .hasSize(2)
             assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
@@ -1513,8 +1513,8 @@ class ApplicationServiceITest : DatabaseTest() {
             val application =
                 applicationFactory.saveApplicationEntity(USERNAME, hanke = hanke, alluId = null)
             assertThat(applicationRepository.findAll()).hasSize(1)
-            attachmentFactory.save(application = application).withCloudContent()
-            attachmentFactory.save(application = application).withCloudContent()
+            attachmentFactory.save(application = application).withContent()
+            attachmentFactory.save(application = application).withContent()
             assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
                 .hasSize(2)
             assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))

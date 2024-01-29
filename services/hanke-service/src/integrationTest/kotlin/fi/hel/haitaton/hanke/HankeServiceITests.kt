@@ -1301,8 +1301,8 @@ class HankeServiceITests(
         @Test
         fun `deletes attachments and their contents`() {
             val hanke = hankeFactory.builder(USER_NAME).saveEntity()
-            hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
-            hankeAttachmentFactory.save(hanke = hanke).withCloudContent()
+            hankeAttachmentFactory.save(hanke = hanke).withContent()
+            hankeAttachmentFactory.save(hanke = hanke).withContent()
 
             hankeService.deleteHanke(hanke.hankeTunnus, USER_NAME)
 

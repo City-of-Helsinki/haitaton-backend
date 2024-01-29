@@ -165,3 +165,5 @@ databaseChangeLog:
       file: db/changelog/changesets/067-create-hankeyhteyshenkilo-table.sql
   - include:
       file: db/changelog/changesets/068-grant-modify-user-permission-to-kayttooikeustasot.sql
+  - include:
+      file: db/changelog/changesets/069-application-attachment-migration-cleanup.yml

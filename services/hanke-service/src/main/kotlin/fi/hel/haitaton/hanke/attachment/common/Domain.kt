@@ -33,7 +33,7 @@ data class ApplicationAttachmentMetadata(
     override val size: Long,
     override val createdByUserId: String,
     override val createdAt: OffsetDateTime,
-    override val blobLocation: String?,
+    override val blobLocation: String,
     val applicationId: Long,
     val attachmentType: ApplicationAttachmentType,
 ) : AttachmentMetadata {

@@ -3,21 +3,19 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
-import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.USERNAME
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService.Companion.generateBlobPath
 import fi.hel.haitaton.hanke.attachment.azure.Container.HAKEMUS_LIITTEET
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentEntity
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
-import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.FileClient
 import fi.hel.haitaton.hanke.currentUserId
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_APPLICATION_ID
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.http.MediaType
@@ -27,7 +25,6 @@ import org.springframework.stereotype.Component
 @Component
 class ApplicationAttachmentFactory(
     private val attachmentRepository: ApplicationAttachmentRepository,
-    private val contentRepository: ApplicationAttachmentContentRepository,
     private val applicationFactory: ApplicationFactory,
     private val fileClient: FileClient,
 ) {
@@ -38,7 +35,6 @@ class ApplicationAttachmentFactory(
         size: Long = DEFAULT_SIZE,
         createdByUser: String = USERNAME,
         createdAt: OffsetDateTime = CREATED_AT,
-        blobLocation: String? = null,
         attachmentType: ApplicationAttachmentType = MUU,
         application: ApplicationEntity = applicationFactory.saveApplicationEntity(USERNAME),
     ): ApplicationAttachmentBuilder {
@@ -49,7 +45,6 @@ class ApplicationAttachmentFactory(
                     fileName,
                     contentType,
                     size,
-                    blobLocation,
                     createdByUser,
                     createdAt,
                     attachmentType,
@@ -59,12 +54,7 @@ class ApplicationAttachmentFactory(
         return ApplicationAttachmentBuilder(entity, attachmentRepository, this)
     }
 
-    fun saveContentToDb(attachmentId: UUID, bytes: ByteArray): ApplicationAttachmentContentEntity {
-        val entity = ApplicationAttachmentContentEntity(attachmentId, bytes)
-        return contentRepository.save(entity)
-    }
-
-    fun saveContentToCloud(
+    fun saveContent(
         path: String,
         filename: String = FILE_NAME_PDF,
         mediaType: MediaType = MEDIA_TYPE,
@@ -86,11 +76,11 @@ class ApplicationAttachmentFactory(
             fileName: String = FILE_NAME,
             contentType: String = APPLICATION_PDF_VALUE,
             size: Long = DEFAULT_SIZE,
-            blobLocation: String? = null,
+            blobLocation: String = generateBlobPath(DEFAULT_APPLICATION_ID),
             createdByUserId: String = USERNAME,
             createdAt: OffsetDateTime = CREATED_AT,
             attachmentType: ApplicationAttachmentType = MUU,
-            applicationId: Long = ApplicationFactory.DEFAULT_APPLICATION_ID,
+            applicationId: Long = DEFAULT_APPLICATION_ID,
         ): ApplicationAttachmentMetadata =
             ApplicationAttachmentMetadata(
                 id = id,
@@ -109,18 +99,17 @@ class ApplicationAttachmentFactory(
             fileName: String = FILE_NAME,
             contentType: String = APPLICATION_PDF_VALUE,
             size: Long = DEFAULT_SIZE,
-            blobLocation: String? = null,
             createdByUserId: String = USERNAME,
             createdAt: OffsetDateTime = CREATED_AT,
             attachmentType: ApplicationAttachmentType = MUU,
-            applicationId: Long = ApplicationFactory.DEFAULT_APPLICATION_ID,
+            applicationId: Long = DEFAULT_APPLICATION_ID,
         ): ApplicationAttachmentEntity =
             ApplicationAttachmentEntity(
                 id = id,
                 fileName = fileName,
                 contentType = contentType,
                 size = size,
-                blobLocation = blobLocation,
+                blobLocation = generateBlobPath(applicationId),
                 createdByUserId = createdByUserId,
                 createdAt = createdAt,
                 attachmentType = attachmentType,
@@ -147,11 +136,5 @@ class ApplicationAttachmentFactory(
                 createdAt = createdAt,
                 applicationId = applicationId,
             )
-
-        fun createContent(
-            fileName: String = FILE_NAME,
-            contentType: String = APPLICATION_PDF_VALUE,
-            bytes: ByteArray = DUMMY_DATA,
-        ) = AttachmentContent(fileName = fileName, contentType = contentType, bytes = bytes)
     }
 }
