@@ -30,6 +30,9 @@ abstract class AttachmentEntity(
     /** Size in bytes. */
     @Column(name = "size") var size: Long,
 
+    /** Path to the blob in Azure. */
+    @Column(name = "blob_location") var blobLocation: String,
+
     /** Person who uploaded this attachment. */
     @Column(name = "created_by_user_id", updatable = false, nullable = false)
     var createdByUserId: String,
@@ -58,11 +61,11 @@ class HankeAttachmentEntity(
     fileName: String,
     contentType: String,
     size: Long,
+    blobLocation: String,
     createdByUserId: String,
     createdAt: OffsetDateTime,
-    @Column(name = "blob_location") var blobLocation: String,
     @ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "hanke_id") var hanke: HankeEntity,
-) : AttachmentEntity(id, fileName, contentType, size, createdByUserId, createdAt) {
+) : AttachmentEntity(id, fileName, contentType, size, blobLocation, createdByUserId, createdAt) {
     fun toDto(): HankeAttachmentMetadataDto =
         HankeAttachmentMetadataDto(
             id = id!!,
@@ -110,14 +113,14 @@ class ApplicationAttachmentEntity(
     fileName: String,
     contentType: String,
     size: Long,
+    blobLocation: String,
     createdByUserId: String,
     createdAt: OffsetDateTime,
-    @Column(name = "blob_location") var blobLocation: String?,
     @Column(name = "application_id") var applicationId: Long,
     @Enumerated(EnumType.STRING)
     @Column(name = "attachment_type")
     var attachmentType: ApplicationAttachmentType,
-) : AttachmentEntity(id, fileName, contentType, size, createdByUserId, createdAt) {
+) : AttachmentEntity(id, fileName, contentType, size, blobLocation, createdByUserId, createdAt) {
     fun toDto(): ApplicationAttachmentMetadataDto =
         ApplicationAttachmentMetadataDto(
             id = id!!,
@@ -169,8 +172,6 @@ interface HankeAttachmentRepository : JpaRepository<HankeAttachmentEntity, UUID>
 @Repository
 interface ApplicationAttachmentRepository : JpaRepository<ApplicationAttachmentEntity, UUID> {
     fun findByApplicationId(applicationId: Long): List<ApplicationAttachmentEntity>
-
-    fun findFirstByBlobLocationIsNull(): ApplicationAttachmentEntity?
 
     fun countByApplicationId(applicationId: Long): Int
 

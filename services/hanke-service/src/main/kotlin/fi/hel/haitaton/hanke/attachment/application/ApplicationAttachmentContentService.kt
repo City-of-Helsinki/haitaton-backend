@@ -1,14 +1,12 @@
 package fi.hel.haitaton.hanke.attachment.application
 
 import fi.hel.haitaton.hanke.attachment.azure.Container
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentContentRepository
-import fi.hel.haitaton.hanke.attachment.common.AttachmentMetadata
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.DownloadNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.FileClient
 import java.util.UUID
 import mu.KotlinLogging
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 
@@ -16,14 +14,13 @@ private val logger = KotlinLogging.logger {}
 
 @Service
 class ApplicationAttachmentContentService(
-    val contentRepository: ApplicationAttachmentContentRepository,
     val fileClient: FileClient,
 ) {
-    fun save(
+    fun upload(
         filename: String,
         contentType: MediaType,
-        applicationId: Long,
-        content: ByteArray
+        content: ByteArray,
+        applicationId: Long
     ): String {
         val blobPath = generateBlobPath(applicationId)
         fileClient.upload(Container.HAKEMUS_LIITTEET, blobPath, filename, contentType, content)
@@ -45,24 +42,15 @@ class ApplicationAttachmentContentService(
         logger.info { "Deleted all attachment content from application $applicationId" }
     }
 
-    fun find(attachment: AttachmentMetadata): ByteArray =
-        attachment.blobLocation?.let { readFromFile(it, attachment.id) }
-            ?: readFromDatabase(attachment.id)
-
-    fun readFromFile(location: String, attachmentId: UUID): ByteArray {
-        return try {
-            fileClient.download(Container.HAKEMUS_LIITTEET, location).content.toBytes()
+    fun find(attachment: ApplicationAttachmentMetadata): ByteArray =
+        try {
+            fileClient
+                .download(Container.HAKEMUS_LIITTEET, attachment.blobLocation)
+                .content
+                .toBytes()
         } catch (e: DownloadNotFoundException) {
-            throw AttachmentNotFoundException(attachmentId)
+            throw AttachmentNotFoundException(attachment.id)
         }
-    }
-
-    fun readFromDatabase(attachmentId: UUID): ByteArray =
-        contentRepository.findByIdOrNull(attachmentId)?.content
-            ?: run {
-                logger.error { "Content not found for hakemus attachment $attachmentId" }
-                throw AttachmentNotFoundException(attachmentId)
-            }
 
     companion object {
         fun generateBlobPath(applicationId: Long) =

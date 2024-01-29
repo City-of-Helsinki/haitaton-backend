@@ -77,7 +77,7 @@ object Asserts {
         assertThat(actual).contains("/")
         val idPart = actual.substringBefore("/")
         val uuidPart = actual.substringAfter("/")
-        assertThat(idPart.toIntOrNull()).isEqualTo(id)
+        assertThat(idPart.toLongOrNull()).isEqualTo(id.toLong())
         assertThat(UUID.fromString(uuidPart)).isNotNull()
     }
 }
