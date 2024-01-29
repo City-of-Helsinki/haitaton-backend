@@ -241,10 +241,10 @@ class HankeKayttajaFactory(
                 tunnistautunut = tunnistautunut
             )
 
-        fun generateHankeKayttaja(i: Int = 1, vararg roolit: ContactType): HankeKayttajaDto =
+        fun createHankeKayttaja(i: Int = 1, vararg roolit: ContactType): HankeKayttajaDto =
             createDto(i, roolit = roolit.toList(), tunnistautunut = (i % 2 == 0))
 
-        fun generateHankeKayttajat(
+        fun createHankeKayttajat(
             amount: Int = 3,
             roolit: List<ContactType> = emptyList()
         ): List<HankeKayttajaDto> =

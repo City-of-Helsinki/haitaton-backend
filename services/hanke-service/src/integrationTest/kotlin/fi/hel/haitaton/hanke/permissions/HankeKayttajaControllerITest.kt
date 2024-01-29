@@ -281,13 +281,13 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             val hanke = HankeFactory.create()
             val testData =
                 listOf(
-                    HankeKayttajaFactory.generateHankeKayttaja(
+                    HankeKayttajaFactory.createHankeKayttaja(
                         1,
                         ContactType.OMISTAJA,
                         ContactType.MUU
                     ),
-                    HankeKayttajaFactory.generateHankeKayttaja(2),
-                    HankeKayttajaFactory.generateHankeKayttaja(3),
+                    HankeKayttajaFactory.createHankeKayttaja(2),
+                    HankeKayttajaFactory.createHankeKayttaja(3),
                 )
             every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
             every { hankeService.findIdentifier(HANKE_TUNNUS) } returns hanke.identifier()
