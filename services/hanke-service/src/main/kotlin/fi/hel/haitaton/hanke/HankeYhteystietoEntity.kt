@@ -63,6 +63,7 @@ class HankeYhteystietoEntity(
     @ManyToOne(fetch = EAGER)
     @JoinColumn(name = "hankeid")
     var hanke: HankeEntity? = null,
+    @JsonView(ChangeLogView::class)
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hankeYhteystieto",

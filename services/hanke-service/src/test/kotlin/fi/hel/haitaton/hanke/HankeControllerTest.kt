@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.Hankevaihe
 import fi.hel.haitaton.hanke.domain.geometriat
+import fi.hel.haitaton.hanke.factory.HankeBuilder.Companion.toModifyRequest
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -185,14 +186,12 @@ class HankeControllerTest {
                 modifiedAt = null,
                 status = HankeStatus.DRAFT
             )
-
-        // mock HankeService response
-        every { hankeService.updateHanke(partialHanke) }
+        val request = partialHanke.toModifyRequest()
+        every { hankeService.updateHanke(hanketunnus, request) }
             .returns(partialHanke.copy(modifiedBy = username, modifiedAt = getCurrentTimeUTC()))
         every { permissionService.hasPermission(123, username, PermissionCode.EDIT) }.returns(true)
 
-        // Actual call
-        val response: Hanke = hankeController.updateHanke(partialHanke, hanketunnus)
+        val response: Hanke = hankeController.updateHanke(request, hanketunnus)
 
         assertThat(response).isNotNull()
         assertThat(response.nimi).isEqualTo("hankkeen nimi")
@@ -200,29 +199,12 @@ class HankeControllerTest {
     }
 
     @Test
-    fun `test that the updateHanke will throw if mismatch in hanke tunnus payload vs path`() {
-        val hankeUpdate = HankeFactory.create()
-        val existingHanke = HankeFactory.create(hankeTunnus = "wrong")
-        every { permissionService.hasPermission(existingHanke.id, username, PermissionCode.EDIT) }
-            .returns(true)
-        every { hankeAuthorizer.authorizeHankeTunnus("wrong", PermissionCode.EDIT) } returns true
-
-        val failure = assertFailure { hankeController.updateHanke(hankeUpdate, "wrong") }
-
-        failure.all {
-            hasClass(HankeArgumentException::class)
-            messageContains(
-                "Hanketunnus mismatch. (In payload=${hankeUpdate.hankeTunnus}, In path=wrong)"
-            )
-        }
-    }
-
-    @Test
     fun `test that the updateHanke will give validation errors from invalid hanke data for name`() {
+        val hanketunnus = "id123"
         val partialHanke =
             Hanke(
                 id = 0,
-                hankeTunnus = "id123",
+                hankeTunnus = hanketunnus,
                 nimi = "",
                 kuvaus = "",
                 onYKTHanke = false,
@@ -234,15 +216,15 @@ class HankeControllerTest {
                 modifiedAt = null,
                 status = HankeStatus.DRAFT
             )
+        val request = partialHanke.toModifyRequest()
+        every { hankeService.loadHanke(hanketunnus) }.returns(HankeFactory.create())
+        every { hankeService.updateHanke(hanketunnus, request) }.returns(partialHanke)
 
-        every { hankeService.loadHanke("id123") }.returns(HankeFactory.create())
-        every { hankeService.updateHanke(partialHanke) }.returns(partialHanke)
-
-        val failure = assertFailure { hankeController.updateHanke(partialHanke, "id123") }
+        val failure = assertFailure { hankeController.updateHanke(request, "id123") }
 
         failure.all {
             hasClass(ConstraintViolationException::class)
-            messageContains("updateHanke.hanke.nimi: " + HankeError.HAI1002.toString())
+            messageContains("updateHanke.hankeUpdate.nimi: " + HankeError.HAI1002.toString())
         }
         verify { disclosureLogService wasNot Called }
     }

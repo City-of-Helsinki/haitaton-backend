@@ -2,9 +2,9 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.domain.Hankealue
+import fi.hel.haitaton.hanke.domain.ModifyHankealueRequest
 import fi.hel.haitaton.hanke.domain.NewGeometriat
 import fi.hel.haitaton.hanke.domain.NewHankealue
-import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
@@ -19,7 +19,7 @@ class HankealueService(
     private val tormaystarkasteluService: TormaystarkasteluLaskentaService
 ) {
 
-    fun mergeAlueetToHanke(incoming: List<SavedHankealue>, existingHanke: HankeEntity) {
+    fun mergeAlueetToHanke(incoming: List<ModifyHankealueRequest>, existingHanke: HankeEntity) {
         mergeDataInto(incoming, existingHanke.alueet) { source, target ->
             copyNonNullHankealueFieldsToEntity(existingHanke.hankeTunnus, source, target)
         }

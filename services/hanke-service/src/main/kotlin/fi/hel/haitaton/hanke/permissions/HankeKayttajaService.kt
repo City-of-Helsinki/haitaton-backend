@@ -42,6 +42,17 @@ class HankeKayttajaService(
         hankekayttajaRepository.findByHankeId(hankeId).map { it.toDto() }
 
     @Transactional(readOnly = true)
+    fun getKayttajaForHanke(kayttajaId: UUID, hankeId: Int): HankekayttajaEntity {
+        val kayttaja =
+            hankekayttajaRepository.findByIdOrNull(kayttajaId)
+                ?: throw HankeKayttajaNotFoundException(kayttajaId)
+        if (kayttaja.hankeId != hankeId) {
+            throw HankeKayttajaNotFoundException(kayttajaId)
+        }
+        return kayttaja
+    }
+
+    @Transactional(readOnly = true)
     fun getKayttajaByUserId(hankeId: Int, userId: String): HankekayttajaEntity? {
         val permission = permissionService.findPermission(hankeId, userId)
         if (permission == null) {

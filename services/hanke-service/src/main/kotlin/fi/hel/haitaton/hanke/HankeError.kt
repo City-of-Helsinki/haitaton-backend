@@ -77,8 +77,10 @@ class HankeNotFoundException(val hankeTunnus: String?) :
 
 class HankeArgumentException(message: String) : RuntimeException(message)
 
-class HankeYhteystietoNotFoundException(val hankeId: Int, ytId: Int) :
-    RuntimeException("HankeYhteystiedot $ytId not found for Hanke $hankeId")
+class HankeYhteystietoNotFoundException(val hanke: HankeIdentifier, ytId: Int) :
+    RuntimeException(
+        "HankeYhteystieto not found for Hanke, yhteystieto: $ytId, ${hanke.logString()}"
+    )
 
 class HankeAlluConflictException(message: String) : RuntimeException(message)
 
