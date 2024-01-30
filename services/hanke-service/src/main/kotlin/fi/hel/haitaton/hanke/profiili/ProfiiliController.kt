@@ -23,6 +23,7 @@ private val logger = KotlinLogging.logger {}
 
 @RestController
 @RequestMapping("/profiili")
+@SecurityRequirement(name = "bearerAuth")
 class ProfiiliController(private val profiiliClient: ProfiiliClient) {
 
     @GetMapping("/verified-name")
@@ -33,7 +34,6 @@ class ProfiiliController(private val profiiliClient: ProfiiliClient) {
         responseCode = "404",
         content = [Content(schema = Schema(implementation = HankeError::class))]
     )
-    @SecurityRequirement(name = "bearerAuth")
     fun verifiedName(
         @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext
     ): Names {
