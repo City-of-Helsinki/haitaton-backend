@@ -6,7 +6,7 @@ import fi.hel.haitaton.hanke.MAXIMUM_DATE
 import fi.hel.haitaton.hanke.MAXIMUM_HANKE_ALUE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_HANKE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_TYOMAAKATUOSOITE_LENGTH
-import fi.hel.haitaton.hanke.domain.Hanke
+import fi.hel.haitaton.hanke.domain.HankeRequest
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.Yhteystieto
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
@@ -21,10 +21,10 @@ import fi.hel.haitaton.hanke.validation.Validators.validateTrue
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
 
-class HankeValidator : ConstraintValidator<ValidHanke, Hanke> {
+class HankeValidator : ConstraintValidator<ValidHanke, HankeRequest> {
 
     /** isValid collects all the validation errors and returns them */
-    override fun isValid(hanke: Hanke?, context: ConstraintValidatorContext): Boolean {
+    override fun isValid(hanke: HankeRequest?, context: ConstraintValidatorContext): Boolean {
         if (hanke == null) {
             context
                 .buildConstraintViolationWithTemplate(HankeError.HAI1002.toString())
@@ -49,7 +49,7 @@ private fun ConstraintValidatorContext.addViolation(error: HankeError, node: Str
 }
 
 /** Doesn't check hanke alue, because they use a different error code. */
-private fun Hanke.validate() =
+private fun HankeRequest.validate() =
     validate { notBlank(nimi, "nimi") }
         .and { nimi.notLongerThan(MAXIMUM_HANKE_NIMI_LENGTH, "nimi") }
         .whenNotNull(tyomaaKatuosoite) {

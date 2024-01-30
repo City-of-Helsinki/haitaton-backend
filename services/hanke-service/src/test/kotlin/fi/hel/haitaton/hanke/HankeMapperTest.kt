@@ -71,13 +71,13 @@ class HankeMapperTest {
         )
 
     private fun HankeEntity.yhteystietoCreatedAt(contactType: ContactType) =
-        listOfHankeYhteystieto
+        yhteystiedot
             .find { it.contactType == contactType }
             ?.createdAt
             ?.let { ZonedDateTime.of(it, TZ_UTC) }
 
     private fun HankeEntity.yhteystietoModifiedAt(contactType: ContactType) =
-        listOfHankeYhteystieto
+        yhteystiedot
             .find { it.contactType == contactType }
             ?.modifiedAt
             ?.let { ZonedDateTime.of(it, TZ_UTC) }

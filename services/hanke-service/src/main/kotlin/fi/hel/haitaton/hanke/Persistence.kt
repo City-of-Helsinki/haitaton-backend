@@ -58,7 +58,7 @@ class HankeEntity(
         cascade = [CascadeType.ALL],
         orphanRemoval = true
     )
-    var listOfHankeYhteystieto: MutableList<HankeYhteystietoEntity> = mutableListOf(),
+    var yhteystiedot: MutableList<HankeYhteystietoEntity> = mutableListOf(),
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hanke",
@@ -99,14 +99,13 @@ class HankeEntity(
     fun addYhteystieto(yhteystieto: HankeYhteystietoEntity) {
         // TODO: should check that the given entity is not yet connected to another Hanke, or
         // if already connected to this hanke (see addTormaystarkasteluTulos())
-        listOfHankeYhteystieto.add(yhteystieto)
+        yhteystiedot.add(yhteystieto)
         yhteystieto.hanke = this
     }
 
     fun removeYhteystieto(yhteystieto: HankeYhteystietoEntity) {
-        // NOTE: this relies on equals() to match yhteystietos almost fully.
-        if (listOfHankeYhteystieto.contains(yhteystieto)) {
-            listOfHankeYhteystieto.remove(yhteystieto)
+        yhteystieto.id?.let { id ->
+            yhteystiedot.removeAll { it.id == id }
             yhteystieto.hanke = null
         }
     }

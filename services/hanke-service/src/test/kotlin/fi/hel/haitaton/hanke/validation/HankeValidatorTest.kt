@@ -11,6 +11,7 @@ import fi.hel.haitaton.hanke.MAXIMUM_HANKE_NIMI_LENGTH
 import fi.hel.haitaton.hanke.MAXIMUM_TYOMAAKATUOSOITE_LENGTH
 import fi.hel.haitaton.hanke.domain.YhteystietoTyyppi.YKSITYISHENKILO
 import fi.hel.haitaton.hanke.factory.DateFactory
+import fi.hel.haitaton.hanke.factory.HankeBuilder.Companion.toModifyRequest
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withYhteystiedot
@@ -67,14 +68,14 @@ class HankeValidatorTest {
 
     @Test
     fun `succeeds for the default hanke`() {
-        val hanke = HankeFactory.create()
+        val hanke = HankeFactory.create().toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isTrue()
     }
 
     @Test
     fun `fails if nimi is empty`() {
-        val hanke = HankeFactory.create(nimi = "")
+        val hanke = HankeFactory.create(nimi = "").toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
@@ -83,14 +84,14 @@ class HankeValidatorTest {
 
     @Test
     fun `succeeds if nimi is of max length`() {
-        val hanke = HankeFactory.create(nimi = maxHankeName)
+        val hanke = HankeFactory.create(nimi = maxHankeName).toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isTrue()
     }
 
     @Test
     fun `fails if nimi is too long`() {
-        val hanke = HankeFactory.create(nimi = maxHankeName + "X")
+        val hanke = HankeFactory.create(nimi = maxHankeName + "X").toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
@@ -99,21 +100,25 @@ class HankeValidatorTest {
 
     @Test
     fun `succeeds if tyomaaKatuosoite is null`() {
-        val hanke = HankeFactory.create().apply { tyomaaKatuosoite = null }
+        val hanke = HankeFactory.create().apply { tyomaaKatuosoite = null }.toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isTrue()
     }
 
     @Test
     fun `succeeds if tyomaaKatuosoite is almost too long`() {
-        val hanke = HankeFactory.create().apply { tyomaaKatuosoite = maxTyomaaOsoite }
+        val hanke =
+            HankeFactory.create().apply { tyomaaKatuosoite = maxTyomaaOsoite }.toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isTrue()
     }
 
     @Test
     fun `fails if tyomaaKatuosoite is too long`() {
-        val hanke = HankeFactory.create().apply { tyomaaKatuosoite = maxTyomaaOsoite + "X" }
+        val hanke =
+            HankeFactory.create()
+                .apply { tyomaaKatuosoite = maxTyomaaOsoite + "X" }
+                .toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
@@ -122,14 +127,14 @@ class HankeValidatorTest {
 
     @Test
     fun `succeeds for the default hanke with an alue`() {
-        val hanke = HankeFactory.create().withHankealue()
+        val hanke = HankeFactory.create().withHankealue().toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isTrue()
     }
 
     @Test
     fun `fails if hanke alue nimi is empty`() {
-        val hanke = HankeFactory.create().withHankealue(nimi = "")
+        val hanke = HankeFactory.create().withHankealue(nimi = "").toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
@@ -138,14 +143,15 @@ class HankeValidatorTest {
 
     @Test
     fun `succeeds if hanke alue nimi is almost too long`() {
-        val hanke = HankeFactory.create().withHankealue(nimi = maxHankealueName)
+        val hanke = HankeFactory.create().withHankealue(nimi = maxHankealueName).toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isTrue()
     }
 
     @Test
     fun `fails if hanke alue nimi is too long`() {
-        val hanke = HankeFactory.create().withHankealue(nimi = maxHankealueName + "X")
+        val hanke =
+            HankeFactory.create().withHankealue(nimi = maxHankealueName + "X").toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
@@ -154,7 +160,10 @@ class HankeValidatorTest {
 
     @Test
     fun `fails if haitta alku pvm is too far in the future`() {
-        val hanke = HankeFactory.create().withHankealue(haittaAlkuPvm = MAXIMUM_DATE.plusDays(1))
+        val hanke =
+            HankeFactory.create()
+                .withHankealue(haittaAlkuPvm = MAXIMUM_DATE.plusDays(1))
+                .toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
@@ -164,7 +173,10 @@ class HankeValidatorTest {
 
     @Test
     fun `fails if haitta loppu pvm is too far in the future`() {
-        val hanke = HankeFactory.create().withHankealue(haittaLoppuPvm = MAXIMUM_DATE.plusDays(1))
+        val hanke =
+            HankeFactory.create()
+                .withHankealue(haittaLoppuPvm = MAXIMUM_DATE.plusDays(1))
+                .toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
@@ -174,7 +186,9 @@ class HankeValidatorTest {
     @Test
     fun `succeeds if haitta loppu pvm is same as start date`() {
         val hanke =
-            HankeFactory.create().withHankealue(haittaLoppuPvm = DateFactory.getStartDatetime())
+            HankeFactory.create()
+                .withHankealue(haittaLoppuPvm = DateFactory.getStartDatetime())
+                .toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isTrue()
     }
@@ -184,6 +198,7 @@ class HankeValidatorTest {
         val hanke =
             HankeFactory.create()
                 .withHankealue(haittaLoppuPvm = DateFactory.getStartDatetime().minusMinutes(1))
+                .toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
@@ -196,6 +211,7 @@ class HankeValidatorTest {
             HankeFactory.create(nimi = "")
                 .withHankealue(nimi = maxHankealueName + "X")
                 .withHankealue(haittaLoppuPvm = MAXIMUM_DATE.plusDays(1))
+                .toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
 
@@ -206,7 +222,7 @@ class HankeValidatorTest {
 
     @Test
     fun `when ytunnus is present and valid should return ok`() {
-        val hanke = HankeFactory.create().withYhteystiedot()
+        val hanke = HankeFactory.create().withYhteystiedot().toModifyRequest()
 
         val result = hankeValidator.isValid(hanke, context)
 
@@ -218,9 +234,10 @@ class HankeValidatorTest {
     @Test
     fun `when ytunnus is present and not valid should not return ok`() {
         val hanke =
-            HankeFactory.create().withYhteystiedot().apply {
-                rakennuttajat = rakennuttajat.modify(ytunnus = "1580375-3")
-            }
+            HankeFactory.create()
+                .withYhteystiedot()
+                .apply { rakennuttajat = rakennuttajat.modify(ytunnus = "1580375-3") }
+                .toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
         verifyError(HankeError.HAI1002, "rakennuttajat[0].ytunnus")
@@ -229,12 +246,15 @@ class HankeValidatorTest {
     @Test
     fun `when tyyppi is yksityishenkilo or null and ytunnus null should return ok`() {
         val hanke =
-            HankeFactory.create().withYhteystiedot().apply {
-                omistajat = omistajat.modify(ytunnus = null, tyyppi = null)
-                rakennuttajat = rakennuttajat.modify(ytunnus = null, tyyppi = YKSITYISHENKILO)
-                toteuttajat = toteuttajat.modify(ytunnus = null, null)
-                muut = muut.modify(ytunnus = null, YKSITYISHENKILO)
-            }
+            HankeFactory.create()
+                .withYhteystiedot()
+                .apply {
+                    omistajat = omistajat.modify(ytunnus = null, tyyppi = null)
+                    rakennuttajat = rakennuttajat.modify(ytunnus = null, tyyppi = YKSITYISHENKILO)
+                    toteuttajat = toteuttajat.modify(ytunnus = null, null)
+                    muut = muut.modify(ytunnus = null, YKSITYISHENKILO)
+                }
+                .toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isTrue()
     }
@@ -242,9 +262,13 @@ class HankeValidatorTest {
     @Test
     fun `when tyyppi is yksityishenkilo and ytunnus is not null should not return ok`() {
         val hanke =
-            HankeFactory.create().withYhteystiedot().apply {
-                omistajat = omistajat.modify(ytunnus = DEFAULT_YTUNNUS, tyyppi = YKSITYISHENKILO)
-            }
+            HankeFactory.create()
+                .withYhteystiedot()
+                .apply {
+                    omistajat =
+                        omistajat.modify(ytunnus = DEFAULT_YTUNNUS, tyyppi = YKSITYISHENKILO)
+                }
+                .toModifyRequest()
 
         assertThat(hankeValidator.isValid(hanke, context)).isFalse()
         verifyError(HankeError.HAI1002, "omistajat[0].ytunnus")

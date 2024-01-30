@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.toUUID
+import java.util.UUID
 
 object HankeYhteyshenkiloFactory {
 
@@ -38,4 +39,13 @@ object HankeYhteyshenkiloFactory {
                 hankeYhteystieto = hankeYhteystieto,
             )
         }
+
+    fun kake(id: UUID) =
+        Yhteyshenkilo(
+            id = id,
+            etunimi = HankeKayttajaFactory.KAKE,
+            sukunimi = HankeKayttajaFactory.KATSELIJA,
+            email = HankeKayttajaFactory.KAKE_EMAIL,
+            puhelinnumero = HankeKayttajaFactory.KAKE_PUHELIN
+        )
 }

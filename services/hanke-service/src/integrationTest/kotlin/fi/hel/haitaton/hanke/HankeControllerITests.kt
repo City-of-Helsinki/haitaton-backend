@@ -534,7 +534,8 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
             } returns true
-            every { hankeService.updateHanke(any()) }.returns(updatedHanke)
+            every { hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any()) }
+                .returns(updatedHanke)
 
             put(url, hankeToBeUpdated)
                 .andExpect(status().isOk)
@@ -543,7 +544,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
-                hankeService.updateHanke(any())
+                hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any())
                 disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, USERNAME)
             }
         }
@@ -582,7 +583,8 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             every {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
             } returns true
-            every { hankeService.updateHanke(any()) } returns expectedHanke
+            every { hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any()) } returns
+                expectedHanke
 
             put(url, hankeToBeUpdated)
                 .andExpect(status().isOk)
@@ -600,7 +602,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
-                hankeService.updateHanke(any())
+                hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any())
                 disclosureLogService.saveDisclosureLogsForHanke(expectedHanke, USERNAME)
             }
         }

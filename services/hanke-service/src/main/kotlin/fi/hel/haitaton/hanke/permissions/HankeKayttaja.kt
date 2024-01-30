@@ -1,7 +1,10 @@
 package fi.hel.haitaton.hanke.permissions
 
+import com.fasterxml.jackson.annotation.JsonView
+import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeYhteyshenkiloEntity
+import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.domain.HasId
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.persistence.CascadeType
@@ -48,8 +51,9 @@ data class HankeKayttajaDto(
 
 @Entity
 @Table(name = "hankekayttaja")
+@JsonView(NotInChangeLogView::class)
 class HankekayttajaEntity(
-    @Id val id: UUID = UUID.randomUUID(),
+    @JsonView(ChangeLogView::class) @Id val id: UUID = UUID.randomUUID(),
 
     /** Related Hanke. */
     @Column(name = "hanke_id") val hankeId: Int,
