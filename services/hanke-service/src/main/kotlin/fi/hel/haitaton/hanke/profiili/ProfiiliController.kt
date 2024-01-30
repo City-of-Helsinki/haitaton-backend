@@ -1,6 +1,8 @@
 package fi.hel.haitaton.hanke.profiili
 
 import fi.hel.haitaton.hanke.HankeError
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.userId
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
@@ -24,7 +26,10 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/profiili")
 @SecurityRequirement(name = "bearerAuth")
-class ProfiiliController(private val profiiliClient: ProfiiliClient) {
+class ProfiiliController(
+    private val profiiliClient: ProfiiliClient,
+    private val disclosureLogService: DisclosureLogService
+) {
 
     @GetMapping("/verified-name")
     @Operation(summary = "Get verified name from Profiili")
@@ -37,7 +42,12 @@ class ProfiiliController(private val profiiliClient: ProfiiliClient) {
     fun verifiedName(
         @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext
     ): Names {
-        return profiiliClient.getVerifiedName(securityContext)
+        val verifiedName = profiiliClient.getVerifiedName(securityContext)
+        disclosureLogService.saveDisclosureLogsForProfiiliNimi(
+            securityContext.userId(),
+            verifiedName
+        )
+        return verifiedName
     }
 
     @ExceptionHandler(VerifiedNameNotFound::class)

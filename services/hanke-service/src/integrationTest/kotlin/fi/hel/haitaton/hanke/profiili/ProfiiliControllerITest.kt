@@ -8,10 +8,13 @@ import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import io.mockk.Called
+import io.mockk.Runs
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.every
+import io.mockk.just
 import io.mockk.verify
 import io.mockk.verifyAll
 import java.net.SocketTimeoutException
@@ -40,6 +43,7 @@ private const val BASE_URL = "/profiili"
 class ProfiiliControllerITest(@Autowired override val mockMvc: MockMvc) : ControllerTest {
 
     @Autowired private lateinit var profiiliClient: ProfiiliClient
+    @Autowired private lateinit var disclosureLogService: DisclosureLogService
 
     @BeforeEach
     fun clearMocks() {
@@ -61,6 +65,7 @@ class ProfiiliControllerITest(@Autowired override val mockMvc: MockMvc) : Contro
             get(url).andExpect(MockMvcResultMatchers.status().isUnauthorized)
 
             verify { profiiliClient wasNot Called }
+            verify { disclosureLogService wasNot Called }
         }
 
         @Test
@@ -71,6 +76,7 @@ class ProfiiliControllerITest(@Autowired override val mockMvc: MockMvc) : Contro
             get(url).andExpect(MockMvcResultMatchers.status().isNotFound)
 
             verifyAll { profiiliClient.getVerifiedName(any()) }
+            verify { disclosureLogService wasNot Called }
         }
 
         @Test
@@ -80,11 +86,13 @@ class ProfiiliControllerITest(@Autowired override val mockMvc: MockMvc) : Contro
             get(url).andExpect(MockMvcResultMatchers.status().isInternalServerError)
 
             verifyAll { profiiliClient.getVerifiedName(any()) }
+            verify { disclosureLogService wasNot Called }
         }
 
         @Test
         fun `returns verified names`() {
             every { profiiliClient.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
+            every { disclosureLogService.saveDisclosureLogsForProfiiliNimi(any(), any()) } just Runs
 
             val names: Names =
                 get(url).andExpect(MockMvcResultMatchers.status().isOk).andReturnBody()
@@ -94,7 +102,10 @@ class ProfiiliControllerITest(@Autowired override val mockMvc: MockMvc) : Contro
                 prop(Names::lastName).isEqualTo(ProfiiliFactory.DEFAULT_LAST_NAME)
                 prop(Names::givenName).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
             }
-            verifyAll { profiiliClient.getVerifiedName(any()) }
+            verifyAll {
+                profiiliClient.getVerifiedName(any())
+                disclosureLogService.saveDisclosureLogsForProfiiliNimi(any(), any())
+            }
         }
     }
 }
