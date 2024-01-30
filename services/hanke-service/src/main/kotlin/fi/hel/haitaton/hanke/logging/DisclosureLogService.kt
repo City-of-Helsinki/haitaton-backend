@@ -13,6 +13,7 @@ import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
+import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.toJsonString
 import org.springframework.stereotype.Service
 
@@ -33,6 +34,15 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     fun saveDisclosureLogsForProfiili(userId: String, gdprInfo: CollectionNode) {
         val entry = disclosureLogEntry(ObjectType.GDPR_RESPONSE, userId, gdprInfo)
         saveDisclosureLog(PROFIILI_AUDIT_LOG_USERID, UserRole.SERVICE, entry)
+    }
+
+    /**
+     * Save disclosure log for when we are reading the verfied name from Profiili. Write a single
+     * disclosure log entry with user names.
+     */
+    fun saveDisclosureLogsForProfiiliNimi(userId: String, names: Names) {
+        val entry = disclosureLogEntry(ObjectType.PROFIILI_NIMI, userId, names)
+        saveDisclosureLog(userId, UserRole.USER, entry)
     }
 
     /**

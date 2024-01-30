@@ -55,6 +55,7 @@ enum class ObjectType {
     KAYTTAJA_TUNNISTE,
     PERMISSION,
     YHTEYSTIETO,
+    PROFIILI_NIMI,
 }
 
 enum class UserRole {
