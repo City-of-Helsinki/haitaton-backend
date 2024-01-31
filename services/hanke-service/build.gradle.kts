@@ -98,7 +98,7 @@ dependencies {
     testImplementation("com.icegreen:greenmail-junit5:2.0.1")
 
     // Testcontainers
-    implementation(platform("org.testcontainers:testcontainers-bom:1.19.3"))
+    implementation(platform("org.testcontainers:testcontainers-bom:1.19.4"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
 
@@ -155,7 +155,7 @@ tasks {
     create("copyEmailTemplates", Copy::class) {
         group = "other"
         description = "Installs shared git hooks"
-        from(file("$buildDir/mjml/main/"))
+        from(file("${layout.buildDirectory}/mjml/main/"))
         into(file("${sourceSets.main.get().resources.srcDirs.first()}/email/template"))
         rename { "$it.mustache" }
         dependsOn(compileMjml)
@@ -165,7 +165,7 @@ tasks {
         mustRunAfter("test", "integrationTest")
         reports { xml.required.set(true) }
         executionData.setFrom(
-            fileTree(buildDir).include("/jacoco/test.exec", "/jacoco/integrationTest.exec")
+            fileTree(layout.buildDirectory).include("/jacoco/test.exec", "/jacoco/integrationTest.exec")
         )
     }
 
