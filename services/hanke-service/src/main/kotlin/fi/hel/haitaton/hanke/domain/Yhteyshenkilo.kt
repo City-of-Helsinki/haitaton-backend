@@ -8,6 +8,6 @@ data class Yhteyshenkilo(
     @field:Schema(description = "Id of the HankeKayttaja") val id: UUID,
     @field:Schema(description = "First name") val etunimi: String,
     @field:Schema(description = "Last name") val sukunimi: String,
-    @field:Schema(description = "Email address") val email: String,
+    @field:Schema(description = "Email address") val sahkoposti: String,
     @field:Schema(description = "Phone number") val puhelinnumero: String,
 )

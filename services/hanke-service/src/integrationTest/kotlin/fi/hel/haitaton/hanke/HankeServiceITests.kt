@@ -782,20 +782,20 @@ class HankeServiceITests(
         assertThat(result.omistajat)
             .single()
             .prop(HankeYhteystieto::yhteyshenkilot)
-            .extracting { it.email }
+            .extracting { it.sahkoposti }
             .containsExactlyInAnyOrder("kayttaja1", newEmail)
         assertThat(result.rakennuttajat)
-            .extracting { yhteystieto -> yhteystieto.yhteyshenkilot.map { it.email } }
+            .extracting { yhteystieto -> yhteystieto.yhteyshenkilot.map { it.sahkoposti } }
             .containsExactlyInAnyOrder(listOf<String>(), listOf("kayttaja1", "kayttaja2"))
         assertThat(result.toteuttajat)
             .single()
             .prop(HankeYhteystieto::yhteyshenkilot)
-            .extracting { it.email }
+            .extracting { it.sahkoposti }
             .containsExactly("kayttaja3")
         assertThat(result.muut)
             .single()
             .prop(HankeYhteystieto::yhteyshenkilot)
-            .extracting { it.email }
+            .extracting { it.sahkoposti }
             .containsExactly(newEmail)
 
         val yhteyshenkiloIdentifiers = hankeYhteyshenkiloRepository.findIds()
@@ -1852,7 +1852,7 @@ class HankeServiceITests(
             prop(Yhteyshenkilo::id).isNotNull()
             prop(Yhteyshenkilo::etunimi).isEqualTo(hankekayttajaInput.etunimi)
             prop(Yhteyshenkilo::sukunimi).isEqualTo(hankekayttajaInput.sukunimi)
-            prop(Yhteyshenkilo::email).isEqualTo(hankekayttajaInput.email)
+            prop(Yhteyshenkilo::sahkoposti).isEqualTo(hankekayttajaInput.email)
             prop(Yhteyshenkilo::puhelinnumero).isEqualTo(hankekayttajaInput.puhelin)
         }
     }
