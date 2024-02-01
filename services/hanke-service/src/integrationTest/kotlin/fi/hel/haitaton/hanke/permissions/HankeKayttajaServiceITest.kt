@@ -53,6 +53,8 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INP
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_RAKENNUTTAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_SUORITTAJA
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
+import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
+import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.identifier
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -60,6 +62,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
+import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
 import fi.hel.haitaton.hanke.test.Asserts.hasReceivers
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.auditEvent
@@ -1252,14 +1255,47 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     inner class CreatePermissionFromToken {
         private val tunniste = "Itf4UuErPqBHkhJF7CUAsu69"
         private val newUserId = "newUser"
+        private val securityContext = mockk<SecurityContext>()
+
+        @BeforeEach
+        fun setUp() {
+            every { securityContext.userId() } returns USERNAME
+            every { profiiliClient.getVerifiedName(any()) } returns ProfiiliFactory.DEFAULT_NAMES
+        }
 
         @Test
         fun `throws exception if tunniste doesn't exist`() {
-            assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, "fake") }
+            assertFailure {
+                    hankeKayttajaService.createPermissionFromToken(
+                        newUserId,
+                        "fake",
+                        securityContext
+                    )
+                }
                 .all {
                     hasClass(TunnisteNotFoundException::class)
                     messageContains(newUserId)
                     messageContains("fake")
+                }
+        }
+
+        @Test
+        fun `throws exception if cannot retrieve verified name from Profiili`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
+            every { profiiliClient.getVerifiedName(any()) } throws
+                VerifiedNameNotFound("Verified name not found from profile.")
+
+            assertFailure {
+                    hankeKayttajaService.createPermissionFromToken(
+                        newUserId,
+                        tunniste,
+                        securityContext
+                    )
+                }
+                .all {
+                    hasClass(VerifiedNameNotFound::class)
+                    messageContains("Verified name not found from profile.")
                 }
         }
 
@@ -1273,7 +1309,13 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 )
             kayttajaFactory.addToken(kayttaja)
 
-            assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, "existing") }
+            assertFailure {
+                    hankeKayttajaService.createPermissionFromToken(
+                        newUserId,
+                        "existing",
+                        securityContext
+                    )
+                }
                 .all {
                     hasClass(UserAlreadyHasPermissionException::class)
                     messageContains(newUserId)
@@ -1293,7 +1335,13 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                     kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS
                 )
 
-            assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, tunniste) }
+            assertFailure {
+                    hankeKayttajaService.createPermissionFromToken(
+                        newUserId,
+                        tunniste,
+                        securityContext
+                    )
+                }
                 .all {
                     hasClass(UserAlreadyHasPermissionException::class)
                     messageContains(newUserId)
@@ -1308,7 +1356,13 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val kayttaja = kayttajaFactory.saveIdentifiedUser(hanke.id, userId = "Other user")
             kayttajaFactory.addToken(kayttaja)
 
-            assertFailure { hankeKayttajaService.createPermissionFromToken(newUserId, "existing") }
+            assertFailure {
+                    hankeKayttajaService.createPermissionFromToken(
+                        newUserId,
+                        "existing",
+                        securityContext
+                    )
+                }
                 .all {
                     hasClass(PermissionAlreadyExistsException::class)
                     messageContains(newUserId)
@@ -1319,11 +1373,34 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         }
 
         @Test
+        fun `Updates name from Profiili`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val originalHankekayttaja =
+                kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
+
+            val kayttaja =
+                hankeKayttajaService.createPermissionFromToken(newUserId, tunniste, securityContext)
+
+            assertThat(kayttaja.nimi).isEqualTo("$DEFAULT_GIVEN_NAME $DEFAULT_LAST_NAME")
+            val hankeKayttaja = hankeKayttajaRepository.findById(kayttaja.id).get()
+            assertThat(hankeKayttaja).all {
+                prop(HankekayttajaEntity::etunimi).isEqualTo(DEFAULT_GIVEN_NAME)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(DEFAULT_LAST_NAME)
+                prop(HankekayttajaEntity::etunimi).isNotEqualTo(originalHankekayttaja.etunimi)
+                prop(HankekayttajaEntity::sukunimi).isNotEqualTo(originalHankekayttaja.sukunimi)
+                prop(HankekayttajaEntity::kutsuttuEtunimi)
+                    .isEqualTo(originalHankekayttaja.kutsuttuEtunimi)
+                prop(HankekayttajaEntity::kutsuttuSukunimi)
+                    .isEqualTo(originalHankekayttaja.kutsuttuSukunimi)
+            }
+        }
+
+        @Test
         fun `Creates a permission`() {
             val hanke = hankeFactory.builder(USERNAME).save()
             kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
 
-            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
+            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste, securityContext)
 
             val permission = permissionRepository.findOneByHankeIdAndUserId(hanke.id, newUserId)
             assertThat(permission)
@@ -1337,7 +1414,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val hanke = hankeFactory.builder(USERNAME).save()
             kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
 
-            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
+            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste, securityContext)
 
             assertThat(kayttajakutsuRepository.findAll()).isEmpty()
         }
@@ -1348,7 +1425,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             kayttajaFactory.saveUnidentifiedUser(hanke.id, tunniste = tunniste)
             auditLogRepository.deleteAll()
 
-            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste)
+            hankeKayttajaService.createPermissionFromToken(newUserId, tunniste, securityContext)
 
             val logs =
                 auditLogRepository.findAll().filter {
