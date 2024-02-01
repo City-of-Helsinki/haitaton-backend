@@ -196,11 +196,27 @@ class HankeKayttajaFactory(
         fun create(
             id: UUID = KAYTTAJA_ID,
             hankeId: Int = HankeFactory.defaultId,
-            nimi: String = PEKKA,
+            etunimi: String = KAKE,
+            sukunimi: String = KATSELIJA,
             sahkoposti: String = PEKKA_EMAIL,
+            puhelinnumero: String = KAKE_PUHELIN,
+            kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
+            roolit: List<ContactType> = emptyList(),
             permissionId: Int? = PERMISSION_ID,
-            kutsuId: UUID? = TUNNISTE_ID,
-        ): HankeKayttaja = HankeKayttaja(id, hankeId, nimi, sahkoposti, permissionId, kutsuId)
+            kayttajaTunnisteId: UUID? = TUNNISTE_ID,
+        ): HankeKayttaja =
+            HankeKayttaja(
+                id = id,
+                hankeId = hankeId,
+                etunimi = etunimi,
+                sukunimi = sukunimi,
+                sahkoposti = sahkoposti,
+                puhelinnumero = puhelinnumero,
+                kayttooikeustaso = kayttooikeustaso,
+                roolit = roolit,
+                permissionId = permissionId,
+                kayttajaTunnisteId = kayttajaTunnisteId
+            )
 
         fun createEntity(
             id: UUID = KAYTTAJA_ID,

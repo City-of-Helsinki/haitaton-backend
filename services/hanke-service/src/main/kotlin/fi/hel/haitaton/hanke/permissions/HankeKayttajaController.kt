@@ -4,7 +4,6 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.validation.ValidHanke
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
@@ -171,7 +170,7 @@ class HankeKayttajaController(
             "@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'CREATE_USER')"
     )
     fun createNewUser(
-        @ValidHanke @RequestBody request: NewUserRequest,
+        @RequestBody request: NewUserRequest,
         @PathVariable hankeTunnus: String
     ): HankeKayttajaDto {
         val hanke = hankeService.loadHanke(hankeTunnus)!!
@@ -233,7 +232,7 @@ have those same permissions.
             "@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'MODIFY_EDIT_PERMISSIONS')"
     )
     fun updatePermissions(
-        @ValidHanke @RequestBody permissions: PermissionUpdate,
+        @RequestBody permissions: PermissionUpdate,
         @PathVariable hankeTunnus: String
     ) {
         val hankeIdentifier = hankeService.findIdentifier(hankeTunnus)!!
@@ -343,6 +342,39 @@ of the token and link will be reset.
     )
     fun resendInvitations(@PathVariable kayttajaId: UUID) {
         hankeKayttajaService.resendInvitation(kayttajaId, currentUserId())
+    }
+
+    @PutMapping("/hankkeet/{hankeTunnus}/kayttajat/self")
+    @Operation(
+        summary = "Update the user's own contact information",
+        description =
+            """
+Updates the contact information of the hankekayttaja the user has in the hanke.
+
+Returns the updated hankekayttaja.
+"""
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Information updated",
+                    responseCode = "200",
+                ),
+                ApiResponse(
+                    description = "Hanke not found or not authorized",
+                    responseCode = "404",
+                ),
+            ]
+    )
+    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
+    fun updateOwnContactInfo(
+        @RequestBody update: ContactUpdate,
+        @PathVariable hankeTunnus: String
+    ): HankeKayttajaDto {
+        return hankeKayttajaService
+            .updateOwnContactInfo(hankeTunnus, update, currentUserId())
+            .toDto()
     }
 
     data class Tunnistautuminen(val tunniste: String)
