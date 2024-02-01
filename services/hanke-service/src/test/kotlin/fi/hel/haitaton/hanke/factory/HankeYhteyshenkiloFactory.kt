@@ -15,7 +15,7 @@ object HankeYhteyshenkiloFactory {
             id = i.toUUID(),
             etunimi = "Etu$i",
             sukunimi = "Suku$i",
-            email = "email$i",
+            sahkoposti = "email$i",
             puhelinnumero = "010$i",
         )
 
@@ -32,7 +32,7 @@ object HankeYhteyshenkiloFactory {
                         hankeId = hankeYhteystieto.hanke!!.id,
                         etunimi = etunimi,
                         sukunimi = sukunimi,
-                        sahkoposti = email,
+                        sahkoposti = sahkoposti,
                         puhelin = puhelinnumero,
                         permission = null,
                     ),
@@ -45,7 +45,7 @@ object HankeYhteyshenkiloFactory {
             id = id,
             etunimi = HankeKayttajaFactory.KAKE,
             sukunimi = HankeKayttajaFactory.KATSELIJA,
-            email = HankeKayttajaFactory.KAKE_EMAIL,
+            sahkoposti = HankeKayttajaFactory.KAKE_EMAIL,
             puhelinnumero = HankeKayttajaFactory.KAKE_PUHELIN
         )
 }
