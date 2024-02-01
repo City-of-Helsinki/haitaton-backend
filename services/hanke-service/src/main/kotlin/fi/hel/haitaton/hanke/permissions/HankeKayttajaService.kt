@@ -210,7 +210,9 @@ class HankeKayttajaService(
 
         val kayttaja = tunnisteEntity.hankekayttaja
 
-        updateVerifiedName(userId, kayttaja, securityContext)
+        if (updateVerifiedName(kayttaja, securityContext)) {
+            logger.info { "Updated user's name from Profiili. userId = $userId" }
+        }
 
         permissionService.findPermission(kayttaja.hankeId, userId)?.let { permission ->
             throw UserAlreadyHasPermissionException(userId, kayttaja.id, permission.id)
@@ -236,16 +238,15 @@ class HankeKayttajaService(
     }
 
     private fun updateVerifiedName(
-        userId: String,
         kayttaja: HankekayttajaEntity,
         securityContext: SecurityContext
-    ) {
+    ): Boolean {
         val (_, lastName, givenName) = profiiliClient.getVerifiedName(securityContext)
-        if (givenName != kayttaja.etunimi || lastName != kayttaja.sukunimi) {
+        return if (givenName != kayttaja.etunimi || lastName != kayttaja.sukunimi) {
             kayttaja.etunimi = givenName
             kayttaja.sukunimi = lastName
-            logger.info { "Updated user's name from Profiili, userId = $userId" }
-        }
+            true
+        } else false
     }
 
     @Transactional
