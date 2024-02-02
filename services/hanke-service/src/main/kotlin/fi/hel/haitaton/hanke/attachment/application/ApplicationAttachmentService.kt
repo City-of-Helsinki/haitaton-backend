@@ -1,12 +1,7 @@
 package fi.hel.haitaton.hanke.attachment.application
 
-import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
-import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
-import fi.hel.haitaton.hanke.allu.Attachment as AlluAttachment
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.Application
-import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
@@ -62,7 +57,13 @@ class ApplicationAttachmentService(
         val filename = AttachmentValidator.validFilename(attachment.originalFilename)
         val application = findApplication(applicationId)
 
-        ensureApplicationIsPending(application)
+        if (isInAllu(application)) {
+            logger.warn {
+                "Application is in Allu, attachments cannot be added. applicationId = $applicationId, alluid = ${application.alluid}"
+            }
+            throw ApplicationInAlluException(application.id, application.alluid)
+        }
+
         val contentType = ensureContentTypeIsValid(attachment.contentType)
         scanAttachment(filename, attachment.bytes)
         metadataService.ensureRoomForAttachment(applicationId)
@@ -89,22 +90,6 @@ class ApplicationAttachmentService(
                 throw e
             }
 
-        try {
-            application.alluid?.let {
-                val alluAttachment =
-                    AlluAttachment(contentType.toString(), filename, attachment.bytes)
-                cableReportService.addAttachment(it, alluAttachment)
-                logger.info {
-                    "Cable report ${application.alluid} sent for application $applicationId"
-                }
-            }
-        } catch (e: Exception) {
-            logger.error(e) { "Allu upload failed, deleting attachment." }
-            metadataService.deleteAttachmentById(newAttachment.id)
-            attachmentContentService.delete(blobPath)
-            throw e
-        }
-
         logger.info {
             "Added attachment metadata ${newAttachment.id} and content $blobPath for application $applicationId"
         }
@@ -118,7 +103,7 @@ class ApplicationAttachmentService(
 
         if (isInAllu(application)) {
             logger.warn {
-                "Application ${application.id} is in Allu, attachments cannot be deleted."
+                "Application is in Allu, attachments cannot be deleted. applicationId = ${application.id}, alluid = ${application.alluid}"
             }
             throw ApplicationInAlluException(application.id, application.alluid)
         }
@@ -159,33 +144,9 @@ class ApplicationAttachmentService(
         }
     }
 
-    private fun ensureApplicationIsPending(application: Application) {
-        if (!isPending(application.alluid, application.alluStatus)) {
-            logger.warn { "Application is processing, cannot add attachment." }
-            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
-        }
-    }
-
     private fun ensureContentTypeIsValid(contentType: String?): MediaType =
         contentType?.let { MediaType.parseMediaType(it) }
             ?: throw AttachmentInvalidException("Content-type was not set")
-
-    /** Application considered pending if no alluId or status null, pending, or pending_client. */
-    private fun isPending(alluId: Int?, alluStatus: ApplicationStatus?): Boolean {
-        alluId ?: return true
-        return when (alluStatus) {
-            null,
-            PENDING,
-            PENDING_CLIENT -> alluPending(alluId)
-            else -> false
-        }
-    }
-
-    /** Check current status from Allu. */
-    private fun alluPending(alluId: Int): Boolean {
-        val status = cableReportService.getApplicationInformation(alluId).status
-        return listOf(PENDING, PENDING_CLIENT).contains(status)
-    }
 
     private fun isInAllu(application: Application): Boolean = application.alluid != null
 }
