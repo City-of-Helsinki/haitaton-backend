@@ -65,10 +65,10 @@ class HankekayttajaEntity(
     val sukunimi: String,
 
     /** Phone number. */
-    val puhelin: String,
+    var puhelin: String,
 
     /** Email address. */
-    val sahkoposti: String,
+    var sahkoposti: String,
 
     /** Users first name used in a Hanke invitation. */
     @Column(name = "kutsuttu_etunimi") val kutsuttuEtunimi: String? = null,
@@ -111,8 +111,12 @@ class HankekayttajaEntity(
         HankeKayttaja(
             id = id,
             hankeId = hankeId,
-            nimi = fullName(),
+            etunimi = etunimi,
+            sukunimi = sukunimi,
             sahkoposti = sahkoposti,
+            puhelinnumero = puhelin,
+            kayttooikeustaso = deriveKayttooikeustaso(),
+            roolit = deriveRoolit(),
             permissionId = permission?.id,
             kayttajaTunnisteId = kayttajakutsu?.id,
         )
@@ -140,11 +144,30 @@ class HankekayttajaEntity(
 data class HankeKayttaja(
     override val id: UUID,
     val hankeId: Int,
-    val nimi: String,
+    val etunimi: String,
+    val sukunimi: String,
     val sahkoposti: String,
+    val puhelinnumero: String,
+    val kayttooikeustaso: Kayttooikeustaso?,
+    val roolit: List<ContactType>,
     val permissionId: Int?,
     val kayttajaTunnisteId: UUID?
-) : HasId<UUID>
+) : HasId<UUID> {
+    fun toDto(): HankeKayttajaDto =
+        HankeKayttajaDto(
+            id = id,
+            sahkoposti = sahkoposti,
+            etunimi = etunimi,
+            sukunimi = sukunimi,
+            nimi = fullName(),
+            puhelinnumero = puhelinnumero,
+            kayttooikeustaso = kayttooikeustaso,
+            roolit = roolit,
+            tunnistautunut = permissionId != null,
+        )
+
+    private fun fullName() = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
+}
 
 @Repository
 interface HankekayttajaRepository : JpaRepository<HankekayttajaEntity, UUID> {

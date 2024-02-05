@@ -753,6 +753,49 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             }
         }
     }
+
+    @Nested
+    inner class UpdateOwnContactInfo {
+        private val hanketunnus = "HAI98-AAA"
+        private val url = "/hankkeet/$hanketunnus/kayttajat/self"
+        private val update = ContactUpdate("updated@email.test", "9991111")
+
+        @Test
+        fun `Returns 404 if hanke not found or user doesn't have permission for it`() {
+            every { authorizer.authorizeHankeTunnus(hanketunnus, VIEW.name) } throws
+                HankeNotFoundException(hanketunnus)
+
+            put(url, update)
+                .andExpect(status().isNotFound)
+                .andExpect(hankeError(HankeError.HAI1001))
+
+            verifySequence { authorizer.authorizeHankeTunnus(hanketunnus, VIEW.name) }
+        }
+
+        @Test
+        fun `Returns updated info when update successful`() {
+            every { authorizer.authorizeHankeTunnus(hanketunnus, VIEW.name) } returns true
+            every {
+                hankeKayttajaService.updateOwnContactInfo(hanketunnus, update, USERNAME)
+            } returns
+                HankeKayttajaFactory.create(
+                    sahkoposti = update.sahkoposti,
+                    puhelinnumero = update.puhelinnumero
+                )
+
+            val response: HankeKayttajaDto =
+                put(url, update).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).all {
+                prop(HankeKayttajaDto::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankeKayttajaDto::puhelinnumero).isEqualTo(update.puhelinnumero)
+            }
+            verifySequence {
+                authorizer.authorizeHankeTunnus(hanketunnus, VIEW.name)
+                hankeKayttajaService.updateOwnContactInfo(hanketunnus, update, USERNAME)
+            }
+        }
+    }
 }
 
 @WebMvcTest(
