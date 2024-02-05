@@ -214,21 +214,13 @@ class ApplicationServiceTest {
     @Nested
     inner class UpdateApplication {
         @Test
-        fun `when update Allu data should save disclosure logs`() {
+        fun `when update should save valid application data`() {
             val hanke = HankeFactory.createMinimalEntity(id = 1)
-            val applicationEntity = applicationEntity(alluId = 42, hanke = hanke)
-            val sender = HankeKayttajaFactory.createEntity()
+            val applicationEntity = applicationEntity(hanke = hanke)
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { applicationRepository.save(applicationEntity) } returns applicationEntity
-            justRun { cableReportService.update(42, any()) }
-            justRun { cableReportService.addAttachment(42, any()) }
-            every { cableReportService.getApplicationInformation(42) } returns
-                AlluFactory.createAlluApplicationResponse()
             every { geometriatDao.validateGeometriat(any()) } returns null
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
-            every { geometriatDao.calculateCombinedArea(any()) } returns 100f
-            every { geometriatDao.calculateArea(any()) } returns 100f
-            every { hankeKayttajaService.getKayttajaByUserId(1, USERNAME) } returns sender
             val updatedData =
                 applicationData.copy(rockExcavation = !applicationData.rockExcavation!!)
 
@@ -237,75 +229,40 @@ class ApplicationServiceTest {
             verifySequence {
                 applicationRepository.findOneById(3)
                 geometriatDao.validateGeometriat(any())
-                cableReportService.getApplicationInformation(42)
                 geometriatDao.isInsideHankeAlueet(1, any())
                 applicationRepository.save(applicationEntity)
-                geometriatDao.calculateCombinedArea(
-                    listOf(applicationData.areas?.first()?.geometry!!)
-                )
-                geometriatDao.calculateArea(any())
-                cableReportService.update(42, any())
-                disclosureLogService.saveDisclosureLogsForAllu(3, updatedData, Status.SUCCESS)
-                cableReportService.addAttachment(42, any())
-                hankeKayttajaService.getKayttajaByUserId(1, USERNAME)
-                hankeKayttajaService.saveNewTokensFromApplication(
-                    applicationEntity,
-                    1,
-                    HANKE_TUNNUS,
-                    HankeFactory.defaultNimi,
-                    USERNAME,
-                    sender
-                )
                 loggingService.logUpdate(any(), any(), USERNAME)
+            }
+            verifyAll {
+                disclosureLogService wasNot Called
+                cableReportService wasNot Called
             }
         }
 
         @Test
-        fun `when user management disabled should not create tokens`() {
-            val hanke = HankeFactory.createMinimalEntity(generated = true)
+        fun `when sent to Allu should throw`() {
+            val hanke = HankeFactory.createMinimalEntity(id = 1)
             val applicationEntity = applicationEntity(alluId = 42, hanke = hanke)
-            val dataupdate = applicationData.copy(name = "New name")
             every { applicationRepository.findOneById(3) } returns applicationEntity
-            every { geometriatDao.validateGeometriat(any()) } returns null
-            every { cableReportService.getApplicationInformation(42) } returns
-                AlluFactory.createAlluApplicationResponse()
-            every { applicationRepository.save(applicationEntity) } returns applicationEntity
-            every { geometriatDao.calculateCombinedArea(any()) } returns 100f
-            every { geometriatDao.calculateArea(any()) } returns 100f
-            justRun { cableReportService.update(42, any()) }
-            justRun { cableReportService.addAttachment(42, any()) }
-            every { hankealueService.createAlueetFromCreateRequest(any(), any()) } returns listOf()
-            every { featureFlags.isDisabled(Feature.USER_MANAGEMENT) } returns true
+            val updatedData =
+                applicationData.copy(rockExcavation = !applicationData.rockExcavation!!)
 
-            applicationService.updateApplicationData(
-                id = 3,
-                newApplicationData = dataupdate,
-                userId = USERNAME
-            )
+            val exception =
+                assertThrows<ApplicationAlreadySentException> {
+                    applicationService.updateApplicationData(3, updatedData, USERNAME)
+                }
 
-            verifySequence {
-                applicationRepository.findOneById(3)
-                geometriatDao.validateGeometriat(any())
-                cableReportService.getApplicationInformation(42)
-                hankealueService.createAlueetFromCreateRequest(any(), any())
-                applicationRepository.save(any())
-                geometriatDao.calculateCombinedArea(any())
-                geometriatDao.calculateArea(any())
-                cableReportService.update(42, any())
-                disclosureLogService.saveDisclosureLogsForAllu(3, any(), any())
-                cableReportService.addAttachment(42, any())
-                loggingService.logUpdate(any(), any(), USERNAME)
-            }
+            assertThat(exception).hasMessage("Application is already sent to Allu, id=3, alluid=42")
+            verifySequence { applicationRepository.findOneById(3) }
             verifyAll {
-                hankeKayttajaService wasNot Called
-                emailSenderService wasNot Called
+                disclosureLogService wasNot Called
+                cableReportService wasNot Called
             }
         }
 
         @Test
         fun `when invalid geometry updateApplicationData should throw`() {
-            val applicationEntity =
-                applicationEntity(alluId = 42, hanke = HankeFactory.createMinimalEntity())
+            val applicationEntity = applicationEntity(hanke = HankeFactory.createMinimalEntity())
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.validateGeometriat(any()) } returns
                 GeometriatDao.InvalidDetail(
@@ -322,7 +279,7 @@ class ApplicationServiceTest {
 
             assertThat(exception)
                 .hasMessage(
-                    """Invalid geometry received when updating application for user $USERNAME, id=3, alluid=42, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
+                    """Invalid geometry received when updating application for user $USERNAME, id=3, reason = Self-intersection, location = {"type":"Point","coordinates":[25494009.65639264,6679886.142116806]}"""
                 )
             verifySequence {
                 applicationRepository.findOneById(3)

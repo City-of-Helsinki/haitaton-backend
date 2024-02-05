@@ -470,14 +470,16 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         }
 
         @Test
-        fun `when application no longer pending should return 409`() {
+        fun `when application sent to Allu should return 409`() {
             val application = ApplicationFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
             every {
                 applicationService.updateApplicationData(id, application.applicationData, USERNAME)
-            } throws ApplicationAlreadyProcessingException(id, 21)
+            } throws ApplicationAlreadySentException(id, 21)
 
-            put("$BASE_URL/$id", application).andExpect(status().isConflict)
+            put("$BASE_URL/$id", application)
+                .andExpect(status().isConflict)
+                .andExpect(jsonPath("errorCode").value("HAI2009"))
 
             verify {
                 authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
