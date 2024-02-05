@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.HeadersBuilder.buildHeaders
+import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
@@ -12,14 +13,17 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.DeleteMapping
+import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 
@@ -102,7 +106,7 @@ class ApplicationAttachmentController(
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
                 ApiResponse(
-                    description = "Application already processing",
+                    description = "Application already in Allu",
                     responseCode = "409",
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
@@ -147,5 +151,13 @@ class ApplicationAttachmentController(
     fun removeAttachment(@PathVariable applicationId: Long, @PathVariable attachmentId: UUID) {
         logger.info { "Deleting attachment $attachmentId from application $applicationId." }
         return applicationAttachmentService.deleteAttachment(attachmentId)
+    }
+
+    @ExceptionHandler(ApplicationInAlluException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun alluDataError(ex: ApplicationInAlluException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2009
     }
 }
