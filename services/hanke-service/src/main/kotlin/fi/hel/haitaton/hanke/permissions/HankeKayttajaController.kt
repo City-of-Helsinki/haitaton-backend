@@ -285,12 +285,8 @@ Responds with information about the activated user and the hanke associated with
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
                 ApiResponse(
-                    description = "Name not found in Profiili",
-                    responseCode = "500",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                ),
-                ApiResponse(
-                    description = "Token doesn't have a user associated with it",
+                    description =
+                        "Token doesn't have a user associated with it or the verified name cannot be retrieved from Profiili",
                     responseCode = "500",
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
