@@ -59,10 +59,10 @@ class HankekayttajaEntity(
     @Column(name = "hanke_id") val hankeId: Int,
 
     /** First name. */
-    val etunimi: String,
+    var etunimi: String,
 
     /** Last name. */
-    val sukunimi: String,
+    var sukunimi: String,
 
     /** Phone number. */
     var puhelin: String,
