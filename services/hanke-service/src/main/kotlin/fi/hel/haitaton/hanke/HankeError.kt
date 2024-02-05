@@ -49,6 +49,7 @@ enum class HankeError(val errorMessage: String) {
     HAI4004("Kayttajatunniste not found"),
     HAI4005("Could not verify user identity"),
     HAI4006("Duplicate hankekayttaja"),
+    HAI4007("Verified name not found in Profiili"),
     ;
 
     val errorCode: String

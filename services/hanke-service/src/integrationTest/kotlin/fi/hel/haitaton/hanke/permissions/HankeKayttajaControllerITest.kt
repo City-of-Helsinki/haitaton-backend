@@ -30,6 +30,7 @@ import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.MODIFY_EDIT_PERMISSIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.RESEND_INVITATION
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
+import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -639,8 +640,9 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         fun `Returns 200 with information on success`() {
             val kayttaja = HankeKayttajaFactory.create(id = kayttajaId)
             val hanke = HankeFactory.create(id = kayttaja.hankeId)
-            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } returns
-                kayttaja
+            every {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+            } returns kayttaja
             every { hankeService.loadHankeById(kayttaja.hankeId) } returns hanke
 
             val response: TunnistautuminenResponse =
@@ -652,45 +654,65 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 prop(TunnistautuminenResponse::hankeNimi).isEqualTo(hanke.nimi)
             }
             verify {
-                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste)
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
                 hankeService.loadHankeById(kayttaja.hankeId)
             }
         }
 
         @Test
+        fun `Returns 500 when cannot retrieve verified name from Profiil`() {
+            every {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+            } throws VerifiedNameNotFound("Verified name not found from profile.")
+
+            post(url, Tunnistautuminen(tunniste))
+                .andExpect(status().isInternalServerError)
+                .andExpect(hankeError(HankeError.HAI4007))
+
+            verify {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+                hankeService wasNot Called
+            }
+        }
+
+        @Test
         fun `Returns 404 when tunniste not found`() {
-            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } throws
-                TunnisteNotFoundException(USERNAME, tunniste)
+            every {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+            } throws TunnisteNotFoundException(USERNAME, tunniste)
 
             post(url, Tunnistautuminen(tunniste))
                 .andExpect(status().isNotFound)
                 .andExpect(hankeError(HankeError.HAI4004))
 
-            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
+            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any()) }
         }
 
         @Test
         fun `Returns 409 when user already has a permission`() {
-            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } throws
-                UserAlreadyHasPermissionException(USERNAME, tunnisteId, permissionId)
+            every {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+            } throws UserAlreadyHasPermissionException(USERNAME, tunnisteId, permissionId)
 
             post(url, Tunnistautuminen(tunniste))
                 .andExpect(status().isConflict)
                 .andExpect(hankeError(HankeError.HAI4003))
 
-            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
+            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any()) }
         }
 
         @Test
         fun `Returns 409 when other user already has a permission for the hanke kayttaja`() {
-            every { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) } throws
+            every {
+                hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
+            } throws
                 PermissionAlreadyExistsException(USERNAME, "Other user", kayttajaId, permissionId)
 
             post(url, Tunnistautuminen(tunniste))
                 .andExpect(status().isConflict)
                 .andExpect(hankeError(HankeError.HAI4003))
 
-            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste) }
+            verify { hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any()) }
         }
     }
 

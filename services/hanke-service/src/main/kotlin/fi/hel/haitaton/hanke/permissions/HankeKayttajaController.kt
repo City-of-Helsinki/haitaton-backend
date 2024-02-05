@@ -4,8 +4,10 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -15,6 +17,8 @@ import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.CurrentSecurityContext
+import org.springframework.security.core.context.SecurityContext
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -281,7 +285,8 @@ Responds with information about the activated user and the hanke associated with
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
                 ApiResponse(
-                    description = "Token doesn't have a user associated with it",
+                    description =
+                        "Token doesn't have a user associated with it or the verified name cannot be retrieved from Profiili",
                     responseCode = "500",
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
@@ -292,11 +297,15 @@ Responds with information about the activated user and the hanke associated with
                 ),
             ]
     )
-    fun identifyUser(@RequestBody tunnistautuminen: Tunnistautuminen): TunnistautuminenResponse {
+    fun identifyUser(
+        @RequestBody tunnistautuminen: Tunnistautuminen,
+        @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext
+    ): TunnistautuminenResponse {
         val kayttaja =
             hankeKayttajaService.createPermissionFromToken(
                 currentUserId(),
-                tunnistautuminen.tunniste
+                tunnistautuminen.tunniste,
+                securityContext
             )
 
         val hanke = hankeService.loadHankeById(kayttaja.hankeId)!!
@@ -441,6 +450,14 @@ Returns the updated hankekayttaja.
     fun tunnisteNotFoundException(ex: TunnisteNotFoundException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI4004
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @Hidden
+    fun verifiedNameNotFoundException(ex: VerifiedNameNotFound): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4007
     }
 
     @ExceptionHandler

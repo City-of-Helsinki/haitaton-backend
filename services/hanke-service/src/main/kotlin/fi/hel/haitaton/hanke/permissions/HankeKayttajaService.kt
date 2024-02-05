@@ -198,13 +198,21 @@ class HankeKayttajaService(
     }
 
     @Transactional
-    fun createPermissionFromToken(userId: String, tunniste: String): HankeKayttaja {
+    fun createPermissionFromToken(
+        userId: String,
+        tunniste: String,
+        securityContext: SecurityContext
+    ): HankeKayttaja {
         logger.info { "Trying to activate token $tunniste for user $userId" }
         val tunnisteEntity =
             kayttajakutsuRepository.findByTunniste(tunniste)
                 ?: throw TunnisteNotFoundException(userId, tunniste)
 
         val kayttaja = tunnisteEntity.hankekayttaja
+
+        if (updateVerifiedName(kayttaja, securityContext)) {
+            logger.info { "Updated user's name from Profiili. userId = $userId" }
+        }
 
         permissionService.findPermission(kayttaja.hankeId, userId)?.let { permission ->
             throw UserAlreadyHasPermissionException(userId, kayttaja.id, permission.id)
@@ -227,6 +235,18 @@ class HankeKayttajaService(
         logService.logDelete(tunnisteEntity.toDomain(), userId)
 
         return kayttaja.toDomain()
+    }
+
+    private fun updateVerifiedName(
+        kayttaja: HankekayttajaEntity,
+        securityContext: SecurityContext
+    ): Boolean {
+        val (_, lastName, givenName) = profiiliClient.getVerifiedName(securityContext)
+        return if (givenName != kayttaja.etunimi || lastName != kayttaja.sukunimi) {
+            kayttaja.etunimi = givenName
+            kayttaja.sukunimi = lastName
+            true
+        } else false
     }
 
     @Transactional
