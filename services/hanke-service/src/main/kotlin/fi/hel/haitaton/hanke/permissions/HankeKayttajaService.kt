@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.permissions
 
 import fi.hel.haitaton.hanke.HankeIdentifier
+import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.configuration.Feature
@@ -242,6 +243,22 @@ class HankeKayttajaService(
         recreateKutsu(kayttaja, currentUserId)
         val hanke = hankeRepository.getReferenceById(kayttaja.hankeId)
         sendHankeInvitation(hanke.hankeTunnus, hanke.nimi, inviter, kayttaja)
+    }
+
+    @Transactional
+    fun updateOwnContactInfo(
+        hankeTunnus: String,
+        update: ContactUpdate,
+        currentUserId: String
+    ): HankeKayttaja {
+        hankeRepository
+            .findOneByHankeTunnus(hankeTunnus)
+            ?.let { getKayttajaByUserId(it.id, currentUserId) }
+            ?.let {
+                it.sahkoposti = update.sahkoposti
+                it.puhelin = update.puhelinnumero
+                return it.toDomain()
+            } ?: throw HankeNotFoundException(hankeTunnus)
     }
 
     /** Check that every user an update was requested for was found as a user of the hanke. */

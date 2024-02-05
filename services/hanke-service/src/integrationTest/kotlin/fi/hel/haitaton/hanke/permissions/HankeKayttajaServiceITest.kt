@@ -27,6 +27,7 @@ import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.email.textBody
@@ -368,8 +369,12 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                         prop(HankeKayttaja::hankeId).isEqualTo(savedHankeId)
                         prop(HankeKayttaja::kayttajaTunnisteId).isNull()
                         prop(HankeKayttaja::permissionId).isNotNull()
-                        prop(HankeKayttaja::nimi).isEqualTo(founderFullName)
+                        prop(HankeKayttaja::etunimi)
+                            .isEqualTo(ProfiiliFactory.DEFAULT_NAMES.givenName)
+                        prop(HankeKayttaja::sukunimi)
+                            .isEqualTo(ProfiiliFactory.DEFAULT_NAMES.lastName)
                         prop(HankeKayttaja::sahkoposti).isEqualTo(founder.sahkoposti)
+                        prop(HankeKayttaja::puhelinnumero).isEqualTo(founder.puhelinnumero)
                     }
                 }
             }
@@ -1446,6 +1451,54 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             assertThat(capturedEmails[0])
                 .isValidHankeInvitation("Current User", dummyEmail, hanke.nimi, hanke.hankeTunnus)
             assertThat(capturedEmails).hasReceivers(kayttaja.sahkoposti)
+        }
+    }
+
+    @Nested
+    inner class UpdateOwnContactInfo {
+        private val update = ContactUpdate("updated@email.test", "9991111")
+
+        @Test
+        fun `Throws exception if there's no hanke`() {
+            val hanketunnus = "HAI-001"
+
+            val failure = assertFailure {
+                hankeKayttajaService.updateOwnContactInfo(hanketunnus, update, USERNAME)
+            }
+
+            failure.all {
+                hasClass(HankeNotFoundException::class)
+                messageContains(hanketunnus)
+            }
+        }
+
+        @Test
+        fun `Throws exception if user not in hanke`() {
+            val hanke = hankeFactory.builder("Other user").save()
+
+            val failure = assertFailure {
+                hankeKayttajaService.updateOwnContactInfo(hanke.hankeTunnus, update, USERNAME)
+            }
+
+            failure.all {
+                hasClass(HankeNotFoundException::class)
+                messageContains(hanke.hankeTunnus)
+            }
+        }
+
+        @Test
+        fun `Updates the contact information of the user`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+
+            hankeKayttajaService.updateOwnContactInfo(hanke.hankeTunnus, update, USERNAME)
+
+            val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)
+            assertThat(kayttaja).isNotNull().all {
+                prop(HankekayttajaEntity::etunimi).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(ProfiiliFactory.DEFAULT_LAST_NAME)
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankekayttajaEntity::puhelin).isEqualTo(update.puhelinnumero)
+            }
         }
     }
 
