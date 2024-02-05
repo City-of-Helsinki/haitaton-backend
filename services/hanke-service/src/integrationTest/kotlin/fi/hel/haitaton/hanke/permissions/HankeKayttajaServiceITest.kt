@@ -1381,7 +1381,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val kayttaja =
                 hankeKayttajaService.createPermissionFromToken(newUserId, tunniste, securityContext)
 
-            assertThat(kayttaja.nimi).isEqualTo("$DEFAULT_GIVEN_NAME $DEFAULT_LAST_NAME")
+            assertThat(kayttaja.etunimi).isEqualTo(DEFAULT_GIVEN_NAME)
+            assertThat(kayttaja.sukunimi).isEqualTo(DEFAULT_LAST_NAME)
             val hankeKayttaja = hankeKayttajaRepository.findById(kayttaja.id).get()
             assertThat(hankeKayttaja).all {
                 prop(HankekayttajaEntity::etunimi).isEqualTo(DEFAULT_GIVEN_NAME)

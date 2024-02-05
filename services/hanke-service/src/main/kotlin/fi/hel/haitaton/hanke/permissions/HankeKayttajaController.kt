@@ -286,7 +286,7 @@ Responds with information about the activated user and the hanke associated with
                 ),
                 ApiResponse(
                     description = "Name not found in Profiili",
-                    responseCode = "404",
+                    responseCode = "500",
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
                 ApiResponse(
@@ -457,7 +457,7 @@ Returns the updated hankekayttaja.
     }
 
     @ExceptionHandler
-    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @Hidden
     fun verifiedNameNotFoundException(ex: VerifiedNameNotFound): HankeError {
         logger.warn(ex) { ex.message }

@@ -660,13 +660,13 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         }
 
         @Test
-        fun `Returns 404 when cannot retrieve verified name from Profiil`() {
+        fun `Returns 500 when cannot retrieve verified name from Profiil`() {
             every {
                 hankeKayttajaService.createPermissionFromToken(USERNAME, tunniste, any())
             } throws VerifiedNameNotFound("Verified name not found from profile.")
 
             post(url, Tunnistautuminen(tunniste))
-                .andExpect(status().isNotFound)
+                .andExpect(status().isInternalServerError)
                 .andExpect(hankeError(HankeError.HAI4007))
 
             verify {
