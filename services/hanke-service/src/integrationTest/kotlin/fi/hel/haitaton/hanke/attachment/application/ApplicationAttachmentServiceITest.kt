@@ -19,12 +19,7 @@ import assertk.assertions.single
 import assertk.assertions.startsWith
 import fi.hel.haitaton.hanke.ALLOWED_ATTACHMENT_COUNT
 import fi.hel.haitaton.hanke.DatabaseTest
-import fi.hel.haitaton.hanke.allu.AlluException
-import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.allu.ApplicationStatus.HANDLING
-import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.CableReportService
-import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
@@ -36,7 +31,6 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
-import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.LIIKENNEJARJESTELY
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.MUU
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType.VALTAKIRJA
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
@@ -49,7 +43,6 @@ import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
 import fi.hel.haitaton.hanke.attachment.successResult
 import fi.hel.haitaton.hanke.attachment.testFile
-import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
@@ -58,10 +51,7 @@ import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
-import io.mockk.every
-import io.mockk.justRun
 import io.mockk.verify
-import io.mockk.verifyOrder
 import java.util.UUID
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.jupiter.api.AfterEach
@@ -309,11 +299,9 @@ class ApplicationAttachmentServiceITest(
         }
 
         @Test
-        fun `Throws exception when allu handling has started`() {
+        fun `Throws exception when application already sent to Allu`() {
             val application =
                 applicationFactory.saveApplicationEntity(username = USERNAME, alluId = ALLU_ID)
-            every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-                AlluFactory.createAlluApplicationResponse(status = HANDLING)
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
@@ -324,38 +312,12 @@ class ApplicationAttachmentServiceITest(
             }
 
             failure.all {
-                hasClass(ApplicationAlreadyProcessingException::class)
+                hasClass(ApplicationInAlluException::class)
                 hasMessage(
-                    "Application is no longer pending in Allu, id=${application.id!!}, alluid=${application.alluid!!}"
+                    "Application is already sent to Allu, applicationId=${application.id}, alluId=${application.alluid}"
                 )
             }
-            verify { cableReportService.getApplicationInformation(ALLU_ID) }
-        }
-
-        @EnumSource(value = ApplicationStatus::class, names = ["PENDING", "PENDING_CLIENT"])
-        @ParameterizedTest
-        fun `Sends attachment to Allu when application is pending`(status: ApplicationStatus) {
-            justRun { cableReportService.addAttachment(ALLU_ID, any()) }
-            mockClamAv.enqueue(response(body(results = successResult())))
-            val application =
-                applicationFactory.saveApplicationEntity(
-                    username = USERNAME,
-                    alluId = ALLU_ID,
-                    alluStatus = PENDING
-                )
-            every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-                AlluFactory.createAlluApplicationResponse(status = status)
-
-            attachmentService.addAttachment(
-                applicationId = application.id!!,
-                attachmentType = LIIKENNEJARJESTELY,
-                attachment = testFile(),
-            )
-
-            verifyOrder {
-                cableReportService.getApplicationInformation(ALLU_ID)
-                cableReportService.addAttachment(ALLU_ID, any())
-            }
+            assertThat(attachmentRepository.countByApplicationId(application.id!!)).isEqualTo(0)
         }
 
         @Test
@@ -390,37 +352,6 @@ class ApplicationAttachmentServiceITest(
                 hasMessage("Attachment upload exception: File 'hello.html' not supported")
             }
             assertThat(attachmentRepository.findAll()).isEmpty()
-        }
-
-        @Test
-        fun `Clean DB and throws exception when Allu upload fails`() {
-            mockClamAv.enqueue(response(body(results = successResult())))
-            val application =
-                applicationFactory.saveApplicationEntity(
-                    username = USERNAME,
-                    alluId = ALLU_ID,
-                    alluStatus = PENDING
-                )
-            every { cableReportService.getApplicationInformation(ALLU_ID) } returns
-                AlluFactory.createAlluApplicationResponse(status = PENDING)
-            every { cableReportService.addAttachment(ALLU_ID, any()) } throws
-                AlluException(listOf())
-
-            assertFailure {
-                    attachmentService.addAttachment(
-                        applicationId = application.id!!,
-                        attachmentType = LIIKENNEJARJESTELY,
-                        attachment = testFile(),
-                    )
-                }
-                .hasClass(AlluException::class)
-
-            assertThat(attachmentRepository.findAll()).isEmpty()
-            assertThat(fileClient.listBlobs(HAKEMUS_LIITTEET)).isEmpty()
-            verifyOrder {
-                cableReportService.getApplicationInformation(ALLU_ID)
-                cableReportService.addAttachment(ALLU_ID, any())
-            }
         }
 
         @Test
