@@ -134,12 +134,14 @@ class ApplicationService(
     ): Application {
         val application = getById(id)
         val previousApplication = application.toApplication()
-        logger.info("Updating application id=$id, alluid=${application.alluid}")
+
+        application.alluid?.let {
+            throw ApplicationAlreadySentException(application.id, application.alluid)
+        } ?: logger.info("Updating application id=$id")
 
         if (previousApplication.applicationData == newApplicationData) {
             logger.info {
-                "Not updating unchanged application data. id=$id, " +
-                    "alluid=${application.alluid}, identifier=${application.applicationIdentifier}"
+                "Not updating unchanged application data. id=$id, identifier=${application.applicationIdentifier}"
             }
             return previousApplication
         }
@@ -156,11 +158,7 @@ class ApplicationService(
         }
 
         validateGeometry(newApplicationData) { validationError ->
-            "Invalid geometry received when updating application for user $userId, id=${application.id}, alluid=${application.alluid}, reason = ${validationError.reason}, location = ${validationError.location}"
-        }
-
-        if (!isStillPending(application.alluid, application.alluStatus)) {
-            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
+            "Invalid geometry received when updating application for user $userId, id=${application.id}, reason = ${validationError.reason}, location = ${validationError.location}"
         }
 
         val hanke = application.hanke
@@ -182,14 +180,8 @@ class ApplicationService(
 
         val saved = applicationRepository.save(application)
 
-        // Update the application in Allu, if it's been already uploaded
-        if (saved.alluid != null) {
-            updateApplicationInAllu(saved)
-            provideAccessOnAlluUpdate(saved, previousApplication.applicationData, userId, hanke)
-        }
-
         return saved.toApplication().also {
-            logger.info("Updated application id=${it.id}, alluid=${it.alluid}")
+            logger.info("Updated application id=${it.id}")
             applicationLoggingService.logUpdate(previousApplication, it, userId)
         }
     }
@@ -368,33 +360,6 @@ class ApplicationService(
             currentKayttaja = kayttaja,
             currentUserId = currentUserId,
             emailRecipients = contactEmails
-        )
-    }
-
-    /** Creates access for new application contacts. Email address used for comparison. */
-    private fun provideAccessOnAlluUpdate(
-        application: ApplicationEntity,
-        previousData: ApplicationData,
-        currentUserId: String,
-        hanke: HankeEntity
-    ) {
-        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
-            logger.info { "Feature ${Feature.USER_MANAGEMENT} disabled. No tokens created." }
-            return
-        }
-
-        val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, currentUserId)
-
-        val previous = previousData.contactPersonEmails()
-        val updated = application.applicationData.contactPersonEmails(omit = kayttaja?.sahkoposti)
-        val newEmails = updated.subtract(previous)
-
-        provideAccess(
-            application = application,
-            hanke = hanke,
-            currentKayttaja = kayttaja,
-            currentUserId = currentUserId,
-            emailRecipients = newEmails
         )
     }
 
@@ -764,6 +729,9 @@ class IncompatibleApplicationException(
 
 class ApplicationNotFoundException(id: Long) :
     RuntimeException("Application not found with id $id")
+
+class ApplicationAlreadySentException(id: Long?, alluid: Int?) :
+    RuntimeException("Application is already sent to Allu, id=$id, alluid=$alluid")
 
 class ApplicationAlreadyProcessingException(id: Long?, alluid: Int?) :
     RuntimeException("Application is no longer pending in Allu, id=$id, alluid=$alluid")

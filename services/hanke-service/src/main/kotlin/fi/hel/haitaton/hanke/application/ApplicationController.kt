@@ -142,10 +142,8 @@ class ApplicationController(
         summary = "Update an application",
         description =
             """Returns the updated application.
-               The application can be updated until it has started processing in Allu, i.e. it's still pending.
+               The application can be updated until it has been sent to Allu.
                If the application hasn't changed since the last update, nothing more is done.
-               If the application has been sent to Allu, it will be updated there as well.
-               If an Allu-update is required, but it fails, the local version will not be updated.
                The pendingOnClient value can't be changed with this endpoint.
                Use [POST /hakemukset/{id}/send-application](#/application-controller/sendApplication) for that.
             """
@@ -166,7 +164,7 @@ class ApplicationController(
                 ),
                 ApiResponse(
                     description =
-                        "The application can't be updated because it has started processing in Allu",
+                        "The application can't be updated because it has been sent to Allu",
                     responseCode = "409",
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
@@ -303,6 +301,14 @@ class ApplicationController(
     fun alluDataError(ex: AlluDataException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2004
+    }
+
+    @ExceptionHandler(ApplicationAlreadySentException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun applicationAlreadySentException(ex: ApplicationAlreadySentException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2009
     }
 
     @ExceptionHandler(ApplicationGeometryException::class)
