@@ -781,7 +781,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     inner class UpdateOwnContactInfo {
         private val hanketunnus = "HAI98-AAA"
         private val url = "/hankkeet/$hanketunnus/kayttajat/self"
-        private val update = OwnContactUpdate("updated@email.test", "9991111")
+        private val update = ContactUpdate("updated@email.test", "9991111")
 
         @Test
         fun `Returns 400 when email is blank`() {
@@ -839,11 +839,20 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     }
 
     @Nested
-    inner class UpdateContactInfo {
+    inner class UpdateKayttajaInfo {
         private val hanketunnus = "HAI98-AAA"
         private val userId = UUID.fromString("5d67712f-ea0b-490c-957f-9b30bddb848c")
         private val url = "/hankkeet/$hanketunnus/kayttajat/$userId"
-        private val update = ContactUpdate("updated@email.test", "9991111")
+        private val update = KayttajaUpdate("updated@email.test", "9991111")
+
+        @Test
+        fun `Returns 400 if invalid data`() {
+            val update = KayttajaUpdate("updated@email.test", "")
+
+            put(url, update)
+                .andExpect(status().isBadRequest)
+                .andExpect(hankeError(HankeError.HAI0003))
+        }
 
         @Test
         fun `Returns 404 if hanke not found or user doesn't have permission for it`() {
@@ -860,7 +869,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         @Test
         fun `Returns 404 if user is not in hanke`() {
             every { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) } returns true
-            every { hankeKayttajaService.updateContactInfo(hanketunnus, update, userId) } throws
+            every { hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId) } throws
                 HankeKayttajaNotFoundException(userId)
 
             put(url, update)
@@ -869,15 +878,15 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
-                hankeKayttajaService.updateContactInfo(hanketunnus, update, userId)
+                hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId)
             }
         }
 
         @Test
         fun `Returns 409 if user is identified and try to change name`() {
-            val update = ContactUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
+            val update = KayttajaUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
             every { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) } returns true
-            every { hankeKayttajaService.updateContactInfo(hanketunnus, update, userId) } throws
+            every { hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId) } throws
                 UserAlreadyHasPermissionException(userId.toString(), userId, 1)
 
             put(url, update)
@@ -886,15 +895,15 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
 
             verifySequence {
                 authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
-                hankeKayttajaService.updateContactInfo(hanketunnus, update, userId)
+                hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId)
             }
         }
 
         @Test
-        fun `Returns updated info when update successful`() {
-            val update = ContactUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
+        fun `Returns updated info when all info update successful`() {
+            val update = KayttajaUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
             every { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) } returns true
-            every { hankeKayttajaService.updateContactInfo(hanketunnus, update, userId) } returns
+            every { hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId) } returns
                 HankeKayttajaFactory.create(
                     etunimi = update.etunimi!!,
                     sukunimi = update.sukunimi!!,
@@ -913,7 +922,29 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             }
             verifySequence {
                 authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
-                hankeKayttajaService.updateContactInfo(hanketunnus, update, userId)
+                hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId)
+            }
+        }
+
+        @Test
+        fun `Returns updated info when contact info update successful`() {
+            every { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) } returns true
+            every { hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId) } returns
+                HankeKayttajaFactory.create(
+                    sahkoposti = update.sahkoposti,
+                    puhelinnumero = update.puhelinnumero
+                )
+
+            val response: HankeKayttajaDto =
+                put(url, update).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).all {
+                prop(HankeKayttajaDto::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankeKayttajaDto::puhelinnumero).isEqualTo(update.puhelinnumero)
+            }
+            verifySequence {
+                authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
+                hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, userId)
             }
         }
     }

@@ -1532,7 +1532,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Nested
     inner class UpdateOwnContactInfo {
-        private val update = OwnContactUpdate("updated@email.test", "9991111")
+        private val update = ContactUpdate("updated@email.test", "9991111")
 
         @Test
         fun `Throws exception if there's no hanke`() {
@@ -1580,14 +1580,14 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Nested
     inner class UpdateContactInfo {
-        private val update = ContactUpdate("updated@email.test", "9991111")
+        private val update = KayttajaUpdate("updated@email.test", "9991111")
 
         @Test
         fun `Throws exception if there's no hanke`() {
             val hanketunnus = "HAI-001"
 
             val failure = assertFailure {
-                hankeKayttajaService.updateContactInfo(hanketunnus, update, UUID.randomUUID())
+                hankeKayttajaService.updateKayttajaInfo(hanketunnus, update, UUID.randomUUID())
             }
 
             failure.all {
@@ -1603,7 +1603,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val otherUser = kayttajaFactory.saveIdentifiedUser(otherHanke.id)
 
             val failure = assertFailure {
-                hankeKayttajaService.updateContactInfo(hanke.hankeTunnus, update, otherUser.id)
+                hankeKayttajaService.updateKayttajaInfo(hanke.hankeTunnus, update, otherUser.id)
             }
 
             failure.all {
@@ -1614,12 +1614,16 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception when user is identified and try to change name`() {
-            val update = ContactUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
+            val update = KayttajaUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
             val hanke = hankeFactory.builder(USERNAME).save()
             val identifiedUser = kayttajaFactory.saveIdentifiedUser(hanke.id)
 
             val failure = assertFailure {
-                hankeKayttajaService.updateContactInfo(hanke.hankeTunnus, update, identifiedUser.id)
+                hankeKayttajaService.updateKayttajaInfo(
+                    hanke.hankeTunnus,
+                    update,
+                    identifiedUser.id
+                )
             }
 
             failure.all {
@@ -1633,7 +1637,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val hanke = hankeFactory.builder(USERNAME).save()
             val identifiedUser = kayttajaFactory.saveIdentifiedUser(hanke.id)
 
-            hankeKayttajaService.updateContactInfo(hanke.hankeTunnus, update, identifiedUser.id)
+            hankeKayttajaService.updateKayttajaInfo(hanke.hankeTunnus, update, identifiedUser.id)
 
             val kayttaja = hankeKayttajaService.getKayttajaForHanke(identifiedUser.id, hanke.id)
             assertThat(kayttaja).isNotNull().all {
@@ -1646,11 +1650,11 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
         @Test
         fun `Updates email, phone and name of an unidentified user`() {
-            val update = ContactUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
+            val update = KayttajaUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
             val hanke = hankeFactory.builder(USERNAME).save()
             val unidentifiedUser = kayttajaFactory.saveUnidentifiedUser(hanke.id)
 
-            hankeKayttajaService.updateContactInfo(hanke.hankeTunnus, update, unidentifiedUser.id)
+            hankeKayttajaService.updateKayttajaInfo(hanke.hankeTunnus, update, unidentifiedUser.id)
 
             val kayttaja = hankeKayttajaService.getKayttajaForHanke(unidentifiedUser.id, hanke.id)
             assertThat(kayttaja).isNotNull().all {

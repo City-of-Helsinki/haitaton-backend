@@ -6,7 +6,6 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
-import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.email.EmailSenderService
@@ -14,7 +13,6 @@ import fi.hel.haitaton.hanke.email.HankeInvitationData
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.userId
-import jakarta.validation.constraints.NotBlank
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
@@ -270,7 +268,7 @@ class HankeKayttajaService(
     @Transactional
     fun updateOwnContactInfo(
         hankeTunnus: String,
-        update: OwnContactUpdate,
+        update: ContactUpdate,
         currentUserId: String
     ): HankeKayttaja {
         hankeRepository
@@ -284,28 +282,34 @@ class HankeKayttajaService(
     }
 
     @Transactional
-    fun updateContactInfo(hankeTunnus: String, update: ContactUpdate, userId: UUID): HankeKayttaja {
-        hankeRepository
-            .findOneByHankeTunnus(hankeTunnus)
-            ?.let { getKayttajaForHanke(userId, it.id) }
-            ?.let { hankeKayttajaEntity ->
-                // changing name is not allowed if the user is identified (has a permission)
-                if (
-                    hankeKayttajaEntity.permission != null &&
-                        (!update.etunimi.isNullOrEmpty() || !update.sukunimi.isNullOrEmpty())
-                ) {
-                    throw UserAlreadyHasPermissionException(
-                        userId.toString(),
-                        hankeKayttajaEntity.id,
-                        hankeKayttajaEntity.permission!!.id
-                    )
-                }
-                hankeKayttajaEntity.sahkoposti = update.sahkoposti
-                hankeKayttajaEntity.puhelin = update.puhelinnumero
-                update.etunimi?.let { hankeKayttajaEntity.etunimi = it }
-                update.sukunimi?.let { hankeKayttajaEntity.sukunimi = it }
-                return hankeKayttajaEntity.toDomain()
+    fun updateKayttajaInfo(
+        hankeTunnus: String,
+        update: KayttajaUpdate,
+        userId: UUID
+    ): HankeKayttaja {
+        val hankeKayttajaEntity =
+            hankeRepository.findOneByHankeTunnus(hankeTunnus)?.let {
+                getKayttajaForHanke(userId, it.id)
             } ?: throw HankeNotFoundException(hankeTunnus)
+
+        // changing name is not allowed if the user is identified (has a permission)
+        if (
+            hankeKayttajaEntity.permission != null &&
+                (!update.etunimi.isNullOrBlank() || !update.sukunimi.isNullOrBlank())
+        ) {
+            throw UserAlreadyHasPermissionException(
+                userId.toString(),
+                hankeKayttajaEntity.id,
+                hankeKayttajaEntity.permission!!.id
+            )
+        }
+
+        hankeKayttajaEntity.sahkoposti = update.sahkoposti
+        hankeKayttajaEntity.puhelin = update.puhelinnumero
+        if (!update.etunimi.isNullOrBlank()) hankeKayttajaEntity.etunimi = update.etunimi
+        if (!update.sukunimi.isNullOrBlank()) hankeKayttajaEntity.sukunimi = update.sukunimi
+
+        return hankeKayttajaEntity.toDomain()
     }
 
     /** Check that every user an update was requested for was found as a user of the hanke. */
@@ -537,15 +541,6 @@ class HankeKayttajaService(
     private fun hankeExistingEmails(hankeId: Int, emails: List<String>): List<String> =
         hankekayttajaRepository.findByHankeIdAndSahkopostiIn(hankeId, emails).map { it.sahkoposti }
 }
-
-data class OwnContactUpdate(@NotBlank val sahkoposti: String, @NotBlank val puhelinnumero: String)
-
-data class ContactUpdate(
-    @NotBlank val sahkoposti: String,
-    @NotBlank val puhelinnumero: String,
-    val etunimi: String? = null,
-    val sukunimi: String? = null
-)
 
 class UserAlreadyExistsException(hankeIdentifier: HankeIdentifier, sahkoposti: String) :
     RuntimeException(

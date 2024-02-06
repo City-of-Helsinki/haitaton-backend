@@ -398,7 +398,7 @@ Returns the updated hankekayttaja.
         summary = "Update the contact information of a user",
         description =
             """
-Updates the contact information of the hankekayttaja the user has in the hanke.
+Updates the contact and (optionally) name information of the hankekayttaja.
 
 Returns the updated hankekayttaja.
 """
@@ -409,6 +409,10 @@ Returns the updated hankekayttaja.
                 ApiResponse(
                     description = "Information updated",
                     responseCode = "200",
+                ),
+                ApiResponse(
+                    description = "Email or telephone number is missing",
+                    responseCode = "400",
                 ),
                 ApiResponse(
                     description = "Hanke not found or not authorized or user is not in hanke",
@@ -422,12 +426,12 @@ Returns the updated hankekayttaja.
             ]
     )
     @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'MODIFY_USER')")
-    fun updateContactInfo(
-        @RequestBody update: ContactUpdate,
+    fun updateKayttajaInfo(
+        @RequestBody @Valid update: KayttajaUpdate,
         @PathVariable hankeTunnus: String,
         @PathVariable kayttajaId: UUID
     ): HankeKayttajaDto {
-        return hankeKayttajaService.updateContactInfo(hankeTunnus, update, kayttajaId).toDto()
+        return hankeKayttajaService.updateKayttajaInfo(hankeTunnus, update, kayttajaId).toDto()
     }
 
     data class Tunnistautuminen(val tunniste: String)
