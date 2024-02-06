@@ -11,10 +11,10 @@ import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
 import io.sentry.Sentry
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.responses.ApiResponse
-import java.lang.RuntimeException
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestControllerAdvice
@@ -180,6 +180,15 @@ class ControllerExceptionHandler {
         logger.warn { ex.message }
         Sentry.captureException(ex)
         return HankeError.HAI3003
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun methodArgumentNotValidException(ex: MethodArgumentNotValidException): HankeError {
+        logger.warn { ex.message }
+        Sentry.captureException(ex)
+        return HankeError.HAI0003
     }
 
     @ExceptionHandler(Throwable::class)
