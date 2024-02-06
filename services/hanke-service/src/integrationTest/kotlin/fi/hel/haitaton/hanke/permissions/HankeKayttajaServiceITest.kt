@@ -261,8 +261,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             assertThat(result).isNotNull().all {
                 prop(HankekayttajaEntity::id).isNotNull()
                 prop(HankekayttajaEntity::sahkoposti).isEqualTo(DEFAULT_HANKE_PERUSTAJA.sahkoposti)
-                prop(HankekayttajaEntity::etunimi).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
-                prop(HankekayttajaEntity::sukunimi).isEqualTo(ProfiiliFactory.DEFAULT_LAST_NAME)
+                prop(HankekayttajaEntity::etunimi).isEqualTo(DEFAULT_GIVEN_NAME)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(DEFAULT_LAST_NAME)
                 prop(HankekayttajaEntity::puhelin).isEqualTo(DEFAULT_HANKE_PERUSTAJA.puhelinnumero)
                 prop(HankekayttajaEntity::permission)
                     .isNotNull()
@@ -313,8 +313,6 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     inner class AddHankeFounder {
         private val founder = DEFAULT_HANKE_PERUSTAJA
         private val securityContext = mockk<SecurityContext>()
-        private val founderFullName =
-            "${ProfiiliFactory.DEFAULT_NAMES.givenName} ${ProfiiliFactory.DEFAULT_NAMES.lastName}"
 
         @BeforeEach
         fun setUp() {
@@ -1534,7 +1532,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
     @Nested
     inner class UpdateOwnContactInfo {
-        private val update = ContactUpdate("updated@email.test", "9991111")
+        private val update = OwnContactUpdate("updated@email.test", "9991111")
 
         @Test
         fun `Throws exception if there's no hanke`() {
@@ -1572,8 +1570,92 @@ class HankeKayttajaServiceITest : DatabaseTest() {
 
             val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)
             assertThat(kayttaja).isNotNull().all {
-                prop(HankekayttajaEntity::etunimi).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
-                prop(HankekayttajaEntity::sukunimi).isEqualTo(ProfiiliFactory.DEFAULT_LAST_NAME)
+                prop(HankekayttajaEntity::etunimi).isEqualTo(DEFAULT_GIVEN_NAME)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(DEFAULT_LAST_NAME)
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankekayttajaEntity::puhelin).isEqualTo(update.puhelinnumero)
+            }
+        }
+    }
+
+    @Nested
+    inner class UpdateContactInfo {
+        private val update = ContactUpdate("updated@email.test", "9991111")
+
+        @Test
+        fun `Throws exception if there's no hanke`() {
+            val hanketunnus = "HAI-001"
+
+            val failure = assertFailure {
+                hankeKayttajaService.updateContactInfo(hanketunnus, update, UUID.randomUUID())
+            }
+
+            failure.all {
+                hasClass(HankeNotFoundException::class)
+                messageContains(hanketunnus)
+            }
+        }
+
+        @Test
+        fun `Throws exception if user not in hanke`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val otherHanke = hankeFactory.builder("Other user").save()
+            val otherUser = kayttajaFactory.saveIdentifiedUser(otherHanke.id)
+
+            val failure = assertFailure {
+                hankeKayttajaService.updateContactInfo(hanke.hankeTunnus, update, otherUser.id)
+            }
+
+            failure.all {
+                hasClass(HankeKayttajaNotFoundException::class)
+                messageContains(otherUser.id.toString())
+            }
+        }
+
+        @Test
+        fun `Throws exception when user is identified and try to change name`() {
+            val update = ContactUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val identifiedUser = kayttajaFactory.saveIdentifiedUser(hanke.id)
+
+            val failure = assertFailure {
+                hankeKayttajaService.updateContactInfo(hanke.hankeTunnus, update, identifiedUser.id)
+            }
+
+            failure.all {
+                hasClass(UserAlreadyHasPermissionException::class)
+                messageContains("The user already has an active permission")
+            }
+        }
+
+        @Test
+        fun `Updates email and phone number of a identified user`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val identifiedUser = kayttajaFactory.saveIdentifiedUser(hanke.id)
+
+            hankeKayttajaService.updateContactInfo(hanke.hankeTunnus, update, identifiedUser.id)
+
+            val kayttaja = hankeKayttajaService.getKayttajaForHanke(identifiedUser.id, hanke.id)
+            assertThat(kayttaja).isNotNull().all {
+                prop(HankekayttajaEntity::etunimi).isEqualTo(identifiedUser.etunimi)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(identifiedUser.sukunimi)
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankekayttajaEntity::puhelin).isEqualTo(update.puhelinnumero)
+            }
+        }
+
+        @Test
+        fun `Updates email, phone and name of an unidentified user`() {
+            val update = ContactUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val unidentifiedUser = kayttajaFactory.saveUnidentifiedUser(hanke.id)
+
+            hankeKayttajaService.updateContactInfo(hanke.hankeTunnus, update, unidentifiedUser.id)
+
+            val kayttaja = hankeKayttajaService.getKayttajaForHanke(unidentifiedUser.id, hanke.id)
+            assertThat(kayttaja).isNotNull().all {
+                prop(HankekayttajaEntity::etunimi).isEqualTo(update.etunimi)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(update.sukunimi)
                 prop(HankekayttajaEntity::sahkoposti).isEqualTo(update.sahkoposti)
                 prop(HankekayttajaEntity::puhelin).isEqualTo(update.puhelinnumero)
             }

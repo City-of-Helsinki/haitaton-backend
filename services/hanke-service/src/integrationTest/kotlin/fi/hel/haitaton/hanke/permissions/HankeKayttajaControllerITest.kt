@@ -28,6 +28,7 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaController.Tunnistautumine
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaController.TunnistautuminenResponse
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.MODIFY_EDIT_PERMISSIONS
+import fi.hel.haitaton.hanke.permissions.PermissionCode.MODIFY_USER
 import fi.hel.haitaton.hanke.permissions.PermissionCode.RESEND_INVITATION
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
@@ -780,7 +781,7 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
     inner class UpdateOwnContactInfo {
         private val hanketunnus = "HAI98-AAA"
         private val url = "/hankkeet/$hanketunnus/kayttajat/self"
-        private val update = ContactUpdate("updated@email.test", "9991111")
+        private val update = OwnContactUpdate("updated@email.test", "9991111")
 
         @Test
         fun `Returns 400 when email is blank`() {
@@ -833,6 +834,86 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
             verifySequence {
                 authorizer.authorizeHankeTunnus(hanketunnus, VIEW.name)
                 hankeKayttajaService.updateOwnContactInfo(hanketunnus, update, USERNAME)
+            }
+        }
+    }
+
+    @Nested
+    inner class UpdateContactInfo {
+        private val hanketunnus = "HAI98-AAA"
+        private val userId = UUID.fromString("5d67712f-ea0b-490c-957f-9b30bddb848c")
+        private val url = "/hankkeet/$hanketunnus/kayttajat/$userId"
+        private val update = ContactUpdate("updated@email.test", "9991111")
+
+        @Test
+        fun `Returns 404 if hanke not found or user doesn't have permission for it`() {
+            every { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) } throws
+                HankeNotFoundException(hanketunnus)
+
+            put(url, update)
+                .andExpect(status().isNotFound)
+                .andExpect(hankeError(HankeError.HAI1001))
+
+            verifySequence { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) }
+        }
+
+        @Test
+        fun `Returns 404 if user is not in hanke`() {
+            every { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) } returns true
+            every { hankeKayttajaService.updateContactInfo(hanketunnus, update, userId) } throws
+                HankeKayttajaNotFoundException(userId)
+
+            put(url, update)
+                .andExpect(status().isNotFound)
+                .andExpect(hankeError(HankeError.HAI4001))
+
+            verifySequence {
+                authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
+                hankeKayttajaService.updateContactInfo(hanketunnus, update, userId)
+            }
+        }
+
+        @Test
+        fun `Returns 409 if user is identified and try to change name`() {
+            val update = ContactUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
+            every { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) } returns true
+            every { hankeKayttajaService.updateContactInfo(hanketunnus, update, userId) } throws
+                UserAlreadyHasPermissionException(userId.toString(), userId, 1)
+
+            put(url, update)
+                .andExpect(status().isConflict)
+                .andExpect(hankeError(HankeError.HAI4003))
+
+            verifySequence {
+                authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
+                hankeKayttajaService.updateContactInfo(hanketunnus, update, userId)
+            }
+        }
+
+        @Test
+        fun `Returns updated info when update successful`() {
+            val update = ContactUpdate("updated@email.test", "9991111", "Uusi", "Nimi")
+            every { authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name) } returns true
+            every { hankeKayttajaService.updateContactInfo(hanketunnus, update, userId) } returns
+                HankeKayttajaFactory.create(
+                    etunimi = update.etunimi!!,
+                    sukunimi = update.sukunimi!!,
+                    sahkoposti = update.sahkoposti,
+                    puhelinnumero = update.puhelinnumero
+                )
+
+            val response: HankeKayttajaDto =
+                put(url, update).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).all {
+                prop(HankeKayttajaDto::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankeKayttajaDto::puhelinnumero).isEqualTo(update.puhelinnumero)
+                prop(HankeKayttajaDto::etunimi).isEqualTo(update.etunimi)
+                prop(HankeKayttajaDto::sukunimi).isEqualTo(update.sukunimi)
+            }
+            verifySequence {
+                authorizer.authorizeHankeTunnus(hanketunnus, MODIFY_USER.name)
+                hankeKayttajaService.updateContactInfo(hanketunnus, update, userId)
             }
         }
     }
