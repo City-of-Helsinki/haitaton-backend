@@ -1579,7 +1579,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
     }
 
     @Nested
-    inner class UpdateContactInfo {
+    inner class UpdateKayttajaInfo {
         private val update = KayttajaUpdate("updated@email.test", "9991111")
 
         @Test
@@ -1633,7 +1633,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `Updates email and phone number of a identified user`() {
+        fun `Updates email and phone number of an identified user`() {
             val hanke = hankeFactory.builder(USERNAME).save()
             val identifiedUser = kayttajaFactory.saveIdentifiedUser(hanke.id)
 
@@ -1643,6 +1643,22 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             assertThat(kayttaja).isNotNull().all {
                 prop(HankekayttajaEntity::etunimi).isEqualTo(identifiedUser.etunimi)
                 prop(HankekayttajaEntity::sukunimi).isEqualTo(identifiedUser.sukunimi)
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankekayttajaEntity::puhelin).isEqualTo(update.puhelinnumero)
+            }
+        }
+
+        @Test
+        fun `Updates email and phone number of an unidentified user`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val unidentifiedUser = kayttajaFactory.saveUnidentifiedUser(hanke.id)
+
+            hankeKayttajaService.updateKayttajaInfo(hanke.hankeTunnus, update, unidentifiedUser.id)
+
+            val kayttaja = hankeKayttajaService.getKayttajaForHanke(unidentifiedUser.id, hanke.id)
+            assertThat(kayttaja).isNotNull().all {
+                prop(HankekayttajaEntity::etunimi).isEqualTo(unidentifiedUser.etunimi)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(unidentifiedUser.sukunimi)
                 prop(HankekayttajaEntity::sahkoposti).isEqualTo(update.sahkoposti)
                 prop(HankekayttajaEntity::puhelin).isEqualTo(update.puhelinnumero)
             }
@@ -1660,6 +1676,23 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             assertThat(kayttaja).isNotNull().all {
                 prop(HankekayttajaEntity::etunimi).isEqualTo(update.etunimi)
                 prop(HankekayttajaEntity::sukunimi).isEqualTo(update.sukunimi)
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(update.sahkoposti)
+                prop(HankekayttajaEntity::puhelin).isEqualTo(update.puhelinnumero)
+            }
+        }
+
+        @Test
+        fun `Does not update name if it is empty or blank`() {
+            val update = KayttajaUpdate("updated@email.test", "9991111", "", " ")
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val unidentifiedUser = kayttajaFactory.saveUnidentifiedUser(hanke.id)
+
+            hankeKayttajaService.updateKayttajaInfo(hanke.hankeTunnus, update, unidentifiedUser.id)
+
+            val kayttaja = hankeKayttajaService.getKayttajaForHanke(unidentifiedUser.id, hanke.id)
+            assertThat(kayttaja).isNotNull().all {
+                prop(HankekayttajaEntity::etunimi).isEqualTo(unidentifiedUser.etunimi)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(unidentifiedUser.sukunimi)
                 prop(HankekayttajaEntity::sahkoposti).isEqualTo(update.sahkoposti)
                 prop(HankekayttajaEntity::puhelin).isEqualTo(update.puhelinnumero)
             }
