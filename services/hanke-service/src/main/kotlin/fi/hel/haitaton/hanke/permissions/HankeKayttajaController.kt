@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import jakarta.validation.Valid
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
@@ -360,6 +361,8 @@ of the token and link will be reset.
             """
 Updates the contact information of the hankekayttaja the user has in the hanke.
 
+The sahkoposti and puhelinnumero are mandatory and can't be empty or blank.
+
 Returns the updated hankekayttaja.
 """
     )
@@ -371,6 +374,10 @@ Returns the updated hankekayttaja.
                     responseCode = "200",
                 ),
                 ApiResponse(
+                    description = "Email or telephone number is missing",
+                    responseCode = "400",
+                ),
+                ApiResponse(
                     description = "Hanke not found or not authorized",
                     responseCode = "404",
                 ),
@@ -378,7 +385,7 @@ Returns the updated hankekayttaja.
     )
     @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
     fun updateOwnContactInfo(
-        @RequestBody update: ContactUpdate,
+        @Valid @RequestBody update: ContactUpdate,
         @PathVariable hankeTunnus: String
     ): HankeKayttajaDto {
         return hankeKayttajaService

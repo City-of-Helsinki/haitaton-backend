@@ -783,6 +783,24 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
         private val update = ContactUpdate("updated@email.test", "9991111")
 
         @Test
+        fun `Returns 400 when email is blank`() {
+            val incompleteUpdate = update.copy(sahkoposti = " ")
+
+            put(url, incompleteUpdate)
+                .andExpect(status().isBadRequest)
+                .andExpect(hankeError(HankeError.HAI0003))
+        }
+
+        @Test
+        fun `Returns 400 when phone number is empty`() {
+            val incompleteUpdate = update.copy(puhelinnumero = "")
+
+            put(url, incompleteUpdate)
+                .andExpect(status().isBadRequest)
+                .andExpect(hankeError(HankeError.HAI0003))
+        }
+
+        @Test
         fun `Returns 404 if hanke not found or user doesn't have permission for it`() {
             every { authorizer.authorizeHankeTunnus(hanketunnus, VIEW.name) } throws
                 HankeNotFoundException(hanketunnus)
