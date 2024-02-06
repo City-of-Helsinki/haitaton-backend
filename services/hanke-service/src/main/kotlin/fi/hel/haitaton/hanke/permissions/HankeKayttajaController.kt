@@ -374,6 +374,10 @@ Returns the updated hankekayttaja.
                     responseCode = "200",
                 ),
                 ApiResponse(
+                    description = "Email or telephone number is missing",
+                    responseCode = "400",
+                ),
+                ApiResponse(
                     description = "Hanke not found or not authorized",
                     responseCode = "404",
                 ),
