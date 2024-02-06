@@ -289,11 +289,11 @@ class HankeKayttajaService(
             .findOneByHankeTunnus(hankeTunnus)
             ?.let { getKayttajaForHanke(userId, it.id) }
             ?.let { hankeKayttajaEntity ->
+                // changing name is not allowed if the user is identified (has a permission)
                 if (
                     hankeKayttajaEntity.permission != null &&
-                        (update.etunimi != null || update.sukunimi != null)
+                        (!update.etunimi.isNullOrEmpty() || !update.sukunimi.isNullOrEmpty())
                 ) {
-                    // changing name is not allowed if the user has a permission
                     throw UserAlreadyHasPermissionException(
                         userId.toString(),
                         hankeKayttajaEntity.id,
