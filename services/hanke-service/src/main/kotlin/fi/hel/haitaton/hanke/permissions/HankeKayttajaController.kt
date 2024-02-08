@@ -393,6 +393,47 @@ Returns the updated hankekayttaja.
             .toDto()
     }
 
+    @PutMapping("/hankkeet/{hankeTunnus}/kayttajat/{kayttajaId}")
+    @Operation(
+        summary = "Update the contact information of a user",
+        description =
+            """
+Updates the contact and (optionally) name information of the hankekayttaja.
+
+Returns the updated hankekayttaja.
+"""
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Information updated",
+                    responseCode = "200",
+                ),
+                ApiResponse(
+                    description = "Email or telephone number is missing",
+                    responseCode = "400",
+                ),
+                ApiResponse(
+                    description = "Hanke not found or not authorized or user is not in hanke",
+                    responseCode = "404",
+                ),
+                ApiResponse(
+                    description =
+                        "User has already been activated and therefore cannot update name",
+                    responseCode = "409",
+                ),
+            ]
+    )
+    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'MODIFY_USER')")
+    fun updateKayttajaInfo(
+        @RequestBody @Valid update: KayttajaUpdate,
+        @PathVariable hankeTunnus: String,
+        @PathVariable kayttajaId: UUID
+    ): HankeKayttajaDto {
+        return hankeKayttajaService.updateKayttajaInfo(hankeTunnus, update, kayttajaId).toDto()
+    }
+
     data class Tunnistautuminen(val tunniste: String)
 
     data class TunnistautuminenResponse(
