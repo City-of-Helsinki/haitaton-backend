@@ -33,10 +33,14 @@ import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
 import fi.hel.haitaton.hanke.validation.ApplicationDataValidator.ensureValidForSend
+import java.io.File
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import kotlin.reflect.KClass
+import kotlin.system.exitProcess
 import mu.KotlinLogging
+import org.springframework.boot.context.event.ApplicationReadyEvent
+import org.springframework.context.event.EventListener
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -65,6 +69,17 @@ class ApplicationService(
     private val featureFlags: FeatureFlags,
     private val hankealueService: HankealueService,
 ) {
+    @EventListener(ApplicationReadyEvent::class)
+    fun renderTest() {
+        applicationRepository.findAll().getOrNull(0)?.let {
+            val data = it.applicationData as CableReportApplicationData
+            val pdfData = ApplicationPdfService.createPdf(data, 666.4f, listOf())
+            File("pdfTest.pdf").writeBytes(pdfData)
+            logger.info { "ASDF Wrote file to ${File("pdfTest.pdf").canonicalPath}" }
+        } ?: logger.info { "ASDF No applications found" }
+        exitProcess(0)
+    }
+
     @Transactional(readOnly = true)
     fun getAllApplicationsForUser(userId: String): List<Application> {
         val hankeIds =

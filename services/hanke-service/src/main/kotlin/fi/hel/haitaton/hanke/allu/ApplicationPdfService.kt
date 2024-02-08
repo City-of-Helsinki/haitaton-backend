@@ -4,6 +4,7 @@ import com.lowagie.text.Chunk
 import com.lowagie.text.Document
 import com.lowagie.text.Element
 import com.lowagie.text.Font
+import com.lowagie.text.Image
 import com.lowagie.text.PageSize
 import com.lowagie.text.Paragraph
 import com.lowagie.text.Phrase
@@ -14,6 +15,7 @@ import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
+import fi.hel.haitaton.hanke.getResource
 import java.io.ByteArrayOutputStream
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -144,6 +146,13 @@ object ApplicationPdfService {
                     .mapIndexed { i, area -> "${areaNames[i]}\n\nPinta-ala: $area m²" }
                     .joinToString("\n\n")
             )
+        }
+
+        data.areas?.map { it.geometry }?.let {
+            val bytes = WMS.areaImage(it)
+            val image = Image.getInstance(bytes)
+            image.scaleToFit(400f, 400f)
+            document.add(image)
         }
 
         document.newPage()
