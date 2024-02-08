@@ -39,14 +39,18 @@ import fi.hel.haitaton.hanke.toJsonString
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusEntity
 import fi.hel.haitaton.hanke.valmistumisilmoitus.ValmistumisilmoitusType
+import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.reflect.KClass
+import kotlin.system.exitProcess
 import mu.KotlinLogging
 import org.geojson.Polygon
+import org.springframework.boot.context.event.ApplicationReadyEvent
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.context.event.EventListener
 import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -75,6 +79,15 @@ class HakemusService(
     private val applicationEventPublisher: ApplicationEventPublisher,
     private val tormaystarkasteluLaskentaService: TormaystarkasteluLaskentaService,
 ) {
+    @EventListener(ApplicationReadyEvent::class)
+    @Transactional
+    fun renderTest() {
+        val data = getById(29).applicationData as JohtoselvityshakemusData
+        val pdfData = JohtoselvityshakemusPdfEncoder.createPdf(data, 666.4f, listOf(1f), listOf())
+        File("pdfTest.pdf").writeBytes(pdfData)
+        logger.info { "ASDF Wrote file to ${File("pdfTest.pdf").canonicalPath}" }
+        exitProcess(0)
+    }
 
     @Transactional(readOnly = true)
     fun getById(applicationId: Long): Hakemus = getEntityById(applicationId).toHakemus()
