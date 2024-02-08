@@ -167,3 +167,5 @@ databaseChangeLog:
       file: db/changelog/changesets/068-grant-modify-user-permission-to-kayttooikeustasot.sql
   - include:
       file: db/changelog/changesets/069-application-attachment-migration-cleanup.yml
+  - include:
+      file: db/changelog/changesets/070-create-hakemusyhteystieto-tables.sql
