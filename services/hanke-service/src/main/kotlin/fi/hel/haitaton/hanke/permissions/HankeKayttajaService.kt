@@ -281,6 +281,37 @@ class HankeKayttajaService(
             } ?: throw HankeNotFoundException(hankeTunnus)
     }
 
+    @Transactional
+    fun updateKayttajaInfo(
+        hankeTunnus: String,
+        update: KayttajaUpdate,
+        userId: UUID
+    ): HankeKayttaja {
+        val hankeKayttajaEntity =
+            hankeRepository.findOneByHankeTunnus(hankeTunnus)?.let {
+                getKayttajaForHanke(userId, it.id)
+            } ?: throw HankeNotFoundException(hankeTunnus)
+
+        // changing name is not allowed if the user is identified (has a permission)
+        if (
+            hankeKayttajaEntity.permission != null &&
+                (!update.etunimi.isNullOrBlank() || !update.sukunimi.isNullOrBlank())
+        ) {
+            throw UserAlreadyHasPermissionException(
+                userId.toString(),
+                hankeKayttajaEntity.id,
+                hankeKayttajaEntity.permission!!.id
+            )
+        }
+
+        hankeKayttajaEntity.sahkoposti = update.sahkoposti
+        hankeKayttajaEntity.puhelin = update.puhelinnumero
+        if (!update.etunimi.isNullOrBlank()) hankeKayttajaEntity.etunimi = update.etunimi
+        if (!update.sukunimi.isNullOrBlank()) hankeKayttajaEntity.sukunimi = update.sukunimi
+
+        return hankeKayttajaEntity.toDomain()
+    }
+
     /** Check that every user an update was requested for was found as a user of the hanke. */
     private fun validateAllKayttajatFound(
         existingKayttajat: List<HankekayttajaEntity>,
