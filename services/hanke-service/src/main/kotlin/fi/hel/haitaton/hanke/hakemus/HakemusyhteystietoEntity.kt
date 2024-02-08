@@ -29,9 +29,9 @@ class HakemusyhteystietoEntity(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id")
     var application: ApplicationEntity,
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "hakemusyhteystietoEntity")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "hakemusyhteystieto")
     @BatchSize(size = 100)
-    var yhteystiedot: List<HakemusyhteyshenkiloEntity>,
+    var yhteyshenkilot: List<HakemusyhteyshenkiloEntity>,
 )
 
 @Entity
@@ -40,8 +40,8 @@ class HakemusyhteyshenkiloEntity(
     @Id val id: UUID = UUID.randomUUID(),
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hakemusyhteystieto_id")
-    var hakemusyhteystietoEntity: HakemusyhteystietoEntity,
+    var hakemusyhteystieto: HakemusyhteystietoEntity,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hankekayttaja_id")
-    var hankekayttajaEntity: HankekayttajaEntity,
+    var hankekayttaja: HankekayttajaEntity,
 )

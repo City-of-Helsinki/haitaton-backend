@@ -32,7 +32,8 @@ create table hakemusyhteyshenkilo
     hakemusyhteystieto_id uuid    not null,
     hankekayttaja_id      uuid    not null,
     tilaaja               boolean not null,
-    constraint fk_hakemusyhteyshenkilo_hakemusyhteystieto foreign key (hakemusyhteystieto_id) references hakemusyhteystieto (id)
+    constraint fk_hakemusyhteyshenkilo_hakemusyhteystieto foreign key (hakemusyhteystieto_id) references hakemusyhteystieto (id),
+    constraint fk_hakemusyhteyshenkilo_hankekayttaja foreign key (hankekayttaja_id) references hankekayttaja (id)
 );
 create index idx_hankekayttaja_id on hakemusyhteyshenkilo (hankekayttaja_id);
 create index idx_hakemusyhteystieto_id on hakemusyhteyshenkilo (hakemusyhteystieto_id);

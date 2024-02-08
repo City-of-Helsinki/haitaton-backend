@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeYhteyshenkiloEntity
 import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.domain.HasId
+import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
@@ -93,6 +94,13 @@ class HankekayttajaEntity(
         orphanRemoval = true
     )
     var yhteyshenkilot: MutableList<HankeYhteyshenkiloEntity> = mutableListOf(),
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        mappedBy = "hankekayttaja",
+        cascade = [CascadeType.ALL],
+        orphanRemoval = true
+    )
+    var hakemusYhteyshenkilot: MutableList<HakemusyhteyshenkiloEntity> = mutableListOf(),
 ) {
     fun toDto(): HankeKayttajaDto =
         HankeKayttajaDto(
