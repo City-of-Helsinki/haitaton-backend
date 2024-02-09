@@ -55,7 +55,7 @@ External volumes are set up
 
 Initialize volumes:
 
-```
+```sh
 docker volume create --name=haitaton_gis_prepare
 docker volume create --name=haitaton_gis_db
 ```
@@ -64,7 +64,7 @@ N.b. haitaton_gis_prepare volume is automatically generated during data copying 
 
 Removal of external volumes (destructive):
 
-```
+```sh
 docker volume rm haitaton_gis_prepare
 docker volume rm haitaton_gis_db
 ```
@@ -87,7 +87,7 @@ When done, leave shell with `exit` command.
 
 ## Build images
 
-```
+```sh
 docker-compose build
 ```
 
@@ -98,7 +98,7 @@ to copy actual script files to external volume.
 
 Script files are copied to external disk using:
 
-```
+```sh
 sh copy-files.sh
 ```
 
@@ -107,14 +107,14 @@ copying in `Dockerfile`s and avoid explicit copying.
 
 Fill out following secrets in gis-material-update/.env:
 
-```sh
+```
 HELSINKI_EXTRANET_USERNAME=
 HELSINKI_EXTRANET_PASSWORD=
 ```
 
 ## Run data fetch
 
-```
+```sh
 docker-compose run --rm gis-fetch <source_1> ... <source_N>
 ```
 

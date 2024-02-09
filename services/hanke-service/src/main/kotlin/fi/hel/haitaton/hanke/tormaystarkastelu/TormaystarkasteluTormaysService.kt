@@ -8,16 +8,16 @@ import org.springframework.stereotype.Service
 class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations) {
 
     /** yleinen katuosa, ylre_parts */
-    fun anyIntersectsYleinenKatuosa(geometriaIds: Set<Int>) =
+    fun anyIntersectsYleinenKatuosa(geometriaIds: Set<Int>): Boolean =
         anyIntersectsWith(geometriaIds, "tormays_ylre_parts_polys")
 
     /** yleinen katualue, ylre_classes */
-    fun maxIntersectingYleinenkatualueKatuluokka(geometriaIds: Set<Int>) =
+    fun maxIntersectingYleinenkatualueKatuluokka(geometriaIds: Set<Int>): Int? =
         getDistinctValuesIntersectingRows(geometriaIds, "tormays_ylre_classes_polys", "ylre_class")
             .maxOfOrNull { TormaystarkasteluKatuluokka.valueOfKatuluokka(it).value }
 
     /** liikenteellinen katuluokka, street_classes */
-    fun maxIntersectingLiikenteellinenKatuluokka(geometriaIds: Set<Int>) =
+    fun maxIntersectingLiikenteellinenKatuluokka(geometriaIds: Set<Int>): Int? =
         getDistinctValuesIntersectingRows(
                 geometriaIds,
                 "tormays_street_classes_polys",
@@ -143,10 +143,23 @@ class TormaystarkasteluTormaysService(private val jdbcOperations: JdbcOperations
 // values
 
 enum class TormaystarkasteluKatuluokka(val value: Int, val katuluokka: String) {
-    TONTTIKATU_TAI_AJOYHTEYS(1, "Tonttikatu tai ajoyhteys"),
+    /**
+     * @deprecated This will be replaced in data by the [TONTTIKATU_TAI_AJOYHTEYS] and
+     *   [KANTAKAUPUNGIN_ASUNTOKATU_HUOLTAVAYLA_TAI_VAHALIIKENTEINEN_KATU] values. This can be
+     *   removed when both street classes and ylre classes have been updated to use the new classes.
+     *   As of writing (9.2.2024), the street classes just need deploying, but the ylre classes need
+     *   updates to the material processing.
+     */
+    OLD_TONTTIKATU_TAI_AJOYHTEYS(1, "Tonttikatu tai ajoyhteys"),
+    TONTTIKATU_TAI_AJOYHTEYS(1, "Asuntokatu, huoltoväylä tai vähäliikenteinen katu"),
+    KANTAKAUPUNGIN_ASUNTOKATU_HUOLTAVAYLA_TAI_VAHALIIKENTEINEN_KATU(
+        2,
+        "Kantakaupungin asuntokatu, huoltoväylä tai vähäliikenteinen katu"
+    ),
     PAIKALLINEN_KOKOOJAKATU(3, "Paikallinen kokoojakatu"),
     ALUEELLINEN_KOKOOJAKATU(4, "Alueellinen kokoojakatu"),
-    PAAKATU_TAI_MOOTTORIVAYLA(5, "Pääkatu tai moottoriväylä");
+    PAAKATU_TAI_MOOTTORIVAYLA(5, "Pääkatu tai moottoriväylä"),
+    ;
 
     companion object {
         fun valueOfKatuluokka(katuluokka: String): TormaystarkasteluKatuluokka {
