@@ -107,6 +107,16 @@ class CentralBusinessAreas:
             index_label="fid",
         )
 
+        # persist results to temp table
+        self._process_result.to_postgis(
+            self._cfg.tormays_table_temp(self._module),
+            connection,
+            "public",
+            if_exists="replace",
+            index=True,
+            index_label="fid",
+        )
+
     def save_to_file(self):
         file_name = self._cfg.target_file(self._module)
         self._df.to_file(file_name, driver="GPKG")

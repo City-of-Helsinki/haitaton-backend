@@ -3,6 +3,10 @@ hsl:
   local_file: "hsl.zip"
   target_file: "buses_lines.gpkg"
   target_buffer_file: "tormays_buses_polys.gpkg"
+  tormays_table_org: "tormays_buses_polys"
+  tormays_table_temp: "tormays_buses_polys_temp"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer:
     - 15
 maka_autoliikennemaarat:
@@ -11,6 +15,10 @@ maka_autoliikennemaarat:
   local_file: "maka_autoliikennemaarat.gpkg"
   target_file: "volume_lines.gpkg"
   target_buffer_file: "tormays_volumes{}_polys.gpkg"
+  tormays_table_org: "tormays_volumes{}_polys"
+  tormays_table_temp: "tormays_volumes{}_polys_temp"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer:
     - 15
     - 30
@@ -20,12 +28,20 @@ ylre_katualueet:
   local_file: "ylre_katualue_alue.gpkg"
   target_file: "ylre_classes_orig_polys.gpkg"
   target_buffer_file: "tormays_ylre_classes_polys.gpkg"
+  tormays_table_org: "tormays_ylre_classes_polys"
+  tormays_table_temp: "tormays_ylre_classes_polys_temp"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
 ylre_katuosat:
   addr: "WFS:https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:YLRE_Katuosat_alue"
   local_file: "ylre_katuosat_alue.gpkg"
   target_file: "ylre_parts_orig_polys.gpkg"
   target_buffer_file: "tormays_ylre_parts_polys.gpkg"
+  tormays_table_org: "tormays_ylre_parts_polys"
+  tormays_table_temp: "tormays_ylre_parts_polys_temp"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer:
     - 5
 osm:
@@ -47,12 +63,20 @@ tram_infra:
   local_file: "helsinki-osm-lines.gpkg"
   target_file: "tram_infra.gpkg"
   target_buffer_file: "tormays_tram_infra_polys.gpkg"
+  tormays_table_org: "tormays_tram_infra_polys"
+  tormays_table_temp: "tormays_tram_infra_polys_temp"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer:
     - 20
 tram_lines:
   local_file: "hsl.zip"
   target_file: "tram_lines.gpkg"
   target_buffer_file: "tormays_tram_lines_polys.gpkg"
+  tormays_table_org: "tormays_tram_lines_polys"
+  tormays_table_temp: "tormays_tram_lines_polys_temp"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer:
     - 35
 cycle_infra:
@@ -60,6 +84,10 @@ cycle_infra:
   local_file: "helsinki_cycleways.gpkg"
   target_file: "cycle_infra.gpkg"
   target_buffer_file: "tormays_cycle_infra_polys.gpkg"
+  tormays_table_org: "tormays_cycle_infra_polys"
+  tormays_table_temp: "tormays_cycle_infra_polys_temp"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer:
     - 20
 liikennevaylat:
@@ -69,8 +97,10 @@ liikennevaylat:
   target_file: "street_classes.gpkg"
   target_buffer_file: "tormays_street_classes_polys.gpkg"
   extra_args: "-nlt CONVERT_TO_LINEAR"
-  tormays_table_org: "street_classes_lines"
+  tormays_table_org: "tormays_street_classes_polys"
   tormays_table_temp: "tormays_street_classes_polys_temp"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer_class_values:
     paakatu_tai_moottorivayla: 20
     alueellinen_kokoojakatu: 20
@@ -82,7 +112,17 @@ central_business_area:
   layer: "avoindata:Piirijako_pienalue"
   local_file: "central_business_areas.gpkg"
   target_file: "tormays_central_business_area_polys.gpkg"
+  tormays_table_org: "tormays_central_business_area_polys"
+  tormays_table_temp: "tormays_central_business_area_polys_temp"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
 
+logging:
+  logging_filename: "/gis-log/validation_deploy_{}.log"
+  logging_filemode: "w"
+  logging_level: DEBUG
+  logging_format: "%(asctime)s - %(levelname)s - %(message)s"
+    
 common:
   download_path: "/downloads"
   crs: "EPSG:3879"

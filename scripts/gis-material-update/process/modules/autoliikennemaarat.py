@@ -58,6 +58,17 @@ class MakaAutoliikennemaarat:
                 index_label="fid",
             )
 
+        # persist results to temp table
+        for buffer_size, polygon_data in self._process_result.items():
+            polygon_data.to_postgis(
+                self._cfg.tormays_table_temp(self._module).format(buffer_size),
+                connection,
+                "public",
+                if_exists="replace",
+                index=True,
+                index_label="fid",
+            )
+
     def save_to_file(self):
         target_lines_file_name = self._cfg.target_file(self._module)
         self._df.to_file(target_lines_file_name, driver="GPKG")

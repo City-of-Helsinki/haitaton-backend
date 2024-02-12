@@ -4,6 +4,8 @@ volumes:
     external: true
   haitaton_gis_db:
     external: true
+  haitaton_gis_validate_deploy:
+    external: true
 services:
   gis-db:
     container_name: haitaton-gis-prepare-db
@@ -40,6 +42,7 @@ services:
     environment:
       HELSINKI_EXTRANET_USERNAME: ${HELSINKI_EXTRANET_USERNAME}
       HELSINKI_EXTRANET_PASSWORD: ${HELSINKI_EXTRANET_PASSWORD}
+      TZ: Europe/Helsinki
     volumes:
       - ./data:/local_data
       - haitaton_gis_prepare:/haitaton-gis
@@ -53,8 +56,21 @@ services:
       dockerfile: process/Dockerfile
     environment:
       TORMAYS_DEPLOYMENT_PROFILE: ${TORMAYS_DEPLOYMENT_PROFILE}
+      TZ: Europe/Helsinki
     volumes:
       - haitaton_gis_prepare:/haitaton-gis
       - ./haitaton-downloads:/downloads
       - ./haitaton-gis-output:/gis-output
-  
+
+  gis-validate-deploy:
+    container_name: haitaton-gis-validate-deploy
+    build:
+      context: .
+      dockerfile: validate-deploy/Dockerfile
+    environment:
+      TORMAYS_DEPLOYMENT_PROFILE: ${TORMAYS_DEPLOYMENT_PROFILE}
+      TZ: Europe/Helsinki
+    volumes:
+      - haitaton_gis_validate_deploy:/haitaton-gis-validate-deploy
+      - ./haitaton-downloads:/downloads
+      - ./haitaton-gis-log:/gis-log

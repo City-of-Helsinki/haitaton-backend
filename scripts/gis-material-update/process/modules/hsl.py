@@ -34,7 +34,8 @@ class HslBuses(GisProcessor):
             raise FileNotFoundError("Helsinki city area polygon not found")
 
         # TODO: how to obtain this string automatically?
-        file_name = cfg.local_file("hsl")
+        self._module = "hsl"
+        file_name = cfg.local_file(self._module)
         self._feed = self._read_feed_data(file_name)
 
         if validate_gtfs:
@@ -325,7 +326,7 @@ class HslBuses(GisProcessor):
         self._process_result_lines = self._process_hsl_bus_lines()
 
         # Buffering configuration
-        buffers = self._cfg.buffer("hsl")
+        buffers = self._cfg.buffer(self._module)
         if len(buffers) != 1:
             raise ValueError("Unkown number of buffer values")
 
@@ -359,15 +360,25 @@ class HslBuses(GisProcessor):
             index_label="fid",
         )
 
+        # persist results to temp table
+        self._process_result_polygons.to_postgis(
+            self._cfg.tormays_table_temp(self._module),
+            connection,
+            "public",
+            if_exists="replace",
+            index=True,
+            index_label="fid",
+        )
+
     def save_to_file(self) -> None:
         """Save processing results to file(s).
 
         write computed bus lines and polygons to file."""
         # Bus line as debug material
-        target_lines_file_name = self._cfg.target_file("hsl")
+        target_lines_file_name = self._cfg.target_file(self._module)
         self._process_result_lines.to_file(target_lines_file_name, driver="GPKG")
         # tormays GIS material
-        target_buffer_file_name = self._cfg.target_buffer_file("hsl")
+        target_buffer_file_name = self._cfg.target_buffer_file(self._module)
 
         # instruct Geopandas for correct data type in file write
         # fid is originally as index, obtain fid as column...

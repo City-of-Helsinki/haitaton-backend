@@ -32,8 +32,9 @@ class TramInfra(GisProcessor):
         self._process_result_lines = None
         self._process_result_polygons = None
         self._debug_result_lines = None
+        self._module = "tram_infra"
 
-        file_name = cfg.local_file("tram_infra")
+        file_name = cfg.local_file(self._module)
 
         self._lines = gpd.read_file(file_name)
 
@@ -61,7 +62,7 @@ class TramInfra(GisProcessor):
         self._debug_result_lines = trams
 
         # Buffering configuration
-        buffers = self._cfg.buffer("tram_infra")
+        buffers = self._cfg.buffer(self._module)
         if len(buffers) != 1:
             raise ValueError("Unkown number of buffer values")
 
@@ -123,10 +124,20 @@ class TramInfra(GisProcessor):
             index_label="fid",
         )
 
+        # persist results to temp table
+        self._process_result_polygons.to_postgis(
+            self._cfg.tormays_table_temp(self._module),
+            engine,
+            "public",
+            if_exists="replace",
+            index=True,
+            index_label="fid",
+        )
+
     def save_to_file(self):
         """Save processing results to file."""
         # tram line infra as debug material
-        target_infra_file_name = self._cfg.target_file("tram_infra")
+        target_infra_file_name = self._cfg.target_file(self._module)
 
         tram_lines = self._process_result_lines.reset_index(drop=True)
 
@@ -136,7 +147,7 @@ class TramInfra(GisProcessor):
         tram_lines.to_file(target_infra_file_name, schema=schema, driver="GPKG")
 
         # tormays GIS material
-        target_buffer_file_name = self._cfg.target_buffer_file("tram_infra")
+        target_buffer_file_name = self._cfg.target_buffer_file(self._module)
 
         # instruct Geopandas for correct data type in file write
         # fid is originally as index, obtain fid as column...

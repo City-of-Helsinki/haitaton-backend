@@ -17,8 +17,9 @@ class Liikennevaylat(GisProcessor):
         self._process_result_lines = None
         self._process_result_polygons = None
         self._debug_result_lines = None
-        self._tormays_table_org = cfg.tormays_table_org("liikennevaylat")
-        self._tormays_table_temp = cfg.tormays_table_temp("liikennevaylat")
+        self._module = "liikennevaylat"
+        self._tormays_table_org = cfg.tormays_table_org(self._module)
+        self._tormays_table_temp = cfg.tormays_table_temp(self._module)
 
         # check that ylre_katuosat file is available
         if not path.exists(self._cfg.target_buffer_file("ylre_katuosat")):
@@ -39,7 +40,7 @@ class Liikennevaylat(GisProcessor):
         self._central_business_area_sindex = self._central_business_area.sindex
 
         # Buffering configuration
-        self._buffers = self._cfg.buffer_class_values("liikennevaylat")
+        self._buffers = self._cfg.buffer_class_values(self._module)
 
         if len(self._buffers) != 5:
             raise ValueError("Unknown number of buffer values")
@@ -145,7 +146,7 @@ class Liikennevaylat(GisProcessor):
             ),
         )
 
-        file_name = cfg.local_file("liikennevaylat")
+        file_name = cfg.local_file(self._module)
 
         self._lines = gpd.read_file(file_name)
 
@@ -351,14 +352,24 @@ class Liikennevaylat(GisProcessor):
             index_label="fid",
         )
 
+        # persist results to temp table
+        self._process_result_polygons.to_postgis(
+            self._cfg.tormays_table_temp(self._module),
+            engine,
+            "public",
+            if_exists="replace",
+            index=True,
+            index_label="fid",
+        )
+
     def save_to_file(self):
         """Save processing results to file."""
         # liikennevaylat as debug material
-        target_infra_file_name = self._cfg.target_file("liikennevaylat")
+        target_infra_file_name = self._cfg.target_file(self._module)
         target_lines = self._process_result_lines.reset_index(drop=True)
         target_lines.to_file(target_infra_file_name, driver="GPKG")
 
         # tormays GIS material
-        target_buffer_file_name = self._cfg.target_buffer_file("liikennevaylat")
+        target_buffer_file_name = self._cfg.target_buffer_file(self._module)
         tormays_polygons = self._process_result_polygons.reset_index(drop=True)
         tormays_polygons.to_file(target_buffer_file_name, driver="GPKG")
