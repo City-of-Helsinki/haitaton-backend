@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonView
 import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.HankeArgumentException
+import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.allu.Contact as AlluContact
 import fi.hel.haitaton.hanke.allu.Customer as AlluCustomer
 import fi.hel.haitaton.hanke.allu.CustomerType
@@ -13,6 +14,7 @@ import fi.hel.haitaton.hanke.allu.PostalAddress as AlluPostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress as AlluStreetAddress
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
+import java.util.UUID
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CustomerWithContacts(val customer: Customer, val contacts: List<Contact>) {
@@ -31,6 +33,7 @@ data class Contact(
     val email: String?,
     val phone: String?,
     val orderer: Boolean = false,
+    @JsonView(NotInChangeLogView::class) val hankekayttajaId: UUID? = null
 ) {
     /** Check if this contact is blank, i.e. it doesn't contain any actual contact information. */
     @JsonIgnore fun isBlank() = listOf(firstName, lastName, email, phone).all { it.isNullOrBlank() }
@@ -76,8 +79,8 @@ data class Contact(
 @JsonView(ChangeLogView::class)
 data class Customer(
     val type: CustomerType?, // Mandatory in Allu, but not in drafts.
-    val name: String,
-    val country: String, // ISO 3166-1 alpha-2 country code
+    val name: String?,
+    val country: String?, // ISO 3166-1 alpha-2 country code
     val email: String?,
     val phone: String?,
     val registryKey: String?, // y-tunnus
@@ -92,7 +95,7 @@ data class Customer(
      * information, so it's not checked here.
      */
     fun hasPersonalInformation() =
-        !(name.isBlank() &&
+        !(name.isNullOrBlank() &&
             email.isNullOrBlank() &&
             phone.isNullOrBlank() &&
             registryKey.isNullOrBlank() &&
@@ -103,8 +106,8 @@ data class Customer(
     fun toAlluData(path: String): AlluCustomer =
         AlluCustomer(
             type ?: throw AlluDataException("$path.type", AlluDataError.NULL),
-            name,
-            country,
+            name ?: throw AlluDataException("$path.name", AlluDataError.NULL),
+            country ?: throw AlluDataException("$path.country", AlluDataError.NULL),
             email,
             phone,
             registryKey,

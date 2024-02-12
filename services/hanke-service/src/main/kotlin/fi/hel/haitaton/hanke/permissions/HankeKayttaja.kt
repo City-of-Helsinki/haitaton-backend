@@ -100,7 +100,7 @@ class HankekayttajaEntity(
         cascade = [CascadeType.ALL],
         orphanRemoval = true
     )
-    var hakemusYhteyshenkilot: MutableList<HakemusyhteyshenkiloEntity> = mutableListOf(),
+    var hakemusyhteyshenkilot: MutableList<HakemusyhteyshenkiloEntity> = mutableListOf(),
 ) {
     fun toDto(): HankeKayttajaDto =
         HankeKayttajaDto(

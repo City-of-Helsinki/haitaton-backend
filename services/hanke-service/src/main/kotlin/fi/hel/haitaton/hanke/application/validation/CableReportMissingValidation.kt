@@ -39,7 +39,7 @@ private fun CustomerWithContacts.validateForMissing(path: String): ValidationRes
         .andAllIn(contacts, "$path.contacts", ::validateForMissing)
 
 private fun Customer.validateForMissing(path: String): ValidationResult =
-    validate { notNull(type, "$path.type") }.and { notBlank(name, "$path.name") }
+    validate { notNull(type, "$path.type") }.and { notNullOrBlank(name, "$path.name") }
 
 private fun validateForMissing(contact: Contact, path: String) = validate {
     notNullOrBlank(contact.fullName(), "$path.firstName")

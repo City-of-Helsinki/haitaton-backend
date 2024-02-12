@@ -374,6 +374,7 @@ class ApplicationFactory(
         applicationIdentifier: String? = null,
         applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
         applicationData: ApplicationData = createCableReportApplicationData(),
+        mutator: (ApplicationEntity) -> Unit = { _ -> },
     ): ApplicationEntity {
         val applicationEntity =
             ApplicationEntity(
@@ -386,6 +387,7 @@ class ApplicationFactory(
                 applicationData = applicationData,
                 hanke = hanke,
             )
+        mutator(applicationEntity)
         return applicationRepository.save(applicationEntity)
     }
 
@@ -412,7 +414,7 @@ class ApplicationFactory(
                     hanke = hanke,
                 )
             }
-        entities.withIndex().forEach { (i, application) -> mutator(i, application) }
+        entities.forEachIndexed { i, application -> mutator(i, application) }
         return applicationRepository.saveAll(entities)
     }
 }
