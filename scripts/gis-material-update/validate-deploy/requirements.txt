@@ -1,0 +1,12 @@
+pandas
+gtfs_kit
+pyyaml
+matplotlib
+sqlalchemy
+psycopg2-binary
+geoalchemy2
+pyjq
+ipykernel
+parse
+black
+isort
