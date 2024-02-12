@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.domain.ModifyGeometriaRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankealueRequest
@@ -194,7 +195,8 @@ data class HankeBuilder(
                 nimi = nimi,
                 haittaAlkuPvm = haittaAlkuPvm,
                 haittaLoppuPvm = haittaLoppuPvm,
-                geometriat = geometriat,
+                geometriat =
+                    geometriat?.let { ModifyGeometriaRequest(it.id, it.featureCollection) },
                 kaistaHaitta = kaistaHaitta,
                 kaistaPituusHaitta = kaistaPituusHaitta,
                 meluHaitta = meluHaitta,
