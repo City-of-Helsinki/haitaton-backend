@@ -205,13 +205,6 @@ internal class DisclosureLogServiceTest {
     }
 
     @Test
-    fun `saveDisclosureLogsForApplication with null application does nothing`() {
-        disclosureLogService.saveDisclosureLogsForApplication(null, userId)
-
-        verify { auditLogService wasNot Called }
-    }
-
-    @Test
     fun `saveDisclosureLogsForApplication with company customers and no contacts does nothing`() {
         val customerWithoutContacts =
             ApplicationFactory.createCompanyCustomer(name = "First").withContacts()

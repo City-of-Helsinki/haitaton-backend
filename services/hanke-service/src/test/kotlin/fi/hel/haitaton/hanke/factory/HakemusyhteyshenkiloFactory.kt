@@ -44,7 +44,7 @@ class HakemusyhteyshenkiloFactory(
                 hankekayttaja =
                     HankekayttajaEntity(
                         id = id,
-                        hankeId = hakemusyhteystieto.application.hanke.id,
+                        hankeId = hakemusyhteystieto.application!!.hanke.id,
                         etunimi = etunimi,
                         sukunimi = sukunimi,
                         sahkoposti = sahkoposti,

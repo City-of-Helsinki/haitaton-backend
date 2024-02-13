@@ -1,23 +1,23 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import assertk.Assert
 import assertk.all
 import assertk.assertThat
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
+import assertk.assertions.isNotNull
 import assertk.assertions.isTrue
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.DatabaseTest
-import fi.hel.haitaton.hanke.application.ApplicationContactType
+import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
-import fi.hel.haitaton.hanke.factory.ApplicationFactory
-import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
-import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
+import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import org.junit.jupiter.api.AfterEach
@@ -43,11 +43,8 @@ class HakemusServiceITest : DatabaseTest() {
 
     @Autowired private lateinit var applicationRepository: ApplicationRepository
 
-    @Autowired private lateinit var applicationFactory: ApplicationFactory
+    @Autowired private lateinit var hakemusFactory: HakemusFactory
     @Autowired private lateinit var hankeFactory: HankeFactory
-    @Autowired private lateinit var hakemusyhteystietoFactory: HakemusyhteystietoFactory
-    @Autowired private lateinit var hakemusyhteyshenkiloFactory: HakemusyhteyshenkiloFactory
-    @Autowired private lateinit var hankeKayttajaFactory: HankeKayttajaFactory
 
     @BeforeEach
     fun clearMocks() {
@@ -69,69 +66,62 @@ class HakemusServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `when application exists should return correct response`() {
-            val hanke = hankeFactory.saveMinimal()
-            val hakijanYhteyshenkilo =
-                hankeKayttajaFactory.saveIdentifiedUser(
-                    hanke.id,
-                    etunimi = "Hannu",
-                    sukunimi = "Hakija",
-                    sahkoposti = "hannu.hakija@yritys.fi"
-                )
-            val tyonSuorittajanYhteyshenkilo =
-                hankeKayttajaFactory.saveIdentifiedUser(
-                    hanke.id,
-                    etunimi = "Susanna",
-                    sukunimi = "Suorittaja",
-                    sahkoposti = "susanna.suorittaja@yritys.fi"
-                )
+        fun `returns yhteystiedot and yhteyshenkilot if they're present`() {
+            val hanke = hankeFactory.saveMinimal(generated = true)
             val application =
-                applicationFactory.saveApplicationEntity(
-                    USERNAME,
-                    hanke = hanke,
-                    mutator = { application ->
-                        application.yhteystiedot[ApplicationContactType.HAKIJA] =
-                            hakemusyhteystietoFactory.createEntity(application = application)
-                        application.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA] =
-                            hakemusyhteystietoFactory.createEntity(
-                                rooli = ApplicationContactType.TYON_SUORITTAJA,
-                                application = application
-                            )
-                    }
-                )
-            hakemusyhteyshenkiloFactory.saveHakemusyhteyshenkilo(
-                application.yhteystiedot[ApplicationContactType.HAKIJA]!!,
-                hakijanYhteyshenkilo,
-                true
-            )
-            hakemusyhteyshenkiloFactory.saveHakemusyhteyshenkilo(
-                application.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]!!,
-                tyonSuorittajanYhteyshenkilo
-            )
+                hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
+                    hakija(kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    tyonSuorittaja(kayttooikeustaso = Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
+                    rakennuttaja(kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI)
+                    asianhoitaja()
+                }
 
             val response = hakemusService.hakemusResponse(application.id!!)
 
-            assertThat(response.id).isEqualTo(application.id)
-            val applicationData = response.applicationData as JohtoselvitysHakemusDataResponse
-            val hakija = application.yhteystiedot[ApplicationContactType.HAKIJA]!!
-            val tyonSuorittaja = application.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]!!
-            assertThat(applicationData.customerWithContacts.customer).all {
-                prop(CustomerResponse::yhteystietoId).isEqualTo(hakija.id)
-                prop(CustomerResponse::type).isEqualTo(hakija.tyyppi)
-                prop(CustomerResponse::name).isEqualTo(hakija.nimi)
+            assertThat(response.applicationData as JohtoselvitysHakemusDataResponse)
+                .hasAllCustomersWithContacts()
+        }
+    }
+
+    private fun Assert<JohtoselvitysHakemusDataResponse>.hasAllCustomersWithContacts() {
+        prop(JohtoselvitysHakemusDataResponse::customerWithContacts).all {
+            prop(CustomerWithContactsResponse::customer).all {
+                prop(CustomerResponse::type).isEqualTo(CustomerType.COMPANY)
             }
-            assertThat(applicationData.customerWithContacts.contacts).single().all {
-                prop(ContactResponse::hankekayttajaId).isEqualTo(hakijanYhteyshenkilo.id)
-                prop(ContactResponse::tilaaja).isTrue()
+        }
+        prop(JohtoselvitysHakemusDataResponse::customerWithContacts).all {
+            prop(CustomerWithContactsResponse::contacts).single().all {
+                prop(ContactResponse::orderer).isTrue()
             }
-            assertThat(applicationData.contractorWithContacts.customer).all {
-                prop(CustomerResponse::yhteystietoId).isEqualTo(tyonSuorittaja.id)
-                prop(CustomerResponse::type).isEqualTo(tyonSuorittaja.tyyppi)
-                prop(CustomerResponse::name).isEqualTo(tyonSuorittaja.nimi)
+        }
+        prop(JohtoselvitysHakemusDataResponse::contractorWithContacts).all {
+            prop(CustomerWithContactsResponse::customer).all {
+                prop(CustomerResponse::type).isEqualTo(CustomerType.COMPANY)
             }
-            assertThat(applicationData.contractorWithContacts.contacts).single().all {
-                prop(ContactResponse::hankekayttajaId).isEqualTo(tyonSuorittajanYhteyshenkilo.id)
-                prop(ContactResponse::tilaaja).isFalse()
+        }
+        prop(JohtoselvitysHakemusDataResponse::contractorWithContacts).all {
+            prop(CustomerWithContactsResponse::contacts).single().all {
+                prop(ContactResponse::orderer).isFalse()
+            }
+        }
+        prop(JohtoselvitysHakemusDataResponse::propertyDeveloperWithContacts).isNotNull().all {
+            prop(CustomerWithContactsResponse::customer).all {
+                prop(CustomerResponse::type).isEqualTo(CustomerType.COMPANY)
+            }
+        }
+        prop(JohtoselvitysHakemusDataResponse::propertyDeveloperWithContacts).isNotNull().all {
+            prop(CustomerWithContactsResponse::contacts).single().all {
+                prop(ContactResponse::orderer).isFalse()
+            }
+        }
+        prop(JohtoselvitysHakemusDataResponse::representativeWithContacts).isNotNull().all {
+            prop(CustomerWithContactsResponse::customer).all {
+                prop(CustomerResponse::type).isEqualTo(CustomerType.COMPANY)
+            }
+        }
+        prop(JohtoselvitysHakemusDataResponse::representativeWithContacts).isNotNull().all {
+            prop(CustomerWithContactsResponse::contacts).single().all {
+                prop(ContactResponse::orderer).isFalse()
             }
         }
     }

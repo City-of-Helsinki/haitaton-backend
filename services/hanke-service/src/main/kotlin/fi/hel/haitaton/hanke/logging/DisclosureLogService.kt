@@ -12,6 +12,11 @@ import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
+import fi.hel.haitaton.hanke.hakemus.ContactResponse
+import fi.hel.haitaton.hanke.hakemus.CustomerResponse
+import fi.hel.haitaton.hanke.hakemus.HakemusDataResponse
+import fi.hel.haitaton.hanke.hakemus.HakemusResponse
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusDataResponse
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.toJsonString
@@ -38,7 +43,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
 
     /**
      * Save disclosure log for when we are reading the verfied name from Profiili. Write a single
-     * disclosure log entry with user names.
+     * disclosure log entry with user's names.
      */
     fun saveDisclosureLogsForProfiiliNimi(userId: String, names: Names) {
         val entry = disclosureLogEntry(ObjectType.PROFIILI_NIMI, userId, names)
@@ -89,8 +94,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
      * Save disclosure logs for when a user accesses an application. Write disclosure log entries
      * for the customers and contacts in the application.
      */
-    fun saveDisclosureLogsForApplication(application: Application?, userId: String) {
-        if (application == null) return
+    fun saveDisclosureLogsForApplication(application: Application, userId: String) {
         saveDisclosureLogsForApplications(listOf(application), userId)
     }
 
@@ -101,6 +105,28 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     fun saveDisclosureLogsForApplications(applications: List<Application>, userId: String) {
         val entries =
             auditLogEntriesForCustomers(applications) + auditLogEntriesForContacts(applications)
+        saveDisclosureLogs(userId, UserRole.USER, entries)
+    }
+
+    /**
+     * Save disclosure logs for when a user accesses an application. Write disclosure log entries
+     * for the customers and contacts in the application.
+     */
+    fun saveDisclosureLogsForHakemusResponse(hakemusResponse: HakemusResponse, userId: String) {
+        saveDisclosureLogsForHakemusResponses(listOf(hakemusResponse), userId)
+    }
+
+    /**
+     * Save disclosure logs for when a user accesses applications. Write disclosure log entries for
+     * the customers and contacts in the applications.
+     */
+    fun saveDisclosureLogsForHakemusResponses(
+        hakemusResponses: List<HakemusResponse>,
+        userId: String
+    ) {
+        val entries =
+            auditLogEntriesForHakemusResponseCustomers(hakemusResponses) +
+                auditLogEntriesForHakemusResponseContacts(hakemusResponses)
         saveDisclosureLogs(userId, UserRole.USER, entries)
     }
 
@@ -155,12 +181,37 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             disclosureLogEntry(objectType, applicationId, customer, status, failureDescription)
         }
 
+    private fun auditLogEntriesForHakemusDataResponseCustomers(
+        applicationId: Long,
+        hakemusDataResponse: HakemusDataResponse,
+        objectType: ObjectType,
+        status: Status = Status.SUCCESS,
+        failureDescription: String? = null
+    ): List<AuditLogEntry> =
+        extractHakemusDataResponseCustomers(hakemusDataResponse).toSet().map { customer ->
+            disclosureLogEntry(objectType, applicationId, customer, status, failureDescription)
+        }
+
     private fun auditLogEntriesForCustomers(
         applications: List<Application>,
         objectType: ObjectType = ObjectType.APPLICATION_CUSTOMER,
     ): Set<AuditLogEntry> =
         applications
             .flatMap { auditLogEntriesForCustomers(it.id!!, it.applicationData, objectType) }
+            .toSet()
+
+    private fun auditLogEntriesForHakemusResponseCustomers(
+        hakemusResponses: List<HakemusResponse>,
+        objectType: ObjectType = ObjectType.APPLICATION_CUSTOMER,
+    ): Set<AuditLogEntry> =
+        hakemusResponses
+            .flatMap {
+                auditLogEntriesForHakemusDataResponseCustomers(
+                    it.id,
+                    it.applicationData,
+                    objectType
+                )
+            }
             .toSet()
 
     private fun auditLogEntriesForContacts(
@@ -174,12 +225,33 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             disclosureLogEntry(objectType, applicationId, contact, status, failureDescription)
         }
 
+    private fun auditLogEntriesForHakemusDataResponseContacts(
+        applicationId: Long,
+        hakemusDataResponse: HakemusDataResponse,
+        objectType: ObjectType,
+        status: Status = Status.SUCCESS,
+        failureDescription: String? = null,
+    ): List<AuditLogEntry> =
+        extractHakemusDataResponseContacts(hakemusDataResponse).toSet().map { contact ->
+            disclosureLogEntry(objectType, applicationId, contact, status, failureDescription)
+        }
+
     private fun auditLogEntriesForContacts(
         applications: List<Application>,
         objectType: ObjectType = ObjectType.APPLICATION_CONTACT,
     ): Set<AuditLogEntry> =
         applications
             .flatMap { auditLogEntriesForContacts(it.id!!, it.applicationData, objectType) }
+            .toSet()
+
+    private fun auditLogEntriesForHakemusResponseContacts(
+        applications: List<HakemusResponse>,
+        objectType: ObjectType = ObjectType.APPLICATION_CONTACT,
+    ): Set<AuditLogEntry> =
+        applications
+            .flatMap {
+                auditLogEntriesForHakemusDataResponseContacts(it.id, it.applicationData, objectType)
+            }
             .toSet()
 
     private fun extractContacts(applicationData: ApplicationData): List<ContactWithRole> =
@@ -193,12 +265,38 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
                     .filter { it.contact.hasInformation() }
         }
 
+    private fun extractHakemusDataResponseContacts(
+        hakemusDataResponse: HakemusDataResponse
+    ): List<ContactResponseWithRole> =
+        when (hakemusDataResponse) {
+            is JohtoselvitysHakemusDataResponse ->
+                hakemusDataResponse
+                    .customersByRole()
+                    .flatMap { (role, customer) ->
+                        customer.contacts.map { ContactResponseWithRole(role, it) }
+                    }
+                    .filter { it.contact.hasInformation() }
+        }
+
     private fun extractCustomers(applicationData: ApplicationData): List<CustomerWithRole> =
         when (applicationData) {
             is CableReportApplicationData ->
                 applicationData
                     .customersByRole()
                     .map { (role, customer) -> CustomerWithRole(role, customer.customer) }
+                    // Only personal data needs to be logged, not other types of customers.
+                    .filter { it.customer.type == CustomerType.PERSON }
+                    .filter { it.customer.hasPersonalInformation() }
+        }
+
+    private fun extractHakemusDataResponseCustomers(
+        hakemusDataResponse: HakemusDataResponse
+    ): List<CustomerResponseWithRole> =
+        when (hakemusDataResponse) {
+            is JohtoselvitysHakemusDataResponse ->
+                hakemusDataResponse
+                    .customersByRole()
+                    .map { (role, customer) -> CustomerResponseWithRole(role, customer.customer) }
                     // Only personal data needs to be logged, not other types of customers.
                     .filter { it.customer.type == CustomerType.PERSON }
                     .filter { it.customer.hasPersonalInformation() }
@@ -247,7 +345,17 @@ data class CustomerWithRole(
     @JsonUnwrapped val customer: Customer,
 )
 
+data class CustomerResponseWithRole(
+    val role: ApplicationContactType,
+    @JsonUnwrapped val customer: CustomerResponse,
+)
+
 data class ContactWithRole(
     val role: ApplicationContactType,
     @JsonUnwrapped val contact: Contact,
+)
+
+data class ContactResponseWithRole(
+    val role: ApplicationContactType,
+    @JsonUnwrapped val contact: ContactResponse,
 )

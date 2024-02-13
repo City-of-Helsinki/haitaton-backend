@@ -1,13 +1,15 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationArea
+import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.PostalAddress
 import java.time.ZonedDateTime
-import java.util.UUID
+import java.util.*
 
 data class HakemusResponse(
     val id: Long,
@@ -55,7 +57,15 @@ data class JohtoselvitysHakemusDataResponse(
     val maintenanceWork: Boolean = false,
     val emergencyWork: Boolean = false,
     val propertyConnectivity: Boolean = false, // tontti-/kiinteistöliitos
-) : HakemusDataResponse
+) : HakemusDataResponse {
+    fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContactsResponse>> =
+        listOfNotNull(
+            ApplicationContactType.HAKIJA to customerWithContacts,
+            ApplicationContactType.TYON_SUORITTAJA to contractorWithContacts,
+            representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
+            propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
+        )
+}
 
 data class CustomerWithContactsResponse(
     val customer: CustomerResponse,
@@ -73,9 +83,33 @@ data class CustomerResponse(
     val ovt: String?, // e-invoice identifier (ovt-tunnus)
     val invoicingOperator: String?, // e-invoicing operator code
     val sapCustomerNumber: String?, // customer's sap number
-)
+) {
+    /**
+     * Check if this customer contains any actual personal information.
+     *
+     * Country alone isn't considered personal information when it's dissociated from other
+     * information, so it's not checked here.
+     */
+    fun hasPersonalInformation() =
+        !(name.isNullOrBlank() &&
+            email.isNullOrBlank() &&
+            phone.isNullOrBlank() &&
+            registryKey.isNullOrBlank() &&
+            ovt.isNullOrBlank() &&
+            invoicingOperator.isNullOrBlank() &&
+            sapCustomerNumber.isNullOrBlank())
+}
 
 data class ContactResponse(
     val hankekayttajaId: UUID,
-    val tilaaja: Boolean,
-)
+    val firstName: String?,
+    val lastName: String?,
+    val email: String?,
+    val phone: String?,
+    val orderer: Boolean = false,
+) {
+    /** Check if this contact is blank, i.e. it doesn't contain any actual contact information. */
+    @JsonIgnore fun isBlank() = listOf(firstName, lastName, email, phone).all { it.isNullOrBlank() }
+
+    fun hasInformation() = !isBlank()
+}

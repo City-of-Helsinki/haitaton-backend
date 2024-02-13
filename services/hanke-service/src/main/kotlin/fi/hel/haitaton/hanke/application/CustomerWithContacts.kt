@@ -17,7 +17,10 @@ import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import java.util.UUID
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class CustomerWithContacts(val customer: Customer, val contacts: List<Contact>) {
+data class CustomerWithContacts(
+    val customer: Customer = Customer(),
+    val contacts: List<Contact> = emptyList()
+) {
     fun toAlluData(path: String): AlluCustomerWithContacts {
         return AlluCustomerWithContacts(
             customer.toAlluData("$path.customer"),
@@ -78,15 +81,15 @@ data class Contact(
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonView(ChangeLogView::class)
 data class Customer(
-    val type: CustomerType?, // Mandatory in Allu, but not in drafts.
-    val name: String?,
-    val country: String?, // ISO 3166-1 alpha-2 country code
-    val email: String?,
-    val phone: String?,
-    val registryKey: String?, // y-tunnus
-    val ovt: String?, // e-invoice identifier (ovt-tunnus)
-    val invoicingOperator: String?, // e-invoicing operator code
-    val sapCustomerNumber: String?, // customer's sap number
+    val type: CustomerType? = null, // Mandatory in Allu, but not in drafts.
+    val name: String? = null,
+    val country: String? = null, // ISO 3166-1 alpha-2 country code
+    val email: String? = null,
+    val phone: String? = null,
+    val registryKey: String? = null, // y-tunnus
+    val ovt: String? = null, // e-invoice identifier (ovt-tunnus)
+    val invoicingOperator: String? = null, // e-invoicing operator code
+    val sapCustomerNumber: String? = null, // customer's sap number
 ) {
     /**
      * Check if this customer contains any actual personal information.

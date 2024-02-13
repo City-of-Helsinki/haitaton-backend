@@ -45,7 +45,7 @@ private val logger = KotlinLogging.logger {}
 @RequestMapping("/hakemukset")
 @SecurityRequirement(name = "bearerAuth")
 @ConditionalOnProperty(
-    name = ["haitaton.features.kortisto"],
+    name = ["haitaton.features.user-management"],
     havingValue = "false",
     matchIfMissing = true
 )

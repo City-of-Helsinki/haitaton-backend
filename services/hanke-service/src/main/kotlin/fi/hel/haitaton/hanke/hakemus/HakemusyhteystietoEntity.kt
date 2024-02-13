@@ -32,7 +32,7 @@ class HakemusyhteystietoEntity(
     @Column(name = "y_tunnus") var ytunnus: String?,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id")
-    var application: ApplicationEntity,
+    var application: ApplicationEntity? = null,
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "hakemusyhteystieto")
     @BatchSize(size = 100)
     var yhteyshenkilot: List<HakemusyhteyshenkiloEntity> = mutableListOf(),
@@ -64,7 +64,17 @@ class HakemusyhteyshenkiloEntity(
     var hankekayttaja: HankekayttajaEntity,
     var tilaaja: Boolean
 ) {
-    fun toContactResponse(): ContactResponse = ContactResponse(hankekayttaja.id, tilaaja)
+    fun toContactResponse(): ContactResponse =
+        ContactResponse(
+            hankekayttaja.id,
+            hankekayttaja.etunimi,
+            hankekayttaja.sukunimi,
+            hankekayttaja.sahkoposti,
+            hankekayttaja.puhelin,
+            tilaaja
+        )
 }
+
+interface HakemusyhteystietoRepository : JpaRepository<HakemusyhteystietoEntity, UUID>
 
 interface HakemusyhteyshenkiloRepository : JpaRepository<HakemusyhteyshenkiloEntity, UUID>

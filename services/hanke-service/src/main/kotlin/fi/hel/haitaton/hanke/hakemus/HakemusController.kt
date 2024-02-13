@@ -1,7 +1,6 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.HankeError
-import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import io.swagger.v3.oas.annotations.Operation
@@ -26,11 +25,10 @@ private val logger = KotlinLogging.logger {}
 @Validated
 @SecurityRequirement(name = "bearerAuth")
 @ConditionalOnProperty(
-    name = ["haitaton.features.kortisto"],
+    name = ["haitaton.features.user-management"],
     havingValue = "true",
 )
 class HakemusController(
-    private val applicationService: ApplicationService,
     private val hakemusService: HakemusService,
     private val disclosureLogService: DisclosureLogService,
 ) {
@@ -53,8 +51,8 @@ class HakemusController(
     @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'VIEW')")
     fun getById(@PathVariable(name = "id") id: Long): HakemusResponse {
         logger.info { "Finding application $id" }
-        val application = applicationService.getApplicationById(id)
-        disclosureLogService.saveDisclosureLogsForApplication(application, currentUserId())
-        return hakemusService.hakemusResponse(id)
+        val response = hakemusService.hakemusResponse(id)
+        disclosureLogService.saveDisclosureLogsForHakemusResponse(response, currentUserId())
+        return response
     }
 }

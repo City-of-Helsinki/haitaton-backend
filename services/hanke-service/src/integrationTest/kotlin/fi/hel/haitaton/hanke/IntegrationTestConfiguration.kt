@@ -13,6 +13,7 @@ import fi.hel.haitaton.hanke.gdpr.GdprProperties
 import fi.hel.haitaton.hanke.gdpr.GdprService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.geometria.GeometriatService
+import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaAuthorizer
@@ -54,6 +55,8 @@ class IntegrationTestConfiguration {
     @Bean fun hankeService(): HankeService = mockk()
 
     @Bean fun applicationService(): ApplicationService = mockk()
+
+    @Bean fun hakemusService(): HakemusService = mockk()
 
     @Bean fun gdprService(): GdprService = mockk(relaxUnitFun = true)
 
