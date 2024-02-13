@@ -53,7 +53,10 @@ import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.AlluFactory.createAlluApplicationResponse
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.asianHoitajaCustomerContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplication
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplicationArea
@@ -779,9 +782,9 @@ class ApplicationServiceITest : DatabaseTest() {
             val inviter = findKayttaja(hanke.id, KAYTTAJA_INPUT_HAKIJA.email)
             assertThat(kutsut.first().hankekayttaja).all {
                 prop(HankekayttajaEntity::fullName).isEqualTo(TEPPO_TESTI)
-                prop(HankekayttajaEntity::puhelin).isEqualTo("04012345678")
-                prop(HankekayttajaEntity::kutsuttuEtunimi).isEqualTo("Teppo")
-                prop(HankekayttajaEntity::kutsuttuSukunimi).isEqualTo("Testihenkilö")
+                prop(HankekayttajaEntity::puhelin).isEqualTo(TEPPO_PHONE)
+                prop(HankekayttajaEntity::kutsuttuEtunimi).isEqualTo(TEPPO)
+                prop(HankekayttajaEntity::kutsuttuSukunimi).isEqualTo(TESTIHENKILO)
                 prop(HankekayttajaEntity::sahkoposti).isEqualTo(TEPPO_EMAIL)
                 prop(HankekayttajaEntity::hankeId).isEqualTo(hanke.id)
                 prop(HankekayttajaEntity::permission).isNull() // user not logged in yet

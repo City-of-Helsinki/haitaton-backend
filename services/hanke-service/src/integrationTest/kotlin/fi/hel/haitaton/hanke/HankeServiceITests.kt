@@ -1120,10 +1120,10 @@ class HankeServiceITests(
                     .flatMap { it.contacts }
                     .find { it.orderer }
             assertThat(orderer).isNotNull().all {
-                prop(Contact::firstName).isEqualTo("Teppo")
-                prop(Contact::lastName).isEqualTo("Testihenkilö")
+                prop(Contact::firstName).isEqualTo(ApplicationFactory.TEPPO)
+                prop(Contact::lastName).isEqualTo(ApplicationFactory.TESTIHENKILO)
                 prop(Contact::email).isEqualTo(ApplicationFactory.TEPPO_EMAIL)
-                prop(Contact::phone).isEqualTo("04012345678")
+                prop(Contact::phone).isEqualTo(ApplicationFactory.TEPPO_PHONE)
             }
 
             val application =
@@ -1134,7 +1134,7 @@ class HankeServiceITests(
             assertThat(users.first()).all {
                 prop(HankekayttajaEntity::id).isNotNull()
                 prop(HankekayttajaEntity::sahkoposti).isEqualTo(ApplicationFactory.TEPPO_EMAIL)
-                prop(HankekayttajaEntity::puhelin).isEqualTo("04012345678")
+                prop(HankekayttajaEntity::puhelin).isEqualTo(ApplicationFactory.TEPPO_PHONE)
                 prop(HankekayttajaEntity::etunimi).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
                 prop(HankekayttajaEntity::sukunimi).isEqualTo(ProfiiliFactory.DEFAULT_LAST_NAME)
                 prop(HankekayttajaEntity::permission)
@@ -1835,7 +1835,7 @@ class HankeServiceITests(
         prop(HankeYhteystieto::email).isEqualTo(ApplicationFactory.TEPPO_EMAIL)
         prop(HankeYhteystieto::tyyppi).isEqualTo(YhteystietoTyyppi.YRITYS)
         prop(HankeYhteystieto::ytunnus).isEqualTo(HankeYhteystietoFactory.DEFAULT_YTUNNUS)
-        prop(HankeYhteystieto::puhelinnumero).isEqualTo("04012345678")
+        prop(HankeYhteystieto::puhelinnumero).isEqualTo(ApplicationFactory.TEPPO_PHONE)
         prop(HankeYhteystieto::organisaatioNimi).isEqualTo("Organisaatio")
         prop(HankeYhteystieto::osasto).isEqualTo("Osasto")
         prop(HankeYhteystieto::createdBy).isEqualTo("test7358")

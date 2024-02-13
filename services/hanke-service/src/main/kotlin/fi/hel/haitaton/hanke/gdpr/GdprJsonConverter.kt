@@ -25,21 +25,24 @@ object GdprJsonConverter {
         if (infos.isEmpty()) {
             return listOf()
         }
-        val names = infos.mapNotNull { it.name }.toSet()
+        val firstNames = infos.mapNotNull { it.firstName }.toSet()
+        val lastNames = infos.mapNotNull { it.lastName }.toSet()
         val phones = infos.mapNotNull { it.phone }.toSet()
         val emails = infos.mapNotNull { it.email }.toSet()
         val ipAddresses = infos.mapNotNull { it.ipAddress }.toSet()
         val organisations = infos.mapNotNull { it.organisation }.toSet()
 
         val idNode = StringNode("id", userId)
-        val namesNode = combineStrings(names, "nimi", "nimet")
+        val firstNamesNode = combineStrings(firstNames, "etunimi", "etunimet")
+        val lastNamesNode = combineStrings(lastNames, "sukunimi", "sukunimet")
         val phonesNode = combineStrings(phones, "puhelinnumero", "puhelinnumerot")
         val emailsNode = combineStrings(emails, "sahkoposti", "sahkopostit")
         val ipAddressesNode = combineStrings(ipAddresses, "ipOsoite", "ipOsoitteet")
         val organisationsNode = combineOrganisations(organisations)
         return listOfNotNull(
             idNode,
-            namesNode,
+            firstNamesNode,
+            lastNamesNode,
             phonesNode,
             emailsNode,
             ipAddressesNode,
@@ -125,7 +128,8 @@ object GdprJsonConverter {
         organisation: GdprOrganisation?,
     ): GdprInfo {
         return GdprInfo(
-            name = contact.fullName(),
+            firstName = contact.firstName,
+            lastName = contact.lastName,
             phone = contact.phone,
             email = contact.email,
             organisation = organisation,

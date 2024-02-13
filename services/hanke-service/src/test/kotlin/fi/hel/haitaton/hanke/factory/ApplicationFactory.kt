@@ -36,7 +36,11 @@ class ApplicationFactory(
         const val DEFAULT_APPLICATION_ID: Long = 1
         const val DEFAULT_APPLICATION_NAME: String = "Johtoselvityksen oletusnimi"
         const val DEFAULT_APPLICATION_IDENTIFIER: String = "JS230014"
+        const val TEPPO = "Teppo"
+        const val TESTIHENKILO = "Testihenkilö"
         const val TEPPO_EMAIL = "teppo@example.test"
+        const val TEPPO_PHONE = "04012345678"
+
         val expectedRecipients =
             arrayOf(
                 "timo.tyonsuorittaja@mail.com",
@@ -56,7 +60,7 @@ class ApplicationFactory(
             name: String = TEPPO_TESTI,
             country: String = "FI",
             email: String? = TEPPO_EMAIL,
-            phone: String? = "04012345678",
+            phone: String? = TEPPO_PHONE,
             registryKey: String? = "281192-937W",
             ovt: String? = null,
             invoicingOperator: String? = null,
@@ -115,18 +119,18 @@ class ApplicationFactory(
             CustomerWithContacts(this, contacts.asList())
 
         fun Customer.withContact(
-            firstName: String? = "Teppo",
-            lastName: String? = "Testihenkilö",
+            firstName: String? = TEPPO,
+            lastName: String? = TESTIHENKILO,
             email: String? = TEPPO_EMAIL,
-            phone: String? = "04012345678",
+            phone: String? = TEPPO_PHONE,
             orderer: Boolean = false,
         ) = withContacts(createContact(firstName, lastName, email, phone, orderer))
 
         fun createContact(
-            firstName: String? = "Teppo",
-            lastName: String? = "Testihenkilö",
+            firstName: String? = TEPPO,
+            lastName: String? = TESTIHENKILO,
             email: String? = TEPPO_EMAIL,
-            phone: String? = "04012345678",
+            phone: String? = TEPPO_PHONE,
             orderer: Boolean = false
         ) = Contact(firstName, lastName, email, phone, orderer)
 
