@@ -11,6 +11,10 @@ import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withApplicationData
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
@@ -67,9 +71,10 @@ internal class DisclosureLogServiceTest {
                 "user",
                 listOf(
                     StringNode("id", "4f15afe1-51dc-4015-bb66-3a536295abea"),
-                    StringNode("nimi", "Teppo Testihenkilö"),
-                    StringNode("sahkoposti", "teppo@example.test"),
-                    StringNode("puhelin", "04012345678"),
+                    StringNode("etunimi", TEPPO),
+                    StringNode("sukunimi", TESTIHENKILO),
+                    StringNode("sahkoposti", TEPPO_EMAIL),
+                    StringNode("puhelin", TEPPO_PHONE),
                 )
             )
 
@@ -80,9 +85,10 @@ internal class DisclosureLogServiceTest {
             {"key":"user","children":
               [
                 {"key":"id","value":"4f15afe1-51dc-4015-bb66-3a536295abea"},
-                {"key":"nimi","value":"Teppo Testihenkilö"},
-                {"key":"sahkoposti","value":"teppo@example.test"},
-                {"key":"puhelin","value":"04012345678"}
+                {"key":"etunimi","value":"$TEPPO"},
+                {"key":"sukunimi","value":"$TESTIHENKILO"},
+                {"key":"sahkoposti","value":"$TEPPO_EMAIL"},
+                {"key":"puhelin","value":"$TEPPO_PHONE"}
               ]
             }"""
                 .reformatJson()

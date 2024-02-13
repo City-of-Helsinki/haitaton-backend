@@ -31,6 +31,7 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.email.textBody
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_APPLICATION_IDENTIFIER
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.asianHoitajaCustomerContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplicationEntity
@@ -591,8 +592,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val kayttajat = hankeKayttajaRepository.findAll()
             assertThat(kayttajat).hasSize(4)
             assertThat(kayttajat).each { kayttaja ->
-                kayttaja.transform { it.etunimi }.isEqualTo("Teppo")
-                kayttaja.transform { it.sukunimi }.isEqualTo("Testihenkilö")
+                kayttaja.transform { it.etunimi }.isEqualTo(ApplicationFactory.TEPPO)
+                kayttaja.transform { it.sukunimi }.isEqualTo(ApplicationFactory.TESTIHENKILO)
                 kayttaja.transform { it.hankeId }.isEqualTo(hanke.id)
                 kayttaja.transform { it.permission }.isNull()
                 kayttaja.transform { it.kayttajakutsu }.isNotNull()

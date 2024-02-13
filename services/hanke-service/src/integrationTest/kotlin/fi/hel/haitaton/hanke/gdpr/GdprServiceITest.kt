@@ -15,10 +15,13 @@ import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -67,7 +70,7 @@ class GdprServiceITest : DatabaseTest() {
                     application.setOrdererName("Other", "User")
                 } else {
                     application.userId = USERID
-                    application.setOrdererName("Teppo", "Testihenkilö")
+                    application.setOrdererName(TEPPO, TESTIHENKILO)
                 }
             }
 
@@ -78,9 +81,10 @@ class GdprServiceITest : DatabaseTest() {
                     "user",
                     listOf(
                         StringNode("id", USERID),
-                        StringNode("nimi", TEPPO_TESTI),
-                        StringNode("puhelinnumero", "04012345678"),
-                        StringNode("sahkoposti", "teppo@example.test"),
+                        StringNode("etunimi", TEPPO),
+                        StringNode("sukunimi", TESTIHENKILO),
+                        StringNode("puhelinnumero", TEPPO_PHONE),
+                        StringNode("sahkoposti", TEPPO_EMAIL),
                         CollectionNode(
                             "organisaatio",
                             listOf(
