@@ -5,6 +5,10 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import java.util.stream.Stream
@@ -71,10 +75,10 @@ class ContactTest {
         assertThat(allContacts).hasSize(4)
         val expectedResult =
             Contact(
-                firstName = "Teppo",
-                lastName = "Testihenkilö",
-                email = "teppo@example.test",
-                phone = "04012345678",
+                firstName = TEPPO,
+                lastName = TESTIHENKILO,
+                email = TEPPO_EMAIL,
+                phone = TEPPO_PHONE,
                 orderer = true,
             )
         assertThat(result).isEqualTo(expectedResult)

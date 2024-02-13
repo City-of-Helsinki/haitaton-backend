@@ -14,6 +14,10 @@ import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
@@ -61,15 +65,17 @@ class GdprJsonConverterTest {
         val result = GdprJsonConverter.createGdprJson(listOf(application, otherApplication), userid)
 
         assertThat(result?.key).isEqualTo("user")
-        assertThat(result?.children).isNotNull().hasSize(5)
+        assertThat(result?.children).isNotNull().hasSize(6)
         val id = getStringNodeFromChildren(result, "id").value
         assertThat(id).isEqualTo(userid)
-        val nimi = getStringNodeFromChildren(result, "nimi").value
-        assertThat(nimi).isEqualTo(TEPPO_TESTI)
+        val etunimi = getStringNodeFromChildren(result, "etunimi").value
+        assertThat(etunimi).isEqualTo(TEPPO)
+        val sukunimi = getStringNodeFromChildren(result, "sukunimi").value
+        assertThat(sukunimi).isEqualTo(TESTIHENKILO)
         val puhelinnumerot = getCollectionNodeFromChildren(result, "puhelinnumerot").children
         assertThat(puhelinnumerot.map { it.key }).each { it.isEqualTo("puhelinnumero") }
         assertThat(puhelinnumerot.map { (it as StringNode).value })
-            .containsExactlyInAnyOrder("12345678", "04012345678")
+            .containsExactlyInAnyOrder("12345678", TEPPO_PHONE)
         val sahkopostit = getCollectionNodeFromChildren(result, "sahkopostit").children
         assertThat(sahkopostit.map { it.key }).each { it.isEqualTo("sahkoposti") }
         assertThat(sahkopostit.map { (it as StringNode).value })
@@ -94,13 +100,13 @@ class GdprJsonConverterTest {
     fun `combineGdprInfos with one info returns simple values`() {
         val result = GdprJsonConverter.combineGdprInfos(listOf(teppoGdprInfo()), "1")
 
-        assertThat(result).hasSize(4)
         assertThat(result)
             .containsExactlyInAnyOrder(
                 StringNode("id", "1"),
-                StringNode("nimi", TEPPO_TESTI),
-                StringNode("puhelinnumero", "04012345678"),
-                StringNode("sahkoposti", "teppo@example.test"),
+                StringNode("etunimi", TEPPO),
+                StringNode("sukunimi", TESTIHENKILO),
+                StringNode("puhelinnumero", TEPPO_PHONE),
+                StringNode("sahkoposti", TEPPO_EMAIL),
             )
     }
 
@@ -115,22 +121,22 @@ class GdprJsonConverterTest {
 
         val result = GdprJsonConverter.combineGdprInfos(infos, "1")
 
-        assertThat(result).hasSize(4)
         assertThat(result)
             .containsExactlyInAnyOrder(
                 StringNode("id", "1"),
-                StringNode("nimi", TEPPO_TESTI),
+                StringNode("etunimi", TEPPO),
+                StringNode("sukunimi", TESTIHENKILO),
                 CollectionNode(
                     "puhelinnumerot",
                     listOf(
-                        StringNode("puhelinnumero", "04012345678"),
+                        StringNode("puhelinnumero", TEPPO_PHONE),
                         StringNode("puhelinnumero", "123456")
                     )
                 ),
                 CollectionNode(
                     "sahkopostit",
                     listOf(
-                        StringNode("sahkoposti", "teppo@example.test"),
+                        StringNode("sahkoposti", TEPPO_EMAIL),
                         StringNode("sahkoposti", "toinen@example.test"),
                         StringNode("sahkoposti", "kolmas@example.test")
                     )
@@ -184,8 +190,9 @@ class GdprJsonConverterTest {
 
         val expectedInfo =
             GdprInfo(
-                name = TEPPO_TESTI,
-                phone = "04012345678",
+                firstName = TEPPO,
+                lastName = TESTIHENKILO,
+                phone = TEPPO_PHONE,
                 email = "teppo@dna.test",
                 organisation = GdprOrganisation(name = "Dna", registryKey = "3766028-0"),
             )
@@ -249,11 +256,11 @@ class GdprJsonConverterTest {
                 ApplicationFactory.createContact(),
                 ApplicationFactory.createContact(
                     firstName = "Toinen",
-                    lastName = "Testihenkilö",
+                    lastName = TESTIHENKILO,
                     email = "toinen@example.test"
                 ),
                 ApplicationFactory.createContact(
-                    firstName = "Teppo",
+                    firstName = TEPPO,
                     lastName = "Toissijainen",
                     email = "toissijainen@example.test"
                 ),
@@ -275,12 +282,14 @@ class GdprJsonConverterTest {
             arrayOf(
                 teppoGdprInfo(organisation = dnaGdprOrganisation()),
                 teppoGdprInfo(
-                    name = "Toinen Testihenkilö",
+                    firstName = "Toinen",
+                    lastName = TESTIHENKILO,
                     email = "toinen@example.test",
                     organisation = dnaGdprOrganisation()
                 ),
                 teppoGdprInfo(
-                    name = "Teppo Toissijainen",
+                    firstName = TEPPO,
+                    lastName = "Toissijainen",
                     email = "toissijainen@example.test",
                     organisation = dnaGdprOrganisation()
                 ),
@@ -322,12 +331,13 @@ class GdprJsonConverterTest {
     ): CollectionNode = (collection?.children?.first { it.key == name } as CollectionNode)
 
     private fun teppoGdprInfo(
-        name: String? = TEPPO_TESTI,
-        phone: String? = "04012345678",
-        email: String? = "teppo@example.test",
+        firstName: String? = TEPPO,
+        lastName: String? = TESTIHENKILO,
+        phone: String? = TEPPO_PHONE,
+        email: String? = TEPPO_EMAIL,
         ipAddress: String? = null,
         organisation: GdprOrganisation? = null,
-    ) = GdprInfo(name, phone, email, ipAddress, organisation)
+    ) = GdprInfo(firstName, lastName, phone, email, ipAddress, organisation)
 
     private fun dnaGdprOrganisation(
         id: Int? = 1,
