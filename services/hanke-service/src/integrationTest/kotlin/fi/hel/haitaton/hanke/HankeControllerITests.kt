@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke
 
+import assertk.assertThat
+import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.application.ApplicationsResponse
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.SavedHankealue
@@ -7,6 +9,7 @@ import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withMuuYhteystieto
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
@@ -546,6 +549,31 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
                 hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any())
                 disclosureLogService.saveDisclosureLogsForHanke(updatedHanke, USERNAME)
+            }
+        }
+
+        @Test
+        fun `accepts modification with geometries`() {
+            val hankeToBeUpdated = HankeFactory.create(hankeTunnus = HANKE_TUNNUS).withHankealue()
+            assertThat(hankeToBeUpdated.alueet.first().geometriat!!.hasFeatures()).isTrue()
+            val modifiedHanke =
+                hankeToBeUpdated.copy(
+                    modifiedBy = USERNAME,
+                    modifiedAt = DateFactory.getEndDatetime()
+                )
+
+            every {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
+            } returns true
+            every { hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any()) } returns
+                modifiedHanke
+
+            put(url, hankeToBeUpdated).andExpect(status().isOk)
+
+            verifySequence {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.EDIT.name)
+                hankeService.updateHanke(hankeToBeUpdated.hankeTunnus, any())
+                disclosureLogService.saveDisclosureLogsForHanke(modifiedHanke, USERNAME)
             }
         }
 

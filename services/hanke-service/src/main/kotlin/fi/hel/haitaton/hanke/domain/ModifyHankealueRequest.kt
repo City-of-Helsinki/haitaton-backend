@@ -28,7 +28,7 @@ data class ModifyHankealueRequest(
         maximum = "2099-12-31T23:59:59.99Z",
     )
     override val haittaLoppuPvm: ZonedDateTime?,
-    override val geometriat: HasFeatures?,
+    override val geometriat: ModifyGeometriaRequest?,
     @field:Schema(
         description = "Street lane hindrance value and explanation",
     )
