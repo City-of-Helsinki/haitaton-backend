@@ -50,6 +50,8 @@ class HakemusyhteystietoEntity(
             null,
             null
         )
+
+    fun toDomain() = Hakemusyhteystieto(id, tyyppi, rooli, nimi, sahkoposti, puhelinnumero, ytunnus)
 }
 
 @Entity

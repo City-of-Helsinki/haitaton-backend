@@ -7,6 +7,9 @@ import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
+import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
+import fi.hel.haitaton.hanke.permissions.HankeKayttaja
 
 object GdprJsonConverter {
 
@@ -15,6 +18,30 @@ object GdprJsonConverter {
             applications.flatMap { getCreatorInfoFromApplication(it.applicationData) }.toSet()
 
         val combinedNodes = combineGdprInfos(infos, userId)
+        if (combinedNodes.isEmpty()) {
+            return null
+        }
+        return CollectionNode("user", combinedNodes)
+    }
+
+    fun createGdprJson(
+        kayttajat: List<HankeKayttaja>,
+        hankeYhteystiedot: List<HankeYhteystieto>,
+        hakemusyhteystiedot: List<Hakemusyhteystieto>,
+        userId: String
+    ): CollectionNode? {
+        val basicInfos = kayttajat.map { getGdprInfosFromHankekayttaja(it) }
+        val hankeOrganisaatiot =
+            hankeYhteystiedot
+                .map { getOrganisationFromHankeyhteystieto(it) }
+                .map { GdprInfo(organisation = it) }
+        val hakemusOrganisaatiot =
+            hakemusyhteystiedot
+                .map { getOrganisationFromHakemusyhteystieto(it) }
+                .map { GdprInfo(organisation = it) }
+
+        val combinedNodes =
+            combineGdprInfos(basicInfos + hankeOrganisaatiot + hakemusOrganisaatiot, userId)
         if (combinedNodes.isEmpty()) {
             return null
         }
@@ -135,4 +162,25 @@ object GdprJsonConverter {
             organisation = organisation,
         )
     }
+
+    private fun getGdprInfosFromHankekayttaja(kayttaja: HankeKayttaja) =
+        GdprInfo(
+            firstName = kayttaja.etunimi,
+            lastName = kayttaja.sukunimi,
+            phone = kayttaja.puhelinnumero,
+            email = kayttaja.sahkoposti
+        )
+
+    private fun getOrganisationFromHankeyhteystieto(yhteystieto: HankeYhteystieto) =
+        GdprOrganisation(
+            name = yhteystieto.nimi,
+            registryKey = yhteystieto.ytunnus,
+            department = yhteystieto.osasto
+        )
+
+    private fun getOrganisationFromHakemusyhteystieto(yhteystieto: Hakemusyhteystieto) =
+        GdprOrganisation(
+            name = yhteystieto.nimi,
+            registryKey = yhteystieto.ytunnus,
+        )
 }

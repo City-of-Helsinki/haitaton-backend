@@ -13,7 +13,7 @@ import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
-import fi.hel.haitaton.hanke.factory.HakemusFactory
+import fi.hel.haitaton.hanke.factory.HakemusResponseFactory
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import io.mockk.Called
@@ -95,7 +95,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 applicationAuthorizer.authorizeApplicationId(id, PermissionCode.VIEW.name)
             } returns true
             every { hakemusService.hakemusResponse(id) } returns
-                HakemusFactory.createHakemusResponse(applicationId = id, hankeTunnus = HANKE_TUNNUS)
+                HakemusResponseFactory.create(applicationId = id, hankeTunnus = HANKE_TUNNUS)
 
             get(url)
                 .andExpect(MockMvcResultMatchers.status().isOk)

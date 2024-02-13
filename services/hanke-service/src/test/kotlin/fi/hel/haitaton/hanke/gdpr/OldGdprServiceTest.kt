@@ -13,10 +13,10 @@ import org.junit.jupiter.api.Test
 
 private const val USERID = "test-user"
 
-class GdprServiceTest {
+class OldGdprServiceTest {
 
     private val applicationService: ApplicationService = mockk(relaxUnitFun = true)
-    private val gdprService = GdprService(applicationService)
+    private val gdprService = OldGdprService(applicationService)
 
     @Nested
     inner class DeleteApplications {
