@@ -80,7 +80,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         fun `when application exists should return it`() {
             every { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) } returns true
             every { hakemusService.hakemusResponse(id) } returns
-                HakemusFactory.createHakemusResponse(id, HANKE_TUNNUS)
+                HakemusFactory.createHakemusResponse(applicationId = id, hankeTunnus = HANKE_TUNNUS)
 
             get("$BASE_URL/$id")
                 .andExpect(MockMvcResultMatchers.status().isOk)

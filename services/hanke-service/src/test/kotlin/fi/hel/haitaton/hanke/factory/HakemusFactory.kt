@@ -17,13 +17,14 @@ import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsResponse
+import fi.hel.haitaton.hanke.hakemus.HakemusDataResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusDataResponse
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import java.time.ZonedDateTime
-import java.util.UUID
+import java.util.*
 import org.geojson.Polygon
 import org.springframework.stereotype.Component
 
@@ -140,7 +141,7 @@ class HakemusFactory(
                 postalAddress = postalAddress,
             )
 
-        private fun createJohtoselvitysHakemusDataResponse(
+        fun createJohtoselvitysHakemusDataResponse(
             name: String = DEFAULT_APPLICATION_NAME,
             areas: List<ApplicationArea>? = listOf(createApplicationArea()),
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
@@ -218,15 +219,71 @@ class HakemusFactory(
                 hanke = hanke,
             )
 
-        fun createHakemusResponse(applicationId: Long, hankeTunnus: String): HakemusResponse =
+        fun createHakemusResponse(
+            applicationId: Long = 1,
+            alluid: Int? = null,
+            alluStatus: ApplicationStatus? = null,
+            applicationIdentifier: String? = null,
+            applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
+            applicationData: HakemusDataResponse = createJohtoselvitysHakemusDataResponse(),
+            hankeTunnus: String = "HAI-1234"
+        ): HakemusResponse =
             HakemusResponse(
                 applicationId,
-                null,
-                null,
-                null,
-                ApplicationType.CABLE_REPORT,
-                createJohtoselvitysHakemusDataResponse(),
+                alluid,
+                alluStatus,
+                applicationIdentifier,
+                applicationType,
+                applicationData,
                 hankeTunnus
+            )
+
+        fun createPersonCustomer(
+            type: CustomerType? = CustomerType.PERSON,
+            name: String = TEPPO_TESTI,
+            country: String = "FI",
+            email: String? = ApplicationFactory.TEPPO_EMAIL,
+            phone: String? = ApplicationFactory.TEPPO_PHONE,
+            registryKey: String? = "281192-937W",
+            ovt: String? = null,
+            invoicingOperator: String? = null,
+            sapCustomerNumber: String? = null,
+        ) =
+            CustomerResponse(
+                UUID.randomUUID(),
+                type,
+                name,
+                country,
+                email,
+                phone,
+                registryKey,
+                ovt,
+                invoicingOperator,
+                sapCustomerNumber
+            )
+
+        fun createCompanyCustomer(
+            type: CustomerType? = CustomerType.COMPANY,
+            name: String = "DNA",
+            country: String = "FI",
+            email: String? = "info@dna.test",
+            phone: String? = "+3581012345678",
+            registryKey: String? = "3766028-0",
+            ovt: String? = null,
+            invoicingOperator: String? = null,
+            sapCustomerNumber: String? = null,
+        ): CustomerResponse =
+            CustomerResponse(
+                UUID.randomUUID(),
+                type,
+                name,
+                country,
+                email,
+                phone,
+                registryKey,
+                ovt,
+                invoicingOperator,
+                sapCustomerNumber
             )
     }
 
