@@ -3,17 +3,13 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
-import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationArea
-import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplication
 import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsResponse
@@ -111,36 +107,6 @@ class HakemusFactory(
                 "/fi/hel/haitaton/hanke/geometria/toinen_polygoni.json".asJsonResource(),
         ): ApplicationArea = ApplicationArea(name, geometry)
 
-        fun createCableReportApplicationData(
-            name: String = DEFAULT_APPLICATION_NAME,
-            areas: List<ApplicationArea>? = listOf(createApplicationArea()),
-            startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
-            endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-            pendingOnClient: Boolean = false,
-            workDescription: String = "Work description.",
-            customerWithContacts: CustomerWithContacts = CustomerWithContacts(),
-            contractorWithContacts: CustomerWithContacts = CustomerWithContacts(),
-            representativeWithContacts: CustomerWithContacts? = null,
-            propertyDeveloperWithContacts: CustomerWithContacts? = null,
-            rockExcavation: Boolean = false,
-            postalAddress: PostalAddress? = null,
-        ): CableReportApplicationData =
-            CableReportApplicationData(
-                applicationType = ApplicationType.CABLE_REPORT,
-                name = name,
-                areas = areas,
-                startTime = startTime,
-                endTime = endTime,
-                pendingOnClient = pendingOnClient,
-                workDescription = workDescription,
-                customerWithContacts = customerWithContacts,
-                contractorWithContacts = contractorWithContacts,
-                representativeWithContacts = representativeWithContacts,
-                propertyDeveloperWithContacts = propertyDeveloperWithContacts,
-                rockExcavation = rockExcavation,
-                postalAddress = postalAddress,
-            )
-
         fun createJohtoselvitysHakemusDataResponse(
             name: String = DEFAULT_APPLICATION_NAME,
             areas: List<ApplicationArea>? = listOf(createApplicationArea()),
@@ -177,46 +143,6 @@ class HakemusFactory(
                 propertyDeveloperWithContacts = propertyDeveloperWithContacts,
                 rockExcavation = rockExcavation,
                 postalAddress = postalAddress,
-            )
-
-        fun createApplication(
-            id: Long? = 1,
-            alluid: Int? = null,
-            alluStatus: ApplicationStatus? = null,
-            applicationIdentifier: String? = null,
-            applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-            applicationData: ApplicationData = createCableReportApplicationData(),
-            hankeTunnus: String = "HAI-1234",
-        ): Application =
-            Application(
-                id = id,
-                alluid = alluid,
-                alluStatus = alluStatus,
-                applicationIdentifier = applicationIdentifier,
-                applicationType = applicationType,
-                applicationData = applicationData,
-                hankeTunnus = hankeTunnus
-            )
-
-        fun createApplicationEntity(
-            id: Long? = 3,
-            alluid: Int? = null,
-            alluStatus: ApplicationStatus? = null,
-            applicationIdentifier: String? = null,
-            userId: String? = null,
-            applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-            applicationData: ApplicationData = createCableReportApplicationData(),
-            hanke: HankeEntity,
-        ): ApplicationEntity =
-            ApplicationEntity(
-                id,
-                alluid,
-                alluStatus,
-                applicationIdentifier,
-                userId,
-                applicationType,
-                applicationData,
-                hanke = hanke,
             )
 
         fun createHakemusResponse(

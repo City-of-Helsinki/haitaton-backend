@@ -1,25 +1,14 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
-import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.PermissionEntity
-import java.util.UUID
+import java.util.*
 import org.springframework.stereotype.Component
 
 @Component
-class HakemusyhteyshenkiloFactory(
-    private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository
-) {
-    fun saveHakemusyhteyshenkilo(
-        hakemusyhteystieto: HakemusyhteystietoEntity,
-        hankekayttaja: HankekayttajaEntity,
-        tilaaja: Boolean = false
-    ): HakemusyhteyshenkiloEntity =
-        hakemusyhteyshenkiloRepository.save(
-            createEntity(hakemusyhteystieto, hankekayttaja, tilaaja)
-        )
+class HakemusyhteyshenkiloFactory {
 
     companion object {
         private const val DEFAULT_ETUNIMI = "Tauno"
@@ -44,7 +33,7 @@ class HakemusyhteyshenkiloFactory(
                 hankekayttaja =
                     HankekayttajaEntity(
                         id = id,
-                        hankeId = hakemusyhteystieto.application!!.hanke.id,
+                        hankeId = hakemusyhteystieto.application.hanke.id,
                         etunimi = etunimi,
                         sukunimi = sukunimi,
                         sahkoposti = sahkoposti,

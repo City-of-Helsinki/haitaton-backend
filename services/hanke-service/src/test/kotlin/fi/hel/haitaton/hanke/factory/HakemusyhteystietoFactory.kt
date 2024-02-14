@@ -4,20 +4,17 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
-import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import org.springframework.stereotype.Component
 
 @Component
-class HakemusyhteystietoFactory(
-    private val hakemusyhteystietoRepository: HakemusyhteystietoRepository
-) {
+class HakemusyhteystietoFactory {
 
     companion object {
-        const val DEFAULT_NIMI = "Oy Testi Ab"
-        const val DEFAULT_SAHKOPOSTI = "hakija@testi.fi"
-        const val DEFAULT_PUHELINNUMERO = "0401234567"
-        const val DEFAULT_YTUNNUS = "1817548-2"
+        private const val DEFAULT_NIMI = "Oy Testi Ab"
+        private const val DEFAULT_SAHKOPOSTI = "hakija@testi.fi"
+        private const val DEFAULT_PUHELINNUMERO = "0401234567"
+        private const val DEFAULT_YTUNNUS = "1817548-2"
 
         fun createEntity(
             tyyppi: CustomerType = CustomerType.COMPANY,
@@ -49,17 +46,4 @@ class HakemusyhteystietoFactory(
                     )
             }
     }
-
-    fun saveHakemusyhteystieto(
-        tyyppi: CustomerType = CustomerType.COMPANY,
-        rooli: ApplicationContactType = ApplicationContactType.HAKIJA,
-        nimi: String = DEFAULT_NIMI,
-        sahkoposti: String = DEFAULT_SAHKOPOSTI,
-        puhelinnumero: String = DEFAULT_PUHELINNUMERO,
-        ytunnus: String? = DEFAULT_YTUNNUS,
-        application: ApplicationEntity
-    ): HakemusyhteystietoEntity =
-        hakemusyhteystietoRepository.save(
-            createEntity(tyyppi, rooli, nimi, sahkoposti, puhelinnumero, ytunnus, application)
-        )
 }

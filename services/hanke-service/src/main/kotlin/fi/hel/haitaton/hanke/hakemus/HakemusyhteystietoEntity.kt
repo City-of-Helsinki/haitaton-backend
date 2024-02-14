@@ -32,7 +32,7 @@ class HakemusyhteystietoEntity(
     @Column(name = "y_tunnus") var ytunnus: String?,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id")
-    var application: ApplicationEntity? = null,
+    var application: ApplicationEntity,
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "hakemusyhteystieto")
     @BatchSize(size = 100)
     var yhteyshenkilot: List<HakemusyhteyshenkiloEntity> = mutableListOf(),

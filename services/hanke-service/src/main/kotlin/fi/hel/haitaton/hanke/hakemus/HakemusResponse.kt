@@ -75,8 +75,8 @@ data class CustomerWithContactsResponse(
 data class CustomerResponse(
     val yhteystietoId: UUID? = null,
     val type: CustomerType?, // Mandatory in Allu, but not in drafts.
-    val name: String?,
-    val country: String?, // ISO 3166-1 alpha-2 country code
+    val name: String,
+    val country: String, // ISO 3166-1 alpha-2 country code
     val email: String?,
     val phone: String?,
     val registryKey: String?, // y-tunnus
@@ -91,7 +91,7 @@ data class CustomerResponse(
      * information, so it's not checked here.
      */
     fun hasPersonalInformation() =
-        !(name.isNullOrBlank() &&
+        !(name.isBlank() &&
             email.isNullOrBlank() &&
             phone.isNullOrBlank() &&
             registryKey.isNullOrBlank() &&

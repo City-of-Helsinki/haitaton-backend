@@ -14,7 +14,7 @@ import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.factory.HakemusFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.Companion.withYhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -41,7 +41,7 @@ class HakemusServiceTest {
 
     companion object {
         private val applicationData: CableReportApplicationData =
-            "/fi/hel/haitaton/hanke/hakemus/applicationData.json".asJsonResource()
+            "/fi/hel/haitaton/hanke/application/applicationData.json".asJsonResource()
     }
 
     @BeforeEach
@@ -113,7 +113,7 @@ class HakemusServiceTest {
         data: ApplicationData = applicationData,
         hanke: HankeEntity = HankeFactory.createMinimalEntity(id = 1)
     ) =
-        HakemusFactory.createApplicationEntity(
+        ApplicationFactory.createApplicationEntity(
                 id = id,
                 alluid = alluId,
                 userId = USERNAME,
