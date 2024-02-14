@@ -8,42 +8,38 @@ import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import org.springframework.stereotype.Component
 
 @Component
-class HakemusyhteystietoFactory {
+object HakemusyhteystietoFactory {
 
-    companion object {
-        private const val DEFAULT_NIMI = "Oy Testi Ab"
-        private const val DEFAULT_SAHKOPOSTI = "hakija@testi.fi"
-        private const val DEFAULT_PUHELINNUMERO = "0401234567"
-        private const val DEFAULT_YTUNNUS = "1817548-2"
+    private const val DEFAULT_NIMI = "Oy Testi Ab"
+    private const val DEFAULT_SAHKOPOSTI = "hakija@testi.fi"
+    private const val DEFAULT_PUHELINNUMERO = "0401234567"
+    private const val DEFAULT_YTUNNUS = "1817548-2"
 
-        fun createEntity(
-            tyyppi: CustomerType = CustomerType.COMPANY,
-            rooli: ApplicationContactType = ApplicationContactType.HAKIJA,
-            nimi: String = DEFAULT_NIMI,
-            sahkoposti: String = DEFAULT_SAHKOPOSTI,
-            puhelinnumero: String = DEFAULT_PUHELINNUMERO,
-            ytunnus: String? = DEFAULT_YTUNNUS,
-            application: ApplicationEntity,
-        ): HakemusyhteystietoEntity =
-            HakemusyhteystietoEntity(
-                tyyppi = tyyppi,
-                rooli = rooli,
-                nimi = nimi,
-                sahkoposti = sahkoposti,
-                puhelinnumero = puhelinnumero,
-                ytunnus = ytunnus,
-                application = application
-            )
+    fun createEntity(
+        tyyppi: CustomerType = CustomerType.COMPANY,
+        rooli: ApplicationContactType = ApplicationContactType.HAKIJA,
+        nimi: String = DEFAULT_NIMI,
+        sahkoposti: String = DEFAULT_SAHKOPOSTI,
+        puhelinnumero: String = DEFAULT_PUHELINNUMERO,
+        ytunnus: String? = DEFAULT_YTUNNUS,
+        application: ApplicationEntity,
+    ): HakemusyhteystietoEntity =
+        HakemusyhteystietoEntity(
+            tyyppi = tyyppi,
+            rooli = rooli,
+            nimi = nimi,
+            sahkoposti = sahkoposti,
+            puhelinnumero = puhelinnumero,
+            ytunnus = ytunnus,
+            application = application
+        )
 
-        fun HakemusyhteystietoEntity.withYhteyshenkilo(
-            hankekayttajaEntity: HankekayttajaEntity,
-            tilaaja: Boolean = false
-        ): HakemusyhteystietoEntity =
-            this.apply {
-                this.yhteyshenkilot =
-                    listOf(
-                        HakemusyhteyshenkiloFactory.createEntity(this, hankekayttajaEntity, tilaaja)
-                    )
-            }
-    }
+    fun HakemusyhteystietoEntity.withYhteyshenkilo(
+        hankekayttajaEntity: HankekayttajaEntity,
+        tilaaja: Boolean = false
+    ): HakemusyhteystietoEntity =
+        this.apply {
+            this.yhteyshenkilot =
+                listOf(HakemusyhteyshenkiloFactory.createEntity(this, hankekayttajaEntity, tilaaja))
+        }
 }

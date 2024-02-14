@@ -1,13 +1,10 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import assertk.Assert
-import assertk.all
 import assertk.assertThat
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
-import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
-import assertk.assertions.isTrue
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.DatabaseTest
@@ -44,6 +41,7 @@ class HakemusServiceITest : DatabaseTest() {
     @Autowired private lateinit var applicationRepository: ApplicationRepository
 
     @Autowired private lateinit var hakemusFactory: HakemusFactory
+
     @Autowired private lateinit var hankeFactory: HankeFactory
 
     @BeforeEach
@@ -84,45 +82,28 @@ class HakemusServiceITest : DatabaseTest() {
     }
 
     private fun Assert<JohtoselvitysHakemusDataResponse>.hasAllCustomersWithContacts() {
-        prop(JohtoselvitysHakemusDataResponse::customerWithContacts).all {
-            prop(CustomerWithContactsResponse::customer).all {
-                prop(CustomerResponse::type).isEqualTo(CustomerType.COMPANY)
-            }
-        }
-        prop(JohtoselvitysHakemusDataResponse::customerWithContacts).all {
-            prop(CustomerWithContactsResponse::contacts).single().all {
-                prop(ContactResponse::orderer).isTrue()
-            }
-        }
-        prop(JohtoselvitysHakemusDataResponse::contractorWithContacts).all {
-            prop(CustomerWithContactsResponse::customer).all {
-                prop(CustomerResponse::type).isEqualTo(CustomerType.COMPANY)
-            }
-        }
-        prop(JohtoselvitysHakemusDataResponse::contractorWithContacts).all {
-            prop(CustomerWithContactsResponse::contacts).single().all {
-                prop(ContactResponse::orderer).isFalse()
-            }
-        }
-        prop(JohtoselvitysHakemusDataResponse::propertyDeveloperWithContacts).isNotNull().all {
-            prop(CustomerWithContactsResponse::customer).all {
-                prop(CustomerResponse::type).isEqualTo(CustomerType.COMPANY)
-            }
-        }
-        prop(JohtoselvitysHakemusDataResponse::propertyDeveloperWithContacts).isNotNull().all {
-            prop(CustomerWithContactsResponse::contacts).single().all {
-                prop(ContactResponse::orderer).isFalse()
-            }
-        }
-        prop(JohtoselvitysHakemusDataResponse::representativeWithContacts).isNotNull().all {
-            prop(CustomerWithContactsResponse::customer).all {
-                prop(CustomerResponse::type).isEqualTo(CustomerType.COMPANY)
-            }
-        }
-        prop(JohtoselvitysHakemusDataResponse::representativeWithContacts).isNotNull().all {
-            prop(CustomerWithContactsResponse::contacts).single().all {
-                prop(ContactResponse::orderer).isFalse()
-            }
-        }
+        prop(JohtoselvitysHakemusDataResponse::customerWithContacts)
+            .isCompanyCustomerWithOneContact(true)
+        prop(JohtoselvitysHakemusDataResponse::contractorWithContacts)
+            .isCompanyCustomerWithOneContact(false)
+        prop(JohtoselvitysHakemusDataResponse::propertyDeveloperWithContacts)
+            .isNotNull()
+            .isCompanyCustomerWithOneContact(false)
+        prop(JohtoselvitysHakemusDataResponse::representativeWithContacts)
+            .isNotNull()
+            .isCompanyCustomerWithOneContact(false)
+    }
+
+    private fun Assert<CustomerWithContactsResponse>.isCompanyCustomerWithOneContact(
+        orderer: Boolean
+    ) {
+        prop(CustomerWithContactsResponse::customer)
+            .prop(CustomerResponse::type)
+            .isEqualTo(CustomerType.COMPANY)
+
+        prop(CustomerWithContactsResponse::contacts)
+            .single()
+            .prop(ContactResponse::orderer)
+            .isEqualTo(orderer)
     }
 }

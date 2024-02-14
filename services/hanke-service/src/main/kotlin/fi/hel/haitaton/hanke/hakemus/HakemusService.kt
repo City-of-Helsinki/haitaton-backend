@@ -47,8 +47,7 @@ class HakemusService(
                     applicationData.applicationType,
                     applicationData.name,
                     customerWithContactsResponseWithYhteystiedot(
-                        hakemusyhteystiedot,
-                        ApplicationContactType.HAKIJA
+                        hakemusyhteystiedot[ApplicationContactType.HAKIJA]
                     )
                         ?: throw HakemusyhteystietoNotFoundException(
                             applicationId,
@@ -60,8 +59,7 @@ class HakemusService(
                     applicationData.pendingOnClient,
                     applicationData.workDescription,
                     customerWithContactsResponseWithYhteystiedot(
-                        hakemusyhteystiedot,
-                        ApplicationContactType.TYON_SUORITTAJA
+                        hakemusyhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
                     )
                         ?: throw HakemusyhteystietoNotFoundException(
                             applicationId,
@@ -70,15 +68,13 @@ class HakemusService(
                     applicationData.rockExcavation,
                     applicationData.postalAddress,
                     customerWithContactsResponseWithYhteystiedot(
-                        hakemusyhteystiedot,
-                        ApplicationContactType.ASIANHOITAJA
+                        hakemusyhteystiedot[ApplicationContactType.ASIANHOITAJA]
                     ),
                     applicationData.invoicingCustomer,
                     applicationData.customerReference,
                     applicationData.area,
                     customerWithContactsResponseWithYhteystiedot(
-                        hakemusyhteystiedot,
-                        ApplicationContactType.RAKENNUTTAJA
+                        hakemusyhteystiedot[ApplicationContactType.RAKENNUTTAJA]
                     ),
                     applicationData.constructionWork,
                     applicationData.maintenanceWork,
@@ -88,10 +84,9 @@ class HakemusService(
         }
 
     private fun customerWithContactsResponseWithYhteystiedot(
-        hakemusyhteystiedot: Map<ApplicationContactType, HakemusyhteystietoEntity>,
-        contactType: ApplicationContactType
+        hakemusyhteystieto: HakemusyhteystietoEntity?
     ): CustomerWithContactsResponse? =
-        hakemusyhteystiedot[contactType]?.let {
+        hakemusyhteystieto?.let {
             val customer = it.toCustomerResponse()
             val contacts =
                 it.yhteyshenkilot.map { yhteyshenkilo -> yhteyshenkilo.toContactResponse() }

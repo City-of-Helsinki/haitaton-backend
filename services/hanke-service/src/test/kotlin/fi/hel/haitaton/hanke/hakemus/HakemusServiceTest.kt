@@ -16,7 +16,7 @@ import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
-import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.Companion.withYhteyshenkilo
+import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory.withYhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import io.mockk.checkUnnecessaryStub
