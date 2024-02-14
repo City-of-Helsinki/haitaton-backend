@@ -1,10 +1,9 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import assertk.Assert
 import assertk.all
 import assertk.assertThat
 import assertk.assertions.isEqualTo
-import assertk.assertions.isFalse
-import assertk.assertions.isTrue
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.HankeEntity
@@ -83,26 +82,10 @@ class HakemusServiceTest {
             assertThat(hakemusResponse.alluid).isEqualTo(null)
             val hakemusDataResponse =
                 hakemusResponse.applicationData as JohtoselvitysHakemusDataResponse
-            assertThat(hakemusDataResponse.customerWithContacts.customer).all {
-                prop(CustomerResponse::yhteystietoId).isEqualTo(hakija.id)
-                prop(CustomerResponse::type).isEqualTo(hakija.tyyppi)
-                prop(CustomerResponse::name).isEqualTo(hakija.nimi)
-            }
-            assertThat(hakemusDataResponse.customerWithContacts.contacts).single().all {
-                prop(ContactResponse::hankekayttajaId)
-                    .isEqualTo(hakija.yhteyshenkilot.single().hankekayttaja.id)
-                prop(ContactResponse::orderer).isTrue()
-            }
-            assertThat(hakemusDataResponse.contractorWithContacts.customer).all {
-                prop(CustomerResponse::yhteystietoId).isEqualTo(tyonSuorittaja.id)
-                prop(CustomerResponse::type).isEqualTo(tyonSuorittaja.tyyppi)
-                prop(CustomerResponse::name).isEqualTo(tyonSuorittaja.nimi)
-            }
-            assertThat(hakemusDataResponse.contractorWithContacts.contacts).single().all {
-                prop(ContactResponse::hankekayttajaId)
-                    .isEqualTo(tyonSuorittaja.yhteyshenkilot.single().hankekayttaja.id)
-                prop(ContactResponse::orderer).isFalse()
-            }
+            assertThat(hakemusDataResponse.customerWithContacts)
+                .hasCorrectCustomerAndContact(hakija, true)
+            assertThat(hakemusDataResponse.contractorWithContacts)
+                .hasCorrectCustomerAndContact(tyonSuorittaja, false)
             verifySequence { applicationRepository.findOneById(applicationEntity.id!!) }
         }
     }
@@ -134,4 +117,20 @@ class HakemusServiceTest {
                         )
                         .withYhteyshenkilo(HankeKayttajaFactory.createEntity())
             }
+
+    private fun Assert<CustomerWithContactsResponse>.hasCorrectCustomerAndContact(
+        hakemusyhteystieto: HakemusyhteystietoEntity,
+        orderer: Boolean
+    ) {
+        prop(CustomerWithContactsResponse::customer).all {
+            prop(CustomerResponse::yhteystietoId).isEqualTo(hakemusyhteystieto.id)
+            prop(CustomerResponse::type).isEqualTo(hakemusyhteystieto.tyyppi)
+            prop(CustomerResponse::name).isEqualTo(hakemusyhteystieto.nimi)
+        }
+        prop(CustomerWithContactsResponse::contacts).single().all {
+            prop(ContactResponse::hankekayttajaId)
+                .isEqualTo(hakemusyhteystieto.yhteyshenkilot.single().hankekayttaja.id)
+            prop(ContactResponse::orderer).isEqualTo(orderer)
+        }
+    }
 }
