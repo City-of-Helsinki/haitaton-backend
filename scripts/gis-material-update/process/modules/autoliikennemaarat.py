@@ -48,15 +48,15 @@ class MakaAutoliikennemaarat:
         )
 
         # persist traffic volume polygons to database
-        for buffer_size, polygon_data in self._process_result.items():
-            polygon_data.to_postgis(
-                "volume_{}".format(buffer_size),
-                connection,
-                "public",
-                if_exists="replace",
-                index=True,
-                index_label="fid",
-            )
+        #for buffer_size, polygon_data in self._process_result.items():
+        #    polygon_data.to_postgis(
+        #        "volume_{}".format(buffer_size),
+        #        connection,
+        #        "public",
+        #        if_exists="replace",
+        #        index=True,
+        #        index_label="fid",
+        #    )
 
         # persist results to temp table
         for buffer_size, polygon_data in self._process_result.items():

@@ -95,14 +95,14 @@ class TramInfra(GisProcessor):
             conn.execute(text("CREATE SCHEMA IF NOT EXISTS {}".format(debug_schema)))
             conn.commit()
 
-        self._debug_result_lines.to_postgis(
-            "tram_infra",
-            engine,
-            debug_schema,
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+        #self._debug_result_lines.to_postgis(
+        #    "tram_infra",
+        #    engine,
+        #    debug_schema,
+        #    if_exists="replace",
+        #    index=True,
+        #    index_label="fid",
+        #)
 
         # persist route lines to database
         self._process_result_lines.to_postgis(
@@ -115,14 +115,14 @@ class TramInfra(GisProcessor):
         )
 
         # persist polygons to database
-        self._process_result_polygons.to_postgis(
-            "tram_infra_polys",
-            engine,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+        #self._process_result_polygons.to_postgis(
+        #    "tram_infra_polys",
+        #    engine,
+        #    "public",
+        #    if_exists="replace",
+        #    index=True,
+        #    index_label="fid",
+        #)
 
         # persist results to temp table
         self._process_result_polygons.to_postgis(

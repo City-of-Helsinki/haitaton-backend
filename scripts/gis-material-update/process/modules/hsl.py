@@ -351,14 +351,14 @@ class HslBuses(GisProcessor):
         )
 
         # persist polygons to database
-        self._process_result_polygons.to_postgis(
-            "bus_line_polys",
-            connection,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+        #self._process_result_polygons.to_postgis(
+        #    "bus_line_polys",
+        #    connection,
+        #    "public",
+        #    if_exists="replace",
+        #    index=True,
+        #    index_label="fid",
+        #)
 
         # persist results to temp table
         self._process_result_polygons.to_postgis(

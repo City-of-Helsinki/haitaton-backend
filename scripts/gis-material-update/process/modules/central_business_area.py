@@ -89,23 +89,23 @@ class CentralBusinessAreas:
     def persist_to_database(self):
         connection = create_engine(self._cfg.pg_conn_uri())
 
-        self._orig.to_postgis(
-            "central_business_area_orig_polys",
-            connection,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+       #self._orig.to_postgis(
+       #    "central_business_area_orig_polys",
+       #    connection,
+       #    "public",
+       #    if_exists="replace",
+       #    index=True,
+       #    index_label="fid",
+       #)
 
-        self._process_result.to_postgis(
-            "central_business_area_polys",
-            connection,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+       #self._process_result.to_postgis(
+       #    "central_business_area_polys",
+       #    connection,
+       #    "public",
+       #    if_exists="replace",
+       #    index=True,
+       #    index_label="fid",
+       #)
 
         # persist results to temp table
         self._process_result.to_postgis(

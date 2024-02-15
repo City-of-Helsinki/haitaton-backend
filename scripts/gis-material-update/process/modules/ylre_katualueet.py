@@ -55,14 +55,14 @@ class YlreKatualueet:
             index_label="fid",
         )
 
-        self._process_result.to_postgis(
-            "ylre_classes_polys",
-            connection,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+        #self._process_result.to_postgis(
+        #    "ylre_classes_polys",
+        #    connection,
+        #    "public",
+        #    if_exists="replace",
+        #    index=True,
+        #    index_label="fid",
+        #)
 
         # persist results to temp table
         self._process_result.to_postgis(

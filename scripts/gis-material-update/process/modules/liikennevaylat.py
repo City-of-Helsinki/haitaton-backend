@@ -334,7 +334,7 @@ class Liikennevaylat(GisProcessor):
 
         # persist route lines to database
         self._process_result_lines.to_postgis(
-            self._tormays_table_org,
+            "street_classes_lines",
             engine,
             "public",
             if_exists="replace",
@@ -343,14 +343,14 @@ class Liikennevaylat(GisProcessor):
         )
 
         # persist polygons to database
-        self._process_result_polygons.to_postgis(
-            self._tormays_table_temp,
-            engine,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+        #self._process_result_polygons.to_postgis(
+        #    self._tormays_table_temp,
+        #    engine,
+        #    "public",
+        #    if_exists="replace",
+        #    index=True,
+        #    index_label="fid",
+        #)
 
         # persist results to temp table
         self._process_result_polygons.to_postgis(

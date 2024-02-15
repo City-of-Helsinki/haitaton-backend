@@ -8,7 +8,7 @@ In order to get started, following steps need to be taken.
 
 Actual details to be taken are described in following sections later in this document.
 
-- build _fetch_ and _process_ images
+- build _fetch_, _process_ and _validate-deploy_images
 - copy necessary script files to external volume. Volume is created during file copying process.
 - run _fetch_ container
 - optional: inspect external volume contents
@@ -18,7 +18,7 @@ Actual details to be taken are described in following sections later in this doc
 
 # Architecture, general description
 
-Data is fetched from data sources and processed accordingly with a custom built containers.
+Data is fetched from data sources and processed and validated and deployed accordingly with a custom built containers.
 
 ## haitaton-gis-fetch
 
@@ -28,19 +28,27 @@ Downloads the requested data.
 
 Process data. Actual processing requirements are data dependent.
 
+## haitaton-gis-validate-deploy
+
+Validates and deploys data. Actual validating and deploing requirements are data dependent.
+
 ## database
 
 Local development database is set up with PostGIS spatial support.
 
 ## Volume mappings
 
-Local directory `data` is mapped to fetch container.
+Local directory `data` is mapped to haitaton-gis-fetch container.
 
-Local directory `haitaton-downloads` is mapped to fetch and processing containers.
+Local directory `haitaton-downloads` is mapped to haitaton-gis-fetch and haitaton-gis-process containers.
 
-Local directory `haitaton-gis-output` is mapped to processing container.
+Local directory `haitaton-gis-output` is mapped to haitaton-gis-process container.
 
-External volume `haitaton_gis_prepare` contains scripts for processing.
+Local directory `haitaton-gis-log` is mapped to haitaton-gis-validate-deploy container.
+
+External volume `haitaton_gis_prepare` contains scripts for haitaton-gis-process.
+
+External volume `haitaton_gis_validate_deploy` contains scripts for haitaton-gis-validate-deploy.
 
 External volume `haitaton_gis_db` is dedicated for database.
 
@@ -52,12 +60,14 @@ External volumes are set up
 
 - haitaton_gis_prepare
 - haitaton_gis_db
+- haitaton_gis_validate_deploy
 
 Initialize volumes:
 
 ```
 docker volume create --name=haitaton_gis_prepare
 docker volume create --name=haitaton_gis_db
+docker volume create --name=haitaton_gis_validate_deploy
 ```
 
 N.b. haitaton_gis_prepare volume is automatically generated during data copying script use.
@@ -67,11 +77,13 @@ Removal of external volumes (destructive):
 ```
 docker volume rm haitaton_gis_prepare
 docker volume rm haitaton_gis_db
+docker volume rm haitaton_gis_validate_deploy
 ```
 
 Local directory bind mount is visible to data fetch and data processing containers:
 
 - ./haitaton-downloads
+
 
 ### Inspect _haitaton_gis_prepare_ volume contents
 
@@ -81,7 +93,9 @@ Run:
 sh inspect-disk.sh
 ```
 
-Container is created, and volume contents can be found in directory: `/haitaton-gis`.
+Container is created, and volume contents can be found in directories: 
+- `/haitaton-gis`
+- `/haitaton-gis-validate-deploy`
 
 When done, leave shell with `exit` command.
 
@@ -91,7 +105,7 @@ When done, leave shell with `exit` command.
 docker-compose build
 ```
 
-Will build _fetch_ and _process_ images. Note, that extra step is needed
+Will build _fetch_, _process_ and _validate-deploy_ images. Note, that extra step is needed
 to copy actual script files to external volume.
 
 ## Copy script files to external volume
