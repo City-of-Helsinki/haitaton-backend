@@ -9,7 +9,7 @@ import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.PostalAddress
 import java.time.ZonedDateTime
-import java.util.*
+import java.util.UUID
 
 data class HakemusResponse(
     val id: Long,

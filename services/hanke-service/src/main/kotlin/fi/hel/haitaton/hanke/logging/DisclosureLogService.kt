@@ -94,7 +94,8 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
      * Save disclosure logs for when a user accesses an application. Write disclosure log entries
      * for the customers and contacts in the application.
      */
-    fun saveDisclosureLogsForApplication(application: Application, userId: String) {
+    fun saveDisclosureLogsForApplication(application: Application?, userId: String) {
+        if (application == null) return
         saveDisclosureLogsForApplications(listOf(application), userId)
     }
 

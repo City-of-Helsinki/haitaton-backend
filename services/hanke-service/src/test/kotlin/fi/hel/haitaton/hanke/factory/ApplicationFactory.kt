@@ -362,10 +362,7 @@ class ApplicationFactory(
             }
     }
 
-    /**
-     * Save an application to database. The mutator can be used to mutate the entity before saving
-     * it.
-     */
+    /** Save an application to database. it. */
     fun saveApplicationEntity(
         username: String,
         hanke: HankeEntity = hankeFactory.saveMinimal(),
@@ -374,7 +371,6 @@ class ApplicationFactory(
         applicationIdentifier: String? = null,
         applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
         applicationData: ApplicationData = createCableReportApplicationData(),
-        mutator: (ApplicationEntity) -> Unit = { _ -> },
     ): ApplicationEntity {
         val applicationEntity =
             ApplicationEntity(
@@ -387,7 +383,6 @@ class ApplicationFactory(
                 applicationData = applicationData,
                 hanke = hanke,
             )
-        mutator(applicationEntity)
         return applicationRepository.save(applicationEntity)
     }
 

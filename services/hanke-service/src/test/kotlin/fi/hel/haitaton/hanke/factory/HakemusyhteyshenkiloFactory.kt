@@ -4,7 +4,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.PermissionEntity
-import java.util.*
+import java.util.UUID
 import org.springframework.stereotype.Component
 
 @Component

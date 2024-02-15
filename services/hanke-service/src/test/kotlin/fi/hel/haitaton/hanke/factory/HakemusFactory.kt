@@ -8,8 +8,11 @@ import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.PostalAddress
-import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_APPLICATION_NAME
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplication
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplicationArea
 import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsResponse
@@ -20,8 +23,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
 import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusDataResponse
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import java.time.ZonedDateTime
-import java.util.*
-import org.geojson.Polygon
+import java.util.UUID
 import org.springframework.stereotype.Component
 
 @Component
@@ -34,9 +36,6 @@ class HakemusFactory(
     private val hankeKayttajaFactory: HankeKayttajaFactory,
 ) {
     companion object {
-        private const val DEFAULT_APPLICATION_NAME: String = "Johtoselvityksen oletusnimi"
-        private const val TEPPO_EMAIL = "teppo@example.test"
-
         private fun createPersonCustomerResponse(
             yhteystietoId: UUID = UUID.randomUUID(),
             type: CustomerType? = CustomerType.PERSON,
@@ -101,12 +100,6 @@ class HakemusFactory(
             orderer: Boolean = false
         ) = ContactResponse(hankekayttajaId, firstName, lastName, email, phone, orderer)
 
-        private fun createApplicationArea(
-            name: String = "Area name",
-            geometry: Polygon =
-                "/fi/hel/haitaton/hanke/geometria/toinen_polygoni.json".asJsonResource(),
-        ): ApplicationArea = ApplicationArea(name, geometry)
-
         fun createJohtoselvitysHakemusDataResponse(
             name: String = DEFAULT_APPLICATION_NAME,
             areas: List<ApplicationArea>? = listOf(createApplicationArea()),
@@ -168,8 +161,8 @@ class HakemusFactory(
             type: CustomerType? = CustomerType.PERSON,
             name: String = TEPPO_TESTI,
             country: String = "FI",
-            email: String? = ApplicationFactory.TEPPO_EMAIL,
-            phone: String? = ApplicationFactory.TEPPO_PHONE,
+            email: String? = TEPPO_EMAIL,
+            phone: String? = TEPPO_PHONE,
             registryKey: String? = "281192-937W",
             ovt: String? = null,
             invoicingOperator: String? = null,
