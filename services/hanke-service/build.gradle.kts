@@ -155,7 +155,7 @@ tasks {
     create("copyEmailTemplates", Copy::class) {
         group = "other"
         description = "Installs shared git hooks"
-        from(file("${layout.buildDirectory}/mjml/main/"))
+        from(file("${layout.buildDirectory.get()}/mjml/main/"))
         into(file("${sourceSets.main.get().resources.srcDirs.first()}/email/template"))
         rename { "$it.mustache" }
         dependsOn(compileMjml)
