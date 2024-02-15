@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomerContacts
 import fi.hel.haitaton.hanke.getResourceAsBytes
+import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
@@ -30,6 +31,7 @@ import io.mockk.verify
 import io.mockk.verifySequence
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -42,6 +44,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.security.test.context.support.WithAnonymousUser
 import org.springframework.security.test.context.support.WithMockUser
+import org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
@@ -51,7 +54,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 private const val USERNAME = "testUser"
 private const val HANKE_TUNNUS = "HAI-1234"
-private const val BASE_URL = "/hakemukset"
+private const val HAKEMUKSET_BASE_URL = "/hakemukset"
+private const val HANKKEET_BASE_URL = "/hankkeet"
 
 @WebMvcTest(
     controllers = [ApplicationController::class],
@@ -64,7 +68,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
     @Autowired private lateinit var applicationService: ApplicationService
     @Autowired private lateinit var hankeService: HankeService
-    @Autowired private lateinit var authorizer: ApplicationAuthorizer
+    @Autowired private lateinit var applicationAuthorizer: ApplicationAuthorizer
     @Autowired private lateinit var disclosureLogService: DisclosureLogService
     @Autowired private lateinit var objectMapper: ObjectMapper
 
@@ -78,7 +82,79 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     @AfterEach
     fun checkMocks() {
         checkUnnecessaryStub()
-        confirmVerified(applicationService, hankeService, authorizer)
+        confirmVerified(applicationService, hankeService, applicationAuthorizer)
+    }
+
+    @Nested
+    inner class GetHankeHakemukset {
+        private val url = "$HANKKEET_BASE_URL/$HANKE_TUNNUS/hakemukset"
+
+        @Test
+        @WithAnonymousUser
+        fun `Without authenticated user return unauthorized (401) `() {
+            get(url)
+                .andExpect(SecurityMockMvcResultMatchers.unauthenticated())
+                .andExpect(status().isUnauthorized)
+                .andExpect(hankeError(HankeError.HAI0001))
+        }
+
+        @Test
+        fun `With unknown hanke tunnus return 404`() {
+            every { applicationAuthorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns
+                true
+            every { hankeService.getHankeApplications(HANKE_TUNNUS) } throws
+                HankeNotFoundException(HANKE_TUNNUS)
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
+
+            verifySequence {
+                applicationAuthorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name)
+                hankeService.getHankeApplications(HANKE_TUNNUS)
+            }
+        }
+
+        @Test
+        fun `When user does not have permission return 404`() {
+            every { applicationAuthorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } throws
+                HankeNotFoundException(HANKE_TUNNUS)
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
+
+            verifySequence { applicationAuthorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) }
+        }
+
+        @Test
+        fun `With no applications return empty list`() {
+            every { hankeService.getHankeApplications(HANKE_TUNNUS) } returns listOf()
+            every { applicationAuthorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns
+                true
+
+            val response: ApplicationsResponse = get(url).andExpect(status().isOk).andReturnBody()
+
+            Assertions.assertTrue(response.applications.isEmpty())
+            verifySequence {
+                applicationAuthorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name)
+                hankeService.getHankeApplications(HANKE_TUNNUS)
+            }
+        }
+
+        @Test
+        fun `With known hanketunnus return applications`() {
+            val applications = ApplicationFactory.createApplications(5)
+            every { hankeService.getHankeApplications(HANKE_TUNNUS) } returns applications
+            every { applicationAuthorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns
+                true
+
+            val response: ApplicationsResponse = get(url).andExpect(status().isOk).andReturnBody()
+
+            Assertions.assertTrue(response.applications.isNotEmpty())
+            assertEquals(ApplicationsResponse(applications), response)
+            verifySequence {
+                applicationAuthorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name)
+                hankeService.getHankeApplications(HANKE_TUNNUS)
+                disclosureLogService.saveDisclosureLogsForApplications(applications, USERNAME)
+            }
+        }
     }
 
     @Nested
@@ -86,7 +162,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         @WithAnonymousUser
         fun `getAll without user ID returns 401`() {
-            get(BASE_URL).andExpect(status().isUnauthorized)
+            get(HAKEMUKSET_BASE_URL).andExpect(status().isUnauthorized)
 
             verify { applicationService wasNot Called }
         }
@@ -95,7 +171,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         fun `when no accessible applications should return empty list`() {
             every { applicationService.getAllApplicationsForUser(USERNAME) } returns listOf()
 
-            get(BASE_URL).andExpect(status().isOk).andExpect(content().json("[]"))
+            get(HAKEMUKSET_BASE_URL).andExpect(status().isOk).andExpect(content().json("[]"))
 
             verify { applicationService.getAllApplicationsForUser(USERNAME) }
         }
@@ -105,7 +181,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             every { applicationService.getAllApplicationsForUser(USERNAME) } returns
                 ApplicationFactory.createApplications(3)
 
-            get(BASE_URL)
+            get(HAKEMUKSET_BASE_URL)
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$").isArray)
                 .andExpect(jsonPath("$.length()").value(3))
@@ -119,50 +195,50 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         @WithAnonymousUser
         fun `when unknown user should return 401`() {
-            get("$BASE_URL/$id").andExpect(status().isUnauthorized)
+            get("$HAKEMUKSET_BASE_URL/$id").andExpect(status().isUnauthorized)
 
             verify { applicationService wasNot Called }
         }
 
         @Test
         fun `when application does not exist should return 404`() {
-            every { authorizer.authorizeApplicationId(id, VIEW.name) } throws
+            every { applicationAuthorizer.authorizeApplicationId(id, VIEW.name) } throws
                 ApplicationNotFoundException(id)
 
-            get("$BASE_URL/$id").andExpect(status().isNotFound)
+            get("$HAKEMUKSET_BASE_URL/$id").andExpect(status().isNotFound)
 
-            verify { authorizer.authorizeApplicationId(id, VIEW.name) }
+            verify { applicationAuthorizer.authorizeApplicationId(id, VIEW.name) }
         }
 
         @Test
         fun `when application exists should return it`() {
-            every { authorizer.authorizeApplicationId(id, VIEW.name) } returns true
+            every { applicationAuthorizer.authorizeApplicationId(id, VIEW.name) } returns true
             every { applicationService.getApplicationById(id) } returns
                 ApplicationFactory.createApplication(id = id, hankeTunnus = HANKE_TUNNUS)
 
-            get("$BASE_URL/$id")
+            get("$HAKEMUKSET_BASE_URL/$id")
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.applicationType").value("CABLE_REPORT"))
                 .andExpect(jsonPath("$.applicationData.applicationType").value("CABLE_REPORT"))
 
             verify {
-                authorizer.authorizeApplicationId(id, VIEW.name)
+                applicationAuthorizer.authorizeApplicationId(id, VIEW.name)
                 applicationService.getApplicationById(id)
             }
         }
 
         @Test
         fun `when application belongs to a hanke should return application with correct hankeTunnus`() {
-            every { authorizer.authorizeApplicationId(id, VIEW.name) } returns true
+            every { applicationAuthorizer.authorizeApplicationId(id, VIEW.name) } returns true
             every { applicationService.getApplicationById(id) } returns
                 ApplicationFactory.createApplication(id = id, hankeTunnus = HANKE_TUNNUS)
 
-            get("$BASE_URL/$id")
+            get("$HAKEMUKSET_BASE_URL/$id")
                 .andExpect(status().isOk)
                 .andExpect(jsonPath("$.hankeTunnus").value(HANKE_TUNNUS))
 
             verify {
-                authorizer.authorizeApplicationId(id, VIEW.name)
+                applicationAuthorizer.authorizeApplicationId(id, VIEW.name)
                 applicationService.getApplicationById(id)
             }
         }
@@ -173,7 +249,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         @WithAnonymousUser
         fun `when unknown user should return 401`() {
-            post(BASE_URL, ApplicationFactory.createApplication(id = null))
+            post(HAKEMUKSET_BASE_URL, ApplicationFactory.createApplication(id = null))
                 .andExpect(status().isUnauthorized)
 
             verify { applicationService wasNot Called }
@@ -181,7 +257,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when no request body should return 400`() {
-            post(BASE_URL).andExpect(status().isBadRequest)
+            post(HAKEMUKSET_BASE_URL).andExpect(status().isBadRequest)
 
             verify { applicationService wasNot Called }
         }
@@ -191,15 +267,15 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             val newApplication =
                 ApplicationFactory.createApplication(id = null, hankeTunnus = HANKE_TUNNUS)
             val createdApplication = newApplication.copy(id = 1234)
-            every { authorizer.authorizeCreate(newApplication) } returns true
+            every { applicationAuthorizer.authorizeCreate(newApplication) } returns true
             every { applicationService.create(newApplication, USERNAME) } returns createdApplication
 
             val response: Application =
-                post(BASE_URL, newApplication).andExpect(status().isOk).andReturnBody()
+                post(HAKEMUKSET_BASE_URL, newApplication).andExpect(status().isOk).andReturnBody()
 
             assertEquals(createdApplication, response)
             verifySequence {
-                authorizer.authorizeCreate(newApplication)
+                applicationAuthorizer.authorizeCreate(newApplication)
                 applicationService.create(newApplication, USERNAME)
             }
         }
@@ -210,7 +286,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
             (content.get("applicationData") as ObjectNode).remove("applicationType")
 
-            postRaw(BASE_URL, content.toJsonString()).andExpect(status().isBadRequest)
+            postRaw(HAKEMUKSET_BASE_URL, content.toJsonString()).andExpect(status().isBadRequest)
 
             verify { applicationService wasNot Called }
         }
@@ -226,12 +302,12 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                             endTime = ZonedDateTime.now().minusDays(1)
                         )
                 )
-            every { authorizer.authorizeCreate(any()) } returns true
+            every { applicationAuthorizer.authorizeCreate(any()) } returns true
 
-            post(BASE_URL, application).andExpect(status().isBadRequest)
+            post(HAKEMUKSET_BASE_URL, application).andExpect(status().isBadRequest)
 
             verify {
-                authorizer.authorizeCreate(any())
+                applicationAuthorizer.authorizeCreate(any())
                 applicationService wasNot Called
             }
         }
@@ -242,7 +318,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
             content.remove("applicationType")
 
-            postRaw(BASE_URL, content.toJsonString())
+            postRaw(HAKEMUKSET_BASE_URL, content.toJsonString())
                 .andDo { print(it) }
                 .andExpect(status().isBadRequest)
 
@@ -259,12 +335,12 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                 )
             val application =
                 ApplicationFactory.createApplication(id = null, applicationData = applicationData)
-            every { authorizer.authorizeCreate(application) } returns true
+            every { applicationAuthorizer.authorizeCreate(application) } returns true
 
-            post(BASE_URL, application).andExpect(status().isBadRequest)
+            post(HAKEMUKSET_BASE_URL, application).andExpect(status().isBadRequest)
 
             verifySequence {
-                authorizer.authorizeCreate(application)
+                applicationAuthorizer.authorizeCreate(application)
                 applicationService wasNot Called
             }
         }
@@ -276,19 +352,19 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             val json = objectMapper.valueToTree<ObjectNode>(newApplication)
             json.remove("hankeTunnus")
             val text = json.asText()
-            postRaw(BASE_URL, text).andExpect(status().isBadRequest)
+            postRaw(HAKEMUKSET_BASE_URL, text).andExpect(status().isBadRequest)
         }
 
         @Test
         fun `when no hanke permission should return hanke not found 404`() {
             val newApplication =
                 ApplicationFactory.createApplication(id = null, hankeTunnus = HANKE_TUNNUS)
-            every { authorizer.authorizeCreate(newApplication) } throws
+            every { applicationAuthorizer.authorizeCreate(newApplication) } throws
                 HankeNotFoundException(HANKE_TUNNUS)
 
-            post(BASE_URL, newApplication).andExpect(status().isNotFound)
+            post(HAKEMUKSET_BASE_URL, newApplication).andExpect(status().isNotFound)
 
-            verify { authorizer.authorizeCreate(newApplication) }
+            verify { applicationAuthorizer.authorizeCreate(newApplication) }
         }
     }
 
@@ -302,7 +378,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                 mockCreatedApplication
 
             val response: Application =
-                post("/hakemukset/johtoselvitys", applicationInput)
+                post("$HAKEMUKSET_BASE_URL/johtoselvitys", applicationInput)
                     .andExpect(status().isOk)
                     .andReturnBody()
 
@@ -321,7 +397,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                     .toCableReportWithoutHanke()
 
             val result =
-                post("/hakemukset/johtoselvitys", applicationInput)
+                post("$HAKEMUKSET_BASE_URL/johtoselvitys", applicationInput)
                     .andExpect(status().isBadRequest)
                     .andReturn()
 
@@ -342,7 +418,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         @WithAnonymousUser
         fun `when unknown user should return 401`() {
-            put("$BASE_URL/$id", ApplicationFactory.createApplication())
+            put("$HAKEMUKSET_BASE_URL/$id", ApplicationFactory.createApplication())
                 .andExpect(status().isUnauthorized)
 
             verify { applicationService wasNot Called }
@@ -350,7 +426,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when no request body should return 400`() {
-            put("$BASE_URL/$id").andExpect(status().isBadRequest)
+            put("$HAKEMUKSET_BASE_URL/$id").andExpect(status().isBadRequest)
 
             verify { applicationService wasNot Called }
         }
@@ -366,15 +442,19 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                             endTime = ZonedDateTime.now().minusDays(1)
                         )
                 )
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } returns true
 
             val result =
-                put("$BASE_URL/$id", application).andExpect(status().isBadRequest).andReturn()
+                put("$HAKEMUKSET_BASE_URL/$id", application)
+                    .andExpect(status().isBadRequest)
+                    .andReturn()
 
             assertThat(result.response.contentAsString)
                 .isEqualTo(HankeErrorDetail(HankeError.HAI2008, listOf("endTime")).toJsonString())
             verify {
-                authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
                 applicationService wasNot Called
             }
         }
@@ -389,12 +469,14 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                 )
             val application =
                 ApplicationFactory.createApplication(id = null, applicationData = applicationData)
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } returns true
 
-            put("$BASE_URL/$id", application).andExpect(status().isBadRequest)
+            put("$HAKEMUKSET_BASE_URL/$id", application).andExpect(status().isBadRequest)
 
             verify {
-                authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
                 applicationService wasNot Called
             }
         }
@@ -402,17 +484,21 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when application exists should return application`() {
             val application = ApplicationFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } returns true
             every {
                 applicationService.updateApplicationData(id, application.applicationData, USERNAME)
             } returns application
 
             val response: Application =
-                put("$BASE_URL/$id", application).andExpect(status().isOk).andReturnBody()
+                put("$HAKEMUKSET_BASE_URL/$id", application)
+                    .andExpect(status().isOk)
+                    .andReturnBody()
 
             assertEquals(application, response)
             verifySequence {
-                authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
                 applicationService.updateApplicationData(id, application.applicationData, USERNAME)
             }
         }
@@ -423,7 +509,8 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
             (content.get("applicationData") as ObjectNode).remove("applicationType")
 
-            putRaw("$BASE_URL/$id", content.toJsonString()).andExpect(status().isBadRequest)
+            putRaw("$HAKEMUKSET_BASE_URL/$id", content.toJsonString())
+                .andExpect(status().isBadRequest)
 
             verify { applicationService wasNot Called }
         }
@@ -434,7 +521,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
             content.remove("applicationType")
 
-            putRaw("$BASE_URL/$id", content.toJsonString())
+            putRaw("$HAKEMUKSET_BASE_URL/$id", content.toJsonString())
                 .andDo { print(it) }
                 .andExpect(status().isBadRequest)
 
@@ -445,18 +532,22 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         fun `when missing required data should return 400`() {
             val mockErrorPaths = listOf("startTime", "customerWithContacts.customer.type")
             val application = ApplicationFactory.createApplication()
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } returns true
             every {
                 applicationService.updateApplicationData(id, application.applicationData, USERNAME)
             } throws InvalidApplicationDataException(mockErrorPaths)
 
             val response =
-                put("$BASE_URL/$id", application).andExpect(status().isBadRequest).andReturn()
+                put("$HAKEMUKSET_BASE_URL/$id", application)
+                    .andExpect(status().isBadRequest)
+                    .andReturn()
 
             assertThat(response.response.contentAsString)
                 .isEqualTo(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString())
             verifySequence {
-                authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
                 applicationService.updateApplicationData(id, application.applicationData, USERNAME)
             }
         }
@@ -464,28 +555,31 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when no application should return 404`() {
             val application = ApplicationFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } throws
-                ApplicationNotFoundException(id)
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } throws ApplicationNotFoundException(id)
 
-            put("$BASE_URL/$id", application).andExpect(status().isNotFound)
+            put("$HAKEMUKSET_BASE_URL/$id", application).andExpect(status().isNotFound)
 
-            verify { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) }
+            verify { applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) }
         }
 
         @Test
         fun `when application sent to Allu should return 409`() {
             val application = ApplicationFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } returns true
             every {
                 applicationService.updateApplicationData(id, application.applicationData, USERNAME)
             } throws ApplicationAlreadySentException(id, 21)
 
-            put("$BASE_URL/$id", application)
+            put("$HAKEMUKSET_BASE_URL/$id", application)
                 .andExpect(status().isConflict)
                 .andExpect(jsonPath("errorCode").value("HAI2009"))
 
             verify {
-                authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
                 applicationService.updateApplicationData(id, application.applicationData, USERNAME)
             }
         }
@@ -496,7 +590,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         @WithAnonymousUser
         fun `when unknown user should 401`() {
-            post("$BASE_URL/$id/send-application").andExpect(status().isUnauthorized)
+            post("$HAKEMUKSET_BASE_URL/$id/send-application").andExpect(status().isUnauthorized)
 
             verify { applicationService wasNot Called }
         }
@@ -504,15 +598,19 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when no request body should send application to Allu and return result`() {
             val application = ApplicationFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } returns true
             every { applicationService.sendApplication(id, USERNAME) } returns application
 
             val response: Application =
-                post("$BASE_URL/$id/send-application").andExpect(status().isOk).andReturnBody()
+                post("$HAKEMUKSET_BASE_URL/$id/send-application")
+                    .andExpect(status().isOk)
+                    .andReturnBody()
 
             assertEquals(application, response)
             verifySequence {
-                authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
                 applicationService.sendApplication(id, USERNAME)
             }
         }
@@ -520,17 +618,19 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when request body is present should ignore it`() {
             val application = ApplicationFactory.createApplication(id = id, alluid = 21)
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } returns true
             every { applicationService.sendApplication(id, USERNAME) } returns application
 
             val response: Application =
-                post("$BASE_URL/$id/send-application", application.copy(alluid = 9999))
+                post("$HAKEMUKSET_BASE_URL/$id/send-application", application.copy(alluid = 9999))
                     .andExpect(status().isOk)
                     .andReturnBody()
 
             assertEquals(application, response)
             verifySequence {
-                authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
                 applicationService.sendApplication(id, USERNAME)
             }
         }
@@ -540,55 +640,62 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             val application = ApplicationFactory.createApplication()
             val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
             (content.get("applicationData") as ObjectNode).remove("applicationType")
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } returns true
             every { applicationService.sendApplication(id, USERNAME) } returns application
 
             val response: Application =
-                postRaw("$BASE_URL/$id/send-application", content.toJsonString())
+                postRaw("$HAKEMUKSET_BASE_URL/$id/send-application", content.toJsonString())
                     .andExpect(status().isOk)
                     .andReturnBody()
 
             assertEquals(application, response)
             verifySequence {
-                authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
                 applicationService.sendApplication(id, USERNAME)
             }
         }
 
         @Test
         fun `when no application or permission should return 404`() {
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } throws
-                ApplicationNotFoundException(id)
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } throws ApplicationNotFoundException(id)
 
-            post("$BASE_URL/$id/send-application").andExpect(status().isNotFound)
+            post("$HAKEMUKSET_BASE_URL/$id/send-application").andExpect(status().isNotFound)
 
-            verify { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) }
+            verify { applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) }
         }
 
         @Test
         fun `when application no longer pending should return 409`() {
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } returns true
             every { applicationService.sendApplication(id, USERNAME) } throws
                 ApplicationAlreadyProcessingException(id, 21)
 
-            post("$BASE_URL/$id/send-application").andExpect(status().isConflict)
+            post("$HAKEMUKSET_BASE_URL/$id/send-application").andExpect(status().isConflict)
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
                 applicationService.sendApplication(id, USERNAME)
             }
         }
 
         @Test
         fun `when invalid application data should return 409`() {
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } returns true
             every { applicationService.sendApplication(id, USERNAME) } throws
                 AlluDataException("applicationData.some.path", AlluDataError.EMPTY_OR_NULL)
 
-            post("$BASE_URL/$id/send-application").andExpect(status().isConflict)
+            post("$HAKEMUKSET_BASE_URL/$id/send-application").andExpect(status().isConflict)
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
                 applicationService.sendApplication(id, USERNAME)
             }
         }
@@ -596,17 +703,21 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when missing data in application should return 400 with details`() {
             val mockErrorPaths = listOf("startTime", "customerWithContacts.customer.type")
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } returns true
             every { applicationService.sendApplication(id, USERNAME) } throws
                 InvalidApplicationDataException(mockErrorPaths)
 
             val response =
-                post("$BASE_URL/$id/send-application").andExpect(status().isBadRequest).andReturn()
+                post("$HAKEMUKSET_BASE_URL/$id/send-application")
+                    .andExpect(status().isBadRequest)
+                    .andReturn()
 
             assertThat(response.response.contentAsString)
                 .isEqualTo(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString())
             verifySequence {
-                authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
                 applicationService.sendApplication(id, USERNAME)
             }
         }
@@ -617,19 +728,20 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         @WithAnonymousUser
         fun `when unknown user should return 401`() {
-            delete("$BASE_URL/$id").andExpect(status().isUnauthorized)
+            delete("$HAKEMUKSET_BASE_URL/$id").andExpect(status().isUnauthorized)
 
             verify { applicationService wasNot Called }
         }
 
         @Test
         fun `when no application or no permission should return 404`() {
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } throws
-                ApplicationNotFoundException(id)
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } throws ApplicationNotFoundException(id)
 
-            delete("$BASE_URL/$id").andExpect(status().isNotFound)
+            delete("$HAKEMUKSET_BASE_URL/$id").andExpect(status().isNotFound)
 
-            verify { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) }
+            verify { applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) }
         }
 
         @ParameterizedTest
@@ -638,30 +750,34 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             hankeDeleted: Boolean
         ) {
             val expectedResponseBody = ApplicationDeletionResultDto(hankeDeleted)
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } returns true
             every { applicationService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME) } returns
                 expectedResponseBody
 
-            delete("$BASE_URL/$id")
+            delete("$HAKEMUKSET_BASE_URL/$id")
                 .andExpect(status().isOk)
                 .andExpect(content().json(expectedResponseBody.toJsonString()))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
                 applicationService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME)
             }
         }
 
         @Test
         fun `when non-pending application in allu should returns 409`() {
-            every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
+            every {
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+            } returns true
             every { applicationService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME) } throws
                 ApplicationAlreadyProcessingException(id, 41)
 
-            delete("$BASE_URL/$id").andExpect(status().isConflict)
+            delete("$HAKEMUKSET_BASE_URL/$id").andExpect(status().isConflict)
 
             verify {
-                authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
+                applicationAuthorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
                 applicationService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME)
             }
         }
@@ -672,37 +788,37 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         @WithAnonymousUser
         fun `when unknown user should return 401`() {
-            get("$BASE_URL/$id/paatos").andExpect(status().isUnauthorized)
+            get("$HAKEMUKSET_BASE_URL/$id/paatos").andExpect(status().isUnauthorized)
 
             verify { applicationService wasNot Called }
         }
 
         @Test
         fun `when no application should return 404`() {
-            every { authorizer.authorizeApplicationId(id, VIEW.name) } throws
+            every { applicationAuthorizer.authorizeApplicationId(id, VIEW.name) } throws
                 ApplicationNotFoundException(id)
 
-            get("$BASE_URL/$id/paatos")
+            get("$HAKEMUKSET_BASE_URL/$id/paatos")
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("errorCode").value("HAI2001"))
                 .andExpect(jsonPath("errorMessage").value("Application not found"))
 
-            verify { authorizer.authorizeApplicationId(id, VIEW.name) }
+            verify { applicationAuthorizer.authorizeApplicationId(id, VIEW.name) }
         }
 
         @Test
         fun `when application has no decision should return 404`() {
-            every { authorizer.authorizeApplicationId(id, VIEW.name) } returns true
+            every { applicationAuthorizer.authorizeApplicationId(id, VIEW.name) } returns true
             every { applicationService.downloadDecision(id, USERNAME) } throws
                 ApplicationDecisionNotFoundException("Decision not found in Allu. alluid=23")
 
-            get("$BASE_URL/$id/paatos")
+            get("$HAKEMUKSET_BASE_URL/$id/paatos")
                 .andExpect(status().isNotFound)
                 .andExpect(jsonPath("errorCode").value("HAI2006"))
                 .andExpect(jsonPath("errorMessage").value("Application decision not found"))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, VIEW.name)
+                applicationAuthorizer.authorizeApplicationId(id, VIEW.name)
                 applicationService.downloadDecision(id, USERNAME)
             }
         }
@@ -711,19 +827,19 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         fun `when decision exists should return bytes and correct headers`() {
             val applicationIdentifier = "JS230001"
             val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
-            every { authorizer.authorizeApplicationId(id, VIEW.name) } returns true
+            every { applicationAuthorizer.authorizeApplicationId(id, VIEW.name) } returns true
             every { applicationService.downloadDecision(id, USERNAME) } returns
                 Pair(applicationIdentifier, pdfBytes)
             every { applicationService.getApplicationById(id) } returns
                 ApplicationFactory.createApplication(applicationIdentifier = applicationIdentifier)
 
-            get("$BASE_URL/$id/paatos", resultType = APPLICATION_PDF)
+            get("$HAKEMUKSET_BASE_URL/$id/paatos", resultType = APPLICATION_PDF)
                 .andExpect(status().isOk)
                 .andExpect(header().string("Content-Disposition", "inline; filename=JS230001.pdf"))
                 .andExpect(content().bytes(pdfBytes))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, VIEW.name)
+                applicationAuthorizer.authorizeApplicationId(id, VIEW.name)
                 applicationService.downloadDecision(id, USERNAME)
                 applicationService.getApplicationById(id)
             }
@@ -735,18 +851,18 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             val application =
                 ApplicationFactory.createApplication(applicationIdentifier = applicationIdentifier)
             val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
-            every { authorizer.authorizeApplicationId(id, VIEW.name) } returns true
+            every { applicationAuthorizer.authorizeApplicationId(id, VIEW.name) } returns true
             every { applicationService.downloadDecision(id, USERNAME) } returns
                 Pair(applicationIdentifier, pdfBytes)
             every { applicationService.getApplicationById(id) } returns application
 
-            get("$BASE_URL/$id/paatos", resultType = APPLICATION_PDF)
+            get("$HAKEMUKSET_BASE_URL/$id/paatos", resultType = APPLICATION_PDF)
                 .andExpect(status().isOk)
                 .andExpect(header().string("Content-Disposition", "inline; filename=JS230001.pdf"))
                 .andExpect(content().bytes(pdfBytes))
 
             verifySequence {
-                authorizer.authorizeApplicationId(id, VIEW.name)
+                applicationAuthorizer.authorizeApplicationId(id, VIEW.name)
                 applicationService.downloadDecision(id, USERNAME)
                 applicationService.getApplicationById(id)
                 disclosureLogService.saveDisclosureLogsForCableReport(
@@ -758,12 +874,12 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when no hanke permission should return 404`() {
-            every { authorizer.authorizeApplicationId(id, VIEW.name) } throws
+            every { applicationAuthorizer.authorizeApplicationId(id, VIEW.name) } throws
                 ApplicationNotFoundException(id)
 
-            get("$BASE_URL/$id/paatos").andExpect(status().isNotFound)
+            get("$HAKEMUKSET_BASE_URL/$id/paatos").andExpect(status().isNotFound)
 
-            verify { authorizer.authorizeApplicationId(id, VIEW.name) }
+            verify { applicationAuthorizer.authorizeApplicationId(id, VIEW.name) }
         }
     }
 
