@@ -417,7 +417,7 @@ docker-compose run --rm gis-fetch <source>
 docker-compose run --rm gis-process <source>
 docker-compose run --rm gis-validate-deploy <source>
 ```
-Remark: In gis-fetch there should be all needed sources listed in prerequisite for each <source>. These prerequisites are listed in [Running processing](./gis-material-update#run-processing).
+Remark: In gis-fetch there should be all needed sources listed in prerequisite for each <source>. These prerequisites are listed in [Running processing](#run-processing).
 
 # Run tests
 
