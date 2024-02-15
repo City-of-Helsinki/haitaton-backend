@@ -53,7 +53,10 @@ private const val USERNAME = "testUser"
 private const val HANKE_TUNNUS = "HAI-1234"
 private const val BASE_URL = "/hakemukset"
 
-@WebMvcTest(ApplicationController::class)
+@WebMvcTest(
+    controllers = [ApplicationController::class],
+    properties = ["haitaton.features.user-management=false"]
+)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)

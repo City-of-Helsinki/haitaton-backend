@@ -18,6 +18,8 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withApplicationData
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
+import fi.hel.haitaton.hanke.factory.HakemusFactory
+import fi.hel.haitaton.hanke.factory.HakemusFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
@@ -27,6 +29,9 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.gdpr.CollectionNode
 import fi.hel.haitaton.hanke.gdpr.StringNode
+import fi.hel.haitaton.hanke.hakemus.ContactResponse
+import fi.hel.haitaton.hanke.hakemus.CustomerResponse
+import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsResponse
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.reformatJson
 import fi.hel.haitaton.hanke.toJsonString
@@ -38,6 +43,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import java.util.UUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -364,6 +370,174 @@ internal class DisclosureLogServiceTest {
 
         assertThat(capturedLogs.captured).hasSameElementsAs(expectedLogs)
         verify(exactly = 1) { auditLogService.createAll(any()) }
+    }
+
+    @Nested
+    inner class SaveDisclosureLogsForHakemusResponse {
+        @Test
+        fun `with company customers and no contacts does nothing`() {
+            val customerWithoutContacts =
+                HakemusFactory.createCompanyCustomer(name = "First").withContacts()
+            ApplicationFactory.createCompanyCustomer(name = "First").withContacts()
+            val contractorWithoutContacts =
+                HakemusFactory.createCompanyCustomer(name = "Second").withContacts()
+            val hakemusResponse =
+                HakemusFactory.createHakemusResponse(
+                    applicationData =
+                        HakemusFactory.createJohtoselvitysHakemusDataResponse(
+                            customerWithContacts = customerWithoutContacts,
+                            contractorWithContacts = contractorWithoutContacts
+                        ),
+                    hankeTunnus = hankeTunnus,
+                )
+
+            disclosureLogService.saveDisclosureLogsForHakemusResponse(hakemusResponse, userId)
+
+            verify { auditLogService wasNot Called }
+        }
+
+        @Test
+        fun `doesn't save entries for blank contacts`() {
+            val customerWithoutContacts =
+                HakemusFactory.createCompanyCustomer(name = "First").withContacts()
+            val contractorWithoutContacts =
+                HakemusFactory.createCompanyCustomer(name = "Second")
+                    .withContacts(ContactResponse(UUID.randomUUID(), "", "", "", ""))
+            val hakemusResponse =
+                HakemusFactory.createHakemusResponse(
+                    applicationData =
+                        HakemusFactory.createJohtoselvitysHakemusDataResponse(
+                            customerWithContacts = customerWithoutContacts,
+                            contractorWithContacts = contractorWithoutContacts
+                        ),
+                    hankeTunnus = hankeTunnus,
+                )
+
+            disclosureLogService.saveDisclosureLogsForHakemusResponse(hakemusResponse, userId)
+
+            verify { auditLogService wasNot Called }
+        }
+
+        @Test
+        fun `doesn't save entries for blank customers`() {
+            val blankCustomer =
+                CustomerResponse(null, CustomerType.PERSON, "", "", "", "", "", "", "", "")
+            val blankCustomerWithCountry =
+                CustomerResponse(null, type = CustomerType.PERSON, "", "FI", "", "", "", "", "", "")
+            val customerWithoutContacts = CustomerWithContactsResponse(blankCustomer, listOf())
+            val contractorWithoutContacts =
+                CustomerWithContactsResponse(blankCustomerWithCountry, listOf())
+            val hakemusResponse =
+                HakemusFactory.createHakemusResponse(
+                    applicationData =
+                        HakemusFactory.createJohtoselvitysHakemusDataResponse(
+                            customerWithContacts = customerWithoutContacts,
+                            contractorWithContacts = contractorWithoutContacts
+                        ),
+                    hankeTunnus = hankeTunnus,
+                )
+
+            disclosureLogService.saveDisclosureLogsForHakemusResponse(hakemusResponse, userId)
+
+            verify { auditLogService wasNot Called }
+        }
+
+        @Test
+        fun `with identical person customers logs every instance`() {
+            val customerWithoutContacts =
+                CustomerWithContactsResponse(HakemusFactory.createPersonCustomer(), listOf())
+            val hakemusResponse =
+                HakemusFactory.createHakemusResponse(
+                    applicationData =
+                        HakemusFactory.createJohtoselvitysHakemusDataResponse(
+                            customerWithContacts = customerWithoutContacts,
+                            contractorWithContacts = customerWithoutContacts,
+                        ),
+                    hankeTunnus = hankeTunnus,
+                )
+            val capturedLogs = slot<Collection<AuditLogEntry>>()
+            every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
+
+            disclosureLogService.saveDisclosureLogsForHakemusResponse(hakemusResponse, userId)
+
+            val expectedLogs =
+                listOf(HAKIJA, TYON_SUORITTAJA).map {
+                    AuditLogEntryFactory.createReadEntryForCustomerResponse(
+                        hakemusResponse.id,
+                        customerWithoutContacts.customer,
+                        it
+                    )
+                }
+            assertThat(capturedLogs.captured).hasSameElementsAs(expectedLogs)
+            verify(exactly = 1) { auditLogService.createAll(any()) }
+        }
+
+        @Test
+        fun `with contacts logs contacts`() {
+            val applicationId = 41L
+            val hakemusDataResponse = HakemusFactory.createJohtoselvitysHakemusDataResponse()
+            val firstContact = hakemusDataResponse.customerWithContacts!!.contacts[0]
+            val secondContact = hakemusDataResponse.contractorWithContacts!!.contacts[0]
+            val application =
+                HakemusFactory.createHakemusResponse(
+                    applicationId = applicationId,
+                    applicationData = hakemusDataResponse,
+                    hankeTunnus = hankeTunnus
+                )
+            val capturedLogs = slot<Collection<AuditLogEntry>>()
+            every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
+
+            disclosureLogService.saveDisclosureLogsForHakemusResponse(application, userId)
+
+            assertThat(capturedLogs.captured)
+                .containsAtLeast(
+                    AuditLogEntryFactory.createReadEntryForContactResponse(
+                        applicationId,
+                        firstContact,
+                        HAKIJA
+                    ),
+                    AuditLogEntryFactory.createReadEntryForContactResponse(
+                        applicationId,
+                        secondContact,
+                        TYON_SUORITTAJA
+                    ),
+                )
+            verify(exactly = 1) { auditLogService.createAll(any()) }
+        }
+    }
+
+    @Nested
+    inner class SaveDisclosureLogsForAllu {
+        @ParameterizedTest(name = "{displayName}({arguments})")
+        @EnumSource(Status::class)
+        fun `saves logs with the given status`(expectedStatus: Status) {
+            val applicationId = 41L
+            val cableReportApplication = ApplicationFactory.createCableReportApplicationData()
+            val firstContact = cableReportApplication.customerWithContacts.contacts[0]
+            val secondContact = cableReportApplication.contractorWithContacts.contacts[0]
+            val expectedLogs =
+                listOf(HAKIJA to firstContact, TYON_SUORITTAJA to secondContact).map {
+                    (role, contact) ->
+                    AuditLogEntryFactory.createReadEntryForContact(applicationId, contact, role)
+                        .copy(
+                            objectType = ObjectType.ALLU_CONTACT,
+                            status = expectedStatus,
+                            userId = ALLU_AUDIT_LOG_USERID,
+                            userRole = UserRole.SERVICE,
+                        )
+                }
+            val capturedLogs = slot<Collection<AuditLogEntry>>()
+            every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
+
+            disclosureLogService.saveDisclosureLogsForAllu(
+                applicationId,
+                cableReportApplication,
+                expectedStatus
+            )
+
+            assertThat(capturedLogs.captured).hasSameElementsAs(expectedLogs)
+            verify(exactly = 1) { auditLogService.createAll(any()) }
+        }
     }
 
     @Test

@@ -362,10 +362,7 @@ class ApplicationFactory(
             }
     }
 
-    /**
-     * Save an application to database. The mutator can be used to mutate the entity before saving
-     * it.
-     */
+    /** Save an application to database. it. */
     fun saveApplicationEntity(
         username: String,
         hanke: HankeEntity = hankeFactory.saveMinimal(),
@@ -412,7 +409,7 @@ class ApplicationFactory(
                     hanke = hanke,
                 )
             }
-        entities.withIndex().forEach { (i, application) -> mutator(i, application) }
+        entities.forEachIndexed { i, application -> mutator(i, application) }
         return applicationRepository.saveAll(entities)
     }
 }

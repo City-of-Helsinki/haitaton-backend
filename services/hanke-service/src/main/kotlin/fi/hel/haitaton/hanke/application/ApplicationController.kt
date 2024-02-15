@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import mu.KotlinLogging
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_PDF
@@ -43,6 +44,11 @@ private val logger = KotlinLogging.logger {}
 @RestController
 @RequestMapping("/hakemukset")
 @SecurityRequirement(name = "bearerAuth")
+@ConditionalOnProperty(
+    name = ["haitaton.features.user-management"],
+    havingValue = "false",
+    matchIfMissing = true
+)
 class ApplicationController(
     private val applicationService: ApplicationService,
     private val hankeService: HankeService,

@@ -1,7 +1,9 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.permissions.KayttooikeustasoEntity
 import fi.hel.haitaton.hanke.permissions.Permission
+import fi.hel.haitaton.hanke.permissions.PermissionEntity
 
 object PermissionFactory {
 
@@ -16,4 +18,11 @@ object PermissionFactory {
         hankeId: Int = HANKE_ID,
         kayttooikeustaso: Kayttooikeustaso = KAYTTOOIKEUSTASO,
     ) = Permission(id, userId, hankeId, kayttooikeustaso)
+
+    fun createEntity(
+        id: Int = PERMISSION_ID,
+        userId: String = USER_ID,
+        hankeId: Int = HANKE_ID,
+        kayttooikeustaso: Kayttooikeustaso = KAYTTOOIKEUSTASO,
+    ) = PermissionEntity(id, userId, hankeId, KayttooikeustasoEntity(1, kayttooikeustaso, 1))
 }
