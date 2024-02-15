@@ -8,7 +8,7 @@ In order to get started, following steps need to be taken.
 
 Actual details to be taken are described in following sections later in this document.
 
-- build _fetch_, _process_ and _validate-deploy_images
+- build _fetch_, _process_ and _validate-deploy_ images
 - copy necessary script files to external volume. Volume is created during file copying process.
 - run _fetch_ container
 - optional: inspect external volume contents
@@ -18,7 +18,7 @@ Actual details to be taken are described in following sections later in this doc
 
 # Architecture, general description
 
-Data is fetched from data sources and processed and validated and deployed accordingly with a custom built containers.
+Data is fetched from data sources and processed, validated and deployed accordingly with a custom built containers.
 
 ## haitaton-gis-fetch
 
