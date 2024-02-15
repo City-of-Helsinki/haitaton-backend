@@ -29,7 +29,6 @@ class HakemusService(
             applicationEntity.applicationIdentifier,
             applicationEntity.applicationType,
             hakemusDataResponseWithYhteystiedot(
-                applicationEntity.id,
                 applicationEntity.applicationData,
                 applicationEntity.yhteystiedot
             ),
@@ -37,7 +36,6 @@ class HakemusService(
         )
 
     private fun hakemusDataResponseWithYhteystiedot(
-        applicationId: Long,
         applicationData: ApplicationData,
         hakemusyhteystiedot: Map<ApplicationContactType, HakemusyhteystietoEntity>
     ) =
@@ -48,11 +46,7 @@ class HakemusService(
                     applicationData.name,
                     customerWithContactsResponseWithYhteystiedot(
                         hakemusyhteystiedot[ApplicationContactType.HAKIJA]
-                    )
-                        ?: throw HakemusyhteystietoNotFoundException(
-                            applicationId,
-                            ApplicationContactType.HAKIJA
-                        ),
+                    ),
                     applicationData.areas,
                     applicationData.startTime,
                     applicationData.endTime,
@@ -60,11 +54,7 @@ class HakemusService(
                     applicationData.workDescription,
                     customerWithContactsResponseWithYhteystiedot(
                         hakemusyhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
-                    )
-                        ?: throw HakemusyhteystietoNotFoundException(
-                            applicationId,
-                            ApplicationContactType.TYON_SUORITTAJA
-                        ),
+                    ),
                     applicationData.rockExcavation,
                     applicationData.postalAddress,
                     customerWithContactsResponseWithYhteystiedot(
@@ -93,11 +83,3 @@ class HakemusService(
             CustomerWithContactsResponse(customer, contacts)
         }
 }
-
-class HakemusyhteystietoNotFoundException(
-    applicationId: Long,
-    contactType: ApplicationContactType
-) :
-    RuntimeException(
-        "Hakemusyhteystieto not found for application, id = $applicationId, contactType = $contactType"
-    )
