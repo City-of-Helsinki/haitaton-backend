@@ -114,12 +114,12 @@ class HakemusFactory(
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             pendingOnClient: Boolean = false,
             workDescription: String = "Work description.",
-            customerWithContacts: CustomerWithContactsResponse =
+            customerWithContacts: CustomerWithContactsResponse? =
                 CustomerWithContactsResponse(
                     createCompanyCustomerResponse(),
                     listOf(createContactResponse())
                 ),
-            contractorWithContacts: CustomerWithContactsResponse =
+            contractorWithContacts: CustomerWithContactsResponse? =
                 CustomerWithContactsResponse(
                     createPersonCustomerResponse(),
                     listOf(createContactResponse())

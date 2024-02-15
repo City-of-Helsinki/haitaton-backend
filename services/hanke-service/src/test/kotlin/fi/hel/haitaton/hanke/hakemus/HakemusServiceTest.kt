@@ -4,6 +4,7 @@ import assertk.Assert
 import assertk.all
 import assertk.assertThat
 import assertk.assertions.isEqualTo
+import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.HankeEntity
@@ -83,8 +84,10 @@ class HakemusServiceTest {
             val hakemusDataResponse =
                 hakemusResponse.applicationData as JohtoselvitysHakemusDataResponse
             assertThat(hakemusDataResponse.customerWithContacts)
+                .isNotNull()
                 .hasCorrectCustomerAndContact(hakija, true)
             assertThat(hakemusDataResponse.contractorWithContacts)
+                .isNotNull()
                 .hasCorrectCustomerAndContact(tyonSuorittaja, false)
             verifySequence { applicationRepository.findOneById(applicationEntity.id!!) }
         }

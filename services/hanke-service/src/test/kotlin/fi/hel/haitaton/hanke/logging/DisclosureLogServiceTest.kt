@@ -463,8 +463,8 @@ internal class DisclosureLogServiceTest {
         fun `saveDisclosureLogsForHakemusResponse with contacts logs contacts`() {
             val applicationId = 41L
             val hakemusDataResponse = HakemusFactory.createJohtoselvitysHakemusDataResponse()
-            val firstContact = hakemusDataResponse.customerWithContacts.contacts[0]
-            val secondContact = hakemusDataResponse.contractorWithContacts.contacts[0]
+            val firstContact = hakemusDataResponse.customerWithContacts!!.contacts[0]
+            val secondContact = hakemusDataResponse.contractorWithContacts!!.contacts[0]
             val application =
                 HakemusFactory.createHakemusResponse(
                     applicationId = applicationId,

@@ -66,8 +66,10 @@ class HakemusServiceITest : DatabaseTest() {
 
     private fun Assert<JohtoselvitysHakemusDataResponse>.hasAllCustomersWithContacts() {
         prop(JohtoselvitysHakemusDataResponse::customerWithContacts)
+            .isNotNull()
             .isCompanyCustomerWithOneContact(true)
         prop(JohtoselvitysHakemusDataResponse::contractorWithContacts)
+            .isNotNull()
             .isCompanyCustomerWithOneContact(false)
         prop(JohtoselvitysHakemusDataResponse::propertyDeveloperWithContacts)
             .isNotNull()

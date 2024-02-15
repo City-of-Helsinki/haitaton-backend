@@ -33,7 +33,7 @@ data class JohtoselvitysHakemusDataResponse(
 
     // Common, required
     override val name: String,
-    var customerWithContacts: CustomerWithContactsResponse, // hakija
+    var customerWithContacts: CustomerWithContactsResponse? = null, // hakija
     override val areas: List<ApplicationArea>?,
     val startTime: ZonedDateTime?,
     val endTime: ZonedDateTime?,
@@ -41,7 +41,7 @@ data class JohtoselvitysHakemusDataResponse(
 
     // CableReport specific, required
     val workDescription: String,
-    var contractorWithContacts: CustomerWithContactsResponse, // työn suorittaja
+    var contractorWithContacts: CustomerWithContactsResponse? = null, // työn suorittaja
     val rockExcavation: Boolean?,
 
     // Common, not required
@@ -60,8 +60,8 @@ data class JohtoselvitysHakemusDataResponse(
 ) : HakemusDataResponse {
     fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContactsResponse>> =
         listOfNotNull(
-            ApplicationContactType.HAKIJA to customerWithContacts,
-            ApplicationContactType.TYON_SUORITTAJA to contractorWithContacts,
+            customerWithContacts?.let { ApplicationContactType.HAKIJA to it },
+            contractorWithContacts?.let { ApplicationContactType.TYON_SUORITTAJA to it },
             representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
             propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
         )
