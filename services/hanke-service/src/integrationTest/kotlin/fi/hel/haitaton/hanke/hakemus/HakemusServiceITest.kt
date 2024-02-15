@@ -11,18 +11,12 @@ import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
-import io.mockk.checkUnnecessaryStub
-import io.mockk.clearAllMocks
-import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
@@ -33,7 +27,6 @@ private const val USERNAME = "test7358"
 @SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
-@ExtendWith(MockFileClientExtension::class)
 class HakemusServiceITest : DatabaseTest() {
 
     @Autowired private lateinit var hakemusService: HakemusService
@@ -43,16 +36,6 @@ class HakemusServiceITest : DatabaseTest() {
     @Autowired private lateinit var hakemusFactory: HakemusFactory
 
     @Autowired private lateinit var hankeFactory: HankeFactory
-
-    @BeforeEach
-    fun clearMocks() {
-        clearAllMocks()
-    }
-
-    @AfterEach
-    fun checkMocks() {
-        checkUnnecessaryStub()
-    }
 
     @Nested
     inner class HakemusResponse {
