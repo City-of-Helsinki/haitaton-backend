@@ -34,7 +34,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -42,7 +41,6 @@ private val logger = KotlinLogging.logger {}
 
 @Validated
 @RestController
-@RequestMapping("/hakemukset")
 @SecurityRequirement(name = "bearerAuth")
 @ConditionalOnProperty(
     name = ["haitaton.features.user-management"],
@@ -54,7 +52,26 @@ class ApplicationController(
     private val hankeService: HankeService,
     private val disclosureLogService: DisclosureLogService,
 ) {
-    @GetMapping
+    @GetMapping("/hankkeet/{hankeTunnus}/hakemukset")
+    @Operation(
+        summary = "Get hanke applications",
+        description = "Returns list of applications belonging to a given hanke."
+    )
+    @PreAuthorize("@applicationAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
+    fun getHankeHakemukset(@PathVariable hankeTunnus: String): ApplicationsResponse {
+        logger.info { "Finding applications for hanke $hankeTunnus" }
+        val userId = currentUserId()
+        hankeService.getHankeApplications(hankeTunnus).let { hakemukset ->
+            if (hakemukset.isNotEmpty()) {
+                disclosureLogService.saveDisclosureLogsForApplications(hakemukset, userId)
+            }
+            return ApplicationsResponse(hakemukset).also {
+                logger.info { "Found ${it.applications.size} applications for hanke $hankeTunnus" }
+            }
+        }
+    }
+
+    @GetMapping("/hakemukset")
     @Operation(
         summary = "Get all applications",
         description =
@@ -67,7 +84,7 @@ class ApplicationController(
         return applications
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/hakemukset/{id}")
     @Operation(
         summary = "Get one application",
         description = "Returns one application if it exists and the user can access it."
@@ -90,7 +107,7 @@ class ApplicationController(
         return application
     }
 
-    @PostMapping
+    @PostMapping("/hakemukset")
     @Operation(
         summary = "Create a new application",
         description =
@@ -116,7 +133,7 @@ class ApplicationController(
         return createdApplication
     }
 
-    @PostMapping("/johtoselvitys")
+    @PostMapping("/hakemukset/johtoselvitys")
     @Operation(
         summary = "Generates new hanke from cable report application and saves application to it.",
         description =
@@ -143,7 +160,7 @@ class ApplicationController(
         }
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/hakemukset/{id}")
     @Operation(
         summary = "Update an application",
         description =
@@ -188,7 +205,7 @@ class ApplicationController(
         return updatedApplication
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/hakemukset/{id}")
     @Operation(
         summary = "Delete an application",
         description =
@@ -223,7 +240,7 @@ class ApplicationController(
         return result
     }
 
-    @PostMapping("/{id}/send-application")
+    @PostMapping("/hakemukset/{id}/send-application")
     @Operation(
         summary = "Send an application to Allu",
         description =
@@ -260,7 +277,7 @@ class ApplicationController(
     fun sendApplication(@PathVariable(name = "id") id: Long): Application =
         applicationService.sendApplication(id, currentUserId())
 
-    @GetMapping("/{id}/paatos")
+    @GetMapping("/hakemukset/{id}/paatos")
     @Operation(
         summary = "Download a decision",
         description = "Downloads a decision for this application from Allu."

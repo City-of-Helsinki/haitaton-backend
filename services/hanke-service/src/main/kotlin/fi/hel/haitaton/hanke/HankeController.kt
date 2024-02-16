@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.application.ApplicationsResponse
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
@@ -118,28 +117,6 @@ class HankeController(
 
         disclosureLogService.saveDisclosureLogsForHankkeet(hankeList, userid)
         return hankeList
-    }
-
-    @GetMapping("/{hankeTunnus}/hakemukset")
-    @Operation(
-        summary = "Get hanke applications",
-        description = "Returns list of applications belonging to a given hanke."
-    )
-    @PreAuthorize("@hankeAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
-    fun getHankeHakemukset(@PathVariable hankeTunnus: String): ApplicationsResponse {
-        logger.info { "Finding applications for hanke $hankeTunnus" }
-
-        val userId = currentUserId()
-
-        hankeService.getHankeApplications(hankeTunnus).let { hakemukset ->
-            if (hakemukset.isNotEmpty()) {
-                disclosureLogService.saveDisclosureLogsForApplications(hakemukset, userId)
-            }
-
-            return ApplicationsResponse(hakemukset).also {
-                logger.info { "Found ${it.applications.size} applications for hanke $hankeTunnus" }
-            }
-        }
     }
 
     @PostMapping

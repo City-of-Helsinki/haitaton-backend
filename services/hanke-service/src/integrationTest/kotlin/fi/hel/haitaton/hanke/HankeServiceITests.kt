@@ -108,7 +108,6 @@ import io.mockk.justRun
 import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifySequence
-import jakarta.persistence.EntityManager
 import java.time.Duration
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -164,7 +163,6 @@ class HankeServiceITests(
     @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired private val cableReportService: CableReportService,
-    @Autowired private val entityManager: EntityManager,
 ) : DatabaseTest() {
 
     companion object {
@@ -331,8 +329,7 @@ class HankeServiceITests(
 
             // Verify privileges
             PermissionCode.entries.forEach {
-                assertk
-                    .assertThat(permissionService.hasPermission(returnedHanke.id, USER_NAME, it))
+                assertThat(permissionService.hasPermission(returnedHanke.id, USER_NAME, it))
                     .isTrue()
             }
             val hankeKayttajat = hankekayttajaRepository.findAll()

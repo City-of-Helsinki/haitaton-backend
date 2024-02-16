@@ -15,13 +15,11 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 private val logger = KotlinLogging.logger {}
 
 @RestController
-@RequestMapping("/hakemukset")
 @Validated
 @SecurityRequirement(name = "bearerAuth")
 @ConditionalOnProperty(
@@ -32,7 +30,7 @@ class HakemusController(
     private val hakemusService: HakemusService,
     private val disclosureLogService: DisclosureLogService,
 ) {
-    @GetMapping("/{id}")
+    @GetMapping("/hakemukset/{id}")
     @Operation(
         summary = "Get one application",
         description = "Returns one application if it exists and the user can access it."
@@ -53,6 +51,33 @@ class HakemusController(
         logger.info { "Finding application $id" }
         val response = hakemusService.hakemusResponse(id)
         disclosureLogService.saveDisclosureLogsForHakemusResponse(response, currentUserId())
+        return response
+    }
+
+    @GetMapping("/hankkeet/{hankeTunnus}/hakemukset")
+    @Operation(
+        summary = "Get hanke applications",
+        description = "Returns list of applications belonging to the given hanke."
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Applications of the requested hanke",
+                    responseCode = "200"
+                ),
+                ApiResponse(
+                    description = "Hanke was not found with the given id",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+            ]
+    )
+    @PreAuthorize("@applicationAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
+    fun getHankkeenHakemukset(@PathVariable hankeTunnus: String): HankkeenHakemuksetResponse {
+        logger.info { "Finding applications for hanke $hankeTunnus" }
+        val response = hakemusService.hankkeenHakemuksetResponse(hankeTunnus)
+        logger.info { "Found ${response.applications.size} applications for hanke $hankeTunnus" }
         return response
     }
 }

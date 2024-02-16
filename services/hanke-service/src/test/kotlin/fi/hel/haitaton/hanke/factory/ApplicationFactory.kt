@@ -309,6 +309,11 @@ class ApplicationFactory(
                 hanke = hanke,
             )
 
+        fun createApplicationEntities(
+            n: Long,
+            hanke: HankeEntity = HankeFactory.createMinimalEntity(),
+        ) = (1..n).map { i -> createApplicationEntity(id = i, hanke = hanke) }
+
         val hakijaCustomerContact: CustomerWithContacts =
             with(KAYTTAJA_INPUT_HAKIJA) {
                 createCompanyCustomer()

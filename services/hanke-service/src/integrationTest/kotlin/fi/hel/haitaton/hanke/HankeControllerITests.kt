@@ -2,11 +2,9 @@ package fi.hel.haitaton.hanke
 
 import assertk.assertThat
 import assertk.assertions.isTrue
-import fi.hel.haitaton.hanke.application.ApplicationsResponse
 import fi.hel.haitaton.hanke.domain.HankeStatus
 import fi.hel.haitaton.hanke.domain.SavedHankealue
 import fi.hel.haitaton.hanke.domain.TyomaaTyyppi
-import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withHankealue
@@ -36,8 +34,6 @@ import java.time.temporal.ChronoUnit
 import org.geojson.FeatureCollection
 import org.hamcrest.Matchers.containsInAnyOrder
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -358,83 +354,6 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
                 hankeService.loadHankkeetByIds(hankeIds)
                 disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME)
-            }
-        }
-    }
-
-    @Nested
-    inner class GetHankeHakemukset {
-        private val url = "$BASE_URL/$HANKE_TUNNUS/hakemukset"
-
-        @Test
-        @WithAnonymousUser
-        fun `Without authenticated user return unauthorized (401) `() {
-            get(url)
-                .andExpect(SecurityMockMvcResultMatchers.unauthenticated())
-                .andExpect(status().isUnauthorized)
-                .andExpect(hankeError(HankeError.HAI0001))
-        }
-
-        @Test
-        fun `With unknown hanke tunnus return 404`() {
-            every {
-                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
-            } returns true
-            every { hankeService.getHankeApplications(HANKE_TUNNUS) } throws
-                HankeNotFoundException(HANKE_TUNNUS)
-
-            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
-
-            verifySequence {
-                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
-                hankeService.getHankeApplications(HANKE_TUNNUS)
-            }
-        }
-
-        @Test
-        fun `When user does not have permission return 404`() {
-            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name) } throws
-                HankeNotFoundException(HANKE_TUNNUS)
-
-            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
-
-            verifySequence {
-                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
-            }
-        }
-
-        @Test
-        fun `With no applications return empty list`() {
-            every { hankeService.getHankeApplications(HANKE_TUNNUS) } returns listOf()
-            every {
-                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
-            } returns true
-
-            val response: ApplicationsResponse = get(url).andExpect(status().isOk).andReturnBody()
-
-            assertTrue(response.applications.isEmpty())
-            verifySequence {
-                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
-                hankeService.getHankeApplications(HANKE_TUNNUS)
-            }
-        }
-
-        @Test
-        fun `With known hanketunnus return applications`() {
-            val applications = ApplicationFactory.createApplications(5)
-            every { hankeService.getHankeApplications(HANKE_TUNNUS) } returns applications
-            every {
-                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
-            } returns true
-
-            val response: ApplicationsResponse = get(url).andExpect(status().isOk).andReturnBody()
-
-            assertTrue(response.applications.isNotEmpty())
-            assertEquals(ApplicationsResponse(applications), response)
-            verifySequence {
-                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
-                hankeService.getHankeApplications(HANKE_TUNNUS)
-                disclosureLogService.saveDisclosureLogsForApplications(applications, USERNAME)
             }
         }
     }
