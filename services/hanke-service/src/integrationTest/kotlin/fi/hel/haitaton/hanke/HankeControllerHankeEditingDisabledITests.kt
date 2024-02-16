@@ -43,7 +43,6 @@ class HankeControllerHankeEditingDisabledITests(@Autowired override val mockMvc:
 
     @Test
     fun `delete hanke works even if hanke editing is disabled`() {
-        every { hankeService.getHankeApplications(HANKE_TUNNUS) }.returns(listOf())
         every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.DELETE.name) } returns
             true
         justRun { hankeService.deleteHanke(HANKE_TUNNUS, USERNAME) }

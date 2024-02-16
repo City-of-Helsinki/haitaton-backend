@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
@@ -12,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class HakemusService(
     private val applicationRepository: ApplicationRepository,
+    private val hankeRepository: HankeRepository,
 ) {
     @Transactional(readOnly = true)
     fun hakemusResponse(applicationId: Long): HakemusResponse {
@@ -20,6 +23,14 @@ class HakemusService(
                 ?: throw ApplicationNotFoundException(applicationId)
         return hakemusResponseWithYhteystiedot(applicationEntity)
     }
+
+    @Transactional(readOnly = true)
+    fun hankkeenHakemuksetResponse(hankeTunnus: String): HankkeenHakemuksetResponse =
+        HankkeenHakemuksetResponse(
+            hankeRepository.findByHankeTunnus(hankeTunnus)?.let { entity ->
+                entity.hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus) }
+            } ?: throw HankeNotFoundException(hankeTunnus)
+        )
 
     private fun hakemusResponseWithYhteystiedot(applicationEntity: ApplicationEntity) =
         HakemusResponse(
