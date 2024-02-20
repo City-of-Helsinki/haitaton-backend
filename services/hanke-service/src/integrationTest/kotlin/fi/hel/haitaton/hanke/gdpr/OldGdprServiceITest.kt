@@ -9,6 +9,7 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
+import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.Application
@@ -40,7 +41,7 @@ private const val USERID = "test-user"
 @WithMockUser(USERID)
 class OldGdprServiceITest : DatabaseTest() {
 
-    @Autowired lateinit var gdprService: GdprService
+    @Autowired lateinit var gdprService: OldGdprService
     @Autowired lateinit var applicationFactory: ApplicationFactory
     @Autowired lateinit var hankeFactory: HankeFactory
     @Autowired lateinit var applicationRepository: ApplicationRepository
@@ -165,7 +166,7 @@ class OldGdprServiceITest : DatabaseTest() {
                     gdprService.findApplicationsToDelete(USERID)
                 }
 
-            assertThat(exception.errors()).all {
+            assertThat(exception.errors).all {
                 hasSize(2)
                 extracting(GdprError::code).each { it.isEqualTo("HAI2003") }
                 extracting { it.message.fi }
@@ -181,19 +182,21 @@ class OldGdprServiceITest : DatabaseTest() {
     @ExtendWith(MockFileClientExtension::class)
     inner class DeleteApplications {
         @Test
-        fun `Deletes all given applications`() {
+        fun `Deletes all given applications of the given user`() {
             val hanke = hankeFactory.builder(USERID).saveEntity()
-            val applications =
-                applicationFactory
-                    .saveApplicationEntities(6, USERID, hanke) { i, application ->
-                        if (i % 2 == 0) application.userId = "Other User"
-                    }
-                    .map { it.toApplication() }
+            applicationFactory
+                .saveApplicationEntities(6, USERID, hanke) { i, application ->
+                    if (i % 2 == 0) application.userId = "Other User"
+                }
+                .map { it.toApplication() }
 
-            gdprService.deleteApplications(applications, USERID)
+            gdprService.deleteInfo(USERID)
 
             val remainingApplications = applicationRepository.findAll()
-            assertThat(remainingApplications).isEmpty()
+            assertThat(remainingApplications).hasSize(3)
+            assertThat(remainingApplications).each {
+                it.prop(ApplicationEntity::userId).isEqualTo("Other User")
+            }
         }
     }
 }
