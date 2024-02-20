@@ -130,6 +130,8 @@ class HankeEntity(
 }
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
+    fun findOneById(id: Int): HankeIdentifier?
+
     fun findOneByHankeTunnus(hankeTunnus: String): HankeIdentifier?
 
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?

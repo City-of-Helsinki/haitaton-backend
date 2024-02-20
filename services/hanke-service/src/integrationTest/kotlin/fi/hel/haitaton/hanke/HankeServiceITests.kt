@@ -53,6 +53,7 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withArea
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.DateFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
+import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeBuilder.Companion.toModifyRequest
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -159,6 +160,7 @@ class HankeServiceITests(
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
+    @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val cableReportService: CableReportService,
 ) : DatabaseTest() {
 
@@ -1481,6 +1483,17 @@ class HankeServiceITests(
 
             assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNotNull()
             verify { cableReportService.getApplicationInformation(hakemusAlluId) }
+        }
+
+        @Test
+        fun `when hakemus has yhteyshenkilot, those are removed as well`() {
+            val hanke =
+                hankeFactory.builder(USER_NAME).withYhteystiedot().withHankealue().saveEntity()
+            hakemusFactory.builder(USER_NAME, hanke).saveWithYhteystiedot { hakija() }
+
+            hankeService.deleteHanke(hanke.hankeTunnus, USER_NAME)
+
+            assertThat(hankeRepository.findByIdOrNull(hanke.id)).isNull()
         }
 
         @Test

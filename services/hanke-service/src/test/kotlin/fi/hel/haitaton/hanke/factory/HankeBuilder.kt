@@ -207,7 +207,7 @@ data class HankeBuilder(
 }
 
 data class HankeYhteystietoBuilder(
-    private val hankeEntity: HankeEntity,
+    val hankeEntity: HankeEntity,
     private val userId: String,
     private val hankeService: HankeService? = null,
     private val hankeKayttajaFactory: HankeKayttajaFactory,
@@ -216,12 +216,14 @@ data class HankeYhteystietoBuilder(
 ) {
     fun kayttaja(
         sahkoposti: String = HankeKayttajaFactory.KAKE_EMAIL,
-        userId: String = HankeKayttajaFactory.FAKE_USERID
+        userId: String = HankeKayttajaFactory.FAKE_USERID,
+        kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
     ): HankekayttajaEntity =
         hankeKayttajaFactory.saveIdentifiedUser(
             hankeEntity.id,
             sahkoposti = sahkoposti,
-            userId = userId
+            userId = userId,
+            kayttooikeustaso = kayttooikeustaso,
         )
 
     fun omistaja(
