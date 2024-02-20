@@ -113,9 +113,6 @@ import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.UUID
 import net.pwall.mustache.Template
-import org.geojson.Feature
-import org.geojson.LngLatAlt
-import org.geojson.Polygon
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -1578,18 +1575,7 @@ class HankeServiceITests(
         auditLogRepository.deleteAll()
         assertEquals(0, auditLogRepository.count())
         TestUtils.addMockedRequestIp()
-        hanke.alueet[0].geometriat?.featureCollection?.features =
-            listOf(
-                Feature().apply {
-                    geometry =
-                        Polygon(
-                            LngLatAlt(24747856.43, 6562789.70),
-                            LngLatAlt(24747855.43, 6562789.70),
-                            LngLatAlt(24747855.43, 6562788.70),
-                            LngLatAlt(24747856.43, 6562789.70)
-                        )
-                }
-            )
+        hanke.alueet[0].geometriat = GeometriaFactory.create(hanke.alueet[0].geometriat!!.id!!)
         val request = hanke.toModifyRequest()
 
         val updatedHanke = hankeService.updateHanke(hanke.hankeTunnus, request)
@@ -1612,21 +1598,14 @@ class HankeServiceITests(
             event.target.objectBefore,
             JSONCompareMode.NON_EXTENSIBLE
         )
-        val templateData =
-            TemplateData(
-                updatedHanke.id,
-                updatedHanke.hankeTunnus,
-                updatedHanke.alueet[0].id,
-                updatedHanke.alueet[0].geometriat?.id,
+        val expectedHankeObject =
+            expectedHankeLogObject(
+                updatedHanke,
+                updatedHanke.alueet[0],
                 hankeVersion = 2,
                 geometriaVersion = 1,
                 tormaystarkasteluTulos = true,
-                alueNimi = "$HANKEALUE_DEFAULT_NAME 1",
-                alkuPvm = updatedHanke.alkuPvm?.format(DateTimeFormatter.ISO_INSTANT),
-                loppuPvm = updatedHanke.loppuPvm?.format(DateTimeFormatter.ISO_INSTANT)
             )
-
-        val expectedHankeObject = expectedHankeWithPolygon.processToString(templateData)
         JSONAssert.assertEquals(
             expectedHankeObject,
             event.target.objectAfter,
@@ -1756,7 +1735,7 @@ class HankeServiceITests(
                 loppuPvm,
             )
         return Template.parse(
-                "/fi/hel/haitaton/hanke/logging/expectedHankeWithPoints.json.mustache"
+                "/fi/hel/haitaton/hanke/logging/expectedHankeWithPolygon.json.mustache"
                     .getResourceAsText()
             )
             .processToString(templateData)
