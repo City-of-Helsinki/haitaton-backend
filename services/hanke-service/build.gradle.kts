@@ -7,7 +7,7 @@ group = "fi.hel.haitaton"
 
 version = "0.0.1-SNAPSHOT"
 
-val sentryVersion = "7.2.0"
+val sentryVersion = "7.3.0"
 
 repositories { mavenCentral() }
 
@@ -51,7 +51,7 @@ plugins {
     val kotlinVersion = "1.9.22"
     id("org.springframework.boot") version "3.1.6"
     id("io.spring.dependency-management") version "1.1.4"
-    id("com.diffplug.spotless") version "6.24.0"
+    id("com.diffplug.spotless") version "6.25.0"
     kotlin("jvm") version kotlinVersion
     // Gives kotlin-allopen, which auto-opens classes with certain annotations
     kotlin("plugin.spring") version kotlinVersion
@@ -79,9 +79,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.7.0")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.7.2")
     implementation("commons-io:commons-io:2.15.1")
-    implementation("com.github.librepdf:openpdf:1.3.39")
+    implementation("com.github.librepdf:openpdf:1.3.40")
     implementation("net.pwall.mustache:kotlin-mustache:0.11")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 
@@ -98,7 +98,7 @@ dependencies {
     testImplementation("com.icegreen:greenmail-junit5:2.0.1")
 
     // Testcontainers
-    implementation(platform("org.testcontainers:testcontainers-bom:1.19.3"))
+    implementation(platform("org.testcontainers:testcontainers-bom:1.19.5"))
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
 
@@ -113,7 +113,7 @@ dependencies {
     implementation("io.sentry:sentry-logback:$sentryVersion")
 
     // Azure
-    implementation(platform("com.azure:azure-sdk-bom:1.2.19"))
+    implementation(platform("com.azure:azure-sdk-bom:1.2.20"))
     implementation("com.azure:azure-storage-blob")
     implementation("com.azure:azure-storage-blob-batch")
     implementation("com.azure:azure-identity")
@@ -155,7 +155,7 @@ tasks {
     create("copyEmailTemplates", Copy::class) {
         group = "other"
         description = "Installs shared git hooks"
-        from(file("$buildDir/mjml/main/"))
+        from(file("${layout.buildDirectory.get()}/mjml/main/"))
         into(file("${sourceSets.main.get().resources.srcDirs.first()}/email/template"))
         rename { "$it.mustache" }
         dependsOn(compileMjml)
@@ -165,7 +165,7 @@ tasks {
         mustRunAfter("test", "integrationTest")
         reports { xml.required.set(true) }
         executionData.setFrom(
-            fileTree(buildDir).include("/jacoco/test.exec", "/jacoco/integrationTest.exec")
+            fileTree(layout.buildDirectory).include("/jacoco/test.exec", "/jacoco/integrationTest.exec")
         )
     }
 
