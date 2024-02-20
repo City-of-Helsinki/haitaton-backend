@@ -10,7 +10,6 @@ def deploy(pg_conn_uri, tormays_table_org, tormays_table_temp, logger=None):
         delete_sql = "delete from " + tormays_table_org
         try:
             logger.info("Deploy ...")
-            # Future development: Add JDBC Lock Registry functionality by inserting line in the table "int_lock" before actual deleting transaction and removing lock line after insert transaction.
             delete_result = connection.execute(text(delete_sql))
             logger.info(tormays_table_org + ": " + f"{delete_result.rowcount} rows deleted.")
         except Exception as e:

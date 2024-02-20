@@ -118,7 +118,7 @@ central_business_area:
   validate_limit_max: 1.10
 
 logging:
-  logging_filename: "/gis-log/validation_deploy_{}.log"
+  logging_filename: ""
   logging_filemode: "w"
   logging_level: DEBUG
   logging_format: "%(asctime)s - %(levelname)s - %(message)s"
