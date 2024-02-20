@@ -14,6 +14,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
@@ -26,6 +27,7 @@ import fi.hel.haitaton.hanke.hasSameElementsAs
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
@@ -33,10 +35,10 @@ import org.springframework.test.context.ActiveProfiles
 
 private const val USERID = "test-user"
 
-@SpringBootTest
+@SpringBootTest(properties = ["haitaton.features.user-management=false"])
 @ActiveProfiles("test")
 @WithMockUser(USERID)
-class GdprServiceITest : DatabaseTest() {
+class OldGdprServiceITest : DatabaseTest() {
 
     @Autowired lateinit var gdprService: GdprService
     @Autowired lateinit var applicationFactory: ApplicationFactory
@@ -176,6 +178,7 @@ class GdprServiceITest : DatabaseTest() {
     }
 
     @Nested
+    @ExtendWith(MockFileClientExtension::class)
     inner class DeleteApplications {
         @Test
         fun `Deletes all given applications`() {

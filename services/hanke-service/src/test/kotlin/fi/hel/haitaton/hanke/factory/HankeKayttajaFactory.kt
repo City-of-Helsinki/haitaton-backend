@@ -55,7 +55,7 @@ class HankeKayttajaFactory(
         sahkoposti: String = KAKE_EMAIL,
         puhelin: String = KAKE_PUHELIN,
         kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
-        userId: String = "fake id",
+        userId: String = FAKE_USERID,
     ): HankekayttajaEntity =
         saveUser(
             hankeId = hankeId,
@@ -133,6 +133,8 @@ class HankeKayttajaFactory(
         const val KATSELIJA = "Katselija"
         const val KAKE_EMAIL = "kake@katselu.test"
         const val KAKE_PUHELIN = "0501234567"
+
+        const val FAKE_USERID = "fake id"
 
         private const val PEKKA = "Pekka Peruskäyttäjä"
         private const val PEKKA_EMAIL = "pekka@peruskäyttäjä.test"

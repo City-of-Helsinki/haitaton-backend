@@ -18,8 +18,8 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withApplicationData
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
-import fi.hel.haitaton.hanke.factory.HakemusFactory
-import fi.hel.haitaton.hanke.factory.HakemusFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.HakemusResponseFactory
+import fi.hel.haitaton.hanke.factory.HakemusResponseFactory.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withOmistaja
 import fi.hel.haitaton.hanke.factory.HankeFactory.Companion.withRakennuttaja
@@ -377,14 +377,14 @@ internal class DisclosureLogServiceTest {
         @Test
         fun `with company customers and no contacts does nothing`() {
             val customerWithoutContacts =
-                HakemusFactory.createCompanyCustomer(name = "First").withContacts()
+                HakemusResponseFactory.companyCustomer(name = "First").withContacts()
             ApplicationFactory.createCompanyCustomer(name = "First").withContacts()
             val contractorWithoutContacts =
-                HakemusFactory.createCompanyCustomer(name = "Second").withContacts()
+                HakemusResponseFactory.companyCustomer(name = "Second").withContacts()
             val hakemusResponse =
-                HakemusFactory.createHakemusResponse(
+                HakemusResponseFactory.create(
                     applicationData =
-                        HakemusFactory.createJohtoselvitysHakemusDataResponse(
+                        HakemusResponseFactory.createJohtoselvitysHakemusDataResponse(
                             customerWithContacts = customerWithoutContacts,
                             contractorWithContacts = contractorWithoutContacts
                         ),
@@ -399,14 +399,14 @@ internal class DisclosureLogServiceTest {
         @Test
         fun `doesn't save entries for blank contacts`() {
             val customerWithoutContacts =
-                HakemusFactory.createCompanyCustomer(name = "First").withContacts()
+                HakemusResponseFactory.companyCustomer(name = "First").withContacts()
             val contractorWithoutContacts =
-                HakemusFactory.createCompanyCustomer(name = "Second")
+                HakemusResponseFactory.companyCustomer(name = "Second")
                     .withContacts(ContactResponse(UUID.randomUUID(), "", "", "", ""))
             val hakemusResponse =
-                HakemusFactory.createHakemusResponse(
+                HakemusResponseFactory.create(
                     applicationData =
-                        HakemusFactory.createJohtoselvitysHakemusDataResponse(
+                        HakemusResponseFactory.createJohtoselvitysHakemusDataResponse(
                             customerWithContacts = customerWithoutContacts,
                             contractorWithContacts = contractorWithoutContacts
                         ),
@@ -428,9 +428,9 @@ internal class DisclosureLogServiceTest {
             val contractorWithoutContacts =
                 CustomerWithContactsResponse(blankCustomerWithCountry, listOf())
             val hakemusResponse =
-                HakemusFactory.createHakemusResponse(
+                HakemusResponseFactory.create(
                     applicationData =
-                        HakemusFactory.createJohtoselvitysHakemusDataResponse(
+                        HakemusResponseFactory.createJohtoselvitysHakemusDataResponse(
                             customerWithContacts = customerWithoutContacts,
                             contractorWithContacts = contractorWithoutContacts
                         ),
@@ -445,11 +445,11 @@ internal class DisclosureLogServiceTest {
         @Test
         fun `with identical person customers logs every instance`() {
             val customerWithoutContacts =
-                CustomerWithContactsResponse(HakemusFactory.createPersonCustomer(), listOf())
+                CustomerWithContactsResponse(HakemusResponseFactory.personCustomer(), listOf())
             val hakemusResponse =
-                HakemusFactory.createHakemusResponse(
+                HakemusResponseFactory.create(
                     applicationData =
-                        HakemusFactory.createJohtoselvitysHakemusDataResponse(
+                        HakemusResponseFactory.createJohtoselvitysHakemusDataResponse(
                             customerWithContacts = customerWithoutContacts,
                             contractorWithContacts = customerWithoutContacts,
                         ),
@@ -475,11 +475,12 @@ internal class DisclosureLogServiceTest {
         @Test
         fun `with contacts logs contacts`() {
             val applicationId = 41L
-            val hakemusDataResponse = HakemusFactory.createJohtoselvitysHakemusDataResponse()
+            val hakemusDataResponse =
+                HakemusResponseFactory.createJohtoselvitysHakemusDataResponse()
             val firstContact = hakemusDataResponse.customerWithContacts!!.contacts[0]
             val secondContact = hakemusDataResponse.contractorWithContacts!!.contacts[0]
             val application =
-                HakemusFactory.createHakemusResponse(
+                HakemusResponseFactory.create(
                     applicationId = applicationId,
                     applicationData = hakemusDataResponse,
                     hankeTunnus = hankeTunnus

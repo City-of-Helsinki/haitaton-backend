@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
+import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
@@ -58,43 +59,57 @@ data class HakemusyhteystietoBuilder(
     private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
     private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
 ) {
+    fun kayttaja(
+        sahkoposti: String = HankeKayttajaFactory.KAKE_EMAIL,
+        userId: String = HankeKayttajaFactory.FAKE_USERID
+    ): HankekayttajaEntity =
+        hankeKayttajaFactory.saveIdentifiedUser(
+            applicationEntity.hanke.id,
+            sahkoposti = sahkoposti,
+            userId = userId
+        )
+
     fun hakija(
         hakija: HankekayttajaInput = HankeKayttajaFactory.KAYTTAJA_INPUT_HAKIJA,
         kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI,
+        yhteystieto: Hakemusyhteystieto = HakemusyhteystietoFactory.create(),
         f: (HakemusyhteystietoEntity) -> Unit =
             defaultYhteyshenkilo(hakija, kayttooikeustaso, true),
     ): HakemusyhteystietoBuilder {
-        f(saveYhteystieto(ApplicationContactType.HAKIJA))
+        f(saveYhteystieto(ApplicationContactType.HAKIJA, yhteystieto))
         return this
     }
 
     fun tyonSuorittaja(
         tyonSuorittaja: HankekayttajaInput = HankeKayttajaFactory.KAYTTAJA_INPUT_SUORITTAJA,
         kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+        yhteystieto: Hakemusyhteystieto = HakemusyhteystietoFactory.create(),
         f: (HakemusyhteystietoEntity) -> Unit =
             defaultYhteyshenkilo(tyonSuorittaja, kayttooikeustaso),
     ): HakemusyhteystietoBuilder {
-        f(saveYhteystieto(ApplicationContactType.TYON_SUORITTAJA))
+        f(saveYhteystieto(ApplicationContactType.TYON_SUORITTAJA, yhteystieto))
         return this
     }
 
     fun rakennuttaja(
         rakennuttaja: HankekayttajaInput = HankeKayttajaFactory.KAYTTAJA_INPUT_RAKENNUTTAJA,
         kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+        yhteystieto: Hakemusyhteystieto = HakemusyhteystietoFactory.create(),
         f: (HakemusyhteystietoEntity) -> Unit =
             defaultYhteyshenkilo(rakennuttaja, kayttooikeustaso),
     ): HakemusyhteystietoBuilder {
-        f(saveYhteystieto(ApplicationContactType.RAKENNUTTAJA))
+        f(saveYhteystieto(ApplicationContactType.RAKENNUTTAJA, yhteystieto))
         return this
     }
 
     fun asianhoitaja(
         asianhoitaja: HankekayttajaInput = HankeKayttajaFactory.KAYTTAJA_INPUT_ASIANHOITAJA,
         kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+        yhteystieto: Hakemusyhteystieto = HakemusyhteystietoFactory.create(),
         f: (HakemusyhteystietoEntity) -> Unit =
             defaultYhteyshenkilo(asianhoitaja, kayttooikeustaso),
     ): HakemusyhteystietoBuilder {
-        f(saveYhteystieto(ApplicationContactType.ASIANHOITAJA))
+        f(saveYhteystieto(ApplicationContactType.ASIANHOITAJA, yhteystieto))
         return this
     }
 
@@ -113,7 +128,7 @@ data class HakemusyhteystietoBuilder(
         addYhteyshenkilo(yhteystietoEntity, kayttaja, tilaaja)
     }
 
-    private fun addYhteyshenkilo(
+    fun addYhteyshenkilo(
         yhteystietoEntity: HakemusyhteystietoEntity,
         kayttaja: HankekayttajaEntity,
         tilaaja: Boolean = false
@@ -127,10 +142,21 @@ data class HakemusyhteystietoBuilder(
         )
     }
 
-    private fun saveYhteystieto(rooli: ApplicationContactType): HakemusyhteystietoEntity {
-        return hakemusyhteystietoRepository.save(
-            HakemusyhteystietoFactory.createEntity(rooli = rooli, application = applicationEntity)
-        )
+    private fun saveYhteystieto(
+        rooli: ApplicationContactType,
+        yhteystieto: Hakemusyhteystieto
+    ): HakemusyhteystietoEntity {
+        val entity =
+            HakemusyhteystietoEntity(
+                tyyppi = yhteystieto.tyyppi,
+                rooli = rooli,
+                nimi = yhteystieto.nimi,
+                sahkoposti = yhteystieto.sahkoposti,
+                puhelinnumero = yhteystieto.puhelinnumero,
+                ytunnus = yhteystieto.ytunnus,
+                application = applicationEntity,
+            )
+        return hakemusyhteystietoRepository.save(entity)
     }
 
     private fun defaultYhteyshenkilo(
