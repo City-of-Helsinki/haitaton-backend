@@ -27,6 +27,7 @@ object HankeYhteystietoFactory {
         tyyppi: YhteystietoTyyppi = YRITYS,
         ytunnus: String = DEFAULT_YTUNNUS,
         puhelinnumero: String = TEPPO_PHONE,
+        osasto: String? = "Osasto",
         createdAt: ZonedDateTime? = getCurrentTimeUTC(),
         modifiedAt: ZonedDateTime? = getCurrentTimeUTC(),
     ): HankeYhteystieto {
@@ -38,7 +39,7 @@ object HankeYhteystietoFactory {
             ytunnus = if (tyyppi != YKSITYISHENKILO) ytunnus else null,
             puhelinnumero = puhelinnumero,
             organisaatioNimi = "Organisaatio",
-            osasto = "Osasto",
+            osasto = osasto,
             createdBy = "test7358",
             createdAt = createdAt,
             modifiedBy = "test7358",
