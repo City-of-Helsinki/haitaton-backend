@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.validation
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.BaseApplication
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.ExcavationNotificationApplicationData
+import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.application.validation.validateForErrors
 import fi.hel.haitaton.hanke.application.validation.validateForMissing
 import fi.hel.haitaton.hanke.validation.Validators.validate
@@ -19,8 +19,7 @@ class ApplicationValidator : ConstraintValidator<ValidApplication, BaseApplicati
         val result =
             when (val data = application.applicationData) {
                 is CableReportApplicationData -> validate { data.validateForErrors() }
-                is ExcavationNotificationApplicationData ->
-                    TODO("Excavation notification not implemented")
+                is ExcavationNotificationData -> TODO("Excavation notification not implemented")
             }
 
         return result.okOrThrow()
@@ -34,8 +33,7 @@ object ApplicationDataValidator {
             when (data) {
                 is CableReportApplicationData ->
                     validate { data.validateForErrors() }.and { data.validateForMissing() }
-                is ExcavationNotificationApplicationData ->
-                    TODO("Excavation notification not implemented")
+                is ExcavationNotificationData -> TODO("Excavation notification not implemented")
             }
 
         return result.okOrThrow()

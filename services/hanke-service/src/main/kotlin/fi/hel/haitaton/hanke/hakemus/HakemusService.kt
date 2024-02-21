@@ -4,8 +4,8 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
+import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
-import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
@@ -19,7 +19,7 @@ import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.ExcavationNotificationApplicationData
+import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
@@ -227,10 +227,7 @@ class HakemusService(
     private fun createApplicationInAllu(hakemus: Hakemus): Int {
         HakemusDataValidator.ensureValidForSend(hakemus.applicationData)
         val alluId =
-            when (val data = hakemus.applicationData) {
-                is JohtoselvityshakemusData ->
-                    createCableReportToAllu(hakemus.id, hakemus.hankeTunnus, data)
-            }
+            createApplicationToAllu(hakemus.id, hakemus.hankeTunnus, hakemus.applicationData)
         try {
             attachmentService.sendInitialAttachments(alluId, hakemus.id)
         } catch (e: Exception) {
@@ -246,10 +243,10 @@ class HakemusService(
         return alluId
     }
 
-    private fun createCableReportToAllu(
+    private fun createApplicationToAllu(
         applicationId: Long,
         hankeTunnus: String,
-        hakemusData: JohtoselvityshakemusData
+        hakemusData: HakemusData
     ): Int {
         val alluData = hakemusData.toAlluData(hankeTunnus)
 
@@ -271,10 +268,7 @@ class HakemusService(
      *
      * @param alluAction The action to perform in Allu. Must return the application's Allu ID.
      */
-    private fun withFormDataPdfUploading(
-        cableReport: JohtoselvityshakemusData,
-        alluAction: () -> Int
-    ): Int {
+    private fun withFormDataPdfUploading(cableReport: HakemusData, alluAction: () -> Int): Int {
         // TODO: Update PDF sending to handle Hakemusdata
         return alluAction()
     }
@@ -286,7 +280,7 @@ class HakemusService(
      */
     private fun <T> withDisclosureLogging(
         applicationId: Long,
-        alluApplicationData: AlluCableReportApplicationData,
+        alluApplicationData: AlluApplicationData,
         f: () -> T,
     ): T {
         // TODO: Update Disclosure logs to handle Hakemusdata
@@ -301,8 +295,7 @@ class HakemusService(
         val expected =
             when (applicationEntity.applicationData) {
                 is CableReportApplicationData -> request is JohtoselvityshakemusUpdateRequest
-                is ExcavationNotificationApplicationData ->
-                    TODO("Excavation notification not implemented")
+                is ExcavationNotificationData -> request is KaivuilmoitusUpdateRequest
             }
         if (!expected) {
             throw IncompatibleHakemusUpdateRequestException(

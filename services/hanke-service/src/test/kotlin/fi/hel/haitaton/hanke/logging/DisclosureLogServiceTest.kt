@@ -15,8 +15,9 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withApplicationData
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCableReportApplicationData
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withExcavationNotificationData
 import fi.hel.haitaton.hanke.factory.AuditLogEntryFactory
 import fi.hel.haitaton.hanke.factory.HakemusResponseFactory
 import fi.hel.haitaton.hanke.factory.HakemusResponseFactory.withContacts
@@ -550,17 +551,19 @@ internal class DisclosureLogServiceTest {
                     listOf(contacts[2 * i], contacts[2 * i + 1], contacts[0])
                 )
             }
+        val invoicingCustomer = ApplicationFactory.createPersonInvoicingCustomer()
         val applications =
             listOf(
                 ApplicationFactory.createApplication(id = 1, hankeTunnus = hankeTunnus)
-                    .withApplicationData(
+                    .withCableReportApplicationData(
                         customerWithContacts = customersWithContacts[0],
                         contractorWithContacts = customersWithContacts[1],
                     ),
                 ApplicationFactory.createApplication(id = 2, hankeTunnus = hankeTunnus)
-                    .withApplicationData(
+                    .withExcavationNotificationData(
                         customerWithContacts = customersWithContacts[2],
                         contractorWithContacts = customersWithContacts[3],
+                        invoicingCustomer = invoicingCustomer,
                     )
             )
         val capturedLogs = slot<Collection<AuditLogEntry>>()

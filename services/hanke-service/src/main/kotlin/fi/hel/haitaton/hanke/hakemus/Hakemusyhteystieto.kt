@@ -2,6 +2,8 @@ package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationContactType
+import fi.hel.haitaton.hanke.application.PostalAddress
+import fi.hel.haitaton.hanke.application.StreetAddress
 import java.util.UUID
 
 data class Hakemusyhteystieto(
@@ -42,4 +44,31 @@ data class Hakemusyhteyshenkilo(
         ContactResponse(hankekayttajaId, etunimi, sukunimi, sahkoposti, puhelin, tilaaja)
 
     fun kokoNimi() = "$etunimi $sukunimi".trim()
+}
+
+data class Laskutusyhteystieto(
+    val tyyppi: CustomerType,
+    val nimi: String,
+    val ytunnus: String?,
+    val ovttunnus: String?,
+    val valittajanTunnus: String?,
+    val asiakkaanViite: String?,
+    val katuosoite: String?,
+    val postinumero: String?,
+    val postitoimipaikka: String?,
+    val sahkoposti: String?,
+    val puhelinnumero: String?,
+) {
+    fun toResponse(): InvoicingCustomerResponse =
+        InvoicingCustomerResponse(
+            tyyppi,
+            nimi,
+            ytunnus,
+            ovttunnus,
+            valittajanTunnus,
+            asiakkaanViite,
+            PostalAddress(StreetAddress(katuosoite), postinumero ?: "", postitoimipaikka ?: ""),
+            sahkoposti,
+            puhelinnumero
+        )
 }

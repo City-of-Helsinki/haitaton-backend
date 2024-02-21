@@ -29,6 +29,9 @@ object Validators {
     fun validateTrue(condition: Boolean, path: String): ValidationResult =
         if (condition) ValidationResult.success() else ValidationResult.failure(path)
 
+    fun validateTrue(condition: Boolean?, path: String): ValidationResult =
+        if (condition == true) ValidationResult.success() else ValidationResult.failure(path)
+
     fun validateFalse(condition: Boolean, path: String): ValidationResult =
         if (!condition) ValidationResult.success() else ValidationResult.failure(path)
 
@@ -72,7 +75,7 @@ object Validators {
      *
      * If needed outside this class, use [ValidationResult.andWhen] instead.
      */
-    private fun given(condition: Boolean, f: () -> ValidationResult): ValidationResult =
+    fun given(condition: Boolean, f: () -> ValidationResult): ValidationResult =
         if (condition) f() else ValidationResult.success()
 
     /**
