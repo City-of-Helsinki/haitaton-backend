@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
+import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
@@ -45,6 +46,8 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
 import org.skyscreamer.jsonassert.JSONAssert
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
@@ -55,7 +58,7 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 private const val HANKE_TUNNUS = "HAI-1234"
@@ -109,23 +112,25 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             verify { applicationAuthorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) }
         }
 
-        @Test
-        fun `when application exists should return it`() {
+        @ParameterizedTest
+        @EnumSource(ApplicationType::class)
+        fun `when application exists should return it`(applicationType: ApplicationType) {
             every {
                 applicationAuthorizer.authorizeApplicationId(id, PermissionCode.VIEW.name)
             } returns true
             every { hakemusService.hakemusResponse(id) } returns
-                HakemusResponseFactory.create(applicationId = id, hankeTunnus = HANKE_TUNNUS)
+                HakemusResponseFactory.create(
+                    applicationType = applicationType,
+                    applicationId = id,
+                    hankeTunnus = HANKE_TUNNUS
+                )
 
             get(url)
                 .andExpect(status().isOk)
-                .andExpect(MockMvcResultMatchers.jsonPath("$.hankeTunnus").value(HANKE_TUNNUS))
+                .andExpect(jsonPath("$.hankeTunnus").value(HANKE_TUNNUS))
+                .andExpect(jsonPath("$.applicationType").value(applicationType.name))
                 .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.applicationType").value("CABLE_REPORT")
-                )
-                .andExpect(
-                    MockMvcResultMatchers.jsonPath("$.applicationData.applicationType")
-                        .value("CABLE_REPORT")
+                    jsonPath("$.applicationData.applicationType").value(applicationType.name)
                 )
 
             verify {
@@ -197,10 +202,22 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
         @Test
         fun `With known hanketunnus return applications`() {
-            val applicationResponses =
-                ApplicationFactory.createApplicationEntities(5).map { HankkeenHakemusResponse(it) }
+            val cableReportApplicationResponses =
+                ApplicationFactory.createApplicationEntities(
+                        2,
+                        applicationType = ApplicationType.CABLE_REPORT
+                    )
+                    .map { HankkeenHakemusResponse(it) }
+            val excavationNotificationResponses =
+                ApplicationFactory.createApplicationEntities(
+                        2,
+                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION
+                    )
+                    .map { HankkeenHakemusResponse(it) }
             every { hakemusService.hankkeenHakemuksetResponse(HANKE_TUNNUS) } returns
-                HankkeenHakemuksetResponse(applicationResponses)
+                HankkeenHakemuksetResponse(
+                    cableReportApplicationResponses + excavationNotificationResponses
+                )
             every {
                 applicationAuthorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
             } returns true
@@ -209,7 +226,12 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 get(url).andExpect(status().isOk).andReturnBody()
 
             assertThat(response.applications).isNotEmpty()
-            assertThat(response).isEqualTo(HankkeenHakemuksetResponse(applicationResponses))
+            assertThat(response)
+                .isEqualTo(
+                    HankkeenHakemuksetResponse(
+                        cableReportApplicationResponses + excavationNotificationResponses
+                    )
+                )
             verifySequence {
                 applicationAuthorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
                 hakemusService.hankkeenHakemuksetResponse(HANKE_TUNNUS)
@@ -382,7 +404,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             put(url, request)
                 .andExpect(status().isNotFound)
-                .andExpect(MockMvcResultMatchers.jsonPath("errorCode").value("HAI2001"))
+                .andExpect(jsonPath("errorCode").value("HAI2001"))
 
             verify {
                 applicationAuthorizer.authorizeApplicationId(
@@ -407,7 +429,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             put(url, request)
                 .andExpect(status().isConflict)
-                .andExpect(MockMvcResultMatchers.jsonPath("errorCode").value("HAI2009"))
+                .andExpect(jsonPath("errorCode").value("HAI2009"))
 
             verify {
                 applicationAuthorizer.authorizeApplicationId(
@@ -438,7 +460,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             put(url, request)
                 .andExpect(status().isBadRequest)
-                .andExpect(MockMvcResultMatchers.jsonPath("errorCode").value("HAI2002"))
+                .andExpect(jsonPath("errorCode").value("HAI2002"))
 
             verify {
                 applicationAuthorizer.authorizeApplicationId(
@@ -464,7 +486,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             put(url, request)
                 .andExpect(status().isBadRequest)
-                .andExpect(MockMvcResultMatchers.jsonPath("errorCode").value("HAI2005"))
+                .andExpect(jsonPath("errorCode").value("HAI2005"))
 
             verify {
                 applicationAuthorizer.authorizeApplicationId(
@@ -495,7 +517,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             put(url, request)
                 .andExpect(status().isBadRequest)
-                .andExpect(MockMvcResultMatchers.jsonPath("errorCode").value("HAI2010"))
+                .andExpect(jsonPath("errorCode").value("HAI2010"))
 
             verify {
                 applicationAuthorizer.authorizeApplicationId(
@@ -521,7 +543,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
 
             put(url, request)
                 .andExpect(status().isBadRequest)
-                .andExpect(MockMvcResultMatchers.jsonPath("errorCode").value("HAI2011"))
+                .andExpect(jsonPath("errorCode").value("HAI2011"))
 
             verify {
                 applicationAuthorizer.authorizeApplicationId(
@@ -532,9 +554,10 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             }
         }
 
-        @Test
-        fun `returns application when it exists`() {
-            val expectedResponse = HakemusResponseFactory.create()
+        @ParameterizedTest
+        @EnumSource(ApplicationType::class)
+        fun `returns application when it exists`(applicationType: ApplicationType) {
+            val expectedResponse = HakemusResponseFactory.create(applicationType = applicationType)
             val request = expectedResponse.toUpdateRequest()
 
             every {

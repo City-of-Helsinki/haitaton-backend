@@ -15,7 +15,8 @@ import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.ExcavationNotificationApplicationData
+import fi.hel.haitaton.hanke.application.ExcavationNotificationData
+import fi.hel.haitaton.hanke.application.InvoicingCustomer
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
@@ -36,6 +37,7 @@ class HakemusService(
     private val hankealueService: HankealueService,
     private val hakemusLoggingService: HakemusLoggingService,
     private val hankeKayttajaService: HankeKayttajaService,
+    private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
 ) {
     @Transactional(readOnly = true)
     fun hakemusResponse(applicationId: Long): HakemusResponse {
@@ -153,8 +155,7 @@ class HakemusService(
         val expected =
             when (applicationEntity.applicationData) {
                 is CableReportApplicationData -> request is JohtoselvityshakemusUpdateRequest
-                is ExcavationNotificationApplicationData ->
-                    TODO("Excavation notification not implemented")
+                is ExcavationNotificationData -> request is KaivuilmoitusUpdateRequest
             }
         if (!expected) {
             throw IncompatibleHakemusUpdateRequestException(
@@ -382,8 +383,37 @@ class HakemusService(
                         hakemusyhteystiedot[ApplicationContactType.ASIANHOITAJA]
                     ),
                 )
-            is ExcavationNotificationApplicationData ->
-                TODO("Excavation notification not implemented")
+            is ExcavationNotificationData ->
+                KaivuilmoitusDataResponse(
+                    applicationData.applicationType,
+                    applicationData.pendingOnClient,
+                    applicationData.name,
+                    applicationData.workDescription,
+                    applicationData.constructionWork,
+                    applicationData.maintenanceWork,
+                    applicationData.emergencyWork,
+                    applicationData.cableReportDone,
+                    applicationData.rockExcavation,
+                    applicationData.cableReports,
+                    applicationData.placementContracts,
+                    applicationData.startTime,
+                    applicationData.endTime,
+                    applicationData.areas ?: listOf(),
+                    customerWithContactsResponseWithYhteystiedot(
+                        hakemusyhteystiedot[ApplicationContactType.HAKIJA]
+                    ),
+                    customerWithContactsResponseWithYhteystiedot(
+                        hakemusyhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
+                    ),
+                    customerWithContactsResponseWithYhteystiedot(
+                        hakemusyhteystiedot[ApplicationContactType.RAKENNUTTAJA]
+                    ),
+                    customerWithContactsResponseWithYhteystiedot(
+                        hakemusyhteystiedot[ApplicationContactType.ASIANHOITAJA]
+                    ),
+                    applicationData.invoicingCustomer.toResponse(applicationData.customerReference),
+                    applicationData.additionalInfo,
+                )
         }
 
     private fun customerWithContactsResponseWithYhteystiedot(
@@ -453,6 +483,21 @@ class HakemusService(
             }
         )
     }
+
+    private fun InvoicingCustomer?.toResponse(customerReference: String?) =
+        this?.let {
+            InvoicingCustomerResponse(
+                it.type,
+                it.name,
+                it.registryKey,
+                it.ovt,
+                it.invoicingOperator,
+                customerReference,
+                it.postalAddress,
+                it.email,
+                it.phone,
+            )
+        }
 }
 
 class IncompatibleHakemusUpdateRequestException(
