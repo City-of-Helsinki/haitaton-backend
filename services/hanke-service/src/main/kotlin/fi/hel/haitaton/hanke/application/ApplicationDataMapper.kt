@@ -2,6 +2,9 @@ package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.COORDINATE_SYSTEM_URN
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
+import fi.hel.haitaton.hanke.allu.AlluExcavationAnnouncementApplicationData
+import fi.hel.haitaton.hanke.allu.PostalAddress
+import fi.hel.haitaton.hanke.allu.StreetAddress
 import fi.hel.haitaton.hanke.application.AlluDataError.EMPTY_OR_NULL
 import fi.hel.haitaton.hanke.application.AlluDataError.NULL
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
@@ -15,38 +18,92 @@ object ApplicationDataMapper {
         applicationData: CableReportApplicationData
     ): AlluCableReportApplicationData =
         with(applicationData) {
-            val description = workDescription(cableReport = this)
+            val description = workDescription(workDescription, rockExcavation!!)
             AlluCableReportApplicationData(
+                postalAddress = postalAddress?.toAlluData(),
                 name = name,
                 customerWithContacts =
                     customerWithContacts
                         .orThrow(path("customerWithContacts"))
                         .toAlluData(path("customerWithContacts")),
-                geometry = getGeometry(applicationData = this),
+                representativeWithContacts =
+                    representativeWithContacts?.toAlluData(path("representativeWithContacts")),
+                invoicingCustomer = null,
+                geometry = getGeometry(this),
                 startTime = startTime.orThrow(path("startTime")),
                 endTime = endTime.orThrow(path("endTime")),
                 pendingOnClient = pendingOnClient,
                 identificationNumber = hankeTunnus,
+                customerReference = null,
+                area = null,
+                trafficArrangementImages = null,
                 clientApplicationKind = description, // intentional
                 workDescription = description,
-                contractorWithContacts =
-                    contractorWithContacts
-                        .orThrow(path("contractorWithContacts"))
-                        .toAlluData(path("contractorWithContacts")),
-                postalAddress = postalAddress?.toAlluData(),
-                representativeWithContacts =
-                    representativeWithContacts?.toAlluData(path("representativeWithContacts")),
-                invoicingCustomer = invoicingCustomer?.toAlluData(path("invoicingCustomer")),
-                customerReference = customerReference,
-                area = area,
                 propertyDeveloperWithContacts =
                     propertyDeveloperWithContacts?.toAlluData(
                         path("propertyDeveloperWithContacts")
                     ),
+                contractorWithContacts =
+                    contractorWithContacts
+                        .orThrow("contractorWithContacts")
+                        .toAlluData(path("contractorWithContacts")),
                 constructionWork = constructionWork,
                 maintenanceWork = maintenanceWork,
                 emergencyWork = emergencyWork,
                 propertyConnectivity = propertyConnectivity
+            )
+        }
+
+    fun toAlluData(
+        hankeTunnus: String,
+        applicationData: ExcavationAnnouncementApplicationData
+    ): AlluExcavationAnnouncementApplicationData =
+        with(applicationData) {
+            val description =
+                workDescription(
+                    workDescription,
+                    rockExcavation ?: false
+                ) // TODO as in cable report?
+            AlluExcavationAnnouncementApplicationData(
+                postalAddress =
+                    PostalAddress(
+                        // TODO: this should be a combination of all area addresses (HAI-1542)
+                        streetAddress = StreetAddress(""),
+                        postalCode = "",
+                        city = ""
+                    ),
+                name = name,
+                customerWithContacts =
+                    customerWithContacts
+                        .orThrow("customerWithContacts")
+                        .toAlluData(path("customerWithContacts")),
+                representativeWithContacts =
+                    representativeWithContacts?.toAlluData(path("representativeWithContacts")),
+                invoicingCustomer = invoicingCustomer?.toAlluData("invoicingCustomer"),
+                geometry = getGeometry(this),
+                startTime = startTime.orThrow(path("startTime")),
+                endTime = endTime.orThrow(path("endTime")),
+                pendingOnClient = pendingOnClient,
+                identificationNumber = hankeTunnus,
+                customerReference = customerReference,
+                area = null,
+                clientApplicationKind = description, // TODO: intentional as in cable report?
+                contractorWithContacts =
+                    contractorWithContacts
+                        .orThrow("contractorWithContacts")
+                        .toAlluData(path("contractorWithContacts")),
+                propertyDeveloperWithContacts =
+                    propertyDeveloperWithContacts?.toAlluData(
+                        path("propertyDeveloperWithContacts")
+                    ),
+                pksCard = null,
+                constructionWork = constructionWork,
+                maintenanceWork = maintenanceWork,
+                emergencyWork = emergencyWork,
+                propertyConnectivity = null,
+                workPurpose = description,
+                placementContracts = placementContracts?.toList(),
+                cableReports = cableReports?.toList()
             )
         }
 
@@ -82,9 +139,8 @@ object ApplicationDataMapper {
 
     private fun <T> T?.orThrow(path: String) = this ?: throw AlluDataException(path, NULL)
 
-    private fun workDescription(cableReport: CableReportApplicationData): String {
-        val excavation = cableReport.rockExcavation.orThrow(path("rockExcavation"))
-        return cableReport.workDescription + excavationText(excavation)
+    private fun workDescription(workDescription: String, rockExcavation: Boolean): String {
+        return workDescription + excavationText(rockExcavation)
     }
 
     private fun excavationText(excavation: Boolean): String =

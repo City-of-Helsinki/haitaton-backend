@@ -33,7 +33,6 @@ sealed interface HakemusData {
     val applicationType: ApplicationType
     val name: String
     val pendingOnClient: Boolean
-    val postalAddress: PostalAddress?
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
     val areas: List<ApplicationArea>?
@@ -47,7 +46,7 @@ sealed interface HakemusData {
 data class JohtoselvityshakemusData(
     override val applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
     override val name: String,
-    override val postalAddress: PostalAddress? = null,
+    val postalAddress: PostalAddress? = null,
     val constructionWork: Boolean = false,
     val maintenanceWork: Boolean = false,
     val propertyConnectivity: Boolean = false,

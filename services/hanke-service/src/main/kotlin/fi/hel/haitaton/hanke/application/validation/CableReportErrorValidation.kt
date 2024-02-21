@@ -19,7 +19,6 @@ import java.util.Locale
 fun CableReportApplicationData.validateForErrors(): ValidationResult =
     validate { notJustWhitespace(name, "name") }
         .and { notJustWhitespace(workDescription, "workDescription") }
-        .and { notJustWhitespace(customerReference, "customerReference") }
         .and { atMostOneOrderer(customersWithContacts()) }
         .andWhen(startTime != null && endTime != null) {
             isBeforeOrEqual(startTime!!, endTime!!, "endTime")
@@ -33,7 +32,6 @@ fun CableReportApplicationData.validateForErrors(): ValidationResult =
         .whenNotNull(propertyDeveloperWithContacts) {
             it.validateForErrors("propertyDeveloperWithContacts")
         }
-        .whenNotNull(invoicingCustomer) { it.validateForErrors("invoicingCustomer") }
 
 private fun CustomerWithContacts.validateForErrors(path: String): ValidationResult =
     customer

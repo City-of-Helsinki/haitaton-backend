@@ -24,11 +24,12 @@ sealed interface HakemusDataResponse {
     val applicationType: ApplicationType
     val pendingOnClient: Boolean
     val name: String
-    val postalAddress: PostalAddress?
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
     val areas: List<ApplicationArea>
     val customerWithContacts: CustomerWithContactsResponse?
+
+    fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsResponse>
 }
 
 data class JohtoselvitysHakemusDataResponse(
@@ -38,7 +39,7 @@ data class JohtoselvitysHakemusDataResponse(
     /** Työn nimi */
     override val name: String,
     /** Katuosoite */
-    override val postalAddress: PostalAddress?,
+    val postalAddress: PostalAddress?,
     /** Työssä on kyse: Uuden rakenteen tai johdon rakentamisesta */
     val constructionWork: Boolean,
     /** Työssä on kyse: Olemassaolevan rakenteen kunnossapitotyöstä */
@@ -73,13 +74,14 @@ data class JohtoselvitysHakemusDataResponse(
     // 4. sivu Liitteet (separete endpoint)
     // 5. sivu Yhteenveto (no input data)
 ) : HakemusDataResponse {
-    fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContactsResponse>> =
+    override fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsResponse> =
         listOfNotNull(
-            customerWithContacts?.let { ApplicationContactType.HAKIJA to it },
-            contractorWithContacts?.let { ApplicationContactType.TYON_SUORITTAJA to it },
-            propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
-            representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
-        )
+                customerWithContacts?.let { ApplicationContactType.HAKIJA to it },
+                contractorWithContacts?.let { ApplicationContactType.TYON_SUORITTAJA to it },
+                propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
+                representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
+            )
+            .toMap()
 }
 
 data class CustomerWithContactsResponse(

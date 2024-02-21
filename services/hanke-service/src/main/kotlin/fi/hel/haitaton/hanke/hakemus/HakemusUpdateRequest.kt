@@ -12,6 +12,12 @@ import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
+import fi.hel.haitaton.hanke.isValidBusinessId
+import fi.hel.haitaton.hanke.validation.ValidationResult
+import fi.hel.haitaton.hanke.validation.Validators
+import fi.hel.haitaton.hanke.validation.Validators.notJustWhitespace
+import fi.hel.haitaton.hanke.validation.Validators.validate
+import fi.hel.haitaton.hanke.validation.Validators.validateTrue
 import java.time.ZonedDateTime
 import java.util.UUID
 
@@ -28,11 +34,12 @@ import java.util.UUID
 sealed interface HakemusUpdateRequest {
     val applicationType: ApplicationType
     val name: String
-    val postalAddress: PostalAddressRequest
+    val workDescription: String
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
     val areas: List<ApplicationArea>?
     val customerWithContacts: CustomerWithContactsRequest?
+    val representativeWithContacts: CustomerWithContactsRequest?
 
     /**
      * Returns true if this application update request has changes compared to the given
@@ -48,6 +55,18 @@ sealed interface HakemusUpdateRequest {
     fun toApplicationData(baseData: ApplicationData): ApplicationData
 
     fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsRequest?>
+
+    /** Validate draft application. Checks only fields that have some actual data. */
+    fun validateForErrors(): ValidationResult =
+        validate { notJustWhitespace(name, "name") }
+            .and { notJustWhitespace(workDescription, "workDescription") }
+            .andWhen(startTime != null && endTime != null) {
+                Validators.isBeforeOrEqual(startTime!!, endTime!!, "endTime")
+            }
+            .whenNotNull(customerWithContacts) { it.validateForErrors("customerWithContacts") }
+            .whenNotNull(representativeWithContacts) {
+                it.validateForErrors("representativeWithContacts")
+            }
 }
 
 data class JohtoselvityshakemusUpdateRequest(
@@ -56,7 +75,7 @@ data class JohtoselvityshakemusUpdateRequest(
     /** Työn nimi */
     override val name: String,
     /** Katuosoite */
-    override val postalAddress: PostalAddressRequest,
+    val postalAddress: PostalAddressRequest,
     /** Työssä on kyse: Uuden rakenteen tai johdon rakentamisesta */
     val constructionWork: Boolean,
     /** Työssä on kyse: Olemassaolevan rakenteen kunnossapitotyöstä */
@@ -71,7 +90,7 @@ data class JohtoselvityshakemusUpdateRequest(
     /** Louhitaanko työn yhteydessä, esimerkiksi kallioperää? */
     val rockExcavation: Boolean,
     /** Työn kuvaus */
-    val workDescription: String,
+    override val workDescription: String,
     // 2. sivu Alueet
     /** Työn arvioitu alkupäivä */
     override val startTime: ZonedDateTime? = null,
@@ -87,7 +106,7 @@ data class JohtoselvityshakemusUpdateRequest(
     /** Rakennuttajan tiedot */
     val propertyDeveloperWithContacts: CustomerWithContactsRequest? = null,
     /** Asianhoitajan tiedot */
-    val representativeWithContacts: CustomerWithContactsRequest? = null,
+    override val representativeWithContacts: CustomerWithContactsRequest? = null,
     // 4. sivu Liitteet (separete endpoint)
     // 5. sivu Yhteenveto (no input data)
 ) : HakemusUpdateRequest {
@@ -143,15 +162,30 @@ data class JohtoselvityshakemusUpdateRequest(
             ApplicationContactType.RAKENNUTTAJA to propertyDeveloperWithContacts,
             ApplicationContactType.ASIANHOITAJA to representativeWithContacts,
         )
+
+    override fun validateForErrors(): ValidationResult =
+        super.validateForErrors()
+            .whenNotNull(postalAddress) { it.validateForErrors("postalAddress") }
+            .whenNotNull(contractorWithContacts) { it.validateForErrors("contractorWithContacts") }
+            .whenNotNull(propertyDeveloperWithContacts) {
+                it.validateForErrors("propertyDeveloperWithContacts")
+            }
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-data class PostalAddressRequest(val streetAddress: StreetAddress)
+data class PostalAddressRequest(val streetAddress: StreetAddress) {
+    internal fun validateForErrors(path: String) = validate {
+        notJustWhitespace(streetAddress.streetName, "$path.streetAddress.streetName")
+    }
+}
 
 data class CustomerWithContactsRequest(
     val customer: CustomerRequest,
     val contacts: List<ContactRequest>,
-)
+) {
+    internal fun validateForErrors(path: String): ValidationResult =
+        customer.validateForErrors("$path.customer")
+}
 
 /**
  * For updating an existing [Hakemusyhteystieto] (with [yhteystietoId]) or creating a new one
@@ -175,6 +209,17 @@ data class CustomerRequest(
             email != hakemusyhteystietoEntity.sahkoposti ||
             phone != hakemusyhteystietoEntity.puhelinnumero ||
             registryKey != hakemusyhteystietoEntity.ytunnus
+
+    internal fun validateForErrors(path: String): ValidationResult =
+        validate { notJustWhitespace(name, "$path.name") }
+            .and { notJustWhitespace(email, "$path.email") }
+            .and { notJustWhitespace(phone, "$path.phone") }
+            .andWhen(
+                registryKey != null &&
+                    (type == CustomerType.COMPANY || type == CustomerType.ASSOCIATION)
+            ) {
+                validateTrue(registryKey.isValidBusinessId(), "$path.registryKey")
+            }
 }
 
 /** For referencing [fi.hel.haitaton.hanke.permissions.HankeKayttaja] by its id. */

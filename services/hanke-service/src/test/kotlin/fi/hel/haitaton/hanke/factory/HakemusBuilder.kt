@@ -5,7 +5,9 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.application.ExcavationAnnouncementApplicationData
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
@@ -53,18 +55,37 @@ data class HakemusBuilder(
 
     fun inHandling(alluId: Int = 1) = withStatus(ApplicationStatus.HANDLING, alluId)
 
-    fun withName(name: String): HakemusBuilder = apply { onCableReport { copy(name = name) } }
+    fun withName(name: String): HakemusBuilder = apply {
+        when (applicationEntity.applicationType) {
+            ApplicationType.CABLE_REPORT -> {
+                onCableReport { copy(name = name) }
+            }
+            ApplicationType.EXCAVATION_ANNOUNCEMENT -> {
+                onExcavationAnnouncement { copy(name = name) }
+            }
+        }
+    }
 
     fun withWorkDescription(workDescription: String): HakemusBuilder = apply {
-        onCableReport { copy(workDescription = workDescription) }
+        when (applicationEntity.applicationType) {
+            ApplicationType.CABLE_REPORT -> {
+                onCableReport { copy(workDescription = workDescription) }
+            }
+            ApplicationType.EXCAVATION_ANNOUNCEMENT -> {
+                onExcavationAnnouncement { copy(workDescription = workDescription) }
+            }
+        }
     }
 
     private fun onCableReport(f: CableReportApplicationData.() -> CableReportApplicationData) {
         applicationEntity.applicationData =
-            when (applicationEntity.applicationData) {
-                is CableReportApplicationData ->
-                    (applicationEntity.applicationData as CableReportApplicationData).f()
-            }
+            (applicationEntity.applicationData as CableReportApplicationData).f()
+    }
+
+    private fun onExcavationAnnouncement(
+        f: ExcavationAnnouncementApplicationData.() -> ExcavationAnnouncementApplicationData
+    ) {
+        (applicationEntity.applicationData as ExcavationAnnouncementApplicationData).f()
     }
 
     fun hakija(

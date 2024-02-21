@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
+import fi.hel.haitaton.hanke.allu.AlluExcavationAnnouncementApplicationData
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import java.time.ZonedDateTime
@@ -28,18 +29,28 @@ enum class ApplicationContactType {
 )
 @JsonSubTypes(
     JsonSubTypes.Type(value = CableReportApplicationData::class, name = "CABLE_REPORT"),
+    JsonSubTypes.Type(
+        value = ExcavationAnnouncementApplicationData::class,
+        name = "EXCAVATION_ANNOUNCEMENT"
+    ),
 )
 sealed interface ApplicationData {
     val applicationType: ApplicationType
     val name: String
     val pendingOnClient: Boolean
+    val startTime: ZonedDateTime?
+    val endTime: ZonedDateTime?
     val areas: List<ApplicationArea>?
+    val customerWithContacts: CustomerWithContacts?
+    val representativeWithContacts: CustomerWithContacts?
 
     fun copy(pendingOnClient: Boolean): ApplicationData
 
     fun toAlluData(hankeTunnus: String): AlluApplicationData
 
     fun customersWithContacts(): List<CustomerWithContacts>
+
+    fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContacts>>
 
     /**
      * Returns a set of email addresses from customer contact persons that:
@@ -58,33 +69,22 @@ sealed interface ApplicationData {
 @JsonView(ChangeLogView::class)
 data class CableReportApplicationData(
     @JsonView(NotInChangeLogView::class) override val applicationType: ApplicationType,
-
-    // Common, required
-    override val name: String,
-    val customerWithContacts: CustomerWithContacts?,
-    override val areas: List<ApplicationArea>?,
-    val startTime: ZonedDateTime?,
-    val endTime: ZonedDateTime?,
     override val pendingOnClient: Boolean,
-
-    // CableReport specific, required
-    val workDescription: String,
-    val contractorWithContacts: CustomerWithContacts?, // työn suorittaja
-    val rockExcavation: Boolean?,
-
-    // Common, not required
+    override val name: String,
     val postalAddress: PostalAddress? = null,
-    val representativeWithContacts: CustomerWithContacts? = null, // Asianhoitaja
-    val invoicingCustomer: Customer? = null,
-    val customerReference: String? = null,
-    val area: Double? = null,
-
-    // CableReport specific, not required
-    val propertyDeveloperWithContacts: CustomerWithContacts? = null, // rakennuttaja
     val constructionWork: Boolean = false,
     val maintenanceWork: Boolean = false,
+    val propertyConnectivity: Boolean = false,
     val emergencyWork: Boolean = false,
-    val propertyConnectivity: Boolean = false, // tontti-/kiinteistöliitos
+    val rockExcavation: Boolean?,
+    val workDescription: String,
+    override val startTime: ZonedDateTime?,
+    override val endTime: ZonedDateTime?,
+    override val areas: List<ApplicationArea>?,
+    override val customerWithContacts: CustomerWithContacts?,
+    val contractorWithContacts: CustomerWithContacts?,
+    val propertyDeveloperWithContacts: CustomerWithContacts? = null,
+    override val representativeWithContacts: CustomerWithContacts? = null,
 ) : ApplicationData {
     override fun copy(pendingOnClient: Boolean): CableReportApplicationData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
@@ -101,7 +101,7 @@ data class CableReportApplicationData(
             representativeWithContacts
         )
 
-    fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContacts>> =
+    override fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContacts>> =
         listOfNotNull(
             customerWithContacts?.let { ApplicationContactType.HAKIJA to it },
             contractorWithContacts?.let { ApplicationContactType.TYON_SUORITTAJA to it },
@@ -132,6 +132,55 @@ data class CableReportApplicationData(
             contractorWithContacts = yhteystiedot[ApplicationContactType.TYON_SUORITTAJA],
             propertyDeveloperWithContacts = yhteystiedot[ApplicationContactType.RAKENNUTTAJA],
             representativeWithContacts = yhteystiedot[ApplicationContactType.ASIANHOITAJA],
+        )
+}
+
+@JsonView(ChangeLogView::class)
+data class ExcavationAnnouncementApplicationData(
+    @JsonView(NotInChangeLogView::class) override val applicationType: ApplicationType,
+    override val pendingOnClient: Boolean,
+    override val name: String,
+    val workDescription: String,
+    val constructionWork: Boolean = false,
+    val maintenanceWork: Boolean = false,
+    val emergencyWork: Boolean = false,
+    val cableReportDone: Boolean,
+    val rockExcavation: Boolean?, // pakollinen, jos cableReportDone == false
+    val cableReports: List<String>? = null, // johtoselvityshakemukset
+    val placementContracts: List<String>? = null, // sijoitussopimustunnukset
+    val requiredCompetence: Boolean? = false, // oltava true, jotta voi lähettää
+    override val startTime: ZonedDateTime?,
+    override val endTime: ZonedDateTime?,
+    override val areas: List<ApplicationArea>?,
+    override val customerWithContacts: CustomerWithContacts?,
+    val contractorWithContacts: CustomerWithContacts?,
+    val propertyDeveloperWithContacts: CustomerWithContacts? = null,
+    override val representativeWithContacts: CustomerWithContacts? = null,
+    val invoicingCustomer: Customer? = null,
+    val customerReference: String? = null,
+    val additionalInfo: String? = null,
+) : ApplicationData {
+    override fun copy(pendingOnClient: Boolean): ExcavationAnnouncementApplicationData =
+        copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
+
+    override fun toAlluData(hankeTunnus: String): AlluExcavationAnnouncementApplicationData =
+        ApplicationDataMapper.toAlluData(hankeTunnus, this)
+
+    /** Returns CustomerWithContacts fields that are not null. */
+    override fun customersWithContacts(): List<CustomerWithContacts> =
+        listOfNotNull(
+            customerWithContacts,
+            contractorWithContacts,
+            propertyDeveloperWithContacts,
+            representativeWithContacts
+        )
+
+    override fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContacts>> =
+        listOfNotNull(
+            customerWithContacts?.let { ApplicationContactType.HAKIJA to it },
+            contractorWithContacts?.let { ApplicationContactType.TYON_SUORITTAJA to it },
+            representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
+            propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
         )
 }
 

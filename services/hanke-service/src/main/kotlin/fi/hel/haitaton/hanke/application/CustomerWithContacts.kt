@@ -77,12 +77,13 @@ data class Contact(
 data class Customer(
     val type: CustomerType?, // Mandatory in Allu, but not in drafts.
     val name: String,
-    val country: String, // ISO 3166-1 alpha-2 country code
+    val postalAddress: PostalAddress?,
     val email: String?,
     val phone: String?,
     val registryKey: String?, // y-tunnus
     val ovt: String?, // e-invoice identifier (ovt-tunnus)
     val invoicingOperator: String?, // e-invoicing operator code
+    val country: String, // ISO 3166-1 alpha-2 country code
     val sapCustomerNumber: String?, // customer's sap number
 ) {
     /**
@@ -104,12 +105,13 @@ data class Customer(
         AlluCustomer(
             type ?: throw AlluDataException("$path.type", AlluDataError.NULL),
             name,
-            country,
+            postalAddress?.toAlluData(),
             email,
             phone,
             registryKey,
             ovt,
             invoicingOperator,
+            country,
             sapCustomerNumber,
         )
 }

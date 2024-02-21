@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.application.ExcavationAnnouncementApplicationData
 import java.time.ZonedDateTime
 
 data class HankkeenHakemuksetResponse(val applications: List<HankkeenHakemusResponse>)
@@ -24,12 +25,14 @@ data class HankkeenHakemusResponse(
         application.alluStatus,
         application.applicationIdentifier,
         application.applicationType,
-        HankkeenHakemusDataResponse(
-            when (application.applicationData) {
-                is CableReportApplicationData ->
+        when (application.applicationData) {
+            is CableReportApplicationData ->
+                HankkeenHakemusDataResponse(
                     application.applicationData as CableReportApplicationData
-            },
-        ),
+                )
+            is ExcavationAnnouncementApplicationData ->
+                TODO("Excavation announcement not implemented")
+        },
     )
 }
 

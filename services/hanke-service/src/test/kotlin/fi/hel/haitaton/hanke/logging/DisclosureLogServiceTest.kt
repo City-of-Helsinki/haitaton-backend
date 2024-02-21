@@ -262,9 +262,10 @@ internal class DisclosureLogServiceTest {
 
     @Test
     fun `saveDisclosureLogsForApplication doesn't save entries for blank customers`() {
-        val blankCustomer = Customer(type = CustomerType.PERSON, "", "", "", "", "", "", "", "")
+        val blankCustomer =
+            Customer(type = CustomerType.PERSON, "", null, "", "", "", "", "", "", "")
         val blankCustomerWithCountry =
-            Customer(type = CustomerType.PERSON, "", "FI", "", "", "", "", "", "")
+            Customer(type = CustomerType.PERSON, "", null, "", "", "", "", "", "FI", "")
         val customerWithoutContacts = CustomerWithContacts(blankCustomer, listOf())
         val contractorWithoutContacts = CustomerWithContacts(blankCustomerWithCountry, listOf())
         val application =

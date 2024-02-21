@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.gdpr
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
@@ -112,13 +111,10 @@ object GdprJsonConverter {
     private fun getIntNode(key: String, value: Int?): IntNode? = value?.let { IntNode(key, value) }
 
     internal fun getCreatorInfoFromApplication(applicationData: ApplicationData): List<GdprInfo> {
-        return when (applicationData) {
-            is CableReportApplicationData ->
-                applicationData
-                    .customersWithContacts()
-                    .filter { it.contacts.any { contact -> contact.orderer } }
-                    .flatMap { getCreatorInfoFromCustomerWithContacts(it) }
-        }
+        return applicationData
+            .customersWithContacts()
+            .filter { it.contacts.any { contact -> contact.orderer } }
+            .flatMap { getCreatorInfoFromCustomerWithContacts(it) }
     }
 
     internal fun getCreatorInfoFromCustomerWithContacts(

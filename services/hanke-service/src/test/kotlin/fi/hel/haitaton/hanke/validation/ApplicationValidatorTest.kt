@@ -138,7 +138,6 @@ class ApplicationValidatorTest {
             Stream.of(
                 Arguments.of("name", baseAppData.copy(name = content)),
                 Arguments.of("workDescription", baseAppData.copy(workDescription = content)),
-                Arguments.of("customerReference", baseAppData.copy(customerReference = content)),
                 Arguments.of(
                     "postalAddress.postalCode",
                     baseAppData.withPostalAddress(postalCode = content)
@@ -259,34 +258,6 @@ class ApplicationValidatorTest {
             val application =
                 ApplicationFactory.createApplication()
                     .withApplicationData(propertyDeveloperWithContacts = null)
-
-            assertThat(applicationValidator.isValid(application, null)).isTrue()
-        }
-
-        @Test
-        fun `invoicingCustomer is validated when not null`() {
-            val application =
-                ApplicationFactory.createApplication(
-                    applicationData =
-                        ApplicationFactory.createCableReportApplicationData()
-                            .copy(
-                                invoicingCustomer =
-                                    ApplicationFactory.createCompanyCustomer(name = " ")
-                            )
-                )
-
-            assertFailure { applicationValidator.isValid(application, null) }
-                .hasClass(InvalidApplicationDataException::class)
-        }
-
-        @Test
-        fun `invoicingCustomer can be null`() {
-            val application =
-                ApplicationFactory.createApplication(
-                    applicationData =
-                        ApplicationFactory.createCableReportApplicationData()
-                            .copy(invoicingCustomer = null)
-                )
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
         }

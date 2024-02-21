@@ -70,6 +70,8 @@ data class ApplicationEntity(
                     hankeId = hanke.id,
                 )
             }
+            is ExcavationAnnouncementApplicationData ->
+                TODO("Excavation announcement not implemented")
         }
     }
 }

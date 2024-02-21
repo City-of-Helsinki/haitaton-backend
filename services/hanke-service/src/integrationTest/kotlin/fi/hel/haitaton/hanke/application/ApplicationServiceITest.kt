@@ -326,6 +326,7 @@ class ApplicationServiceITest : IntegrationTest() {
             val application =
                 applicationService.create(
                     createApplication(
+                        applicationType = ApplicationType.CABLE_REPORT,
                         id = null,
                         hankeTunnus = hanke.hankeTunnus,
                         applicationData = dataWithoutAreas
@@ -1071,6 +1072,7 @@ class ApplicationServiceITest : IntegrationTest() {
             val application =
                 applicationService.create(
                     createApplication(
+                        applicationType = ApplicationType.CABLE_REPORT,
                         id = null,
                         hankeTunnus = hanke.hankeTunnus,
                         applicationData = dataWithoutAreas
@@ -1534,12 +1536,13 @@ class ApplicationServiceITest : IntegrationTest() {
            "customer": {
              "type": "COMPANY",
              "name": "DNA",
-             "country": "FI",
+             "postalAddress": null,
              "email": "info@dna.test",
              "phone": "+3581012345678",
              "registryKey": "3766028-0",
              "ovt": null,
              "invoicingOperator": null,
+             "country": "FI",
              "sapCustomerNumber": null
            },
            "contacts": [
@@ -1576,16 +1579,13 @@ class ApplicationServiceITest : IntegrationTest() {
                 "startTime": "${nextYear()}-02-20T23:45:56Z",
                 "endTime": "${nextYear()}-02-21T00:12:34Z",
                 "pendingOnClient": true,
-                "workDescription": "Work description.",
+                "workDescription": "Työn kuvaus.",
                 "rockExcavation": false,
                 "contractorWithContacts": {
                   ${customerWithContactsJson(orderer = false)}
                 },
                 "postalAddress": null,
                 "representativeWithContacts": null,
-                "invoicingCustomer": null,
-                "customerReference": null,
-                "area": null,
                 "propertyDeveloperWithContacts": null,
                 "constructionWork": false,
                 "maintenanceWork": false,

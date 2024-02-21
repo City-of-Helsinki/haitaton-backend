@@ -163,6 +163,7 @@ class EmailSenderService(
                         sv = "ledningsutredning",
                         en = "a cable report application",
                     )
+                ApplicationType.EXCAVATION_ANNOUNCEMENT -> TODO("Not yet implemented")
             }
 
         /**
