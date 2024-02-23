@@ -1,0 +1,17 @@
+{
+  "name": "",
+  "streetAddress": "",
+  "constructionWork": false,
+  "maintenanceWork": false,
+  "propertyConnectivity": false,
+  "emergencyWork": false,
+  "rockExcavation": false,
+  "workDescription": "",
+  "startTime": null,
+  "endTime": null,
+  "areas": null,
+  "customerWithContacts": null,
+  "contractorWithContacts": null,
+  "propertyDeveloperWithContacts": null,
+  "representativeWithContacts": null
+}

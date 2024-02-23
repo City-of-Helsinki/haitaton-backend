@@ -1,0 +1,35 @@
+{
+  "name": "",
+  "streetAddress": "",
+  "constructionWork": false,
+  "maintenanceWork": false,
+  "propertyConnectivity": false,
+  "emergencyWork": false,
+  "rockExcavation": false,
+  "workDescription": "",
+  "startTime": null,
+  "endTime": null,
+  "areas": null,
+  "customerWithContacts": {
+    "customer": {
+      "type": "COMPANY",
+      "name": "Testiyritys",
+      "email": "info@testiyritys.fi",
+      "phone": "0401234567",
+      "registryKey": "1234567-8"
+    },
+    "contacts": [
+      {
+        "id": "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f",
+        "orderer": true
+      },
+      {
+        "id": "3047a6fc-5a2b-41cb-bb99-1f907fef2101",
+        "orderer": false
+      }
+    ]
+  },
+  "contractorWithContacts": null,
+  "propertyDeveloperWithContacts": null,
+  "representativeWithContacts": null
+}
