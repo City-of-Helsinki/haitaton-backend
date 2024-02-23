@@ -1,11 +1,10 @@
 package fi.hel.haitaton.hanke
 
-import org.springframework.test.context.DynamicPropertyRegistry
-import org.springframework.test.context.DynamicPropertySource
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlMergeMode
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
+import org.testcontainers.containers.PostgreSQLContainer
+import org.testcontainers.utility.DockerImageName
 import org.testcontainers.utility.MountableFile
 
 /**
@@ -20,12 +19,14 @@ import org.testcontainers.utility.MountableFile
  */
 @Sql("/clear-db.sql")
 @SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
-@Testcontainers
 abstract class DatabaseTest {
     companion object {
-        @Container
-        private val postgresContainer: HaitatonPostgreSQLContainer =
-            HaitatonPostgreSQLContainer()
+        @ServiceConnection
+        private val postgresContainer: PostgreSQLContainer<*> =
+            PostgreSQLContainer(
+                    DockerImageName.parse("postgis/postgis:13-master")
+                        .asCompatibleSubstituteFor("postgres")
+                )
                 .withPassword("test")
                 .withUsername("test")
                 .withCopyToContainer(
@@ -35,15 +36,8 @@ abstract class DatabaseTest {
                     "/docker-entrypoint-initdb.d/HEL-GIS-data-test.sql"
                 )
 
-        @JvmStatic
-        @DynamicPropertySource
-        fun postgresqlProperties(registry: DynamicPropertyRegistry) {
-            registry.add("spring.datasource.url", postgresContainer::getJdbcUrl)
-            registry.add("spring.datasource.username", postgresContainer::getUsername)
-            registry.add("spring.datasource.password", postgresContainer::getPassword)
-            registry.add("spring.liquibase.url", postgresContainer::getJdbcUrl)
-            registry.add("spring.liquibase.user", postgresContainer::getUsername)
-            registry.add("spring.liquibase.password", postgresContainer::getPassword)
+        init {
+            postgresContainer.start()
         }
     }
 }
