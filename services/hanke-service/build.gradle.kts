@@ -49,7 +49,7 @@ spotless {
 
 plugins {
     val kotlinVersion = "1.9.22"
-    id("org.springframework.boot") version "3.1.6"
+    id("org.springframework.boot") version "3.2.3"
     id("io.spring.dependency-management") version "1.1.4"
     id("com.diffplug.spotless") version "6.25.0"
     kotlin("jvm") version kotlinVersion
@@ -79,7 +79,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.liquibase:liquibase-core")
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-60:3.7.3")
+    implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")
     implementation("commons-io:commons-io:2.15.1")
     implementation("com.github.librepdf:openpdf:2.0.0")
     implementation("net.pwall.mustache:kotlin-mustache:0.11")
@@ -98,7 +98,8 @@ dependencies {
     testImplementation("com.icegreen:greenmail-junit5:2.0.1")
 
     // Testcontainers
-    implementation(platform("org.testcontainers:testcontainers-bom:1.19.6"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.19.6"))
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:postgresql")
 
