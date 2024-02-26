@@ -1557,8 +1557,7 @@ class ApplicationServiceITest : DatabaseTest() {
                "lastName": "Testihenkilö",
                "email": "teppo@example.test",
                "phone": "04012345678",
-               "orderer": $orderer,
-               "id": null
+               "orderer": $orderer
              }
            ]
         """

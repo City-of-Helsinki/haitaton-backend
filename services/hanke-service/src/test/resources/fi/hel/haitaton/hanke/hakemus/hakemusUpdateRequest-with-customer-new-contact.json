@@ -1,35 +1,33 @@
 {
-  "name": "",
-  "streetAddress": "",
-  "constructionWork": false,
-  "maintenanceWork": false,
-  "propertyConnectivity": false,
-  "emergencyWork": false,
-  "rockExcavation": false,
-  "workDescription": "",
-  "startTime": null,
-  "endTime": null,
-  "areas": null,
-  "customerWithContacts": {
-    "customer": {
-      "type": "COMPANY",
-      "name": "Testiyritys",
-      "email": "info@testiyritys.fi",
-      "phone": "0401234567",
-      "registryKey": "1234567-8"
-    },
-    "contacts": [
-      {
-        "id": "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f",
-        "orderer": true
-      },
-      {
-        "id": "3047a6fc-5a2b-41cb-bb99-1f907fef2101",
-        "orderer": false
-      }
-    ]
-  },
-  "contractorWithContacts": null,
-  "propertyDeveloperWithContacts": null,
-  "representativeWithContacts": null
+  "nimi": "",
+  "katuosoite": "",
+  "rakennustyo": false,
+  "huoltotyo": false,
+  "kiinteistoliittyma": false,
+  "hatatyo": false,
+  "louhintaa": false,
+  "tyonKuvaus": "",
+  "alkuPvm": null,
+  "loppuPvm": null,
+  "tyoalueet": null,
+  "yhteystiedot": {
+    "HAKIJA": {
+      "id": "c3e3e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e",
+      "tyyppi": "COMPANY",
+      "nimi": "Testiyritys",
+      "sahkoposti": "info@testiyritys.fi",
+      "puhelin": "0401234567",
+      "ytunnus": "1234567-8",
+      "yhteyshenkilot": [
+        {
+          "id": "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f",
+          "tilaaja": true
+        },
+        {
+          "id": "3047a6fc-5a2b-41cb-bb99-1f907fef2101",
+          "tilaaja": false
+        }
+      ]
+    }
+  }
 }

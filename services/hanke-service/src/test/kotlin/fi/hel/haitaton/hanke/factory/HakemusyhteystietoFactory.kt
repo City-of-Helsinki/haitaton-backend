@@ -5,7 +5,6 @@ import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
-import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import java.util.UUID
 import org.springframework.stereotype.Component
 
@@ -36,15 +35,6 @@ object HakemusyhteystietoFactory {
             ytunnus = ytunnus,
             application = application
         )
-
-    fun HakemusyhteystietoEntity.withYhteyshenkilo(
-        hankekayttajaEntity: HankekayttajaEntity,
-        tilaaja: Boolean = false
-    ): HakemusyhteystietoEntity =
-        this.apply {
-            this.yhteyshenkilot =
-                listOf(HakemusyhteyshenkiloFactory.createEntity(this, hankekayttajaEntity, tilaaja))
-        }
 
     fun create(
         id: UUID = DEFAULT_ID,
