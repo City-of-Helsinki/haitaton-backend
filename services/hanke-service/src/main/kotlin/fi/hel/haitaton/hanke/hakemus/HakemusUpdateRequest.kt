@@ -55,11 +55,8 @@ data class JohtoselvityshakemusUpdateRequest(
     /** Työn kuvaus */
     val workDescription: String,
     // 2. sivu Alueet
-    /** Työn arvioitu alkupäivä */
     override val startTime: ZonedDateTime? = null,
-    /** Työn arvioitu loppupäivä */
     override val endTime: ZonedDateTime? = null,
-    /** Työalueet */
     override val areas: List<ApplicationArea>? = null,
     // 3. sivu Yhteystiedot
     /** Hakijan tiedot */
