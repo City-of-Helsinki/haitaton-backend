@@ -13,7 +13,6 @@ import fi.hel.haitaton.hanke.allu.PostalAddress as AlluPostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress as AlluStreetAddress
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
-import java.util.UUID
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CustomerWithContacts(val customer: Customer, val contacts: List<Contact>) {
@@ -32,7 +31,6 @@ data class Contact(
     val email: String?,
     val phone: String?,
     val orderer: Boolean = false,
-    val id: UUID? = null
 ) {
     /** Check if this contact is blank, i.e. it doesn't contain any actual contact information. */
     @JsonIgnore fun isBlank() = listOf(firstName, lastName, email, phone).all { it.isNullOrBlank() }
@@ -88,11 +86,6 @@ data class Customer(
     val sapCustomerNumber: String?, // customer's sap number
 ) {
     /**
-     * Check if this customer is blank, i.e. it doesn't contain any actual user-defined information.
-     */
-    @JsonIgnore fun isBlank() = listOf(name, email, phone, registryKey).all { it.isNullOrBlank() }
-
-    /**
      * Check if this customer contains any actual personal information.
      *
      * Country alone isn't considered personal information when it's dissociated from other
@@ -137,6 +130,3 @@ data class PostalAddress(
 data class StreetAddress(val streetName: String?) {
     fun toAlluData(): AlluStreetAddress = AlluStreetAddress(streetName)
 }
-
-fun CustomerWithContacts?.isNullOrBlank(): Boolean =
-    this == null || customer.isBlank() // we don't check the contacts because they hold only ids
