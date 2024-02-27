@@ -19,14 +19,8 @@
       "puhelin": "0401234567",
       "ytunnus": "1234567-8",
       "yhteyshenkilot": [
-        {
-          "id": "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f",
-          "tilaaja": true
-        },
-        {
-          "id": "3047a6fc-5a2b-41cb-bb99-1f907fef2101",
-          "tilaaja": false
-        }
+        "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f",
+        "3047a6fc-5a2b-41cb-bb99-1f907fef2101"
       ]
     }
   }
