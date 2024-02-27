@@ -103,6 +103,20 @@ class HakemusUpdateRequestTest {
 
             assertThat(request.hasChanges(original)).isFalse()
         }
+
+        @Test
+        fun `returns true when customer contacts are removed`() {
+            val original =
+                createApplicationEntityWithYhteystiedot(
+                    Pair("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f", true),
+                    Pair("3047a6fc-5a2b-41cb-bb99-1f907fef2101", false)
+                )
+            val request =
+                "/fi/hel/haitaton/hanke/hakemus/hakemusUpdateRequest-with-customer-without-contacts.json"
+                    .asJsonResource<JohtoselvityshakemusUpdateRequest>()
+
+            assertThat(request.hasChanges(original)).isTrue()
+        }
     }
 
     private fun createApplicationEntityWithYhteystiedot(

@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.hakemus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType
+import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import java.time.ZonedDateTime
@@ -21,6 +22,13 @@ sealed interface HakemusUpdateRequest {
      * [applicationEntity].
      */
     fun hasChanges(applicationEntity: ApplicationEntity): Boolean
+
+    /**
+     * Converts this update request to an [ApplicationData] object using the given [baseData] as a
+     * basis. This means that we take the values in [baseData] and replace only the ones that are
+     * defined in this request.
+     */
+    fun <T : ApplicationData> toApplicationData(baseData: T): T
 }
 
 data class JohtoselvityshakemusUpdateRequest(
@@ -58,6 +66,10 @@ data class JohtoselvityshakemusUpdateRequest(
             tyoalueet != applicationData.areas ||
             yhteystiedot.hasChanges(applicationEntity.yhteystiedot)
     }
+
+    override fun <T : ApplicationData> toApplicationData(baseData: T): T {
+        TODO("Not yet implemented")
+    }
 }
 
 /**
@@ -71,7 +83,7 @@ data class HakemusyhteystietoRequest(
     val sahkoposti: String? = null,
     val puhelin: String? = null,
     val ytunnus: String? = null,
-    val yhteyshenkilot: List<HakemusyhteyshenkiloRequest>? = null,
+    val yhteyshenkilot: List<UUID>? = null,
 ) {
 
     /**
@@ -86,37 +98,23 @@ data class HakemusyhteystietoRequest(
             yhteyshenkilot.hasChanges(hakemusyhteystietoEntity.yhteyshenkilot)
 }
 
-data class HakemusyhteyshenkiloRequest(
-    /** Hankekayttaja id */
-    val id: UUID,
-    val tilaaja: Boolean
-)
-
 fun Map<ApplicationContactType, HakemusyhteystietoRequest>?.hasChanges(
     hakemusyhteystiedot: Map<ApplicationContactType, HakemusyhteystietoEntity>
 ): Boolean {
     if (this == null) {
         return hakemusyhteystiedot.isNotEmpty()
     }
-    if (this.size != hakemusyhteystiedot.size) return true
+    if (this.keys != hakemusyhteystiedot.keys) return true
     return this.entries.any { (role, yhteystietoRequest) ->
-        hakemusyhteystiedot[role]?.let { entity -> yhteystietoRequest.hasChanges(entity) } ?: true
+        yhteystietoRequest.hasChanges(hakemusyhteystiedot[role]!!)
     }
 }
 
-fun List<HakemusyhteyshenkiloRequest>?.hasChanges(
-    hakemusyhteyshenkilot: List<HakemusyhteyshenkiloEntity>
-): Boolean {
-    if (this.isNullOrEmpty()) {
+fun List<UUID>?.hasChanges(hakemusyhteyshenkilot: List<HakemusyhteyshenkiloEntity>): Boolean {
+    if (this == null) {
         return hakemusyhteyshenkilot.isNotEmpty()
     }
-    if (this.size != hakemusyhteyshenkilot.size) return true
-    hakemusyhteyshenkilot
-        .map { it.hankekayttaja.id }
-        .toSet()
-        .let { existingIds ->
-            return this.any { hakemusyhteyshenkiloRequest ->
-                hakemusyhteyshenkiloRequest.id !in existingIds
-            }
-        }
+    val requestIds = this.toSet()
+    val existingIds = hakemusyhteyshenkilot.map { it.hankekayttaja.id }.toSet()
+    return requestIds != existingIds
 }

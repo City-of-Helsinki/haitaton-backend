@@ -12,15 +12,13 @@
   "tyoalueet": null,
   "yhteystiedot": {
     "HAKIJA": {
-      "id": "",
+      "id": "c3e3e3e3-3e3e-3e3e-3e3e-3e3e3e3e3e3e",
       "tyyppi": "COMPANY",
       "nimi": "Testiyritys",
       "sahkoposti": "info@testiyritys.fi",
       "puhelin": "0401234567",
       "ytunnus": "1234567-8",
-      "yhteyshenkilot": [
-        "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f"
-      ]
+      "yhteyshenkilot": null
     }
   }
 }
