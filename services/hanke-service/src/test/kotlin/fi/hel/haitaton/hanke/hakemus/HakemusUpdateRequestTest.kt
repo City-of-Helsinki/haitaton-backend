@@ -6,8 +6,8 @@ import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -28,9 +28,7 @@ class HakemusUpdateRequestTest {
                     applicationData = ApplicationFactory.createBlankCableReportApplicationData(),
                     hanke = HankeFactory.createMinimalEntity()
                 )
-            val request =
-                "/fi/hel/haitaton/hanke/hakemus/hakemusUpdateRequest-blank.json"
-                    .asJsonResource<JohtoselvityshakemusUpdateRequest>()
+            val request = HakemusUpdateRequestFactory.createBlankJohtoselvityshakemusUpdateRequest()
 
             assertThat(request.hasChanges(original)).isFalse()
         }
@@ -43,8 +41,8 @@ class HakemusUpdateRequestTest {
                     hanke = HankeFactory.createMinimalEntity()
                 )
             val request =
-                "/fi/hel/haitaton/hanke/hakemus/hakemusUpdateRequest-with-name.json"
-                    .asJsonResource<JohtoselvityshakemusUpdateRequest>()
+                HakemusUpdateRequestFactory.createBlankJohtoselvityshakemusUpdateRequest()
+                    .copy(name = "Testihakemus")
 
             assertThat(request.hasChanges(original)).isTrue()
         }
@@ -57,8 +55,10 @@ class HakemusUpdateRequestTest {
                     hanke = HankeFactory.createMinimalEntity()
                 )
             val request =
-                "/fi/hel/haitaton/hanke/hakemus/hakemusUpdateRequest-with-work-description.json"
-                    .asJsonResource<JohtoselvityshakemusUpdateRequest>()
+                HakemusUpdateRequestFactory.createBlankJohtoselvityshakemusUpdateRequest()
+                    .copy(
+                        workDescription = "Lorem ipsum dolor sit amet, consectetur adipiscing elit."
+                    )
 
             assertThat(request.hasChanges(original)).isTrue()
         }
@@ -71,8 +71,9 @@ class HakemusUpdateRequestTest {
                     hanke = HankeFactory.createMinimalEntity()
                 )
             val request =
-                "/fi/hel/haitaton/hanke/hakemus/hakemusUpdateRequest-with-customer.json"
-                    .asJsonResource<JohtoselvityshakemusUpdateRequest>()
+                createJohtoselvityshakemusUpdateRequestWithCustomerWithContacts(
+                    "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f"
+                )
 
             assertThat(request.hasChanges(original)).isTrue()
         }
@@ -84,8 +85,10 @@ class HakemusUpdateRequestTest {
                     Pair("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f", true)
                 )
             val request =
-                "/fi/hel/haitaton/hanke/hakemus/hakemusUpdateRequest-with-customer-new-contact.json"
-                    .asJsonResource<JohtoselvityshakemusUpdateRequest>()
+                createJohtoselvityshakemusUpdateRequestWithCustomerWithContacts(
+                    "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f",
+                    "3047a6fc-5a2b-41cb-bb99-1f907fef2101"
+                )
 
             assertThat(request.hasChanges(original)).isTrue()
         }
@@ -98,8 +101,10 @@ class HakemusUpdateRequestTest {
                     Pair("3047a6fc-5a2b-41cb-bb99-1f907fef2101", false)
                 )
             val request =
-                "/fi/hel/haitaton/hanke/hakemus/hakemusUpdateRequest-with-customer-new-contact.json"
-                    .asJsonResource<JohtoselvityshakemusUpdateRequest>()
+                createJohtoselvityshakemusUpdateRequestWithCustomerWithContacts(
+                    "cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f",
+                    "3047a6fc-5a2b-41cb-bb99-1f907fef2101"
+                )
 
             assertThat(request.hasChanges(original)).isFalse()
         }
@@ -111,9 +116,7 @@ class HakemusUpdateRequestTest {
                     Pair("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f", true),
                     Pair("3047a6fc-5a2b-41cb-bb99-1f907fef2101", false)
                 )
-            val request =
-                "/fi/hel/haitaton/hanke/hakemus/hakemusUpdateRequest-with-customer-without-contacts.json"
-                    .asJsonResource<JohtoselvityshakemusUpdateRequest>()
+            val request = createJohtoselvityshakemusUpdateRequestWithCustomerWithContacts()
 
             assertThat(request.hasChanges(original)).isTrue()
         }
@@ -150,4 +153,22 @@ class HakemusUpdateRequestTest {
                                 }
                         }
             }
+
+    private fun createJohtoselvityshakemusUpdateRequestWithCustomerWithContacts(
+        vararg yhteyshenkilot: String
+    ): JohtoselvityshakemusUpdateRequest =
+        HakemusUpdateRequestFactory.createBlankJohtoselvityshakemusUpdateRequest()
+            .copy(
+                customerWithContacts =
+                    CustomerWithContactsRequest(
+                        CustomerRequest(
+                            type = CustomerType.COMPANY,
+                            name = "Testiyritys",
+                            email = "info@testiyritys.fi",
+                            phone = "0401234567",
+                            registryKey = "1234567-8"
+                        ),
+                        yhteyshenkilot.map { ContactRequest(UUID.fromString(it)) }
+                    )
+            )
 }
