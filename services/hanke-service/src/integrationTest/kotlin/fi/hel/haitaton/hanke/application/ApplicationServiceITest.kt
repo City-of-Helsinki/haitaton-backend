@@ -1504,7 +1504,7 @@ class ApplicationServiceITest : DatabaseTest() {
     }
 
     private fun Assert<MimeMessage>.isValid(type: ApplicationType, hankeTunnus: String?) {
-        val name = KAYTTAJA_INPUT_HAKIJA.fullName()
+        val name = "${KAYTTAJA_INPUT_HAKIJA.etunimi} ${KAYTTAJA_INPUT_HAKIJA.sukunimi}"
         val email = KAYTTAJA_INPUT_HAKIJA.email
         prop(MimeMessage::textBody).all {
             contains("$name ($email) on tehnyt")

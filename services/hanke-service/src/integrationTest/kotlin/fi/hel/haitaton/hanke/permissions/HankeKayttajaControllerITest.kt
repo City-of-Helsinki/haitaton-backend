@@ -262,10 +262,10 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 prop(HankeKayttajaDto::sahkoposti).isEqualTo("email.1.address.com")
                 prop(HankeKayttajaDto::etunimi).isEqualTo("test1")
                 prop(HankeKayttajaDto::sukunimi).isEqualTo("name1")
-                prop(HankeKayttajaDto::nimi).isEqualTo("test1 name1")
                 prop(HankeKayttajaDto::puhelinnumero).isEqualTo("0405551111")
                 prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
                 prop(HankeKayttajaDto::tunnistautunut).isEqualTo(false)
+                prop(HankeKayttajaDto::kutsuttu).isEqualTo(HankeKayttajaFactory.INVITATION_DATE)
             }
             verifySequence {
                 authorizer.authorizeKayttajaId(kayttajaId, "VIEW")
@@ -303,10 +303,10 @@ class HankeKayttajaControllerITest(@Autowired override val mockMvc: MockMvc) : C
                 assertThat(id).isNotNull()
                 assertThat(etunimi).isEqualTo("test1")
                 assertThat(sukunimi).isEqualTo("name1")
-                assertThat(nimi).isEqualTo("test1 name1")
                 assertThat(puhelinnumero).isEqualTo("0405551111")
                 assertThat(sahkoposti).isEqualTo("email.1.address.com")
                 assertThat(tunnistautunut).isEqualTo(false)
+                assertThat(kutsuttu).isEqualTo(HankeKayttajaFactory.INVITATION_DATE)
                 assertThat(roolit).containsExactlyInAnyOrder(ContactType.OMISTAJA, ContactType.MUU)
             }
             assertThat(response.kayttajat).hasSameElementsAs(testData)
