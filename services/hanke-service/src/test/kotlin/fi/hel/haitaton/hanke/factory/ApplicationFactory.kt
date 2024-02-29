@@ -206,6 +206,30 @@ class ApplicationFactory(
                 postalAddress = postalAddress,
             )
 
+        internal fun createBlankCableReportApplicationData() =
+            createCableReportApplicationData(
+                name = "",
+                areas = null,
+                startTime = null,
+                endTime = null,
+                pendingOnClient = false,
+                workDescription = "",
+                customerWithContacts =
+                    CustomerWithContacts(
+                        Customer(null, "", "", null, null, null, null, null, null),
+                        listOf()
+                    ),
+                contractorWithContacts =
+                    CustomerWithContacts(
+                        Customer(null, "", "", null, null, null, null, null, null),
+                        listOf()
+                    ),
+                representativeWithContacts = null,
+                propertyDeveloperWithContacts = null,
+                rockExcavation = false,
+                postalAddress = PostalAddress(StreetAddress(""), "", "")
+            )
+
         fun createApplication(
             id: Long? = 1,
             alluid: Int? = null,
