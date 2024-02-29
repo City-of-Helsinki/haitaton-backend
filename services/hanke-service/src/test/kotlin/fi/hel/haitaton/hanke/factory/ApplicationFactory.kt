@@ -16,7 +16,6 @@ import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
-import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_RAKENNUTTAJA
@@ -136,8 +135,7 @@ class ApplicationFactory(
 
         fun createApplicationArea(
             name: String = "Area name",
-            geometry: Polygon =
-                "/fi/hel/haitaton/hanke/geometria/toinen_polygoni.json".asJsonResource(),
+            geometry: Polygon = GeometriaFactory.secondPolygon,
         ): ApplicationArea = ApplicationArea(name, geometry)
 
         fun Application.withApplicationData(
