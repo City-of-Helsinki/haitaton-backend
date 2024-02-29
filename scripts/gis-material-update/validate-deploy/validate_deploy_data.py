@@ -21,6 +21,7 @@ DEFAULT_DEPLOYMENT_PROFILE = "local_development"
 def validate_deploy_item(item: str, cfg: Config):
     print(f"Validating deployment item: {item}")
     gis_processor = instantiate_processor(item, cfg)
+    gis_processor.get_temp_data(cfg)
     gis_processor.validate_deploy()
     pass
 
@@ -45,10 +46,7 @@ def instantiate_processor(item: str, cfg: Config) -> GisProcessor:
     elif item == "central_business_area":
         return CentralBusinessAreas(cfg)
     else:
-        try:
-            raise RuntimeError("Configuration not recognized: {}".format(item))
-        except Exception as e:
-            print("{}".format(e))
+        print("{}".format(RuntimeError("Configuration not recognized: {}".format(item))))
 
 if __name__ == "__main__":
 

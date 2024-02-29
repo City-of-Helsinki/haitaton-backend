@@ -17,15 +17,15 @@ class Liikennevaylat(GisProcessor):
         self._process_result_lines = None
         self._process_result_polygons = None
         self._debug_result_lines = None
+        self._orig = None
         self._module = "liikennevaylat"
-        self._tormays_table_org = cfg.tormays_table_org(self._module)
-        self._tormays_table_temp = cfg.tormays_table_temp(self._module)
+        self._store_original_data = cfg.store_orinal_data(self._module)
 
         # check that ylre_katuosat file is available
         if not path.exists(self._cfg.target_buffer_file("ylre_katuosat")):
             raise FileNotFoundError("ylre katuosat polygon not found")
-        
-        # Loading ylre_katuosat dataset 
+
+        # Loading ylre_katuosat dataset
         ylre_katuosat_filename = cfg.target_buffer_file("ylre_katuosat")
         self._ylre_katuosat = gpd.read_file(ylre_katuosat_filename)
         self._ylre_katuosat_sindex = self._ylre_katuosat.sindex
@@ -33,7 +33,7 @@ class Liikennevaylat(GisProcessor):
         # check central business area file is available
         if not path.exists(self._cfg.target_file("central_business_area")):
             raise FileNotFoundError("central business area polygon not found")
-        
+
         # Loading central business area dataset
         central_business_area_filename = cfg.target_file("central_business_area")
         self._central_business_area = gpd.read_file(central_business_area_filename)
@@ -63,8 +63,8 @@ class Liikennevaylat(GisProcessor):
             "yhtmuokkauspvm",
             "yhtdatanomistaja",
             "paivitetty_tietopalveluun",
-            "gml_id", 
-            "id", 
+            "gml_id",
+            "id",
             "uuid",
             "paatyyppi",
             "alatyyppi",
@@ -144,11 +144,22 @@ class Liikennevaylat(GisProcessor):
                 "Pyöräkatu",
                 "Asuntokatu, huoltoväylä tai muu vähäliikenteinen katu",
             ),
+            (
+                "Jalankulku ja pyöräliikenne",
+                "Piha- ja/tai kävelykatu",
+                "Asuntokatu, huoltoväylä tai muu vähäliikenteinen katu",
+            ),
+            (
+                "Jalankulku ja pyöräliikenne",
+                "Pyöräkatu",
+                "Asuntokatu, huoltoväylä tai muu vähäliikenteinen katu",
+            ),
         )
 
         file_name = cfg.local_file(self._module)
 
         self._lines = gpd.read_file(file_name)
+        self._orig = self._lines
 
     def _get_central_business_area_and_merge(self) -> gpd.GeoDataFrame:
         retval = self._central_business_area
@@ -178,9 +189,7 @@ class Liikennevaylat(GisProcessor):
         else:
             return False  # Return False for None values
 
-    def _check_and_change_central_business_area_objects(
-        self, main_and_sub_types: list[str], checked_data: gpd.GeoDataFrame
-    ) -> gpd.GeoDataFrame:
+    def _check_and_change_central_business_area_objects(self, main_and_sub_types: list[str], checked_data: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         retval = checked_data.copy()
         area_of_interest = self._get_central_business_area_and_merge()
         retval["IsInsideArea"] = retval.apply(lambda row: self._is_inside_area(row["geometry"], area_of_interest.geometry.iloc[0]), axis=1)
@@ -189,17 +198,13 @@ class Liikennevaylat(GisProcessor):
 
         return retval
 
-    def _drop_unnecessary_columns(
-        self, columns_to_drop: list[str], shapes: gpd.GeoDataFrame
-    ) -> gpd.GeoDataFrame:
+    def _drop_unnecessary_columns(self, columns_to_drop: list[str], shapes: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         retval = shapes.copy()
         retval.drop(columns_to_drop, axis=1, inplace=True)
 
         return retval
 
-    def _drop_not_used_classes_base_on_main_and_sub_types(
-        self, main_and_sub_types, shapes: gpd.GeoDataFrame
-    ) -> gpd.GeoDataFrame:
+    def _drop_not_used_classes_base_on_main_and_sub_types(self, main_and_sub_types, shapes: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         retval = shapes.copy()
         for main_type, sub_types in main_and_sub_types.items():
             for sub_type in sub_types:
@@ -214,9 +219,7 @@ class Liikennevaylat(GisProcessor):
 
         return retval
 
-    def _set_street_classes(
-        self, set_class_names_list, shapes: gpd.GeoDataFrame
-    ) -> gpd.GeoDataFrame:
+    def _set_street_classes(self, set_class_names_list, shapes: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         retval = shapes.copy()
 
         # Add new column street_class
@@ -231,9 +234,7 @@ class Liikennevaylat(GisProcessor):
 
         return retval
 
-    def _check_and_set_ylre_classes_id(
-        self, lines: gpd.GeoDataFrame
-    ) -> gpd.GeoDataFrame:
+    def _check_and_set_ylre_classes_id(self, lines: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         ylre_katuosat_dissolved = self._ylre_katuosat.dissolve("ylre_street_area")
         joined_result = gpd.sjoin(lines, ylre_katuosat_dissolved, predicate='within')
 
@@ -241,9 +242,7 @@ class Liikennevaylat(GisProcessor):
 
         return retval
 
-    def _buffering(
-        self, lines: gpd.GeoDataFrame
-    ) -> gpd.GeoDataFrame:
+    def _buffering(self, lines: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
         # Buffer lines
         target_infra_polys = lines.copy()
         retval = target_infra_polys[0:0]
@@ -254,14 +253,10 @@ class Liikennevaylat(GisProcessor):
 
         return retval
 
-    def _clip_by_ylre_classes_areas(
-        self, geometry: gpd.GeoDataFrame
-    ) -> gpd.GeoDataFrame:
-        
+    def _clip_by_ylre_classes_areas(self, geometry: gpd.GeoDataFrame) -> gpd.GeoDataFrame:
+
         ylre_katuosat_dissolved = self._ylre_katuosat.dissolve("ylre_street_area")
-
         ylre_areas = geometry[geometry["index_right"].notnull()]
-
         clipped_result=gpd.clip(ylre_areas, ylre_katuosat_dissolved)
 
         # Getting objects which were not clipped
@@ -276,7 +271,7 @@ class Liikennevaylat(GisProcessor):
         # Adding clipped results to objects which were not interacting with YLRE areas at all
         retval = gpd.GeoDataFrame(pd.concat([geometry.loc[~geometry["index_right"].notnull()], clipped_result], ignore_index=True))
 
-        # Adding not clipped objects 
+        # Adding not clipped objects
         retval = gpd.GeoDataFrame(pd.concat([retval, not_clipped], ignore_index=True))
 
         return retval
@@ -293,7 +288,7 @@ class Liikennevaylat(GisProcessor):
         self._process_result_lines = self._set_street_classes(
             self._street_class_name_base_on_main_and_sub_type, self._process_result_lines
         )
-        
+
         # Check central business area objects
         self._process_result_lines = self._check_and_change_central_business_area_objects(
             self._street_classes_check_inside_kantakaupunki, self._process_result_lines
@@ -325,42 +320,23 @@ class Liikennevaylat(GisProcessor):
         self._process_result_polygons = target_infra_polys
 
     def persist_to_database(self):
-        engine = create_engine(self._cfg.pg_conn_uri(), future=True)
+        connection = create_engine(self._cfg.pg_conn_uri(), future=True)
 
         # Drop z-values
         func = lambda geom: shapely.wkb.loads(shapely.wkb.dumps(geom, output_dimension=2))
-        self._process_result_lines["geometry"] = self._process_result_lines["geometry"].apply(func)
-        self._process_result_polygons["geometry"] = self._process_result_polygons["geometry"].apply(func)
+        self._orig["geometry"] = self._orig["geometry"].apply(func)
 
-        # persist route lines to database
-        self._process_result_lines.to_postgis(
-            "street_classes_lines",
-            engine,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
-
-        # persist polygons to database
-        #self._process_result_polygons.to_postgis(
-        #    self._tormays_table_temp,
-        #    engine,
-        #    "public",
-        #    if_exists="replace",
-        #    index=True,
-        #    index_label="fid",
-        #)
-
-        # persist results to temp table
-        self._process_result_polygons.to_postgis(
-            self._cfg.tormays_table_temp(self._module),
-            engine,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+        if self._store_original_data is not False:
+            self._orig.rename_geometry('geom', inplace=True)
+            # persist original data
+            self._orig.to_postgis(
+                self._store_original_data,
+                connection,
+                "public",
+                if_exists="replace",
+                index=True,
+                index_label="fid",
+                )
 
     def save_to_file(self):
         """Save processing results to file."""

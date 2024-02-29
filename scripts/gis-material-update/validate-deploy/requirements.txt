@@ -10,3 +10,4 @@ ipykernel
 parse
 black
 isort
+boto3

@@ -17,8 +17,10 @@ class CycleInfra(GisProcessor):
         self._module = "cycle_infra"
 
         file_name = cfg.local_file(self._module)
+        self._store_original_data = cfg.store_orinal_data(self._module)
 
         self._lines = gpd.read_file(file_name)
+        self._orig = self._lines
 
     def process(self):
         self._process_result_lines = self._lines
@@ -36,38 +38,20 @@ class CycleInfra(GisProcessor):
         self._process_result_polygons = target_infra_polys
 
     def persist_to_database(self):
-        engine = create_engine(self._cfg.pg_conn_uri(), future=True)
+        connection = create_engine(self._cfg.pg_conn_uri(), future=True)
 
-        # persist route lines to database
-        self._process_result_lines.to_postgis(
-            "cycle_infra",
-            engine,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+        if self._store_original_data is not False:
+            self._orig.rename_geometry('geom', inplace=True)
+            # persist original data
+            self._orig.to_postgis(
+                self._store_original_data,
+                connection,
+                "public",
+                if_exists="replace",
+                index=True,
+                index_label="fid",
+                )
 
-        # persist polygons to database
-        #self._process_result_polygons.to_postgis(
-        #    "cycle_infra_polys",
-        #    engine,
-        #    "public",
-        #    if_exists="replace",
-        #    index=True,
-        #    index_label="fid",
-        #)
-
-        # persist results to temp table
-        self._process_result_polygons.to_postgis(
-            self._cfg.tormays_table_temp(self._module),
-            engine,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
-        
     def save_to_file(self):
         """Save processing results to file."""
         # cycle line infra as debug material

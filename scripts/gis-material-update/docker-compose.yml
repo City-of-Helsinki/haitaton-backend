@@ -74,3 +74,4 @@ services:
       - haitaton_gis_validate_deploy:/haitaton-gis-validate-deploy
       - ./haitaton-downloads:/downloads
       - ./haitaton-gis-log:/gis-log
+      - ./haitaton-gis-output:/gis-output

@@ -103,6 +103,10 @@ class Config:
         """Return buffer value list from configuration."""
         return self._cfg.get(item, {}).get("tormays_table_temp")
 
+    def store_orinal_data(self, item: str) -> str:
+        """Return buffer value list from configuration."""
+        return self._cfg.get(item, {}).get("store_orinal_data")
+
     def buffer_class_values(self, item: str) -> list[int]:
         """Return buffer value list from configuration."""
         return self._cfg.get(item, {}).get("buffer_class_values")

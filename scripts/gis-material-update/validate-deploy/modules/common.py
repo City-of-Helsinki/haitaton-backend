@@ -1,91 +1,83 @@
 import math
 from sqlalchemy import create_engine, text
-    
-def deploy(pg_conn_uri, tormays_table_org, tormays_table_temp, logger=None):
-    # validate data amount: is it between given limits
-    delete_result = None
-    engine = create_engine(pg_conn_uri)
-    with engine.connect() as connection:
-        transaction = connection.begin()
-        delete_sql = "delete from " + tormays_table_org
-        try:
-            logger.info("Deploy ...")
-            delete_result = connection.execute(text(delete_sql))
-            logger.info(tormays_table_org + ": " + f"{delete_result.rowcount} rows deleted.")
-        except Exception as e:
-            # Transaction implicitly rolls back if an exception occurred within the "with" block
-            logger.error(f"Error: {e}")
-        
-        if delete_result:    
-            copy_sql = "insert into " + tormays_table_org + " select * from " + tormays_table_temp
-            try:
-                copy_result = connection.execute(text(copy_sql))
-                transaction.commit()
-                logger.info(tormays_table_org + ": " + f"{copy_result.rowcount} rows inserted.")
-            except Exception as e:
-                # Transaction implicitly rolls back if an exception occurred within the "with" block
-                logger.error(f"Error: {e}")
-            
-def validate_data_count_limits(module, pg_conn_uri, tormays_table_org, tormays_table_temp, validate_limit_min, validate_limit_max, logger=None):
-    # validate data amount: is it between given limits
-    tormays_result = None
-    temp_result = None
-    retval = None
-    old_amount = None
-    new_amount = None
-    tormays_sql = "select count(*) lkm from " + tormays_table_org + " where geometry is not null"
-    temp_sql = "select count(*) lkm from " + tormays_table_temp + " where geometry is not null"
+from sqlalchemy.exc import ProgrammingError
+
+def get_data_count(pg_conn_uri, counted_table, logger=None):
+    data_amount = None
+    sql = "select count(*) lkm from " + counted_table + " where geom is not null"
     engine = create_engine(pg_conn_uri)
     with engine.connect() as connection:
         try:
-            tormays_result = connection.execute(text(tormays_sql)).fetchall()
+            count_result = connection.execute(text(sql)).fetchall()
+        except ProgrammingError as e:
+            data_amount = -1
+            count_result = None
+            logger.error(f"Error: {e}")
         except Exception as e:
-            # Transaction implicitly rolls back if an exception occurred within the "with" block
+            count_result = None
             logger.error(f"Error: {e}")
 
-    with engine.connect() as connection:
-        try:
-            temp_result = connection.execute(text(temp_sql)).fetchall()
-        except Exception as e:
-            # Transaction implicitly rolls back if an exception occurred within the "with" block
-            logger.error(f"Error: {e}")
+    if count_result:
+        for row in count_result:
+            data_amount = row.lkm
 
-    if tormays_result:
-        for row in tormays_result:
-            old_amount = row.lkm
-    
-    if temp_result:
-        for row in temp_result:
-            new_amount = row.lkm
-    
-    if new_amount and old_amount:
-        if new_amount>=math.floor(validate_limit_min*old_amount) and new_amount<=math.ceil(validate_limit_max*old_amount):
-            retval = "Valid"
-        elif new_amount<math.floor(validate_limit_min*old_amount):
-            retval = "Data amount is Below given limits"
-        elif new_amount>math.ceil(validate_limit_max*old_amount):
-            retval = "Data amount is Above given limits"
-        else:
-            retval = "Not valid"
+    return data_amount
+
+def validate_data_count_limits(module, pg_conn_uri, tormays_table_org, tormays_file_temp, validate_limit_min, validate_limit_max, filename, logger=None):
+    # validate data amount: is it between given limits
+    textval = None
+    old_amount = get_data_count(pg_conn_uri, tormays_table_org, logger)
+    new_amount = len(tormays_file_temp)
+
+    if new_amount and old_amount and validate_limit_min and validate_limit_max and old_amount != -1:
+        min_limit = math.floor(validate_limit_min*old_amount)
+        max_limit = math.ceil(validate_limit_max*old_amount)
+        if new_amount >= min_limit and new_amount <= max_limit:
+            textval = "Valid"
+        elif new_amount < min_limit:
+            textval = "Data amount is Below given limits"
+        elif new_amount > max_limit:
+            textval = "Data amount is Above given limits"
     else:
-        retval = "Not valid"
+        min_limit = "NA"
+        max_limit = "NA"
+        if old_amount == -1:
+            textval = "Tormays table {} not exists."
+        else:
+            textval = "Not valid"
 
     logger.info("Data amount validation started")
     logger.info("Module: " + module)
-    logger.info("New data amount (" + tormays_table_temp + "): " + str(new_amount))
+    logger.info("New data amount (" + filename + "): " + str(new_amount))
     logger.info("Old data amount (" + tormays_table_org + "): " + str(old_amount))
-    if old_amount and validate_limit_min and validate_limit_max:
-        low_limit = math.floor(validate_limit_min*old_amount)
-        max_limit = math.ceil(validate_limit_max*old_amount)
+    logger.info("Limits: " + str(min_limit) + " <= new amount <= " + str(max_limit))
+
+    if textval == "Valid":
+        logger.info("Data amount validation result: " + textval)
+        return True
+    elif textval == "Tormays table {} not exists.":
+        logger.error(textval.format(tormays_table_org))
+        return False
     else:
-        low_limit = "NA"
-        max_limit = "NA"
-        
-    logger.info("Limits: " + str(low_limit) + " <= new amount <= " + str(max_limit))
-    
-    if retval == "Valid":
-        logger.info("Data amount validation result: " + retval)
-    else:
-        logger.error("Data amount validation result: " + retval)
-        
-    return retval
+        logger.error("Data amount validation result: " + textval)
+        return False
+
+def deploy(pg_conn_uri, tormays_table_org, tormays_file_temp, logger=None):
+    engine = create_engine(pg_conn_uri)
+    with engine.connect() as connection:
+        transaction = connection.begin()
+        try:
+            logger.info("Deploy ...")
+            tormays_file_temp.to_postgis(
+                tormays_table_org,
+                connection,
+                "public",
+                if_exists="replace",
+                index=True,
+                index_label="fid",
+                )
+            transaction.commit()
+            logger.info(f"Uploaded new data into table {tormays_table_org}: {len(tormays_file_temp)} rows")
+        except Exception as e:
+            # Transaction implicitly rolls back if an exception occurred within the "with" block
+            logger.error(f"Error: {e}")

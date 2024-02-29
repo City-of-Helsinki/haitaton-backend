@@ -99,10 +99,6 @@ class Config:
         """Return buffer value list from configuration."""
         return self._cfg.get(item, {}).get("tormays_table_org")
 
-    def tormays_table_temp(self, item: str) -> str:
-        """Return buffer value list from configuration."""
-        return self._cfg.get(item, {}).get("tormays_table_temp")
-
     def validate_limit_min(self, item: str):
         """Return buffer value list from configuration."""
         return self._cfg.get(item, {}).get("validate_limit_min")
