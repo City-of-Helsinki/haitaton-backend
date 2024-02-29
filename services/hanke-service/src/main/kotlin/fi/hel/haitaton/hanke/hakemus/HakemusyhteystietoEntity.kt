@@ -35,7 +35,7 @@ class HakemusyhteystietoEntity(
     var application: ApplicationEntity,
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "hakemusyhteystieto")
     @BatchSize(size = 100)
-    var yhteyshenkilot: List<HakemusyhteyshenkiloEntity> = mutableListOf(),
+    var yhteyshenkilot: List<HakemusyhteyshenkiloEntity> = listOf(),
 ) {
     fun toCustomerResponse(): CustomerResponse =
         CustomerResponse(
