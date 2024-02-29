@@ -12,4 +12,14 @@ data class Hakemusyhteystieto(
     var sahkoposti: String?,
     var puhelinnumero: String?,
     var ytunnus: String?,
+    var yhteyshenkilot: List<Hakemusyhteyshenkilo> = emptyList(),
+)
+
+data class Hakemusyhteyshenkilo(
+    val hankekayttajaId: UUID,
+    val etunimi: String,
+    val sukunimi: String,
+    val sahkoposti: String,
+    val puhelin: String,
+    val tilaaja: Boolean,
 )

@@ -17,7 +17,7 @@ data class HakemusResponse(
     val alluStatus: ApplicationStatus?,
     val applicationIdentifier: String?,
     val applicationType: ApplicationType,
-    var applicationData: HakemusDataResponse,
+    val applicationData: HakemusDataResponse,
     val hankeTunnus: String,
 )
 

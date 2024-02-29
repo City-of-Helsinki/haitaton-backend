@@ -12,12 +12,12 @@ import java.time.ZonedDateTime
 import java.util.UUID
 
 sealed interface HakemusUpdateRequest {
-    val name: String
-    val postalAddress: PostalAdressRequest
-    val startTime: ZonedDateTime?
-    val endTime: ZonedDateTime?
-    val areas: List<ApplicationArea>?
-    val customerWithContacts: CustomerWithContactsRequest?
+    var name: String
+    var postalAddress: PostalAddressRequest
+    var startTime: ZonedDateTime?
+    var endTime: ZonedDateTime?
+    var areas: List<ApplicationArea>?
+    var customerWithContacts: CustomerWithContactsRequest?
 
     /**
      * Returns true if this application update request has changes compared to the given
@@ -31,45 +31,47 @@ sealed interface HakemusUpdateRequest {
      * defined in this request.
      */
     fun toApplicationData(baseData: ApplicationData): ApplicationData
+
+    fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsRequest?>
 }
 
 data class JohtoselvityshakemusUpdateRequest(
     // 1. sivu Perustiedot (first filled in Create)
     /** Työn nimi */
-    override val name: String,
+    override var name: String,
     /** Katuosoite */
-    override val postalAddress: PostalAdressRequest,
+    override var postalAddress: PostalAddressRequest,
     /** Työssä on kyse: Uuden rakenteen tai johdon rakentamisesta */
-    val constructionWork: Boolean,
+    var constructionWork: Boolean,
     /** Työssä on kyse: Olemassaolevan rakenteen kunnossapitotyöstä */
-    val maintenanceWork: Boolean,
+    var maintenanceWork: Boolean,
     /** Työssä on kyse: Kiinteistöliittymien rakentamisesta */
-    val propertyConnectivity: Boolean,
+    var propertyConnectivity: Boolean,
     /**
      * Työssä on kyse: Kaivutyö on aloitettu ennen johtoselvityksen tilaamista merkittävien
      * vahinkojen välttämiseksi
      */
-    val emergencyWork: Boolean,
+    var emergencyWork: Boolean,
     /** Louhitaanko työn yhteydessä, esimerkiksi kallioperää? */
-    val rockExcavation: Boolean,
+    var rockExcavation: Boolean,
     /** Työn kuvaus */
-    val workDescription: String,
+    var workDescription: String,
     // 2. sivu Alueet
     /** Työn arvioitu alkupäivä */
-    override val startTime: ZonedDateTime? = null,
+    override var startTime: ZonedDateTime? = null,
     /** Työn arvioitu loppupäivä */
-    override val endTime: ZonedDateTime? = null,
+    override var endTime: ZonedDateTime? = null,
     /** Työalueet */
-    override val areas: List<ApplicationArea>? = null,
+    override var areas: List<ApplicationArea>? = null,
     // 3. sivu Yhteystiedot
     /** Hakijan tiedot */
-    override val customerWithContacts: CustomerWithContactsRequest? = null,
+    override var customerWithContacts: CustomerWithContactsRequest? = null,
     /** Työn suorittajan tiedot */
-    val contractorWithContacts: CustomerWithContactsRequest? = null,
+    var contractorWithContacts: CustomerWithContactsRequest? = null,
     /** Rakennuttajan tiedot */
-    val propertyDeveloperWithContacts: CustomerWithContactsRequest? = null,
+    var propertyDeveloperWithContacts: CustomerWithContactsRequest? = null,
     /** Asianhoitajan tiedot */
-    val representativeWithContacts: CustomerWithContactsRequest? = null,
+    var representativeWithContacts: CustomerWithContactsRequest? = null,
     // 4. sivu Liitteet (separete endpoint)
     // 5. sivu Yhteenveto (no input data)
 ) : HakemusUpdateRequest {
@@ -77,8 +79,8 @@ data class JohtoselvityshakemusUpdateRequest(
     override fun hasChanges(applicationEntity: ApplicationEntity): Boolean {
         val applicationData = applicationEntity.applicationData as CableReportApplicationData
         return name != applicationData.name ||
-            postalAddress.streetAddress.streetName !=
-                applicationData.postalAddress?.streetAddress?.streetName ||
+            (postalAddress.streetAddress.streetName ?: "") !=
+                (applicationData.postalAddress?.streetAddress?.streetName ?: "") ||
             constructionWork != applicationData.constructionWork ||
             maintenanceWork != applicationData.maintenanceWork ||
             propertyConnectivity != applicationData.propertyConnectivity ||
@@ -117,13 +119,21 @@ data class JohtoselvityshakemusUpdateRequest(
             endTime = this.endTime,
             areas = this.areas,
         )
+
+    override fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsRequest?> =
+        mapOf(
+            ApplicationContactType.HAKIJA to customerWithContacts,
+            ApplicationContactType.TYON_SUORITTAJA to contractorWithContacts,
+            ApplicationContactType.RAKENNUTTAJA to propertyDeveloperWithContacts,
+            ApplicationContactType.ASIANHOITAJA to representativeWithContacts,
+        )
 }
 
-data class PostalAdressRequest(val streetAddress: StreetAddress)
+data class PostalAddressRequest(var streetAddress: StreetAddress)
 
 data class CustomerWithContactsRequest(
-    val customer: CustomerRequest,
-    val contacts: List<ContactRequest>,
+    var customer: CustomerRequest,
+    var contacts: List<ContactRequest>,
 )
 
 /**
@@ -132,12 +142,12 @@ data class CustomerWithContactsRequest(
  */
 data class CustomerRequest(
     /** Hakemusyhteystieto id */
-    val yhteystietoId: UUID? = null,
-    val type: CustomerType? = null,
-    val name: String? = null,
-    val email: String? = null,
-    val phone: String? = null,
-    val registryKey: String? = null,
+    var yhteystietoId: UUID? = null,
+    var type: CustomerType,
+    var name: String,
+    var email: String,
+    var phone: String,
+    var registryKey: String? = null,
 ) {
     /**
      * Returns true if this customer has changes compared to the given [hakemusyhteystietoEntity].
@@ -152,7 +162,7 @@ data class CustomerRequest(
 
 /** For referencing [fi.hel.haitaton.hanke.permissions.HankeKayttaja] by its id. */
 data class ContactRequest(
-    val hankekayttajaId: UUID,
+    var hankekayttajaId: UUID,
 )
 
 fun CustomerWithContactsRequest?.hasChanges(

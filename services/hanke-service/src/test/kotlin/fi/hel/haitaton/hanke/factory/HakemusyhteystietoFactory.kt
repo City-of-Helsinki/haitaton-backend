@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationEntity
+import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import java.util.UUID
@@ -44,5 +45,16 @@ object HakemusyhteystietoFactory {
         sahkoposti: String = DEFAULT_SAHKOPOSTI,
         puhelinnumero: String = DEFAULT_PUHELINNUMERO,
         ytunnus: String? = DEFAULT_YTUNNUS,
-    ) = Hakemusyhteystieto(id, tyyppi, rooli, nimi, sahkoposti, puhelinnumero, ytunnus)
+        yhteyshenkilot: List<Hakemusyhteyshenkilo> = emptyList()
+    ) =
+        Hakemusyhteystieto(
+            id,
+            tyyppi,
+            rooli,
+            nimi,
+            sahkoposti,
+            puhelinnumero,
+            ytunnus,
+            yhteyshenkilot
+        )
 }

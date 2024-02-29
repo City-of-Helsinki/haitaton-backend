@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.hakemus.Hakemusyhteyshenkilo
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
@@ -50,6 +51,23 @@ object HakemusyhteyshenkiloFactory {
         HakemusyhteyshenkiloEntity(
             hakemusyhteystieto = hakemusyhteystieto,
             hankekayttaja = hankekayttaja,
+            tilaaja = tilaaja
+        )
+
+    fun create(
+        id: UUID = UUID.randomUUID(),
+        etunimi: String = DEFAULT_ETUNIMI,
+        sukunimi: String = DEFAULT_SUKUNIMI,
+        sahkoposti: String = DEFAULT_SAHKOPOSTI,
+        puhelin: String = DEFAULT_PUHELIN,
+        tilaaja: Boolean = DEFAULT_TILAAJA
+    ) =
+        Hakemusyhteyshenkilo(
+            hankekayttajaId = id,
+            etunimi = etunimi,
+            sukunimi = sukunimi,
+            sahkoposti = sahkoposti,
+            puhelin = puhelin,
             tilaaja = tilaaja
         )
 }

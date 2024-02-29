@@ -25,7 +25,7 @@ const val DEFAULT_COUNTRY = "FI"
 @Table(name = "hakemusyhteystieto")
 class HakemusyhteystietoEntity(
     @Id val id: UUID = UUID.randomUUID(),
-    @Enumerated(EnumType.STRING) val tyyppi: CustomerType,
+    @Enumerated(EnumType.STRING) var tyyppi: CustomerType,
     @Enumerated(EnumType.STRING) val rooli: ApplicationContactType,
     var nimi: String,
     var sahkoposti: String?,
@@ -41,7 +41,7 @@ class HakemusyhteystietoEntity(
         orphanRemoval = true
     )
     @BatchSize(size = 100)
-    var yhteyshenkilot: List<HakemusyhteyshenkiloEntity> = listOf(),
+    val yhteyshenkilot: MutableList<HakemusyhteyshenkiloEntity> = mutableListOf(),
 ) {
     fun toCustomerResponse(): CustomerResponse =
         CustomerResponse(
@@ -57,7 +57,17 @@ class HakemusyhteystietoEntity(
             null
         )
 
-    fun toDomain() = Hakemusyhteystieto(id, tyyppi, rooli, nimi, sahkoposti, puhelinnumero, ytunnus)
+    fun toDomain() =
+        Hakemusyhteystieto(
+            id,
+            tyyppi,
+            rooli,
+            nimi,
+            sahkoposti,
+            puhelinnumero,
+            ytunnus,
+            yhteyshenkilot.map { it.toDomain() }
+        )
 }
 
 @Entity
@@ -74,6 +84,16 @@ class HakemusyhteyshenkiloEntity(
 ) {
     fun toContactResponse(): ContactResponse =
         ContactResponse(
+            hankekayttaja.id,
+            hankekayttaja.etunimi,
+            hankekayttaja.sukunimi,
+            hankekayttaja.sahkoposti,
+            hankekayttaja.puhelin,
+            tilaaja
+        )
+
+    fun toDomain() =
+        Hakemusyhteyshenkilo(
             hankekayttaja.id,
             hankekayttaja.etunimi,
             hankekayttaja.sukunimi,
