@@ -12,7 +12,6 @@ import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import java.time.ZonedDateTime
-import org.geojson.Point
 import org.geojson.Polygon
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -50,11 +49,11 @@ internal class GeometriatDaoITest : DatabaseTest() {
             assertThat(loadedGeometriat!!.createdAt).isEqualTo(geometriat.createdAt)
             assertThat(loadedGeometriat!!.modifiedByUserId).isEqualTo(geometriat.modifiedByUserId)
             assertThat(loadedGeometriat!!.modifiedAt).isEqualTo(geometriat.modifiedAt)
-            assertThat(loadedGeometriat!!.featureCollection!!.features.size).isEqualTo(2)
-            assertThat(loadedGeometriat!!.featureCollection!!.features[0].geometry is Point)
-            val loadedPoint = loadedGeometriat!!.featureCollection!!.features[0].geometry as Point
-            val point = geometriat.featureCollection!!.features[0].geometry as Point
-            assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
+            assertThat(loadedGeometriat!!.featureCollection!!.features.size).isEqualTo(1)
+            val loadedPolygon =
+                loadedGeometriat!!.featureCollection!!.features[0].geometry as Polygon
+            val polygon = geometriat.featureCollection!!.features[0].geometry as Polygon
+            assertThat(loadedPolygon.coordinates).isEqualTo(polygon.coordinates)
         }
         // Update
         geometriat.featureCollection!!
@@ -72,11 +71,10 @@ internal class GeometriatDaoITest : DatabaseTest() {
             assertThat(loadedGeometriat.modifiedByUserId).isEqualTo(geometriat.modifiedByUserId)
             assertThat(loadedGeometriat.modifiedAt!!.isAfter(geometriat.modifiedAt!!))
             assertThat(loadedGeometriat.featureCollection!!.features.size)
-                .isEqualTo(3) // this has increased
-            assertThat(loadedGeometriat.featureCollection!!.features[0].geometry is Point)
-            val loadedPoint = loadedGeometriat.featureCollection!!.features[0].geometry as Point
-            val point = geometriat.featureCollection!!.features[0].geometry as Point
-            assertThat(loadedPoint.coordinates).isEqualTo(point.coordinates)
+                .isEqualTo(2) // this has increased
+            val loadedPolygon = loadedGeometriat.featureCollection!!.features[0].geometry as Polygon
+            val polygon = geometriat.featureCollection!!.features[0].geometry as Polygon
+            assertThat(loadedPolygon.coordinates).isEqualTo(polygon.coordinates)
         }
 
         // Delete
