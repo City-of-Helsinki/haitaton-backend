@@ -1,6 +1,8 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import com.fasterxml.jackson.annotation.JsonIgnore
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationArea
@@ -20,6 +22,15 @@ data class HakemusResponse(
     val hankeTunnus: String,
 )
 
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "applicationType",
+    visible = true
+)
+@JsonSubTypes(
+    JsonSubTypes.Type(value = JohtoselvitysHakemusDataResponse::class, name = "CABLE_REPORT"),
+)
 sealed interface HakemusDataResponse {
     val applicationType: ApplicationType
     val pendingOnClient: Boolean
@@ -32,24 +43,24 @@ sealed interface HakemusDataResponse {
 }
 
 data class JohtoselvitysHakemusDataResponse(
-    override val applicationType: ApplicationType,
+    override val applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
     override val pendingOnClient: Boolean,
     // 1. sivu Perustiedot (first filled in Create)
     /** Työn nimi */
     override val name: String,
     /** Katuosoite */
-    override val postalAddress: PostalAddress? = null,
+    override val postalAddress: PostalAddress?,
     /** Työssä on kyse: Uuden rakenteen tai johdon rakentamisesta */
-    val constructionWork: Boolean = false,
+    val constructionWork: Boolean,
     /** Työssä on kyse: Olemassaolevan rakenteen kunnossapitotyöstä */
-    val maintenanceWork: Boolean = false,
+    val maintenanceWork: Boolean,
     /** Työssä on kyse: Kiinteistöliittymien rakentamisesta */
-    val propertyConnectivity: Boolean = false, // tontti-/kiinteistöliitos
+    val propertyConnectivity: Boolean,
     /**
      * Työssä on kyse: Kaivutyö on aloitettu ennen johtoselvityksen tilaamista merkittävien
      * vahinkojen välttämiseksi
      */
-    val emergencyWork: Boolean = false,
+    val emergencyWork: Boolean,
     /** Louhitaanko työn yhteydessä, esimerkiksi kallioperää? */
     val rockExcavation: Boolean?,
     /** Työn kuvaus */
@@ -63,13 +74,13 @@ data class JohtoselvitysHakemusDataResponse(
     override val areas: List<ApplicationArea>?,
     // 3. sivu Yhteystiedot
     /** Hakijan tiedot */
-    override val customerWithContacts: CustomerWithContactsResponse? = null,
+    override val customerWithContacts: CustomerWithContactsResponse?,
     /** Työn suorittajan tiedot */
-    val contractorWithContacts: CustomerWithContactsResponse? = null,
+    val contractorWithContacts: CustomerWithContactsResponse?,
     /** Rakennuttajan tiedot */
-    val propertyDeveloperWithContacts: CustomerWithContactsResponse? = null,
+    val propertyDeveloperWithContacts: CustomerWithContactsResponse?,
     /** Asianhoitajan tiedot */
-    val representativeWithContacts: CustomerWithContactsResponse? = null,
+    val representativeWithContacts: CustomerWithContactsResponse?,
     // 4. sivu Liitteet (separete endpoint)
     // 5. sivu Yhteenveto (no input data)
 ) : HakemusDataResponse {

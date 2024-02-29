@@ -3,8 +3,6 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationArea
-import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.hakemus.ContactRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerRequest
@@ -14,12 +12,15 @@ import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.PostalAddressRequest
 import fi.hel.haitaton.hanke.parseJson
 import fi.hel.haitaton.hanke.toJsonString
-import java.time.Instant
 import java.time.ZonedDateTime
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 object HakemusUpdateRequestFactory {
+
+    private const val DEFAULT_CUSTOMER_NAME = "Testiyritys"
+    private const val DEFAULT_CUSTOMER_EMAIL = "info@testiyritys.fi"
+    private const val DEFAULT_CUSTOMER_PHONE = "0401234567"
+    private const val DEFAULT_CUSTOMER_REGISTRY_KEY = "3474137-6"
 
     fun createBlankJohtoselvityshakemusUpdateRequest(): JohtoselvityshakemusUpdateRequest {
         return JohtoselvityshakemusUpdateRequest(
@@ -52,7 +53,7 @@ object HakemusUpdateRequestFactory {
             rockExcavation = false,
             workDescription = "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
             startTime = ZonedDateTime.now(TZ_UTC),
-            endTime = ZonedDateTime.ofInstant(Instant.now().plus(5, ChronoUnit.DAYS), TZ_UTC),
+            endTime = ZonedDateTime.now(TZ_UTC).plusDays(5),
             areas = listOf(ApplicationArea("Hankealue 1", GeometriaFactory.polygon)),
             customerWithContacts =
                 createCustomerWithContactsRequest(
@@ -66,27 +67,6 @@ object HakemusUpdateRequestFactory {
         )
     }
 
-    fun createJohtoselvityshakemusUpdateRequestFromApplicationEntity(
-        applicationEntity: ApplicationEntity
-    ): JohtoselvityshakemusUpdateRequest {
-        val applicationData = applicationEntity.applicationData as CableReportApplicationData
-        return JohtoselvityshakemusUpdateRequest(
-            name = applicationData.name,
-            postalAddress =
-                applicationData.postalAddress?.let { PostalAddressRequest(it.streetAddress) }
-                    ?: PostalAddressRequest(StreetAddress("")),
-            constructionWork = applicationData.constructionWork,
-            maintenanceWork = applicationData.maintenanceWork,
-            propertyConnectivity = applicationData.propertyConnectivity,
-            emergencyWork = applicationData.emergencyWork,
-            rockExcavation = applicationData.rockExcavation ?: false,
-            workDescription = applicationData.workDescription,
-            startTime = applicationData.startTime,
-            endTime = applicationData.endTime,
-            areas = applicationData.areas,
-        )
-    }
-
     private fun createCustomerWithContactsRequest(
         customerType: CustomerType = CustomerType.COMPANY,
         yhteystietoId: UUID? = UUID.randomUUID(),
@@ -96,22 +76,46 @@ object HakemusUpdateRequestFactory {
             CustomerRequest(
                 yhteystietoId = yhteystietoId,
                 type = customerType,
-                name = "Testiyritys",
-                email = "info@testiyritys.fi",
-                phone = "0401234567",
-                registryKey = "1234567-8",
+                name = DEFAULT_CUSTOMER_NAME,
+                email = DEFAULT_CUSTOMER_EMAIL,
+                phone = DEFAULT_CUSTOMER_PHONE,
+                registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
             ),
             hankekayttajaIds.map { ContactRequest(it) }
         )
 
     fun JohtoselvityshakemusUpdateRequest.withCustomerWithContactsRequest(
-        customerType: CustomerType,
+        type: CustomerType,
         yhteystietoId: UUID? = UUID.randomUUID(),
         vararg hankekayttajaIds: UUID
     ) =
         this.copy(
             customerWithContacts =
-                createCustomerWithContactsRequest(customerType, yhteystietoId, *hankekayttajaIds)
+                createCustomerWithContactsRequest(type, yhteystietoId, *hankekayttajaIds)
+        )
+
+    fun JohtoselvityshakemusUpdateRequest.withCustomer(
+        type: CustomerType = CustomerType.COMPANY,
+        yhteystietoId: UUID? = UUID.randomUUID(),
+        name: String = DEFAULT_CUSTOMER_NAME,
+        email: String = DEFAULT_CUSTOMER_EMAIL,
+        phone: String = DEFAULT_CUSTOMER_PHONE,
+        registryKey: String = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        vararg hankekayttajaIds: UUID
+    ) =
+        this.copy(
+            customerWithContacts =
+                CustomerWithContactsRequest(
+                    CustomerRequest(
+                        yhteystietoId = yhteystietoId,
+                        type = type,
+                        name = name,
+                        email = email,
+                        phone = phone,
+                        registryKey = registryKey
+                    ),
+                    hankekayttajaIds.map { ContactRequest(it) }
+                )
         )
 
     fun JohtoselvityshakemusUpdateRequest.withWorkDescription(workDescription: String) =
@@ -119,6 +123,19 @@ object HakemusUpdateRequestFactory {
 
     fun JohtoselvityshakemusUpdateRequest.withAreas(areas: List<ApplicationArea>) =
         this.copy(areas = areas)
+
+    fun JohtoselvityshakemusUpdateRequest.withTimes(
+        startTime: ZonedDateTime?,
+        endTime: ZonedDateTime?
+    ) = this.copy(startTime = startTime, endTime = endTime)
+
+    fun JohtoselvityshakemusUpdateRequest.withRegistryKey(registryKey: String) =
+        this.copy(
+            customerWithContacts =
+                this.customerWithContacts?.copy(
+                    customer = this.customerWithContacts!!.customer.copy(registryKey = registryKey)
+                )
+        )
 
     fun HakemusResponse.toUpdateRequest(): JohtoselvityshakemusUpdateRequest =
         this.applicationData.toJsonString().parseJson()

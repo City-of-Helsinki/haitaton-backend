@@ -1,11 +1,14 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
+import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
@@ -13,7 +16,17 @@ import java.time.ZonedDateTime
 import java.util.UUID
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.EXISTING_PROPERTY,
+    property = "applicationType",
+    visible = true
+)
+@JsonSubTypes(
+    JsonSubTypes.Type(value = JohtoselvityshakemusUpdateRequest::class, name = "CABLE_REPORT"),
+)
 sealed interface HakemusUpdateRequest {
+    val applicationType: ApplicationType
     val name: String
     val postalAddress: PostalAddressRequest
     val startTime: ZonedDateTime?
@@ -38,6 +51,7 @@ sealed interface HakemusUpdateRequest {
 }
 
 data class JohtoselvityshakemusUpdateRequest(
+    override val applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
     // 1. sivu Perustiedot (first filled in Create)
     /** Työn nimi */
     override val name: String,
