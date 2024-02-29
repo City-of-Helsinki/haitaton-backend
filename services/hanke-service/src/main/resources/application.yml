@@ -98,7 +98,6 @@ spring:
     url: jdbc:postgresql://${HAITATON_HOST:localhost}:${HAITATON_PORT:5432}/${HAITATON_DATABASE:haitaton}
     username: ${HAITATON_USER:haitaton_user}
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
     hibernate:
       naming:
         # Make database field names to match the entity member names
