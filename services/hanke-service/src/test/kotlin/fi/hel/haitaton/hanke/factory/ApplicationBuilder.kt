@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationEntity
@@ -17,7 +18,7 @@ import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 
 data class ApplicationBuilder(
-    private val application: Application,
+    private var application: Application,
     private val userId: String,
     private val names: Names = ProfiiliFactory.DEFAULT_NAMES,
     private val applicationService: ApplicationService,
@@ -31,7 +32,15 @@ data class ApplicationBuilder(
      * Create this application and then update it to give it fuller information. This method does an
      * actual update, so it will set modifiedBy and modifiedAt columns and bump version up to 1.
      */
-    fun save(): Application = applicationService.create(application, userId)
+    fun save(): Application {
+        val id = applicationService.create(application, userId).id!!
+        val entity = applicationRepository.getReferenceById(id)
+        entity.alluid = application.alluid
+        entity.alluStatus = application.alluStatus
+        entity.applicationIdentifier = application.applicationIdentifier
+        applicationRepository.save(entity)
+        return applicationService.getApplicationById(id)
+    }
 
     /** Save the entity with [save], and - for convenience - get the saved entity from DB. */
     private fun saveEntity(): ApplicationEntity =
@@ -50,6 +59,22 @@ data class ApplicationBuilder(
         builder.f()
         return entity
     }
+
+    fun withStatus(
+        status: ApplicationStatus = ApplicationStatus.PENDING,
+        alluId: Int = 1,
+        identifier: String = "JS000$alluId"
+    ): ApplicationBuilder {
+        application =
+            application.copy(
+                alluid = alluId,
+                alluStatus = status,
+                applicationIdentifier = identifier
+            )
+        return this
+    }
+
+    fun inHandling(alluId: Int = 1) = withStatus(ApplicationStatus.HANDLING, alluId)
 }
 
 data class HakemusyhteystietoBuilder(

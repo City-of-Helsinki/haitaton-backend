@@ -246,46 +246,29 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
         }
 
         @Test
-        fun `Returns 204 when no information was found`() {
-            every { gdprService.findApplicationsToDelete(USERID) } returns listOf()
+        fun `Returns 204 when any found information was removed`() {
+            every { gdprService.canDelete(USERID) } returns true
 
             delete()
                 .andExpect(MockMvcResultMatchers.status().isNoContent)
                 .andExpect(content().string(""))
 
             verifySequence {
-                gdprService.findApplicationsToDelete(USERID)
-                gdprService.deleteApplications(listOf(), USERID)
-            }
-            verify { disclosureLogService wasNot Called }
-        }
-
-        @Test
-        fun `Returns 204 when information was found and deleted`() {
-            val applications = ApplicationFactory.createApplications(3)
-            every { gdprService.findApplicationsToDelete(USERID) } returns applications
-
-            delete()
-                .andExpect(MockMvcResultMatchers.status().isNoContent)
-                .andExpect(content().string(""))
-
-            verifySequence {
-                gdprService.findApplicationsToDelete(USERID)
-                gdprService.deleteApplications(applications, USERID)
+                gdprService.canDelete(USERID)
+                gdprService.deleteInfo(USERID)
             }
             verify { disclosureLogService wasNot Called }
         }
 
         @Test
         fun `Doesn't remove anything if doing a dry run`() {
-            val applications = ApplicationFactory.createApplications(3)
-            every { gdprService.findApplicationsToDelete(USERID) } returns applications
+            every { gdprService.canDelete(USERID) } returns true
 
             delete(true)
                 .andExpect(MockMvcResultMatchers.status().isNoContent)
                 .andExpect(content().string(""))
 
-            verifyAll { gdprService.findApplicationsToDelete(USERID) }
+            verifyAll { gdprService.canDelete(USERID) }
             verify { disclosureLogService wasNot Called }
         }
 
@@ -296,8 +279,8 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
                 ApplicationFactory.createApplications(2) { i, application ->
                     application.copy(applicationIdentifier = "JS$i")
                 }
-            every { gdprService.findApplicationsToDelete(USERID) } throws
-                DeleteForbiddenException(applications)
+            every { gdprService.canDelete(USERID) } throws
+                DeleteForbiddenException.fromSentApplications(applications)
             val expectedResponse =
                 """
                 {
@@ -326,7 +309,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
                 .andExpect(MockMvcResultMatchers.status().isForbidden)
                 .andExpect(content().json(expectedResponse))
 
-            verifyAll { gdprService.findApplicationsToDelete(USERID) }
+            verifyAll { gdprService.canDelete(USERID) }
             verify { disclosureLogService wasNot Called }
         }
     }

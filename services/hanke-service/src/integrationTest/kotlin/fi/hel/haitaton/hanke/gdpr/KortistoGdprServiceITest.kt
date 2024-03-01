@@ -5,7 +5,9 @@ import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.any
+import assertk.assertions.contains
 import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.first
 import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
@@ -13,6 +15,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.DatabaseTest
@@ -22,6 +25,9 @@ import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.PermissionFactory
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.permissions.PermissionEntity
 import fi.hel.haitaton.hanke.permissions.PermissionRepository
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
@@ -37,6 +43,7 @@ private const val USERID = "test-user"
 @WithMockUser(USERID)
 class KortistoGdprServiceITest(
     @Autowired val gdprService: GdprService,
+    @Autowired val hankeKayttajaService: HankeKayttajaService,
     @Autowired val hakemusFactory: HakemusFactory,
     @Autowired val hankeFactory: HankeFactory,
     @Autowired val hankekayttajaFactory: HankeKayttajaFactory,
@@ -50,14 +57,14 @@ class KortistoGdprServiceITest(
     @Nested
     inner class FindGdprInfo {
         @Test
-        fun `Returns null when user has no permissions`() {
+        fun `returns null when user has no permissions`() {
             val result = gdprService.findGdprInfo(USERID)
 
             assertThat(result).isNull()
         }
 
         @Test
-        fun `Returns null when user has permissions but no hankekayttaja`() {
+        fun `returns null when user has permissions but no hankekayttaja`() {
             val hanke1 = hankeFactory.saveMinimal()
             val hanke2 = hankeFactory.saveMinimal()
             permissionRepository.save(
@@ -73,7 +80,7 @@ class KortistoGdprServiceITest(
         }
 
         @Test
-        fun `Returns basic info when user has hankekayttaja`() {
+        fun `returns basic info when user has hankekayttaja`() {
             val hanke1 = hankeFactory.saveMinimal()
             val hanke2 = hankeFactory.saveMinimal()
             hankekayttajaFactory.saveIdentifiedUser(hanke1.id, userId = USERID)
@@ -116,7 +123,7 @@ class KortistoGdprServiceITest(
         }
 
         @Test
-        fun `Returns organization info when user is hankeyhteyshenkilo`() {
+        fun `returns organization info when user is hankeyhteyshenkilo`() {
             val toteuttajaYhteystieto =
                 HankeYhteystietoFactory.create(
                     id = null,
@@ -158,7 +165,7 @@ class KortistoGdprServiceITest(
         }
 
         @Test
-        fun `Returns organization info when user is hakemusyhteyshenkilo`() {
+        fun `returns organization info when user is hakemusyhteyshenkilo`() {
             val toteuttajaYhteystieto =
                 HakemusyhteystietoFactory.create(
                     nimi = "Yritys Oy",
@@ -200,20 +207,122 @@ class KortistoGdprServiceITest(
     }
 
     @Nested
-    inner class FindApplicationsToDelete {
+    inner class CanDelete {
         @Test
-        fun `throws not implemented exception`() {
-            val failure = assertFailure { gdprService.findApplicationsToDelete(USERID) }
+        fun `returns true when there's no data for the user`() {
+            val result = gdprService.canDelete(USERID)
 
-            failure.hasClass(NotImplementedError::class)
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `returns true when there's a hankekayttaja for the user, but no application`() {
+            hankeFactory.builder(USERID).save()
+            assertThat(permissionRepository.findAll())
+                .first()
+                .prop(PermissionEntity::userId)
+                .isEqualTo(USERID)
+
+            val result = gdprService.canDelete(USERID)
+
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `returns true when there are only draft applications`() {
+            val hanke = hankeFactory.builder(USERID).withHankealue().saveEntity()
+            val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERID)!!
+            hakemusFactory.builder(USERID, hanke).saveWithYhteystiedot {
+                asianhoitaja { addYhteyshenkilo(it, kayttaja) }
+            }
+            hakemusFactory.builder(USERID, hanke).saveWithYhteystiedot {
+                rakennuttaja { addYhteyshenkilo(it, kayttaja) }
+            }
+
+            val result = gdprService.canDelete(USERID)
+
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `throws exception when there's an active application`() {
+            val hanke = hankeFactory.builder(USERID).withHankealue().saveEntity()
+            val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERID)!!
+            hakemusFactory.builder(USERID, hanke).saveWithYhteystiedot {
+                asianhoitaja { addYhteyshenkilo(it, kayttaja) }
+            }
+            val activeHakemus =
+                hakemusFactory.builder(USERID, hanke).inHandling().saveWithYhteystiedot {
+                    rakennuttaja { addYhteyshenkilo(it, kayttaja) }
+                }
+
+            val failure = assertFailure { gdprService.canDelete(USERID) }
+
+            failure.given { e ->
+                val messages = (e as DeleteForbiddenException).errors.map { it.message.fi }
+                assertThat(messages).single().contains(activeHakemus.applicationIdentifier!!)
+            }
+        }
+
+        @Test
+        fun `returns true when the user is not an admin and not on any active applications`() {
+            val adminUserId = "admin"
+            val hanke = hankeFactory.builder(adminUserId).withHankealue().saveEntity()
+            val adminKayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, adminUserId)!!
+            val targetKayttaja =
+                hankekayttajaFactory.saveIdentifiedUser(
+                    hanke.id,
+                    userId = USERID,
+                    kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS
+                )
+            hakemusFactory.builder(adminUserId, hanke).saveWithYhteystiedot {
+                asianhoitaja { addYhteyshenkilo(it, targetKayttaja) }
+            }
+            hakemusFactory.builder(adminUserId, hanke).inHandling().saveWithYhteystiedot {
+                rakennuttaja { addYhteyshenkilo(it, adminKayttaja) }
+            }
+
+            val result = gdprService.canDelete(USERID)
+
+            assertThat(result).isTrue()
+        }
+
+        @Test
+        fun `throws exception when user is the only admin and there's an active application on the hanke`() {
+            val hanke = hankeFactory.builder(USERID).withHankealue().saveEntity()
+            hakemusFactory.builder(USERID, hanke).saveWithYhteystiedot { asianhoitaja() }
+            val activeHakemus =
+                hakemusFactory.builder(USERID, hanke).inHandling().saveWithYhteystiedot {
+                    rakennuttaja()
+                }
+
+            val failure = assertFailure { gdprService.canDelete(USERID) }
+
+            failure.given { e ->
+                val messages = (e as DeleteForbiddenException).errors.map { it.message.fi }
+                assertThat(messages).single().contains(activeHakemus.applicationIdentifier!!)
+            }
+        }
+
+        @Test
+        fun `returns true when there's another admin even if there's an active application`() {
+            val hanke = hankeFactory.builder(USERID).withHankealue().saveEntity()
+            hakemusFactory.builder(USERID, hanke).saveWithYhteystiedot { asianhoitaja() }
+            hakemusFactory.builder(USERID, hanke).inHandling().saveWithYhteystiedot {
+                rakennuttaja(kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+            }
+
+            val result = gdprService.canDelete(USERID)
+
+            assertThat(result).isTrue()
         }
     }
 
     @Nested
-    inner class DeleteApplications {
+    inner class DeleteInfo {
         @Test
         fun `throws not implemented exception`() {
-            val failure = assertFailure { gdprService.deleteApplications(listOf(), USERID) }
+            val failure = assertFailure { gdprService.deleteInfo(USERID) }
 
             failure.hasClass(NotImplementedError::class)
         }

@@ -148,12 +148,12 @@ class GdprController(
     ) {
         authenticate(userId, token, gdprProperties.deleteScope)
 
-        val applicationsToDelete = gdprService.findApplicationsToDelete(userId)
+        gdprService.canDelete(userId)
 
         if (dryRun) {
-            logger.info { "Not deleting applications, GDPR request was a dry run." }
+            logger.info { "Not deleting information, GDPR request was a dry run." }
         } else {
-            gdprService.deleteApplications(applicationsToDelete, userId)
+            gdprService.deleteInfo(userId)
         }
     }
 
@@ -187,7 +187,7 @@ class GdprController(
     fun deleteForbidden(ex: DeleteForbiddenException): GdprErrorResponse {
         logger.info { "User has active applications, refusing GDPR delete request." }
         Sentry.captureException(ex)
-        return GdprErrorResponse(ex.errors())
+        return GdprErrorResponse(ex.errors)
     }
 
     @ExceptionHandler(Exception::class)
@@ -213,22 +213,27 @@ class GdprController(
     data class GdprErrorResponse(val errors: List<GdprError>)
 }
 
-data class DeleteForbiddenException(val applications: List<Application>) : RuntimeException() {
-    fun errors() = applications.map(Companion::toGdprError)
-
+data class DeleteForbiddenException(val errors: List<GdprError>) : RuntimeException() {
     companion object {
-        private fun toGdprError(application: Application): GdprError =
-            GdprError(
-                HankeError.HAI2003.errorCode,
-                LocalizedMessage(
-                    "Keskeneräinen hakemus tunnuksella ${application.applicationIdentifier}. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
-                    "Pågående ansökan med koden ${application.applicationIdentifier}. Kontakta alueidenkaytto@hel.fi för att ta bort ansökan.",
-                    "An unfinished application with the ID ${application.applicationIdentifier}. Please contact alueidenkaytto@hel.fi to remove the application."
-                )
+        fun fromSentApplications(applications: List<Application>) =
+            DeleteForbiddenException(
+                applications.map { GdprError.fromSentApplication(it.applicationIdentifier) }
             )
     }
 }
 
-data class GdprError(val code: String, val message: LocalizedMessage)
+data class GdprError(val code: String, val message: LocalizedMessage) {
+    companion object {
+        fun fromSentApplication(applicationIdentifier: String?) =
+            GdprError(
+                HankeError.HAI2003.errorCode,
+                LocalizedMessage(
+                    "Keskeneräinen hakemus tunnuksella $applicationIdentifier. Ota yhteyttä alueidenkaytto@hel.fi hakemuksen poistamiseksi.",
+                    "Pågående ansökan med koden $applicationIdentifier. Kontakta alueidenkaytto@hel.fi för att ta bort ansökan.",
+                    "An unfinished application with the ID $applicationIdentifier. Please contact alueidenkaytto@hel.fi to remove the application."
+                )
+            )
+    }
+}
 
 data class LocalizedMessage(val fi: String, val sv: String, val en: String)
