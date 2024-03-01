@@ -155,8 +155,8 @@ class OldGdprService(private val applicationService: ApplicationService) : GdprS
 
     @Transactional(readOnly = true)
     override fun canDelete(userId: String): Boolean {
-        findApplicationsToDelete(userId)
         // Will throw an exception if the information can't be deleted
+        findApplicationsToDelete(userId)
         return true
     }
 
