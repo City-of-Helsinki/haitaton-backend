@@ -98,7 +98,6 @@ data class HankeBuilder(
             HankeYhteystietoBuilder(
                 entity,
                 userId,
-                hankeService,
                 hankeKayttajaFactory,
                 hankeYhteystietoRepository,
                 hankeYhteyshenkiloRepository,
@@ -209,7 +208,6 @@ data class HankeBuilder(
 data class HankeYhteystietoBuilder(
     val hankeEntity: HankeEntity,
     private val userId: String,
-    private val hankeService: HankeService? = null,
     private val hankeKayttajaFactory: HankeKayttajaFactory,
     private val hankeYhteystietoRepository: HankeYhteystietoRepository,
     private val hankeYhteyshenkiloRepository: HankeYhteyshenkiloRepository,

@@ -136,9 +136,6 @@ class HankeKayttajaFactory(
 
         const val FAKE_USERID = "fake id"
 
-        private const val PEKKA = "Pekka Peruskäyttäjä"
-        private const val PEKKA_EMAIL = "pekka@peruskäyttäjä.test"
-
         val INVITATION_DATE: OffsetDateTime = OffsetDateTime.parse("2024-02-29T15:43:12Z")
 
         val KAYTTAJA_INPUT_HAKIJA =
@@ -202,7 +199,7 @@ class HankeKayttajaFactory(
             hankeId: Int = HankeFactory.defaultId,
             etunimi: String = KAKE,
             sukunimi: String = KATSELIJA,
-            sahkoposti: String = PEKKA_EMAIL,
+            sahkoposti: String = KAKE_EMAIL,
             puhelinnumero: String = KAKE_PUHELIN,
             kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
             roolit: List<ContactType> = emptyList(),
@@ -245,7 +242,38 @@ class HankeKayttajaFactory(
             )
 
         fun createDto(
-            i: Int = 1,
+            id: UUID = KAYTTAJA_ID,
+            etunimi: String = KAKE,
+            sukunimi: String = KATSELIJA,
+            sahkoposti: String = KAKE_EMAIL,
+            puhelinnumero: String = KAKE_PUHELIN,
+            kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
+            roolit: List<ContactType> = emptyList(),
+            tunnistautunut: Boolean = true,
+        ) =
+            HankeKayttajaDto(
+                id = id,
+                etunimi = etunimi,
+                sukunimi = sukunimi,
+                sahkoposti = sahkoposti,
+                puhelinnumero = puhelinnumero,
+                kayttooikeustaso = kayttooikeustaso,
+                roolit = roolit,
+                tunnistautunut = tunnistautunut,
+                kutsuttu = if (tunnistautunut) null else INVITATION_DATE,
+            )
+
+        fun createHankeKayttaja(i: Int = 1, vararg roolit: ContactType): HankeKayttajaDto =
+            createDto(i, roolit = roolit.toList(), tunnistautunut = (i % 2 == 0))
+
+        fun createHankeKayttajat(
+            amount: Int = 3,
+            roolit: List<ContactType> = emptyList()
+        ): List<HankeKayttajaDto> =
+            (1..amount).map { createDto(it, roolit = roolit, tunnistautunut = (it % 2 == 0)) }
+
+        private fun createDto(
+            i: Int,
             id: UUID = UUID.randomUUID(),
             roolit: List<ContactType> = emptyList(),
             tunnistautunut: Boolean = false
@@ -261,14 +289,5 @@ class HankeKayttajaFactory(
                 tunnistautunut = tunnistautunut,
                 kutsuttu = if (tunnistautunut) null else INVITATION_DATE,
             )
-
-        fun createHankeKayttaja(i: Int = 1, vararg roolit: ContactType): HankeKayttajaDto =
-            createDto(i, roolit = roolit.toList(), tunnistautunut = (i % 2 == 0))
-
-        fun createHankeKayttajat(
-            amount: Int = 3,
-            roolit: List<ContactType> = emptyList()
-        ): List<HankeKayttajaDto> =
-            (1..amount).map { createDto(it, roolit = roolit, tunnistautunut = (it % 2 == 0)) }
     }
 }

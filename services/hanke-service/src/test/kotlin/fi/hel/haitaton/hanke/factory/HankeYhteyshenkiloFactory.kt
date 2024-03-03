@@ -10,6 +10,14 @@ import java.util.UUID
 
 object HankeYhteyshenkiloFactory {
 
+    fun create(
+        id: UUID = UUID.fromString("ed1d0ea2-c5de-4298-859a-9d02eb828668"),
+        etunimi: String = HankeKayttajaFactory.KAKE,
+        sukunimi: String = HankeKayttajaFactory.KATSELIJA,
+        sahkoposti: String = HankeKayttajaFactory.KAKE_EMAIL,
+        puhelinnumero: String = HankeKayttajaFactory.KAKE_EMAIL
+    ) = Yhteyshenkilo(id, etunimi, sukunimi, sahkoposti, puhelinnumero)
+
     fun create(i: Int) =
         Yhteyshenkilo(
             id = i.toUUID(),

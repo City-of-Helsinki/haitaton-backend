@@ -34,8 +34,8 @@ class HankeKayttajaService(
     private val profiiliClient: ProfiiliClient,
 ) {
     @Transactional(readOnly = true)
-    fun getKayttaja(kayttajaId: UUID): HankeKayttajaDto =
-        hankekayttajaRepository.findByIdOrNull(kayttajaId)?.toDto()
+    fun getKayttaja(kayttajaId: UUID): HankeKayttaja =
+        hankekayttajaRepository.findByIdOrNull(kayttajaId)?.toDomain()
             ?: throw HankeKayttajaNotFoundException(kayttajaId)
 
     @Transactional(readOnly = true)

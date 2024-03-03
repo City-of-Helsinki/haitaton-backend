@@ -35,6 +35,7 @@ class KayttooikeustasoEntityITest : DatabaseTest() {
                         PermissionCode.RESEND_INVITATION,
                         PermissionCode.CREATE_USER,
                         PermissionCode.MODIFY_USER,
+                        PermissionCode.DELETE_USER,
                     )
                 ),
                 Arguments.of(
