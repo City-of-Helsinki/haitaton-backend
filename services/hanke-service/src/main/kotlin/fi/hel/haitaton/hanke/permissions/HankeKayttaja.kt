@@ -17,6 +17,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToMany
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
+import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.stereotype.Repository
@@ -26,9 +27,7 @@ data class HankekayttajaInput(
     val sukunimi: String,
     val email: String,
     val puhelin: String,
-) {
-    fun fullName(): String = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
-}
+)
 
 @Schema(description = "Api response of user data of given Hanke")
 data class HankeKayttajaResponse(
@@ -41,13 +40,12 @@ data class HankeKayttajaDto(
     @field:Schema(description = "Email address") val sahkoposti: String,
     @field:Schema(description = "First name") val etunimi: String,
     @field:Schema(description = "Last name") val sukunimi: String,
-    @Deprecated("Use etunimi and sukunimi instead.")
-    @field:Schema(description = "Full name", deprecated = true)
-    val nimi: String,
     @field:Schema(description = "Phone number") val puhelinnumero: String,
     @field:Schema(description = "Access level in Hanke") val kayttooikeustaso: Kayttooikeustaso?,
     @field:Schema(description = "User roles in Hanke") val roolit: List<ContactType>,
     @field:Schema(description = "Has user logged in to view Hanke") val tunnistautunut: Boolean,
+    @field:Schema(description = "When their latest invitation was sent")
+    val kutsuttu: OffsetDateTime?,
 )
 
 @Entity
@@ -108,11 +106,11 @@ class HankekayttajaEntity(
             sahkoposti = sahkoposti,
             etunimi = etunimi,
             sukunimi = sukunimi,
-            nimi = fullName(),
             puhelinnumero = puhelin,
             kayttooikeustaso = deriveKayttooikeustaso(),
             roolit = deriveRoolit(),
             tunnistautunut = permission != null,
+            kutsuttu = kayttajakutsu?.createdAt,
         )
 
     fun toDomain(): HankeKayttaja =
@@ -127,6 +125,7 @@ class HankekayttajaEntity(
             roolit = deriveRoolit(),
             permissionId = permission?.id,
             kayttajaTunnisteId = kayttajakutsu?.id,
+            kutsuttu = kayttajakutsu?.createdAt,
         )
 
     /**
@@ -159,7 +158,8 @@ data class HankeKayttaja(
     val kayttooikeustaso: Kayttooikeustaso?,
     val roolit: List<ContactType>,
     val permissionId: Int?,
-    val kayttajaTunnisteId: UUID?
+    val kayttajaTunnisteId: UUID?,
+    val kutsuttu: OffsetDateTime?,
 ) : HasId<UUID> {
     fun toDto(): HankeKayttajaDto =
         HankeKayttajaDto(
@@ -167,14 +167,12 @@ data class HankeKayttaja(
             sahkoposti = sahkoposti,
             etunimi = etunimi,
             sukunimi = sukunimi,
-            nimi = fullName(),
             puhelinnumero = puhelinnumero,
             kayttooikeustaso = kayttooikeustaso,
             roolit = roolit,
             tunnistautunut = permissionId != null,
+            kutsuttu = kutsuttu,
         )
-
-    private fun fullName() = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
 }
 
 @Repository

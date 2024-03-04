@@ -120,7 +120,7 @@ class HankeKayttajaFactory(
         kayttajakutsuRepository.save(
             KayttajakutsuEntity(
                 tunniste = tunniste,
-                createdAt = OffsetDateTime.parse("2023-03-31T15:41:21Z"),
+                createdAt = INVITATION_DATE,
                 kayttooikeustaso = kayttooikeustaso,
                 hankekayttaja = this,
             )
@@ -138,6 +138,8 @@ class HankeKayttajaFactory(
 
         private const val PEKKA = "Pekka Peruskäyttäjä"
         private const val PEKKA_EMAIL = "pekka@peruskäyttäjä.test"
+
+        val INVITATION_DATE: OffsetDateTime = OffsetDateTime.parse("2024-02-29T15:43:12Z")
 
         val KAYTTAJA_INPUT_HAKIJA =
             HankekayttajaInput(
@@ -217,7 +219,8 @@ class HankeKayttajaFactory(
                 kayttooikeustaso = kayttooikeustaso,
                 roolit = roolit,
                 permissionId = permissionId,
-                kayttajaTunnisteId = kayttajaTunnisteId
+                kayttajaTunnisteId = kayttajaTunnisteId,
+                kutsuttu = if (permissionId != null) INVITATION_DATE else null,
             )
 
         fun createEntity(
@@ -252,11 +255,11 @@ class HankeKayttajaFactory(
                 sahkoposti = "email.$i.address.com",
                 etunimi = "test$i",
                 sukunimi = "name$i",
-                nimi = "test$i name$i",
                 puhelinnumero = "040555$i$i$i$i",
                 kayttooikeustaso = KATSELUOIKEUS,
                 roolit = roolit,
-                tunnistautunut = tunnistautunut
+                tunnistautunut = tunnistautunut,
+                kutsuttu = if (tunnistautunut) null else INVITATION_DATE,
             )
 
         fun createHankeKayttaja(i: Int = 1, vararg roolit: ContactType): HankeKayttajaDto =

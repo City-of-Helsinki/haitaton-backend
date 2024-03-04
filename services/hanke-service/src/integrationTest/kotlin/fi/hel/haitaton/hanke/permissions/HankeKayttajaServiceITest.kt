@@ -146,11 +146,10 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 prop(HankeKayttajaDto::sahkoposti).isEqualTo(HankeKayttajaFactory.KAKE_EMAIL)
                 prop(HankeKayttajaDto::etunimi).isEqualTo(HankeKayttajaFactory.KAKE)
                 prop(HankeKayttajaDto::sukunimi).isEqualTo(HankeKayttajaFactory.KATSELIJA)
-                prop(HankeKayttajaDto::nimi)
-                    .isEqualTo("${HankeKayttajaFactory.KAKE} ${HankeKayttajaFactory.KATSELIJA}")
                 prop(HankeKayttajaDto::puhelinnumero).isEqualTo(HankeKayttajaFactory.KAKE_PUHELIN)
                 prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
                 prop(HankeKayttajaDto::tunnistautunut).isEqualTo(true)
+                prop(HankeKayttajaDto::kutsuttu).isNull()
             }
         }
 
@@ -164,6 +163,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             assertThat(response).all {
                 prop(HankeKayttajaDto::id).isEqualTo(kayttajaEntity.id)
                 prop(HankeKayttajaDto::tunnistautunut).isEqualTo(false)
+                prop(HankeKayttajaDto::kutsuttu).isEqualTo(HankeKayttajaFactory.INVITATION_DATE)
             }
         }
     }
@@ -202,12 +202,12 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 prop(HankeKayttajaDto::id).isEqualTo(entity.id)
                 prop(HankeKayttajaDto::etunimi).isEqualTo(entity.etunimi)
                 prop(HankeKayttajaDto::sukunimi).isEqualTo(entity.sukunimi)
-                prop(HankeKayttajaDto::nimi).isEqualTo(entity.fullName())
                 prop(HankeKayttajaDto::puhelinnumero).isEqualTo(entity.puhelin)
                 prop(HankeKayttajaDto::sahkoposti).isEqualTo(entity.sahkoposti)
                 prop(HankeKayttajaDto::kayttooikeustaso)
                     .isEqualTo(entity.permission!!.kayttooikeustaso)
                 prop(HankeKayttajaDto::tunnistautunut).isEqualTo(true)
+                prop(HankeKayttajaDto::kutsuttu).isNull()
             }
         }
 
@@ -431,10 +431,10 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                 prop(HankeKayttajaDto::sahkoposti).isEqualTo(email)
                 prop(HankeKayttajaDto::etunimi).isEqualTo("Joku")
                 prop(HankeKayttajaDto::sukunimi).isEqualTo("Jokunen")
-                prop(HankeKayttajaDto::nimi).isEqualTo("Joku Jokunen")
                 prop(HankeKayttajaDto::puhelinnumero).isEqualTo("0508889999")
                 prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
                 prop(HankeKayttajaDto::tunnistautunut).isFalse()
+                prop(HankeKayttajaDto::kutsuttu).isRecent()
             }
         }
 
@@ -664,7 +664,7 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             assertThat(capturedEmails).hasSize(3)
             assertThat(capturedEmails)
                 .areValidHankeInvitations(
-                    KAYTTAJA_INPUT_HAKIJA.fullName(),
+                    "${KAYTTAJA_INPUT_HAKIJA.etunimi} ${KAYTTAJA_INPUT_HAKIJA.sukunimi}",
                     KAYTTAJA_INPUT_HAKIJA.email,
                     hanke
                 )
