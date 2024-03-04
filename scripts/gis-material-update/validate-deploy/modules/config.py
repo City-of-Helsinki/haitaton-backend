@@ -68,11 +68,6 @@ class Config:
     def deployment_profile(self) -> str:
         return self._deployment_profile
 
-    def local_file(self, item: str) -> str:
-        """Return local file name from configuration."""
-        file_path = self._file_directory()
-        return "/".join([file_path, self._cfg.get(item, {}).get("local_file")])
-
     def target_file(self, item: str) -> str:
         """Return target file name from configuration."""
         file_path = self._file_directory("output_dir")
@@ -82,14 +77,6 @@ class Config:
         """Return target buffer file name from configuration."""
         file_path = self._file_directory("output_dir")
         return "/".join([file_path, self._cfg.get(item, {}).get("target_buffer_file")])
-
-    def crs(self) -> str:
-        """Return CRS information from config file."""
-        return self._cfg.get("common").get("crs")
-
-    def layer(self, item: str) -> str:
-        """Return layer name of source data from configuration."""
-        return self._cfg.get(item, {}).get("layer")
 
     def buffer(self, item: str) -> list[int]:
         """Return buffer value list from configuration."""
@@ -106,10 +93,6 @@ class Config:
     def validate_limit_max(self, item: str):
         """Return buffer value list from configuration."""
         return self._cfg.get(item, {}).get("validate_limit_max")
-
-    def buffer_class_values(self, item: str) -> list[int]:
-        """Return buffer value list from configuration."""
-        return self._cfg.get(item, {}).get("buffer_class_values")
 
     def pg_conn_uri(self, deployment: str = None) -> str:
         """Return PostgreSQL connection URI

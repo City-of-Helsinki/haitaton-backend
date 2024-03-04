@@ -21,7 +21,7 @@ DEFAULT_DEPLOYMENT_PROFILE = "local_development"
 def validate_deploy_item(item: str, cfg: Config):
     print(f"Validating deployment item: {item}")
     gis_processor = instantiate_processor(item, cfg)
-    gis_processor.get_temp_data(cfg)
+    gis_processor.get_temp_data()
     gis_processor.validate_deploy()
     pass
 
