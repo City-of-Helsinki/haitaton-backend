@@ -1,6 +1,7 @@
 from __future__ import annotations
-from os.path import exists
+
 from pathlib import Path
+
 import yaml
 
 
@@ -34,13 +35,9 @@ class Config:
 
         for config_file in [cand / "config.yaml" for cand in candidate_paths]:
             if config_file.is_file():
-                with open(str(config_file), "r") as stream:
-                    try:
-                        parsed = yaml.safe_load(stream)
-                    except yaml.YAMLError as exc:
-                        raise Exception(exc)
-                    else:
-                        print("Using configuration file: {}".format(config_file))
+                with open(str(config_file)) as stream:
+                    parsed = yaml.safe_load(stream)
+                    print(f"Using configuration file: {config_file}")
                 return parsed
         raise OSError("Configuration file was not found.")
 
@@ -62,8 +59,7 @@ class Config:
 
         if directory_name.exists():
             return str(directory_name)
-        else:
-            return None
+        return None
 
     def deployment_profile(self) -> str:
         return self._deployment_profile
@@ -94,12 +90,12 @@ class Config:
         """Return buffer value list from configuration."""
         return self._cfg.get(item, {}).get("validate_limit_max")
 
-    def pg_conn_uri(self, deployment: str = None) -> str:
+    def pg_conn_uri(self) -> str:
         """Return PostgreSQL connection URI
 
         deployment -parameter refers to deployment in configuration"""
-        if deployment is None:
-            deployment = self.deployment_profile()
+
+        deployment = self.deployment_profile()
 
         return "postgresql://{user}:{password}@{host}:{port}/{dbname}".format(
             user=self._cfg.get(deployment, {}).get("database").get("username"),

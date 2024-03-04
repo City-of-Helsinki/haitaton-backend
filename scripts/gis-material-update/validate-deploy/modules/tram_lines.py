@@ -1,8 +1,6 @@
-import logging
-
 from modules.config import Config
-from modules.common import *
 from modules.gis_validate_deploy import GisProcessor
+
 
 class TramLines(GisProcessor):
     """Process tram lines, i.e. schedule information."""

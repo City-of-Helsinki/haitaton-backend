@@ -1,6 +1,7 @@
 from modules.config import Config
 from modules.gis_validate_deploy import GisProcessor
 
+
 class CentralBusinessAreas(GisProcessor):
     """Process Central Business Areas"""
 
