@@ -268,7 +268,7 @@ class HankeServiceITests(
                 prop(Hanke::kuvaus).isNull()
                 prop(Hanke::vaihe).isNull()
                 prop(Hanke::version).isEqualTo(0)
-                prop(Hanke::createdAt).isNotNull().isRecentZDT()
+                prop(Hanke::createdAt).isRecentZDT()
                 prop(Hanke::createdBy).isNotNull().isEqualTo(USER_NAME)
                 prop(Hanke::modifiedAt).isNull()
                 prop(Hanke::modifiedBy).isNull()
@@ -308,7 +308,7 @@ class HankeServiceITests(
                 prop(HankeEntity::onYKTHanke).isNull()
                 prop(HankeEntity::version).isEqualTo(0)
                 prop(HankeEntity::createdByUserId).isNotNull().isEqualTo(USER_NAME)
-                prop(HankeEntity::createdAt).isNotNull().isRecentUTC()
+                prop(HankeEntity::createdAt).isRecentUTC()
                 prop(HankeEntity::modifiedByUserId).isNull()
                 prop(HankeEntity::modifiedAt).isNull()
                 prop(HankeEntity::generated).isFalse()
@@ -520,7 +520,7 @@ class HankeServiceITests(
             prop(Hanke::version).isEqualTo(1)
             prop(Hanke::createdAt).isEqualTo(hanke.createdAt)
             prop(Hanke::createdBy).isEqualTo(hanke.createdBy)
-            prop(Hanke::modifiedAt).isNotNull().isRecentZDT(Duration.ofMinutes(10))
+            prop(Hanke::modifiedAt).isRecentZDT(Duration.ofMinutes(10))
             prop(Hanke::modifiedBy).isNotNull().isEqualTo(USER_NAME)
         }
         val loadedHanke = hankeService.loadHanke(result.hankeTunnus)
@@ -528,7 +528,7 @@ class HankeServiceITests(
             prop(Hanke::version).isEqualTo(1)
             prop(Hanke::createdAt).isEqualTo(hanke.createdAt)
             prop(Hanke::createdBy).isEqualTo(hanke.createdBy)
-            prop(Hanke::modifiedAt).isNotNull().isRecentZDT(Duration.ofMinutes(10))
+            prop(Hanke::modifiedAt).isRecentZDT(Duration.ofMinutes(10))
             prop(Hanke::modifiedBy).isNotNull().isEqualTo(USER_NAME)
         }
     }
@@ -555,7 +555,7 @@ class HankeServiceITests(
         assertThat(result.omistajat[1]).all {
             prop(HankeYhteystieto::id).isEqualTo(ytid2)
             prop(HankeYhteystieto::nimi).isEqualTo(NAME_SOMETHING)
-            prop(HankeYhteystieto::modifiedAt).isNotNull().isRecentZDT(Duration.ofMinutes(10))
+            prop(HankeYhteystieto::modifiedAt).isRecentZDT(Duration.ofMinutes(10))
             prop(HankeYhteystieto::modifiedBy).isNotNull().isEqualTo(USER_NAME)
         }
 
