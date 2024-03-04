@@ -99,14 +99,13 @@ object ApplicationPdfService {
     ): ByteArray {
         val outputStream = ByteArrayOutputStream()
         val document = Document(PageSize.A4)
-        val pdfWriter = PdfWriter.getInstance(document, outputStream)
+        PdfWriter.getInstance(document, outputStream)
         formatPdf(
             document,
             data,
             totalArea,
             areas,
         )
-        pdfWriter.close()
         return outputStream.toByteArray()
     }
 
@@ -176,8 +175,8 @@ object ApplicationPdfService {
     private fun getOrderer(data: CableReportApplicationData): Contact? =
         data.customerWithContacts.contacts.find { it.orderer }
             ?: data.contractorWithContacts.contacts.find { it.orderer }
-                ?: data.representativeWithContacts?.contacts?.find { it.orderer }
-                ?: data.propertyDeveloperWithContacts?.contacts?.find { it.orderer }
+            ?: data.representativeWithContacts?.contacts?.find { it.orderer }
+            ?: data.propertyDeveloperWithContacts?.contacts?.find { it.orderer }
 
     private fun getWorkTargets(applicationData: CableReportApplicationData): String {
         return listOf(
