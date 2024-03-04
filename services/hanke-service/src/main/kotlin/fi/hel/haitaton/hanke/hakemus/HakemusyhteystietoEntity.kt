@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -33,7 +34,12 @@ class HakemusyhteystietoEntity(
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id")
     var application: ApplicationEntity,
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "hakemusyhteystieto")
+    @OneToMany(
+        fetch = FetchType.LAZY,
+        mappedBy = "hakemusyhteystieto",
+        cascade = [CascadeType.REMOVE],
+        orphanRemoval = true
+    )
     @BatchSize(size = 100)
     var yhteyshenkilot: List<HakemusyhteyshenkiloEntity> = listOf(),
 ) {

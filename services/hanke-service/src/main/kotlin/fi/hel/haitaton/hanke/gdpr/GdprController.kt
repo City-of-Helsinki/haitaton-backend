@@ -154,6 +154,7 @@ class GdprController(
             logger.info { "Not deleting information, GDPR request was a dry run." }
         } else {
             gdprService.deleteInfo(userId)
+            logger.info { "Deleted all information we could find on user $userId" }
         }
     }
 
