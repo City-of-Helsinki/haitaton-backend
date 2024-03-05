@@ -144,7 +144,8 @@ class EmailSenderService(
             "$templatePath/common/signature-en.mustache".getResourceAsText(),
         )
 
-    private fun emailNotAllowed(email: String) = !emailConfig.filter.allowList.contains(email)
+    private fun emailNotAllowed(email: String) =
+        !emailConfig.filter.allowList.any { it.toRegex().matches(email) }
 
     private fun parseTemplate(path: String, contextObject: Any): String =
         Template.parse(path.getResource().openStream()).processToString(contextObject)

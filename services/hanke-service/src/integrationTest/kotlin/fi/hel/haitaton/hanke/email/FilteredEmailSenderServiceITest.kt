@@ -19,12 +19,12 @@ import org.springframework.test.context.ActiveProfiles
     properties =
         [
             "haitaton.email.filter.use=true",
-            "haitaton.email.filter.allow-list=test@test.test;something@mail.com",
+            "haitaton.email.filter.allow-list=test@test.test;something@mail.com;.*@wildcard.com",
             "haitaton.features.user-management=false"
         ]
 )
 @ActiveProfiles("test")
-class EmailSenderServicePropertiesITest : DatabaseTest() {
+class FilteredEmailSenderServiceITest : DatabaseTest() {
 
     companion object {
         @JvmField
@@ -53,12 +53,28 @@ class EmailSenderServicePropertiesITest : DatabaseTest() {
     }
 
     @Test
+    fun `sendJohtoselvitysCompleteEmail blocks send when recipient is close to an allowed email`() {
+        emailSenderService.sendJohtoselvitysCompleteEmail("atest@test.test", 13L, "JS2300001")
+
+        assertThat(greenMail.receivedMessages.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `sendJohtoselvitysCompleteEmail sends email when email matches wildcard`() {
+        emailSenderService.sendJohtoselvitysCompleteEmail("test@wildcard.com", 15L, "JS2300001")
+
+        val email = greenMail.firstReceivedMessage()
+        assertThat(email.allRecipients).hasSize(1)
+        assertThat(email.allRecipients[0].toString()).isEqualTo("test@wildcard.com")
+    }
+
+    @Test
     fun `sendApplicationNotificationEmail when user management not enabled does not send`() {
         emailSenderService.sendApplicationNotificationEmail(
             ApplicationNotificationData(
                 senderName = "Kalle Kutsuja",
                 senderEmail = "kalle.kutsuja@mail.com",
-                recipientEmail = "matti.meikalainen@mail.com",
+                recipientEmail = "test@test.test",
                 applicationType = CABLE_REPORT,
                 applicationIdentifier = "JS002",
                 hankeTunnus = "HAI24-1",
