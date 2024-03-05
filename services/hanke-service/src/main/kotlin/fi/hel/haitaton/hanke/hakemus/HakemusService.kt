@@ -16,7 +16,7 @@ import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
-import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
+import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
 import java.util.UUID
@@ -33,7 +33,7 @@ class HakemusService(
     private val hankeRepository: HankeRepository,
     private val geometriatDao: GeometriatDao,
     private val hankealueService: HankealueService,
-    private val applicationLoggingService: ApplicationLoggingService,
+    private val hakemusLoggingService: HakemusLoggingService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
 ) {
@@ -83,7 +83,10 @@ class HakemusService(
                 hanke = hanke,
                 yhteystiedot = mutableMapOf()
             )
-        return applicationRepository.save(entity).toHakemus()
+
+        val hakemus = applicationRepository.save(entity).toHakemus()
+        hakemusLoggingService.logCreate(hakemus, currentUserId)
+        return hakemus
     }
 
     @Transactional
@@ -97,7 +100,7 @@ class HakemusService(
         val applicationEntity =
             applicationRepository.findOneById(applicationId)
                 ?: throw ApplicationNotFoundException(applicationId)
-        val application = applicationEntity.toApplication() // the original state for audit logging
+        val hakemus = applicationEntity.toHakemus() // the original state for audit logging
 
         assertNotSent(applicationEntity)
         assertCompatibility(applicationEntity, request)
@@ -130,11 +133,7 @@ class HakemusService(
         val updatedApplicationEntity = saveWithUpdate(applicationEntity, request)
 
         logger.info("Updated application id=${applicationId}")
-        applicationLoggingService.logUpdate(
-            application,
-            updatedApplicationEntity.toApplication(),
-            userId
-        )
+        hakemusLoggingService.logUpdate(hakemus, updatedApplicationEntity.toHakemus(), userId)
 
         return hakemusResponseWithYhteystiedot(updatedApplicationEntity)
     }
