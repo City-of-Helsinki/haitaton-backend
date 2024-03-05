@@ -11,10 +11,12 @@ class YlreKatuosat:
     def __init__(self, cfg: Config):
         self._cfg = cfg
         self._module = "ylre_katuosat"
+        self._store_original_data = cfg.store_orinal_data(self._module)
 
         filename = cfg.local_file(self._module)
         layer = cfg.layer(self._module)
         df = gpd.read_file(filename, layer=layer)
+        self._orig = df
         df["ylre_types_concat"] = df["paatyyppi"] + " - " + df["alatyyppi"]
         selected_types = [
             "Ajorata - Ajorata",
@@ -43,23 +45,17 @@ class YlreKatuosat:
     def persist_to_database(self):
         connection = create_engine(self._cfg.pg_conn_uri())
 
-        self._df.to_postgis(
-            "ylre_parts_orig_polys",
-            connection,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
-
-        self._process_result.to_postgis(
-            "ylre_parts_polys",
-            connection,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+        if self._store_original_data is not False:
+            self._orig.rename_geometry('geom', inplace=True)
+            # persist original data
+            self._orig.to_postgis(
+                self._store_original_data,
+                connection,
+                "public",
+                if_exists="replace",
+                index=True,
+                index_label="fid",
+                )
 
     def save_to_file(self):
         file_name = self._cfg.target_file(self._module)

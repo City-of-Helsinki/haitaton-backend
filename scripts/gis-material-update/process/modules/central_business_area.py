@@ -12,12 +12,12 @@ class CentralBusinessAreas:
     def __init__(self, cfg: Config):
         self._cfg = cfg
         self._process_result_polygons = None
-        self._process_result_merged_polygon = None
         self._module = "central_business_area"
 
         filename = cfg.local_file(self._module)
-        layer = cfg.layer(self._module)
-        df = gpd.read_file(filename, layer=layer)
+        self._store_original_data = cfg.store_orinal_data(self._module)
+        self._layer = cfg.layer(self._module)
+        df = gpd.read_file(filename, layer=self._layer)
         self._orig = df
 
         self._kantakaupunki_peruspiiri_nimi = [
@@ -89,25 +89,19 @@ class CentralBusinessAreas:
     def persist_to_database(self):
         connection = create_engine(self._cfg.pg_conn_uri())
 
-        self._orig.to_postgis(
-            "central_business_area_orig_polys",
-            connection,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
-
-        self._process_result.to_postgis(
-            "central_business_area_polys",
-            connection,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+        if self._store_original_data is not False:
+            self._orig.rename_geometry('geom', inplace=True)
+            # persist original data
+            self._orig.to_postgis(
+                self._store_original_data,
+                connection,
+                "public",
+                if_exists="replace",
+                index=True,
+                index_label="fid",
+                )
 
     def save_to_file(self):
+        # write processed data to file
         file_name = self._cfg.target_file(self._module)
         self._df.to_file(file_name, driver="GPKG")
-        

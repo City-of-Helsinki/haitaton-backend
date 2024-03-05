@@ -14,16 +14,19 @@ class CycleInfra(GisProcessor):
         self._process_result_lines = None
         self._process_result_polygons = None
         self._debug_result_lines = None
+        self._module = "cycle_infra"
 
-        file_name = cfg.local_file("cycle_infra")
+        file_name = cfg.local_file(self._module)
+        self._store_original_data = cfg.store_orinal_data(self._module)
 
         self._lines = gpd.read_file(file_name)
+        self._orig = self._lines
 
     def process(self):
         self._process_result_lines = self._lines
 
         # Buffering configuration
-        buffers = self._cfg.buffer("cycle_infra")
+        buffers = self._cfg.buffer(self._module)
         if len(buffers) != 1:
             raise ValueError("Unknown number of buffer values")
 
@@ -35,39 +38,31 @@ class CycleInfra(GisProcessor):
         self._process_result_polygons = target_infra_polys
 
     def persist_to_database(self):
-        engine = create_engine(self._cfg.pg_conn_uri(), future=True)
+        connection = create_engine(self._cfg.pg_conn_uri(), future=True)
 
-        # persist route lines to database
-        self._process_result_lines.to_postgis(
-            "cycle_infra",
-            engine,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
-
-        # persist polygons to database
-        self._process_result_polygons.to_postgis(
-            "cycle_infra_polys",
-            engine,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+        if self._store_original_data is not False:
+            self._orig.rename_geometry('geom', inplace=True)
+            # persist original data
+            self._orig.to_postgis(
+                self._store_original_data,
+                connection,
+                "public",
+                if_exists="replace",
+                index=True,
+                index_label="fid",
+                )
 
     def save_to_file(self):
         """Save processing results to file."""
         # cycle line infra as debug material
-        target_infra_file_name = self._cfg.target_file("cycle_infra")
+        target_infra_file_name = self._cfg.target_file(self._module)
 
         cycle_lines = self._process_result_lines.reset_index(drop=True)
 
         cycle_lines.to_file(target_infra_file_name, driver="GPKG")
 
         # tormays GIS material
-        target_buffer_file_name = self._cfg.target_buffer_file("cycle_infra")
+        target_buffer_file_name = self._cfg.target_buffer_file(self._module)
 
         # instruct Geopandas for correct data type in file write
         # fid is originally as index, obtain fid as column...

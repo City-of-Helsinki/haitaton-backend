@@ -32,8 +32,11 @@ class TramInfra(GisProcessor):
         self._process_result_lines = None
         self._process_result_polygons = None
         self._debug_result_lines = None
+        self._orig = None
+        self._module = "tram_infra"
+        self._store_original_data = cfg.store_orinal_data(self._module)
 
-        file_name = cfg.local_file("tram_infra")
+        file_name = cfg.local_file(self._module)
 
         self._lines = gpd.read_file(file_name)
 
@@ -58,10 +61,10 @@ class TramInfra(GisProcessor):
         trams["infra"] = 1
         trams = trams.astype({"infra": "int32"})
         self._process_result_lines = trams.loc[:, ["infra", "geometry"]]
-        self._debug_result_lines = trams
+        self._orig = trams
 
         # Buffering configuration
-        buffers = self._cfg.buffer("tram_infra")
+        buffers = self._cfg.buffer(self._module)
         if len(buffers) != 1:
             raise ValueError("Unkown number of buffer values")
 
@@ -78,55 +81,31 @@ class TramInfra(GisProcessor):
         except Exception as e:
             print("Area polygon file not found!")
             raise e
-        
+
         target_infra_polys = gpd.clip(target_infra_polys, helsinki_region_polygon)
 
         # save to instance
         self._process_result_polygons = target_infra_polys
 
     def persist_to_database(self):
-        engine = create_engine(self._cfg.pg_conn_uri(), future=True)
+        connection = create_engine(self._cfg.pg_conn_uri(), future=True)
 
-        # persist original results for debugging and development
-        debug_schema = "debug"
-
-        with engine.connect() as conn:
-            conn.execute(text("CREATE SCHEMA IF NOT EXISTS {}".format(debug_schema)))
-            conn.commit()
-
-        self._debug_result_lines.to_postgis(
-            "tram_infra",
-            engine,
-            debug_schema,
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
-
-        # persist route lines to database
-        self._process_result_lines.to_postgis(
-            "tram_infra",
-            engine,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
-
-        # persist polygons to database
-        self._process_result_polygons.to_postgis(
-            "tram_infra_polys",
-            engine,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+        if self._store_original_data is not False:
+            self._orig.rename_geometry('geom', inplace=True)
+            # persist original data
+            self._orig.to_postgis(
+                self._store_original_data,
+                connection,
+                "public",
+                if_exists="replace",
+                index=True,
+                index_label="fid",
+                )
 
     def save_to_file(self):
         """Save processing results to file."""
         # tram line infra as debug material
-        target_infra_file_name = self._cfg.target_file("tram_infra")
+        target_infra_file_name = self._cfg.target_file(self._module)
 
         tram_lines = self._process_result_lines.reset_index(drop=True)
 
@@ -136,7 +115,7 @@ class TramInfra(GisProcessor):
         tram_lines.to_file(target_infra_file_name, schema=schema, driver="GPKG")
 
         # tormays GIS material
-        target_buffer_file_name = self._cfg.target_buffer_file("tram_infra")
+        target_buffer_file_name = self._cfg.target_buffer_file(self._module)
 
         # instruct Geopandas for correct data type in file write
         # fid is originally as index, obtain fid as column...

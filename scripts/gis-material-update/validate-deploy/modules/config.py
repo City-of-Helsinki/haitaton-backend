@@ -30,7 +30,7 @@ class Config:
         * local development
         """
         parsed = {}
-        candidate_paths = [Path("/haitaton-gis"), Path(__file__).parent.parent.parent]
+        candidate_paths = [Path("/haitaton-gis-validate-deploy"), Path(__file__).parent.parent.parent]
 
         for config_file in [cand / "config.yaml" for cand in candidate_paths]:
             if config_file.is_file():
@@ -68,11 +68,6 @@ class Config:
     def deployment_profile(self) -> str:
         return self._deployment_profile
 
-    def local_file(self, item: str) -> str:
-        """Return local file name from configuration."""
-        file_path = self._file_directory()
-        return "/".join([file_path, self._cfg.get(item, {}).get("local_file")])
-
     def target_file(self, item: str) -> str:
         """Return target file name from configuration."""
         file_path = self._file_directory("output_dir")
@@ -83,14 +78,6 @@ class Config:
         file_path = self._file_directory("output_dir")
         return "/".join([file_path, self._cfg.get(item, {}).get("target_buffer_file")])
 
-    def crs(self) -> str:
-        """Return CRS information from config file."""
-        return self._cfg.get("common").get("crs")
-
-    def layer(self, item: str) -> str:
-        """Return layer name of source data from configuration."""
-        return self._cfg.get(item, {}).get("layer")
-
     def buffer(self, item: str) -> list[int]:
         """Return buffer value list from configuration."""
         return self._cfg.get(item, {}).get("buffer")
@@ -99,17 +86,13 @@ class Config:
         """Return buffer value list from configuration."""
         return self._cfg.get(item, {}).get("tormays_table_org")
 
-    def tormays_table_temp(self, item: str) -> str:
+    def validate_limit_min(self, item: str):
         """Return buffer value list from configuration."""
-        return self._cfg.get(item, {}).get("tormays_table_temp")
+        return self._cfg.get(item, {}).get("validate_limit_min")
 
-    def store_orinal_data(self, item: str) -> str:
+    def validate_limit_max(self, item: str):
         """Return buffer value list from configuration."""
-        return self._cfg.get(item, {}).get("store_orinal_data")
-
-    def buffer_class_values(self, item: str) -> list[int]:
-        """Return buffer value list from configuration."""
-        return self._cfg.get(item, {}).get("buffer_class_values")
+        return self._cfg.get(item, {}).get("validate_limit_max")
 
     def pg_conn_uri(self, deployment: str = None) -> str:
         """Return PostgreSQL connection URI
@@ -125,3 +108,19 @@ class Config:
             port=self._cfg.get(deployment, {}).get("database").get("port"),
             dbname=self._cfg.get(deployment, {}).get("database").get("database"),
         )
+
+    def logging_filename(self) -> str:
+        """Return logging file name information from config file."""
+        return self._cfg.get("logging").get("logging_filename")
+
+    def logging_filemode(self) -> str:
+        """Return logging file mode information from config file."""
+        return self._cfg.get("logging").get("logging_filemode")
+
+    def logging_level(self) -> str:
+        """Return logging file level information from config file."""
+        return self._cfg.get("logging").get("logging_level")
+
+    def logging_format(self) -> str:
+        """Return logging file level information from config file."""
+        return self._cfg.get("logging").get("logging_format")
