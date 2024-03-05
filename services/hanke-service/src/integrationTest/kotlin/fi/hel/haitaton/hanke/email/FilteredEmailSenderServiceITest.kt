@@ -19,7 +19,7 @@ import org.springframework.test.context.ActiveProfiles
     properties =
         [
             "haitaton.email.filter.use=true",
-            "haitaton.email.filter.allow-list=test@test.test;something@mail.com;.*@wildcard.com",
+            "haitaton.email.filter.allow-list=test@test.test;something@mail.com;*@wildcard.com",
             "haitaton.features.user-management=false"
         ]
 )
@@ -46,7 +46,7 @@ class FilteredEmailSenderServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `sendJohtoselvitysCompleteEmail when recipient not in allow list does not send`() {
+    fun `sendJohtoselvitysCompleteEmail blocks send when recipient is not in allow list`() {
         emailSenderService.sendJohtoselvitysCompleteEmail("foo@bar.test", 13L, "JS2300001")
 
         assertThat(greenMail.receivedMessages.size).isEqualTo(0)
@@ -55,6 +55,13 @@ class FilteredEmailSenderServiceITest : DatabaseTest() {
     @Test
     fun `sendJohtoselvitysCompleteEmail blocks send when recipient is close to an allowed email`() {
         emailSenderService.sendJohtoselvitysCompleteEmail("atest@test.test", 13L, "JS2300001")
+
+        assertThat(greenMail.receivedMessages.size).isEqualTo(0)
+    }
+
+    @Test
+    fun `sendJohtoselvitysCompleteEmail blocks send when dot is replaced`() {
+        emailSenderService.sendJohtoselvitysCompleteEmail("test@test-test", 13L, "JS2300001")
 
         assertThat(greenMail.receivedMessages.size).isEqualTo(0)
     }
@@ -69,7 +76,7 @@ class FilteredEmailSenderServiceITest : DatabaseTest() {
     }
 
     @Test
-    fun `sendApplicationNotificationEmail when user management not enabled does not send`() {
+    fun `sendApplicationNotificationEmail does not send when user management is not enabled`() {
         emailSenderService.sendApplicationNotificationEmail(
             ApplicationNotificationData(
                 senderName = "Kalle Kutsuja",
