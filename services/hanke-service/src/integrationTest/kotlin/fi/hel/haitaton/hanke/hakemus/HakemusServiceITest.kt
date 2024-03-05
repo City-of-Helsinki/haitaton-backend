@@ -27,6 +27,7 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
+import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.toCustomerWithContactsRequest
 import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -244,7 +245,7 @@ class HakemusServiceITest : DatabaseTest() {
                         application.id!!,
                         HakemusUpdateRequestFactory
                             .createJohtoselvityshakemusUpdateRequestFromHakemus(application)
-                            .apply { areas = listOf(intersectingArea) },
+                            .copy(areas = listOf(intersectingArea)),
                         USERID
                     )
                 }
@@ -270,12 +271,12 @@ class HakemusServiceITest : DatabaseTest() {
                         application.id!!,
                         HakemusUpdateRequestFactory
                             .createJohtoselvityshakemusUpdateRequestFromHakemus(application)
-                            .apply {
+                            .copy(
                                 customerWithContacts =
                                     HakemusUpdateRequestFactory.createCustomerWithContactsRequest(
                                         yhteystietoId = requestYhteystietoId
                                     )
-                            },
+                            ),
                         USERID
                     )
                 }
@@ -300,12 +301,12 @@ class HakemusServiceITest : DatabaseTest() {
                         application.id!!,
                         HakemusUpdateRequestFactory
                             .createJohtoselvityshakemusUpdateRequestFromHakemus(application)
-                            .apply {
+                            .copy(
                                 customerWithContacts =
                                     HakemusUpdateRequestFactory.createCustomerWithContactsRequest(
                                         yhteystietoId = requestYhteystietoId
                                     )
-                            },
+                            ),
                         USERID
                     )
                 }
@@ -335,10 +336,22 @@ class HakemusServiceITest : DatabaseTest() {
                         application.id!!,
                         HakemusUpdateRequestFactory
                             .createJohtoselvityshakemusUpdateRequestFromHakemus(application)
-                            .apply {
-                                customerWithContacts!!.contacts.first().hankekayttajaId =
-                                    requestHankekayttajaId
-                            },
+                            .copy(
+                                customerWithContacts =
+                                    application.applicationData.customerWithContacts!!
+                                        .toCustomerWithContactsRequest()!!
+                                        .copy(
+                                            contacts =
+                                                listOf(
+                                                    *application.applicationData
+                                                        .customerWithContacts!!
+                                                        .toCustomerWithContactsRequest()!!
+                                                        .contacts
+                                                        .toTypedArray(),
+                                                    ContactRequest(requestHankekayttajaId)
+                                                )
+                                        )
+                            ),
                         USERID
                     )
                 }
@@ -360,7 +373,7 @@ class HakemusServiceITest : DatabaseTest() {
                         application.id!!,
                         HakemusUpdateRequestFactory
                             .createJohtoselvityshakemusUpdateRequestFromHakemus(application)
-                            .apply { areas = listOf(notInHankeArea) },
+                            .copy(areas = listOf(notInHankeArea)),
                         USERID
                     )
                 }
@@ -391,22 +404,29 @@ class HakemusServiceITest : DatabaseTest() {
                 }
             val originalAuditLogSize = auditLogRepository.findByType(ObjectType.APPLICATION).size
 
-            val updatedHakemus =
-                hakemusService.updateHakemus(
-                    application.id!!,
-                    HakemusUpdateRequestFactory.createJohtoselvityshakemusUpdateRequestFromHakemus(
-                            application
-                        )
-                        .apply {
-                            this.workDescription = "New work description"
-                            this.customerWithContacts!!.contacts =
-                                listOf(
-                                    *this.customerWithContacts!!.contacts.toTypedArray(),
-                                    ContactRequest(otherKayttaja.id)
+            val request =
+                HakemusUpdateRequestFactory.createJohtoselvityshakemusUpdateRequestFromHakemus(
+                        application
+                    )
+                    .copy(
+                        // change work description
+                        workDescription = "New work description",
+                        // add a new contact
+                        customerWithContacts =
+                            application.applicationData.customerWithContacts!!
+                                .toCustomerWithContactsRequest()!!
+                                .copy(
+                                    contacts =
+                                        listOf(
+                                            *application.applicationData.customerWithContacts!!
+                                                .toCustomerWithContactsRequest()!!
+                                                .contacts
+                                                .toTypedArray(),
+                                            ContactRequest(otherKayttaja.id)
+                                        )
                                 )
-                        },
-                    USERID
-                )
+                    )
+            val updatedHakemus = hakemusService.updateHakemus(application.id!!, request, USERID)
 
             assertThat(
                     (updatedHakemus.applicationData as JohtoselvitysHakemusDataResponse)

@@ -39,43 +39,9 @@ class HakemusService(
     private val geometriatDao: GeometriatDao,
     private val hankealueService: HankealueService,
     private val applicationLoggingService: ApplicationLoggingService,
-    private val hankeKayttajaService: HankeKayttajaService
+    private val hankeKayttajaService: HankeKayttajaService,
+    private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
 ) {
-    @Transactional
-    fun createHakemus(hakemus: Hakemus, userId: String): Hakemus {
-        logger.info("Creating a new application for user $userId")
-
-        assertGeometryValidity(hakemus.applicationData.areas) { validationError ->
-            "Invalid geometry received when creating a new application for user $userId, reason = ${validationError.reason}, location = ${validationError.location}"
-        }
-
-        val hanke =
-            hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)
-                ?: throw HankeNotFoundException(hakemus.hankeTunnus)
-
-        assertYhteyshenkilotValidity(hanke, hakemus.applicationData.allContactIds()) {
-            "Invalid hanke user/users received when creating a new application hankeId=${hanke.id}, invalid hankeKayttajaIds=$it"
-        }
-
-        if (!hanke.generated) {
-            hakemus.applicationData.areas?.let { areas ->
-                assertGeometryCompatibility(hanke.id, areas) { applicationArea ->
-                    "Application geometry doesn't match any hankealue when creating a new application for user $userId, " +
-                        "hankeId = ${hanke.id}, application geometry = ${applicationArea.geometry.toJsonString()}"
-                }
-            }
-        }
-
-        val applicationEntity = hakemus.toEntity(userId, hanke)
-
-        val savedApplicationEntity = applicationRepository.save(applicationEntity)
-        hanke.hakemukset.add(savedApplicationEntity)
-        val savedApplication = savedApplicationEntity.toHakemus()
-        logger.info { "Created a new application with id ${savedApplication.id} for user $userId" }
-        applicationLoggingService.logCreate(savedApplicationEntity.toApplication(), userId)
-        return savedApplication
-    }
-
     @Transactional(readOnly = true)
     fun hakemusResponse(applicationId: Long): HakemusResponse {
         val applicationEntity =
@@ -433,14 +399,15 @@ class HakemusService(
         hakemusyhteystietoEntity: HakemusyhteystietoEntity
     ) =
         HakemusyhteyshenkiloEntity(
-            hakemusyhteystieto = hakemusyhteystietoEntity,
-            hankekayttaja =
-                hankeKayttajaService.getKayttajaForHanke(
-                    hankekayttajaId,
-                    hakemusyhteystietoEntity.application.hanke.id
-                ),
-            tilaaja = false
-        )
+                hakemusyhteystieto = hakemusyhteystietoEntity,
+                hankekayttaja =
+                    hankeKayttajaService.getKayttajaForHanke(
+                        hankekayttajaId,
+                        hakemusyhteystietoEntity.application.hanke.id
+                    ),
+                tilaaja = false
+            )
+            .also { hakemusyhteyshenkiloRepository.save(it) }
 
     private fun CustomerWithContactsRequest.toExistingHakemusyhteystietoEntity(
         hakemusyhteystietoEntity: HakemusyhteystietoEntity
@@ -469,123 +436,7 @@ class HakemusService(
             }
         )
     }
-
-    private fun Hakemus.toEntity(userId: String, hanke: HankeEntity): ApplicationEntity =
-        ApplicationEntity(
-                id = null,
-                alluid = alluid,
-                alluStatus = alluStatus,
-                applicationIdentifier = applicationIdentifier,
-                userId = userId,
-                applicationType = applicationType,
-                applicationData = applicationData.toApplicationData(true),
-                hanke = hanke
-            )
-            .also {
-                it.yhteystiedot.putAll(
-                    when (applicationData) {
-                        is JohtoselvityshakemusData -> applicationData.yhteystiedot(it)
-                    }
-                )
-            }
-
-    private fun JohtoselvityshakemusData.yhteystiedot(
-        applicationEntity: ApplicationEntity
-    ): MutableMap<ApplicationContactType, HakemusyhteystietoEntity> {
-        val yhteystiedot = mutableMapOf<ApplicationContactType, HakemusyhteystietoEntity>()
-        customerWithContacts?.let {
-            yhteystiedot[ApplicationContactType.HAKIJA] =
-                it.toHakemusyhteystietoEntity(applicationEntity)
-        }
-        contractorWithContacts?.let {
-            yhteystiedot[ApplicationContactType.TYON_SUORITTAJA] =
-                it.toHakemusyhteystietoEntity(applicationEntity)
-        }
-        propertyDeveloperWithContacts?.let {
-            yhteystiedot[ApplicationContactType.RAKENNUTTAJA] =
-                it.toHakemusyhteystietoEntity(applicationEntity)
-        }
-        representativeWithContacts?.let {
-            yhteystiedot[ApplicationContactType.ASIANHOITAJA] =
-                it.toHakemusyhteystietoEntity(applicationEntity)
-        }
-        return yhteystiedot
-    }
-
-    private fun Hakemusyhteystieto.toHakemusyhteystietoEntity(
-        applicationEntity: ApplicationEntity
-    ): HakemusyhteystietoEntity =
-        HakemusyhteystietoEntity(
-                tyyppi = tyyppi,
-                rooli = rooli,
-                nimi = nimi,
-                sahkoposti = sahkoposti,
-                puhelinnumero = puhelinnumero,
-                ytunnus = ytunnus,
-                application = applicationEntity,
-            )
-            .also { hakemusyhteystietoEntity ->
-                hakemusyhteystietoEntity.yhteyshenkilot.addAll(
-                    yhteyshenkilot.map { it.toHakemusyhteyshenkiloEntity(hakemusyhteystietoEntity) }
-                )
-            }
-
-    private fun Hakemusyhteyshenkilo.toHakemusyhteyshenkiloEntity(
-        hakemusyhteystietoEntity: HakemusyhteystietoEntity
-    ): HakemusyhteyshenkiloEntity =
-        HakemusyhteyshenkiloEntity(
-            hakemusyhteystieto = hakemusyhteystietoEntity,
-            hankekayttaja =
-                hankeKayttajaService.getKayttajaForHanke(
-                    hankekayttajaId,
-                    hakemusyhteystietoEntity.application.hanke.id
-                ),
-            tilaaja = tilaaja
-        )
 }
-
-private fun ApplicationEntity.toHakemus(): Hakemus =
-    Hakemus(
-        id = id!!,
-        alluid = alluid,
-        alluStatus = alluStatus,
-        applicationIdentifier = applicationIdentifier,
-        applicationType = applicationType,
-        applicationData =
-            when (applicationData) {
-                is CableReportApplicationData ->
-                    (this.applicationData as CableReportApplicationData).toHakemusData(this)
-            },
-        hankeTunnus = hanke.hankeTunnus
-    )
-
-private fun CableReportApplicationData.toHakemusData(
-    applicationEntity: ApplicationEntity
-): HakemusData =
-    JohtoselvityshakemusData(
-        name = name,
-        postalAddress = postalAddress,
-        constructionWork = constructionWork,
-        maintenanceWork = maintenanceWork,
-        propertyConnectivity = propertyConnectivity,
-        emergencyWork = emergencyWork,
-        rockExcavation = rockExcavation,
-        workDescription = workDescription,
-        startTime = startTime,
-        endTime = endTime,
-        areas = areas,
-        customerWithContacts =
-            applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA].toHakemusyhteystieto(),
-        contractorWithContacts =
-            applicationEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
-                .toHakemusyhteystieto(),
-        propertyDeveloperWithContacts =
-            applicationEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]
-                .toHakemusyhteystieto(),
-        representativeWithContacts =
-            applicationEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]
-                .toHakemusyhteystieto(),
-    )
 
 private fun ApplicationArea.toNewHankealue(
     i: Int,

@@ -12,12 +12,12 @@ import java.time.ZonedDateTime
 import java.util.UUID
 
 sealed interface HakemusUpdateRequest {
-    var name: String
-    var postalAddress: PostalAddressRequest
-    var startTime: ZonedDateTime?
-    var endTime: ZonedDateTime?
-    var areas: List<ApplicationArea>?
-    var customerWithContacts: CustomerWithContactsRequest?
+    val name: String
+    val postalAddress: PostalAddressRequest
+    val startTime: ZonedDateTime?
+    val endTime: ZonedDateTime?
+    val areas: List<ApplicationArea>?
+    val customerWithContacts: CustomerWithContactsRequest?
 
     /**
      * Returns true if this application update request has changes compared to the given
@@ -38,40 +38,40 @@ sealed interface HakemusUpdateRequest {
 data class JohtoselvityshakemusUpdateRequest(
     // 1. sivu Perustiedot (first filled in Create)
     /** Työn nimi */
-    override var name: String,
+    override val name: String,
     /** Katuosoite */
-    override var postalAddress: PostalAddressRequest,
+    override val postalAddress: PostalAddressRequest,
     /** Työssä on kyse: Uuden rakenteen tai johdon rakentamisesta */
-    var constructionWork: Boolean,
+    val constructionWork: Boolean,
     /** Työssä on kyse: Olemassaolevan rakenteen kunnossapitotyöstä */
-    var maintenanceWork: Boolean,
+    val maintenanceWork: Boolean,
     /** Työssä on kyse: Kiinteistöliittymien rakentamisesta */
-    var propertyConnectivity: Boolean,
+    val propertyConnectivity: Boolean,
     /**
      * Työssä on kyse: Kaivutyö on aloitettu ennen johtoselvityksen tilaamista merkittävien
      * vahinkojen välttämiseksi
      */
-    var emergencyWork: Boolean,
+    val emergencyWork: Boolean,
     /** Louhitaanko työn yhteydessä, esimerkiksi kallioperää? */
-    var rockExcavation: Boolean,
+    val rockExcavation: Boolean,
     /** Työn kuvaus */
-    var workDescription: String,
+    val workDescription: String,
     // 2. sivu Alueet
     /** Työn arvioitu alkupäivä */
-    override var startTime: ZonedDateTime? = null,
+    override val startTime: ZonedDateTime? = null,
     /** Työn arvioitu loppupäivä */
-    override var endTime: ZonedDateTime? = null,
+    override val endTime: ZonedDateTime? = null,
     /** Työalueet */
-    override var areas: List<ApplicationArea>? = null,
+    override val areas: List<ApplicationArea>? = null,
     // 3. sivu Yhteystiedot
     /** Hakijan tiedot */
-    override var customerWithContacts: CustomerWithContactsRequest? = null,
+    override val customerWithContacts: CustomerWithContactsRequest? = null,
     /** Työn suorittajan tiedot */
-    var contractorWithContacts: CustomerWithContactsRequest? = null,
+    val contractorWithContacts: CustomerWithContactsRequest? = null,
     /** Rakennuttajan tiedot */
-    var propertyDeveloperWithContacts: CustomerWithContactsRequest? = null,
+    val propertyDeveloperWithContacts: CustomerWithContactsRequest? = null,
     /** Asianhoitajan tiedot */
-    var representativeWithContacts: CustomerWithContactsRequest? = null,
+    val representativeWithContacts: CustomerWithContactsRequest? = null,
     // 4. sivu Liitteet (separete endpoint)
     // 5. sivu Yhteenveto (no input data)
 ) : HakemusUpdateRequest {
@@ -129,11 +129,11 @@ data class JohtoselvityshakemusUpdateRequest(
         )
 }
 
-data class PostalAddressRequest(var streetAddress: StreetAddress)
+data class PostalAddressRequest(val streetAddress: StreetAddress)
 
 data class CustomerWithContactsRequest(
-    var customer: CustomerRequest,
-    var contacts: List<ContactRequest>,
+    val customer: CustomerRequest,
+    val contacts: List<ContactRequest>,
 )
 
 /**
@@ -142,12 +142,12 @@ data class CustomerWithContactsRequest(
  */
 data class CustomerRequest(
     /** Hakemusyhteystieto id */
-    var yhteystietoId: UUID? = null,
-    var type: CustomerType,
-    var name: String,
-    var email: String,
-    var phone: String,
-    var registryKey: String? = null,
+    val yhteystietoId: UUID? = null,
+    val type: CustomerType,
+    val name: String,
+    val email: String,
+    val phone: String,
+    val registryKey: String? = null,
 ) {
     /**
      * Returns true if this customer has changes compared to the given [hakemusyhteystietoEntity].
@@ -162,7 +162,7 @@ data class CustomerRequest(
 
 /** For referencing [fi.hel.haitaton.hanke.permissions.HankeKayttaja] by its id. */
 data class ContactRequest(
-    var hankekayttajaId: UUID,
+    val hankekayttajaId: UUID,
 )
 
 fun CustomerWithContactsRequest?.hasChanges(
