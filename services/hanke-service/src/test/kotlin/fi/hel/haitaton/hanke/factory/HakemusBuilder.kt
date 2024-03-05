@@ -4,13 +4,12 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 
 data class HakemusBuilder(
-    private var hakemus: Hakemus,
+    private var applicationEntity: ApplicationEntity,
     private val userId: String,
     private val hakemusFactory: HakemusFactory,
     private val hankeKayttajaService: HankeKayttajaService,
@@ -20,7 +19,7 @@ data class HakemusBuilder(
     private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
     private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
 ) {
-    fun save(): Hakemus = hakemusFactory.save(hakemus, userId)
+    fun save(): ApplicationEntity = applicationRepository.save(applicationEntity)
 
     fun saveWithYhteystiedot(f: HakemusyhteystietoBuilder.() -> Unit): ApplicationEntity {
         val hakemus = save()
@@ -42,12 +41,17 @@ data class HakemusBuilder(
         alluId: Int = 1,
         identifier: String = "JS000$alluId"
     ): HakemusBuilder {
-        hakemus =
-            hakemus.copy(alluid = alluId, alluStatus = status, applicationIdentifier = identifier)
+        applicationEntity =
+            applicationEntity.copy(
+                alluid = alluId,
+                alluStatus = status,
+                applicationIdentifier = identifier
+            )
         return this
     }
 
     fun inHandling(alluId: Int = 1) = withStatus(ApplicationStatus.HANDLING, alluId)
 
-    fun withHakemusModification(f: Hakemus.() -> Unit): HakemusBuilder = this.apply { hakemus.f() }
+    fun withModification(f: ApplicationEntity.() -> Unit): HakemusBuilder =
+        this.apply { applicationEntity.f() }
 }

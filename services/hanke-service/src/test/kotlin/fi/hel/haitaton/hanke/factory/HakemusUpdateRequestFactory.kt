@@ -3,13 +3,12 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.TZ_UTC
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationArea
+import fi.hel.haitaton.hanke.application.ApplicationEntity
+import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.hakemus.ContactRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
-import fi.hel.haitaton.hanke.hakemus.Hakemus
-import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
-import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.PostalAddressRequest
 import java.time.Instant
@@ -76,53 +75,26 @@ object HakemusUpdateRequestFactory {
         )
     }
 
-    fun createJohtoselvityshakemusUpdateRequestFromHakemus(
-        hakemus: Hakemus
+    fun createJohtoselvityshakemusUpdateRequestFromApplicationEntity(
+        applicationEntity: ApplicationEntity
     ): JohtoselvityshakemusUpdateRequest {
-        val applicationData = hakemus.applicationData as JohtoselvityshakemusData
+        val applicationData = applicationEntity.applicationData as CableReportApplicationData
         return JohtoselvityshakemusUpdateRequest(
-            name = applicationData.name ?: "",
+            name = applicationData.name,
             postalAddress =
                 applicationData.postalAddress?.let { PostalAddressRequest(it.streetAddress) }
                     ?: PostalAddressRequest(StreetAddress("")),
-            constructionWork = applicationData.constructionWork ?: false,
-            maintenanceWork = applicationData.maintenanceWork ?: false,
-            propertyConnectivity = applicationData.propertyConnectivity ?: false,
-            emergencyWork = applicationData.emergencyWork ?: false,
+            constructionWork = applicationData.constructionWork,
+            maintenanceWork = applicationData.maintenanceWork,
+            propertyConnectivity = applicationData.propertyConnectivity,
+            emergencyWork = applicationData.emergencyWork,
             rockExcavation = applicationData.rockExcavation ?: false,
-            workDescription = applicationData.workDescription ?: "",
+            workDescription = applicationData.workDescription,
             startTime = applicationData.startTime,
             endTime = applicationData.endTime,
             areas = applicationData.areas,
-            customerWithContacts =
-                applicationData.customerWithContacts?.toCustomerWithContactsRequest(),
-            contractorWithContacts =
-                applicationData.contractorWithContacts?.toCustomerWithContactsRequest(),
-            propertyDeveloperWithContacts =
-                applicationData.propertyDeveloperWithContacts?.toCustomerWithContactsRequest(),
-            representativeWithContacts =
-                applicationData.representativeWithContacts?.toCustomerWithContactsRequest()
         )
     }
-
-    fun Hakemusyhteystieto?.toCustomerWithContactsRequest() =
-        this?.let {
-            CustomerWithContactsRequest(
-                CustomerRequest(
-                    yhteystietoId = it.id,
-                    type = it.tyyppi,
-                    name = it.nimi,
-                    email = it.sahkoposti ?: "",
-                    phone = it.puhelinnumero ?: "",
-                    registryKey = it.ytunnus
-                ),
-                it.yhteyshenkilot.map { yhteyshenkilo ->
-                    ContactRequest(
-                        hankekayttajaId = yhteyshenkilo.hankekayttajaId,
-                    )
-                }
-            )
-        }
 
     fun createCustomerWithContactsRequest(
         customerType: CustomerType = CustomerType.COMPANY,

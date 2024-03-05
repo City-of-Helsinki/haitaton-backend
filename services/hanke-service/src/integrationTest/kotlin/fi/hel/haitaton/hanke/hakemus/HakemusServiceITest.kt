@@ -18,25 +18,25 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
+import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
-import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.toCustomerWithContactsRequest
-import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
-import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.toJsonString
 import java.util.UUID
@@ -58,9 +58,11 @@ class HakemusServiceITest : DatabaseTest() {
 
     @Autowired private lateinit var hakemusService: HakemusService
 
-    @Autowired private lateinit var hankeKayttajaService: HankeKayttajaService
-
     @Autowired private lateinit var applicationRepository: ApplicationRepository
+
+    @Autowired private lateinit var hakemusyhteystietoRepository: HakemusyhteystietoRepository
+
+    @Autowired private lateinit var hankekayttajaRepository: HankekayttajaRepository
 
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
 
@@ -68,7 +70,7 @@ class HakemusServiceITest : DatabaseTest() {
 
     @Autowired private lateinit var hankeFactory: HankeFactory
 
-    @Autowired private lateinit var hakemusKayttajaFactory: HankeKayttajaFactory
+    @Autowired private lateinit var hankeKayttajaFactory: HankeKayttajaFactory
 
     @Nested
     inner class HakemusResponse {
@@ -225,9 +227,8 @@ class HakemusServiceITest : DatabaseTest() {
 
             hakemusService.updateHakemus(
                 application.id!!,
-                HakemusUpdateRequestFactory.createJohtoselvityshakemusUpdateRequestFromHakemus(
-                    application
-                ),
+                HakemusUpdateRequestFactory
+                    .createJohtoselvityshakemusUpdateRequestFromApplicationEntity(application),
                 USERID
             )
 
@@ -244,7 +245,9 @@ class HakemusServiceITest : DatabaseTest() {
                     hakemusService.updateHakemus(
                         application.id!!,
                         HakemusUpdateRequestFactory
-                            .createJohtoselvityshakemusUpdateRequestFromHakemus(application)
+                            .createJohtoselvityshakemusUpdateRequestFromApplicationEntity(
+                                application
+                            )
                             .copy(areas = listOf(intersectingArea)),
                         USERID
                     )
@@ -270,7 +273,9 @@ class HakemusServiceITest : DatabaseTest() {
                     hakemusService.updateHakemus(
                         application.id!!,
                         HakemusUpdateRequestFactory
-                            .createJohtoselvityshakemusUpdateRequestFromHakemus(application)
+                            .createJohtoselvityshakemusUpdateRequestFromApplicationEntity(
+                                application
+                            )
                             .copy(
                                 customerWithContacts =
                                     HakemusUpdateRequestFactory.createCustomerWithContactsRequest(
@@ -289,10 +294,8 @@ class HakemusServiceITest : DatabaseTest() {
 
         @Test
         fun `throws exception when the request has different persisted contact than the application`() {
-            val application = createHakemus {
-                applicationData.customerWithContacts = HakemusyhteystietoFactory.create()
-            }
-            val originalYhteystietoId = application.applicationData.customerWithContacts!!.id
+            val application = createHakemusWithHakija()
+            val originalYhteystietoId = hakemusyhteystietoRepository.findAll().first().id
             val requestYhteystietoId = UUID.randomUUID()
 
             val exception =
@@ -300,7 +303,9 @@ class HakemusServiceITest : DatabaseTest() {
                     hakemusService.updateHakemus(
                         application.id!!,
                         HakemusUpdateRequestFactory
-                            .createJohtoselvityshakemusUpdateRequestFromHakemus(application)
+                            .createJohtoselvityshakemusUpdateRequestFromApplicationEntity(
+                                application
+                            )
                             .copy(
                                 customerWithContacts =
                                     HakemusUpdateRequestFactory.createCustomerWithContactsRequest(
@@ -319,15 +324,8 @@ class HakemusServiceITest : DatabaseTest() {
 
         @Test
         fun `throws exception when the request has a contact that is not a user on hanke`() {
-            val hanke = hankeFactory.builder(USERID).withHankealue().saveEntity()
-            val kayttaja = hankeKayttajaService.getKayttajatByHankeId(hanke.id).single()
-            val application =
-                createHakemus(hanke) {
-                    applicationData.customerWithContacts =
-                        HakemusyhteystietoFactory.create(
-                            yhteyshenkilot = listOf(HakemusyhteyshenkiloFactory.create(kayttaja.id))
-                        )
-                }
+            val application = createHakemusWithHakija()
+            val yhteystieto = hakemusyhteystietoRepository.findAll().first()
             val requestHankekayttajaId = UUID.randomUUID()
 
             val exception =
@@ -335,22 +333,16 @@ class HakemusServiceITest : DatabaseTest() {
                     hakemusService.updateHakemus(
                         application.id!!,
                         HakemusUpdateRequestFactory
-                            .createJohtoselvityshakemusUpdateRequestFromHakemus(application)
+                            .createJohtoselvityshakemusUpdateRequestFromApplicationEntity(
+                                application
+                            )
                             .copy(
                                 customerWithContacts =
-                                    application.applicationData.customerWithContacts!!
-                                        .toCustomerWithContactsRequest()!!
-                                        .copy(
-                                            contacts =
-                                                listOf(
-                                                    *application.applicationData
-                                                        .customerWithContacts!!
-                                                        .toCustomerWithContactsRequest()!!
-                                                        .contacts
-                                                        .toTypedArray(),
-                                                    ContactRequest(requestHankekayttajaId)
-                                                )
-                                        )
+                                    HakemusUpdateRequestFactory.createCustomerWithContactsRequest(
+                                        CustomerType.COMPANY,
+                                        yhteystieto.id,
+                                        requestHankekayttajaId
+                                    )
                             ),
                         USERID
                     )
@@ -372,7 +364,9 @@ class HakemusServiceITest : DatabaseTest() {
                     hakemusService.updateHakemus(
                         application.id!!,
                         HakemusUpdateRequestFactory
-                            .createJohtoselvityshakemusUpdateRequestFromHakemus(application)
+                            .createJohtoselvityshakemusUpdateRequestFromApplicationEntity(
+                                application
+                            )
                             .copy(areas = listOf(notInHankeArea)),
                         USERID
                     )
@@ -391,40 +385,35 @@ class HakemusServiceITest : DatabaseTest() {
         @Test
         fun `saves updated data and creates an audit log`() {
             val hanke = hankeFactory.builder(USERID).withHankealue().saveEntity()
-            val kayttaja = hankeKayttajaService.getKayttajatByHankeId(hanke.id).single()
-            val otherKayttaja = hakemusKayttajaFactory.saveUser(hanke.id)
             val application =
-                createHakemus(hanke) {
-                    (applicationData as JohtoselvityshakemusData).workDescription =
-                        "Old work description"
-                    applicationData.customerWithContacts =
-                        HakemusyhteystietoFactory.create(
-                            yhteyshenkilot = listOf(HakemusyhteyshenkiloFactory.create(kayttaja.id))
+                createHakemusWithHakija(hanke) {
+                    applicationData =
+                        (applicationData as CableReportApplicationData).copy(
+                            workDescription = "Old work description"
                         )
                 }
+            val yhteystieto = hakemusyhteystietoRepository.findAll().first()
+            val kayttaja =
+                hankekayttajaRepository
+                    .findByHankeIdAndSahkopostiIn(hanke.id, listOf(KAYTTAJA_INPUT_HAKIJA.email))
+                    .single()
+            val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
             val originalAuditLogSize = auditLogRepository.findByType(ObjectType.APPLICATION).size
 
             val request =
-                HakemusUpdateRequestFactory.createJohtoselvityshakemusUpdateRequestFromHakemus(
-                        application
-                    )
+                HakemusUpdateRequestFactory
+                    .createJohtoselvityshakemusUpdateRequestFromApplicationEntity(application)
                     .copy(
                         // change work description
                         workDescription = "New work description",
                         // add a new contact
                         customerWithContacts =
-                            application.applicationData.customerWithContacts!!
-                                .toCustomerWithContactsRequest()!!
-                                .copy(
-                                    contacts =
-                                        listOf(
-                                            *application.applicationData.customerWithContacts!!
-                                                .toCustomerWithContactsRequest()!!
-                                                .contacts
-                                                .toTypedArray(),
-                                            ContactRequest(otherKayttaja.id)
-                                        )
-                                )
+                            HakemusUpdateRequestFactory.createCustomerWithContactsRequest(
+                                CustomerType.COMPANY,
+                                yhteystieto.id,
+                                kayttaja.id,
+                                newKayttaja.id
+                            )
                     )
             val updatedHakemus = hakemusService.updateHakemus(application.id!!, request, USERID)
 
@@ -446,9 +435,19 @@ class HakemusServiceITest : DatabaseTest() {
 
         private fun createHakemus(
             hankeEntity: HankeEntity = hankeFactory.builder(USERID).withHankealue().saveEntity(),
-            f: Hakemus.() -> Unit = {}
-        ): Hakemus {
-            return hakemusFactory.builder(USERID, hankeEntity).withHakemusModification(f).save()
+            f: ApplicationEntity.() -> Unit = {}
+        ): ApplicationEntity {
+            return hakemusFactory.builder(USERID, hankeEntity).withModification(f).save()
+        }
+
+        private fun createHakemusWithHakija(
+            hankeEntity: HankeEntity = hankeFactory.builder(USERID).withHankealue().saveEntity(),
+            f: ApplicationEntity.() -> Unit = {}
+        ): ApplicationEntity {
+            return hakemusFactory
+                .builder(USERID, hankeEntity)
+                .withModification(f)
+                .saveWithYhteystiedot { hakija() }
         }
     }
 }
