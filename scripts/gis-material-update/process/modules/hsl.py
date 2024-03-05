@@ -34,8 +34,10 @@ class HslBuses(GisProcessor):
             raise FileNotFoundError("Helsinki city area polygon not found")
 
         # TODO: how to obtain this string automatically?
-        file_name = cfg.local_file("hsl")
+        self._module = "hsl"
+        file_name = cfg.local_file(self._module)
         self._feed = self._read_feed_data(file_name)
+        self._store_original_data = cfg.store_orinal_data(self._module)
 
         if validate_gtfs:
             self._feed.validate()
@@ -44,6 +46,7 @@ class HslBuses(GisProcessor):
 
         self._process_result_lines = None
         self._process_result_polygons = None
+        self._orig = None
 
     def _read_feed_data(self, file_name) -> gk.Feed:
         """Read feed data from zip file"""
@@ -323,9 +326,11 @@ class HslBuses(GisProcessor):
     def process(self) -> None:
         # main part of processing is initiated here
         self._process_result_lines = self._process_hsl_bus_lines()
+        self._orig = self._process_result_lines
+
 
         # Buffering configuration
-        buffers = self._cfg.buffer("hsl")
+        buffers = self._cfg.buffer(self._module)
         if len(buffers) != 1:
             raise ValueError("Unkown number of buffer values")
 
@@ -339,35 +344,27 @@ class HslBuses(GisProcessor):
     def persist_to_database(self) -> None:
         connection = create_engine(self._cfg.pg_conn_uri())
 
-        # persist route lines to database
-        self._process_result_lines.to_postgis(
-            "bus_lines",
-            connection,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
-
-        # persist polygons to database
-        self._process_result_polygons.to_postgis(
-            "bus_line_polys",
-            connection,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+        if self._store_original_data is not False:
+            self._orig.rename_geometry('geom', inplace=True)
+            # persist original data
+            self._orig.to_postgis(
+                self._store_original_data,
+                connection,
+                "public",
+                if_exists="replace",
+                index=True,
+                index_label="fid",
+                )
 
     def save_to_file(self) -> None:
         """Save processing results to file(s).
 
         write computed bus lines and polygons to file."""
         # Bus line as debug material
-        target_lines_file_name = self._cfg.target_file("hsl")
+        target_lines_file_name = self._cfg.target_file(self._module)
         self._process_result_lines.to_file(target_lines_file_name, driver="GPKG")
         # tormays GIS material
-        target_buffer_file_name = self._cfg.target_buffer_file("hsl")
+        target_buffer_file_name = self._cfg.target_buffer_file(self._module)
 
         # instruct Geopandas for correct data type in file write
         # fid is originally as index, obtain fid as column...

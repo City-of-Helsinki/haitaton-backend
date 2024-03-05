@@ -3,31 +3,51 @@ hsl:
   local_file: "hsl.zip"
   target_file: "buses_lines.gpkg"
   target_buffer_file: "tormays_buses_polys.gpkg"
+  tormays_table_org: "tormays_buses_polys"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer:
     - 15
+  store_orinal_data: False
+#  store_orinal_data: "bus_lines"
 maka_autoliikennemaarat:
   addr: "WFS:https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:Ajoneuvoliikenne_liikennemaarat_viiva"
   local_file: "maka_autoliikennemaarat.gpkg"
   target_file: "volume_lines.gpkg"
   target_buffer_file: "tormays_volumes{}_polys.gpkg"
+  tormays_table_org: "tormays_volumes{}_polys"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer:
     - 15
     - 30
+  store_orinal_data: False
+#  store_orinal_data: "volume_lines"
 ylre_katualueet:
   addr: "WFS:https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:YLRE_Katualue_alue"
   local_file: "ylre_katualue_alue.gpkg"
   target_file: "ylre_classes_orig_polys.gpkg"
   target_buffer_file: "tormays_ylre_classes_polys.gpkg"
+  tormays_table_org: "tormays_ylre_classes_polys"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
+  store_orinal_data: False
+#  store_orinal_data: "ylre_classes_orig_polys"
 ylre_katuosat:
   addr: "WFS:https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:YLRE_Katuosat_alue"
   local_file: "ylre_katuosat_alue.gpkg"
   target_file: "ylre_parts_orig_polys.gpkg"
   target_buffer_file: "tormays_ylre_parts_polys.gpkg"
+  tormays_table_org: "tormays_ylre_parts_polys"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer:
     - 5
+  store_orinal_data: False
+#  store_orinal_data: "ylre_parts_orig_polys"
 osm:
   addr: "/vsicurl/https://download.geofabrik.de/europe/finland-latest.osm.pbf"
   layer: "lines"
@@ -47,21 +67,36 @@ tram_infra:
   local_file: "helsinki-osm-lines.gpkg"
   target_file: "tram_infra.gpkg"
   target_buffer_file: "tormays_tram_infra_polys.gpkg"
+  tormays_table_org: "tormays_tram_infra_polys"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer:
     - 20
+  store_orinal_data: False
+#  store_orinal_data: "tram_infra"
 tram_lines:
   local_file: "hsl.zip"
   target_file: "tram_lines.gpkg"
   target_buffer_file: "tormays_tram_lines_polys.gpkg"
+  tormays_table_org: "tormays_tram_lines_polys"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer:
     - 35
+  store_orinal_data: False
+#  store_orinal_data: "tram_lines"
 cycle_infra:
   addr: "/local_data/helsinki_cycleways.gpkg"
   local_file: "helsinki_cycleways.gpkg"
   target_file: "cycle_infra.gpkg"
   target_buffer_file: "tormays_cycle_infra_polys.gpkg"
+  tormays_table_org: "tormays_cycle_infra_polys"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer:
     - 20
+  store_orinal_data: False
+#  store_orinal_data: "cycle_infra"
 liikennevaylat:
   addr: "WFS:https://$HELSINKI_EXTRANET_USERNAME:$HELSINKI_EXTRANET_PASSWORD@kartta.hel.fi/ws/geoserver/helsinki/wfs"
   layer: "helsinki:Liikennevaylat_kehitys"
@@ -69,19 +104,33 @@ liikennevaylat:
   target_file: "street_classes.gpkg"
   target_buffer_file: "tormays_street_classes_polys.gpkg"
   extra_args: "-nlt CONVERT_TO_LINEAR"
-  tormays_table_org: "street_classes_lines"
-  tormays_table_temp: "tormays_street_classes_polys_temp"
+  tormays_table_org: "tormays_street_classes_polys"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
   buffer_class_values:
     paakatu_tai_moottorivayla: 20
     alueellinen_kokoojakatu: 20
     paikallinen_kokoojakatu: 20
     kantakaupungin_asuntokatu_huoltovayla_tai_muu_vahaliikenteinen_katu: 10
     asuntokatu_huoltovayla_tai_muu_vahaliikenteinen_katu: 10
+  store_orinal_data: False
+#  store_orinal_data: "liikennevaylat"
 central_business_area:
   addr: "WFS:https://kartta.hel.fi/ws/geoserver/avoindata/wfs"
   layer: "avoindata:Piirijako_pienalue"
   local_file: "central_business_areas.gpkg"
   target_file: "tormays_central_business_area_polys.gpkg"
+  tormays_table_org: "tormays_central_business_area_polys"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
+  store_orinal_data: False
+#  store_orinal_data: "Piirijako_pienalue"
+
+logging:
+  logging_filename: ""
+  logging_filemode: "w"
+  logging_level: INFO
+  logging_format: "%(asctime)s - %(levelname)s - %(message)s"
 
 common:
   download_path: "/downloads"

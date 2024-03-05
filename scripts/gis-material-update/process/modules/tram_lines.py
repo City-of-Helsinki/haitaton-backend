@@ -24,8 +24,11 @@ class TramLines(GisProcessor):
         self._process_result_lines = None
         self._process_result_polygons = None
         self._debug_result_lines = None
+        self._orig = None
+        self._module = "tram_lines"
+        self._store_original_data = cfg.store_orinal_data(self._module)
 
-        file_name = cfg.local_file("tram_lines")
+        file_name = cfg.local_file(self._module)
         self._feed = gk.read_feed(file_name, dist_units="km")
 
     def _tram_trips(self) -> pd.DataFrame:
@@ -70,12 +73,13 @@ class TramLines(GisProcessor):
         shapes_and_trips = gpd.GeoDataFrame(shapes_and_trips, geometry="geometry")
 
         shapes_and_trips["lines"] = 1
+        self._orig = shapes_and_trips
         shapes_and_trips = shapes_and_trips.loc[:, ["lines", "geometry"]]
         shapes_and_trips = shapes_and_trips.astype({"lines": "int32"})
 
         self._process_result_lines = shapes_and_trips
 
-        buffers = self._cfg.buffer("tram_lines")
+        buffers = self._cfg.buffer(self._module)
         if len(buffers) != 1:
             raise ValueError("Unknown number of buffer values")
 
@@ -92,39 +96,31 @@ class TramLines(GisProcessor):
         except Exception as e:
             print("Area polygon file not found!")
             raise e
-        
+
         target_lines_polys = gpd.clip(target_lines_polys, helsinki_region_polygon)
 
         # save to instance
         self._process_result_polygons = target_lines_polys
 
     def persist_to_database(self):
-        engine = create_engine(self._cfg.pg_conn_uri(), future=True)
+        connection = create_engine(self._cfg.pg_conn_uri(), future=True)
 
-        # persist route lines to database
-        self._process_result_lines.to_postgis(
-            "tram_lines",
-            engine,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
-
-        # persist polygons to database
-        self._process_result_polygons.to_postgis(
-            "tram_lines_polys",
-            engine,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
+        if self._store_original_data is not False:
+            self._orig.rename_geometry('geom', inplace=True)
+            # persist original data
+            self._orig.to_postgis(
+                self._store_original_data,
+                connection,
+                "public",
+                if_exists="replace",
+                index=True,
+                index_label="fid",
+                )
 
     def save_to_file(self):
         """Save processing results to file."""
         # tram line infra as debug material
-        target_infra_file_name = self._cfg.target_file("tram_lines")
+        target_infra_file_name = self._cfg.target_file(self._module)
 
         tram_lines = self._process_result_lines.reset_index(drop=True)
 
@@ -134,7 +130,7 @@ class TramLines(GisProcessor):
         tram_lines.to_file(target_infra_file_name, schema=schema, driver="GPKG")
 
         # tormays GIS material
-        target_buffer_file_name = self._cfg.target_buffer_file("tram_lines")
+        target_buffer_file_name = self._cfg.target_buffer_file(self._module)
 
         # instruct Geopandas for correct data type in file write
         # fid is originally as index, obtain fid as column...

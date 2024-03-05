@@ -13,8 +13,10 @@ class MakaAutoliikennemaarat:
         self._module = "maka_autoliikennemaarat"
 
         filename = cfg.local_file(self._module)
+        self._store_original_data = cfg.store_orinal_data(self._module)
         layer = cfg.layer(self._module)
         df = gpd.read_file(filename, layer=layer)
+        self._orig = df
         self._df = (
             df.loc[:, ["autot", "geometry"]]
             .rename(columns={"autot": "volume"})
@@ -37,26 +39,17 @@ class MakaAutoliikennemaarat:
     def persist_to_database(self) -> None:
         connection = create_engine(self._cfg.pg_conn_uri())
 
-        # persist traffic volume lines to database
-        self._df.to_postgis(
-            "volume_lines",
-            connection,
-            "public",
-            if_exists="replace",
-            index=True,
-            index_label="fid",
-        )
-
-        # persist traffic volume polygons to database
-        for buffer_size, polygon_data in self._process_result.items():
-            polygon_data.to_postgis(
-                "volume_{}".format(buffer_size),
+        if self._store_original_data is not False:
+            self._orig.rename_geometry('geom', inplace=True)
+            # persist original data
+            self._orig.to_postgis(
+                self._store_original_data,
                 connection,
                 "public",
                 if_exists="replace",
                 index=True,
                 index_label="fid",
-            )
+                )
 
     def save_to_file(self):
         target_lines_file_name = self._cfg.target_file(self._module)

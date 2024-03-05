@@ -8,7 +8,7 @@ In order to get started, following steps need to be taken.
 
 Actual details to be taken are described in following sections later in this document.
 
-- build _fetch_ and _process_ images
+- build _fetch_, _process_ and _validate-deploy_ images
 - copy necessary script files to external volume. Volume is created during file copying process.
 - run _fetch_ container
 - optional: inspect external volume contents
@@ -18,7 +18,7 @@ Actual details to be taken are described in following sections later in this doc
 
 # Architecture, general description
 
-Data is fetched from data sources and processed accordingly with a custom built containers.
+Data is fetched from data sources and processed, validated and deployed accordingly with a custom built containers.
 
 ## haitaton-gis-fetch
 
@@ -28,19 +28,27 @@ Downloads the requested data.
 
 Process data. Actual processing requirements are data dependent.
 
+## haitaton-gis-validate-deploy
+
+Validates and deploys data. Actual validating and deploing requirements are data dependent.
+
 ## database
 
 Local development database is set up with PostGIS spatial support.
 
 ## Volume mappings
 
-Local directory `data` is mapped to fetch container.
+Local directory `data` is mapped to haitaton-gis-fetch container.
 
-Local directory `haitaton-downloads` is mapped to fetch and processing containers.
+Local directory `haitaton-downloads` is mapped to haitaton-gis-fetch and haitaton-gis-process containers.
 
-Local directory `haitaton-gis-output` is mapped to processing container.
+Local directory `haitaton-gis-output` is mapped to haitaton-gis-process container.
 
-External volume `haitaton_gis_prepare` contains scripts for processing.
+Local directory `haitaton-gis-log` is mapped to haitaton-gis-validate-deploy container.
+
+External volume `haitaton_gis_prepare` contains scripts for haitaton-gis-process.
+
+External volume `haitaton_gis_validate_deploy` contains scripts for haitaton-gis-validate-deploy.
 
 External volume `haitaton_gis_db` is dedicated for database.
 
@@ -52,12 +60,14 @@ External volumes are set up
 
 - haitaton_gis_prepare
 - haitaton_gis_db
+- haitaton_gis_validate_deploy
 
 Initialize volumes:
 
 ```sh
 docker volume create --name=haitaton_gis_prepare
 docker volume create --name=haitaton_gis_db
+docker volume create --name=haitaton_gis_validate_deploy
 ```
 
 N.b. haitaton_gis_prepare volume is automatically generated during data copying script use.
@@ -67,11 +77,13 @@ Removal of external volumes (destructive):
 ```sh
 docker volume rm haitaton_gis_prepare
 docker volume rm haitaton_gis_db
+docker volume rm haitaton_gis_validate_deploy
 ```
 
 Local directory bind mount is visible to data fetch and data processing containers:
 
 - ./haitaton-downloads
+
 
 ### Inspect _haitaton_gis_prepare_ volume contents
 
@@ -81,7 +93,9 @@ Run:
 sh inspect-disk.sh
 ```
 
-Container is created, and volume contents can be found in directory: `/haitaton-gis`.
+Container is created, and volume contents can be found in directories: 
+- `/haitaton-gis`
+- `/haitaton-gis-validate-deploy`
 
 When done, leave shell with `exit` command.
 
@@ -91,7 +105,7 @@ When done, leave shell with `exit` command.
 docker-compose build
 ```
 
-Will build _fetch_ and _process_ images. Note, that extra step is needed
+Will build _fetch_, _process_ and _validate-deploy_ images. Note, that extra step is needed
 to copy actual script files to external volume.
 
 ## Copy script files to external volume
@@ -359,6 +373,82 @@ Output files (names configured in `config.yaml`)
 
 - street_classes.gpkg
 - tormays_street_classes_polys.gpkg
+
+
+## Run validate-deploy
+
+This process will validate and deploy new "tormays" data.
+
+```
+docker-compose run --rm gis-validate-deploy <source_1> ... <source_N>
+```
+
+Where `<source>` is currently one of:
+
+- `hsl` - HSL bus schedules
+- `ylre_katualueet` - Helsinki YLRE street areas, polygons.
+- `ylre_katuosat` - Helsinki YLRE parts, polygons.
+- `maka_autoliikennemaarat` - Traffic volumes (car traffic)
+- `tram_infra` - Tram infra  
+- `tram_lines` - Tram railways
+- `cycle_infra` - Cycle infra (local file)
+- `central_business_area` - Helsinki city "kantakaupunki"
+- `liikennevaylat` - Helsinki city street classes
+
+Log files are written to `./haitaton-gis-output` -directory. Logging is having own configuration section in config.yaml:
+
+```sh
+logging:
+  logging_filename: "/gis-log/validation_deploy_{}.log"
+  logging_filemode: "w"
+  logging_level: DEBUG
+  logging_format: "%(asctime)s - %(levelname)s - %(message)s"
+```
+
+If logs are want to write stdOut then change logging_filename to "".
+
+All sources are having own configuration variables in config.yaml. These are included in sources own section. For example:
+
+```sh
+  tormays_table_org: "tormays_central_business_area_polys"
+  tormays_table_temp: "tormays_central_business_area_polys_temp"
+  validate_limit_min: 0.98
+  validate_limit_max: 1.10
+```
+
+where 
+- `tormays_table_org` = "tormays" table name which is used in Haitaton (variable is used in gis-process)
+- `tormays_table_temp` = temporary table name where gis-process will save processed data (variable is used in gis-process)
+- `validate_limit_min` = percentage lower limit on "tormays" data eg. 0.98: (line amount of "tormays_table_org")*0.98 (variable is used in gis-validate-deploy)
+- `validate_limit_max` = percentage upper limit on "tormays" data eg. 1.10: (line amount of "tormays_table_org")*1.10 (variable is used in gis-validate-deploy)
+
+# Gis material automation
+
+Total automation process includes this processes:
+- gis-fetch (Remark: each source is having it's own prerequisites)
+- gis-process (Remark: tormays_table_org value should be equivalent to Haitaton model) 
+- gis-validate-deploy (Remark: validate_limit_min and validate_limit_max values)
+
+Automation of  the `<source>`: 
+
+```sh
+docker-compose run --rm gis-fetch <source>
+docker-compose run --rm gis-process <source>
+docker-compose run --rm gis-validate-deploy <source>
+```
+
+
+**Note:** In gis-fetch there should be all needed sources listed in prerequisite for each <source>. These prerequisites are listed in [Running processing](#run-processing).
+
+Here is an example how to run all supported sources at once:
+
+```sh
+docker-compose run --rm gis-fetch hsl hki maka_autoliikennemaarat ylre_katuosat ylre_katualueet osm helsinki_osm_lines cycle_infra central_business_area liikennevaylat
+docker-compose run --rm gis-process hsl maka_autoliikennemaarat ylre_katualueet tram_infra tram_lines cycle_infra ylre_katuosat central_business_area liikennevaylat
+docker-compose run --rm gis-validate-deploy hsl maka_autoliikennemaarat ylre_katualueet tram_infra tram_lines cycle_infra ylre_katuosat central_business_area liikennevaylat
+```
+
+**Note:** central_business_area and ylre_katuosat need to be listed before liikennevaylat because liikennevaylat processing is depending on results of central_business_area and ylre_katuosat processing
 
 # Run tests
 
