@@ -21,6 +21,8 @@ import org.apache.commons.text.StringEscapeUtils
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.springframework.mail.javamail.JavaMailSender
 
 private const val INVITER_NAME = "Matti Meikäläinen"
@@ -343,6 +345,24 @@ class EmailSenderServiceTest {
                     "City of Helsinki Urban Environment Division",
                     "haitaton@hel.fi",
                 )
+        }
+    }
+
+    @Nested
+    inner class ExpandAsterisks {
+        @ParameterizedTest
+        @CsvSource(
+            "kake@katselu.test, \\Qkake@katselu.test\\E",
+            "*@katselu.test,    .*\\Q@katselu.test\\E",
+            "*@*.test,          .*\\Q@\\E.*\\Q.test\\E",
+            "kake@katselu.*,    \\Qkake@katselu.\\E.*",
+            "**@katselu.test,   .*.*\\Q@katselu.test\\E",
+            "*@k*t*s*l*.test,   .*\\Q@k\\E.*\\Qt\\E.*\\Qs\\E.*\\Ql\\E.*\\Q.test\\E",
+        )
+        fun `returns correct output`(input: String, expected: String) {
+            val result = EmailSenderService.expandAsterisks(input)
+
+            assertThat(result).isEqualTo(expected)
         }
     }
 }
