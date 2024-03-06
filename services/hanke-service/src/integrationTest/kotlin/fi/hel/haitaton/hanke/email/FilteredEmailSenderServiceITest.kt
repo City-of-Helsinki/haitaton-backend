@@ -76,6 +76,19 @@ class FilteredEmailSenderServiceITest : DatabaseTest() {
     }
 
     @Test
+    fun `sendJohtoselvitysCompleteEmail sends email when email with suffix matches wildcard`() {
+        emailSenderService.sendJohtoselvitysCompleteEmail(
+            "test+suffix@wildcard.com",
+            15L,
+            "JS2300001"
+        )
+
+        val email = greenMail.firstReceivedMessage()
+        assertThat(email.allRecipients).hasSize(1)
+        assertThat(email.allRecipients[0].toString()).isEqualTo("test+suffix@wildcard.com")
+    }
+
+    @Test
     fun `sendApplicationNotificationEmail does not send when user management is not enabled`() {
         emailSenderService.sendApplicationNotificationEmail(
             ApplicationNotificationData(
