@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.hakemus.HakemusData
+import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import java.time.ZonedDateTime
 
@@ -112,7 +113,7 @@ data class CableReportApplicationData(
     fun findOrderer(): Contact? =
         customersWithContacts().flatMap { it.contacts }.find { it.orderer }
 
-    fun toHakemusData(applicationEntity: ApplicationEntity): HakemusData =
+    fun toHakemusData(yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto>): HakemusData =
         JohtoselvityshakemusData(
             name = name,
             postalAddress = postalAddress,
@@ -125,14 +126,10 @@ data class CableReportApplicationData(
             startTime = startTime,
             endTime = endTime,
             areas = areas,
-            customerWithContacts =
-                applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA]?.toDomain(),
-            contractorWithContacts =
-                applicationEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]?.toDomain(),
-            propertyDeveloperWithContacts =
-                applicationEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]?.toDomain(),
-            representativeWithContacts =
-                applicationEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]?.toDomain(),
+            customerWithContacts = yhteystiedot[ApplicationContactType.HAKIJA],
+            contractorWithContacts = yhteystiedot[ApplicationContactType.TYON_SUORITTAJA],
+            propertyDeveloperWithContacts = yhteystiedot[ApplicationContactType.RAKENNUTTAJA],
+            representativeWithContacts = yhteystiedot[ApplicationContactType.ASIANHOITAJA],
         )
 }
 

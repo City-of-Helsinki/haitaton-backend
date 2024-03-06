@@ -52,18 +52,21 @@ data class ApplicationEntity(
             hanke.hankeTunnus,
         )
 
-    fun toHakemus(): Hakemus =
-        Hakemus(
+    fun toHakemus(): Hakemus {
+        val yhteystiedot = yhteystiedot.mapValues { it.value.toDomain() }
+        val applicationData =
+            when (applicationData) {
+                is CableReportApplicationData ->
+                    (this.applicationData as CableReportApplicationData).toHakemusData(yhteystiedot)
+            }
+        return Hakemus(
             id = id!!,
             alluid = alluid,
             alluStatus = alluStatus,
             applicationIdentifier = applicationIdentifier,
             applicationType = applicationType,
-            applicationData =
-                when (applicationData) {
-                    is CableReportApplicationData ->
-                        (this.applicationData as CableReportApplicationData).toHakemusData(this)
-                },
+            applicationData = applicationData,
             hankeTunnus = hanke.hankeTunnus
         )
+    }
 }

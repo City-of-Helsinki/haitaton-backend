@@ -1,6 +1,6 @@
 --liquibase formatted sql
 --changeset Topias Heinonen:071-grant-delete-user-permission-to-kayttooikeustasot
---comment: Grant the MODIFY_USERS permission to all kayttooikeustasot except KATSELUOIKEUS
+--comment: Grant the DELETE_USER permission to the two highest kayttooikeustaso.
 
 UPDATE kayttooikeustaso
 SET permissioncode = permissioncode | 2048
