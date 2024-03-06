@@ -55,7 +55,10 @@ private fun HankeRequest.validate() =
         .whenNotNull(tyomaaKatuosoite) {
             it.notLongerThan(MAXIMUM_TYOMAAKATUOSOITE_LENGTH, "tyomaaKatuosoite")
         }
-        .and { validateYhteystiedot(yhteystiedotByType()) }
+        .whenNotNull(omistajat) { allIn(it, "omistajat", ::validateYhteystieto) }
+        .whenNotNull(toteuttajat) { allIn(it, "toteuttajat", ::validateYhteystieto) }
+        .whenNotNull(rakennuttajat) { allIn(it, "rakennuttajat", ::validateYhteystieto) }
+        .whenNotNull(muut) { allIn(it, "muut", ::validateYhteystieto) }
 
 private fun validateHankeAlue(hankealue: Hankealue, path: String) = hankealue.validate(path)
 

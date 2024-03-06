@@ -57,7 +57,28 @@ class HakemusyhteystietoEntity(
             null
         )
 
-    fun toDomain() = Hakemusyhteystieto(id, tyyppi, rooli, nimi, sahkoposti, puhelinnumero, ytunnus)
+    fun toDomain() =
+        Hakemusyhteystieto(
+            id = id,
+            tyyppi = tyyppi,
+            rooli = rooli,
+            nimi = nimi,
+            sahkoposti = sahkoposti,
+            puhelinnumero = puhelinnumero,
+            ytunnus = ytunnus,
+            yhteyshenkilot =
+                yhteyshenkilot.map { yhteyshenkilo ->
+                    Hakemusyhteyshenkilo(
+                        id = id,
+                        hankekayttajaId = yhteyshenkilo.hankekayttaja.id,
+                        etunimi = yhteyshenkilo.hankekayttaja.etunimi,
+                        sukunimi = yhteyshenkilo.hankekayttaja.sukunimi,
+                        sahkoposti = yhteyshenkilo.hankekayttaja.sahkoposti,
+                        puhelin = yhteyshenkilo.hankekayttaja.puhelin,
+                        tilaaja = yhteyshenkilo.tilaaja,
+                    )
+                }
+        )
 }
 
 @Entity

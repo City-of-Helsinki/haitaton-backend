@@ -8,8 +8,19 @@ data class Hakemusyhteystieto(
     val id: UUID,
     val tyyppi: CustomerType,
     val rooli: ApplicationContactType,
-    var nimi: String,
-    var sahkoposti: String?,
-    var puhelinnumero: String?,
-    var ytunnus: String?,
+    val nimi: String,
+    val sahkoposti: String?,
+    val puhelinnumero: String?,
+    val ytunnus: String?,
+    val yhteyshenkilot: List<Hakemusyhteyshenkilo>,
+)
+
+data class Hakemusyhteyshenkilo(
+    val id: UUID,
+    val hankekayttajaId: UUID,
+    val etunimi: String,
+    val sukunimi: String,
+    val sahkoposti: String,
+    val puhelin: String,
+    val tilaaja: Boolean,
 )

@@ -4,6 +4,8 @@ import assertk.Assert
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
+import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.extracting
 import assertk.assertions.hasClass
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
@@ -12,17 +14,17 @@ import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.DatabaseTest
-import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
-import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.hasSameElementsAs
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaNotFoundException
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -36,15 +38,13 @@ private const val USERNAME = "test7358"
 @SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
-class HakemusServiceITest : DatabaseTest() {
-
-    @Autowired private lateinit var hakemusService: HakemusService
-
-    @Autowired private lateinit var applicationRepository: ApplicationRepository
-
-    @Autowired private lateinit var hakemusFactory: HakemusFactory
-
-    @Autowired private lateinit var hankeFactory: HankeFactory
+class HakemusServiceITest(
+    @Autowired private val hakemusService: HakemusService,
+    @Autowired private val hankeKayttajaService: HankeKayttajaService,
+    @Autowired private val applicationRepository: ApplicationRepository,
+    @Autowired private val hakemusFactory: HakemusFactory,
+    @Autowired private val hankeFactory: HankeFactory,
+) : DatabaseTest() {
 
     @Nested
     inner class HakemusResponse {
@@ -71,13 +71,41 @@ class HakemusServiceITest : DatabaseTest() {
             assertThat(response.applicationData as JohtoselvitysHakemusDataResponse)
                 .hasAllCustomersWithContacts()
         }
+
+        private fun Assert<JohtoselvitysHakemusDataResponse>.hasAllCustomersWithContacts() {
+            prop(JohtoselvitysHakemusDataResponse::customerWithContacts)
+                .isNotNull()
+                .isCompanyCustomerWithOneContact(true)
+            prop(JohtoselvitysHakemusDataResponse::contractorWithContacts)
+                .isNotNull()
+                .isCompanyCustomerWithOneContact(false)
+            prop(JohtoselvitysHakemusDataResponse::propertyDeveloperWithContacts)
+                .isNotNull()
+                .isCompanyCustomerWithOneContact(false)
+            prop(JohtoselvitysHakemusDataResponse::representativeWithContacts)
+                .isNotNull()
+                .isCompanyCustomerWithOneContact(false)
+        }
+
+        private fun Assert<CustomerWithContactsResponse>.isCompanyCustomerWithOneContact(
+            orderer: Boolean
+        ) {
+            prop(CustomerWithContactsResponse::customer)
+                .prop(CustomerResponse::type)
+                .isEqualTo(CustomerType.COMPANY)
+
+            prop(CustomerWithContactsResponse::contacts)
+                .single()
+                .prop(ContactResponse::orderer)
+                .isEqualTo(orderer)
+        }
     }
 
     @Nested
     inner class HankkeenHakemuksetResponse {
         @Test
-        fun `return applications`() {
-            val hanke = initHankeWithHakemus()
+        fun `returns applications`() {
+            val (_, hanke) = hankeFactory.builder(USERNAME).saveAsGenerated()
 
             val result = hakemusService.hankkeenHakemuksetResponse(hanke.hankeTunnus)
 
@@ -86,7 +114,7 @@ class HakemusServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `when hanke does not exist throws not found`() {
+        fun `throws not found when hanke does not exist`() {
             val hankeTunnus = "HAI-1234"
 
             assertFailure { hakemusService.hankkeenHakemuksetResponse(hankeTunnus) }
@@ -97,54 +125,61 @@ class HakemusServiceITest : DatabaseTest() {
         }
 
         @Test
-        fun `when no applications returns an empty result`() {
+        fun `returns an empty result when there are no applications`() {
             val hankeInitial = hankeFactory.builder(USERNAME).save()
 
             val result = hakemusService.hankkeenHakemuksetResponse(hankeInitial.hankeTunnus)
 
             assertThat(result.applications).isEmpty()
         }
+    }
 
-        private fun initHankeWithHakemus(): HankeEntity {
-            val hanke = hankeFactory.saveMinimal(hankeTunnus = "HAI23-1")
-            val application =
-                applicationRepository.save(
-                    ApplicationFactory.createApplicationEntity(
-                        hanke = hanke,
-                        alluStatus = ApplicationStatus.PENDING,
-                        alluid = null,
-                        userId = USERNAME
-                    )
-                )
-            return hanke.apply { hakemukset = mutableSetOf(application) }
+    @Nested
+    inner class GetHakemuksetForKayttaja {
+        @Test
+        fun `throws an exception when kayttaja does not exist`() {
+            val kayttajaId = UUID.fromString("750b4207-2c5f-49a0-9b80-4829c807abeb")
+
+            val failure = assertFailure { hakemusService.getHakemuksetForKayttaja(kayttajaId) }
+
+            failure.all {
+                hasClass(HankeKayttajaNotFoundException::class)
+                messageContains(kayttajaId.toString())
+            }
         }
-    }
 
-    private fun Assert<JohtoselvitysHakemusDataResponse>.hasAllCustomersWithContacts() {
-        prop(JohtoselvitysHakemusDataResponse::customerWithContacts)
-            .isNotNull()
-            .isCompanyCustomerWithOneContact(true)
-        prop(JohtoselvitysHakemusDataResponse::contractorWithContacts)
-            .isNotNull()
-            .isCompanyCustomerWithOneContact(false)
-        prop(JohtoselvitysHakemusDataResponse::propertyDeveloperWithContacts)
-            .isNotNull()
-            .isCompanyCustomerWithOneContact(false)
-        prop(JohtoselvitysHakemusDataResponse::representativeWithContacts)
-            .isNotNull()
-            .isCompanyCustomerWithOneContact(false)
-    }
+        @Test
+        fun `returns an empty list when the kayttaja exists but there are no applications`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
 
-    private fun Assert<CustomerWithContactsResponse>.isCompanyCustomerWithOneContact(
-        orderer: Boolean
-    ) {
-        prop(CustomerWithContactsResponse::customer)
-            .prop(CustomerResponse::type)
-            .isEqualTo(CustomerType.COMPANY)
+            val result = hakemusService.getHakemuksetForKayttaja(founder.id)
 
-        prop(CustomerWithContactsResponse::contacts)
-            .single()
-            .prop(ContactResponse::orderer)
-            .isEqualTo(orderer)
+            assertThat(result).isEmpty()
+        }
+
+        @Test
+        fun `returns applications when the kayttaja is an yhteyshenkilo`() {
+            val hanke = hankeFactory.saveWithAlue(USERNAME)
+            val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+            val application1 =
+                hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
+                    hakija { addYhteyshenkilo(it, founder) }
+                    rakennuttaja()
+                    tyonSuorittaja()
+                }
+            val application2 =
+                hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
+                    hakija()
+                    rakennuttaja()
+                    tyonSuorittaja { addYhteyshenkilo(it, founder) }
+                }
+
+            val result = hakemusService.getHakemuksetForKayttaja(founder.id)
+
+            assertThat(result)
+                .extracting { it.id }
+                .containsExactlyInAnyOrder(application1.id, application2.id)
+        }
     }
 }

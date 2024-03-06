@@ -64,6 +64,9 @@ class HankeFactory(
         return hankeService.loadHanke(hankeTunnus)!!
     }
 
+    /** Convenience method for storing a hanke with a hankealue. */
+    fun saveWithAlue(userId: String): HankeEntity = builder(userId).withHankealue().saveEntity()
+
     fun builder(userId: String): HankeBuilder {
         val hanke =
             create(
