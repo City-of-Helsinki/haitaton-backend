@@ -23,6 +23,9 @@ haitaton:
     # For non-prod envs, send filter should be used to send only in allowed addresses.
     filter:
       # List of allowed addresses, separated by ;
+      # The addresses allow for *-wildcards.
+      # The allow list used in test environments, so the email server won't try
+      # to send emails to made-up addresses.
       allow-list: ${HAITATON_EMAIL_FILTER_ALLOW_LIST:haitaton@test.com}
       use: ${HAITATON_EMAIL_FILTER_USE:true}
     from: ${HAITATON_EMAIL_FROM:Haitaton <noreply.haitaton@hel.fi>}

@@ -21,7 +21,11 @@ data class EmailProperties(
     val from: String,
     val baseUrl: String,
     val filter: EmailFilterProperties
-)
+) {
+    val filterRegexes: List<Regex> by lazy {
+        filter.allowList.map { EmailSenderService.expandAsterisks(it).toRegex() }
+    }
+}
 
 data class EmailFilterProperties(
     val use: Boolean,
@@ -144,7 +148,8 @@ class EmailSenderService(
             "$templatePath/common/signature-en.mustache".getResourceAsText(),
         )
 
-    private fun emailNotAllowed(email: String) = !emailConfig.filter.allowList.contains(email)
+    private fun emailNotAllowed(email: String) =
+        !emailConfig.filterRegexes.any { it.matches(email) }
 
     private fun parseTemplate(path: String, contextObject: Any): String =
         Template.parse(path.getResource().openStream()).processToString(contextObject)
@@ -159,5 +164,12 @@ class EmailSenderService(
                         en = "a cable report application",
                     )
             }
+
+        /**
+         * Expand the asterisks in the given pattern to `.*` and surround the literal parts with
+         * regex literal flags `\Q` and `\E`.
+         */
+        fun expandAsterisks(pattern: String): String =
+            pattern.split('*').joinToString(".*") { "\\Q$it\\E" }.replace("\\Q\\E", "")
     }
 }
