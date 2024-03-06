@@ -142,14 +142,17 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val response = hankeKayttajaService.getKayttaja(kayttajaEntity.id)
 
             assertThat(response).all {
-                prop(HankeKayttajaDto::id).isEqualTo(kayttajaEntity.id)
-                prop(HankeKayttajaDto::sahkoposti).isEqualTo(HankeKayttajaFactory.KAKE_EMAIL)
-                prop(HankeKayttajaDto::etunimi).isEqualTo(HankeKayttajaFactory.KAKE)
-                prop(HankeKayttajaDto::sukunimi).isEqualTo(HankeKayttajaFactory.KATSELIJA)
-                prop(HankeKayttajaDto::puhelinnumero).isEqualTo(HankeKayttajaFactory.KAKE_PUHELIN)
-                prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
-                prop(HankeKayttajaDto::tunnistautunut).isEqualTo(true)
-                prop(HankeKayttajaDto::kutsuttu).isNull()
+                prop(HankeKayttaja::id).isEqualTo(kayttajaEntity.id)
+                prop(HankeKayttaja::hankeId).isEqualTo(hanke.id)
+                prop(HankeKayttaja::etunimi).isEqualTo(HankeKayttajaFactory.KAKE)
+                prop(HankeKayttaja::sukunimi).isEqualTo(HankeKayttajaFactory.KATSELIJA)
+                prop(HankeKayttaja::sahkoposti).isEqualTo(HankeKayttajaFactory.KAKE_EMAIL)
+                prop(HankeKayttaja::puhelinnumero).isEqualTo(HankeKayttajaFactory.KAKE_PUHELIN)
+                prop(HankeKayttaja::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KATSELUOIKEUS)
+                prop(HankeKayttaja::roolit).isEmpty()
+                prop(HankeKayttaja::permissionId).isNotNull()
+                prop(HankeKayttaja::kayttajaTunnisteId).isNull()
+                prop(HankeKayttaja::kutsuttu).isNull()
             }
         }
 
@@ -161,9 +164,8 @@ class HankeKayttajaServiceITest : DatabaseTest() {
             val response = hankeKayttajaService.getKayttaja(kayttajaEntity.id)
 
             assertThat(response).all {
-                prop(HankeKayttajaDto::id).isEqualTo(kayttajaEntity.id)
-                prop(HankeKayttajaDto::tunnistautunut).isEqualTo(false)
-                prop(HankeKayttajaDto::kutsuttu).isEqualTo(HankeKayttajaFactory.INVITATION_DATE)
+                prop(HankeKayttaja::id).isEqualTo(kayttajaEntity.id)
+                prop(HankeKayttaja::permissionId).isNull()
             }
         }
     }

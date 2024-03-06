@@ -8,6 +8,10 @@ import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaNotFoundException
+import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
+import java.util.UUID
+import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -15,7 +19,19 @@ import org.springframework.transaction.annotation.Transactional
 class HakemusService(
     private val applicationRepository: ApplicationRepository,
     private val hankeRepository: HankeRepository,
+    private val hankekayttajaRepository: HankekayttajaRepository,
 ) {
+    @Transactional(readOnly = true)
+    fun getHakemuksetForKayttaja(kayttajaId: UUID): List<Hakemus> {
+        val kayttaja =
+            hankekayttajaRepository.findByIdOrNull(kayttajaId)
+                ?: throw HankeKayttajaNotFoundException(kayttajaId)
+        return kayttaja.hakemusyhteyshenkilot
+            .map { it.hakemusyhteystieto }
+            .map { it.application }
+            .map { it.toHakemus() }
+    }
+
     @Transactional(readOnly = true)
     fun hakemusResponse(applicationId: Long): HakemusResponse {
         val applicationEntity =
@@ -25,12 +41,14 @@ class HakemusService(
     }
 
     @Transactional(readOnly = true)
-    fun hankkeenHakemuksetResponse(hankeTunnus: String): HankkeenHakemuksetResponse =
-        HankkeenHakemuksetResponse(
-            hankeRepository.findByHankeTunnus(hankeTunnus)?.let { entity ->
-                entity.hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus) }
-            } ?: throw HankeNotFoundException(hankeTunnus)
+    fun hankkeenHakemuksetResponse(hankeTunnus: String): HankkeenHakemuksetResponse {
+        val hanke =
+            hankeRepository.findByHankeTunnus(hankeTunnus)
+                ?: throw HankeNotFoundException(hankeTunnus)
+        return HankkeenHakemuksetResponse(
+            hanke.hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus) }
         )
+    }
 
     private fun hakemusResponseWithYhteystiedot(applicationEntity: ApplicationEntity) =
         HakemusResponse(

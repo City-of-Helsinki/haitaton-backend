@@ -8,6 +8,9 @@ import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
+import fi.hel.haitaton.hanke.hakemus.HakemusData
+import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
+import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import java.time.ZonedDateTime
 
 enum class ApplicationContactType {
@@ -34,7 +37,9 @@ sealed interface ApplicationData {
     val areas: List<ApplicationArea>?
 
     fun copy(pendingOnClient: Boolean): ApplicationData
+
     fun toAlluData(hankeTunnus: String): AlluApplicationData
+
     fun customersWithContacts(): List<CustomerWithContacts>
 
     /**
@@ -107,6 +112,25 @@ data class CableReportApplicationData(
 
     fun findOrderer(): Contact? =
         customersWithContacts().flatMap { it.contacts }.find { it.orderer }
+
+    fun toHakemusData(yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto>): HakemusData =
+        JohtoselvityshakemusData(
+            name = name,
+            postalAddress = postalAddress,
+            constructionWork = constructionWork,
+            maintenanceWork = maintenanceWork,
+            propertyConnectivity = propertyConnectivity,
+            emergencyWork = emergencyWork,
+            rockExcavation = rockExcavation,
+            workDescription = workDescription,
+            startTime = startTime,
+            endTime = endTime,
+            areas = areas,
+            customerWithContacts = yhteystiedot[ApplicationContactType.HAKIJA],
+            contractorWithContacts = yhteystiedot[ApplicationContactType.TYON_SUORITTAJA],
+            propertyDeveloperWithContacts = yhteystiedot[ApplicationContactType.RAKENNUTTAJA],
+            representativeWithContacts = yhteystiedot[ApplicationContactType.ASIANHOITAJA],
+        )
 }
 
 fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }

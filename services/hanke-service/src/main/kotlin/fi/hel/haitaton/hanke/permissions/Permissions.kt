@@ -38,6 +38,7 @@ enum class PermissionCode(val code: Long) {
     RESEND_INVITATION(256),
     CREATE_USER(512),
     MODIFY_USER(1024),
+    DELETE_USER(2048),
 }
 
 @Repository

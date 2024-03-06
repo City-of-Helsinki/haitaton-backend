@@ -247,7 +247,7 @@ class KortistoGdprServiceITest(
 
         @Test
         fun `returns true when there are only draft applications`() {
-            val hanke = hankeFactory.builder(USERID).withHankealue().saveEntity()
+            val hanke = hankeFactory.saveWithAlue(USERID)
             val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERID)!!
             hakemusFactory.builder(USERID, hanke).saveWithYhteystiedot {
                 asianhoitaja { addYhteyshenkilo(it, kayttaja) }
@@ -263,7 +263,7 @@ class KortistoGdprServiceITest(
 
         @Test
         fun `throws exception when there's an active application`() {
-            val hanke = hankeFactory.builder(USERID).withHankealue().saveEntity()
+            val hanke = hankeFactory.saveWithAlue(USERID)
             val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERID)!!
             hakemusFactory.builder(USERID, hanke).saveWithYhteystiedot {
                 asianhoitaja { addYhteyshenkilo(it, kayttaja) }
@@ -306,7 +306,7 @@ class KortistoGdprServiceITest(
 
         @Test
         fun `throws exception when user is the only admin and there's an active application on the hanke`() {
-            val hanke = hankeFactory.builder(USERID).withHankealue().saveEntity()
+            val hanke = hankeFactory.saveWithAlue(USERID)
             hakemusFactory.builder(USERID, hanke).saveWithYhteystiedot { asianhoitaja() }
             val activeHakemus =
                 hakemusFactory.builder(USERID, hanke).inHandling().saveWithYhteystiedot {
@@ -323,7 +323,7 @@ class KortistoGdprServiceITest(
 
         @Test
         fun `returns true when there's another admin even if there's an active application`() {
-            val hanke = hankeFactory.builder(USERID).withHankealue().saveEntity()
+            val hanke = hankeFactory.saveWithAlue(USERID)
             hakemusFactory.builder(USERID, hanke).saveWithYhteystiedot { asianhoitaja() }
             hakemusFactory.builder(USERID, hanke).inHandling().saveWithYhteystiedot {
                 rakennuttaja(kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)

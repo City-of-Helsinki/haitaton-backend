@@ -2,7 +2,10 @@ package fi.hel.haitaton.hanke.permissions
 
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.currentUserId
+import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
 import io.swagger.v3.oas.annotations.Hidden
@@ -36,6 +39,7 @@ private val logger = KotlinLogging.logger {}
 class HankeKayttajaController(
     private val hankeService: HankeService,
     private val hankeKayttajaService: HankeKayttajaService,
+    private val hakemusService: HakemusService,
     private val permissionService: PermissionService,
     private val disclosureLogService: DisclosureLogService,
 ) {
@@ -111,7 +115,7 @@ class HankeKayttajaController(
     )
     @PreAuthorize("@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'VIEW')")
     fun getHankeKayttaja(@PathVariable kayttajaId: UUID): HankeKayttajaDto =
-        hankeKayttajaService.getKayttaja(kayttajaId).also {
+        hankeKayttajaService.getKayttaja(kayttajaId).toDto().also {
             disclosureLogService.saveDisclosureLogsForHankeKayttaja(it, currentUserId())
         }
 
@@ -432,6 +436,80 @@ Returns the updated hankekayttaja.
         @PathVariable kayttajaId: UUID
     ): HankeKayttajaDto {
         return hankeKayttajaService.updateKayttajaInfo(hankeTunnus, update, kayttajaId).toDto()
+    }
+
+    @GetMapping("/kayttajat/{kayttajaId}/deleteInfo")
+    @Operation(
+        summary = "Check if user can be deleted",
+        description =
+            """
+Check if there are active applications the user is a contact in that would
+prevent their deletion. Deleting would also be prevented if the user is the only
+contact in the applicant customer role, so check that as well.
+
+Also, collect draft applications the user is a contact in, since the frontend
+needs to show them when asking for confirmation.
+
+Does not check if the caller needs KAIKKI_OIKEUDET to delete this particular
+user.
+"""
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Return the results",
+                    responseCode = "200",
+                ),
+                ApiResponse(
+                    description = "kayttajaId is not a proper UUID",
+                    responseCode = "400",
+                ),
+                ApiResponse(
+                    description = "Hankekayttaja not found or not authorized",
+                    responseCode = "404",
+                ),
+            ]
+    )
+    @PreAuthorize(
+        "@featureService.isEnabled('USER_MANAGEMENT') && " +
+            "@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'DELETE_USER')"
+    )
+    fun checkForDelete(@PathVariable kayttajaId: UUID): DeleteInfo {
+        val kayttaja = hankeKayttajaService.getKayttaja(kayttajaId)
+        val hanke =
+            hankeService.loadHankeById(kayttaja.hankeId)
+                ?: throw HankeKayttajaNotFoundException(kayttajaId)
+        val onlyOmistajanYhteyshenkilo =
+            hanke.omistajat.any {
+                it.yhteyshenkilot.size == 1 && it.yhteyshenkilot.first().id == kayttajaId
+            }
+
+        val hakemukset = hakemusService.getHakemuksetForKayttaja(kayttajaId)
+        val (draftHakemukset, activeHakemukset) =
+            hakemukset.map { DeleteInfo.HakemusDetails(it) }.partition { it.alluStatus == null }
+
+        return DeleteInfo(activeHakemukset, draftHakemukset, onlyOmistajanYhteyshenkilo)
+    }
+
+    data class DeleteInfo(
+        val activeHakemukset: List<HakemusDetails>,
+        val draftHakemukset: List<HakemusDetails>,
+        val onlyOmistajanYhteyshenkilo: Boolean,
+    ) {
+        data class HakemusDetails(
+            val nimi: String,
+            val applicationIdentifier: String?,
+            val alluStatus: ApplicationStatus?,
+        ) {
+            constructor(
+                hakemus: Hakemus
+            ) : this(
+                hakemus.applicationData.name,
+                hakemus.applicationIdentifier,
+                hakemus.alluStatus,
+            )
+        }
     }
 
     data class Tunnistautuminen(val tunniste: String)

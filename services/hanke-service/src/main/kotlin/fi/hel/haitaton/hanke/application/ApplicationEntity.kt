@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.CascadeType
@@ -50,4 +51,22 @@ data class ApplicationEntity(
             applicationData,
             hanke.hankeTunnus,
         )
+
+    fun toHakemus(): Hakemus {
+        val yhteystiedot = yhteystiedot.mapValues { it.value.toDomain() }
+        val applicationData =
+            when (applicationData) {
+                is CableReportApplicationData ->
+                    (this.applicationData as CableReportApplicationData).toHakemusData(yhteystiedot)
+            }
+        return Hakemus(
+            id = id!!,
+            alluid = alluid,
+            alluStatus = alluStatus,
+            applicationIdentifier = applicationIdentifier,
+            applicationType = applicationType,
+            applicationData = applicationData,
+            hankeTunnus = hanke.hankeTunnus
+        )
+    }
 }
