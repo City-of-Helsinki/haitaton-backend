@@ -477,7 +477,9 @@ user.
     )
     fun checkForDelete(@PathVariable kayttajaId: UUID): DeleteInfo {
         val kayttaja = hankeKayttajaService.getKayttaja(kayttajaId)
-        val hanke = hankeService.loadHankeById(kayttaja.hankeId)!!
+        val hanke =
+            hankeService.loadHankeById(kayttaja.hankeId)
+                ?: throw HankeKayttajaNotFoundException(kayttajaId)
         val onlyOmistajanYhteyshenkilo =
             hanke.omistajat.any {
                 it.yhteyshenkilot.size == 1 && it.yhteyshenkilot.first().id == kayttajaId

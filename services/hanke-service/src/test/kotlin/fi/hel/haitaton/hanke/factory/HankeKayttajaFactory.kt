@@ -278,16 +278,14 @@ class HankeKayttajaFactory(
             roolit: List<ContactType> = emptyList(),
             tunnistautunut: Boolean = false
         ) =
-            HankeKayttajaDto(
+            createDto(
                 id = id,
                 sahkoposti = "email.$i.address.com",
                 etunimi = "test$i",
                 sukunimi = "name$i",
                 puhelinnumero = "040555$i$i$i$i",
-                kayttooikeustaso = KATSELUOIKEUS,
                 roolit = roolit,
                 tunnistautunut = tunnistautunut,
-                kutsuttu = if (tunnistautunut) null else INVITATION_DATE,
             )
     }
 }
