@@ -642,12 +642,7 @@ class HankeService(
         securityContext: SecurityContext,
     ): Hanke =
         with(cableReportWithoutHanke) {
-            val alueet =
-                HankealueService.createHankealueetFromApplicationAreas(
-                    applicationData.areas,
-                    applicationData.startTime,
-                    applicationData.endTime
-                )
+            val alueet = HankealueService.createHankealueetFromCableReport(applicationData)
             val nimi = limitHankeName(applicationData.name)
             val perustaja = applicationData.ordererAsFounder()
 
