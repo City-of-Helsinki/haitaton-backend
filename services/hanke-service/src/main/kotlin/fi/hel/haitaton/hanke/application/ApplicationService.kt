@@ -457,7 +457,12 @@ class ApplicationService(
         hanke: HankeEntity,
         newApplicationData: CableReportApplicationData,
     ) {
-        val hankealueet = HankealueService.createHankealueetFromCableReport(newApplicationData)
+        val hankealueet =
+            HankealueService.createHankealueetFromApplicationAreas(
+                newApplicationData.areas,
+                newApplicationData.startTime,
+                newApplicationData.endTime
+            )
         hanke.alueet.clear()
         hanke.alueet.addAll(hankealueService.createAlueetFromCreateRequest(hankealueet, hanke))
     }

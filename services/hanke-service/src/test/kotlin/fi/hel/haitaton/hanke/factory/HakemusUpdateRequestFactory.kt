@@ -52,22 +52,10 @@ object HakemusUpdateRequestFactory {
             endTime = ZonedDateTime.ofInstant(Instant.now().plus(5, ChronoUnit.DAYS), TZ_UTC),
             areas = listOf(ApplicationArea("Hankealue 1", GeometriaFactory.polygon)),
             customerWithContacts =
-                CustomerWithContactsRequest(
-                    // new customer without an id
-                    CustomerRequest(
-                        type = CustomerType.COMPANY,
-                        name = "Testiyritys",
-                        email = "info@testiyritys.fi",
-                        phone = "123456789",
-                        registryKey = "1234567-8",
-                    ),
-                    listOf(
-                        // an existing contact person
-                        ContactRequest(
-                            hankekayttajaId =
-                                UUID.fromString("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f")
-                        )
-                    )
+                createCustomerWithContactsRequest(
+                    CustomerType.COMPANY,
+                    null,
+                    UUID.fromString("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f")
                 ),
             contractorWithContacts = null,
             propertyDeveloperWithContacts = null,
@@ -112,4 +100,20 @@ object HakemusUpdateRequestFactory {
             ),
             hankekayttajaIds.map { ContactRequest(it) }
         )
+
+    fun JohtoselvityshakemusUpdateRequest.withCustomerWithContactsRequest(
+        customerType: CustomerType,
+        yhteystietoId: UUID? = UUID.randomUUID(),
+        vararg hankekayttajaIds: UUID
+    ) =
+        this.copy(
+            customerWithContacts =
+                createCustomerWithContactsRequest(customerType, yhteystietoId, *hankekayttajaIds)
+        )
+
+    fun JohtoselvityshakemusUpdateRequest.withWorkDescription(workDescription: String) =
+        this.copy(workDescription = workDescription)
+
+    fun JohtoselvityshakemusUpdateRequest.withAreas(areas: List<ApplicationArea>) =
+        this.copy(areas = areas)
 }

@@ -1,6 +1,6 @@
 package fi.hel.haitaton.hanke
 
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.ModifyHankealueRequest
 import fi.hel.haitaton.hanke.domain.NewGeometriat
@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.geometria.GeometriatService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluLaskentaService
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
+import java.time.ZonedDateTime
 import org.geojson.Feature
 import org.geojson.FeatureCollection
 import org.springframework.stereotype.Service
@@ -108,20 +109,23 @@ class HankealueService(
         }
 
     companion object {
-        fun createHankealueetFromCableReport(
-            cableReportData: CableReportApplicationData
+        fun createHankealueetFromApplicationAreas(
+            areas: List<ApplicationArea>?,
+            startTime: ZonedDateTime?,
+            endTime: ZonedDateTime?,
         ): List<NewHankealue> =
-            (cableReportData.areas ?: listOf())
-                .map { Feature().apply { geometry = it.geometry } }
-                .map { FeatureCollection().add(it) }
-                .map { NewGeometriat(it) }
-                .mapIndexed { i, geometria ->
-                    NewHankealue(
-                        nimi = "$HANKEALUE_DEFAULT_NAME ${i + 1}",
-                        geometriat = geometria,
-                        haittaAlkuPvm = cableReportData.startTime,
-                        haittaLoppuPvm = cableReportData.endTime,
-                    )
-                }
+            areas?.let {
+                it.map { Feature().apply { geometry = it.geometry } }
+                    .map { feature -> FeatureCollection().add(feature) }
+                    .map { featureCollection -> NewGeometriat(featureCollection) }
+                    .mapIndexed { i, geometria ->
+                        NewHankealue(
+                            nimi = "$HANKEALUE_DEFAULT_NAME ${i + 1}",
+                            geometriat = geometria,
+                            haittaAlkuPvm = startTime,
+                            haittaLoppuPvm = endTime,
+                        )
+                    }
+            } ?: emptyList()
     }
 }

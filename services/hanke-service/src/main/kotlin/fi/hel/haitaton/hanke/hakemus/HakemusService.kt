@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.hakemus
 
-import fi.hel.haitaton.hanke.HANKEALUE_DEFAULT_NAME
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
@@ -15,20 +14,15 @@ import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeExcept
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.domain.NewGeometriat
-import fi.hel.haitaton.hanke.domain.NewHankealue
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaNotFoundException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.toJsonString
-import java.time.ZonedDateTime
 import java.util.UUID
 import kotlin.reflect.KClass
 import mu.KotlinLogging
-import org.geojson.Feature
-import org.geojson.FeatureCollection
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -99,7 +93,7 @@ class HakemusService(
         }
 
         assertGeometryValidity(request.areas) { validationError ->
-            "Invalid geometry received when updating application id=${applicationEntity.id}, reason = ${validationError.reason}, location = ${validationError.location}"
+            "Invalid geometry received when updating application id=${applicationEntity.id}, reason=${validationError.reason}, location=${validationError.location}"
         }
 
         assertYhteystiedotValidity(applicationEntity, request)
@@ -109,7 +103,7 @@ class HakemusService(
             request.areas?.let { areas ->
                 assertGeometryCompatibility(hankeEntity.id, areas) { area ->
                     "Application geometry doesn't match any hankealue when updating application id=${applicationEntity.id}, " +
-                        "hankeId = ${hankeEntity.id}, application geometry = ${area.geometry.toJsonString()}"
+                        "hankeId=${hankeEntity.id}, application geometry=${area.geometry.toJsonString()}"
                 }
             }
         } else {
@@ -140,15 +134,16 @@ class HakemusService(
         applicationEntity: ApplicationEntity,
         request: HakemusUpdateRequest
     ) {
-        when (applicationEntity.applicationData) {
-            is CableReportApplicationData ->
-                if (request !is JohtoselvityshakemusUpdateRequest) {
-                    throw IncompatibleHakemusUpdateRequestException(
-                        applicationEntity.id!!,
-                        applicationEntity.applicationData::class,
-                        request::class
-                    )
-                }
+        val expected =
+            when (applicationEntity.applicationData) {
+                is CableReportApplicationData -> request is JohtoselvityshakemusUpdateRequest
+            }
+        if (!expected) {
+            throw IncompatibleHakemusUpdateRequestException(
+                applicationEntity.id!!,
+                applicationEntity.applicationData::class,
+                request::class
+            )
         }
     }
 
@@ -189,15 +184,16 @@ class HakemusService(
                 .flatMap { it.contacts.map { contact -> contact.hankekayttajaId } }
                 .toSet()
         ) {
-            "Invalid hanke user/users received when updating application id=${applicationEntity.id}, invalid hankeKayttajaIds=$it"
+            "Invalid hanke user/users received when updating application id=${applicationEntity.id}, invalidHankeKayttajaIds=$it"
         }
     }
 
     /**
-     * If the yhteystieto is present in the application and in the request, the ids must match. If
-     * the yhteystieto is not present in the application, it means that the request adds a new
-     * yhteystieto, and it cannot have an id. If the yhteystieto is not present in the request, it
-     * means that the application yhteystieto is removed.
+     * If the request does not have a customer (i.e. the customer is either removed or has not
+     * existed at all) or the customer is new (i.e. not persisted == not having yhteystietoId) or
+     * the customer is the same as the existing one (i.e. the ids match) then all is well.
+     *
+     * Otherwise, the request is invalid.
      */
     private fun assertYhteystietoValidity(
         applicationId: Long,
@@ -206,30 +202,18 @@ class HakemusService(
         customerWithContacts: CustomerWithContactsRequest?
     ) {
         if (
-            hakemusyhteystietoEntity != null &&
-                customerWithContacts != null &&
-                customerWithContacts.customer.yhteystietoId != hakemusyhteystietoEntity.id
+            customerWithContacts == null ||
+                customerWithContacts.customer.yhteystietoId == null ||
+                customerWithContacts.customer.yhteystietoId == hakemusyhteystietoEntity?.id
         ) {
-            // ids don't match
-            throw InvalidHakemusyhteystietoException(
-                applicationId,
-                rooli,
-                hakemusyhteystietoEntity.id,
-                customerWithContacts.customer.yhteystietoId
-            )
+            return
         }
-        if (
-            hakemusyhteystietoEntity == null &&
-                customerWithContacts?.customer?.yhteystietoId != null
-        ) {
-            // new yhteystieto has an id when it shouldn't
-            throw InvalidHakemusyhteystietoException(
-                applicationId,
-                rooli,
-                null,
-                customerWithContacts.customer.yhteystietoId
-            )
-        }
+        throw InvalidHakemusyhteystietoException(
+            applicationId,
+            rooli,
+            hakemusyhteystietoEntity?.id,
+            customerWithContacts.customer.yhteystietoId
+        )
     }
 
     /** Assert that the contacts are users of the hanke. */
@@ -263,15 +247,15 @@ class HakemusService(
     /** Update the hanke areas based on the update request work areas. */
     private fun updateHankealueet(hankeEntity: HankeEntity, updateRequest: HakemusUpdateRequest) {
         val hankealueet =
-            updateRequest.areas?.mapIndexed { i, area ->
-                area.toNewHankealue(i, updateRequest.startTime!!, updateRequest.endTime!!)
-            } ?: emptyList()
-        hankeEntity.alueet.clear()
-        if (hankealueet.isNotEmpty()) {
-            hankeEntity.alueet.addAll(
-                hankealueService.createAlueetFromCreateRequest(hankealueet, hankeEntity)
+            HankealueService.createHankealueetFromApplicationAreas(
+                updateRequest.areas,
+                updateRequest.startTime,
+                updateRequest.endTime
             )
-        }
+        hankeEntity.alueet.clear()
+        hankeEntity.alueet.addAll(
+            hankealueService.createAlueetFromCreateRequest(hankealueet, hankeEntity)
+        )
     }
 
     /** Creates a new [ApplicationEntity] based on the given [request] and saves it. */
@@ -455,26 +439,13 @@ class HakemusService(
     }
 }
 
-private fun ApplicationArea.toNewHankealue(
-    i: Int,
-    alkuPvm: ZonedDateTime,
-    loppuPvm: ZonedDateTime
-) =
-    NewHankealue(
-        nimi = "$HANKEALUE_DEFAULT_NAME $i",
-        geometriat =
-            NewGeometriat(FeatureCollection().add(Feature().also { it.geometry = this.geometry })),
-        haittaAlkuPvm = alkuPvm,
-        haittaLoppuPvm = loppuPvm
-    )
-
 class IncompatibleHakemusUpdateRequestException(
     applicationId: Long,
     oldApplicationClass: KClass<out ApplicationData>,
     requestClass: KClass<out HakemusUpdateRequest>,
 ) :
     RuntimeException(
-        "Tried to update application $applicationId of type $oldApplicationClass with update request of type $requestClass"
+        "Invalid update reeuqest for application id=$applicationId type=$oldApplicationClass requestType=$requestClass"
     )
 
 class InvalidHakemusyhteystietoException(
