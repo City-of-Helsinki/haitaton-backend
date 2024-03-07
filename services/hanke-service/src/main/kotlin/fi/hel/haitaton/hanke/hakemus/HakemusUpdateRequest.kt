@@ -13,7 +13,7 @@ import java.util.UUID
 
 sealed interface HakemusUpdateRequest {
     val name: String
-    val postalAddress: PostalAdressRequest
+    val postalAddress: PostalAddressRequest
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
     val areas: List<ApplicationArea>?
@@ -31,6 +31,8 @@ sealed interface HakemusUpdateRequest {
      * defined in this request.
      */
     fun toApplicationData(baseData: ApplicationData): ApplicationData
+
+    fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsRequest?>
 }
 
 data class JohtoselvityshakemusUpdateRequest(
@@ -38,7 +40,7 @@ data class JohtoselvityshakemusUpdateRequest(
     /** Työn nimi */
     override val name: String,
     /** Katuosoite */
-    override val postalAddress: PostalAdressRequest,
+    override val postalAddress: PostalAddressRequest,
     /** Työssä on kyse: Uuden rakenteen tai johdon rakentamisesta */
     val constructionWork: Boolean,
     /** Työssä on kyse: Olemassaolevan rakenteen kunnossapitotyöstä */
@@ -77,8 +79,8 @@ data class JohtoselvityshakemusUpdateRequest(
     override fun hasChanges(applicationEntity: ApplicationEntity): Boolean {
         val applicationData = applicationEntity.applicationData as CableReportApplicationData
         return name != applicationData.name ||
-            postalAddress.streetAddress.streetName !=
-                applicationData.postalAddress?.streetAddress?.streetName ||
+            (postalAddress.streetAddress.streetName ?: "") !=
+                (applicationData.postalAddress?.streetAddress?.streetName ?: "") ||
             constructionWork != applicationData.constructionWork ||
             maintenanceWork != applicationData.maintenanceWork ||
             propertyConnectivity != applicationData.propertyConnectivity ||
@@ -117,9 +119,17 @@ data class JohtoselvityshakemusUpdateRequest(
             endTime = this.endTime,
             areas = this.areas,
         )
+
+    override fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsRequest?> =
+        mapOf(
+            ApplicationContactType.HAKIJA to customerWithContacts,
+            ApplicationContactType.TYON_SUORITTAJA to contractorWithContacts,
+            ApplicationContactType.RAKENNUTTAJA to propertyDeveloperWithContacts,
+            ApplicationContactType.ASIANHOITAJA to representativeWithContacts,
+        )
 }
 
-data class PostalAdressRequest(val streetAddress: StreetAddress)
+data class PostalAddressRequest(val streetAddress: StreetAddress)
 
 data class CustomerWithContactsRequest(
     val customer: CustomerRequest,
@@ -133,10 +143,10 @@ data class CustomerWithContactsRequest(
 data class CustomerRequest(
     /** Hakemusyhteystieto id */
     val yhteystietoId: UUID? = null,
-    val type: CustomerType? = null,
-    val name: String? = null,
-    val email: String? = null,
-    val phone: String? = null,
+    val type: CustomerType,
+    val name: String,
+    val email: String,
+    val phone: String,
     val registryKey: String? = null,
 ) {
     /**

@@ -1,41 +1,42 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.ApplicationArea
+import fi.hel.haitaton.hanke.application.ApplicationData
+import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.PostalAddress
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplication
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
+import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import java.time.ZonedDateTime
 import org.springframework.stereotype.Component
 
 @Component
 class HakemusFactory(
-    private val applicationService: ApplicationService,
-    private val profiiliClient: ProfiiliClient,
+    private val hankeKayttajaService: HankeKayttajaService,
     private val applicationRepository: ApplicationRepository,
+    private val hankeRepository: HankeRepository,
     private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
     private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
     private val hankeKayttajaFactory: HankeKayttajaFactory,
 ) {
-    fun builder(userId: String, hankeEntity: HankeEntity): ApplicationBuilder {
-        val application = createApplication(hankeTunnus = hankeEntity.hankeTunnus)
-        return ApplicationBuilder(
-            application,
+    fun builder(userId: String, hankeEntity: HankeEntity): HakemusBuilder {
+        val applicationEntity = createHakemus(userId = userId, hanke = hankeEntity)
+        return HakemusBuilder(
+            applicationEntity,
             userId,
-            ProfiiliFactory.DEFAULT_NAMES,
-            applicationService,
+            this,
+            hankeKayttajaService,
             applicationRepository,
-            profiiliClient,
+            hankeRepository,
             hankeKayttajaFactory,
             hakemusyhteystietoRepository,
             hakemusyhteyshenkiloRepository,
@@ -93,4 +94,26 @@ class HakemusFactory(
                 propertyDeveloperWithContacts = propertyDeveloperWithContacts,
             )
     }
+
+    fun createHakemus(
+        id: Long? = 1,
+        alluid: Int? = null,
+        alluStatus: ApplicationStatus? = null,
+        applicationIdentifier: String? = null,
+        userId: String,
+        applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
+        applicationData: ApplicationData =
+            ApplicationFactory.createBlankCableReportApplicationData(),
+        hanke: HankeEntity,
+    ): ApplicationEntity =
+        ApplicationEntity(
+            id = id,
+            alluid = alluid,
+            alluStatus = alluStatus,
+            applicationIdentifier = applicationIdentifier,
+            userId = userId,
+            applicationType = applicationType,
+            applicationData = applicationData,
+            hanke = hanke,
+        )
 }
