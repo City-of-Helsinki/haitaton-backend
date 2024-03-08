@@ -16,7 +16,6 @@ import fi.hel.haitaton.hanke.attachment.APPLICATION_ID
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
-import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.andExpectError
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
@@ -26,6 +25,7 @@ import fi.hel.haitaton.hanke.attachment.testFile
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
+import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified

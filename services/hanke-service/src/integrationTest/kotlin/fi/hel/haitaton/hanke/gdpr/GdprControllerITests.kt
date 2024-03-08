@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.gdpr
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -31,12 +32,10 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 
-private const val USERID = "test-user"
-
 @WebMvcTest(controllers = [GdprController::class], properties = ["haitaton.gdpr.disabled=false"])
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("test")
-@WithMockUser(USERID)
+@WithMockUser(USERNAME)
 class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
 
     @Autowired lateinit var gdprService: GdprService
@@ -99,19 +98,19 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
 
         @Test
         fun `When user has no info, return 204`() {
-            every { gdprService.findGdprInfo(USERID) }.returns(null)
+            every { gdprService.findGdprInfo(USERNAME) }.returns(null)
 
             get()
                 .andExpect(MockMvcResultMatchers.status().isNoContent)
                 .andExpect(content().string(""))
 
-            verify { gdprService.findGdprInfo(USERID) }
+            verify { gdprService.findGdprInfo(USERNAME) }
             verify { disclosureLogService wasNot Called }
         }
 
         @Test
         fun `When there's an internal error, return gdpr error response`() {
-            every { gdprService.findGdprInfo(USERID) }.throws(RuntimeException())
+            every { gdprService.findGdprInfo(USERNAME) }.throws(RuntimeException())
             val expectedError =
                 """
               {
@@ -131,7 +130,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
                 .andExpect(MockMvcResultMatchers.status().`is`(500))
                 .andExpect(content().json(expectedError))
 
-            verify { gdprService.findGdprInfo(USERID) }
+            verify { gdprService.findGdprInfo(USERNAME) }
             verify { disclosureLogService wasNot Called }
         }
 
@@ -141,7 +140,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
                 CollectionNode(
                     "user",
                     listOf(
-                        StringNode("id", USERID),
+                        StringNode("id", USERNAME),
                         StringNode("nimi", "Teppo Testihenkilö"),
                         CollectionNode(
                             "organisaatio",
@@ -153,7 +152,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
                         ),
                     ),
                 )
-            every { gdprService.findGdprInfo(USERID) }.returns(info)
+            every { gdprService.findGdprInfo(USERNAME) }.returns(info)
             val expectedResponse =
                 """
               {
@@ -161,7 +160,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
                 "children": [
                   {
                     "key":"id",
-                    "value":"test-user"
+                    "value":"$USERNAME"
                   },
                   {
                     "key":"nimi",
@@ -193,8 +192,8 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
                 .andExpect(content().json(expectedResponse))
 
             verifySequence {
-                gdprService.findGdprInfo(USERID)
-                disclosureLogService.saveDisclosureLogsForProfiili(USERID, any<CollectionNode>())
+                gdprService.findGdprInfo(USERNAME)
+                disclosureLogService.saveDisclosureLogsForProfiili(USERNAME, any<CollectionNode>())
             }
         }
     }
@@ -247,28 +246,28 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
 
         @Test
         fun `Returns 204 when any found information was removed`() {
-            every { gdprService.canDelete(USERID) } returns true
+            every { gdprService.canDelete(USERNAME) } returns true
 
             delete()
                 .andExpect(MockMvcResultMatchers.status().isNoContent)
                 .andExpect(content().string(""))
 
             verifySequence {
-                gdprService.canDelete(USERID)
-                gdprService.deleteInfo(USERID)
+                gdprService.canDelete(USERNAME)
+                gdprService.deleteInfo(USERNAME)
             }
             verify { disclosureLogService wasNot Called }
         }
 
         @Test
         fun `Doesn't remove anything if doing a dry run`() {
-            every { gdprService.canDelete(USERID) } returns true
+            every { gdprService.canDelete(USERNAME) } returns true
 
             delete(true)
                 .andExpect(MockMvcResultMatchers.status().isNoContent)
                 .andExpect(content().string(""))
 
-            verifyAll { gdprService.canDelete(USERID) }
+            verifyAll { gdprService.canDelete(USERNAME) }
             verify { disclosureLogService wasNot Called }
         }
 
@@ -279,7 +278,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
                 ApplicationFactory.createApplications(2) { i, application ->
                     application.copy(applicationIdentifier = "JS$i")
                 }
-            every { gdprService.canDelete(USERID) } throws
+            every { gdprService.canDelete(USERNAME) } throws
                 DeleteForbiddenException.fromSentApplications(applications)
             val expectedResponse =
                 """
@@ -309,7 +308,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
                 .andExpect(MockMvcResultMatchers.status().isForbidden)
                 .andExpect(content().json(expectedResponse))
 
-            verifyAll { gdprService.canDelete(USERID) }
+            verifyAll { gdprService.canDelete(USERNAME) }
             verify { disclosureLogService wasNot Called }
         }
     }
@@ -318,7 +317,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
         val jwtBuilder = jwtBuilder.claim("http://localhost:8080", listOf("haitaton.gdprquery"))
         jwtModifier(jwtBuilder)
         return mockMvc.perform(
-            MockMvcRequestBuilders.get("/gdpr-api/$USERID")
+            MockMvcRequestBuilders.get("/gdpr-api/$USERNAME")
                 .accept(MediaType.APPLICATION_JSON)
                 .with(jwt().jwt(jwtBuilder.build()))
         )
@@ -328,7 +327,7 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
         dryRun: Boolean = false,
         jwtModifier: (Jwt.Builder) -> Unit = {},
     ): ResultActions {
-        val url = if (dryRun) "/gdpr-api/$USERID?dry_run=true" else "/gdpr-api/$USERID"
+        val url = if (dryRun) "/gdpr-api/$USERNAME?dry_run=true" else "/gdpr-api/$USERNAME"
         val jwtBuilder = jwtBuilder.claim("http://localhost:8080", listOf("haitaton.gdprdelete"))
         jwtModifier(jwtBuilder)
         return mockMvc.perform(
@@ -339,5 +338,5 @@ class GdprControllerITests(@Autowired var mockMvc: MockMvc) {
     }
 
     private val jwtBuilder: Jwt.Builder =
-        Jwt.withTokenValue("token").header("alg", "none").claim("sub", USERID)
+        Jwt.withTokenValue("token").header("alg", "none").claim("sub", USERNAME)
 }

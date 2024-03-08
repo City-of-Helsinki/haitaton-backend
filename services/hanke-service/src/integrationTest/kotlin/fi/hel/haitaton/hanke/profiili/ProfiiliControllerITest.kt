@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.Called
 import io.mockk.Runs
 import io.mockk.checkUnnecessaryStub
@@ -31,7 +32,6 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 
-private const val USERNAME = "testUser"
 private const val BASE_URL = "/profiili"
 
 @WebMvcTest(

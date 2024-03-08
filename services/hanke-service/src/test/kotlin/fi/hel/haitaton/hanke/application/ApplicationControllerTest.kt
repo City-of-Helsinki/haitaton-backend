@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.application
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -17,11 +18,10 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.junit.jupiter.SpringExtension
 
-private const val username = "testUser"
 private const val hankeTunnus = "HAI-1234"
 
 @ExtendWith(SpringExtension::class)
-@WithMockUser(username)
+@WithMockUser(USERNAME)
 class ApplicationControllerTest {
 
     private val applicationService: ApplicationService = mockk()
@@ -60,13 +60,13 @@ class ApplicationControllerTest {
                         )
                 ),
             )
-        every { applicationService.getAllApplicationsForUser(username) } returns applications
+        every { applicationService.getAllApplicationsForUser(USERNAME) } returns applications
 
         applicationController.getAll()
 
         verify {
-            disclosureLogService.saveDisclosureLogsForApplications(applications, username)
-            applicationService.getAllApplicationsForUser(username)
+            disclosureLogService.saveDisclosureLogsForApplications(applications, USERNAME)
+            applicationService.getAllApplicationsForUser(USERNAME)
         }
     }
 
@@ -80,7 +80,7 @@ class ApplicationControllerTest {
 
         verifySequence {
             applicationService.getApplicationById(1)
-            disclosureLogService.saveDisclosureLogsForApplication(application, username)
+            disclosureLogService.saveDisclosureLogsForApplication(application, USERNAME)
         }
     }
 
@@ -90,13 +90,13 @@ class ApplicationControllerTest {
         val requestApplication =
             ApplicationFactory.createApplication(id = null, hankeTunnus = hankeTunnus)
         val createdApplication = requestApplication.copy(id = 1)
-        every { applicationService.create(requestApplication, username) } returns createdApplication
+        every { applicationService.create(requestApplication, USERNAME) } returns createdApplication
 
         applicationController.create(requestApplication)
 
         verifySequence {
-            applicationService.create(requestApplication, username)
-            disclosureLogService.saveDisclosureLogsForApplication(createdApplication, username)
+            applicationService.create(requestApplication, USERNAME)
+            disclosureLogService.saveDisclosureLogsForApplication(createdApplication, USERNAME)
         }
     }
 
@@ -105,14 +105,14 @@ class ApplicationControllerTest {
         val hankeTunnus = "HAI-1234"
         val application = ApplicationFactory.createApplication(id = 1, hankeTunnus = hankeTunnus)
         every {
-            applicationService.updateApplicationData(1, application.applicationData, username)
+            applicationService.updateApplicationData(1, application.applicationData, USERNAME)
         } returns application
 
         applicationController.update(1, application)
 
         verifySequence {
-            applicationService.updateApplicationData(1, application.applicationData, username)
-            disclosureLogService.saveDisclosureLogsForApplication(application, username)
+            applicationService.updateApplicationData(1, application.applicationData, USERNAME)
+            disclosureLogService.saveDisclosureLogsForApplication(application, USERNAME)
         }
     }
 }

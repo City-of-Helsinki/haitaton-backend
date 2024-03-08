@@ -26,6 +26,7 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withTimes
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -53,7 +54,6 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 
-private const val USERNAME = "testUser"
 private const val HANKE_TUNNUS = "HAI-1234"
 
 @WebMvcTest(

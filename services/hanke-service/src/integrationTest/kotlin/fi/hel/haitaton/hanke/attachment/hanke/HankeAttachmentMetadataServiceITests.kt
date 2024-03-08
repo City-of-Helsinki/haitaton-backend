@@ -19,7 +19,6 @@ import fi.hel.haitaton.hanke.HankeIdentifier
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
-import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadataDto
@@ -27,6 +26,7 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
+import fi.hel.haitaton.hanke.test.USERNAME
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.junit.jupiter.api.Nested

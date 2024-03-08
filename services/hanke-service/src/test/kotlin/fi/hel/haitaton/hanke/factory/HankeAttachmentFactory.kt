@@ -4,7 +4,6 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.attachment.DEFAULT_DATA
 import fi.hel.haitaton.hanke.attachment.DEFAULT_SIZE
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
-import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
 import fi.hel.haitaton.hanke.attachment.common.FileClient
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentEntity
@@ -13,6 +12,7 @@ import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentMetadataDto
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentContentService
 import fi.hel.haitaton.hanke.currentUserId
+import fi.hel.haitaton.hanke.test.USERNAME
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.http.MediaType

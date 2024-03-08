@@ -46,6 +46,7 @@ import fi.hel.haitaton.hanke.permissions.PermissionCode.MODIFY_USER
 import fi.hel.haitaton.hanke.permissions.PermissionCode.RESEND_INVITATION
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
 import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
+import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.touch
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -77,7 +78,6 @@ import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-private const val USERNAME = "testUser"
 private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
 
 @WebMvcTest(HankeKayttajaController::class)

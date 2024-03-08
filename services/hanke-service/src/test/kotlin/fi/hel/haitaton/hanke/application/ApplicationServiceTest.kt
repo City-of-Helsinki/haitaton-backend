@@ -37,6 +37,7 @@ import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
 import io.mockk.Called
 import io.mockk.called
@@ -64,7 +65,6 @@ import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.boot.test.system.CapturedOutput
 import org.springframework.boot.test.system.OutputCaptureExtension
 
-private const val USERNAME = "test"
 private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
 
 class ApplicationServiceTest {

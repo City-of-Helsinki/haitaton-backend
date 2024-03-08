@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.permissions.PermissionCode
+import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.every
 import io.mockk.justRun
 import org.junit.jupiter.api.Test
@@ -13,7 +14,6 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 
-private const val USERNAME = "test"
 private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
 private const val BASE_URL = "/hankkeet"
 

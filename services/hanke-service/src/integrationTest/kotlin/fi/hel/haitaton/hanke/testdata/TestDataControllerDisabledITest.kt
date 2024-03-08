@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.testdata
 
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
+import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -20,7 +21,6 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 
-private const val USERNAME = "testUser"
 private const val BASE_URL = "/testdata"
 
 @WebMvcTest(
