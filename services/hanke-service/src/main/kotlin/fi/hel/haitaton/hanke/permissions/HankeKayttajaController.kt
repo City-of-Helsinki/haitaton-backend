@@ -2,10 +2,7 @@ package fi.hel.haitaton.hanke.permissions
 
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
-import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.currentUserId
-import fi.hel.haitaton.hanke.hakemus.Hakemus
-import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
 import io.swagger.v3.oas.annotations.Hidden
@@ -39,7 +36,7 @@ private val logger = KotlinLogging.logger {}
 class HankeKayttajaController(
     private val hankeService: HankeService,
     private val hankeKayttajaService: HankeKayttajaService,
-    private val hakemusService: HakemusService,
+    private val hankekayttajaDeleteService: HankekayttajaDeleteService,
     private val permissionService: PermissionService,
     private val disclosureLogService: DisclosureLogService,
 ) {
@@ -475,42 +472,8 @@ user.
         "@featureService.isEnabled('USER_MANAGEMENT') && " +
             "@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'DELETE_USER')"
     )
-    fun checkForDelete(@PathVariable kayttajaId: UUID): DeleteInfo {
-        val kayttaja = hankeKayttajaService.getKayttaja(kayttajaId)
-        val hanke =
-            hankeService.loadHankeById(kayttaja.hankeId)
-                ?: throw HankeKayttajaNotFoundException(kayttajaId)
-        val onlyOmistajanYhteyshenkilo =
-            hanke.omistajat.any {
-                it.yhteyshenkilot.size == 1 && it.yhteyshenkilot.first().id == kayttajaId
-            }
-
-        val hakemukset = hakemusService.getHakemuksetForKayttaja(kayttajaId)
-        val (draftHakemukset, activeHakemukset) =
-            hakemukset.map { DeleteInfo.HakemusDetails(it) }.partition { it.alluStatus == null }
-
-        return DeleteInfo(activeHakemukset, draftHakemukset, onlyOmistajanYhteyshenkilo)
-    }
-
-    data class DeleteInfo(
-        val activeHakemukset: List<HakemusDetails>,
-        val draftHakemukset: List<HakemusDetails>,
-        val onlyOmistajanYhteyshenkilo: Boolean,
-    ) {
-        data class HakemusDetails(
-            val nimi: String,
-            val applicationIdentifier: String?,
-            val alluStatus: ApplicationStatus?,
-        ) {
-            constructor(
-                hakemus: Hakemus
-            ) : this(
-                hakemus.applicationData.name,
-                hakemus.applicationIdentifier,
-                hakemus.alluStatus,
-            )
-        }
-    }
+    fun checkForDelete(@PathVariable kayttajaId: UUID): HankekayttajaDeleteService.DeleteInfo =
+        hankekayttajaDeleteService.checkForDelete(kayttajaId)
 
     data class Tunnistautuminen(val tunniste: String)
 

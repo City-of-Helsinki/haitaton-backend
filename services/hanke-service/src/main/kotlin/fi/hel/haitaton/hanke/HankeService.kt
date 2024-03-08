@@ -44,6 +44,9 @@ class HankeService(
         hankeRepository.findOneByHankeTunnus(hankeTunnus)
 
     @Transactional(readOnly = true)
+    fun findIdentifier(hankeId: Int): HankeIdentifier? = hankeRepository.findOneById(hankeId)
+
+    @Transactional(readOnly = true)
     fun getHankeApplications(hankeTunnus: String): List<Application> =
         hankeRepository.findByHankeTunnus(hankeTunnus)?.let { entity ->
             entity.hakemukset.map { hakemus -> hakemus.toApplication() }

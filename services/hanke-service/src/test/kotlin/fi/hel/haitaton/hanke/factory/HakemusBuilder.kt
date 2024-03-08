@@ -51,15 +51,19 @@ data class HakemusBuilder(
         return this
     }
 
-    fun withWorkDescription(workDescription: String) = apply {
+    fun inHandling(alluId: Int = 1) = withStatus(ApplicationStatus.HANDLING, alluId)
+
+    fun withName(name: String): HakemusBuilder = apply { onCableReport { copy(name = name) } }
+
+    fun withWorkDescription(workDescription: String): HakemusBuilder = apply {
+        onCableReport { copy(workDescription = workDescription) }
+    }
+
+    private fun onCableReport(f: CableReportApplicationData.() -> CableReportApplicationData) {
         applicationEntity.applicationData =
             when (applicationEntity.applicationData) {
                 is CableReportApplicationData ->
-                    (applicationEntity.applicationData as CableReportApplicationData).copy(
-                        workDescription = workDescription
-                    )
+                    (applicationEntity.applicationData as CableReportApplicationData).f()
             }
     }
-
-    fun inHandling(alluId: Int = 1) = withStatus(ApplicationStatus.HANDLING, alluId)
 }

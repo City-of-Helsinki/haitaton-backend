@@ -224,14 +224,28 @@ data class HankeYhteystietoBuilder(
             kayttooikeustaso = kayttooikeustaso,
         )
 
-    fun omistaja(
-        omistaja: HankekayttajaInput = HankeKayttajaFactory.KAYTTAJA_INPUT_OMISTAJA,
+    fun kayttaja(
+        kayttajaInput: HankekayttajaInput,
         kayttooikeustaso: Kayttooikeustaso = Kayttooikeustaso.KATSELUOIKEUS,
+    ): HankekayttajaEntity =
+        hankeKayttajaFactory.findOrSaveIdentifiedUser(
+            hankeEntity.id,
+            kayttajaInput,
+            kayttooikeustaso = kayttooikeustaso,
+        )
+
+    fun omistaja(
         yhteystieto: HankeYhteystieto = HankeYhteystietoFactory.create(id = null),
-        f: (HankeYhteystietoEntity) -> Unit = defaultYhteyshenkilo(omistaja, kayttooikeustaso),
+        vararg yhteyshenkilot: HankekayttajaEntity =
+            arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_OMISTAJA))
     ): HankeYhteystietoBuilder {
-        f(saveYhteystieto(ContactType.OMISTAJA, yhteystieto))
+        val saved = saveYhteystieto(ContactType.OMISTAJA, yhteystieto)
+        addYhteyshenkilot(saved, yhteyshenkilot.toList())
         return this
+    }
+
+    fun omistaja(first: HankekayttajaEntity, vararg yhteyshenkilot: HankekayttajaEntity) {
+        omistaja(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
     }
 
     fun rakennuttaja(
@@ -282,6 +296,13 @@ data class HankeYhteystietoBuilder(
         hankeYhteyshenkiloRepository.save(
             HankeYhteyshenkiloEntity(hankeKayttaja = kayttaja, hankeYhteystieto = yhteystietoEntity)
         )
+    }
+
+    private fun addYhteyshenkilot(
+        yhteystietoEntity: HankeYhteystietoEntity,
+        yhteystiedot: Iterable<HankekayttajaEntity>
+    ) {
+        yhteystiedot.forEach { addYhteyshenkilo(yhteystietoEntity, it) }
     }
 
     private fun saveYhteystieto(
