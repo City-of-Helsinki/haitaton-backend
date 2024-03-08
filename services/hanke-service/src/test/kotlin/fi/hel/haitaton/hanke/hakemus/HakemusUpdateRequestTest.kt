@@ -141,7 +141,7 @@ class HakemusUpdateRequestTest {
                             application = this
                         )
                         .apply {
-                            yhteyshenkilot =
+                            yhteyshenkilot.addAll(
                                 hakemusyhteyshenkilot.map {
                                     HakemusyhteyshenkiloFactory.createEntity(
                                         this,
@@ -151,6 +151,7 @@ class HakemusUpdateRequestTest {
                                         it.second
                                     )
                                 }
+                            )
                         }
             }
 

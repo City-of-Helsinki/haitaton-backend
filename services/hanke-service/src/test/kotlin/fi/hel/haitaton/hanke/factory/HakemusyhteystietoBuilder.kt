@@ -1,11 +1,7 @@
 package fi.hel.haitaton.hanke.factory
 
-import fi.hel.haitaton.hanke.allu.ApplicationStatus
-import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationEntity
-import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.application.ApplicationService
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
@@ -14,68 +10,6 @@ import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
-import fi.hel.haitaton.hanke.profiili.Names
-import fi.hel.haitaton.hanke.profiili.ProfiiliClient
-
-data class ApplicationBuilder(
-    private var application: Application,
-    private val userId: String,
-    private val names: Names = ProfiiliFactory.DEFAULT_NAMES,
-    private val applicationService: ApplicationService,
-    private val applicationRepository: ApplicationRepository,
-    private val mockProfiiliClient: ProfiiliClient,
-    private val hankeKayttajaFactory: HankeKayttajaFactory,
-    private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
-    private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
-) {
-    /**
-     * Create this application and then update it to give it fuller information. This method does an
-     * actual update, so it will set modifiedBy and modifiedAt columns and bump version up to 1.
-     */
-    fun save(): Application {
-        val id = applicationService.create(application, userId).id!!
-        val entity = applicationRepository.getReferenceById(id)
-        entity.alluid = application.alluid
-        entity.alluStatus = application.alluStatus
-        entity.applicationIdentifier = application.applicationIdentifier
-        applicationRepository.save(entity)
-        return applicationService.getApplicationById(id)
-    }
-
-    /** Save the entity with [save], and - for convenience - get the saved entity from DB. */
-    private fun saveEntity(): ApplicationEntity =
-        applicationRepository.getReferenceById(save().id!!)
-
-    fun saveWithYhteystiedot(f: HakemusyhteystietoBuilder.() -> Unit): ApplicationEntity {
-        val entity = saveEntity()
-        val builder =
-            HakemusyhteystietoBuilder(
-                entity,
-                userId,
-                hankeKayttajaFactory,
-                hakemusyhteystietoRepository,
-                hakemusyhteyshenkiloRepository,
-            )
-        builder.f()
-        return entity
-    }
-
-    fun withStatus(
-        status: ApplicationStatus = ApplicationStatus.PENDING,
-        alluId: Int = 1,
-        identifier: String = "JS000$alluId"
-    ): ApplicationBuilder {
-        application =
-            application.copy(
-                alluid = alluId,
-                alluStatus = status,
-                applicationIdentifier = identifier
-            )
-        return this
-    }
-
-    fun inHandling(alluId: Int = 1) = withStatus(ApplicationStatus.HANDLING, alluId)
-}
 
 data class HakemusyhteystietoBuilder(
     private val applicationEntity: ApplicationEntity,
