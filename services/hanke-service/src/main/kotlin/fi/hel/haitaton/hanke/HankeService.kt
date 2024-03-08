@@ -518,7 +518,7 @@ class HankeService(
         }
         kayttajatToRemove.forEach { removeYhteyshenkilo(it, existingYT) }
 
-        // Remove the corresponding entry from the map. (Afterwards, the entries remaining in
+        // Remove the corresponding entry from the map. (Afterward, the entries remaining in
         // the map were not in the incoming data, so should be removed from the database.)
         existingYTs.remove(incomingId)
     }
@@ -592,7 +592,7 @@ class HankeService(
         savedHankeEntity: HankeEntity,
         userid: String
     ) {
-        // It would be possible to process all operation types the same way afterwards like for
+        // It would be possible to process all operation types the same way afterward like for
         // creating new yhteystietos, but that would cause some (relatively) minor extra work, and,
         // the proper solution would be to handle personal data access in its own separate service
         // and do the logging there independently... So, the current way of doing things should be

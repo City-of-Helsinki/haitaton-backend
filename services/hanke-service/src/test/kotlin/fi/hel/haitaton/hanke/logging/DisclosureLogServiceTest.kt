@@ -421,12 +421,9 @@ internal class DisclosureLogServiceTest {
         @Test
         fun `doesn't save entries for blank customers`() {
             val blankCustomer =
-                CustomerResponse(null, CustomerType.PERSON, "", "", "", "", "", "", "", "")
-            val blankCustomerWithCountry =
-                CustomerResponse(null, type = CustomerType.PERSON, "", "FI", "", "", "", "", "", "")
+                CustomerResponse(UUID.randomUUID(), CustomerType.PERSON, "", "", "", "")
             val customerWithoutContacts = CustomerWithContactsResponse(blankCustomer, listOf())
-            val contractorWithoutContacts =
-                CustomerWithContactsResponse(blankCustomerWithCountry, listOf())
+            val contractorWithoutContacts = CustomerWithContactsResponse(blankCustomer, listOf())
             val hakemusResponse =
                 HakemusResponseFactory.create(
                     applicationData =

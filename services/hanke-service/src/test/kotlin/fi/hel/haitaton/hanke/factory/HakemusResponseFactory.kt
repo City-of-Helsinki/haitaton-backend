@@ -74,51 +74,35 @@ object HakemusResponseFactory {
         )
 
     fun companyCustomer(
-        type: CustomerType? = CustomerType.COMPANY,
+        type: CustomerType = CustomerType.COMPANY,
         name: String = "DNA",
-        country: String = "FI",
-        email: String? = "info@dna.test",
-        phone: String? = "+3581012345678",
+        email: String = "info@dna.test",
+        phone: String = "+3581012345678",
         registryKey: String? = "3766028-0",
-        ovt: String? = null,
-        invoicingOperator: String? = null,
-        sapCustomerNumber: String? = null,
     ): CustomerResponse =
         CustomerResponse(
             UUID.randomUUID(),
             type,
             name,
-            country,
             email,
             phone,
             registryKey,
-            ovt,
-            invoicingOperator,
-            sapCustomerNumber
         )
 
     fun personCustomer(
-        type: CustomerType? = CustomerType.PERSON,
+        type: CustomerType = CustomerType.PERSON,
         name: String = TEPPO_TESTI,
-        country: String = "FI",
-        email: String? = ApplicationFactory.TEPPO_EMAIL,
-        phone: String? = ApplicationFactory.TEPPO_PHONE,
+        email: String = ApplicationFactory.TEPPO_EMAIL,
+        phone: String = ApplicationFactory.TEPPO_PHONE,
         registryKey: String? = "281192-937W",
-        ovt: String? = null,
-        invoicingOperator: String? = null,
-        sapCustomerNumber: String? = null,
     ) =
         CustomerResponse(
             UUID.randomUUID(),
             type,
             name,
-            country,
             email,
             phone,
             registryKey,
-            ovt,
-            invoicingOperator,
-            sapCustomerNumber
         )
 
     fun CustomerResponse.withContacts(
@@ -127,61 +111,45 @@ object HakemusResponseFactory {
 
     private fun createPersonCustomerResponse(
         yhteystietoId: UUID = UUID.randomUUID(),
-        type: CustomerType? = CustomerType.PERSON,
+        type: CustomerType = CustomerType.PERSON,
         name: String = TEPPO_TESTI,
-        country: String = "FI",
-        email: String? = ApplicationFactory.TEPPO_EMAIL,
-        phone: String? = "04012345678",
+        email: String = ApplicationFactory.TEPPO_EMAIL,
+        phone: String = "04012345678",
         registryKey: String? = "281192-937W",
-        ovt: String? = null,
-        invoicingOperator: String? = null,
-        sapCustomerNumber: String? = null,
     ) =
         CustomerResponse(
             yhteystietoId,
             type,
             name,
-            country,
             email,
             phone,
             registryKey,
-            ovt,
-            invoicingOperator,
-            sapCustomerNumber
         )
 
     private fun createCompanyCustomerResponse(
         yhteystietoId: UUID = UUID.randomUUID(),
-        type: CustomerType? = CustomerType.COMPANY,
+        type: CustomerType = CustomerType.COMPANY,
         name: String = "DNA",
-        country: String = "FI",
-        email: String? = "info@dna.test",
-        phone: String? = "+3581012345678",
+        email: String = "info@dna.test",
+        phone: String = "+3581012345678",
         registryKey: String? = "3766028-0",
-        ovt: String? = null,
-        invoicingOperator: String? = null,
-        sapCustomerNumber: String? = null,
     ): CustomerResponse {
         return CustomerResponse(
             yhteystietoId,
             type,
             name,
-            country,
             email,
             phone,
             registryKey,
-            ovt,
-            invoicingOperator,
-            sapCustomerNumber
         )
     }
 
     private fun createContactResponse(
         hankekayttajaId: UUID = UUID.randomUUID(),
-        firstName: String? = "Teppo",
-        lastName: String? = "Testihenkilö",
-        email: String? = ApplicationFactory.TEPPO_EMAIL,
-        phone: String? = "04012345678",
+        firstName: String = "Teppo",
+        lastName: String = "Testihenkilö",
+        email: String = ApplicationFactory.TEPPO_EMAIL,
+        phone: String = "04012345678",
         orderer: Boolean = false
     ) = ContactResponse(hankekayttajaId, firstName, lastName, email, phone, orderer)
 }
