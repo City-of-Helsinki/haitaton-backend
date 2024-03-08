@@ -725,26 +725,21 @@ class HankeServiceITests(
 
     @Test
     fun `updateHanke adds and removes correct yhteyshenkilot in a complex setting`() {
-        lateinit var kayttaja1: HankekayttajaEntity
-        lateinit var kayttaja2: HankekayttajaEntity
-        lateinit var kayttaja3: HankekayttajaEntity
-        val hankeId =
-            hankeFactory
-                .builder(USERNAME)
-                .saveWithYhteystiedot {
-                    kayttaja1 = kayttaja("kayttaja1")
-                    kayttaja2 = kayttaja("kayttaja2")
-                    kayttaja3 = kayttaja("kayttaja3")
-                    omistaja(kayttaja1, kayttaja2)
-                    rakennuttaja {}
-                    rakennuttaja {}
-                    toteuttaja { addYhteyshenkilo(it, kayttaja3) }
-                    muuYhteystieto {
-                        addYhteyshenkilo(it, kayttaja1)
-                        addYhteyshenkilo(it, kayttaja("kayttaja4"))
-                    }
-                }
-                .id
+        val hankeEntity = hankeFactory.builder().saveEntity()
+        val hankeId = hankeEntity.id
+        val kayttaja1 = hankeKayttajaFactory.saveIdentifiedUser(hankeId, sahkoposti = "kayttaja1")
+        val kayttaja2 = hankeKayttajaFactory.saveIdentifiedUser(hankeId, sahkoposti = "kayttaja2")
+        val kayttaja3 = hankeKayttajaFactory.saveIdentifiedUser(hankeId, sahkoposti = "kayttaja3")
+        hankeFactory.addYhteystiedotTo(hankeEntity) {
+            omistaja(kayttaja1, kayttaja2)
+            rakennuttaja {}
+            rakennuttaja {}
+            toteuttaja { addYhteyshenkilo(it, kayttaja3) }
+            muuYhteystieto {
+                addYhteyshenkilo(it, kayttaja1)
+                addYhteyshenkilo(it, kayttaja("kayttaja4"))
+            }
+        }
         val hanke = hankeService.loadHankeById(hankeId)!!
         val newEmail = "new kayttaja"
         val newKayttaja = hankeKayttajaFactory.saveIdentifiedUser(hanke.id, sahkoposti = newEmail)

@@ -344,14 +344,11 @@ class KortistoGdprServiceITest(
 
         @Test
         fun `deletes hanke with applications when there are no other users`() {
-            lateinit var kayttaja: HankekayttajaEntity
-            val hanke =
-                hankeFactory.builder(USERNAME).withHankealue().saveWithYhteystiedot {
-                    kayttaja = hankeKayttajaService.getKayttajaByUserId(hankeEntity.id, USERNAME)!!
-                    omistaja(kayttaja)
-                }
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+            val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+            hankeFactory.addYhteystiedotTo(hanke) { omistaja(founder) }
             hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
-                hakija { addYhteyshenkilo(it, kayttaja) }
+                hakija { addYhteyshenkilo(it, founder) }
             }
 
             gdprService.deleteInfo(USERNAME)
@@ -412,12 +409,9 @@ class KortistoGdprServiceITest(
 
         @Test
         fun `deletes hankekayttaja when there's another admin in the hanke`() {
-            lateinit var kayttaja: HankekayttajaEntity
-            val hanke =
-                hankeFactory.builder(USERNAME).withHankealue().saveWithYhteystiedot {
-                    kayttaja = hankeKayttajaService.getKayttajaByUserId(hankeEntity.id, USERNAME)!!
-                    omistaja(kayttaja)
-                }
+            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+            val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+            hankeFactory.addYhteystiedotTo(hanke) { omistaja(founder) }
             val hakemus =
                 hakemusFactory.builder(USERNAME, hanke).inHandling().saveWithYhteystiedot {
                     hakija(
@@ -436,22 +430,20 @@ class KortistoGdprServiceITest(
             assertThat(hankeKayttajaService.getKayttajatByHankeId(hanke.id)).single().all {
                 prop(HankeKayttajaDto::kayttooikeustaso).isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
                 prop(HankeKayttajaDto::sukunimi).isEqualTo(KAYTTAJA_INPUT_HAKIJA.sukunimi)
-                prop(HankeKayttajaDto::id).isNotEqualTo(kayttaja.id)
+                prop(HankeKayttajaDto::id).isNotEqualTo(founder.id)
             }
         }
 
         @Test
         fun `deletes hankekayttaja when the kayttaja is not an admin`() {
-            lateinit var kayttaja: HankekayttajaEntity
-            val hanke =
-                hankeFactory.builder(OTHER_USER_ID).withHankealue().saveWithYhteystiedot {
-                    kayttaja =
-                        kayttaja(
-                            kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI,
-                            userId = USERNAME
-                        )
-                    omistaja(kayttaja)
-                }
+            val hanke = hankeFactory.builder(OTHER_USER_ID).withHankealue().saveEntity()
+            val kayttaja =
+                hankekayttajaFactory.saveIdentifiedUser(
+                    kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI,
+                    userId = USERNAME,
+                    hankeId = hanke.id,
+                )
+            hankeFactory.addYhteystiedotTo(hanke) { omistaja(kayttaja) }
             val hakemus =
                 hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
                     hakija { addYhteyshenkilo(it, kayttaja) }

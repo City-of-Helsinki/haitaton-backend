@@ -221,11 +221,11 @@ class HankeKayttajaServiceITest : DatabaseTest() {
                     .withPerustaja(KAYTTAJA_INPUT_PERUSTAJA)
                     .saveWithYhteystiedot {
                         omistaja()
-                            .rakennuttaja()
-                            .toteuttaja()
-                            .toteuttaja(toteuttaja = KAYTTAJA_INPUT_RAKENNUTTAJA)
-                            .muuYhteystieto(KAYTTAJA_INPUT_ASIANHOITAJA)
-                            .muuYhteystieto(KAYTTAJA_INPUT_MUU)
+                        rakennuttaja()
+                        toteuttaja()
+                        toteuttaja(toteuttaja = KAYTTAJA_INPUT_RAKENNUTTAJA)
+                        muuYhteystieto(KAYTTAJA_INPUT_ASIANHOITAJA)
+                        muuYhteystieto(KAYTTAJA_INPUT_MUU)
                     }
             val expectedRoles =
                 mapOf(
