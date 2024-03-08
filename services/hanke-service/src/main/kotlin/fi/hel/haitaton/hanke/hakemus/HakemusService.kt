@@ -339,33 +339,30 @@ class HakemusService(
             is CableReportApplicationData ->
                 JohtoselvitysHakemusDataResponse(
                     applicationData.applicationType,
+                    applicationData.pendingOnClient,
                     applicationData.name,
+                    applicationData.postalAddress,
+                    applicationData.constructionWork,
+                    applicationData.maintenanceWork,
+                    applicationData.propertyConnectivity,
+                    applicationData.emergencyWork,
+                    applicationData.rockExcavation,
+                    applicationData.workDescription,
+                    applicationData.startTime,
+                    applicationData.endTime,
+                    applicationData.areas,
                     customerWithContactsResponseWithYhteystiedot(
                         hakemusyhteystiedot[ApplicationContactType.HAKIJA]
                     ),
-                    applicationData.areas,
-                    applicationData.startTime,
-                    applicationData.endTime,
-                    applicationData.pendingOnClient,
-                    applicationData.workDescription,
                     customerWithContactsResponseWithYhteystiedot(
                         hakemusyhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
                     ),
-                    applicationData.rockExcavation,
-                    applicationData.postalAddress,
-                    customerWithContactsResponseWithYhteystiedot(
-                        hakemusyhteystiedot[ApplicationContactType.ASIANHOITAJA]
-                    ),
-                    applicationData.invoicingCustomer,
-                    applicationData.customerReference,
-                    applicationData.area,
                     customerWithContactsResponseWithYhteystiedot(
                         hakemusyhteystiedot[ApplicationContactType.RAKENNUTTAJA]
                     ),
-                    applicationData.constructionWork,
-                    applicationData.maintenanceWork,
-                    applicationData.emergencyWork,
-                    applicationData.propertyConnectivity
+                    customerWithContactsResponseWithYhteystiedot(
+                        hakemusyhteystiedot[ApplicationContactType.ASIANHOITAJA]
+                    ),
                 )
         }
 

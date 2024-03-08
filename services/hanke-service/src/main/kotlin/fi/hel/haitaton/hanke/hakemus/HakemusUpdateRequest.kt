@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType
@@ -11,6 +12,7 @@ import fi.hel.haitaton.hanke.application.StreetAddress
 import java.time.ZonedDateTime
 import java.util.UUID
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 sealed interface HakemusUpdateRequest {
     val name: String
     val postalAddress: PostalAddressRequest
@@ -129,6 +131,7 @@ data class JohtoselvityshakemusUpdateRequest(
         )
 }
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class PostalAddressRequest(val streetAddress: StreetAddress)
 
 data class CustomerWithContactsRequest(
@@ -161,6 +164,7 @@ data class CustomerRequest(
 }
 
 /** For referencing [fi.hel.haitaton.hanke.permissions.HankeKayttaja] by its id. */
+@JsonIgnoreProperties(ignoreUnknown = true)
 data class ContactRequest(
     val hankekayttajaId: UUID,
 )

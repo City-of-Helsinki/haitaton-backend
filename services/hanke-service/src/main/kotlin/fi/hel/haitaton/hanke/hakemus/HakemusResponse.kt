@@ -6,7 +6,6 @@ import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationType
-import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.PostalAddress
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -23,47 +22,63 @@ data class HakemusResponse(
 
 sealed interface HakemusDataResponse {
     val applicationType: ApplicationType
-    val name: String
     val pendingOnClient: Boolean
+    val name: String
+    val postalAddress: PostalAddress?
+    val startTime: ZonedDateTime?
+    val endTime: ZonedDateTime?
     val areas: List<ApplicationArea>?
+    val customerWithContacts: CustomerWithContactsResponse?
 }
 
 data class JohtoselvitysHakemusDataResponse(
     override val applicationType: ApplicationType,
-
-    // Common, required
-    override val name: String,
-    var customerWithContacts: CustomerWithContactsResponse? = null, // hakija
-    override val areas: List<ApplicationArea>?,
-    val startTime: ZonedDateTime?,
-    val endTime: ZonedDateTime?,
     override val pendingOnClient: Boolean,
-
-    // CableReport specific, required
-    val workDescription: String,
-    var contractorWithContacts: CustomerWithContactsResponse? = null, // työn suorittaja
-    val rockExcavation: Boolean?,
-
-    // Common, not required
-    val postalAddress: PostalAddress? = null,
-    var representativeWithContacts: CustomerWithContactsResponse? = null, // asianhoitaja
-    val invoicingCustomer: Customer? = null,
-    val customerReference: String? = null,
-    val area: Double? = null,
-
-    // CableReport specific, not required
-    var propertyDeveloperWithContacts: CustomerWithContactsResponse? = null, // rakennuttaja
+    // 1. sivu Perustiedot (first filled in Create)
+    /** Työn nimi */
+    override val name: String,
+    /** Katuosoite */
+    override val postalAddress: PostalAddress? = null,
+    /** Työssä on kyse: Uuden rakenteen tai johdon rakentamisesta */
     val constructionWork: Boolean = false,
+    /** Työssä on kyse: Olemassaolevan rakenteen kunnossapitotyöstä */
     val maintenanceWork: Boolean = false,
-    val emergencyWork: Boolean = false,
+    /** Työssä on kyse: Kiinteistöliittymien rakentamisesta */
     val propertyConnectivity: Boolean = false, // tontti-/kiinteistöliitos
+    /**
+     * Työssä on kyse: Kaivutyö on aloitettu ennen johtoselvityksen tilaamista merkittävien
+     * vahinkojen välttämiseksi
+     */
+    val emergencyWork: Boolean = false,
+    /** Louhitaanko työn yhteydessä, esimerkiksi kallioperää? */
+    val rockExcavation: Boolean?,
+    /** Työn kuvaus */
+    val workDescription: String,
+    // 2. sivu Alueet
+    /** Työn arvioitu alkupäivä */
+    override val startTime: ZonedDateTime?,
+    /** Työn arvioitu loppupäivä */
+    override val endTime: ZonedDateTime?,
+    /** Työalueet */
+    override val areas: List<ApplicationArea>?,
+    // 3. sivu Yhteystiedot
+    /** Hakijan tiedot */
+    override val customerWithContacts: CustomerWithContactsResponse? = null,
+    /** Työn suorittajan tiedot */
+    val contractorWithContacts: CustomerWithContactsResponse? = null,
+    /** Rakennuttajan tiedot */
+    val propertyDeveloperWithContacts: CustomerWithContactsResponse? = null,
+    /** Asianhoitajan tiedot */
+    val representativeWithContacts: CustomerWithContactsResponse? = null,
+    // 4. sivu Liitteet (separete endpoint)
+    // 5. sivu Yhteenveto (no input data)
 ) : HakemusDataResponse {
     fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContactsResponse>> =
         listOfNotNull(
             customerWithContacts?.let { ApplicationContactType.HAKIJA to it },
             contractorWithContacts?.let { ApplicationContactType.TYON_SUORITTAJA to it },
-            representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
             propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
+            representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
         )
 }
 
@@ -73,43 +88,28 @@ data class CustomerWithContactsResponse(
 )
 
 data class CustomerResponse(
-    val yhteystietoId: UUID? = null,
-    val type: CustomerType?, // Mandatory in Allu, but not in drafts.
+    val yhteystietoId: UUID,
+    val type: CustomerType,
     val name: String,
-    val country: String, // ISO 3166-1 alpha-2 country code
-    val email: String?,
-    val phone: String?,
-    val registryKey: String?, // y-tunnus
-    val ovt: String?, // e-invoice identifier (ovt-tunnus)
-    val invoicingOperator: String?, // e-invoicing operator code
-    val sapCustomerNumber: String?, // customer's sap number
+    val email: String,
+    val phone: String,
+    val registryKey: String?,
 ) {
-    /**
-     * Check if this customer contains any actual personal information.
-     *
-     * Country alone isn't considered personal information when it's dissociated from other
-     * information, so it's not checked here.
-     */
+    /** Check if this customer contains any actual personal information. */
     fun hasPersonalInformation() =
-        !(name.isBlank() &&
-            email.isNullOrBlank() &&
-            phone.isNullOrBlank() &&
-            registryKey.isNullOrBlank() &&
-            ovt.isNullOrBlank() &&
-            invoicingOperator.isNullOrBlank() &&
-            sapCustomerNumber.isNullOrBlank())
+        !(name.isBlank() && email.isBlank() && phone.isBlank() && registryKey.isNullOrBlank())
 }
 
 data class ContactResponse(
     val hankekayttajaId: UUID,
-    val firstName: String?,
-    val lastName: String?,
-    val email: String?,
-    val phone: String?,
+    val firstName: String,
+    val lastName: String,
+    val email: String,
+    val phone: String,
     val orderer: Boolean = false,
 ) {
     /** Check if this contact is blank, i.e. it doesn't contain any actual contact information. */
-    @JsonIgnore fun isBlank() = listOf(firstName, lastName, email, phone).all { it.isNullOrBlank() }
+    @JsonIgnore fun isBlank() = listOf(firstName, lastName, email, phone).all { it.isBlank() }
 
     fun hasInformation() = !isBlank()
 }

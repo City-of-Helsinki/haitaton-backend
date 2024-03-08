@@ -26,9 +26,13 @@ class HakemusFactory(
     private val hankeRepository: HankeRepository,
     private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
     private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
+    private val hankeFactory: HankeFactory,
     private val hankeKayttajaFactory: HankeKayttajaFactory,
 ) {
-    fun builder(userId: String, hankeEntity: HankeEntity): HakemusBuilder {
+    fun builder(
+        userId: String,
+        hankeEntity: HankeEntity = hankeFactory.builder(userId).withHankealue().saveEntity()
+    ): HakemusBuilder {
         val applicationEntity = createHakemus(userId = userId, hanke = hankeEntity)
         return HakemusBuilder(
             applicationEntity,

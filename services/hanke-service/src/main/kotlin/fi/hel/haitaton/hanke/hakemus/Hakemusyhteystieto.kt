@@ -9,8 +9,8 @@ data class Hakemusyhteystieto(
     val tyyppi: CustomerType,
     val rooli: ApplicationContactType,
     val nimi: String,
-    val sahkoposti: String?,
-    val puhelinnumero: String?,
+    val sahkoposti: String,
+    val puhelinnumero: String,
     val ytunnus: String?,
     val yhteyshenkilot: List<Hakemusyhteyshenkilo>,
 )

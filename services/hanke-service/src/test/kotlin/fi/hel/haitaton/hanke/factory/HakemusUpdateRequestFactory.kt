@@ -9,8 +9,11 @@ import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.hakemus.ContactRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
+import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.PostalAddressRequest
+import fi.hel.haitaton.hanke.parseJson
+import fi.hel.haitaton.hanke.toJsonString
 import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
@@ -84,7 +87,7 @@ object HakemusUpdateRequestFactory {
         )
     }
 
-    fun createCustomerWithContactsRequest(
+    private fun createCustomerWithContactsRequest(
         customerType: CustomerType = CustomerType.COMPANY,
         yhteystietoId: UUID? = UUID.randomUUID(),
         vararg hankekayttajaIds: UUID
@@ -116,4 +119,7 @@ object HakemusUpdateRequestFactory {
 
     fun JohtoselvityshakemusUpdateRequest.withAreas(areas: List<ApplicationArea>) =
         this.copy(areas = areas)
+
+    fun HakemusResponse.toUpdateRequest(): JohtoselvityshakemusUpdateRequest =
+        this.applicationData.toJsonString().parseJson()
 }

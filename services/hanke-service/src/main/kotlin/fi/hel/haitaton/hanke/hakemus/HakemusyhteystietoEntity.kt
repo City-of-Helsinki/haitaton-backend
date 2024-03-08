@@ -19,8 +19,6 @@ import java.util.UUID
 import org.hibernate.annotations.BatchSize
 import org.springframework.data.jpa.repository.JpaRepository
 
-const val DEFAULT_COUNTRY = "FI"
-
 @Entity
 @Table(name = "hakemusyhteystieto")
 class HakemusyhteystietoEntity(
@@ -28,8 +26,8 @@ class HakemusyhteystietoEntity(
     @Enumerated(EnumType.STRING) var tyyppi: CustomerType,
     @Enumerated(EnumType.STRING) val rooli: ApplicationContactType,
     var nimi: String,
-    var sahkoposti: String?,
-    var puhelinnumero: String?,
+    var sahkoposti: String,
+    var puhelinnumero: String,
     @Column(name = "y_tunnus") var ytunnus: String?,
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "application_id")
@@ -48,13 +46,9 @@ class HakemusyhteystietoEntity(
             id,
             tyyppi,
             nimi,
-            DEFAULT_COUNTRY,
             sahkoposti,
             puhelinnumero,
             ytunnus,
-            null,
-            null,
-            null
         )
 
     fun toDomain() =

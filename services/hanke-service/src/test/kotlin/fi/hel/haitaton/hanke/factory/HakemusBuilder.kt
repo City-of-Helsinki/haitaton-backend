@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
@@ -36,7 +37,7 @@ data class HakemusBuilder(
         return entity
     }
 
-    private fun withStatus(
+    fun withStatus(
         status: ApplicationStatus = ApplicationStatus.PENDING,
         alluId: Int = 1,
         identifier: String = "JS000$alluId"
@@ -50,8 +51,15 @@ data class HakemusBuilder(
         return this
     }
 
-    fun inHandling(alluId: Int = 1) = withStatus(ApplicationStatus.HANDLING, alluId)
+    fun withWorkDescription(workDescription: String) = apply {
+        applicationEntity.applicationData =
+            when (applicationEntity.applicationData) {
+                is CableReportApplicationData ->
+                    (applicationEntity.applicationData as CableReportApplicationData).copy(
+                        workDescription = workDescription
+                    )
+            }
+    }
 
-    fun withModification(f: ApplicationEntity.() -> Unit): HakemusBuilder =
-        this.apply { applicationEntity.f() }
+    fun inHandling(alluId: Int = 1) = withStatus(ApplicationStatus.HANDLING, alluId)
 }
