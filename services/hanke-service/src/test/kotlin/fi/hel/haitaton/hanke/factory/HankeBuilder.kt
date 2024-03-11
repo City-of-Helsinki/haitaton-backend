@@ -116,7 +116,7 @@ data class HankeBuilder(
     fun withGeneratedOmistaja(i: Int = 1) = withGeneratedOmistajat(i)
 
     fun withGeneratedOmistajat(vararg discriminators: Int) = applyToHanke {
-        omistajat = HankeYhteystietoFactory.createDifferentiated(discriminators.toList())
+        omistajat = HankeYhteystietoFactory.createDifferentiated(discriminators.asList())
     }
 
     fun withGeneratedRakennuttaja(i: Int = 1) = applyToHanke {
@@ -239,9 +239,9 @@ data class HankeYhteystietoBuilder(
         vararg yhteyshenkilot: HankekayttajaEntity =
             arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_OMISTAJA))
     ): HankeYhteystietoEntity =
-        saveYhteystieto(ContactType.OMISTAJA, yhteystieto, yhteyshenkilot.toList())
+        saveYhteystieto(ContactType.OMISTAJA, yhteystieto, yhteyshenkilot.asList())
 
-    fun omistaja(kayttooikeustaso: Kayttooikeustaso) =
+    fun omistaja(kayttooikeustaso: Kayttooikeustaso): HankeYhteystietoEntity =
         omistaja(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_OMISTAJA, kayttooikeustaso))
 
     fun omistaja(
@@ -254,7 +254,7 @@ data class HankeYhteystietoBuilder(
         vararg yhteyshenkilot: HankekayttajaEntity =
             arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_RAKENNUTTAJA))
     ): HankeYhteystietoEntity =
-        saveYhteystieto(ContactType.RAKENNUTTAJA, yhteystieto, yhteyshenkilot.toList())
+        saveYhteystieto(ContactType.RAKENNUTTAJA, yhteystieto, yhteyshenkilot.asList())
 
     fun rakennuttaja(kayttooikeustaso: Kayttooikeustaso) =
         rakennuttaja(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_RAKENNUTTAJA, kayttooikeustaso))
@@ -269,7 +269,7 @@ data class HankeYhteystietoBuilder(
         vararg yhteyshenkilot: HankekayttajaEntity =
             arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_SUORITTAJA))
     ): HankeYhteystietoEntity =
-        saveYhteystieto(ContactType.TOTEUTTAJA, yhteystieto, yhteyshenkilot.toList())
+        saveYhteystieto(ContactType.TOTEUTTAJA, yhteystieto, yhteyshenkilot.asList())
 
     fun toteuttaja(kayttooikeustaso: Kayttooikeustaso) =
         toteuttaja(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_SUORITTAJA, kayttooikeustaso))
@@ -284,7 +284,7 @@ data class HankeYhteystietoBuilder(
         vararg yhteyshenkilot: HankekayttajaEntity =
             arrayOf(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_ASIANHOITAJA))
     ): HankeYhteystietoEntity =
-        saveYhteystieto(ContactType.MUU, yhteystieto, yhteyshenkilot.toList())
+        saveYhteystieto(ContactType.MUU, yhteystieto, yhteyshenkilot.asList())
 
     fun muuYhteystieto(kayttooikeustaso: Kayttooikeustaso) =
         muuYhteystieto(kayttaja(HankeKayttajaFactory.KAYTTAJA_INPUT_ASIANHOITAJA, kayttooikeustaso))

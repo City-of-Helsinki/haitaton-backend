@@ -74,8 +74,8 @@ class HakemusServiceITest(
             val hanke = hankeFactory.saveMinimal(generated = true)
             val application =
                 hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
-                    hakija(kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
-                    tyonSuorittaja(kayttooikeustaso = Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
+                    hakija(Kayttooikeustaso.KAIKKI_OIKEUDET, tilaaja = true)
+                    tyonSuorittaja(Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
                     rakennuttaja(kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI)
                     asianhoitaja()
                 }

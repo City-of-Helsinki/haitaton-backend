@@ -189,12 +189,10 @@ class KortistoGdprServiceITest(
             val hanke = hankeFactory.saveMinimal(generated = true)
             hakemusFactory.builder("other", hanke).saveWithYhteystiedot {
                 val kayttaja = kayttaja(userId = USERNAME)
-                hakija(yhteystieto = omistajaYhteystieto) { addYhteyshenkilo(it, kayttaja) }
-                tyonSuorittaja(yhteystieto = toteuttajaYhteystieto) {
-                    addYhteyshenkilo(it, kayttaja)
-                }
-                rakennuttaja(yhteystieto = toteuttajaYhteystieto) { addYhteyshenkilo(it, kayttaja) }
-                asianhoitaja(yhteystieto = toteuttajaYhteystieto) { addYhteyshenkilo(it, kayttaja) }
+                hakija(yhteystieto = omistajaYhteystieto, kayttaja)
+                tyonSuorittaja(yhteystieto = toteuttajaYhteystieto, kayttaja)
+                rakennuttaja(yhteystieto = toteuttajaYhteystieto, kayttaja)
+                asianhoitaja(yhteystieto = toteuttajaYhteystieto, kayttaja)
             }
 
             val result = gdprService.findGdprInfo(USERNAME)
@@ -242,12 +240,8 @@ class KortistoGdprServiceITest(
         fun `returns true when there are only draft applications`() {
             val hanke = hankeFactory.saveWithAlue(USERNAME)
             val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
-            hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
-                asianhoitaja { addYhteyshenkilo(it, kayttaja) }
-            }
-            hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
-                rakennuttaja { addYhteyshenkilo(it, kayttaja) }
-            }
+            hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot { asianhoitaja(kayttaja) }
+            hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot { rakennuttaja(kayttaja) }
 
             val result = gdprService.canDelete(USERNAME)
 
@@ -258,12 +252,10 @@ class KortistoGdprServiceITest(
         fun `throws exception when there's an active application`() {
             val hanke = hankeFactory.saveWithAlue(USERNAME)
             val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
-            hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
-                asianhoitaja { addYhteyshenkilo(it, kayttaja) }
-            }
+            hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot { asianhoitaja(kayttaja) }
             val activeHakemus =
                 hakemusFactory.builder(USERNAME, hanke).inHandling().saveWithYhteystiedot {
-                    rakennuttaja { addYhteyshenkilo(it, kayttaja) }
+                    rakennuttaja(kayttaja)
                 }
 
             val failure = assertFailure { gdprService.canDelete(USERNAME) }
@@ -286,10 +278,10 @@ class KortistoGdprServiceITest(
                     kayttooikeustaso = Kayttooikeustaso.HANKEMUOKKAUS
                 )
             hakemusFactory.builder(adminUserId, hanke).saveWithYhteystiedot {
-                asianhoitaja { addYhteyshenkilo(it, targetKayttaja) }
+                asianhoitaja(targetKayttaja)
             }
             hakemusFactory.builder(adminUserId, hanke).inHandling().saveWithYhteystiedot {
-                rakennuttaja { addYhteyshenkilo(it, adminKayttaja) }
+                rakennuttaja(adminKayttaja)
             }
 
             val result = gdprService.canDelete(USERNAME)
@@ -340,9 +332,7 @@ class KortistoGdprServiceITest(
             val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
             val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
             hankeFactory.addYhteystiedotTo(hanke) { omistaja(founder) }
-            hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
-                hakija { addYhteyshenkilo(it, founder) }
-            }
+            hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot { hakija(founder) }
 
             gdprService.deleteInfo(USERNAME)
 
@@ -407,10 +397,7 @@ class KortistoGdprServiceITest(
             hankeFactory.addYhteystiedotTo(hanke) { omistaja(founder) }
             val hakemus =
                 hakemusFactory.builder(USERNAME, hanke).inHandling().saveWithYhteystiedot {
-                    hakija(
-                        hakija = KAYTTAJA_INPUT_HAKIJA,
-                        kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
-                    )
+                    hakija(Kayttooikeustaso.KAIKKI_OIKEUDET)
                 }
 
             gdprService.deleteInfo(USERNAME)
@@ -438,9 +425,7 @@ class KortistoGdprServiceITest(
                 )
             hankeFactory.addYhteystiedotTo(hanke) { omistaja(kayttaja) }
             val hakemus =
-                hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
-                    hakija { addYhteyshenkilo(it, kayttaja) }
-                }
+                hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot { hakija(kayttaja) }
             val founder: HankekayttajaEntity =
                 hankeKayttajaService.getKayttajaByUserId(hanke.id, OTHER_USER_ID)!!
 
@@ -466,7 +451,7 @@ class KortistoGdprServiceITest(
             val kayttaja = hankekayttajaFactory.saveIdentifiedUser(hanke.id, userId = USERNAME)
             val hakemus =
                 hakemusFactory.builder(USERNAME, hanke).inHandling().saveWithYhteystiedot {
-                    hakija { addYhteyshenkilo(it, kayttaja) }
+                    hakija(kayttaja)
                 }
 
             val failure = assertFailure { gdprService.deleteInfo(USERNAME) }
@@ -495,7 +480,7 @@ class KortistoGdprServiceITest(
                 }
             val nonAdminHakemus =
                 hakemusFactory.builder(USERNAME, nonAdminHanke).saveWithYhteystiedot {
-                    hakija { addYhteyshenkilo(it, nonAdminKayttaja) }
+                    hakija(nonAdminKayttaja)
                 }
             lateinit var twoAdminKayttaja: HankekayttajaEntity
             val twoAdminHanke =
@@ -516,7 +501,7 @@ class KortistoGdprServiceITest(
                     omistaja(soloKayttaja)
                 }
             hakemusFactory.builder(USERNAME, soloHanke).saveWithYhteystiedot {
-                hakija { addYhteyshenkilo(it, soloKayttaja) }
+                hakija(soloKayttaja)
             }
             val oneAdminHanke =
                 hankeFactory.builder(USERNAME).withHankealue().saveWithYhteystiedot {
