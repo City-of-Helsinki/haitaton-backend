@@ -6,8 +6,8 @@ import assertk.assertThat
 import assertk.assertions.hasClass
 import assertk.assertions.isTrue
 import assertk.assertions.messageContains
-import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.factory.HankeAttachmentFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -20,19 +20,13 @@ import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
 class HankeAttachmentAuthorizerITest(
     @Autowired private val authorizer: HankeAttachmentAuthorizer,
     @Autowired private val permissionService: PermissionService,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeAttachmentFactory: HankeAttachmentFactory,
-) : DatabaseTest() {
+) : IntegrationTest() {
     private val hankeTunnus = "HAI24-14"
     private val attachmentId = UUID.fromString("3b0e3149-37a2-4393-af03-6a34b946fef1")
 

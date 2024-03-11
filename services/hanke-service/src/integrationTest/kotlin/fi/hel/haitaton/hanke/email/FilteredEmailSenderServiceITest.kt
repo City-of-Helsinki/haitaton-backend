@@ -6,14 +6,13 @@ import assertk.assertions.isEqualTo
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
-import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.application.ApplicationType.CABLE_REPORT
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.ActiveProfiles
 
 @SpringBootTest(
     properties =
@@ -23,8 +22,7 @@ import org.springframework.test.context.ActiveProfiles
             "haitaton.features.user-management=false"
         ]
 )
-@ActiveProfiles("test")
-class FilteredEmailSenderServiceITest : DatabaseTest() {
+class FilteredEmailSenderServiceITest : IntegrationTest() {
 
     companion object {
         @JvmField

@@ -26,8 +26,8 @@ import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.ContactType
-import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.email.textBody
@@ -86,17 +86,11 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.core.context.SecurityContext
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
 const val kayttajaTunnistePattern = "[a-zA-z0-9]{24}"
 
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
-class HankeKayttajaServiceITest : DatabaseTest() {
+class HankeKayttajaServiceITest : IntegrationTest() {
 
     @Autowired private lateinit var hankeKayttajaService: HankeKayttajaService
     @Autowired private lateinit var permissionService: PermissionService

@@ -10,12 +10,11 @@ import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNull
 import assertk.assertions.prop
-import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
@@ -29,16 +28,11 @@ import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
 @SpringBootTest(properties = ["haitaton.features.user-management=false"])
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
-class OldGdprServiceITest : DatabaseTest() {
+class OldGdprServiceITest : IntegrationTest() {
 
     @Autowired lateinit var gdprService: OldGdprService
     @Autowired lateinit var applicationFactory: ApplicationFactory
@@ -178,7 +172,6 @@ class OldGdprServiceITest : DatabaseTest() {
     }
 
     @Nested
-    @ExtendWith(MockFileClientExtension::class)
     inner class DeleteApplications {
         @Test
         fun `Deletes all given applications of the given user`() {

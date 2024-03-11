@@ -8,21 +8,17 @@ import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
-import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import java.time.ZonedDateTime
 import org.geojson.Polygon
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.JdbcTemplate
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
 
-@SpringBootTest
-@ActiveProfiles("test")
-internal class GeometriatDaoITest : DatabaseTest() {
+internal class GeometriatDaoITest : IntegrationTest() {
 
     private val expectedPolygonArea = 1707f
 

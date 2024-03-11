@@ -24,11 +24,11 @@ import assertk.assertions.single
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
-import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
@@ -46,7 +46,6 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContent
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
-import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.email.EmailSenderService.Companion.translations
 import fi.hel.haitaton.hanke.email.textBody
@@ -122,27 +121,19 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
 import org.skyscreamer.jsonassert.JSONAssert
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
 
 private const val HANKE_TUNNUS = "HAI23-5"
 
 private val dataWithoutAreas = createCableReportApplicationData(areas = listOf())
 
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
-@ExtendWith(MockFileClientExtension::class)
-class ApplicationServiceITest : DatabaseTest() {
+class ApplicationServiceITest : IntegrationTest() {
 
     @Autowired private lateinit var applicationService: ApplicationService
     @Autowired private lateinit var hankeService: HankeService

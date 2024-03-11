@@ -6,7 +6,7 @@ import assertk.assertThat
 import assertk.assertions.hasClass
 import assertk.assertions.isTrue
 import assertk.assertions.messageContains
-import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -14,19 +14,13 @@ import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
 class HankeKayttajaAuthorizerITest(
     @Autowired private val authorizer: HankeKayttajaAuthorizer,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired private val permissionService: PermissionService,
-) : DatabaseTest() {
+) : IntegrationTest() {
 
     @Nested
     inner class AuthorizeKayttajaId {

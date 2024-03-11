@@ -8,24 +8,20 @@ import assertk.assertions.isEqualTo
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
-import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.firstReceivedMessage
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.ActiveProfiles
 
 private const val TEST_EMAIL = "test@test.test"
 private const val HAITATON_NO_REPLY = "no-reply@hel.fi"
 private const val APPLICATION_IDENTIFIER = "JS2300001"
 private const val INVITER_NAME = "Matti Meikäläinen"
 
-@SpringBootTest
-@ActiveProfiles("test")
-class EmailSenderServiceITest : DatabaseTest() {
+class EmailSenderServiceITest : IntegrationTest() {
 
     companion object {
         @JvmField
