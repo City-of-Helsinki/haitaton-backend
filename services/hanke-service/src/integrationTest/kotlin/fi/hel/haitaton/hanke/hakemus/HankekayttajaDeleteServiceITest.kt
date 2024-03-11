@@ -25,6 +25,7 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaNotFoundException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaDeleteService
@@ -47,6 +48,7 @@ class HankekayttajaDeleteServiceITest(
     @Autowired val hakemusService: HakemusService,
     @Autowired val hankeFactory: HankeFactory,
     @Autowired val hakemusFactory: HakemusFactory,
+    @Autowired val hankeKayttajaFactory: HankeKayttajaFactory,
 ) : IntegrationTest() {
 
     @Nested
@@ -214,7 +216,7 @@ class HankekayttajaDeleteServiceITest(
             val builder = hankeFactory.yhteystietoBuilderFrom(hanke)
             builder.omistaja(founder, builder.kayttaja())
             val offendingOmistaja = builder.omistaja(founder)
-            builder.toteuttaja(kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+            builder.toteuttaja(Kayttooikeustaso.KAIKKI_OIKEUDET)
 
             val failure = assertFailure { deleteService.delete(founder.id) }
 
@@ -229,7 +231,7 @@ class HankekayttajaDeleteServiceITest(
         fun `throws an exception if the user is a contact in an active hakemus`() {
             val hanke =
                 hankeFactory.builder().withHankealue().saveWithYhteystiedot {
-                    toteuttaja(kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    toteuttaja(Kayttooikeustaso.KAIKKI_OIKEUDET)
                 }
             val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
             val pending =
@@ -261,7 +263,7 @@ class HankekayttajaDeleteServiceITest(
             val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
             hankeFactory.addYhteystiedotTo(hanke) {
                 omistaja(founder, kayttaja())
-                toteuttaja(kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+                toteuttaja(Kayttooikeustaso.KAIKKI_OIKEUDET)
             }
             val draftHakemus =
                 hakemusFactory.builder(hankeEntity = hanke).withName("Draft").saveWithYhteystiedot {

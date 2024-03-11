@@ -217,9 +217,9 @@ class HankeKayttajaServiceITest : IntegrationTest() {
                         omistaja()
                         rakennuttaja()
                         toteuttaja()
-                        toteuttaja(toteuttaja = KAYTTAJA_INPUT_RAKENNUTTAJA)
-                        muuYhteystieto(KAYTTAJA_INPUT_ASIANHOITAJA)
-                        muuYhteystieto(KAYTTAJA_INPUT_MUU)
+                        toteuttaja(kayttaja(KAYTTAJA_INPUT_RAKENNUTTAJA))
+                        muuYhteystieto(kayttaja(KAYTTAJA_INPUT_ASIANHOITAJA))
+                        muuYhteystieto(kayttaja(KAYTTAJA_INPUT_MUU))
                     }
             val expectedRoles =
                 mapOf(

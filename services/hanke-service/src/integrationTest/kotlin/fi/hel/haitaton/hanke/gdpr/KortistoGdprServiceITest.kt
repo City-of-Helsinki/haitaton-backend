@@ -151,9 +151,9 @@ class KortistoGdprServiceITest(
             hankeFactory.builder("other").saveWithYhteystiedot {
                 val kayttaja = kayttaja(userId = USERNAME)
                 omistaja(yhteystieto = omistajaYhteystieto, kayttaja)
-                toteuttaja(yhteystieto = toteuttajaYhteystieto) { addYhteyshenkilo(it, kayttaja) }
-                rakennuttaja(yhteystieto = toteuttajaYhteystieto) { addYhteyshenkilo(it, kayttaja) }
-                rakennuttaja(yhteystieto = toteuttajaYhteystieto) { addYhteyshenkilo(it, kayttaja) }
+                toteuttaja(yhteystieto = toteuttajaYhteystieto, kayttaja)
+                rakennuttaja(yhteystieto = toteuttajaYhteystieto, kayttaja)
+                rakennuttaja(yhteystieto = toteuttajaYhteystieto, kayttaja)
             }
 
             val result = gdprService.findGdprInfo(USERNAME)
