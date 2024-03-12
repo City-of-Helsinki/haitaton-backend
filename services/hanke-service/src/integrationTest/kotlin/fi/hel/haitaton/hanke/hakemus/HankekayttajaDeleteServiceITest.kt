@@ -17,8 +17,8 @@ import assertk.assertions.isTrue
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
-import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
@@ -47,7 +47,7 @@ class HankekayttajaDeleteServiceITest(
     @Autowired val hakemusService: HakemusService,
     @Autowired val hankeFactory: HankeFactory,
     @Autowired val hakemusFactory: HakemusFactory,
-) : DatabaseTest() {
+) : IntegrationTest() {
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)

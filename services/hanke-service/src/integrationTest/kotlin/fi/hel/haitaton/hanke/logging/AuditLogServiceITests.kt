@@ -5,23 +5,19 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
-import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.TestUtils
 import jakarta.persistence.EntityManager
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.ActiveProfiles
 
 /**
  * Testing the configurations and database setup for AuditLogRepository class with a database. The
  * repositories have no additional code over the base JPARepository, so only the configs/setups get
  * indirectly tested.
  */
-@SpringBootTest
-@ActiveProfiles("test")
-class AuditLogServiceITests : DatabaseTest() {
+class AuditLogServiceITests : IntegrationTest() {
 
     @Autowired private lateinit var entityManager: EntityManager
     @Autowired private lateinit var auditLogService: AuditLogService

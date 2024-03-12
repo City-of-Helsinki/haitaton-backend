@@ -3,7 +3,7 @@ package fi.hel.haitaton.hanke.attachment.common
 import assertk.assertThat
 import assertk.assertions.isFalse
 import assertk.assertions.isTrue
-import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.attachment.body
 import fi.hel.haitaton.hanke.attachment.failResult
 import fi.hel.haitaton.hanke.attachment.response
@@ -18,13 +18,9 @@ import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.web.reactive.function.client.WebClientResponseException
 
-@SpringBootTest
-@ActiveProfiles("test")
-class FileScanClientITest : DatabaseTest() {
+class FileScanClientITest : IntegrationTest() {
 
     @Autowired private lateinit var scanClient: FileScanClient
 

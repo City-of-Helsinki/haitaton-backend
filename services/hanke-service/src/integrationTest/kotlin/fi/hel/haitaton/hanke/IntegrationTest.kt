@@ -1,6 +1,8 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.test.USERNAME
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
 import org.springframework.security.test.context.support.WithMockUser
@@ -26,7 +28,8 @@ import org.testcontainers.utility.MountableFile
 @SpringBootTest
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
-abstract class DatabaseTest {
+@ExtendWith(MockFileClientExtension::class)
+abstract class IntegrationTest {
     companion object {
         @ServiceConnection
         private val postgresContainer: PostgreSQLContainer<*> =

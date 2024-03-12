@@ -5,7 +5,7 @@ import assertk.assertions.each
 import assertk.assertions.hasSize
 import assertk.assertions.isNull
 import assertk.assertions.isTrue
-import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
@@ -14,14 +14,8 @@ import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
-class TestDataServiceITest : DatabaseTest() {
+class TestDataServiceITest : IntegrationTest() {
 
     @Autowired private lateinit var testDataService: TestDataService
     @Autowired private lateinit var applicationRepository: ApplicationRepository

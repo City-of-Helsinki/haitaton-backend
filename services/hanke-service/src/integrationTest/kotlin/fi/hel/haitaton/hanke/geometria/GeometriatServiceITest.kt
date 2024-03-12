@@ -11,28 +11,23 @@ import assertk.assertions.isNotSameInstanceAs
 import assertk.assertions.isNull
 import assertk.assertions.prop
 import fi.hel.haitaton.hanke.DATABASE_TIMESTAMP_FORMAT
-import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.domain.geometriat
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.test.Asserts.isRecentZDT
+import fi.hel.haitaton.hanke.test.USERNAME
 import org.geojson.Polygon
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.core.context.SecurityContextHolder
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(username = "test")
-internal class GeometriatServiceITest : DatabaseTest() {
+internal class GeometriatServiceITest : IntegrationTest() {
 
     @Autowired private lateinit var hankeService: HankeService
 
@@ -53,7 +48,7 @@ internal class GeometriatServiceITest : DatabaseTest() {
         // they must be picked from the created hanke-instance.
         val hankeTunnus =
             hankeFactory
-                .builder("test")
+                .builder(USERNAME)
                 .withHankealue(HankealueFactory.createMinimal(geometriat = geometriat))
                 .save()
                 .hankeTunnus
@@ -156,7 +151,7 @@ internal class GeometriatServiceITest : DatabaseTest() {
             assertThat(savedGeometriat).isNotNull().all {
                 prop(Geometriat::version).isEqualTo(0)
                 prop(Geometriat::createdAt).isRecentZDT()
-                prop(Geometriat::createdByUserId).isEqualTo("test")
+                prop(Geometriat::createdByUserId).isEqualTo(USERNAME)
                 prop(Geometriat::modifiedAt).isNull()
                 prop(Geometriat::modifiedByUserId).isNull()
                 prop(Geometriat::featureCollection).isNotNull().all {
