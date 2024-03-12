@@ -16,14 +16,11 @@ import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaNotFoundException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.toJsonString
 import java.util.UUID
 import kotlin.reflect.KClass
 import mu.KotlinLogging
-import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -33,24 +30,12 @@ private val logger = KotlinLogging.logger {}
 class HakemusService(
     private val applicationRepository: ApplicationRepository,
     private val hankeRepository: HankeRepository,
-    private val hankekayttajaRepository: HankekayttajaRepository,
     private val geometriatDao: GeometriatDao,
     private val hankealueService: HankealueService,
     private val applicationLoggingService: ApplicationLoggingService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
 ) {
-    @Transactional(readOnly = true)
-    fun getHakemuksetForKayttaja(kayttajaId: UUID): List<Hakemus> {
-        val kayttaja =
-            hankekayttajaRepository.findByIdOrNull(kayttajaId)
-                ?: throw HankeKayttajaNotFoundException(kayttajaId)
-        return kayttaja.hakemusyhteyshenkilot
-            .map { it.hakemusyhteystieto }
-            .map { it.application }
-            .map { it.toHakemus() }
-    }
-
     @Transactional(readOnly = true)
     fun hakemusResponse(applicationId: Long): HakemusResponse {
         val applicationEntity =

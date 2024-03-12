@@ -225,7 +225,12 @@ class HankeServiceITests(
         fun `returns yhteystiedot and yhteyshenkilot if they're present`() {
             val entity =
                 hankeFactory.builder(USERNAME).saveWithYhteystiedot {
-                    omistaja(kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    omistaja(
+                        kayttaja(
+                            HankeKayttajaFactory.KAYTTAJA_INPUT_OMISTAJA,
+                            Kayttooikeustaso.KAIKKI_OIKEUDET
+                        )
+                    )
                     rakennuttaja(kayttooikeustaso = Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
                     toteuttaja(kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI)
                     muuYhteystieto()
@@ -730,10 +735,7 @@ class HankeServiceITests(
                     kayttaja1 = kayttaja("kayttaja1")
                     kayttaja2 = kayttaja("kayttaja2")
                     kayttaja3 = kayttaja("kayttaja3")
-                    omistaja {
-                        addYhteyshenkilo(it, kayttaja1)
-                        addYhteyshenkilo(it, kayttaja2)
-                    }
+                    omistaja(kayttaja1, kayttaja2)
                     rakennuttaja {}
                     rakennuttaja {}
                     toteuttaja { addYhteyshenkilo(it, kayttaja3) }

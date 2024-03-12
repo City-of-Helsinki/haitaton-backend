@@ -18,6 +18,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaAuthorizer
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.permissions.HankekayttajaDeleteService
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
 import fi.hel.haitaton.hanke.security.AccessRules
@@ -86,6 +87,8 @@ class IntegrationTestConfiguration {
     @Bean fun applicationAttachmentService(): ApplicationAttachmentService = mockk()
 
     @Bean fun hankeKayttajaService(): HankeKayttajaService = mockk()
+
+    @Bean fun hankekayttajaDeleteService(): HankekayttajaDeleteService = mockk()
 
     @Bean fun hankeKayttajaAuthorizer(): HankeKayttajaAuthorizer = mockk(relaxUnitFun = true)
 

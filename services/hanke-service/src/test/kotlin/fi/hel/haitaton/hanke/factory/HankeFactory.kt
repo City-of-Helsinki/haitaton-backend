@@ -22,6 +22,7 @@ import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HankealueFactory.createHankeAlueEntity
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_NAMES
 import fi.hel.haitaton.hanke.profiili.ProfiiliClient
+import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulos
 import fi.hel.haitaton.hanke.tormaystarkastelu.TormaystarkasteluTulosEntity
 import java.time.ZonedDateTime
@@ -65,9 +66,10 @@ class HankeFactory(
     }
 
     /** Convenience method for storing a hanke with a hankealue. */
-    fun saveWithAlue(userId: String): HankeEntity = builder(userId).withHankealue().saveEntity()
+    fun saveWithAlue(userId: String = USERNAME): HankeEntity =
+        builder(userId).withHankealue().saveEntity()
 
-    fun builder(userId: String): HankeBuilder {
+    fun builder(userId: String = USERNAME): HankeBuilder {
         val hanke =
             create(
                 nimi = defaultNimi,
