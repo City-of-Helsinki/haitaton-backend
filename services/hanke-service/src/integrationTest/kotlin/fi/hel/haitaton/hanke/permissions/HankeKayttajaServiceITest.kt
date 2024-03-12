@@ -74,6 +74,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasTargetType
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
+import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toChangeLogJsonString
 import fi.hel.haitaton.hanke.userId
 import io.mockk.every
@@ -90,7 +91,6 @@ import org.springframework.security.core.context.SecurityContext
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 
-private const val USERNAME = "test7358"
 const val kayttajaTunnistePattern = "[a-zA-z0-9]{24}"
 
 @SpringBootTest

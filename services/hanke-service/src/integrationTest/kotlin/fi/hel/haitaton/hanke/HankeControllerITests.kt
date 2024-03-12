@@ -18,6 +18,7 @@ import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.tormaystarkastelu.AutoliikenteenKaistavaikutustenPituus
 import fi.hel.haitaton.hanke.tormaystarkastelu.IndeksiType
 import fi.hel.haitaton.hanke.tormaystarkastelu.Meluhaitta
@@ -49,7 +50,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-private const val USERNAME = "test"
 private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
 private const val BASE_URL = "/hankkeet"
 
@@ -122,7 +122,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
                 hankeService.loadHanke(HANKE_TUNNUS)
-                disclosureLogService.saveDisclosureLogsForHanke(hanke, "test")
+                disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME)
             }
         }
 
@@ -176,7 +176,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
                 hankeService.loadHanke(HANKE_TUNNUS)
-                disclosureLogService.saveDisclosureLogsForHanke(hanke, "test")
+                disclosureLogService.saveDisclosureLogsForHanke(hanke, USERNAME)
             }
         }
 
@@ -275,7 +275,7 @@ class HankeControllerITests(@Autowired override val mockMvc: MockMvc) : Controll
             verifySequence {
                 permissionService.getAllowedHankeIds(USERNAME, PermissionCode.VIEW)
                 hankeService.loadHankkeetByIds(hankeIds)
-                disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, "test")
+                disclosureLogService.saveDisclosureLogsForHankkeet(hankkeet, USERNAME)
             }
         }
 

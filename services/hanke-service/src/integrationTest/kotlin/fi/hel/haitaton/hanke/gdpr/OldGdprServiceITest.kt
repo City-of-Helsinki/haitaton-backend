@@ -25,6 +25,7 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.hasSameElementsAs
+import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -34,11 +35,9 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 
-private const val USERID = "test-user"
-
 @SpringBootTest(properties = ["haitaton.features.user-management=false"])
 @ActiveProfiles("test")
-@WithMockUser(USERID)
+@WithMockUser(USERNAME)
 class OldGdprServiceITest : DatabaseTest() {
 
     @Autowired lateinit var gdprService: OldGdprService
@@ -50,40 +49,40 @@ class OldGdprServiceITest : DatabaseTest() {
     inner class FindGdprInfo {
         @Test
         fun `Returns null without applications`() {
-            val result = gdprService.findGdprInfo(USERID)
+            val result = gdprService.findGdprInfo(USERNAME)
 
             assertThat(result).isNull()
         }
 
         @Test
         fun `Returns null when user has no applications`() {
-            val hanke = hankeFactory.builder(USERID).saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             applicationFactory.saveApplicationEntities(3, "Other User", hanke)
-            val result = gdprService.findGdprInfo(USERID)
+            val result = gdprService.findGdprInfo(USERNAME)
 
             assertThat(result).isNull()
         }
 
         @Test
         fun `Returns information for user's applications`() {
-            val hanke = hankeFactory.builder(USERID).saveEntity()
-            applicationFactory.saveApplicationEntities(6, USERID, hanke) { i, application ->
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
+            applicationFactory.saveApplicationEntities(6, USERNAME, hanke) { i, application ->
                 if (i % 2 == 0) {
                     application.userId = "Other User"
                     application.setOrdererName("Other", "User")
                 } else {
-                    application.userId = USERID
+                    application.userId = USERNAME
                     application.setOrdererName(TEPPO, TESTIHENKILO)
                 }
             }
 
-            val result = gdprService.findGdprInfo(USERID)
+            val result = gdprService.findGdprInfo(USERNAME)
 
             val expected =
                 CollectionNode(
                     "user",
                     listOf(
-                        StringNode("id", USERID),
+                        StringNode("id", USERNAME),
                         StringNode("etunimi", TEPPO),
                         StringNode("sukunimi", TESTIHENKILO),
                         StringNode("puhelinnumero", TEPPO_PHONE),
@@ -114,31 +113,31 @@ class OldGdprServiceITest : DatabaseTest() {
     inner class FindApplicationsToDeletes {
         @Test
         fun `Returns empty list with no applications`() {
-            val result = gdprService.findApplicationsToDelete(USERID)
+            val result = gdprService.findApplicationsToDelete(USERNAME)
 
             assertThat(result).isEmpty()
         }
 
         @Test
         fun `Returns empty list with no matching applications`() {
-            val hanke = hankeFactory.builder(USERID).saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             applicationFactory.saveApplicationEntities(3, "Other user", hanke)
 
-            val result = gdprService.findApplicationsToDelete(USERID)
+            val result = gdprService.findApplicationsToDelete(USERNAME)
 
             assertThat(result).isEmpty()
         }
 
         @Test
         fun `Returns applications when only pending applications`() {
-            val hanke = hankeFactory.builder(USERID).saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             val statuses = listOf(null, ApplicationStatus.PENDING, ApplicationStatus.PENDING_CLIENT)
             val applications =
-                applicationFactory.saveApplicationEntities(3, USERID, hanke) { i, application ->
+                applicationFactory.saveApplicationEntities(3, USERNAME, hanke) { i, application ->
                     application.alluStatus = statuses[i]
                 }
 
-            val result = gdprService.findApplicationsToDelete(USERID)
+            val result = gdprService.findApplicationsToDelete(USERNAME)
 
             assertThat(result).hasSize(3)
             assertThat(result).extracting(Application::alluStatus).hasSameElementsAs(statuses)
@@ -149,21 +148,21 @@ class OldGdprServiceITest : DatabaseTest() {
 
         @Test
         fun `Throws exception when some applications are not pending`() {
-            val hanke = hankeFactory.builder(USERID).saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             val statuses =
                 listOf(
                     ApplicationStatus.HANDLING,
                     ApplicationStatus.PENDING,
                     ApplicationStatus.DECISION
                 )
-            applicationFactory.saveApplicationEntities(3, USERID, hanke) { i, application ->
+            applicationFactory.saveApplicationEntities(3, USERNAME, hanke) { i, application ->
                 application.alluStatus = statuses[i]
                 application.applicationIdentifier = "HAI-00$i"
             }
 
             val exception =
                 assertThrows<DeleteForbiddenException> {
-                    gdprService.findApplicationsToDelete(USERID)
+                    gdprService.findApplicationsToDelete(USERNAME)
                 }
 
             assertThat(exception.errors).all {
@@ -183,14 +182,14 @@ class OldGdprServiceITest : DatabaseTest() {
     inner class DeleteApplications {
         @Test
         fun `Deletes all given applications of the given user`() {
-            val hanke = hankeFactory.builder(USERID).saveEntity()
+            val hanke = hankeFactory.builder(USERNAME).saveEntity()
             applicationFactory
-                .saveApplicationEntities(6, USERID, hanke) { i, application ->
+                .saveApplicationEntities(6, USERNAME, hanke) { i, application ->
                     if (i % 2 == 0) application.userId = "Other User"
                 }
                 .map { it.toApplication() }
 
-            gdprService.deleteInfo(USERID)
+            gdprService.deleteInfo(USERNAME)
 
             val remainingApplications = applicationRepository.findAll()
             assertThat(remainingApplications).hasSize(3)
