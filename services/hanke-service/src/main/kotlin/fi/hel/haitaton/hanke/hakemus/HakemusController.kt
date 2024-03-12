@@ -9,6 +9,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
@@ -108,7 +109,26 @@ class HakemusController(
                 ApiResponse(
                     description = "Request contains invalid data",
                     responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeErrorDetail::class))]
+                    content =
+                        [
+                            Content(
+                                schema =
+                                    Schema(oneOf = [HankeErrorDetail::class, HankeError::class]),
+                                examples =
+                                    [
+                                        ExampleObject(
+                                            name = "Validation error",
+                                            summary = "Validation error example",
+                                            value = "{hankeError: 'HAI2008', errorPaths: ['name']}"
+                                        ),
+                                        ExampleObject(
+                                            name = "Incompatible request",
+                                            summary = "Incompatible request example",
+                                            value = "{hankeError: 'HAI2002'}"
+                                        ),
+                                    ]
+                            )
+                        ]
                 ),
                 ApiResponse(
                     description = "An application was not found with the given id",
@@ -119,16 +139,6 @@ class HakemusController(
                     description =
                         "The application can't be updated because it has been sent to Allu",
                     responseCode = "409",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                ),
-                ApiResponse(
-                    description = "Request contains non-compatible data",
-                    responseCode = "400",
-                    content = [Content(schema = Schema(implementation = HankeError::class))]
-                ),
-                ApiResponse(
-                    description = "Request contains invalid customer or contact data",
-                    responseCode = "400",
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
             ]

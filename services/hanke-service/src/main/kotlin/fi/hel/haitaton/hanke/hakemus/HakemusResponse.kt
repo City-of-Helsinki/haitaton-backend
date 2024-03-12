@@ -1,8 +1,6 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationArea
@@ -22,15 +20,6 @@ data class HakemusResponse(
     val hankeTunnus: String,
 )
 
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    include = JsonTypeInfo.As.EXISTING_PROPERTY,
-    property = "applicationType",
-    visible = true
-)
-@JsonSubTypes(
-    JsonSubTypes.Type(value = JohtoselvitysHakemusDataResponse::class, name = "CABLE_REPORT"),
-)
 sealed interface HakemusDataResponse {
     val applicationType: ApplicationType
     val pendingOnClient: Boolean

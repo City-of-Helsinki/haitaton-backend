@@ -34,12 +34,15 @@ import io.mockk.confirmVerified
 import io.mockk.every
 import io.mockk.verify
 import io.mockk.verifySequence
+import java.nio.charset.StandardCharsets
 import java.time.ZonedDateTime
 import java.util.UUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
+import org.skyscreamer.jsonassert.JSONAssert
+import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
@@ -496,12 +499,18 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } returns expectedResponse
 
-            val response: HakemusResponse =
+            val response =
                 put("$baseUrl/$id", request)
                     .andExpect(MockMvcResultMatchers.status().isOk)
-                    .andReturnBody()
+                    .andReturn()
+                    .response
+                    .getContentAsString(StandardCharsets.UTF_8)
 
-            assertThat(response).isEqualTo(expectedResponse)
+            JSONAssert.assertEquals(
+                expectedResponse.toJsonString(),
+                response,
+                JSONCompareMode.NON_EXTENSIBLE
+            )
             verifySequence {
                 applicationAuthorizer.authorizeApplicationId(
                     id,
