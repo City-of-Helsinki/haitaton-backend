@@ -3,8 +3,8 @@ package fi.hel.haitaton.hanke.factory
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationArea
-import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.PostalAddress
+import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsResponse
@@ -16,12 +16,13 @@ import java.util.UUID
 
 object HakemusResponseFactory {
 
+    private const val DEFAULT_STREET_NAME = "Kotikatu 1"
+
     fun create(
         applicationId: Long = 1,
         alluid: Int? = null,
         alluStatus: ApplicationStatus? = null,
         applicationIdentifier: String? = null,
-        applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
         applicationData: HakemusDataResponse = createJohtoselvitysHakemusDataResponse(),
         hankeTunnus: String = "HAI-1234"
     ): HakemusResponse =
@@ -30,18 +31,20 @@ object HakemusResponseFactory {
             alluid,
             alluStatus,
             applicationIdentifier,
-            applicationType,
+            applicationData.applicationType,
             applicationData,
             hankeTunnus
         )
 
     fun createJohtoselvitysHakemusDataResponse(
+        pendingOnClient: Boolean = false,
         name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
-        areas: List<ApplicationArea>? = listOf(ApplicationFactory.createApplicationArea()),
+        postalAddress: PostalAddress = PostalAddress(StreetAddress(DEFAULT_STREET_NAME), "", ""),
+        rockExcavation: Boolean = false,
+        workDescription: String = "Work description.",
         startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
         endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-        pendingOnClient: Boolean = false,
-        workDescription: String = "Work description.",
+        areas: List<ApplicationArea>? = listOf(ApplicationFactory.createApplicationArea()),
         customerWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(
                 createCompanyCustomerResponse(),
@@ -54,23 +57,24 @@ object HakemusResponseFactory {
             ),
         representativeWithContacts: CustomerWithContactsResponse? = null,
         propertyDeveloperWithContacts: CustomerWithContactsResponse? = null,
-        rockExcavation: Boolean = false,
-        postalAddress: PostalAddress? = null,
     ): JohtoselvitysHakemusDataResponse =
         JohtoselvitysHakemusDataResponse(
-            applicationType = ApplicationType.CABLE_REPORT,
+            pendingOnClient = pendingOnClient,
             name = name,
-            areas = areas,
+            postalAddress = postalAddress,
+            constructionWork = true,
+            maintenanceWork = false,
+            propertyConnectivity = false,
+            emergencyWork = false,
+            rockExcavation = rockExcavation,
+            workDescription = workDescription,
             startTime = startTime,
             endTime = endTime,
-            pendingOnClient = pendingOnClient,
-            workDescription = workDescription,
+            areas = areas,
             customerWithContacts = customerWithContacts,
             contractorWithContacts = contractorWithContacts,
             representativeWithContacts = representativeWithContacts,
             propertyDeveloperWithContacts = propertyDeveloperWithContacts,
-            rockExcavation = rockExcavation,
-            postalAddress = postalAddress,
         )
 
     fun companyCustomer(

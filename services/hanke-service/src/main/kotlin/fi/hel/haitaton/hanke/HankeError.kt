@@ -40,6 +40,8 @@ enum class HankeError(val errorMessage: String) {
     HAI2007("Application geometry not inside any hankealue"),
     HAI2008("Application contains invalid data"),
     HAI2009("Application is already sent to Allu, operation prohibited."),
+    HAI2010("Application contains invalid customer"),
+    HAI2011("Application contains invalid contact"),
     HAI3001("Attachment upload failed"),
     HAI3002("Loading attachment failed"),
     HAI3003("Attachment limit reached"),
