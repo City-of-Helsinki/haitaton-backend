@@ -13,8 +13,8 @@ import assertk.assertions.isNotNull
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
-import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeNotFoundException
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationContactType
@@ -46,13 +46,7 @@ import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
 class HakemusServiceITest(
     @Autowired private val hakemusService: HakemusService,
     @Autowired private val applicationRepository: ApplicationRepository,
@@ -62,7 +56,7 @@ class HakemusServiceITest(
     @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory
-) : DatabaseTest() {
+) : IntegrationTest() {
 
     @Nested
     inner class HakemusResponse {

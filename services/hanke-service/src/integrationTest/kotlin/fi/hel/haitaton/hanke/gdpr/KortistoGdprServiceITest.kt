@@ -20,12 +20,11 @@ import assertk.assertions.isNull
 import assertk.assertions.isTrue
 import assertk.assertions.prop
 import assertk.assertions.single
-import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
-import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -43,15 +42,10 @@ import fi.hel.haitaton.hanke.permissions.PermissionRepository
 import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
 @SpringBootTest(properties = ["haitaton.features.user-management=true"])
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
 class KortistoGdprServiceITest(
     @Autowired val gdprService: GdprService,
     @Autowired val hankeKayttajaService: HankeKayttajaService,
@@ -62,7 +56,7 @@ class KortistoGdprServiceITest(
     @Autowired val hakemusFactory: HakemusFactory,
     @Autowired val hankeFactory: HankeFactory,
     @Autowired val hankekayttajaFactory: HankeKayttajaFactory,
-) : DatabaseTest() {
+) : IntegrationTest() {
     val OTHER_USER_ID = "Other user"
 
     @Test
@@ -335,7 +329,6 @@ class KortistoGdprServiceITest(
     }
 
     @Nested
-    @ExtendWith(MockFileClientExtension::class)
     inner class DeleteInfo {
         @Test
         fun `doesn't throw an exception when there's no data for the user`() {

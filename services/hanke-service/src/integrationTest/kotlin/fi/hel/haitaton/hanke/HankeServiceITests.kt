@@ -38,7 +38,6 @@ import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.attachment.azure.Container.HANKE_LIITTEET
 import fi.hel.haitaton.hanke.attachment.common.HankeAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
-import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeStatus
@@ -123,17 +122,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.skyscreamer.jsonassert.JSONAssert
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.security.core.context.SecurityContext
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 
 private const val NAME_1 = "etu1 suku1"
@@ -141,9 +136,6 @@ private const val NAME_2 = "etu2 suku2"
 private const val NAME_3 = "etu3 suku3"
 private const val NAME_SOMETHING = "Som Et Hing"
 
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(USERNAME)
 class HankeServiceITests(
     @Autowired private val hankeService: HankeService,
     @Autowired private val permissionService: PermissionService,
@@ -162,7 +154,7 @@ class HankeServiceITests(
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val cableReportService: CableReportService,
-) : DatabaseTest() {
+) : IntegrationTest() {
 
     companion object {
         @JvmField
@@ -1339,7 +1331,6 @@ class HankeServiceITests(
     }
 
     @Nested
-    @ExtendWith(MockFileClientExtension::class)
     inner class DeleteHanke {
         @Test
         fun `creates audit log entry for deleted hanke`() {
