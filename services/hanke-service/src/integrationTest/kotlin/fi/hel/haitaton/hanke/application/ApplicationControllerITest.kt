@@ -20,6 +20,7 @@ import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
+import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
 import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
 import io.mockk.Called
@@ -52,7 +53,6 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-private const val USERNAME = "testUser"
 private const val HANKE_TUNNUS = "HAI-1234"
 private const val BASE_URL = "/hakemukset"
 private const val HANKKEET_BASE_URL = "/hankkeet"

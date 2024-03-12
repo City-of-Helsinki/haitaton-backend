@@ -97,6 +97,7 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.TestUtils.nextYear
+import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -133,7 +134,6 @@ import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
 
-private const val USERNAME = "test7358"
 private const val HANKE_TUNNUS = "HAI23-5"
 
 private val dataWithoutAreas = createCableReportApplicationData(areas = listOf())

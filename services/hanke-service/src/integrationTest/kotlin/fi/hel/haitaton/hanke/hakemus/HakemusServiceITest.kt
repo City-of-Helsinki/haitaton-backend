@@ -43,6 +43,7 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaNotFoundException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
 import java.util.UUID
 import org.junit.jupiter.api.Nested
@@ -51,8 +52,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
-
-private const val USERNAME = "test7358"
 
 @SpringBootTest
 @ActiveProfiles("test")
