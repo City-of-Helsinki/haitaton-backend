@@ -217,14 +217,9 @@ class HankeServiceITests(
         fun `returns yhteystiedot and yhteyshenkilot if they're present`() {
             val entity =
                 hankeFactory.builder(USERNAME).saveWithYhteystiedot {
-                    omistaja(
-                        kayttaja(
-                            HankeKayttajaFactory.KAYTTAJA_INPUT_OMISTAJA,
-                            Kayttooikeustaso.KAIKKI_OIKEUDET
-                        )
-                    )
-                    rakennuttaja(kayttooikeustaso = Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
-                    toteuttaja(kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI)
+                    omistaja(Kayttooikeustaso.KAIKKI_OIKEUDET)
+                    rakennuttaja(Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
+                    toteuttaja(Kayttooikeustaso.HAKEMUSASIOINTI)
                     muuYhteystieto()
                 }
 
@@ -724,13 +719,10 @@ class HankeServiceITests(
         val kayttaja3 = hankeKayttajaFactory.saveIdentifiedUser(hankeId, sahkoposti = "kayttaja3")
         hankeFactory.addYhteystiedotTo(hankeEntity) {
             omistaja(kayttaja1, kayttaja2)
-            rakennuttaja {}
-            rakennuttaja {}
-            toteuttaja { addYhteyshenkilo(it, kayttaja3) }
-            muuYhteystieto {
-                addYhteyshenkilo(it, kayttaja1)
-                addYhteyshenkilo(it, kayttaja("kayttaja4"))
-            }
+            rakennuttaja(yhteyshenkilot = arrayOf())
+            rakennuttaja(yhteyshenkilot = arrayOf())
+            toteuttaja(kayttaja3)
+            muuYhteystieto(kayttaja1, kayttaja("kayttaja4"))
         }
         val hanke = hankeService.loadHankeById(hankeId)!!
         val newEmail = "new kayttaja"
@@ -1734,11 +1726,7 @@ class HankeServiceITests(
                 alkuPvm,
                 loppuPvm,
             )
-        return Template.parse(
-                "/fi/hel/haitaton/hanke/logging/expectedHankeWithPolygon.json.mustache"
-                    .getResourceAsText()
-            )
-            .processToString(templateData)
+        return expectedHankeWithPolygon.processToString(templateData)
     }
 
     private fun List<AuditLogEntryEntity>.findByTargetId(id: Int): AuditLogEntryEntity =
