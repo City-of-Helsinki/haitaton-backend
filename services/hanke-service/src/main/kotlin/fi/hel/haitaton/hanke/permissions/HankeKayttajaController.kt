@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.CurrentSecurityContext
 import org.springframework.security.core.context.SecurityContext
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -475,6 +476,52 @@ user.
     fun checkForDelete(@PathVariable kayttajaId: UUID): HankekayttajaDeleteService.DeleteInfo =
         hankekayttajaDeleteService.checkForDelete(kayttajaId)
 
+    @Operation(
+        summary = "Delete the user",
+        description =
+            """
+Deletes the given hankekayttaja (user) from the hanke.
+
+Check if there are active applications the user is a contact in or if the user is the only
+contact in the applicant customer role. If either is true, refuse to delete the kayttaja.
+"""
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "User deleted. No body.",
+                    responseCode = "204",
+                ),
+                ApiResponse(
+                    description = "kayttajaId is not a proper UUID.",
+                    responseCode = "400",
+                ),
+                ApiResponse(
+                    description = "Hankekayttaja not found or not authorized.",
+                    responseCode = "404",
+                ),
+                ApiResponse(
+                    description =
+                        "Hankekayttaja is a contact on an active application or " +
+                            "the only contact in the applicant customer role or " +
+                            "there would be no admin users left.",
+                    responseCode = "409",
+                ),
+            ]
+    )
+    @DeleteMapping("/kayttajat/{kayttajaId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(
+        "@featureService.isEnabled('USER_MANAGEMENT') && " +
+            "@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'DELETE_USER')"
+    )
+    fun delete(@PathVariable kayttajaId: UUID) {
+        logger.info { "Deleting kayttaja $kayttajaId" }
+        hankekayttajaDeleteService.delete(kayttajaId)
+        logger.info { "Deleted kayttaja $kayttajaId" }
+    }
+
     data class Tunnistautuminen(val tunniste: String)
 
     data class TunnistautuminenResponse(
@@ -577,6 +624,22 @@ user.
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden
     fun currentUserWithoutKayttajaException(ex: CurrentUserWithoutKayttajaException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4003
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun onlyOmistajaContactException(ex: OnlyOmistajaContactException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4003
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun hasActiveApplicationsException(ex: HasActiveApplicationsException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI4003
     }

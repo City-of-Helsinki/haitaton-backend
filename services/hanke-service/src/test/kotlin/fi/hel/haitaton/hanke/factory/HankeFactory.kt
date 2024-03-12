@@ -90,6 +90,19 @@ class HankeFactory(
         )
     }
 
+    fun yhteystietoBuilderFrom(hanke: HankeEntity): HankeYhteystietoBuilder =
+        HankeYhteystietoBuilder(
+            hanke,
+            hanke.createdByUserId!!,
+            hankeKayttajaFactory,
+            hankeYhteystietoRepository,
+            hankeYhteyshenkiloRepository
+        )
+
+    fun addYhteystiedotTo(hanke: HankeEntity, f: HankeYhteystietoBuilder.() -> Unit) {
+        yhteystietoBuilderFrom(hanke).f()
+    }
+
     companion object {
 
         const val defaultHankeTunnus = "HAI21-1"
