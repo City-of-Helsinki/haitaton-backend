@@ -5,7 +5,6 @@ import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactlyInAnyOrder
-import assertk.assertions.extracting
 import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
@@ -39,8 +38,6 @@ import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.ObjectType
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaNotFoundException
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -58,7 +55,6 @@ import org.springframework.test.context.ActiveProfiles
 @WithMockUser(USERNAME)
 class HakemusServiceITest(
     @Autowired private val hakemusService: HakemusService,
-    @Autowired private val hankeKayttajaService: HankeKayttajaService,
     @Autowired private val applicationRepository: ApplicationRepository,
     @Autowired private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
     @Autowired private val hankekayttajaRepository: HankekayttajaRepository,
@@ -155,55 +151,6 @@ class HakemusServiceITest(
             val result = hakemusService.hankkeenHakemuksetResponse(hankeInitial.hankeTunnus)
 
             assertThat(result.applications).isEmpty()
-        }
-    }
-
-    @Nested
-    inner class GetHakemuksetForKayttaja {
-        @Test
-        fun `throws an exception when kayttaja does not exist`() {
-            val kayttajaId = UUID.fromString("750b4207-2c5f-49a0-9b80-4829c807abeb")
-
-            val failure = assertFailure { hakemusService.getHakemuksetForKayttaja(kayttajaId) }
-
-            failure.all {
-                hasClass(HankeKayttajaNotFoundException::class)
-                messageContains(kayttajaId.toString())
-            }
-        }
-
-        @Test
-        fun `returns an empty list when the kayttaja exists but there are no applications`() {
-            val hanke = hankeFactory.builder(USERNAME).save()
-            val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
-
-            val result = hakemusService.getHakemuksetForKayttaja(founder.id)
-
-            assertThat(result).isEmpty()
-        }
-
-        @Test
-        fun `returns applications when the kayttaja is an yhteyshenkilo`() {
-            val hanke = hankeFactory.saveWithAlue(USERNAME)
-            val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
-            val application1 =
-                hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
-                    hakija { addYhteyshenkilo(it, founder) }
-                    rakennuttaja()
-                    tyonSuorittaja()
-                }
-            val application2 =
-                hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
-                    hakija()
-                    rakennuttaja()
-                    tyonSuorittaja { addYhteyshenkilo(it, founder) }
-                }
-
-            val result = hakemusService.getHakemuksetForKayttaja(founder.id)
-
-            assertThat(result)
-                .extracting { it.id }
-                .containsExactlyInAnyOrder(application1.id, application2.id)
         }
     }
 

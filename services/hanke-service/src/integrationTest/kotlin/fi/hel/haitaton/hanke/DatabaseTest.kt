@@ -1,6 +1,10 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.test.USERNAME
+import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection
+import org.springframework.security.test.context.support.WithMockUser
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.jdbc.Sql
 import org.springframework.test.context.jdbc.SqlMergeMode
 import org.testcontainers.containers.PostgreSQLContainer
@@ -19,6 +23,9 @@ import org.testcontainers.utility.MountableFile
  */
 @Sql("/clear-db.sql")
 @SqlMergeMode(SqlMergeMode.MergeMode.MERGE)
+@SpringBootTest
+@ActiveProfiles("test")
+@WithMockUser(USERNAME)
 abstract class DatabaseTest {
     companion object {
         @ServiceConnection

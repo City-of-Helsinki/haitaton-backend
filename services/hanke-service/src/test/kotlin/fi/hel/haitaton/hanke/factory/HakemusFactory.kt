@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.test.USERNAME
 import java.time.ZonedDateTime
 import org.springframework.stereotype.Component
 
@@ -30,7 +31,7 @@ class HakemusFactory(
     private val hankeKayttajaFactory: HankeKayttajaFactory,
 ) {
     fun builder(
-        userId: String,
+        userId: String = USERNAME,
         hankeEntity: HankeEntity = hankeFactory.builder(userId).withHankealue().saveEntity()
     ): HakemusBuilder {
         val applicationEntity = createHakemus(userId = userId, hanke = hankeEntity)
