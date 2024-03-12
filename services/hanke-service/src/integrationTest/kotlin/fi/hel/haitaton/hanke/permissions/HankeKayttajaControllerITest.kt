@@ -52,7 +52,6 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
@@ -964,7 +963,6 @@ class HankeKayttajaControllerITest(
     }
 
     @Nested
-    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     inner class CheckForDelete {
         private val kayttajaId = UUID.fromString("294af703-7982-47f8-bc08-f08ace485a2b")
         private val url = "/kayttajat/$kayttajaId/deleteInfo"
@@ -1014,6 +1012,91 @@ class HankeKayttajaControllerITest(
             verifySequence {
                 authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name)
                 deleteService.checkForDelete(kayttajaId)
+            }
+        }
+    }
+
+    @Nested
+    inner class Delete {
+        private val kayttajaId = UUID.fromString("294af703-7982-47f8-bc08-f08ace485a2b")
+        private val url = "/kayttajat/$kayttajaId"
+
+        @Test
+        fun `Returns not found when the call is not authorized`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } throws
+                HankeKayttajaNotFoundException(kayttajaId)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI4001))
+
+            verifySequence { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) }
+        }
+
+        @Test
+        fun `Returns not found when hankekayttaja is not found`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } returns true
+            every { deleteService.delete(kayttajaId) } throws
+                HankeKayttajaNotFoundException(kayttajaId)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI4001))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name)
+                deleteService.delete(kayttajaId)
+            }
+        }
+
+        @Test
+        fun `Returns 409 when hankekayttaja is the only one with Kaikki Oikeudet`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } returns true
+            every { deleteService.delete(kayttajaId) } throws
+                NoAdminRemainingException(TestHankeIdentifier(132, "JS44-11"))
+
+            delete(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI4003))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name)
+                deleteService.delete(kayttajaId)
+            }
+        }
+
+        @Test
+        fun `Returns 409 when hankekayttaja is the only contact for an omistaja`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } returns true
+            every { deleteService.delete(kayttajaId) } throws
+                OnlyOmistajaContactException(kayttajaId, listOf(13, 15))
+
+            delete(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI4003))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name)
+                deleteService.delete(kayttajaId)
+            }
+        }
+
+        @Test
+        fun `Returns 409 when hankekayttaja is an yhteyshenkilo on an active hakemus`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } returns true
+            every { deleteService.delete(kayttajaId) } throws
+                HasActiveApplicationsException(kayttajaId, listOf(13, 15))
+
+            delete(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI4003))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name)
+                deleteService.delete(kayttajaId)
+            }
+        }
+
+        @Test
+        fun `Returns 204 when hankekayttaja was deleted`() {
+            every { authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name) } returns true
+            justRun { deleteService.delete(kayttajaId) }
+
+            delete(url).andExpect(status().isNoContent).andExpect(content().string(""))
+
+            verifySequence {
+                authorizer.authorizeKayttajaId(kayttajaId, DELETE_USER.name)
+                deleteService.delete(kayttajaId)
             }
         }
     }

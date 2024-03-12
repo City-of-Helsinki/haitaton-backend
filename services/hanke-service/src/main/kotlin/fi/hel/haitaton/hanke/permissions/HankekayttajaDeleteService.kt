@@ -29,6 +29,36 @@ class HankekayttajaDeleteService(
         return DeleteInfo(activeHakemukset, draftHakemukset, isOnlyOmistajanYhteyshenkilo)
     }
 
+    @Transactional
+    fun delete(kayttajaId: UUID) {
+        val kayttaja = getKayttaja(kayttajaId)
+
+        if (isTheOnlyKaikkiOikeudetKayttaja(kayttaja)) {
+            throw NoAdminRemainingException(hankeService.findIdentifier(kayttaja.hankeId)!!)
+        }
+
+        val offendingOmistajat = onlyOmistajanYhteyshenkiloIn(kayttaja)
+        if (offendingOmistajat.isNotEmpty()) {
+            throw OnlyOmistajaContactException(kayttajaId, offendingOmistajat.map { it.id!! })
+        }
+
+        val activeHakemukset = getHakemuksetForKayttaja(kayttajaId).filter { it.alluStatus != null }
+        if (activeHakemukset.isNotEmpty()) {
+            throw HasActiveApplicationsException(kayttajaId, activeHakemukset.map { it.id!! })
+        }
+
+        hankekayttajaRepository.delete(kayttaja)
+    }
+
+    private fun isTheOnlyKaikkiOikeudetKayttaja(kayttaja: HankekayttajaEntity): Boolean {
+        if (kayttaja.deriveKayttooikeustaso() != Kayttooikeustaso.KAIKKI_OIKEUDET) return false
+        val adminCount =
+            hankekayttajaRepository.findByHankeId(kayttaja.hankeId).count {
+                it.deriveKayttooikeustaso() == Kayttooikeustaso.KAIKKI_OIKEUDET
+            }
+        return adminCount == 1
+    }
+
     @Transactional(readOnly = true)
     fun getHakemuksetForKayttaja(kayttajaId: UUID): List<Hakemus> =
         getHakemuksetForKayttaja(getKayttaja(kayttajaId))
@@ -74,3 +104,15 @@ class HankekayttajaDeleteService(
         }
     }
 }
+
+class OnlyOmistajaContactException(kayttajaId: UUID, yhteystietoId: List<Int>) :
+    RuntimeException(
+        "Hankekayttaja is the only contact for an omistaja. Cannot delete. " +
+            "hankekayttajaId=$kayttajaId, yhteystietoIds=${yhteystietoId.joinToString(", ")}"
+    )
+
+class HasActiveApplicationsException(kayttajaId: UUID, hakemusIds: List<Long>) :
+    RuntimeException(
+        "Hankekayttaja is a contact in active applications. Cannot delete. " +
+            "hankekayttajaId=$kayttajaId, applicationIds=${hakemusIds.joinToString(", ")}"
+    )
