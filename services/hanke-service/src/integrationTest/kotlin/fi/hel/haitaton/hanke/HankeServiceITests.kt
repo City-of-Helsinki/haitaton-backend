@@ -31,6 +31,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ALLU_USER_CANCELLATION_MSG
 import fi.hel.haitaton.hanke.application.Application
+import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
@@ -65,8 +66,12 @@ import fi.hel.haitaton.hanke.factory.HankeYhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HankeYhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankealueFactory
 import fi.hel.haitaton.hanke.factory.ProfiiliFactory
+import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_GIVEN_NAME
+import fi.hel.haitaton.hanke.factory.ProfiiliFactory.DEFAULT_LAST_NAME
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.geometria.Geometriat
+import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.logging.AuditLogEntryEntity
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
@@ -325,8 +330,8 @@ class HankeServiceITests(
             val hankeKayttajat = hankekayttajaRepository.findAll()
             assertThat(hankeKayttajat).single().all {
                 prop(HankekayttajaEntity::hankeId).isEqualTo(returnedHanke.id)
-                prop(HankekayttajaEntity::etunimi).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
-                prop(HankekayttajaEntity::sukunimi).isEqualTo(ProfiiliFactory.DEFAULT_LAST_NAME)
+                prop(HankekayttajaEntity::etunimi).isEqualTo(DEFAULT_GIVEN_NAME)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(DEFAULT_LAST_NAME)
                 prop(HankekayttajaEntity::puhelin).isEqualTo(DEFAULT_HANKE_PERUSTAJA.puhelinnumero)
                 prop(HankekayttajaEntity::sahkoposti).isEqualTo(DEFAULT_HANKE_PERUSTAJA.sahkoposti)
                 prop(HankekayttajaEntity::kutsuttuEtunimi).isNull()
@@ -1111,8 +1116,8 @@ class HankeServiceITests(
                 prop(HankekayttajaEntity::id).isNotNull()
                 prop(HankekayttajaEntity::sahkoposti).isEqualTo(ApplicationFactory.TEPPO_EMAIL)
                 prop(HankekayttajaEntity::puhelin).isEqualTo(ApplicationFactory.TEPPO_PHONE)
-                prop(HankekayttajaEntity::etunimi).isEqualTo(ProfiiliFactory.DEFAULT_GIVEN_NAME)
-                prop(HankekayttajaEntity::sukunimi).isEqualTo(ProfiiliFactory.DEFAULT_LAST_NAME)
+                prop(HankekayttajaEntity::etunimi).isEqualTo(DEFAULT_GIVEN_NAME)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(DEFAULT_LAST_NAME)
                 prop(HankekayttajaEntity::permission)
                     .isNotNull()
                     .prop(PermissionEntity::kayttooikeustaso)
@@ -1198,6 +1203,90 @@ class HankeServiceITests(
                 }
 
             assertThat(exception).hasMessage("Orderer not found.")
+        }
+    }
+
+    @Nested
+    inner class GenerateHankeWithJohtoselvityshakemus {
+        private val hakemusNimi = "Johtoselvitys for a private property"
+
+        @Test
+        fun `saves hanke based on request`() {
+            val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+
+            hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+
+            assertThat(hankeRepository.findAll()).single().all {
+                prop(HankeEntity::generated).isTrue()
+                prop(HankeEntity::status).isEqualTo(HankeStatus.DRAFT)
+                prop(HankeEntity::nimi).isEqualTo(hakemusNimi)
+                prop(HankeEntity::createdByUserId).isEqualTo(USERNAME)
+                prop(HankeEntity::createdAt).isRecentUTC()
+            }
+        }
+
+        @Test
+        fun `saves hakemus based on request`() {
+            val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+
+            hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+
+            assertThat(applicationRepository.findAll())
+                .single()
+                .prop(ApplicationEntity::applicationData)
+                .prop(ApplicationData::name)
+                .isEqualTo(hakemusNimi)
+        }
+
+        @Test
+        fun `returns the saved hakemus`() {
+            val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+
+            val hakemus =
+                hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+
+            assertThat(hakemus).all {
+                prop(Hakemus::applicationData).prop(HakemusData::name).isEqualTo(hakemusNimi)
+            }
+        }
+
+        @Test
+        fun `generates hankekayttaja for founder`() {
+            val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+
+            val hakemus =
+                hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+
+            val hanke = hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)!!
+            val kayttajat = hankekayttajaRepository.findByHankeId(hanke.id)
+            assertThat(kayttajat).single().all {
+                prop(HankekayttajaEntity::id).isNotNull()
+                prop(HankekayttajaEntity::sahkoposti).isEqualTo(DEFAULT_HANKE_PERUSTAJA.sahkoposti)
+                prop(HankekayttajaEntity::puhelin).isEqualTo(DEFAULT_HANKE_PERUSTAJA.puhelinnumero)
+                prop(HankekayttajaEntity::etunimi).isEqualTo(DEFAULT_GIVEN_NAME)
+                prop(HankekayttajaEntity::sukunimi).isEqualTo(DEFAULT_LAST_NAME)
+                prop(HankekayttajaEntity::permission)
+                    .isNotNull()
+                    .prop(PermissionEntity::kayttooikeustaso)
+                    .isEqualTo(Kayttooikeustaso.KAIKKI_OIKEUDET)
+                prop(HankekayttajaEntity::kayttajakutsu).isNull() // no token for creator
+                prop(HankekayttajaEntity::kutsujaId).isNull() // no inviter for creator
+                prop(HankekayttajaEntity::kutsuttuEtunimi).isNull() // no name in invitation
+                prop(HankekayttajaEntity::kutsuttuSukunimi).isNull() // no name in invitation
+            }
+        }
+
+        @Test
+        fun `sets hanke name according to limit and saves successfully`() {
+            val expectedName = "a".repeat(MAXIMUM_HANKE_NIMI_LENGTH)
+            val tooLongName = expectedName + "bbb"
+            val request = CreateHankeRequest(tooLongName, DEFAULT_HANKE_PERUSTAJA)
+
+            val hakemus =
+                hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+
+            val hanke = hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)!!
+            assertThat(hanke.nimi).isEqualTo(expectedName)
         }
     }
 

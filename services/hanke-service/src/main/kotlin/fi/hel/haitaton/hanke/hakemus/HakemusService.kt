@@ -13,6 +13,7 @@ import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
@@ -52,6 +53,37 @@ class HakemusService(
         return HankkeenHakemuksetResponse(
             hanke.hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus) }
         )
+    }
+
+    /** Create a johtoselvitys from a hanke that was just created. */
+    @Transactional
+    fun createJohtoselvitys(hanke: HankeEntity, currentUserId: String): Hakemus {
+        val data =
+            CableReportApplicationData(
+                name = hanke.nimi,
+                applicationType = ApplicationType.CABLE_REPORT,
+                pendingOnClient = true,
+                areas = null,
+                customerWithContacts = null,
+                contractorWithContacts = null,
+                startTime = null,
+                endTime = null,
+                rockExcavation = null,
+                workDescription = "",
+            )
+        val entity =
+            ApplicationEntity(
+                id = null,
+                alluid = null,
+                alluStatus = null,
+                applicationIdentifier = null,
+                userId = currentUserId,
+                applicationType = ApplicationType.CABLE_REPORT,
+                applicationData = data,
+                hanke = hanke,
+                yhteystiedot = mutableMapOf()
+            )
+        return applicationRepository.save(entity).toHakemus()
     }
 
     @Transactional
@@ -335,7 +367,7 @@ class HakemusService(
                     applicationData.workDescription,
                     applicationData.startTime,
                     applicationData.endTime,
-                    applicationData.areas,
+                    applicationData.areas ?: listOf(),
                     customerWithContactsResponseWithYhteystiedot(
                         hakemusyhteystiedot[ApplicationContactType.HAKIJA]
                     ),

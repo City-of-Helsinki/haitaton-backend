@@ -13,7 +13,21 @@ data class Hakemusyhteystieto(
     val puhelinnumero: String,
     val ytunnus: String?,
     val yhteyshenkilot: List<Hakemusyhteyshenkilo>,
-)
+) {
+    fun toResponse(): CustomerWithContactsResponse =
+        CustomerWithContactsResponse(
+            customer =
+                CustomerResponse(
+                    yhteystietoId = id,
+                    type = tyyppi,
+                    name = nimi,
+                    email = sahkoposti,
+                    phone = puhelinnumero,
+                    registryKey = ytunnus,
+                ),
+            contacts = yhteyshenkilot.map { it.toResponse() }
+        )
+}
 
 data class Hakemusyhteyshenkilo(
     val id: UUID,
@@ -23,4 +37,7 @@ data class Hakemusyhteyshenkilo(
     val sahkoposti: String,
     val puhelin: String,
     val tilaaja: Boolean,
-)
+) {
+    fun toResponse(): ContactResponse =
+        ContactResponse(hankekayttajaId, etunimi, sukunimi, sahkoposti, puhelin, tilaaja)
+}

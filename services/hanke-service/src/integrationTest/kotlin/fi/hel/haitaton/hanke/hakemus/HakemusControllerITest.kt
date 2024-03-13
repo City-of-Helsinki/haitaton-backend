@@ -17,13 +17,16 @@ import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusResponseFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.toUpdateRequest
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withRegistryKey
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withTimes
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
+import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.test.USERNAME
@@ -53,6 +56,7 @@ import org.springframework.security.test.web.servlet.response.SecurityMockMvcRes
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 private const val HANKE_TUNNUS = "HAI-1234"
 
@@ -89,7 +93,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         @Test
         @WithAnonymousUser
         fun `when unknown user should return 401`() {
-            get(url).andExpect(MockMvcResultMatchers.status().isUnauthorized)
+            get(url).andExpect(status().isUnauthorized)
 
             verify { hakemusService wasNot Called }
         }
@@ -100,7 +104,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 applicationAuthorizer.authorizeApplicationId(id, PermissionCode.VIEW.name)
             } throws ApplicationNotFoundException(id)
 
-            get(url).andExpect(MockMvcResultMatchers.status().isNotFound)
+            get(url).andExpect(status().isNotFound)
 
             verify { applicationAuthorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) }
         }
@@ -114,7 +118,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 HakemusResponseFactory.create(applicationId = id, hankeTunnus = HANKE_TUNNUS)
 
             get(url)
-                .andExpect(MockMvcResultMatchers.status().isOk)
+                .andExpect(status().isOk)
                 .andExpect(MockMvcResultMatchers.jsonPath("$.hankeTunnus").value(HANKE_TUNNUS))
                 .andExpect(
                     MockMvcResultMatchers.jsonPath("$.applicationType").value("CABLE_REPORT")
@@ -140,7 +144,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         fun `Without authenticated user return unauthorized (401) `() {
             get(url)
                 .andExpect(SecurityMockMvcResultMatchers.unauthenticated())
-                .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+                .andExpect(status().isUnauthorized)
                 .andExpect(hankeError(HankeError.HAI0001))
         }
 
@@ -152,9 +156,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every { hakemusService.hankkeenHakemuksetResponse(HANKE_TUNNUS) } throws
                 HankeNotFoundException(HANKE_TUNNUS)
 
-            get(url)
-                .andExpect(MockMvcResultMatchers.status().isNotFound)
-                .andExpect(hankeError(HankeError.HAI1001))
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
 
             verifySequence {
                 applicationAuthorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
@@ -168,9 +170,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 applicationAuthorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
             } throws HankeNotFoundException(HANKE_TUNNUS)
 
-            get(url)
-                .andExpect(MockMvcResultMatchers.status().isNotFound)
-                .andExpect(hankeError(HankeError.HAI1001))
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
 
             verifySequence {
                 applicationAuthorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
@@ -186,7 +186,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             } returns true
 
             val response: HankkeenHakemuksetResponse =
-                get(url).andExpect(MockMvcResultMatchers.status().isOk).andReturnBody()
+                get(url).andExpect(status().isOk).andReturnBody()
 
             assertThat(response.applications).isEmpty()
             verifySequence {
@@ -206,7 +206,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             } returns true
 
             val response: HankkeenHakemuksetResponse =
-                get(url).andExpect(MockMvcResultMatchers.status().isOk).andReturnBody()
+                get(url).andExpect(status().isOk).andReturnBody()
 
             assertThat(response.applications).isNotEmpty()
             assertThat(response).isEqualTo(HankkeenHakemuksetResponse(applicationResponses))
@@ -218,24 +218,76 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
     }
 
     @Nested
-    inner class UpdateApplication {
-        private val baseUrl = "/hakemukset"
+    inner class CreateWithGeneratedHanke {
+        private val url = "/johtoselvityshakemus"
+        private val hakemusNimi = "Cool digs."
 
         @Test
         @WithAnonymousUser
         fun `returns 401 when unknown user`() {
-            put(
-                    "$baseUrl/$id",
-                    HakemusUpdateRequestFactory.createBlankJohtoselvityshakemusUpdateRequest()
+            val request = CreateHankeRequest(hakemusNimi, HankeFactory.DEFAULT_HANKE_PERUSTAJA)
+
+            post(url, request).andExpect(status().isUnauthorized)
+        }
+
+        @Test
+        fun `returns 400 when no request body`() {
+            post(url).andExpect(status().isBadRequest)
+        }
+
+        @Test
+        fun `returns 400 when request doesn't pass validation`() {
+            val request =
+                CreateHankeRequest(
+                    hakemusNimi,
+                    HankeFactory.DEFAULT_HANKE_PERUSTAJA.copy(sahkoposti = "")
                 )
-                .andExpect(MockMvcResultMatchers.status().isUnauthorized)
+
+            post(url, request)
+                .andExpect(status().isBadRequest)
+                .andExpect(hankeError(HankeError.HAI1002))
+        }
+
+        @Test
+        fun `returns hakemus after creating hanke and hakemus`() {
+            val request = CreateHankeRequest(hakemusNimi, HankeFactory.DEFAULT_HANKE_PERUSTAJA)
+            val hakemus = HakemusFactory.create()
+            every { hankeService.generateHankeWithJohtoselvityshakemus(request, any()) } returns
+                hakemus
+
+            val response =
+                post(url, request)
+                    .andExpect(status().isOk)
+                    .andReturn()
+                    .response
+                    .getContentAsString(StandardCharsets.UTF_8)
+
+            val expectedResponse = hakemus.toResponse()
+            JSONAssert.assertEquals(
+                expectedResponse.toJsonString(),
+                response,
+                JSONCompareMode.NON_EXTENSIBLE
+            )
+            verifySequence { hankeService.generateHankeWithJohtoselvityshakemus(request, any()) }
+        }
+    }
+
+    @Nested
+    inner class UpdateApplication {
+        private val url = "/hakemukset/$id"
+
+        @Test
+        @WithAnonymousUser
+        fun `returns 401 when unknown user`() {
+            put(url, HakemusUpdateRequestFactory.createBlankJohtoselvityshakemusUpdateRequest())
+                .andExpect(status().isUnauthorized)
 
             verify { hakemusService wasNot Called }
         }
 
         @Test
         fun `returns 400 when no request body`() {
-            put("$baseUrl/$id").andExpect(MockMvcResultMatchers.status().isBadRequest)
+            put(url).andExpect(status().isBadRequest)
 
             verify { hakemusService wasNot Called }
         }
@@ -255,10 +307,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 )
             } returns true
 
-            val result =
-                put("$baseUrl/$id", request)
-                    .andExpect(MockMvcResultMatchers.status().isBadRequest)
-                    .andReturn()
+            val result = put(url, request).andExpect(status().isBadRequest).andReturn()
 
             assertThat(result.response.contentAsString)
                 .isEqualTo(HankeErrorDetail(HankeError.HAI2008, listOf("endTime")).toJsonString())
@@ -283,7 +332,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 )
             } returns true
 
-            put("$baseUrl/$id", request).andExpect(MockMvcResultMatchers.status().isBadRequest)
+            put(url, request).andExpect(status().isBadRequest)
 
             verify {
                 applicationAuthorizer.authorizeApplicationId(
@@ -307,10 +356,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 )
             } returns true
 
-            val response =
-                put("$baseUrl/$id", request)
-                    .andExpect(MockMvcResultMatchers.status().isBadRequest)
-                    .andReturn()
+            val response = put(url, request).andExpect(status().isBadRequest).andReturn()
 
             assertThat(response.response.contentAsString)
                 .isEqualTo(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString())
@@ -334,8 +380,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 )
             } throws ApplicationNotFoundException(id)
 
-            put("$baseUrl/$id", request)
-                .andExpect(MockMvcResultMatchers.status().isNotFound)
+            put(url, request)
+                .andExpect(status().isNotFound)
                 .andExpect(MockMvcResultMatchers.jsonPath("errorCode").value("HAI2001"))
 
             verify {
@@ -359,8 +405,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
                 ApplicationAlreadySentException(id, 21)
 
-            put("$baseUrl/$id", request)
-                .andExpect(MockMvcResultMatchers.status().isConflict)
+            put(url, request)
+                .andExpect(status().isConflict)
                 .andExpect(MockMvcResultMatchers.jsonPath("errorCode").value("HAI2009"))
 
             verify {
@@ -390,8 +436,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 ) // these types are actually compatible but since there are no other application
             // types yet, we use them here
 
-            put("$baseUrl/$id", request)
-                .andExpect(MockMvcResultMatchers.status().isBadRequest)
+            put(url, request)
+                .andExpect(status().isBadRequest)
                 .andExpect(MockMvcResultMatchers.jsonPath("errorCode").value("HAI2002"))
 
             verify {
@@ -416,8 +462,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
                 ApplicationGeometryException("Invalid geometry")
 
-            put("$baseUrl/$id", request)
-                .andExpect(MockMvcResultMatchers.status().isBadRequest)
+            put(url, request)
+                .andExpect(status().isBadRequest)
                 .andExpect(MockMvcResultMatchers.jsonPath("errorCode").value("HAI2005"))
 
             verify {
@@ -447,8 +493,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                     UUID.randomUUID()
                 )
 
-            put("$baseUrl/$id", request)
-                .andExpect(MockMvcResultMatchers.status().isBadRequest)
+            put(url, request)
+                .andExpect(status().isBadRequest)
                 .andExpect(MockMvcResultMatchers.jsonPath("errorCode").value("HAI2010"))
 
             verify {
@@ -473,8 +519,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
                 InvalidHakemusyhteyshenkiloException("Invalid contact")
 
-            put("$baseUrl/$id", request)
-                .andExpect(MockMvcResultMatchers.status().isBadRequest)
+            put(url, request)
+                .andExpect(status().isBadRequest)
                 .andExpect(MockMvcResultMatchers.jsonPath("errorCode").value("HAI2011"))
 
             verify {
@@ -500,8 +546,8 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every { hakemusService.updateHakemus(id, request, USERNAME) } returns expectedResponse
 
             val response =
-                put("$baseUrl/$id", request)
-                    .andExpect(MockMvcResultMatchers.status().isOk)
+                put(url, request)
+                    .andExpect(status().isOk)
                     .andReturn()
                     .response
                     .getContentAsString(StandardCharsets.UTF_8)
