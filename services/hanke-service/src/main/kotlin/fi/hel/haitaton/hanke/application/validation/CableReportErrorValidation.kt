@@ -25,8 +25,8 @@ fun CableReportApplicationData.validateForErrors(): ValidationResult =
             isBeforeOrEqual(startTime!!, endTime!!, "endTime")
         }
         .whenNotNull(postalAddress) { it.validateForErrors("postalAddress") }
-        .and { customerWithContacts.validateForErrors("customerWithContacts") }
-        .and { contractorWithContacts.validateForErrors("contractorWithContacts") }
+        .whenNotNull(customerWithContacts) { it.validateForErrors("customerWithContacts") }
+        .whenNotNull(contractorWithContacts) { it.validateForErrors("contractorWithContacts") }
         .whenNotNull(representativeWithContacts) {
             it.validateForErrors("representativeWithContacts")
         }

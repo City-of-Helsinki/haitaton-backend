@@ -114,9 +114,11 @@ class ApplicationServiceTest {
                 Arguments.of(
                     applicationData.copy(
                         customerWithContacts =
-                            applicationData.customerWithContacts.copy(
+                            applicationData.customerWithContacts!!.copy(
                                 customer =
-                                    applicationData.customerWithContacts.customer.copy(type = null)
+                                    applicationData.customerWithContacts!!
+                                        .customer
+                                        .copy(type = null)
                             )
                     ),
                     "applicationData.customerWithContacts.customer.type",

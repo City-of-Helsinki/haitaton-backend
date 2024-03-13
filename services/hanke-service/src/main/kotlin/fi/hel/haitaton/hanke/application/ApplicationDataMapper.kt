@@ -19,7 +19,9 @@ object ApplicationDataMapper {
             AlluCableReportApplicationData(
                 name = name,
                 customerWithContacts =
-                    customerWithContacts.toAlluData(path("customerWithContacts")),
+                    customerWithContacts
+                        .orThrow(path("customerWithContacts"))
+                        .toAlluData(path("customerWithContacts")),
                 geometry = getGeometry(applicationData = this),
                 startTime = startTime.orThrow(path("startTime")),
                 endTime = endTime.orThrow(path("endTime")),
@@ -28,7 +30,9 @@ object ApplicationDataMapper {
                 clientApplicationKind = description, // intentional
                 workDescription = description,
                 contractorWithContacts =
-                    contractorWithContacts.toAlluData(path("contractorWithContacts")),
+                    contractorWithContacts
+                        .orThrow(path("contractorWithContacts"))
+                        .toAlluData(path("contractorWithContacts")),
                 postalAddress = postalAddress?.toAlluData(),
                 representativeWithContacts =
                     representativeWithContacts?.toAlluData(path("representativeWithContacts")),

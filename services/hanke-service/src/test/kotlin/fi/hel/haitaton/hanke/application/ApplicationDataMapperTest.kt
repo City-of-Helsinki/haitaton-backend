@@ -42,7 +42,7 @@ internal class ApplicationDataMapperTest {
             val result = ApplicationDataMapper.toAlluData(HANKE_TUNNUS, input)
 
             assertThat(result.name).isEqualTo(input.name)
-            assertThat(result.customerWithContacts).isValid(input.customerWithContacts)
+            assertThat(result.customerWithContacts).isValid(input.customerWithContacts!!)
             assertThat(result.geometry).isEqualTo(ApplicationDataMapper.getGeometry(input))
             assertThat(result.startTime).isEqualTo(input.startTime)
             assertThat(result.endTime).isEqualTo(input.endTime)
@@ -50,7 +50,7 @@ internal class ApplicationDataMapperTest {
             assertThat(result.identificationNumber).isEqualTo(HANKE_TUNNUS)
             assertThat(result.clientApplicationKind).isEqualTo(toDescription(input.workDescription))
             assertThat(result.workDescription).isEqualTo(toDescription(input.workDescription))
-            assertThat(result.contractorWithContacts).isValid(input.contractorWithContacts)
+            assertThat(result.contractorWithContacts).isValid(input.contractorWithContacts!!)
             assertThat(result.postalAddress).isEqualTo(input.postalAddress)
             assertThat(result.representativeWithContacts).isNull()
             assertThat(result.invoicingCustomer).isNull()

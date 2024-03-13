@@ -24,8 +24,8 @@ fun CableReportApplicationData.validateForMissing(): ValidationResult =
         .and { notNull(areas, "areas") }
         .and { notNull(rockExcavation, "rockExcavation") }
         .and { exactlyOneOrderer(customersWithContacts()) }
-        .and { customerWithContacts.validateForMissing("customerWithContacts") }
-        .and { contractorWithContacts.validateForMissing("contractorWithContacts") }
+        .andWithNotNull(customerWithContacts, "customerWithContacts") { validateForMissing(it) }
+        .andWithNotNull(contractorWithContacts, "contractorWithContacts") { validateForMissing(it) }
         .whenNotNull(representativeWithContacts) {
             it.validateForMissing("representativeWithContacts")
         }
