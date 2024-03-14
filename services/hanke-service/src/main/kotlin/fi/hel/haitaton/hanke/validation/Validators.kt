@@ -99,6 +99,13 @@ private constructor(private val errorPaths: MutableList<String> = mutableListOf(
     fun <T> whenNotNull(value: T?, f: (T) -> ValidationResult): ValidationResult =
         if (value != null) this.and { f(value) } else this
 
+    /** Fail if the value is null. Run the validation when it is not. */
+    fun <T> andWithNotNull(
+        value: T?,
+        path: String,
+        f: (T).(String) -> ValidationResult
+    ): ValidationResult = if (value != null) this.and { value.f(path) } else and { failure(path) }
+
     /** Check run the validation lambda only if the pre-condition is true. */
     fun andWhen(condition: Boolean, f: () -> ValidationResult): ValidationResult =
         if (condition) this.and(f) else this

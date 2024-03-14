@@ -186,7 +186,15 @@ class ApplicationDataValidatorTest {
                 of(
                     "Null rock excavation",
                     createCableReportApplicationData().copy(rockExcavation = null)
-                )
+                ),
+                of(
+                    "Null customer",
+                    createCableReportApplicationData().copy(customerWithContacts = null)
+                ),
+                of(
+                    "Null contractor",
+                    createCableReportApplicationData().copy(contractorWithContacts = null)
+                ),
             )
 
         @JvmStatic

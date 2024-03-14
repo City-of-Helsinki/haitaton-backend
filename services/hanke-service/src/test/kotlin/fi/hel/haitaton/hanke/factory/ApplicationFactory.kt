@@ -247,7 +247,7 @@ class ApplicationFactory(
                 hankeTunnus = hankeTunnus
             )
 
-        fun Application.withCustomer(customer: CustomerWithContacts): Application =
+        fun Application.withCustomer(customer: CustomerWithContacts?): Application =
             this.copy(
                 applicationData =
                     (applicationData as CableReportApplicationData).copy(
@@ -258,7 +258,7 @@ class ApplicationFactory(
         fun Application.withCustomerContacts(vararg contacts: Contact): Application =
             this.withCustomer(
                 (applicationData as CableReportApplicationData)
-                    .customerWithContacts
+                    .customerWithContacts!!
                     .copy(contacts = contacts.asList())
             )
 

@@ -62,7 +62,7 @@ data class CableReportApplicationData(
 
     // Common, required
     override val name: String,
-    val customerWithContacts: CustomerWithContacts,
+    val customerWithContacts: CustomerWithContacts?,
     override val areas: List<ApplicationArea>?,
     val startTime: ZonedDateTime?,
     val endTime: ZonedDateTime?,
@@ -70,7 +70,7 @@ data class CableReportApplicationData(
 
     // CableReport specific, required
     val workDescription: String,
-    val contractorWithContacts: CustomerWithContacts, // työn suorittaja
+    val contractorWithContacts: CustomerWithContacts?, // työn suorittaja
     val rockExcavation: Boolean?,
 
     // Common, not required
@@ -104,8 +104,8 @@ data class CableReportApplicationData(
 
     fun customersByRole(): List<Pair<ApplicationContactType, CustomerWithContacts>> =
         listOfNotNull(
-            ApplicationContactType.HAKIJA to customerWithContacts,
-            ApplicationContactType.TYON_SUORITTAJA to contractorWithContacts,
+            customerWithContacts?.let { ApplicationContactType.HAKIJA to it },
+            contractorWithContacts?.let { ApplicationContactType.TYON_SUORITTAJA to it },
             representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
             propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
         )

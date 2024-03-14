@@ -316,8 +316,8 @@ internal class DisclosureLogServiceTest {
     fun `saveDisclosureLogsForApplication with contacts logs contacts`() {
         val applicationId = 41L
         val cableReportApplication = ApplicationFactory.createCableReportApplicationData()
-        val firstContact = cableReportApplication.customerWithContacts.contacts[0]
-        val secondContact = cableReportApplication.contractorWithContacts.contacts[0]
+        val firstContact = cableReportApplication.customerWithContacts!!.contacts[0]
+        val secondContact = cableReportApplication.contractorWithContacts!!.contacts[0]
         val application =
             ApplicationFactory.createApplication(
                 id = applicationId,
@@ -346,8 +346,8 @@ internal class DisclosureLogServiceTest {
     fun `saveDisclosureLogsForAllu saves logs with the given status`(expectedStatus: Status) {
         val applicationId = 41L
         val cableReportApplication = ApplicationFactory.createCableReportApplicationData()
-        val firstContact = cableReportApplication.customerWithContacts.contacts[0]
-        val secondContact = cableReportApplication.contractorWithContacts.contacts[0]
+        val firstContact = cableReportApplication.customerWithContacts!!.contacts[0]
+        val secondContact = cableReportApplication.contractorWithContacts!!.contacts[0]
         val expectedLogs =
             listOf(HAKIJA to firstContact, TYON_SUORITTAJA to secondContact).map { (role, contact)
                 ->
@@ -511,8 +511,8 @@ internal class DisclosureLogServiceTest {
         fun `saves logs with the given status`(expectedStatus: Status) {
             val applicationId = 41L
             val cableReportApplication = ApplicationFactory.createCableReportApplicationData()
-            val firstContact = cableReportApplication.customerWithContacts.contacts[0]
-            val secondContact = cableReportApplication.contractorWithContacts.contacts[0]
+            val firstContact = cableReportApplication.customerWithContacts!!.contacts[0]
+            val secondContact = cableReportApplication.contractorWithContacts!!.contacts[0]
             val expectedLogs =
                 listOf(HAKIJA to firstContact, TYON_SUORITTAJA to secondContact).map {
                     (role, contact) ->
