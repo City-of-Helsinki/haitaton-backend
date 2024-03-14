@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.validation
 
-import fi.hel.haitaton.hanke.ContactType
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.MAXIMUM_DATE
 import fi.hel.haitaton.hanke.MAXIMUM_HANKE_ALUE_NIMI_LENGTH
@@ -70,20 +69,6 @@ private fun Hankealue.validate(path: String) =
         .andWhen(haittaAlkuPvm != null && haittaLoppuPvm != null) {
             isBeforeOrEqual(haittaAlkuPvm!!, haittaLoppuPvm!!, "$path.haittaLoppuPvm")
         }
-
-private fun validateYhteystiedot(
-    yhteystiedot: Map<ContactType, List<Yhteystieto>>
-): ValidationResult =
-    whenNotNull(yhteystiedot[ContactType.OMISTAJA]) {
-            allIn(it, "omistajat", ::validateYhteystieto)
-        }
-        .whenNotNull(yhteystiedot[ContactType.TOTEUTTAJA]) {
-            allIn(it, "toteuttajat", ::validateYhteystieto)
-        }
-        .whenNotNull(yhteystiedot[ContactType.RAKENNUTTAJA]) {
-            allIn(it, "rakennuttajat", ::validateYhteystieto)
-        }
-        .whenNotNull(yhteystiedot[ContactType.MUU]) { allIn(it, "muut", ::validateYhteystieto) }
 
 private fun validateYhteystieto(yhteystieto: Yhteystieto, path: String): ValidationResult =
     yhteystieto.validate(path)

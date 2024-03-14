@@ -427,7 +427,7 @@ class IncompatibleHakemusUpdateRequestException(
     requestClass: KClass<out HakemusUpdateRequest>,
 ) :
     RuntimeException(
-        "Invalid update reeuqest for application id=$applicationId type=$oldApplicationClass requestType=$requestClass"
+        "Invalid update request for application id=$applicationId type=$oldApplicationClass requestType=$requestClass"
     )
 
 class InvalidHakemusyhteystietoException(
