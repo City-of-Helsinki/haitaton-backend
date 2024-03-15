@@ -1,5 +1,7 @@
 package fi.hel.haitaton.hanke
 
+import fi.hel.haitaton.hanke.test.JacksonTestExtension
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.http.MediaType
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors
 import org.springframework.test.web.servlet.MockMvc
@@ -8,6 +10,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 
+@ExtendWith(JacksonTestExtension::class)
 interface ControllerTest {
     val mockMvc: MockMvc
 

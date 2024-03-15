@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke
 
 import fi.hel.haitaton.hanke.attachment.common.MockFileClientExtension
+import fi.hel.haitaton.hanke.test.JacksonTestExtension
 import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.boot.test.context.SpringBootTest
@@ -29,6 +30,7 @@ import org.testcontainers.utility.MountableFile
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
 @ExtendWith(MockFileClientExtension::class)
+@ExtendWith(JacksonTestExtension::class)
 abstract class IntegrationTest {
     companion object {
         @ServiceConnection

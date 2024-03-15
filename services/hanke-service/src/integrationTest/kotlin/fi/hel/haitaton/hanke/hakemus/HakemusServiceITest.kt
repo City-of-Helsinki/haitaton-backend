@@ -44,9 +44,15 @@ import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INP
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
+import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
+import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectAfter
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
 import java.util.UUID
@@ -208,6 +214,22 @@ class HakemusServiceITest(
                     prop(HakemusData::endTime).isNull()
                     prop(HakemusData::areas).isNull()
                     prop(HakemusData::yhteystiedot).isEmpty()
+                }
+            }
+        }
+
+        @Test
+        fun `writes to audit logs`() {
+            val hanke = hankeFactory.saveMinimal(nimi = hakemusNimi)
+            auditLogRepository.deleteAll()
+
+            val hakemus = hakemusService.createJohtoselvitys(hanke, USERNAME)
+
+            assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.CREATE) {
+                hasUserActor(USERNAME)
+                withTarget {
+                    prop(AuditLogTarget::objectBefore).isNull()
+                    hasObjectAfter<Hakemus> { prop(Hakemus::id).isEqualTo(hakemus.id) }
                 }
             }
         }
@@ -399,7 +421,7 @@ class HakemusServiceITest(
                     .findByHankeIdAndSahkopostiIn(hanke.id, listOf(KAYTTAJA_INPUT_HAKIJA.email))
                     .single()
             val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
-            val originalAuditLogSize = auditLogRepository.findByType(ObjectType.APPLICATION).size
+            val originalAuditLogSize = auditLogRepository.findByType(ObjectType.HAKEMUS).size
             val request =
                 hakemus
                     .toUpdateRequest()
@@ -422,7 +444,7 @@ class HakemusServiceITest(
                     .transform { it.map { contact -> contact.hankekayttajaId } }
                     .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
             }
-            val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
+            val applicationLogs = auditLogRepository.findByType(ObjectType.HAKEMUS)
             assertThat(applicationLogs).hasSize(originalAuditLogSize + 1)
         }
     }

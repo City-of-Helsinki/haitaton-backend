@@ -1204,6 +1204,22 @@ class HankeServiceITests(
 
             assertThat(exception).hasMessage("Orderer not found.")
         }
+
+        @Test
+        fun `writes to audit logs`() {
+            val inputApplication = ApplicationFactory.cableReportWithoutHanke()
+
+            hankeService.generateHankeWithApplication(inputApplication, setUpProfiiliMocks())
+
+            assertThat(auditLogRepository.findAll())
+                .extracting { it.message.auditEvent.target.type }
+                .containsExactlyInAnyOrder(
+                    ObjectType.APPLICATION,
+                    ObjectType.HANKE,
+                    ObjectType.HANKE_KAYTTAJA,
+                    ObjectType.PERMISSION,
+                )
+        }
     }
 
     @Nested
@@ -1287,6 +1303,22 @@ class HankeServiceITests(
 
             val hanke = hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)!!
             assertThat(hanke.nimi).isEqualTo(expectedName)
+        }
+
+        @Test
+        fun `writes to audit logs`() {
+            val request = CreateHankeRequest(hakemusNimi, DEFAULT_HANKE_PERUSTAJA)
+
+            hankeService.generateHankeWithJohtoselvityshakemus(request, setUpProfiiliMocks())
+
+            assertThat(auditLogRepository.findAll())
+                .extracting { it.message.auditEvent.target.type }
+                .containsExactlyInAnyOrder(
+                    ObjectType.HAKEMUS,
+                    ObjectType.HANKE,
+                    ObjectType.HANKE_KAYTTAJA,
+                    ObjectType.PERMISSION,
+                )
         }
     }
 
