@@ -27,7 +27,7 @@ sealed interface HakemusDataResponse {
     val postalAddress: PostalAddress?
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
-    val areas: List<ApplicationArea>?
+    val areas: List<ApplicationArea>
     val customerWithContacts: CustomerWithContactsResponse?
 }
 
@@ -60,7 +60,7 @@ data class JohtoselvitysHakemusDataResponse(
     /** Työn arvioitu loppupäivä */
     override val endTime: ZonedDateTime?,
     /** Työalueet */
-    override val areas: List<ApplicationArea>?,
+    override val areas: List<ApplicationArea>,
     // 3. sivu Yhteystiedot
     /** Hakijan tiedot */
     override val customerWithContacts: CustomerWithContactsResponse?,

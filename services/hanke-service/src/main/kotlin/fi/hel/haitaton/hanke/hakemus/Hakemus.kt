@@ -4,41 +4,91 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.PostalAddress
+import fi.hel.haitaton.hanke.domain.HasId
 import java.time.ZonedDateTime
 
 data class Hakemus(
-    val id: Long?,
+    override val id: Long,
     val alluid: Int?,
     val alluStatus: ApplicationStatus?,
     val applicationIdentifier: String?,
     val applicationType: ApplicationType,
     val applicationData: HakemusData,
-    val hankeTunnus: String
-)
+    val hankeTunnus: String,
+    val hankeId: Int,
+) : HasId<Long> {
+    fun toResponse(): HakemusResponse =
+        HakemusResponse(
+            id = id,
+            alluid = alluid,
+            alluStatus = alluStatus,
+            applicationIdentifier = applicationIdentifier,
+            applicationType = applicationType,
+            applicationData = applicationData.toResponse(),
+            hankeTunnus = hankeTunnus,
+        )
+}
 
 sealed interface HakemusData {
+    val applicationType: ApplicationType
     val name: String
+    val pendingOnClient: Boolean
     val postalAddress: PostalAddress?
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
     val areas: List<ApplicationArea>?
     val customerWithContacts: Hakemusyhteystieto?
+
+    fun toResponse(): HakemusDataResponse
+
+    fun yhteystiedot(): List<Hakemusyhteystieto>
 }
 
 data class JohtoselvityshakemusData(
+    override val applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
     override val name: String,
     override val postalAddress: PostalAddress? = null,
-    val constructionWork: Boolean? = null,
-    val maintenanceWork: Boolean? = null,
-    val propertyConnectivity: Boolean? = null,
-    val emergencyWork: Boolean? = null,
+    val constructionWork: Boolean = false,
+    val maintenanceWork: Boolean = false,
+    val propertyConnectivity: Boolean = false,
+    val emergencyWork: Boolean = false,
     val rockExcavation: Boolean? = null,
     val workDescription: String? = null,
     override val startTime: ZonedDateTime? = null,
     override val endTime: ZonedDateTime? = null,
+    override val pendingOnClient: Boolean,
     override val areas: List<ApplicationArea>? = null,
     override val customerWithContacts: Hakemusyhteystieto? = null,
     val contractorWithContacts: Hakemusyhteystieto? = null,
     val propertyDeveloperWithContacts: Hakemusyhteystieto? = null,
     val representativeWithContacts: Hakemusyhteystieto? = null,
-) : HakemusData
+) : HakemusData {
+    override fun toResponse(): JohtoselvitysHakemusDataResponse =
+        JohtoselvitysHakemusDataResponse(
+            applicationType = ApplicationType.CABLE_REPORT,
+            pendingOnClient = pendingOnClient,
+            name = name,
+            postalAddress = postalAddress,
+            constructionWork = constructionWork,
+            maintenanceWork = maintenanceWork,
+            propertyConnectivity = propertyConnectivity,
+            emergencyWork = emergencyWork,
+            rockExcavation = rockExcavation,
+            workDescription = workDescription ?: "",
+            startTime = startTime,
+            endTime = endTime,
+            areas = areas ?: listOf(),
+            customerWithContacts = customerWithContacts?.toResponse(),
+            contractorWithContacts = contractorWithContacts?.toResponse(),
+            propertyDeveloperWithContacts = propertyDeveloperWithContacts?.toResponse(),
+            representativeWithContacts = representativeWithContacts?.toResponse(),
+        )
+
+    override fun yhteystiedot(): List<Hakemusyhteystieto> =
+        listOfNotNull(
+            customerWithContacts,
+            contractorWithContacts,
+            propertyDeveloperWithContacts,
+            representativeWithContacts,
+        )
+}

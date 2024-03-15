@@ -44,7 +44,7 @@ object HakemusResponseFactory {
         workDescription: String = "Work description.",
         startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
         endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
-        areas: List<ApplicationArea>? = listOf(ApplicationFactory.createApplicationArea()),
+        areas: List<ApplicationArea> = listOf(ApplicationFactory.createApplicationArea()),
         customerWithContacts: CustomerWithContactsResponse? =
             CustomerWithContactsResponse(
                 createCompanyCustomerResponse(),

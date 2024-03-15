@@ -50,13 +50,14 @@ class HakemusFactory(
 
     companion object {
         fun create(
-            id: Long? = 1,
+            id: Long = 1,
             alluid: Int? = null,
             alluStatus: ApplicationStatus? = null,
             applicationIdentifier: String? = null,
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
             applicationData: HakemusData = createJohtoselvityshakemusData(),
             hankeTunnus: String = "HAI-1234",
+            hankeId: Int = 1,
         ): Hakemus =
             Hakemus(
                 id = id,
@@ -65,7 +66,8 @@ class HakemusFactory(
                 applicationIdentifier = applicationIdentifier,
                 applicationType = applicationType,
                 applicationData = applicationData,
-                hankeTunnus = hankeTunnus
+                hankeTunnus = hankeTunnus,
+                hankeId = hankeId,
             )
 
         fun createJohtoselvityshakemusData(
@@ -75,6 +77,7 @@ class HakemusFactory(
             workDescription: String = "Work description.",
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
+            pendingOnClient: Boolean = false,
             areas: List<ApplicationArea>? = listOf(ApplicationFactory.createApplicationArea()),
             customerWithContacts: Hakemusyhteystieto? = null,
             contractorWithContacts: Hakemusyhteystieto? = null,
@@ -92,6 +95,7 @@ class HakemusFactory(
                 workDescription = workDescription,
                 startTime = startTime,
                 endTime = endTime,
+                pendingOnClient = pendingOnClient,
                 areas = areas,
                 customerWithContacts = customerWithContacts,
                 contractorWithContacts = contractorWithContacts,
