@@ -8,7 +8,6 @@ import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
-import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import java.time.ZonedDateTime
@@ -113,7 +112,9 @@ data class CableReportApplicationData(
     fun findOrderer(): Contact? =
         customersWithContacts().flatMap { it.contacts }.find { it.orderer }
 
-    fun toHakemusData(yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto>): HakemusData =
+    fun toHakemusData(
+        yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto>
+    ): JohtoselvityshakemusData =
         JohtoselvityshakemusData(
             name = name,
             postalAddress = postalAddress,
@@ -125,6 +126,7 @@ data class CableReportApplicationData(
             workDescription = workDescription,
             startTime = startTime,
             endTime = endTime,
+            pendingOnClient = pendingOnClient,
             areas = areas,
             customerWithContacts = yhteystiedot[ApplicationContactType.HAKIJA],
             contractorWithContacts = yhteystiedot[ApplicationContactType.TYON_SUORITTAJA],

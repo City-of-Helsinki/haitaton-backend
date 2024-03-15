@@ -9,7 +9,10 @@ import assertk.assertions.hasClass
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
+import assertk.assertions.isNull
+import assertk.assertions.isTrue
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
@@ -18,10 +21,14 @@ import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationContactType
+import fi.hel.haitaton.hanke.application.ApplicationData
+import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
+import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
@@ -55,7 +62,7 @@ class HakemusServiceITest(
     @Autowired private val auditLogRepository: AuditLogRepository,
     @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val hankeFactory: HankeFactory,
-    @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory
+    @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
 ) : IntegrationTest() {
 
     @Nested
@@ -149,6 +156,64 @@ class HakemusServiceITest(
     }
 
     @Nested
+    inner class CreateJohtoselvitys {
+        private val hakemusNimi = "Johtoselvitys for a private property"
+
+        @Test
+        fun `saves the new hakemus`() {
+            val hanke = hankeFactory.saveMinimal(nimi = hakemusNimi)
+
+            hakemusService.createJohtoselvitys(hanke, USERNAME)
+
+            assertThat(applicationRepository.findAll()).single().all {
+                prop(ApplicationEntity::id).isNotNull()
+                prop(ApplicationEntity::alluid).isNull()
+                prop(ApplicationEntity::alluStatus).isNull()
+                prop(ApplicationEntity::applicationIdentifier).isNull()
+                prop(ApplicationEntity::userId).isEqualTo(USERNAME)
+                prop(ApplicationEntity::applicationType).isEqualTo(ApplicationType.CABLE_REPORT)
+                prop(ApplicationEntity::applicationData)
+                    .isInstanceOf(CableReportApplicationData::class)
+                    .all {
+                        prop(ApplicationData::name).isEqualTo(hakemusNimi)
+                        prop(ApplicationData::applicationType)
+                            .isEqualTo(ApplicationType.CABLE_REPORT)
+                        prop(ApplicationData::pendingOnClient).isTrue()
+                        prop(ApplicationData::areas).isNull()
+                        prop(ApplicationData::customersWithContacts).isEmpty()
+                        prop(CableReportApplicationData::startTime).isNull()
+                        prop(CableReportApplicationData::endTime).isNull()
+                    }
+            }
+        }
+
+        @Test
+        fun `returns the created hakemus`() {
+            val hanke = hankeFactory.saveMinimal(nimi = hakemusNimi)
+
+            val hakemus = hakemusService.createJohtoselvitys(hanke, USERNAME)
+
+            assertThat(hakemus).all {
+                prop(Hakemus::id).isNotNull()
+                prop(Hakemus::alluid).isNull()
+                prop(Hakemus::alluStatus).isNull()
+                prop(Hakemus::applicationIdentifier).isNull()
+                prop(Hakemus::applicationType).isEqualTo(ApplicationType.CABLE_REPORT)
+                prop(Hakemus::hankeTunnus).isEqualTo(hanke.hankeTunnus)
+                prop(Hakemus::applicationData).isInstanceOf(JohtoselvityshakemusData::class).all {
+                    prop(HakemusData::name).isEqualTo(hakemusNimi)
+                    prop(HakemusData::pendingOnClient).isTrue()
+                    prop(HakemusData::postalAddress).isNull()
+                    prop(HakemusData::startTime).isNull()
+                    prop(HakemusData::endTime).isNull()
+                    prop(HakemusData::areas).isNull()
+                    prop(HakemusData::yhteystiedot).isEmpty()
+                }
+            }
+        }
+    }
+
+    @Nested
     inner class UpdateHakemus {
 
         private val intersectingArea =
@@ -197,7 +262,9 @@ class HakemusServiceITest(
             val entity = hakemusFactory.builder(USERNAME).save()
             val hakemus = hakemusService.hakemusResponse(entity.id!!)
             val originalAuditLogSize = auditLogRepository.findByType(ObjectType.APPLICATION).size
-            val request = hakemus.toUpdateRequest()
+            // The saved hakemus has null in areas, but the response replaces it with an empty list,
+            // so set the value back to null in the request.
+            val request = hakemus.toUpdateRequest().copy(areas = null)
 
             hakemusService.updateHakemus(hakemus.id, request, USERNAME)
 

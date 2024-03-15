@@ -44,7 +44,7 @@ class HankekayttajaDeleteService(
 
         val activeHakemukset = getHakemuksetForKayttaja(kayttajaId).filter { it.alluStatus != null }
         if (activeHakemukset.isNotEmpty()) {
-            throw HasActiveApplicationsException(kayttajaId, activeHakemukset.map { it.id!! })
+            throw HasActiveApplicationsException(kayttajaId, activeHakemukset.map { it.id })
         }
 
         hankekayttajaRepository.delete(kayttaja)

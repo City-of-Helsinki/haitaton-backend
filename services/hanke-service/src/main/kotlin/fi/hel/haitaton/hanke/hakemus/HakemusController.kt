@@ -2,26 +2,35 @@ package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
+import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.currentUserId
+import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
+import fi.hel.haitaton.hanke.toHankeError
+import fi.hel.haitaton.hanke.validation.ValidCreateHankeRequest
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import jakarta.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.CurrentSecurityContext
+import org.springframework.security.core.context.SecurityContext
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -38,6 +47,7 @@ private val logger = KotlinLogging.logger {}
 )
 class HakemusController(
     private val hakemusService: HakemusService,
+    private val hankeService: HankeService,
     private val disclosureLogService: DisclosureLogService,
 ) {
     @GetMapping("/hakemukset/{id}")
@@ -89,6 +99,37 @@ class HakemusController(
         val response = hakemusService.hankkeenHakemuksetResponse(hankeTunnus)
         logger.info { "Found ${response.applications.size} applications for hanke $hankeTunnus" }
         return response
+    }
+
+    @PostMapping("/johtoselvityshakemus")
+    @Operation(
+        summary =
+            "Generates new hanke from a cable report application and saves an application to it.",
+        description =
+            "Returns the created application. The new application is created as a draft, " +
+                "i.e. with true in pendingOnClient. The draft is not sent to Allu. "
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "The created application", responseCode = "200"),
+                ApiResponse(
+                    description = "The request body was invalid",
+                    responseCode = "400",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+            ]
+    )
+    fun createWithGeneratedHanke(
+        @ValidCreateHankeRequest @RequestBody request: CreateHankeRequest,
+        @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext,
+    ): HakemusResponse {
+        val hakemus = hankeService.generateHankeWithJohtoselvityshakemus(request, securityContext)
+        logger.info {
+            "Created hanke and hakemus for a stand-alone johtoselvitys. hakemusId=${hakemus.id} " +
+                "hankeTunnus=${hakemus.hankeTunnus} hankeId=${hakemus.hankeId}"
+        }
+        return hakemus.toResponse()
     }
 
     @PutMapping("/hakemukset/{id}")
@@ -202,5 +243,13 @@ class HakemusController(
     fun invalidHakemusyhteyshenkiloException(ex: InvalidHakemusyhteyshenkiloException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2011
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(ConstraintViolationException::class)
+    @Hidden
+    fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
+        logger.warn { ex.message }
+        return ex.toHankeError(HankeError.HAI1002)
     }
 }

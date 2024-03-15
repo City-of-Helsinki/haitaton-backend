@@ -14,6 +14,8 @@ import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
 import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
 import fi.hel.haitaton.hanke.domain.Yhteystieto
+import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
@@ -35,6 +37,7 @@ class HankeService(
     private val hankealueService: HankealueService,
     private val hankeLoggingService: HankeLoggingService,
     private val applicationService: ApplicationService,
+    private val hakemusService: HakemusService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val hankeAttachmentService: HankeAttachmentService,
 ) {
@@ -96,6 +99,21 @@ class HankeService(
             cableReport.toNewApplication(hanke.hankeTunnus),
             securityContext.userId()
         )
+    }
+
+    /**
+     * Create application when no existing hanke. Autogenerates hanke and applies application to it.
+     */
+    @Transactional
+    fun generateHankeWithJohtoselvityshakemus(
+        request: CreateHankeRequest,
+        securityContext: SecurityContext,
+    ): Hakemus {
+        logger.info { "Creating a Hanke for a stand-alone cable report." }
+        val hanke = createNewEntity(limitHankeName(request.nimi), true, securityContext.userId())
+        saveCreatedHanke(hanke, request.perustaja, securityContext)
+        logger.info { "Creating the stand-alone johtoselvityshakemus." }
+        return hakemusService.createJohtoselvitys(hanke, securityContext.userId())
     }
 
     @Transactional
