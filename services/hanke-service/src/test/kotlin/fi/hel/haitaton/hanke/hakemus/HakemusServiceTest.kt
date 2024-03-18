@@ -14,7 +14,6 @@ import assertk.assertions.single
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
-import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.Contact
@@ -38,6 +37,7 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
+import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.called
 import io.mockk.checkUnnecessaryStub
@@ -123,6 +123,9 @@ class HakemusServiceTest {
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse()
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+            every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
+            every { geometriatDao.calculateArea(any()) } returns 11.0f
+            justRun { alluClient.addAttachment(alluId, any()) }
             justRun { attachmentService.sendInitialAttachments(alluId, any()) }
             val applicationCapturingSlot = slot<AlluCableReportApplicationData>()
             justRun {
@@ -208,8 +211,11 @@ class HakemusServiceTest {
             verifySequence {
                 applicationRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
+                geometriatDao.calculateCombinedArea(any())
+                geometriatDao.calculateArea(any())
                 alluClient.create(any())
                 disclosureLogService.saveDisclosureLogsForAllu(3, any(), Status.SUCCESS)
+                alluClient.addAttachment(alluId, any())
                 attachmentService.sendInitialAttachments(alluId, any())
                 alluClient.getApplicationInformation(alluId)
                 applicationRepository.save(any())
@@ -220,7 +226,9 @@ class HakemusServiceTest {
         fun `saves disclosure logs when sending fails`() {
             val applicationEntity = applicationEntity()
             every { applicationRepository.findOneById(3) } returns applicationEntity
-            every { alluClient.create(any()) } throws AlluException(listOf())
+            every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
+            every { geometriatDao.calculateArea(any()) } returns 11.0f
+            every { alluClient.create(any()) } throws AlluException()
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
             assertThrows<AlluException> { hakemusService.sendHakemus(3, USERNAME) }
@@ -228,6 +236,8 @@ class HakemusServiceTest {
             verifySequence {
                 applicationRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
+                geometriatDao.calculateCombinedArea(any())
+                geometriatDao.calculateArea(any())
                 alluClient.create(any())
                 disclosureLogService.saveDisclosureLogsForAllu(
                     3,
@@ -243,6 +253,8 @@ class HakemusServiceTest {
             val applicationEntity = applicationEntity()
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.isInsideHankeAlueet(any(), any()) } returns true
+            every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
+            every { geometriatDao.calculateArea(any()) } returns 11.0f
             every { alluClient.create(any()) } throws AlluLoginException(RuntimeException())
 
             assertThrows<AlluLoginException> { hakemusService.sendHakemus(3, USERNAME) }
@@ -250,6 +262,8 @@ class HakemusServiceTest {
             verifySequence {
                 applicationRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(any(), any())
+                geometriatDao.calculateCombinedArea(any())
+                geometriatDao.calculateArea(any())
                 alluClient.create(any())
             }
             verify { disclosureLogService wasNot called }
@@ -269,8 +283,11 @@ class HakemusServiceTest {
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { applicationRepository.save(any()) } answers { firstArg() }
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
+            every { geometriatDao.calculateCombinedArea(any()) } returns 11.0f
+            every { geometriatDao.calculateArea(any()) } returns 11.0f
             val applicationCapturingSlot = slot<AlluCableReportApplicationData>()
             every { alluClient.create(capture(applicationCapturingSlot)) } returns alluId
+            justRun { alluClient.addAttachment(alluId, any()) }
             every { alluClient.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
             justRun { attachmentService.sendInitialAttachments(alluId, any()) }
@@ -284,8 +301,11 @@ class HakemusServiceTest {
             verifySequence {
                 applicationRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
+                geometriatDao.calculateCombinedArea(any())
+                geometriatDao.calculateArea(any())
                 alluClient.create(any())
                 disclosureLogService.saveDisclosureLogsForAllu(3, any(), Status.SUCCESS)
+                alluClient.addAttachment(alluId, any())
                 attachmentService.sendInitialAttachments(alluId, any())
                 alluClient.getApplicationInformation(alluId)
                 applicationRepository.save(any())
