@@ -6,6 +6,7 @@ import assertk.assertions.isEqualTo
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.prop
+import fi.hel.haitaton.hanke.logging.ALLU_AUDIT_LOG_USERID
 import fi.hel.haitaton.hanke.logging.AuditLogEntry
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
@@ -24,6 +25,11 @@ object AuditLogEntryAsserts {
         prop(AuditLogEntry::userId).isEqualTo(userId)
     }
 
+    fun Assert<AuditLogEntry>.hasAlluActor() = all {
+        prop(AuditLogEntry::userRole).isEqualTo(UserRole.SERVICE)
+        prop(AuditLogEntry::userId).isEqualTo(ALLU_AUDIT_LOG_USERID)
+    }
+
     inline fun <reified T> Assert<AuditLogEntry>.hasObjectAfter(after: T) = hasObjectAfter {
         isEqualTo(after)
     }
@@ -36,8 +42,8 @@ object AuditLogEntryAsserts {
             .transform { it.parseJson<T>() }
             .all { body(this) }
 
-    inline fun <reified T> Assert<AuditLogEntry>.hasObjectBefore(after: T) = hasObjectBefore {
-        isEqualTo(after)
+    inline fun <reified T> Assert<AuditLogEntry>.hasObjectBefore(before: T) = hasObjectBefore {
+        isEqualTo(before)
     }
 
     inline fun <reified T> Assert<AuditLogEntry>.hasObjectBefore(

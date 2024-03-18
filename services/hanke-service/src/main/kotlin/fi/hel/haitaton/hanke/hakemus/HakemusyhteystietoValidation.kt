@@ -35,9 +35,8 @@ internal fun exactlyOneOrderer(yhteystiedot: List<Hakemusyhteystieto>): Validati
     )
 
 internal fun Hakemusyhteystieto.validateForMissing(path: String): ValidationResult =
-    Validators.validate { Validators.notNull(tyyppi, "$path.tyyppi") }
-        .and { Validators.notBlank(nimi, "$path.nimi") }
+    Validators.validate { Validators.notBlank(nimi, "$path.nimi") }
         .andAllIn(yhteyshenkilot, "$path.yhteyshenkilot", ::validateForMissing)
 
 internal fun validateForMissing(contact: Hakemusyhteyshenkilo, path: String) =
-    Validators.validate { Validators.notBlank(contact.kokoNimi(), "$path.firstName") }
+    Validators.validate { Validators.notBlank(contact.kokoNimi(), "$path.etunimi") }

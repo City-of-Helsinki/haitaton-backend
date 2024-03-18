@@ -6,6 +6,7 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
+import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationHistory
@@ -616,9 +617,7 @@ class ApplicationService(
         val alluData = cableReport.toAlluData(hankeTunnus)
 
         return withFormDataPdfUploading(cableReport) {
-            withDisclosureLogging(applicationId, cableReport) {
-                cableReportService.create(alluData)
-            }
+            withDisclosureLogging(applicationId, alluData) { cableReportService.create(alluData) }
         }
     }
 
@@ -631,7 +630,7 @@ class ApplicationService(
         val alluData = cableReport.toAlluData(hankeTunnus)
 
         withFormDataPdfUploading(cableReport) {
-            withDisclosureLogging(applicationId, cableReport) {
+            withDisclosureLogging(applicationId, alluData) {
                 cableReportService.update(alluId, alluData)
             }
             alluId
@@ -694,7 +693,7 @@ class ApplicationService(
      */
     private fun <T> withDisclosureLogging(
         applicationId: Long,
-        cableReportApplicationData: CableReportApplicationData,
+        cableReportApplicationData: AlluCableReportApplicationData,
         f: () -> T,
     ): T {
         try {
@@ -709,7 +708,7 @@ class ApplicationService(
             // Since the login failed we didn't send the application itself, so logging not needed.
             throw e
         } catch (e: Throwable) {
-            // There was an exception outside logging, so there was at least an attempt to send the
+            // There was an exception outside login, so there was at least an attempt to send the
             // application to Allu. Allu might have read it and rejected it, so we should log this
             // as a disclosure event.
             disclosureLogService.saveDisclosureLogsForAllu(
