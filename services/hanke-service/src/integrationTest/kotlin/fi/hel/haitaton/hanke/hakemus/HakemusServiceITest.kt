@@ -673,6 +673,7 @@ class HakemusServiceITest(
             hankeRepository.save(hanke.apply { alueet = mutableListOf() })
             assertThat(geometriatDao.isInsideHankeAlueet(hanke.id, areas[0].geometry)).isFalse()
             every { cableReportService.create(any()) } returns alluId
+            justRun { cableReportService.addAttachment(alluId, any()) }
             every { cableReportService.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
@@ -680,6 +681,7 @@ class HakemusServiceITest(
 
             verifySequence {
                 cableReportService.create(any())
+                cableReportService.addAttachment(alluId, any())
                 cableReportService.getApplicationInformation(any())
             }
         }
@@ -700,6 +702,7 @@ class HakemusServiceITest(
                     .toAlluData(hanke.hankeTunnus)
                     .copy(pendingOnClient = false)
             every { cableReportService.create(applicationData) } returns alluId
+            justRun { cableReportService.addAttachment(alluId, any()) }
             every { cableReportService.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(id = alluId)
 
@@ -713,6 +716,7 @@ class HakemusServiceITest(
             Assertions.assertFalse(savedApplicationData.pendingOnClient)
             verifySequence {
                 cableReportService.create(applicationData)
+                cableReportService.addAttachment(alluId, any())
                 cableReportService.getApplicationInformation(alluId)
             }
         }
@@ -745,6 +749,7 @@ class HakemusServiceITest(
             val applicationData = application.applicationData as CableReportApplicationData
             val expectedDataAfterSend = applicationData.copy(pendingOnClient = false)
             every { cableReportService.create(any()) } returns alluId
+            justRun { cableReportService.addAttachment(alluId, any()) }
             every { cableReportService.getApplicationInformation(alluId) } throws
                 AlluException(listOf())
 
@@ -763,6 +768,7 @@ class HakemusServiceITest(
 
             verifySequence {
                 cableReportService.create(any())
+                cableReportService.addAttachment(alluId, any())
                 cableReportService.getApplicationInformation(alluId)
             }
         }
@@ -795,6 +801,7 @@ class HakemusServiceITest(
             val applicationEntity = applicationRepository.getReferenceById(hakemus.id)
             attachmentFactory.save(application = applicationEntity).withContent()
             every { cableReportService.create(any()) } returns alluId
+            justRun { cableReportService.addAttachment(alluId, any()) }
             every { cableReportService.addAttachments(alluId, any(), any()) } throws
                 AlluException(listOf())
             justRun { cableReportService.cancel(alluId) }
@@ -805,12 +812,35 @@ class HakemusServiceITest(
             failure.hasClass(AlluException::class)
             verifySequence {
                 cableReportService.create(any())
+                cableReportService.addAttachment(alluId, any())
                 cableReportService.addAttachments(alluId, any(), any())
                 cableReportService.cancel(alluId)
                 cableReportService.sendSystemComment(
                     alluId,
                     ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG
                 )
+            }
+        }
+
+        @Test
+        fun `saves the Allu ID and status even when sending the form data attachment fails`() {
+            val hakemus = hakemusFactory.builder().withMandatoryFields().save()
+            every { cableReportService.create(any()) } returns alluId
+            every { cableReportService.addAttachment(alluId, any()) } throws AlluException(listOf())
+            every { cableReportService.getApplicationInformation(alluId) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            val response = hakemusService.sendHakemus(hakemus.id, USERNAME)
+
+            assertThat(response.alluid).isEqualTo(alluId)
+            assertThat(response.alluStatus).isEqualTo(ApplicationStatus.PENDING)
+            val savedHakemus = applicationRepository.getReferenceById(hakemus.id)
+            assertThat(savedHakemus.alluid).isEqualTo(alluId)
+            assertThat(savedHakemus.alluStatus).isEqualTo(ApplicationStatus.PENDING)
+            verifySequence {
+                cableReportService.create(any())
+                cableReportService.addAttachment(alluId, any())
+                cableReportService.getApplicationInformation(alluId)
             }
         }
 
@@ -825,6 +855,7 @@ class HakemusServiceITest(
                 hakemusData.copy(pendingOnClient = false).setOrdererForContractor(founder.id)
             val expectedAlluRequest = expectedDataAfterSend.toAlluData(hakemus.hankeTunnus)
             every { cableReportService.create(expectedAlluRequest) } returns alluId
+            justRun { cableReportService.addAttachment(alluId, any()) }
             justRun { cableReportService.addAttachments(alluId, any(), any()) }
             every { cableReportService.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
@@ -846,6 +877,7 @@ class HakemusServiceITest(
             }
             verifySequence {
                 cableReportService.create(expectedAlluRequest)
+                cableReportService.addAttachment(alluId, any())
                 cableReportService.addAttachments(alluId, any(), any())
                 cableReportService.getApplicationInformation(alluId)
             }
@@ -871,6 +903,7 @@ class HakemusServiceITest(
                 hakemusData.copy(pendingOnClient = false).setOrdererForCustomer(founder.id)
             val expectedAlluRequest = expectedDataAfterSend.toAlluData(hakemus.hankeTunnus)
             every { cableReportService.create(expectedAlluRequest) } returns alluId
+            justRun { cableReportService.addAttachment(alluId, any()) }
             every { cableReportService.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
@@ -886,6 +919,7 @@ class HakemusServiceITest(
                 .contains(Pair(founder.id, true))
             verifySequence {
                 cableReportService.create(expectedAlluRequest)
+                cableReportService.addAttachment(alluId, any())
                 cableReportService.getApplicationInformation(alluId)
             }
         }
@@ -931,6 +965,7 @@ class HakemusServiceITest(
                     .save()
             auditLogRepository.deleteAll()
             every { cableReportService.create(any()) } returns alluId
+            justRun { cableReportService.addAttachment(alluId, any()) }
             every { cableReportService.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
@@ -999,6 +1034,7 @@ class HakemusServiceITest(
                 .hasSameElementsAs(expectedObjects.map { it.toJsonString() })
             verifySequence {
                 cableReportService.create(any())
+                cableReportService.addAttachment(alluId, any())
                 cableReportService.getApplicationInformation(alluId)
             }
         }
