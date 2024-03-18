@@ -40,4 +40,6 @@ data class Hakemusyhteyshenkilo(
 ) {
     fun toResponse(): ContactResponse =
         ContactResponse(hankekayttajaId, etunimi, sukunimi, sahkoposti, puhelin, tilaaja)
+
+    fun kokoNimi() = "$etunimi $sukunimi".trim()
 }

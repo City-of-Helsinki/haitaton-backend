@@ -196,6 +196,42 @@ class HakemusController(
         return response
     }
 
+    @PostMapping("/hakemukset/{id}/laheta")
+    @Operation(
+        summary = "Send an application to Allu for processing",
+        description =
+            """Returns the application with updated status fields.
+               - Sets the pendingOnClient value of the application to false. This means the application is no longer a draft.
+               - A clerk at Allu can start processing the application after this call.
+               - The application cannot be edited after it has been sent.
+               - The caller needs to be a contact on the application for at least one customer. 
+            """
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "The sent application", responseCode = "200"),
+                ApiResponse(
+                    description = "Application contains invalid data",
+                    responseCode = "400",
+                    content = [Content(schema = Schema(implementation = HankeErrorDetail::class))]
+                ),
+                ApiResponse(
+                    description = "An application was not found with the given id",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+                ApiResponse(
+                    description = "The application has been sent already",
+                    responseCode = "409",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+            ]
+    )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
+    fun sendHakemus(@PathVariable(name = "id") id: Long): HakemusResponse =
+        hakemusService.sendHakemus(id, currentUserId()).toResponse()
+
     @ExceptionHandler(InvalidHakemusDataException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
@@ -262,5 +298,13 @@ class HakemusController(
     fun handleValidationExceptions(ex: ConstraintViolationException): HankeError {
         logger.warn { ex.message }
         return ex.toHankeError(HankeError.HAI1002)
+    }
+
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    @ExceptionHandler(UserNotInContactsException::class)
+    @Hidden
+    fun userNotInContactsException(ex: UserNotInContactsException): HankeError {
+        logger.warn { ex.message }
+        return HankeError.HAI2012
     }
 }

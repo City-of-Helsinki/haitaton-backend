@@ -41,7 +41,7 @@ object HakemusResponseFactory {
         name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
         postalAddress: PostalAddress = PostalAddress(StreetAddress(DEFAULT_STREET_NAME), "", ""),
         rockExcavation: Boolean = false,
-        workDescription: String = "Work description.",
+        workDescription: String = ApplicationFactory.DEFAULT_WORK_DESCRIPTION,
         startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
         endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
         areas: List<ApplicationArea> = listOf(ApplicationFactory.createApplicationArea()),

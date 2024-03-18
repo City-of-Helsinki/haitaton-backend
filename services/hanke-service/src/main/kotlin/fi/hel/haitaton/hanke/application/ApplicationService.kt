@@ -136,7 +136,11 @@ class ApplicationService(
         val previousApplication = application.toApplication()
 
         application.alluid?.let {
-            throw ApplicationAlreadySentException(application.id, application.alluid)
+            throw ApplicationAlreadySentException(
+                application.id,
+                application.alluid,
+                application.alluStatus
+            )
         } ?: logger.info("Updating application id=$id")
 
         if (previousApplication.applicationData == newApplicationData) {
@@ -445,7 +449,7 @@ class ApplicationService(
         }
     }
 
-    private fun checkApplicationAreasInsideHankealue(
+    fun checkApplicationAreasInsideHankealue(
         hankeId: Int,
         areas: List<ApplicationArea>,
         customMessageOnFailure: (ApplicationArea) -> String
@@ -737,11 +741,11 @@ class IncompatibleApplicationException(
 class ApplicationNotFoundException(id: Long) :
     RuntimeException("Application not found with id $id")
 
-class ApplicationAlreadySentException(id: Long?, alluid: Int?) :
-    RuntimeException("Application is already sent to Allu, id=$id, alluid=$alluid")
+class ApplicationAlreadySentException(id: Long?, alluid: Int?, status: ApplicationStatus?) :
+    RuntimeException("Application is already sent to Allu, id=$id, alluId=$alluid, status=$status")
 
 class ApplicationAlreadyProcessingException(id: Long?, alluid: Int?) :
-    RuntimeException("Application is no longer pending in Allu, id=$id, alluid=$alluid")
+    RuntimeException("Application is no longer pending in Allu, id=$id, alluId=$alluid")
 
 class ApplicationGeometryException(message: String) : RuntimeException(message)
 

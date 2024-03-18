@@ -254,7 +254,8 @@ class ApplicationServiceTest {
                     applicationService.updateApplicationData(3, updatedData, USERNAME)
                 }
 
-            assertThat(exception).hasMessage("Application is already sent to Allu, id=3, alluid=42")
+            assertThat(exception)
+                .hasMessage("Application is already sent to Allu, id=3, alluId=42, status=null")
             verifySequence { applicationRepository.findOneById(3) }
             verifyAll {
                 disclosureLogService wasNot Called

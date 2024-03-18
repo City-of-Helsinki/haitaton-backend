@@ -69,6 +69,15 @@ class HankeFactory(
     fun saveWithAlue(userId: String = USERNAME): HankeEntity =
         builder(userId).withHankealue().saveEntity()
 
+    /**
+     * Save a hanke that has the generated field set. The hanke is created like it would be created
+     * for a stand-alone johtoselvityshakemus.
+     */
+    fun saveGenerated(
+        createRequest: CreateHankeRequest = createRequest(),
+        userId: String = USERNAME,
+    ): HankeEntity = builder(userId).saveGenerated(createRequest)
+
     fun builder(userId: String = USERNAME): HankeBuilder {
         val hanke =
             create(

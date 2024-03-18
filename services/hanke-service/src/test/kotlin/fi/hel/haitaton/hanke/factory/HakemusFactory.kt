@@ -9,6 +9,8 @@ import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.PostalAddress
+import fi.hel.haitaton.hanke.domain.CreateHankeRequest
+import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.HakemusService
@@ -36,9 +38,22 @@ class HakemusFactory(
         userId: String,
         hankeEntity: HankeEntity = hankeFactory.builder(userId).withHankealue().saveEntity()
     ): HakemusBuilder {
-        val applicationEntity = createHakemus(userId = userId, hanke = hankeEntity)
-        return HakemusBuilder(
+        val applicationEntity = createEntity(userId = userId, hanke = hankeEntity)
+        return builder(userId, applicationEntity, hankeEntity.id)
+    }
+
+    fun builder(
+        hankeEntity: HankeEntity = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+    ) = builder(USERNAME, hankeEntity)
+
+    private fun builder(
+        userId: String,
+        applicationEntity: ApplicationEntity,
+        hankeId: Int,
+    ): HakemusBuilder =
+        HakemusBuilder(
             applicationEntity,
+            hankeId,
             userId,
             this,
             hakemusService,
@@ -49,11 +64,18 @@ class HakemusFactory(
             hakemusyhteystietoRepository,
             hakemusyhteyshenkiloRepository,
         )
-    }
 
-    fun builder(
-        hankeEntity: HankeEntity = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
-    ) = builder(USERNAME, hankeEntity)
+    fun builderWithGeneratedHanke(
+        userId: String = USERNAME,
+        nimi: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
+        perustaja: HankePerustaja = HankeFactory.DEFAULT_HANKE_PERUSTAJA,
+    ): HakemusBuilder {
+        val request = CreateHankeRequest(nimi, perustaja)
+        val hankeEntity = hankeFactory.saveGenerated(request, userId)
+        val applicationEntity = createEntity(userId = userId, hanke = hankeEntity)
+
+        return builder(userId, applicationEntity, hankeEntity.id)
+    }
 
     companion object {
         fun create(
@@ -81,7 +103,7 @@ class HakemusFactory(
             name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
             postalAddress: PostalAddress? = null,
             rockExcavation: Boolean = false,
-            workDescription: String = "Work description.",
+            workDescription: String = ApplicationFactory.DEFAULT_WORK_DESCRIPTION,
             startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
             endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
             pendingOnClient: Boolean = false,
@@ -109,26 +131,26 @@ class HakemusFactory(
                 representativeWithContacts = representativeWithContacts,
                 propertyDeveloperWithContacts = propertyDeveloperWithContacts,
             )
-    }
 
-    fun createHakemus(
-        alluid: Int? = null,
-        alluStatus: ApplicationStatus? = null,
-        applicationIdentifier: String? = null,
-        userId: String,
-        applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-        applicationData: ApplicationData =
-            ApplicationFactory.createBlankCableReportApplicationData(),
-        hanke: HankeEntity,
-    ): ApplicationEntity =
-        ApplicationEntity(
-            id = null,
-            alluid = alluid,
-            alluStatus = alluStatus,
-            applicationIdentifier = applicationIdentifier,
-            userId = userId,
-            applicationType = applicationType,
-            applicationData = applicationData,
-            hanke = hanke,
-        )
+        fun createEntity(
+            alluid: Int? = null,
+            alluStatus: ApplicationStatus? = null,
+            applicationIdentifier: String? = null,
+            userId: String,
+            applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
+            applicationData: ApplicationData =
+                ApplicationFactory.createBlankCableReportApplicationData(),
+            hanke: HankeEntity,
+        ): ApplicationEntity =
+            ApplicationEntity(
+                id = null,
+                alluid = alluid,
+                alluStatus = alluStatus,
+                applicationIdentifier = applicationIdentifier,
+                userId = userId,
+                applicationType = applicationType,
+                applicationData = applicationData,
+                hanke = hanke,
+            )
+    }
 }
