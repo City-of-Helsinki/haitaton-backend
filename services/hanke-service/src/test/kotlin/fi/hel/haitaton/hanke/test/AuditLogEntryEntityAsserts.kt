@@ -26,7 +26,7 @@ object AuditLogEntryEntityAsserts {
     fun Assert<AuditLogEntryEntity>.auditEvent(body: Assert<AuditLogEvent>.() -> Unit) =
         auditEvent().all { body(this) }
 
-    fun Assert<AuditLogActor>.isUser(userId: String) =
+    private fun Assert<AuditLogActor>.isUser(userId: String) =
         this.all {
             prop(AuditLogActor::role).isEqualTo(UserRole.USER)
             prop(AuditLogActor::userId).isNotNull().isEqualTo(userId)
@@ -41,6 +41,12 @@ object AuditLogEntryEntityAsserts {
             prop(AuditLogActor::ipAddress).isEqualTo(ipAddress)
         }
 
+    fun Assert<AuditLogEvent>.hasServiceActor(userId: String) =
+        prop(AuditLogEvent::actor).all {
+            prop(AuditLogActor::role).isEqualTo(UserRole.SERVICE)
+            prop(AuditLogActor::userId).isEqualTo(userId)
+        }
+
     fun Assert<AuditLogEvent>.hasMockedIp(ipAddress: String = TestUtils.mockedIp) =
         prop(AuditLogEvent::actor).prop(AuditLogActor::ipAddress).isEqualTo(ipAddress)
 
@@ -48,10 +54,15 @@ object AuditLogEntryEntityAsserts {
         prop(AuditLogEvent::target).all(body)
 
     inline fun <reified T> Assert<AuditLogTarget>.hasObjectBefore(before: T) =
+        hasObjectBefore<T> { isEqualTo(before) }
+
+    inline fun <reified T> Assert<AuditLogTarget>.hasObjectBefore(
+        crossinline body: Assert<T>.() -> Unit
+    ) =
         prop(AuditLogTarget::objectBefore)
             .isNotNull()
             .transform { it.parseJson<T>() }
-            .isEqualTo(before)
+            .all { body(this) }
 
     inline fun <reified T> Assert<AuditLogTarget>.hasObjectAfter(after: T) =
         hasObjectAfter<T> { isEqualTo(after) }
