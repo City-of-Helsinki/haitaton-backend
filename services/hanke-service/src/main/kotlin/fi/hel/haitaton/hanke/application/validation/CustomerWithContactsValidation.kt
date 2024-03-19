@@ -65,7 +65,13 @@ internal fun InvoicingCustomer.validateForMissing(path: String): ValidationResul
     validate { notNull(type, "$path.type") }
         .and { notBlank(name, "$path.name") }
         .andWhen(type == CustomerType.COMPANY || type == CustomerType.ASSOCIATION) {
-            validateTrue(registryKey.isValidBusinessId(), "$path.registryKey")
+            validateTrue(registryKey.isValidBusinessId(), "$path.registryKey").andWhen(
+                !ovt.isNullOrBlank()
+            ) {
+                validateTrue(ovt.isValidOVT(registryKey), "$path.ovt").and {
+                    notNullOrBlank(invoicingOperator, "$path.invoicingOperator")
+                }
+            }
         }
 
 private fun validateForMissing(contact: Contact, path: String) = validate {
