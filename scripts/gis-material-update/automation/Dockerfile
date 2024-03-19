@@ -21,8 +21,8 @@ RUN python -m venv /opt/venv && /opt/venv/bin/pip install --upgrade pip && /opt/
 COPY ./automation/automation.sh /haitaton-automation/
 COPY ./config.yaml /haitaton-gis/
 COPY ./config.yaml /haitaton-gis-validate-deploy/
-COPY ./automation/fetch_all.sh /haitaton-gis/
-COPY ./automation/fetch_data.sh /haitaton-gis/
+COPY ./fetch/fetch_all.sh /haitaton-gis/
+COPY ./fetch/fetch_data.sh /haitaton-gis/
 COPY ./process/process_data.py /haitaton-gis/
 COPY ./process/process_data.sh /haitaton-gis/
 COPY ./osm_vrt_clip.vrt /haitaton-gis/
