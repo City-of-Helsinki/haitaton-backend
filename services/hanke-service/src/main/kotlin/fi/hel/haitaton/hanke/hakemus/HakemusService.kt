@@ -38,6 +38,14 @@ class HakemusService(
     private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
 ) {
     @Transactional(readOnly = true)
+    fun get(applicationId: Long): Hakemus {
+        val applicationEntity =
+            applicationRepository.findOneById(applicationId)
+                ?: throw ApplicationNotFoundException(applicationId)
+        return applicationEntity.toHakemus()
+    }
+
+    @Transactional(readOnly = true)
     fun hakemusResponse(applicationId: Long): HakemusResponse {
         val applicationEntity =
             applicationRepository.findOneById(applicationId)
