@@ -1589,7 +1589,7 @@ class HankeServiceITests(
         fun `when hakemus has yhteyshenkilot, those are removed as well`() {
             val hanke =
                 hankeFactory.builder(USERNAME).withYhteystiedot().withHankealue().saveEntity()
-            hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot { hakija() }
+            hakemusFactory.builder(hanke).hakija().save()
 
             hankeService.deleteHanke(hanke.hankeTunnus, USERNAME)
 

@@ -31,7 +31,7 @@ class HakemusFactory(
     private val hankeKayttajaFactory: HankeKayttajaFactory,
 ) {
     fun builder(
-        userId: String = USERNAME,
+        userId: String,
         hankeEntity: HankeEntity = hankeFactory.builder(userId).withHankealue().saveEntity()
     ): HakemusBuilder {
         val applicationEntity = createHakemus(userId = userId, hanke = hankeEntity)
@@ -47,6 +47,10 @@ class HakemusFactory(
             hakemusyhteyshenkiloRepository,
         )
     }
+
+    fun builder(
+        hankeEntity: HankeEntity = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+    ) = builder(USERNAME, hankeEntity)
 
     companion object {
         fun create(
