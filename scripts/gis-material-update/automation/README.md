@@ -38,7 +38,9 @@ docker run --rm --network host --env-file haitaton.env haitaton-gis-automation <
 
 Where `<source>` is currently one of:
 
-- `hsl` - HSL bus schedules
+- `hsl` - HSL bus routes
+- `tram_lines` - Tram routes.
+- `tram_infra` - Tram infra.
 - `ylre_katualueet` - Helsinki YLRE street areas, polygons.
 - `ylre_katuosat` - Helsinki YLRE parts, polygons.
 - `maka_autoliikennemaarat` - Traffic volumes (car traffic)
