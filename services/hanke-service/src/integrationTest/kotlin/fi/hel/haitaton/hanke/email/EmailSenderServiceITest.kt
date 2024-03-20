@@ -10,7 +10,10 @@ import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.application.ApplicationType
+import fi.hel.haitaton.hanke.email.EmailSenderService.Companion.translations
 import fi.hel.haitaton.hanke.firstReceivedMessage
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import org.apache.commons.text.StringEscapeUtils
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.RegisterExtension
@@ -20,6 +23,9 @@ private const val TEST_EMAIL = "test@test.test"
 private const val HAITATON_NO_REPLY = "no-reply@hel.fi"
 private const val APPLICATION_IDENTIFIER = "JS2300001"
 private const val INVITER_NAME = "Matti Meikäläinen"
+private const val INVITER_EMAIL = "matti.meikalainen@test.fi"
+private const val HANKE_TUNNUS = "HAI24-1"
+private const val HANKE_NIMI = "Mannerheimintien liikenneuudistus"
 
 class EmailSenderServiceITest : IntegrationTest() {
 
@@ -109,10 +115,10 @@ class EmailSenderServiceITest : IntegrationTest() {
         private val hankeInvitation =
             HankeInvitationData(
                 inviterName = INVITER_NAME,
-                inviterEmail = "matti.meikalainen@test.fi",
+                inviterEmail = INVITER_EMAIL,
                 recipientEmail = TEST_EMAIL,
-                hankeTunnus = "HAI24-1",
-                hankeNimi = "Mannerheimintien liikenneuudistus",
+                hankeTunnus = HANKE_TUNNUS,
+                hankeNimi = HANKE_NIMI,
                 invitationToken = "MgtzRbcPsvoKQamnaSxCnmW7",
             )
 
@@ -174,11 +180,11 @@ class EmailSenderServiceITest : IntegrationTest() {
         private val applicationNotification =
             ApplicationNotificationData(
                 senderName = INVITER_NAME,
-                senderEmail = "matti.meikalainen@test.fi",
+                senderEmail = INVITER_EMAIL,
                 recipientEmail = TEST_EMAIL,
                 applicationType = ApplicationType.CABLE_REPORT,
                 applicationIdentifier = APPLICATION_IDENTIFIER,
-                hankeTunnus = "HAI24-1",
+                hankeTunnus = HANKE_TUNNUS,
             )
 
         @Test
@@ -231,6 +237,87 @@ class EmailSenderServiceITest : IntegrationTest() {
                 contains("$htmlEscapedName (${data.senderEmail})")
                 contains("johtoselvityshakemuksen (${data.applicationIdentifier})")
                 contains("""<a href="http://localhost:3001">""")
+            }
+        }
+    }
+
+    @Nested
+    inner class AccessRightsUpdateNotification {
+        private val accessRightsUpdateNotificationData =
+            AccessRightsUpdateNotificationData(
+                recipientEmail = TEST_EMAIL,
+                hankeTunnus = HANKE_TUNNUS,
+                hankeNimi = HANKE_NIMI,
+                updatedByName = INVITER_NAME,
+                updatedByEmail = INVITER_EMAIL,
+                newAccessRights = Kayttooikeustaso.HANKEMUOKKAUS,
+            )
+
+        @Test
+        fun `Send email with correct recipient`() {
+            emailSenderService.sendAccessRightsUpdateNotificationEmail(
+                accessRightsUpdateNotificationData
+            )
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.allRecipients).hasSize(1)
+            assertThat(email.allRecipients[0].toString()).isEqualTo(TEST_EMAIL)
+        }
+
+        @Test
+        fun `Send email with sender from properties`() {
+            emailSenderService.sendAccessRightsUpdateNotificationEmail(
+                accessRightsUpdateNotificationData
+            )
+
+            val email = greenMail.firstReceivedMessage()
+            assertThat(email.from).hasSize(1)
+            assertThat(email.from[0].toString()).isEqualTo(HAITATON_NO_REPLY)
+        }
+
+        @Test
+        fun `Send email with correct subject`() {
+            emailSenderService.sendAccessRightsUpdateNotificationEmail(
+                accessRightsUpdateNotificationData
+            )
+
+            val email = greenMail.firstReceivedMessage()
+            // TODO needs translations
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Käyttöoikeustasoasi on muutettu (HAI24-1) / sama ruotsiksi / sama englanniksi"
+                )
+        }
+
+        @Test
+        fun `Send email with parametrized hybrid body`() {
+            val data = accessRightsUpdateNotificationData
+
+            emailSenderService.sendAccessRightsUpdateNotificationEmail(data)
+
+            val email = greenMail.firstReceivedMessage()
+            val (textBody, htmlBody) = email.bodies()
+            assertThat(textBody).all {
+                contains("${data.updatedByName} (${data.updatedByEmail}) on")
+                contains(
+                    "muuttanut käyttöoikeustasoasi hankkeella \"${data.hankeNimi}\" (${data.hankeTunnus})"
+                )
+                contains("Uusi käyttöoikeutesi on \"${data.newAccessRights.translations().fi}\"")
+                contains(
+                    "Tarkastele hanketta täällä: http://localhost:3001/fi/hankesalkku/${data.hankeTunnus}"
+                )
+            }
+            assertThat(htmlBody).all {
+                contains(
+                    "${StringEscapeUtils.escapeHtml4(data.updatedByName)} (${data.updatedByEmail}) on"
+                )
+                contains(
+                    "muuttanut käyttöoikeustasoasi hankkeella <b>${data.hankeNimi} (${data.hankeTunnus})</b>"
+                )
+                contains("Uusi käyttöoikeutesi on <b>${data.newAccessRights.translations().fi}</b>")
+                contains(
+                    "Tarkastele hanketta täällä: <a href=\"http://localhost:3001/fi/hankesalkku/${data.hankeTunnus}\">http://localhost:3001/fi/hankesalkku/${data.hankeTunnus}</a>"
+                )
             }
         }
     }

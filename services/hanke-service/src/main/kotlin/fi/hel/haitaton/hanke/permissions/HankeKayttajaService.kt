@@ -8,6 +8,7 @@ import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
+import fi.hel.haitaton.hanke.email.AccessRightsUpdateNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.HankeInvitationData
 import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
@@ -195,6 +196,14 @@ class HankeKayttajaService(
         }
 
         validateAdminRemains(hankeIdentifier)
+
+        getKayttajaByUserId(hankeIdentifier.id, userId)?.let { updater ->
+            sendAccessRightsUpdateNotificationEmails(
+                hankeIdentifier,
+                kayttajat.map { Pair(it, updates[it.id]!!) },
+                updater
+            )
+        }
     }
 
     @Transactional
@@ -540,6 +549,29 @@ class HankeKayttajaService(
 
     private fun hankeExistingEmails(hankeId: Int, emails: List<String>): List<String> =
         hankekayttajaRepository.findByHankeIdAndSahkopostiIn(hankeId, emails).map { it.sahkoposti }
+
+    private fun sendAccessRightsUpdateNotificationEmails(
+        hankeIdentifier: HankeIdentifier,
+        usersAndPermissions: List<Pair<HankekayttajaEntity, Kayttooikeustaso>>,
+        updater: HankekayttajaEntity
+    ) {
+        logger.info { "Sending access rights update notification." }
+        val hanke =
+            hankeRepository.findByIdOrNull(hankeIdentifier.id)
+                ?: throw HankeNotFoundException(hankeIdentifier.hankeTunnus)
+        usersAndPermissions.forEach { (kayttaja, kayttooikeustaso) ->
+            val notificationData =
+                AccessRightsUpdateNotificationData(
+                    kayttaja.sahkoposti,
+                    hanke.hankeTunnus,
+                    hanke.nimi,
+                    updater.fullName(),
+                    updater.sahkoposti,
+                    kayttooikeustaso
+                )
+            emailSenderService.sendAccessRightsUpdateNotificationEmail(notificationData)
+        }
+    }
 }
 
 class UserAlreadyExistsException(hankeIdentifier: HankeIdentifier, sahkoposti: String) :
