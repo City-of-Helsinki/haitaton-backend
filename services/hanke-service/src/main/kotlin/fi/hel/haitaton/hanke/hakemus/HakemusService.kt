@@ -425,15 +425,15 @@ class HakemusService(
 
     private fun CustomerWithContactsRequest.toExistingHakemusyhteystietoEntity(
         hakemusyhteystietoEntity: HakemusyhteystietoEntity
-    ) =
-        hakemusyhteystietoEntity.also {
-            it.tyyppi = customer.type
-            it.nimi = customer.name
-            it.sahkoposti = customer.email
-            it.puhelinnumero = customer.phone
-            it.ytunnus = customer.registryKey
-            it.yhteyshenkilot.update(it, this.contacts)
-        }
+    ): HakemusyhteystietoEntity {
+        hakemusyhteystietoEntity.tyyppi = customer.type
+        hakemusyhteystietoEntity.nimi = customer.name
+        hakemusyhteystietoEntity.sahkoposti = customer.email
+        hakemusyhteystietoEntity.puhelinnumero = customer.phone
+        hakemusyhteystietoEntity.ytunnus = customer.registryKey
+        hakemusyhteystietoEntity.yhteyshenkilot.update(hakemusyhteystietoEntity, this.contacts)
+        return hakemusyhteystietoEntity
+    }
 
     private fun MutableList<HakemusyhteyshenkiloEntity>.update(
         hakemusyhteystietoEntity: HakemusyhteystietoEntity,

@@ -25,6 +25,7 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaNotFoundException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaDeleteService
@@ -46,6 +47,7 @@ class HankekayttajaDeleteServiceITest(
     @Autowired val hankeService: HankeService,
     @Autowired val hakemusService: HakemusService,
     @Autowired val hankeFactory: HankeFactory,
+    @Autowired val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired val hakemusFactory: HakemusFactory,
 ) : IntegrationTest() {
 
@@ -143,19 +145,19 @@ class HankekayttajaDeleteServiceITest(
         fun `divides active and draft applications correctly`() {
             val hanke = hankeFactory.saveWithAlue()
             val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
-            hakemusFactory.builder(hankeEntity = hanke).withName("Draft").saveWithYhteystiedot {
-                hakija(founder)
-            }
+            hakemusFactory.builder(hankeEntity = hanke).withName("Draft").hakija(founder).save()
             hakemusFactory
                 .builder(hankeEntity = hanke)
                 .withName("Pending")
                 .withStatus(ApplicationStatus.PENDING, alluId = 1, identifier = "JS230001")
-                .saveWithYhteystiedot { hakija(founder) }
+                .hakija(founder)
+                .save()
             hakemusFactory
                 .builder(hankeEntity = hanke)
                 .withName("Decision")
                 .withStatus(ApplicationStatus.DECISION, alluId = 2, identifier = "JS230002")
-                .saveWithYhteystiedot { hakija(founder) }
+                .hakija(founder)
+                .save()
 
             val response: DeleteInfo = deleteService.checkForDelete(founder.id)
 
@@ -237,13 +239,15 @@ class HankekayttajaDeleteServiceITest(
                     .builder(hankeEntity = hanke)
                     .withName("Pending")
                     .withStatus(ApplicationStatus.PENDING, alluId = 1, identifier = "JS230001")
-                    .saveWithYhteystiedot { hakija(founder) }
+                    .hakija(founder)
+                    .save()
             val decision =
                 hakemusFactory
                     .builder(hankeEntity = hanke)
                     .withName("Decision")
                     .withStatus(ApplicationStatus.DECISION, alluId = 2, identifier = "JS230002")
-                    .saveWithYhteystiedot { tyonSuorittaja(founder) }
+                    .tyonSuorittaja(founder)
+                    .save()
 
             val failure = assertFailure { deleteService.delete(founder.id) }
 
@@ -263,10 +267,14 @@ class HankekayttajaDeleteServiceITest(
                 omistaja(founder, kayttaja())
                 toteuttaja(Kayttooikeustaso.KAIKKI_OIKEUDET)
             }
+            val otherKayttaja =
+                hankeKayttajaFactory.saveIdentifiedUser(hanke.id, sahkoposti = "Something else")
             val draftHakemus =
-                hakemusFactory.builder(hankeEntity = hanke).withName("Draft").saveWithYhteystiedot {
-                    hakija(founder, kayttaja(sahkoposti = "Something else"))
-                }
+                hakemusFactory
+                    .builder(hanke)
+                    .withName("Draft")
+                    .hakija(founder, otherKayttaja)
+                    .save()
 
             deleteService.delete(founder.id)
 
@@ -320,17 +328,9 @@ class HankekayttajaDeleteServiceITest(
             val hanke = hankeFactory.saveWithAlue(USERNAME)
             val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
             val application1 =
-                hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
-                    hakija(founder)
-                    rakennuttaja()
-                    tyonSuorittaja()
-                }
+                hakemusFactory.builder(hanke).hakija(founder).rakennuttaja().tyonSuorittaja().save()
             val application2 =
-                hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
-                    hakija()
-                    rakennuttaja()
-                    tyonSuorittaja(founder)
-                }
+                hakemusFactory.builder(hanke).hakija().rakennuttaja().tyonSuorittaja(founder).save()
 
             val result = deleteService.getHakemuksetForKayttaja(founder.id)
 
