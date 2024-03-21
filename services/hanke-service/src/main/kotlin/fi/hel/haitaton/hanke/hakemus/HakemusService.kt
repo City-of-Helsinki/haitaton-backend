@@ -35,6 +35,7 @@ class HakemusService(
     private val hankealueService: HankealueService,
     private val hakemusLoggingService: HakemusLoggingService,
     private val hankeKayttajaService: HankeKayttajaService,
+    private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
     private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
 ) {
     @Transactional(readOnly = true)
@@ -405,6 +406,7 @@ class HakemusService(
                 ytunnus = customer.registryKey,
                 application = applicationEntity,
             )
+            .also { hakemusyhteystietoRepository.save(it) }
             .apply {
                 yhteyshenkilot.addAll(contacts.map { it.toNewHakemusyhteyshenkiloEntity(this) })
             }

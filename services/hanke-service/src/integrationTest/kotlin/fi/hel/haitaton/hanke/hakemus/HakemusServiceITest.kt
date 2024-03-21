@@ -475,13 +475,10 @@ class HakemusServiceITest(
             val kayttaja1 = hankeKayttajaFactory.saveUser(hanke.id)
             val kayttaja2 = hankeKayttajaFactory.saveUser(hanke.id, sahkoposti = "other@email")
             val entity =
-                hakemusFactory
-                    .builder(USERNAME, hanke)
-                    .withWorkDescription("Old work description")
-                    .saveWithYhteystiedot {
-                        hakija()
-                        tyonSuorittaja(kayttaja1, kayttaja2)
-                    }
+                hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
+                    hakija()
+                    tyonSuorittaja(kayttaja1, kayttaja2)
+                }
             val hakemus = hakemusService.hakemusResponse(entity.id!!)
             val tyonSuorittaja =
                 hakemusyhteystietoRepository.findAll().single {
@@ -547,7 +544,7 @@ class HakemusServiceITest(
             val persistedHakemus = hakemusService.hakemusResponse(updatedHakemus.id)
             assertThat(persistedHakemus.applicationData)
                 .isInstanceOf(JohtoselvitysHakemusDataResponse::class)
-                .prop(JohtoselvitysHakemusDataResponse::contractorWithContacts)
+                .prop(JohtoselvitysHakemusDataResponse::customerWithContacts)
                 .isNotNull()
                 .prop(CustomerWithContactsResponse::contacts)
                 .extracting { it.hankekayttajaId }
