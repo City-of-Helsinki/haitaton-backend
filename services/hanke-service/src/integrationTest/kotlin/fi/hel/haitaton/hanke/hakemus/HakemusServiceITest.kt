@@ -441,17 +441,32 @@ class HakemusServiceITest(
 
             val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
 
-            assertThat(updatedHakemus.applicationData as JohtoselvitysHakemusDataResponse).all {
-                prop(JohtoselvitysHakemusDataResponse::workDescription)
-                    .isEqualTo("New work description")
-                prop(JohtoselvitysHakemusDataResponse::customerWithContacts)
-                    .isNotNull()
-                    .prop(CustomerWithContactsResponse::contacts)
-                    .transform { it.map { contact -> contact.hankekayttajaId } }
-                    .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
-            }
+            assertThat(updatedHakemus.applicationData)
+                .isInstanceOf(JohtoselvitysHakemusDataResponse::class)
+                .all {
+                    prop(JohtoselvitysHakemusDataResponse::workDescription)
+                        .isEqualTo("New work description")
+                    prop(JohtoselvitysHakemusDataResponse::customerWithContacts)
+                        .isNotNull()
+                        .prop(CustomerWithContactsResponse::contacts)
+                        .extracting { it.hankekayttajaId }
+                        .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
+                }
             val applicationLogs = auditLogRepository.findByType(ObjectType.HAKEMUS)
             assertThat(applicationLogs).hasSize(originalAuditLogSize + 1)
+
+            val persistedHakemus = hakemusService.hakemusResponse(updatedHakemus.id)
+            assertThat(persistedHakemus.applicationData)
+                .isInstanceOf(JohtoselvitysHakemusDataResponse::class)
+                .all {
+                    prop(JohtoselvitysHakemusDataResponse::workDescription)
+                        .isEqualTo("New work description")
+                    prop(JohtoselvitysHakemusDataResponse::customerWithContacts)
+                        .isNotNull()
+                        .prop(CustomerWithContactsResponse::contacts)
+                        .extracting { it.hankekayttajaId }
+                        .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
+                }
         }
 
         @Test
