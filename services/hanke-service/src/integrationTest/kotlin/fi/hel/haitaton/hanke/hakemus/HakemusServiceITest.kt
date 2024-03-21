@@ -86,12 +86,13 @@ class HakemusServiceITest(
         fun `returns yhteystiedot and yhteyshenkilot if they're present`() {
             val hanke = hankeFactory.saveMinimal(generated = true)
             val application =
-                hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
-                    hakija(Kayttooikeustaso.KAIKKI_OIKEUDET, tilaaja = true)
-                    tyonSuorittaja(Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
-                    rakennuttaja(kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI)
-                    asianhoitaja()
-                }
+                hakemusFactory
+                    .builder(USERNAME, hanke)
+                    .hakija(Kayttooikeustaso.KAIKKI_OIKEUDET, tilaaja = true)
+                    .rakennuttaja(Kayttooikeustaso.HAKEMUSASIOINTI)
+                    .asianhoitaja()
+                    .tyonSuorittaja(Kayttooikeustaso.KAIKKIEN_MUOKKAUS)
+                    .save()
 
             val response = hakemusService.hakemusResponse(application.id!!)
 
@@ -264,7 +265,7 @@ class HakemusServiceITest(
 
         @Test
         fun `throws exception when the application has been sent to Allu`() {
-            val entity = hakemusFactory.builder(USERNAME).withStatus(alluId = 21).save()
+            val entity = hakemusFactory.builder().withStatus(alluId = 21).save()
             val hakemus = hakemusService.hakemusResponse(entity.id!!)
             val request = hakemus.toUpdateRequest()
 
@@ -281,7 +282,7 @@ class HakemusServiceITest(
 
         @Test
         fun `does not create a new audit log entry when the application has not changed`() {
-            val entity = hakemusFactory.builder(USERNAME).save()
+            val entity = hakemusFactory.builder().save()
             val hakemus = hakemusService.hakemusResponse(entity.id!!)
             val originalAuditLogSize = auditLogRepository.findByType(ObjectType.APPLICATION).size
             // The saved hakemus has null in areas, but the response replaces it with an empty list,
@@ -296,7 +297,7 @@ class HakemusServiceITest(
 
         @Test
         fun `throws exception when there are invalid geometry in areas`() {
-            val entity = hakemusFactory.builder(USERNAME).save()
+            val entity = hakemusFactory.builder().save()
             val hakemus = hakemusService.hakemusResponse(entity.id!!)
             val request = hakemus.toUpdateRequest().withAreas(listOf(intersectingArea))
 
@@ -316,7 +317,7 @@ class HakemusServiceITest(
 
         @Test
         fun `throws exception when the request has a persisted contact but the application does not`() {
-            val entity = hakemusFactory.builder(USERNAME).save()
+            val entity = hakemusFactory.builder().save()
             val hakemus = hakemusService.hakemusResponse(entity.id!!)
             val requestYhteystietoId = UUID.randomUUID()
             val request =
@@ -339,7 +340,7 @@ class HakemusServiceITest(
 
         @Test
         fun `throws exception when the request has different persisted contact than the application`() {
-            val entity = hakemusFactory.builder(USERNAME).saveWithYhteystiedot { hakija() }
+            val entity = hakemusFactory.builder().hakija().save()
             val hakemus = hakemusService.hakemusResponse(entity.id!!)
             val originalYhteystietoId = hakemusyhteystietoRepository.findAll().first().id
             val requestYhteystietoId = UUID.randomUUID()
@@ -363,7 +364,7 @@ class HakemusServiceITest(
 
         @Test
         fun `throws exception when the request has a contact that is not a user on hanke`() {
-            val entity = hakemusFactory.builder(USERNAME).saveWithYhteystiedot { hakija() }
+            val entity = hakemusFactory.builder().hakija().save()
             val hakemus = hakemusService.hakemusResponse(entity.id!!)
             val yhteystieto = hakemusyhteystietoRepository.findAll().first()
             val requestHankekayttajaId = UUID.randomUUID()
@@ -389,8 +390,8 @@ class HakemusServiceITest(
 
         @Test
         fun `throws exception when area is not inside hanke area`() {
-            val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
-            val entity = hakemusFactory.builder(USERNAME, hanke).save()
+            val hanke = hankeFactory.builder().withHankealue().saveEntity()
+            val entity = hakemusFactory.builder(hanke).save()
             val hakemus = hakemusService.hakemusResponse(entity.id!!)
             val request = hakemus.toUpdateRequest().withAreas(listOf(notInHankeArea))
 
@@ -413,7 +414,8 @@ class HakemusServiceITest(
                 hakemusFactory
                     .builder(USERNAME, hanke)
                     .withWorkDescription("Old work description")
-                    .saveWithYhteystiedot { hakija() }
+                    .hakija()
+                    .save()
             val hakemus = hakemusService.hakemusResponse(entity.id!!)
             val yhteystieto = hakemusyhteystietoRepository.findAll().first()
             val kayttaja =

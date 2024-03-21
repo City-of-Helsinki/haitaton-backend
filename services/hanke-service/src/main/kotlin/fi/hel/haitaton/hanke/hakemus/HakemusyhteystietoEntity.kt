@@ -35,7 +35,7 @@ class HakemusyhteystietoEntity(
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hakemusyhteystieto",
-        cascade = [CascadeType.REMOVE],
+        cascade = [CascadeType.ALL],
         orphanRemoval = true
     )
     @BatchSize(size = 100)
