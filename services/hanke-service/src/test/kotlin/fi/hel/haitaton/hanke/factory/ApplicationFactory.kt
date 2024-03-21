@@ -186,7 +186,7 @@ class ApplicationFactory(
                                 postalAddress
                             )
                     )
-                ApplicationType.EXCAVATION_ANNOUNCEMENT ->
+                ApplicationType.EXCAVATION_NOTIFICATION ->
                     this.copy(
                         applicationData =
                             createExcavationAnnouncementApplicationData(
@@ -216,7 +216,7 @@ class ApplicationFactory(
         fun createApplicationData(applicationType: ApplicationType): ApplicationData =
             when (applicationType) {
                 ApplicationType.CABLE_REPORT -> createCableReportApplicationData()
-                ApplicationType.EXCAVATION_ANNOUNCEMENT ->
+                ApplicationType.EXCAVATION_NOTIFICATION ->
                     createExcavationAnnouncementApplicationData()
             }
 
@@ -277,7 +277,7 @@ class ApplicationFactory(
             additionalInfo: String? = null,
         ): ExcavationAnnouncementApplicationData =
             ExcavationAnnouncementApplicationData(
-                applicationType = ApplicationType.EXCAVATION_ANNOUNCEMENT,
+                applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
                 pendingOnClient = pendingOnClient,
                 name = name,
                 workDescription = workDescription,
@@ -303,7 +303,7 @@ class ApplicationFactory(
         fun createBlankApplicationData(applicationType: ApplicationType): ApplicationData =
             when (applicationType) {
                 ApplicationType.CABLE_REPORT -> createBlankCableReportApplicationData()
-                ApplicationType.EXCAVATION_ANNOUNCEMENT ->
+                ApplicationType.EXCAVATION_NOTIFICATION ->
                     createBlankExcavationAnnouncementApplicationData()
             }
 

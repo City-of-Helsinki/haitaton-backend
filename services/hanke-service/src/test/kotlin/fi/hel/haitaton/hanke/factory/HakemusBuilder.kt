@@ -60,7 +60,7 @@ data class HakemusBuilder(
             ApplicationType.CABLE_REPORT -> {
                 onCableReport { copy(name = name) }
             }
-            ApplicationType.EXCAVATION_ANNOUNCEMENT -> {
+            ApplicationType.EXCAVATION_NOTIFICATION -> {
                 onExcavationAnnouncement { copy(name = name) }
             }
         }
@@ -71,7 +71,7 @@ data class HakemusBuilder(
             ApplicationType.CABLE_REPORT -> {
                 onCableReport { copy(workDescription = workDescription) }
             }
-            ApplicationType.EXCAVATION_ANNOUNCEMENT -> {
+            ApplicationType.EXCAVATION_NOTIFICATION -> {
                 onExcavationAnnouncement { copy(workDescription = workDescription) }
             }
         }

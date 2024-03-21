@@ -30,7 +30,7 @@ class HakemusDeserializer : JsonDeserializer<Hakemus>() {
         val dataClass =
             when (basicHakemus.applicationType) {
                 ApplicationType.CABLE_REPORT -> JohtoselvityshakemusData::class.java
-                ApplicationType.EXCAVATION_ANNOUNCEMENT -> TODO("Kaivuilmoitus not yet implemented")
+                ApplicationType.EXCAVATION_NOTIFICATION -> TODO("Kaivuilmoitus not yet implemented")
             }
 
         val dataNode = root.path("applicationData") as ObjectNode
