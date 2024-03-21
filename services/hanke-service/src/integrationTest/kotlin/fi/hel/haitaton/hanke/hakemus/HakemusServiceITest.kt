@@ -76,7 +76,7 @@ class HakemusServiceITest(
 ) : IntegrationTest() {
 
     @Nested
-    inner class HakemusResponseTest {
+    inner class HakemusResponse {
         @Test
         fun `when application does not exist should throw`() {
             assertThat(applicationRepository.findAll()).isEmpty()
@@ -441,32 +441,17 @@ class HakemusServiceITest(
 
             val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
 
-            assertThat(updatedHakemus.applicationData)
-                .isInstanceOf(JohtoselvitysHakemusDataResponse::class)
-                .all {
-                    prop(JohtoselvitysHakemusDataResponse::workDescription)
-                        .isEqualTo("New work description")
-                    prop(JohtoselvitysHakemusDataResponse::customerWithContacts)
-                        .isNotNull()
-                        .prop(CustomerWithContactsResponse::contacts)
-                        .extracting { it.hankekayttajaId }
-                        .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
-                }
+            assertThat(updatedHakemus.applicationData as JohtoselvitysHakemusDataResponse).all {
+                prop(JohtoselvitysHakemusDataResponse::workDescription)
+                    .isEqualTo("New work description")
+                prop(JohtoselvitysHakemusDataResponse::customerWithContacts)
+                    .isNotNull()
+                    .prop(CustomerWithContactsResponse::contacts)
+                    .transform { it.map { contact -> contact.hankekayttajaId } }
+                    .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
+            }
             val applicationLogs = auditLogRepository.findByType(ObjectType.HAKEMUS)
             assertThat(applicationLogs).hasSize(originalAuditLogSize + 1)
-
-            val persistedHakemus = hakemusService.hakemusResponse(updatedHakemus.id)
-            assertThat(persistedHakemus.applicationData)
-                .isInstanceOf(JohtoselvitysHakemusDataResponse::class)
-                .all {
-                    prop(JohtoselvitysHakemusDataResponse::workDescription)
-                        .isEqualTo("New work description")
-                    prop(JohtoselvitysHakemusDataResponse::customerWithContacts)
-                        .isNotNull()
-                        .prop(CustomerWithContactsResponse::contacts)
-                        .extracting { it.hankekayttajaId }
-                        .containsExactlyInAnyOrder(kayttaja.id, newKayttaja.id)
-                }
         }
 
         @Test
@@ -475,10 +460,11 @@ class HakemusServiceITest(
             val kayttaja1 = hankeKayttajaFactory.saveUser(hanke.id)
             val kayttaja2 = hankeKayttajaFactory.saveUser(hanke.id, sahkoposti = "other@email")
             val entity =
-                hakemusFactory.builder(USERNAME, hanke).saveWithYhteystiedot {
-                    hakija()
-                    tyonSuorittaja(kayttaja1, kayttaja2)
-                }
+                hakemusFactory
+                    .builder(USERNAME, hanke)
+                    .hakija()
+                    .tyonSuorittaja(kayttaja1, kayttaja2)
+                    .save()
             val hakemus = hakemusService.hakemusResponse(entity.id!!)
             val tyonSuorittaja =
                 hakemusyhteystietoRepository.findAll().single {
