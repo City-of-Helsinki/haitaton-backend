@@ -38,9 +38,8 @@ import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.toUpdateRequest
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withAreas
-import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withContractorWithContactsRequest
+import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withContractor
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomer
-import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomerWithContactsRequest
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
@@ -325,9 +324,7 @@ class HakemusServiceITest(
             val hakemus = hakemusService.hakemusResponse(entity.id!!)
             val requestYhteystietoId = UUID.randomUUID()
             val request =
-                hakemus
-                    .toUpdateRequest()
-                    .withCustomerWithContactsRequest(CustomerType.COMPANY, requestYhteystietoId)
+                hakemus.toUpdateRequest().withCustomer(CustomerType.COMPANY, requestYhteystietoId)
 
             val exception = assertFailure {
                 hakemusService.updateHakemus(hakemus.id, request, USERNAME)
@@ -349,9 +346,7 @@ class HakemusServiceITest(
             val originalYhteystietoId = hakemusyhteystietoRepository.findAll().first().id
             val requestYhteystietoId = UUID.randomUUID()
             val request =
-                hakemus
-                    .toUpdateRequest()
-                    .withCustomerWithContactsRequest(CustomerType.COMPANY, requestYhteystietoId)
+                hakemus.toUpdateRequest().withCustomer(CustomerType.COMPANY, requestYhteystietoId)
 
             val exception = assertFailure {
                 hakemusService.updateHakemus(hakemus.id, request, USERNAME)
@@ -375,11 +370,7 @@ class HakemusServiceITest(
             val request =
                 hakemus
                     .toUpdateRequest()
-                    .withCustomerWithContactsRequest(
-                        CustomerType.COMPANY,
-                        yhteystieto.id,
-                        requestHankekayttajaId
-                    )
+                    .withCustomer(CustomerType.COMPANY, yhteystieto.id, requestHankekayttajaId)
 
             val exception = assertFailure {
                 hakemusService.updateHakemus(hakemus.id, request, USERNAME)
@@ -431,12 +422,7 @@ class HakemusServiceITest(
             val request =
                 hakemus
                     .toUpdateRequest()
-                    .withCustomerWithContactsRequest(
-                        CustomerType.COMPANY,
-                        yhteystieto.id,
-                        kayttaja.id,
-                        newKayttaja.id
-                    )
+                    .withCustomer(CustomerType.COMPANY, yhteystieto.id, kayttaja.id, newKayttaja.id)
                     .withWorkDescription("New work description")
 
             val updatedHakemus = hakemusService.updateHakemus(hakemus.id, request, USERNAME)
@@ -488,7 +474,7 @@ class HakemusServiceITest(
             val request =
                 hakemus
                     .toUpdateRequest()
-                    .withContractorWithContactsRequest(
+                    .withContractor(
                         CustomerType.COMPANY,
                         tyonSuorittaja.id,
                         hankekayttajaIds = arrayOf()

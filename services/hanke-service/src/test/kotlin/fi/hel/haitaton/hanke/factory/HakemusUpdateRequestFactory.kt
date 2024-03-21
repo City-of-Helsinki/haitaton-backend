@@ -56,53 +56,22 @@ object HakemusUpdateRequestFactory {
             endTime = ZonedDateTime.now(TZ_UTC).plusDays(5),
             areas = listOf(ApplicationArea("Hankealue 1", GeometriaFactory.polygon)),
             customerWithContacts =
-                createCustomerWithContactsRequest(
-                    CustomerType.COMPANY,
-                    null,
-                    UUID.fromString("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f")
+                CustomerWithContactsRequest(
+                    CustomerRequest(
+                        yhteystietoId = UUID.randomUUID(),
+                        type = CustomerType.COMPANY,
+                        name = DEFAULT_CUSTOMER_NAME,
+                        email = DEFAULT_CUSTOMER_EMAIL,
+                        phone = DEFAULT_CUSTOMER_PHONE,
+                        registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY
+                    ),
+                    listOf(ContactRequest(UUID.fromString("cd1d4d2f-526b-4ee5-a1fa-97b14d25a11f")))
                 ),
             contractorWithContacts = null,
             propertyDeveloperWithContacts = null,
             representativeWithContacts = null
         )
     }
-
-    private fun createCustomerWithContactsRequest(
-        customerType: CustomerType = CustomerType.COMPANY,
-        yhteystietoId: UUID? = UUID.randomUUID(),
-        vararg hankekayttajaIds: UUID
-    ) =
-        CustomerWithContactsRequest(
-            CustomerRequest(
-                yhteystietoId = yhteystietoId,
-                type = customerType,
-                name = DEFAULT_CUSTOMER_NAME,
-                email = DEFAULT_CUSTOMER_EMAIL,
-                phone = DEFAULT_CUSTOMER_PHONE,
-                registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
-            ),
-            hankekayttajaIds.map { ContactRequest(it) }
-        )
-
-    fun JohtoselvityshakemusUpdateRequest.withCustomerWithContactsRequest(
-        type: CustomerType,
-        yhteystietoId: UUID? = UUID.randomUUID(),
-        vararg hankekayttajaIds: UUID
-    ) =
-        this.copy(
-            customerWithContacts =
-                createCustomerWithContactsRequest(type, yhteystietoId, *hankekayttajaIds)
-        )
-
-    fun JohtoselvityshakemusUpdateRequest.withContractorWithContactsRequest(
-        type: CustomerType,
-        yhteystietoId: UUID? = UUID.randomUUID(),
-        vararg hankekayttajaIds: UUID
-    ) =
-        this.copy(
-            contractorWithContacts =
-                createCustomerWithContactsRequest(type, yhteystietoId, *hankekayttajaIds)
-        )
 
     fun JohtoselvityshakemusUpdateRequest.withCustomer(
         type: CustomerType = CustomerType.COMPANY,
@@ -126,6 +95,60 @@ object HakemusUpdateRequestFactory {
                     ),
                     hankekayttajaIds.map { ContactRequest(it) }
                 )
+        )
+
+    fun JohtoselvityshakemusUpdateRequest.withContractor(
+        type: CustomerType = CustomerType.COMPANY,
+        yhteystietoId: UUID? = UUID.randomUUID(),
+        name: String = DEFAULT_CUSTOMER_NAME,
+        email: String = DEFAULT_CUSTOMER_EMAIL,
+        phone: String = DEFAULT_CUSTOMER_PHONE,
+        registryKey: String = DEFAULT_CUSTOMER_REGISTRY_KEY,
+        vararg hankekayttajaIds: UUID
+    ) =
+        this.copy(
+            contractorWithContacts =
+                CustomerWithContactsRequest(
+                    CustomerRequest(
+                        yhteystietoId = yhteystietoId,
+                        type = type,
+                        name = name,
+                        email = email,
+                        phone = phone,
+                        registryKey = registryKey
+                    ),
+                    hankekayttajaIds.map { ContactRequest(it) }
+                )
+        )
+
+    fun JohtoselvityshakemusUpdateRequest.withCustomer(
+        type: CustomerType = CustomerType.COMPANY,
+        yhteystietoId: UUID? = UUID.randomUUID(),
+        vararg hankekayttajaIds: UUID
+    ) =
+        withCustomer(
+            type = type,
+            yhteystietoId = yhteystietoId,
+            name = DEFAULT_CUSTOMER_NAME,
+            email = DEFAULT_CUSTOMER_EMAIL,
+            phone = DEFAULT_CUSTOMER_PHONE,
+            registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
+            hankekayttajaIds = hankekayttajaIds
+        )
+
+    fun JohtoselvityshakemusUpdateRequest.withContractor(
+        type: CustomerType = CustomerType.COMPANY,
+        yhteystietoId: UUID? = UUID.randomUUID(),
+        vararg hankekayttajaIds: UUID
+    ) =
+        withContractor(
+            type = type,
+            yhteystietoId = yhteystietoId,
+            name = DEFAULT_CUSTOMER_NAME,
+            email = DEFAULT_CUSTOMER_EMAIL,
+            phone = DEFAULT_CUSTOMER_PHONE,
+            registryKey = DEFAULT_CUSTOMER_REGISTRY_KEY,
+            hankekayttajaIds = hankekayttajaIds
         )
 
     fun JohtoselvityshakemusUpdateRequest.withWorkDescription(workDescription: String) =

@@ -35,8 +35,6 @@ class HakemusService(
     private val hankealueService: HankealueService,
     private val hakemusLoggingService: HakemusLoggingService,
     private val hankeKayttajaService: HankeKayttajaService,
-    private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
-    private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
 ) {
     @Transactional(readOnly = true)
     fun hakemusResponse(applicationId: Long): HakemusResponse {
@@ -406,7 +404,6 @@ class HakemusService(
                 ytunnus = customer.registryKey,
                 application = applicationEntity,
             )
-            .also { hakemusyhteystietoRepository.save(it) }
             .apply {
                 yhteyshenkilot.addAll(contacts.map { it.toNewHakemusyhteyshenkiloEntity(this) })
             }
@@ -415,15 +412,14 @@ class HakemusService(
         hakemusyhteystietoEntity: HakemusyhteystietoEntity
     ) =
         HakemusyhteyshenkiloEntity(
-                hakemusyhteystieto = hakemusyhteystietoEntity,
-                hankekayttaja =
-                    hankeKayttajaService.getKayttajaForHanke(
-                        hankekayttajaId,
-                        hakemusyhteystietoEntity.application.hanke.id
-                    ),
-                tilaaja = false
-            )
-            .also { hakemusyhteyshenkiloRepository.save(it) }
+            hakemusyhteystieto = hakemusyhteystietoEntity,
+            hankekayttaja =
+                hankeKayttajaService.getKayttajaForHanke(
+                    hankekayttajaId,
+                    hakemusyhteystietoEntity.application.hanke.id
+                ),
+            tilaaja = false
+        )
 
     private fun CustomerWithContactsRequest.toExistingHakemusyhteystietoEntity(
         hakemusyhteystietoEntity: HakemusyhteystietoEntity
