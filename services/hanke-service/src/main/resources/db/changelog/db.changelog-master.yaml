@@ -171,3 +171,5 @@ databaseChangeLog:
       file: db/changelog/changesets/070-create-hakemusyhteystieto-tables.sql
   - include:
       file: db/changelog/changesets/071-grant-delete-user-permission-to-kayttooikeustasot.sql
+  - include:
+      file: db/changelog/changesets/072-add-on-delete-cascade-to-hakemus-yhteystieto-and-yhteyshenkilo.sql
