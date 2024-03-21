@@ -94,6 +94,16 @@ object HakemusUpdateRequestFactory {
                 createCustomerWithContactsRequest(type, yhteystietoId, *hankekayttajaIds)
         )
 
+    fun JohtoselvityshakemusUpdateRequest.withContractorWithContactsRequest(
+        type: CustomerType,
+        yhteystietoId: UUID? = UUID.randomUUID(),
+        vararg hankekayttajaIds: UUID
+    ) =
+        this.copy(
+            contractorWithContacts =
+                createCustomerWithContactsRequest(type, yhteystietoId, *hankekayttajaIds)
+        )
+
     fun JohtoselvityshakemusUpdateRequest.withCustomer(
         type: CustomerType = CustomerType.COMPANY,
         yhteystietoId: UUID? = UUID.randomUUID(),
