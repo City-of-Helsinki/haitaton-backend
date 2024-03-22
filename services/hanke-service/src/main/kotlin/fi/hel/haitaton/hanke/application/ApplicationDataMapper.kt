@@ -19,7 +19,7 @@ object ApplicationDataMapper {
     ): AlluCableReportApplicationData =
         with(applicationData) {
             val description =
-                workDescription(workDescription, rockExcavation.orThrow("rockExcavation"))
+                workDescription(workDescription, rockExcavation.orThrow(path("rockExcavation")))
             AlluCableReportApplicationData(
                 postalAddress = postalAddress?.toAlluData(),
                 name = name,
@@ -36,7 +36,7 @@ object ApplicationDataMapper {
                 pendingOnClient = pendingOnClient,
                 identificationNumber = hankeTunnus,
                 customerReference = null,
-                area = null,
+                area = null, // currently area is not given nor calculated in Haitaton
                 trafficArrangementImages = null,
                 clientApplicationKind = description, // intentional
                 workDescription = description,
@@ -46,7 +46,7 @@ object ApplicationDataMapper {
                     ),
                 contractorWithContacts =
                     contractorWithContacts
-                        .orThrow("contractorWithContacts")
+                        .orThrow(path("contractorWithContacts"))
                         .toAlluData(path("contractorWithContacts")),
                 constructionWork = constructionWork,
                 maintenanceWork = maintenanceWork,
@@ -76,22 +76,22 @@ object ApplicationDataMapper {
                 name = name,
                 customerWithContacts =
                     customerWithContacts
-                        .orThrow("customerWithContacts")
+                        .orThrow(path("customerWithContacts"))
                         .toAlluData(path("customerWithContacts")),
                 representativeWithContacts =
                     representativeWithContacts?.toAlluData(path("representativeWithContacts")),
-                invoicingCustomer = invoicingCustomer?.toAlluData("invoicingCustomer"),
+                invoicingCustomer = invoicingCustomer?.toAlluData(path("invoicingCustomer")),
                 geometry = getGeometry(this),
                 startTime = startTime.orThrow(path("startTime")),
                 endTime = endTime.orThrow(path("endTime")),
                 pendingOnClient = pendingOnClient,
                 identificationNumber = hankeTunnus,
                 customerReference = customerReference,
-                area = null,
+                area = null, // currently area is not given nor calculated in Haitaton
                 clientApplicationKind = description, // TODO: intentional as in cable report?
                 contractorWithContacts =
                     contractorWithContacts
-                        .orThrow("contractorWithContacts")
+                        .orThrow(path("contractorWithContacts"))
                         .toAlluData(path("contractorWithContacts")),
                 propertyDeveloperWithContacts =
                     propertyDeveloperWithContacts?.toAlluData(
