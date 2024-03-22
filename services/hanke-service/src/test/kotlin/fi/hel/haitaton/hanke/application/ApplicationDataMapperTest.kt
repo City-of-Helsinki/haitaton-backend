@@ -82,8 +82,8 @@ internal class ApplicationDataMapperTest {
         }
 
         @Test
-        fun `Map excavation announcement fields correctly`() {
-            val input = ApplicationFactory.createExcavationAnnouncementApplicationData()
+        fun `Map excavation notification fields correctly`() {
+            val input = ApplicationFactory.createExcavationNotificationApplicationData()
 
             val result = ApplicationDataMapper.toAlluData(HANKE_TUNNUS, input)
 

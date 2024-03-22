@@ -2,7 +2,7 @@ package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.COORDINATE_SYSTEM_URN
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
-import fi.hel.haitaton.hanke.allu.AlluExcavationAnnouncementApplicationData
+import fi.hel.haitaton.hanke.allu.AlluExcavationNotificationApplicationData
 import fi.hel.haitaton.hanke.allu.PostalAddress
 import fi.hel.haitaton.hanke.allu.StreetAddress
 import fi.hel.haitaton.hanke.application.AlluDataError.EMPTY_OR_NULL
@@ -56,15 +56,15 @@ object ApplicationDataMapper {
 
     fun toAlluData(
         hankeTunnus: String,
-        applicationData: ExcavationAnnouncementApplicationData
-    ): AlluExcavationAnnouncementApplicationData =
+        applicationData: ExcavationNotificationApplicationData
+    ): AlluExcavationNotificationApplicationData =
         with(applicationData) {
             val description =
                 workDescription(
                     workDescription,
                     rockExcavation ?: false
                 ) // TODO as in cable report?
-            AlluExcavationAnnouncementApplicationData(
+            AlluExcavationNotificationApplicationData(
                 postalAddress =
                     PostalAddress(
                         // TODO: this should be a combination of all area addresses (HAI-1542)

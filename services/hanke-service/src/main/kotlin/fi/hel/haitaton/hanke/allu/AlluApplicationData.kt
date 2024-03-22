@@ -49,7 +49,7 @@ data class CableReportInformationRequestResponse(
     val updatedFields: List<InformationRequestFieldKey>
 )
 
-data class AlluExcavationAnnouncementApplicationData(
+data class AlluExcavationNotificationApplicationData(
     override val postalAddress: PostalAddress? = null,
     override val name: String,
     override val customerWithContacts: CustomerWithContacts,

@@ -14,7 +14,7 @@ import fi.hel.haitaton.hanke.application.CableReportWithoutHanke
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
-import fi.hel.haitaton.hanke.application.ExcavationAnnouncementApplicationData
+import fi.hel.haitaton.hanke.application.ExcavationNotificationApplicationData
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
@@ -189,7 +189,7 @@ class ApplicationFactory(
                 ApplicationType.EXCAVATION_NOTIFICATION ->
                     this.copy(
                         applicationData =
-                            createExcavationAnnouncementApplicationData(
+                            createExcavationNotificationApplicationData(
                                 pendingOnClient,
                                 name,
                                 workDescription,
@@ -217,7 +217,7 @@ class ApplicationFactory(
             when (applicationType) {
                 ApplicationType.CABLE_REPORT -> createCableReportApplicationData()
                 ApplicationType.EXCAVATION_NOTIFICATION ->
-                    createExcavationAnnouncementApplicationData()
+                    createExcavationNotificationApplicationData()
             }
 
         fun createCableReportApplicationData(
@@ -252,7 +252,7 @@ class ApplicationFactory(
                 postalAddress = postalAddress,
             )
 
-        fun createExcavationAnnouncementApplicationData(
+        fun createExcavationNotificationApplicationData(
             pendingOnClient: Boolean = false,
             name: String = DEFAULT_APPLICATION_NAME,
             workDescription: String = "Työn kuvaus.",
@@ -275,8 +275,8 @@ class ApplicationFactory(
             invoicingCustomer: Customer? = createCompanyInvoiceCustomer(),
             customerReference: String? = "Asiakkaan viite",
             additionalInfo: String? = null,
-        ): ExcavationAnnouncementApplicationData =
-            ExcavationAnnouncementApplicationData(
+        ): ExcavationNotificationApplicationData =
+            ExcavationNotificationApplicationData(
                 applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
                 pendingOnClient = pendingOnClient,
                 name = name,
@@ -304,7 +304,7 @@ class ApplicationFactory(
             when (applicationType) {
                 ApplicationType.CABLE_REPORT -> createBlankCableReportApplicationData()
                 ApplicationType.EXCAVATION_NOTIFICATION ->
-                    createBlankExcavationAnnouncementApplicationData()
+                    createBlankExcavationNotificationApplicationData()
             }
 
         internal fun createBlankCableReportApplicationData() =
@@ -327,8 +327,8 @@ class ApplicationFactory(
                 postalAddress = PostalAddress(StreetAddress(""), "", "")
             )
 
-        internal fun createBlankExcavationAnnouncementApplicationData() =
-            createExcavationAnnouncementApplicationData(
+        internal fun createBlankExcavationNotificationApplicationData() =
+            createExcavationNotificationApplicationData(
                 name = "",
                 workDescription = "",
                 areas = null,

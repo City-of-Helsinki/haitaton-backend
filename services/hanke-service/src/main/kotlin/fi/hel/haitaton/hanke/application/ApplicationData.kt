@@ -8,7 +8,7 @@ import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
-import fi.hel.haitaton.hanke.allu.AlluExcavationAnnouncementApplicationData
+import fi.hel.haitaton.hanke.allu.AlluExcavationNotificationApplicationData
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
 import java.time.ZonedDateTime
@@ -30,8 +30,8 @@ enum class ApplicationContactType {
 @JsonSubTypes(
     JsonSubTypes.Type(value = CableReportApplicationData::class, name = "CABLE_REPORT"),
     JsonSubTypes.Type(
-        value = ExcavationAnnouncementApplicationData::class,
-        name = "EXCAVATION_ANNOUNCEMENT"
+        value = ExcavationNotificationApplicationData::class,
+        name = "EXCAVATION_NOTIFICATION"
     ),
 )
 sealed interface ApplicationData {
@@ -136,7 +136,7 @@ data class CableReportApplicationData(
 }
 
 @JsonView(ChangeLogView::class)
-data class ExcavationAnnouncementApplicationData(
+data class ExcavationNotificationApplicationData(
     @JsonView(NotInChangeLogView::class) override val applicationType: ApplicationType,
     override val pendingOnClient: Boolean,
     override val name: String,
@@ -160,10 +160,10 @@ data class ExcavationAnnouncementApplicationData(
     val customerReference: String? = null,
     val additionalInfo: String? = null,
 ) : ApplicationData {
-    override fun copy(pendingOnClient: Boolean): ExcavationAnnouncementApplicationData =
+    override fun copy(pendingOnClient: Boolean): ExcavationNotificationApplicationData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
 
-    override fun toAlluData(hankeTunnus: String): AlluExcavationAnnouncementApplicationData =
+    override fun toAlluData(hankeTunnus: String): AlluExcavationNotificationApplicationData =
         ApplicationDataMapper.toAlluData(hankeTunnus, this)
 
     /** Returns CustomerWithContacts fields that are not null. */

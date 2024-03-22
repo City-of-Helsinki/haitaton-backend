@@ -7,7 +7,7 @@ import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.ExcavationAnnouncementApplicationData
+import fi.hel.haitaton.hanke.application.ExcavationNotificationApplicationData
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
@@ -61,7 +61,7 @@ data class HakemusBuilder(
                 onCableReport { copy(name = name) }
             }
             ApplicationType.EXCAVATION_NOTIFICATION -> {
-                onExcavationAnnouncement { copy(name = name) }
+                onExcavationNotification { copy(name = name) }
             }
         }
     }
@@ -72,7 +72,7 @@ data class HakemusBuilder(
                 onCableReport { copy(workDescription = workDescription) }
             }
             ApplicationType.EXCAVATION_NOTIFICATION -> {
-                onExcavationAnnouncement { copy(workDescription = workDescription) }
+                onExcavationNotification { copy(workDescription = workDescription) }
             }
         }
     }
@@ -82,10 +82,10 @@ data class HakemusBuilder(
             (applicationEntity.applicationData as CableReportApplicationData).f()
     }
 
-    private fun onExcavationAnnouncement(
-        f: ExcavationAnnouncementApplicationData.() -> ExcavationAnnouncementApplicationData
+    private fun onExcavationNotification(
+        f: ExcavationNotificationApplicationData.() -> ExcavationNotificationApplicationData
     ) {
-        (applicationEntity.applicationData as ExcavationAnnouncementApplicationData).f()
+        (applicationEntity.applicationData as ExcavationNotificationApplicationData).f()
     }
 
     fun hakija(

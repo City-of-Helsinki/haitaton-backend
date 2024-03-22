@@ -155,9 +155,9 @@ class ApplicationService(
                         newApplicationData::class
                     )
                 }
-            is ExcavationAnnouncementApplicationData ->
-                // no support for excavation announcement in old service
-                throw NotImplementedError("Excavation announcement not implemented")
+            is ExcavationNotificationApplicationData ->
+                // no support for excavation notification in old service
+                throw NotImplementedError("Excavation notification not implemented")
         }
 
         validateGeometry(newApplicationData) { validationError ->
@@ -572,8 +572,8 @@ class ApplicationService(
         when (val data = entity.applicationData) {
             is CableReportApplicationData ->
                 updateCableReportInAllu(entity.id!!, alluId, entity.hanke.hankeTunnus, data)
-            is ExcavationAnnouncementApplicationData ->
-                TODO("Sending excavation announcement to Allu not implemented.")
+            is ExcavationNotificationApplicationData ->
+                TODO("Sending excavation notification to Allu not implemented.")
         }
 
         return alluId
@@ -586,8 +586,8 @@ class ApplicationService(
             when (val data = entity.applicationData) {
                 is CableReportApplicationData ->
                     createCableReportToAllu(entity.id!!, entity.hanke.hankeTunnus, data)
-                is ExcavationAnnouncementApplicationData ->
-                    TODO("Sending excavation announcement to Allu not implemented.")
+                is ExcavationNotificationApplicationData ->
+                    TODO("Sending excavation notification to Allu not implemented.")
             }
         try {
             attachmentService.sendInitialAttachments(alluId, entity.id)
