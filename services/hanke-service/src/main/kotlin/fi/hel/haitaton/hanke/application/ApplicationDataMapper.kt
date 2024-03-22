@@ -18,7 +18,8 @@ object ApplicationDataMapper {
         applicationData: CableReportApplicationData
     ): AlluCableReportApplicationData =
         with(applicationData) {
-            val description = workDescription(workDescription, rockExcavation!!)
+            val description =
+                workDescription(workDescription, rockExcavation.orThrow("rockExcavation"))
             AlluCableReportApplicationData(
                 postalAddress = postalAddress?.toAlluData(),
                 name = name,
