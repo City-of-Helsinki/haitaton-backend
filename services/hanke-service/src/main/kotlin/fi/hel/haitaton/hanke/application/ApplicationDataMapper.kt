@@ -61,10 +61,7 @@ object ApplicationDataMapper {
     ): AlluExcavationNotificationApplicationData =
         with(applicationData) {
             val description =
-                workDescription(
-                    workDescription,
-                    rockExcavation ?: false
-                ) // TODO as in cable report?
+                workDescription(workDescription, rockExcavation) // TODO as in cable report?
             AlluExcavationNotificationApplicationData(
                 postalAddress =
                     PostalAddress(
@@ -140,10 +137,10 @@ object ApplicationDataMapper {
 
     private fun <T> T?.orThrow(path: String) = this ?: throw AlluDataException(path, NULL)
 
-    private fun workDescription(workDescription: String, rockExcavation: Boolean): String {
+    private fun workDescription(workDescription: String, rockExcavation: Boolean?): String {
         return workDescription + excavationText(rockExcavation)
     }
 
-    private fun excavationText(excavation: Boolean): String =
-        if (excavation) "\nLouhitaan" else "\nEi louhita"
+    private fun excavationText(excavation: Boolean?): String =
+        if (excavation == null) "" else if (excavation) "\nLouhitaan" else "\nEi louhita"
 }
