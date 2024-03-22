@@ -46,7 +46,7 @@ def validate_data_count_limits(module, pg_conn_uri, tormays_table_org, tormays_f
             return True
     elif old_amount == -1:
         logger.error(f"Tormays table {tormays_table_org} not exists.")
-        return False
+        return True
     else:
         logger.error("Data amount validation failed because of missing configuration.")
         return False

@@ -161,3 +161,14 @@ local_docker_development:
   storage:
     download_dir: "/downloads"
     output_dir: "/gis-output"
+
+docker_development:
+  database:
+    port: 154321
+    host: localhost1
+    username: haitaton1
+    password: haitaton1
+    database: haitaton1
+  storage:
+    download_dir: "/downloads"
+    output_dir: "/gis-output"

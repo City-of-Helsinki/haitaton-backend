@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     deployment_profile = os.environ.get("TORMAYS_DEPLOYMENT_PROFILE")
     use_deployment_profile = DEFAULT_DEPLOYMENT_PROFILE
-    if deployment_profile in ["local_docker_development", "local_development"]:
+    if deployment_profile in ["local_docker_development", "local_development", "docker_development"]:
         use_deployment_profile = deployment_profile
     else:
         print(
@@ -68,11 +68,7 @@ if __name__ == "__main__":
             )
         )
 
-    print("Using deployment profile: '{}'".format(use_deployment_profile))
-
     cfg = Config().with_deployment_profile(use_deployment_profile)
-
-    print("Processing data.")
 
     for item in sys.argv[1:]:
         process_item(item, cfg)

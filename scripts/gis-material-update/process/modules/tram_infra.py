@@ -5,24 +5,27 @@ from sqlalchemy import create_engine, text
 from modules.config import Config
 from modules.gis_processing import GisProcessor
 
+# SettingWithCopyWarning warning disabling
+pd.options.mode.chained_assignment = None
+
 # Select only following tag values:
 # tram = Urban tram
 # light_rail = Light rail
 
 TRAM_TYPES = ["tram", "light_rail"]
 
-def dict_values_to_list(d: dict) -> dict:
-    """Transform dict values to list."""
-    return {k: [v] for k, v in d.items()}
-
-
-def other_tag_to_dict(tags: str) -> dict:
-    """Split OSM tags to dict."""
-    tags = tags[1:-1]
-    return {
-        k: v for k, v in [s.split('"=>"') for s in tags.split('","')] if v is not None
-    }
-
+# Following commented lines kept as a backup of the older implementation where was different version of gdal used.
+#def dict_values_to_list(d: dict) -> dict:
+#    """Transform dict values to list."""
+#    return {k: [v] for k, v in d.items()}
+#
+#
+#def other_tag_to_dict(tags: str) -> dict:
+#    """Split OSM tags to dict."""
+#    tags = tags[1:-1]
+#    return {
+#        k: v for k, v in [s.split('"=>"') for s in tags.split('","')] if v is not None
+#    }
 
 class TramInfra(GisProcessor):
     """Process tram infra."""
@@ -35,29 +38,31 @@ class TramInfra(GisProcessor):
         self._orig = None
         self._module = "tram_infra"
         self._store_original_data = cfg.store_orinal_data(self._module)
-
         file_name = cfg.local_file(self._module)
-
         self._lines = gpd.read_file(file_name)
 
     def process(self):
         lines = self._lines
-        lines_with_tags = lines[~lines.other_tags.isna()].copy()
+        # New implementation of getting only tram lines:
+        trams = lines.loc[lines["railway"].isin(TRAM_TYPES)]
 
-        lines_with_tags["tag_dict"] = lines_with_tags.apply(
-            lambda r: other_tag_to_dict(r.other_tags), axis=1
-        )
-        lines_with_tags_tram_index = lines_with_tags.apply(
-            lambda r: any(tag_value in r.tag_dict.get("railway", []) for tag_value in TRAM_TYPES), axis=1
-        )
-        tram_lines = lines_with_tags[lines_with_tags_tram_index]
+        # Following commented lines kept as a backup of the older implementation where was different version of gdal used.
+        #lines_with_tags = lines[~lines.other_tags.isna()].copy()
 
-        df_list = []
-        for i, r in tram_lines.iterrows():
-            df_list.append(pd.DataFrame(dict_values_to_list(r.tag_dict)))
-        df_new = pd.concat(df_list)
-        df_new.index = tram_lines.index
-        trams = tram_lines.join(df_new, how="inner").drop(["tag_dict"], axis=1)
+        #lines_with_tags["tag_dict"] = lines_with_tags.apply(
+        #    lambda r: other_tag_to_dict(r.other_tags), axis=1
+        #)
+        #lines_with_tags_tram_index = lines_with_tags.apply(
+        #    lambda r: any(tag_value in r.tag_dict.get("railway", []) for tag_value in TRAM_TYPES), axis=1
+        #)
+        #tram_lines = lines_with_tags[lines_with_tags_tram_index]
+
+        #df_list = []
+        #for i, r in tram_lines.iterrows():
+        #    df_list.append(pd.DataFrame(dict_values_to_list(r.tag_dict)))
+        #df_new = pd.concat(df_list)
+        #df_new.index = tram_lines.index
+        #trams = tram_lines.join(df_new, how="inner").drop(["tag_dict"], axis=1)
         trams["infra"] = 1
         trams = trams.astype({"infra": "int32"})
         self._process_result_lines = trams.loc[:, ["infra", "geometry"]]
