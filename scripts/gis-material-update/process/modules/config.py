@@ -39,8 +39,6 @@ class Config:
                         parsed = yaml.safe_load(stream)
                     except yaml.YAMLError as exc:
                         raise Exception(exc)
-                    else:
-                        print("Using configuration file: {}".format(config_file))
                 return parsed
         raise OSError("Configuration file was not found.")
 
@@ -56,6 +54,8 @@ class Config:
         if deployment_profile == "local_development":
             directory_name = Path(__file__).parent.parent.parent / directory
         elif deployment_profile == "local_docker_development":
+            directory_name = Path(directory)
+        elif deployment_profile == "docker_development":
             directory_name = Path(directory)
         else:
             raise ValueError("Storage type not detected!")

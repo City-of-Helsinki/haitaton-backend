@@ -47,4 +47,4 @@ class GisProcessor(ABC):
                 self._logger
                 )
         else:
-            logging.error("Validation failed(" + self._module + "). No deploy")
+            logging.error("Validation failed (" + self._module + "). No deploy")

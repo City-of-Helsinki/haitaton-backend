@@ -2,7 +2,7 @@ from __future__ import annotations
 from os.path import exists
 from pathlib import Path
 import yaml
-
+import os
 
 class Config:
     """Class to handle configuration."""
@@ -39,8 +39,6 @@ class Config:
                         parsed = yaml.safe_load(stream)
                     except yaml.YAMLError as exc:
                         raise Exception(exc)
-                    else:
-                        print("Using configuration file: {}".format(config_file))
                 return parsed
         raise OSError("Configuration file was not found.")
 
@@ -56,6 +54,8 @@ class Config:
         if deployment_profile == "local_development":
             directory_name = Path(__file__).parent.parent.parent / directory
         elif deployment_profile == "local_docker_development":
+            directory_name = Path(directory)
+        elif deployment_profile == "docker_development":
             directory_name = Path(directory)
         else:
             raise ValueError("Storage type not detected!")
@@ -102,12 +102,12 @@ class Config:
             deployment = self.deployment_profile()
 
         return "postgresql://{user}:{password}@{host}:{port}/{dbname}".format(
-            user=self._cfg.get(deployment, {}).get("database").get("username"),
-            password=self._cfg.get(deployment, {}).get("database").get("password"),
-            host=self._cfg.get(deployment, {}).get("database").get("host"),
-            port=self._cfg.get(deployment, {}).get("database").get("port"),
-            dbname=self._cfg.get(deployment, {}).get("database").get("database"),
-        )
+            user=os.environ.get("HAITATON_USER",self._cfg.get(deployment, {}).get("database").get("username")),
+            password=os.environ.get("HAITATON_PASSWORD",self._cfg.get(deployment, {}).get("database").get("password")),
+            host=os.environ.get("HAITATON_HOST",self._cfg.get(deployment, {}).get("database").get("host")),
+            port=os.environ.get("HAITATON_PORT",self._cfg.get(deployment, {}).get("database").get("port")),
+            dbname=os.environ.get("HAITATON_DATABASE",self._cfg.get(deployment, {}).get("database").get("database")),
+            )
 
     def logging_filename(self) -> str:
         """Return logging file name information from config file."""

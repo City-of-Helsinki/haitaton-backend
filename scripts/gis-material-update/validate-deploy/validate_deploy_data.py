@@ -19,7 +19,6 @@ from modules.central_business_area import CentralBusinessAreas
 DEFAULT_DEPLOYMENT_PROFILE = "local_development"
 
 def validate_deploy_item(item: str, cfg: Config):
-    print(f"Validating deployment item: {item}")
     gis_processor = instantiate_processor(item, cfg)
     gis_processor.get_temp_data()
     gis_processor.validate_deploy()
@@ -52,7 +51,7 @@ if __name__ == "__main__":
 
     deployment_profile = os.environ.get("TORMAYS_DEPLOYMENT_PROFILE")
     use_deployment_profile = DEFAULT_DEPLOYMENT_PROFILE
-    if deployment_profile in ["local_docker_development", "local_development"]:
+    if deployment_profile in ["local_docker_development", "local_development", "docker_development"]:
         use_deployment_profile = deployment_profile
     else:
         print(
@@ -61,11 +60,7 @@ if __name__ == "__main__":
             )
         )
 
-    print("Using deployment profile: '{}'".format(use_deployment_profile))
-
     cfg = Config().with_deployment_profile(use_deployment_profile)
-
-    print("Validating data.")
 
     for item in sys.argv[1:]:
         validate_deploy_item(item, cfg)
