@@ -36,8 +36,8 @@ enum class ApplicationContactType {
 )
 sealed interface ApplicationData {
     val applicationType: ApplicationType
-    val name: String
     val pendingOnClient: Boolean
+    val name: String
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
     val areas: List<ApplicationArea>?

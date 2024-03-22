@@ -4,44 +4,44 @@ import java.time.ZonedDateTime
 import org.geojson.GeometryCollection
 
 sealed interface AlluApplicationData {
-    val postalAddress: PostalAddress?
+    val identificationNumber: String
+    val pendingOnClient: Boolean
     val name: String
-    val customerWithContacts: CustomerWithContacts
-    val representativeWithContacts: CustomerWithContacts?
-    val invoicingCustomer: Customer?
-    val geometry: GeometryCollection
     val startTime: ZonedDateTime
     val endTime: ZonedDateTime
-    val pendingOnClient: Boolean
-    val identificationNumber: String
-    val customerReference: String?
+    val geometry: GeometryCollection
     val area: Double?
+    val customerWithContacts: CustomerWithContacts
+    val representativeWithContacts: CustomerWithContacts?
+    val postalAddress: PostalAddress?
+    val invoicingCustomer: Customer?
+    val customerReference: String?
     val trafficArrangementImages: List<Int>?
     val clientApplicationKind: String
 }
 
 data class AlluCableReportApplicationData(
-    override val postalAddress: PostalAddress? = null,
-    override val name: String,
-    override val customerWithContacts: CustomerWithContacts,
-    override val representativeWithContacts: CustomerWithContacts? = null,
-    override val invoicingCustomer: Customer? = null,
-    override val geometry: GeometryCollection,
-    override val startTime: ZonedDateTime,
-    override val endTime: ZonedDateTime,
-    override val pendingOnClient: Boolean,
     override val identificationNumber: String,
-    override val customerReference: String? = null,
-    override val area: Double? = null,
-    override val trafficArrangementImages: List<Int>? = null,
-    override val clientApplicationKind: String,
-    val workDescription: String,
-    val propertyDeveloperWithContacts: CustomerWithContacts? = null,
-    val contractorWithContacts: CustomerWithContacts,
+    override val pendingOnClient: Boolean,
+    override val name: String,
+    override val postalAddress: PostalAddress? = null,
     val constructionWork: Boolean = false,
     val maintenanceWork: Boolean = false,
-    val emergencyWork: Boolean = false,
     val propertyConnectivity: Boolean = false,
+    val emergencyWork: Boolean = false,
+    val workDescription: String,
+    override val clientApplicationKind: String,
+    override val startTime: ZonedDateTime,
+    override val endTime: ZonedDateTime,
+    override val geometry: GeometryCollection,
+    override val area: Double? = null,
+    override val customerWithContacts: CustomerWithContacts,
+    val contractorWithContacts: CustomerWithContacts,
+    val propertyDeveloperWithContacts: CustomerWithContacts? = null,
+    override val representativeWithContacts: CustomerWithContacts? = null,
+    override val invoicingCustomer: Customer? = null,
+    override val customerReference: String? = null,
+    override val trafficArrangementImages: List<Int>? = null,
 ) : AlluApplicationData
 
 data class CableReportInformationRequestResponse(
@@ -50,34 +50,34 @@ data class CableReportInformationRequestResponse(
 )
 
 data class AlluExcavationNotificationApplicationData(
-    override val postalAddress: PostalAddress? = null,
-    override val name: String,
-    override val customerWithContacts: CustomerWithContacts,
-    override val representativeWithContacts: CustomerWithContacts? = null,
-    override val invoicingCustomer: Customer? = null,
-    override val geometry: GeometryCollection,
-    override val startTime: ZonedDateTime,
-    override val endTime: ZonedDateTime,
-    override val pendingOnClient: Boolean,
     override val identificationNumber: String,
-    override val customerReference: String? = null,
-    override val area: Double? = null,
-    override val trafficArrangementImages: List<Int>? = null,
+    override val pendingOnClient: Boolean,
+    override val name: String,
+    val workPurpose: String,
     override val clientApplicationKind: String,
-    val contractorWithContacts: CustomerWithContacts,
-    val propertyDeveloperWithContacts: CustomerWithContacts? = null,
-    val pksCard: Boolean? = null,
     val constructionWork: Boolean? = null,
     val maintenanceWork: Boolean? = null,
     val emergencyWork: Boolean? = null,
-    val propertyConnectivity: Boolean? = null,
-    val selfSupervision: Boolean? = null,
-    val workPurpose: String,
+    val cableReports: List<String>? = null,
+    val placementContracts: List<String>? = null,
+    override val startTime: ZonedDateTime,
+    override val endTime: ZonedDateTime,
+    override val geometry: GeometryCollection,
+    override val area: Double? = null,
+    override val postalAddress: PostalAddress? = null,
+    override val customerWithContacts: CustomerWithContacts,
+    val contractorWithContacts: CustomerWithContacts,
+    val propertyDeveloperWithContacts: CustomerWithContacts? = null,
+    override val representativeWithContacts: CustomerWithContacts? = null,
+    override val invoicingCustomer: Customer? = null,
+    override val customerReference: String? = null,
     val additionalInfo: String? = null,
+    val pksCard: Boolean? = null,
+    val selfSupervision: Boolean? = null,
+    val propertyConnectivity: Boolean? = null,
+    override val trafficArrangementImages: List<Int>? = null,
     val trafficArrangements: String? = null,
     val trafficArrangementImpediment: TrafficArrangementImpediment? = null,
-    val placementContracts: List<String>? = null,
-    val cableReports: List<String>? = null,
 ) : AlluApplicationData
 
 enum class TrafficArrangementImpediment {
