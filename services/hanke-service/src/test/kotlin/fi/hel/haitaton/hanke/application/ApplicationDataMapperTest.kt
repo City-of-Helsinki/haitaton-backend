@@ -20,8 +20,8 @@ import fi.hel.haitaton.hanke.COORDINATE_SYSTEM_URN
 import fi.hel.haitaton.hanke.allu.Contact as AlluContact
 import fi.hel.haitaton.hanke.allu.Customer as AlluCustomer
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts as AlluCustomerWithContacts
-import fi.hel.haitaton.hanke.allu.PostalAddress
-import fi.hel.haitaton.hanke.allu.StreetAddress
+import fi.hel.haitaton.hanke.allu.PostalAddress as AlluPostalAddress
+import fi.hel.haitaton.hanke.allu.StreetAddress as AlluStreetAddress
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
@@ -112,15 +112,13 @@ internal class ApplicationDataMapperTest {
             given { result ->
                 assertThat(result.customer.type).isEqualTo(input.customer.type)
                 assertThat(result.customer.name).isEqualTo(input.customer.name)
-                assertThat(result.customer.country).isEqualTo(input.customer.country)
+                assertThat(result.customer.country).isEqualTo(DEFAULT_COUNTRY)
                 assertThat(result.customer.email).isEqualTo(input.customer.email)
                 assertThat(result.customer.phone).isEqualTo(input.customer.phone)
                 assertThat(result.customer.registryKey).isEqualTo(input.customer.registryKey)
-                assertThat(result.customer.ovt).isEqualTo(input.customer.ovt)
-                assertThat(result.customer.invoicingOperator)
-                    .isEqualTo(input.customer.invoicingOperator)
-                assertThat(result.customer.sapCustomerNumber)
-                    .isEqualTo(input.customer.sapCustomerNumber)
+                assertThat(result.customer.ovt).isNull()
+                assertThat(result.customer.invoicingOperator).isNull()
+                assertThat(result.customer.sapCustomerNumber).isNull()
                 assertThat(result.contacts).isEqualTo(input.contacts)
             }
 
@@ -134,17 +132,30 @@ internal class ApplicationDataMapperTest {
             }
         }
 
-        private fun Assert<AlluCustomer?>.isEqualTo(input: Customer?) = given { result ->
+        private fun Assert<AlluCustomer?>.isEqualTo(input: InvoicingCustomer?) = given { result ->
             assertThat(result == null).isEqualTo(input == null)
             assertThat(result?.type).isEqualTo(input?.type)
             assertThat(result?.name).isEqualTo(input?.name)
+            assertThat(result?.postalAddress).isEqualTo(input?.postalAddress)
             assertThat(result?.ovt).isEqualTo(input?.ovt)
             assertThat(result?.invoicingOperator).isEqualTo(input?.invoicingOperator)
-            assertThat(result?.sapCustomerNumber).isEqualTo(input?.sapCustomerNumber)
-            assertThat(result?.country).isEqualTo(input?.country)
+            assertThat(result?.sapCustomerNumber).isNull()
+            assertThat(result?.country).isEqualTo(DEFAULT_COUNTRY)
             assertThat(result?.email).isEqualTo(input?.email)
             assertThat(result?.phone).isEqualTo(input?.phone)
             assertThat(result?.registryKey).isEqualTo(input?.registryKey)
+        }
+
+        private fun Assert<AlluPostalAddress?>.isEqualTo(input: PostalAddress?) = given { result ->
+            assertThat(result == null).isEqualTo(input == null)
+            assertThat(result?.streetAddress).isEqualTo(input?.streetAddress)
+            assertThat(result?.postalCode).isEqualTo(input?.postalCode)
+            assertThat(result?.city).isEqualTo(input?.city)
+        }
+
+        private fun Assert<AlluStreetAddress?>.isEqualTo(input: StreetAddress?) = given { result ->
+            assertThat(result == null).isEqualTo(input == null)
+            assertThat(result?.streetName).isEqualTo(input?.streetName)
         }
 
         private fun toDescription(initial: String) = "$initial\nEi louhita"

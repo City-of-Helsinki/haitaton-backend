@@ -15,6 +15,7 @@ import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.ExcavationNotificationApplicationData
+import fi.hel.haitaton.hanke.application.InvoicingCustomer
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
@@ -58,51 +59,31 @@ class ApplicationFactory(
         fun createPersonCustomer(
             type: CustomerType? = CustomerType.PERSON,
             name: String = TEPPO_TESTI,
-            postalAddress: PostalAddress? = null,
             email: String? = TEPPO_EMAIL,
             phone: String? = TEPPO_PHONE,
             registryKey: String? = "281192-937W",
-            ovt: String? = null,
-            invoicingOperator: String? = null,
-            country: String = "FI",
-            sapCustomerNumber: String? = null,
         ) =
             Customer(
                 type,
                 name,
-                postalAddress,
                 email,
                 phone,
                 registryKey,
-                ovt,
-                invoicingOperator,
-                country,
-                sapCustomerNumber
             )
 
         fun createCompanyCustomer(
             type: CustomerType? = CustomerType.COMPANY,
             name: String = "DNA",
-            postalAddress: PostalAddress? = null,
             email: String? = "info@dna.test",
             phone: String? = "+3581012345678",
             registryKey: String? = "3766028-0",
-            ovt: String? = null,
-            invoicingOperator: String? = null,
-            country: String = "FI",
-            sapCustomerNumber: String? = null,
         ): Customer =
             Customer(
                 type,
                 name,
-                postalAddress,
                 email,
                 phone,
                 registryKey,
-                ovt,
-                invoicingOperator,
-                country,
-                sapCustomerNumber
             )
 
         fun createCompanyCustomerWithOrderer(): CustomerWithContacts {
@@ -111,9 +92,14 @@ class ApplicationFactory(
             return CustomerWithContacts(customer, listOf(contact))
         }
 
-        private fun createCompanyInvoiceCustomer(): Customer =
-            createCompanyCustomer(
+        private fun createCompanyInvoiceCustomer(): InvoicingCustomer =
+            InvoicingCustomer(
+                type = CustomerType.COMPANY,
+                name = "DNA",
                 postalAddress = createPostalAddress(),
+                email = "info@dna.test",
+                phone = "+3581012345678",
+                registryKey = "3766028-0",
                 ovt = "003737660280",
                 invoicingOperator = "003721291126",
             )
@@ -272,7 +258,7 @@ class ApplicationFactory(
                 createCompanyCustomer().withContacts(createContact()),
             representativeWithContacts: CustomerWithContacts? = null,
             propertyDeveloperWithContacts: CustomerWithContacts? = null,
-            invoicingCustomer: Customer? = createCompanyInvoiceCustomer(),
+            invoicingCustomer: InvoicingCustomer? = createCompanyInvoiceCustomer(),
             customerReference: String? = "Asiakkaan viite",
             additionalInfo: String? = null,
         ): ExcavationNotificationApplicationData =
@@ -315,15 +301,9 @@ class ApplicationFactory(
                 endTime = null,
                 areas = null,
                 customerWithContacts =
-                    CustomerWithContacts(
-                        Customer(null, "", null, "", null, null, null, null, "", null),
-                        listOf()
-                    ),
+                    CustomerWithContacts(Customer(null, "", null, null, null), listOf()),
                 contractorWithContacts =
-                    CustomerWithContacts(
-                        Customer(null, "", null, "", null, null, null, null, "", null),
-                        listOf()
-                    ),
+                    CustomerWithContacts(Customer(null, "", null, null, null), listOf()),
                 postalAddress = PostalAddress(StreetAddress(""), "", "")
             )
 
@@ -335,15 +315,9 @@ class ApplicationFactory(
                 startTime = null,
                 endTime = null,
                 customerWithContacts =
-                    CustomerWithContacts(
-                        Customer(null, "", null, "", null, null, null, null, "", null),
-                        listOf()
-                    ),
+                    CustomerWithContacts(Customer(null, "", null, null, null), listOf()),
                 contractorWithContacts =
-                    CustomerWithContacts(
-                        Customer(null, "", null, "", null, null, null, null, "", null),
-                        listOf()
-                    ),
+                    CustomerWithContacts(Customer(null, "", null, null, null), listOf()),
                 additionalInfo = null
             )
 

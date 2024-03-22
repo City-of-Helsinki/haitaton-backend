@@ -156,7 +156,7 @@ data class ExcavationNotificationApplicationData(
     val contractorWithContacts: CustomerWithContacts?,
     val propertyDeveloperWithContacts: CustomerWithContacts? = null,
     override val representativeWithContacts: CustomerWithContacts? = null,
-    val invoicingCustomer: Customer? = null,
+    val invoicingCustomer: InvoicingCustomer? = null,
     val customerReference: String? = null,
     val additionalInfo: String? = null,
 ) : ApplicationData {

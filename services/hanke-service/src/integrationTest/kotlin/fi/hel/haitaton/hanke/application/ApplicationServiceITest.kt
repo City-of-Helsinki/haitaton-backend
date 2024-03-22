@@ -1536,14 +1536,9 @@ class ApplicationServiceITest : IntegrationTest() {
            "customer": {
              "type": "COMPANY",
              "name": "DNA",
-             "postalAddress": null,
              "email": "info@dna.test",
              "phone": "+3581012345678",
-             "registryKey": "3766028-0",
-             "ovt": null,
-             "invoicingOperator": null,
-             "country": "FI",
-             "sapCustomerNumber": null
+             "registryKey": "3766028-0"
            },
            "contacts": [
              {

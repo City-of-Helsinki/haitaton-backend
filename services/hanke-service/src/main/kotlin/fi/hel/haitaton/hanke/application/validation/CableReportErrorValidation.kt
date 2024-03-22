@@ -13,7 +13,6 @@ import fi.hel.haitaton.hanke.validation.Validators.notJustWhitespace
 import fi.hel.haitaton.hanke.validation.Validators.validate
 import fi.hel.haitaton.hanke.validation.Validators.validateFalse
 import fi.hel.haitaton.hanke.validation.Validators.validateTrue
-import java.util.Locale
 
 /** Validate draft application. Checks only fields that have some actual data. */
 fun CableReportApplicationData.validateForErrors(): ValidationResult =
@@ -40,13 +39,9 @@ private fun CustomerWithContacts.validateForErrors(path: String): ValidationResu
 
 private fun Customer.validateForErrors(path: String): ValidationResult =
     validate { notJustWhitespace(name, "$path.name") }
-        .and { validateTrue(Locale.getISOCountries().contains(country), "$path.country") }
         .and { notJustWhitespace(email, "$path.email") }
         .and { notJustWhitespace(phone, "$path.phone") }
         .whenNotNull(registryKey) { validateTrue(it.isValidBusinessId(), "$path.registryKey") }
-        .and { notJustWhitespace(ovt, "$path.ovt") }
-        .and { notJustWhitespace(invoicingOperator, "$path.invoicingOperator") }
-        .and { notJustWhitespace(sapCustomerNumber, "$path.sapCustomerNumber") }
 
 private fun validateContactForErrors(contact: Contact, path: String) =
     with(contact) {
