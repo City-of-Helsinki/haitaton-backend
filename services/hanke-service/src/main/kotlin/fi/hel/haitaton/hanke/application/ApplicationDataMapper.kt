@@ -18,8 +18,7 @@ object ApplicationDataMapper {
         applicationData: CableReportApplicationData
     ): AlluCableReportApplicationData =
         with(applicationData) {
-            val description =
-                workDescription(workDescription, rockExcavation.orThrow(path("rockExcavation")))
+            val description = workDescription(this)
             AlluCableReportApplicationData(
                 postalAddress = postalAddress?.toAlluData(),
                 name = name,
@@ -60,8 +59,6 @@ object ApplicationDataMapper {
         applicationData: ExcavationNotificationApplicationData
     ): AlluExcavationNotificationApplicationData =
         with(applicationData) {
-            val description =
-                workDescription(workDescription, rockExcavation) // TODO as in cable report?
             AlluExcavationNotificationApplicationData(
                 postalAddress =
                     PostalAddress(
@@ -85,7 +82,7 @@ object ApplicationDataMapper {
                 identificationNumber = hankeTunnus,
                 customerReference = customerReference,
                 area = null, // currently area is not given nor calculated in Haitaton
-                clientApplicationKind = description, // TODO: intentional as in cable report?
+                clientApplicationKind = workDescription,
                 contractorWithContacts =
                     contractorWithContacts
                         .orThrow(path("contractorWithContacts"))
@@ -99,7 +96,7 @@ object ApplicationDataMapper {
                 maintenanceWork = maintenanceWork,
                 emergencyWork = emergencyWork,
                 propertyConnectivity = null,
-                workPurpose = description,
+                workPurpose = workDescription,
                 placementContracts = placementContracts?.toList(),
                 cableReports = cableReports?.toList()
             )
@@ -137,10 +134,11 @@ object ApplicationDataMapper {
 
     private fun <T> T?.orThrow(path: String) = this ?: throw AlluDataException(path, NULL)
 
-    private fun workDescription(workDescription: String, rockExcavation: Boolean?): String {
-        return workDescription + excavationText(rockExcavation)
+    private fun workDescription(cableReport: CableReportApplicationData): String {
+        val excavation = cableReport.rockExcavation.orThrow(path("rockExcavation"))
+        return cableReport.workDescription + excavationText(excavation)
     }
 
-    private fun excavationText(excavation: Boolean?): String =
-        if (excavation == null) "" else if (excavation) "\nLouhitaan" else "\nEi louhita"
+    private fun excavationText(excavation: Boolean): String =
+        if (excavation) "\nLouhitaan" else "\nEi louhita"
 }
