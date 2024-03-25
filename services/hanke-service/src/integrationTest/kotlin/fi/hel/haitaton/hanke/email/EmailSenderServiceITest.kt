@@ -285,7 +285,7 @@ class EmailSenderServiceITest : IntegrationTest() {
             // TODO needs translations
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Käyttöoikeustasoasi on muutettu (HAI24-1) / sama ruotsiksi / sama englanniksi"
+                    "Haitaton: Käyttöoikeustasoasi on muutettu (HAI24-1) / Käyttöoikeustasoasi on muutettu (HAI24-1) / Käyttöoikeustasoasi on muutettu (HAI24-1)"
                 )
         }
 

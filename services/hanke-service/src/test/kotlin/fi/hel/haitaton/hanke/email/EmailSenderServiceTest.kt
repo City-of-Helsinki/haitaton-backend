@@ -376,7 +376,7 @@ class EmailSenderServiceTest {
 
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / sama ruotsiksi / sama englanniksi"
+                    "Haitaton: Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS)"
                 )
         }
 
@@ -385,7 +385,7 @@ class EmailSenderServiceTest {
             val (textBody, htmlBody) = sendAndCapture().bodies()
 
             val expectedBody =
-                "Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / sama ruotsiksi / sama englanniksi"
+                "Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS)"
             assertThat(textBody).contains(expectedBody)
             assertThat(htmlBody).contains(expectedBody)
         }
@@ -457,7 +457,7 @@ class EmailSenderServiceTest {
                 "on muuttanut käyttöoikeustasoasi hankkeella \"$HANKE_NIMI\" ($HANKE_TUNNUS). Uusi käyttöoikeutesi on \"Ändring i projekt\"."
 
             override val updateInformationHtml =
-                "on muuttanut käyttöoikeustasoasi hankkeella <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Uusi käyttöoikeutesi on <b>Ändring i projekt</b>."
+                "on muuttanut käyttöoikeustasoasi hankkeella <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Uusi käyttöoikeutesi on <b>${StringEscapeUtils.escapeHtml4("Ändring i projekt")}</b>."
 
             override val linkPrefix = "Tarkastele hanketta täällä:"
 
