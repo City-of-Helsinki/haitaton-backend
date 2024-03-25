@@ -1,7 +1,0 @@
-pandas
-gtfs_kit
-pyyaml
-sqlalchemy
-psycopg2-binary
-geoalchemy2
-parse
