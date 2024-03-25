@@ -1,3 +1,10 @@
+# New repository
+
+The folder `gis-material-update` is moved to on own repository `https://github.com/City-of-Helsinki/haitaton-gis-update`
+and instructions can be found in `https://github.com/City-of-Helsinki/haitaton-gis-update/blob/main/README.md´
+
+Older instruction can be still found below.
+
 # Updating tormays -material to environemnts
 
 General overview:
