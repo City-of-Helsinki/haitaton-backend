@@ -1,0 +1,37 @@
+<mjml>
+    <mj-head>
+        <mj-include path="common/attributes.partial"/>
+    </mj-head>
+    <mj-body>
+        <mj-include path="common/header-content.partial"/>
+        <mj-section>
+            <mj-column>
+                <mj-text mj-class="header-txt">
+                    Sinut on poistettu hankkeelta ({{hankeTunnus}}) / Sinut on poistettu hankkeelta ({{hankeTunnus}}) / Sinut on poistettu hankkeelta ({{hankeTunnus}})
+                </mj-text>
+                <mj-text mj-class="basic-txt">
+                    {{deletedByName}} ({{deletedByEmail}}) on poistanut sinut hankkeelta <b>{{hankeNimi}} ({{hankeTunnus}})</b>,
+                    eikä sinulla ole enää pääsyä hankkeelle.
+                </mj-text>
+                <mj-include path="common/signature-fi.partial"/>
+
+                <mj-divider mj-class="language-separator" />
+
+                <mj-text mj-class="basic-txt">
+                    {{deletedByName}} ({{deletedByEmail}}) on poistanut sinut hankkeelta <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
+                    eikä sinulla ole enää pääsyä hankkeelle.
+                </mj-text>
+                <mj-include path="common/signature-sv.partial"/>
+
+                <mj-divider mj-class="language-separator" />
+
+                <mj-text mj-class="basic-txt">
+                    {{deletedByName}} ({{deletedByEmail}}) on poistanut sinut hankkeelta <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
+                    eikä sinulla ole enää pääsyä hankkeelle.
+                </mj-text>
+                <mj-include path="common/signature-en.partial"/>
+            </mj-column>
+        </mj-section>
+        <mj-include path="common/footer-content.partial"/>
+    </mj-body>
+</mjml>
