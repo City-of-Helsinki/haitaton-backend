@@ -13,13 +13,11 @@ import fi.hel.haitaton.hanke.validation.Validators.notJustWhitespace
 import fi.hel.haitaton.hanke.validation.Validators.validate
 import fi.hel.haitaton.hanke.validation.Validators.validateFalse
 import fi.hel.haitaton.hanke.validation.Validators.validateTrue
-import java.util.Locale
 
 /** Validate draft application. Checks only fields that have some actual data. */
 fun CableReportApplicationData.validateForErrors(): ValidationResult =
     validate { notJustWhitespace(name, "name") }
         .and { notJustWhitespace(workDescription, "workDescription") }
-        .and { notJustWhitespace(customerReference, "customerReference") }
         .and { atMostOneOrderer(customersWithContacts()) }
         .andWhen(startTime != null && endTime != null) {
             isBeforeOrEqual(startTime!!, endTime!!, "endTime")
@@ -33,7 +31,6 @@ fun CableReportApplicationData.validateForErrors(): ValidationResult =
         .whenNotNull(propertyDeveloperWithContacts) {
             it.validateForErrors("propertyDeveloperWithContacts")
         }
-        .whenNotNull(invoicingCustomer) { it.validateForErrors("invoicingCustomer") }
 
 private fun CustomerWithContacts.validateForErrors(path: String): ValidationResult =
     customer
@@ -42,13 +39,9 @@ private fun CustomerWithContacts.validateForErrors(path: String): ValidationResu
 
 private fun Customer.validateForErrors(path: String): ValidationResult =
     validate { notJustWhitespace(name, "$path.name") }
-        .and { validateTrue(Locale.getISOCountries().contains(country), "$path.country") }
         .and { notJustWhitespace(email, "$path.email") }
         .and { notJustWhitespace(phone, "$path.phone") }
         .whenNotNull(registryKey) { validateTrue(it.isValidBusinessId(), "$path.registryKey") }
-        .and { notJustWhitespace(ovt, "$path.ovt") }
-        .and { notJustWhitespace(invoicingOperator, "$path.invoicingOperator") }
-        .and { notJustWhitespace(sapCustomerNumber, "$path.sapCustomerNumber") }
 
 private fun validateContactForErrors(contact: Contact, path: String) =
     with(contact) {

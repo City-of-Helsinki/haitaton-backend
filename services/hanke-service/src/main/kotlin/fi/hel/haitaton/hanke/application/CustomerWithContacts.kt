@@ -14,6 +14,8 @@ import fi.hel.haitaton.hanke.allu.StreetAddress as AlluStreetAddress
 import fi.hel.haitaton.hanke.domain.HankePerustaja
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 
+const val DEFAULT_COUNTRY = "FI"
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CustomerWithContacts(val customer: Customer, val contacts: List<Contact>) {
     fun toAlluData(path: String): AlluCustomerWithContacts {
@@ -77,13 +79,48 @@ data class Contact(
 data class Customer(
     val type: CustomerType?, // Mandatory in Allu, but not in drafts.
     val name: String,
-    val country: String, // ISO 3166-1 alpha-2 country code
+    val email: String?,
+    val phone: String?,
+    val registryKey: String?, // y-tunnus
+) {
+    /**
+     * Check if this customer contains any actual personal information.
+     *
+     * Country alone isn't considered personal information when it's dissociated from other
+     * information, so it's not checked here.
+     */
+    fun hasPersonalInformation() =
+        !(name.isBlank() &&
+            email.isNullOrBlank() &&
+            phone.isNullOrBlank() &&
+            registryKey.isNullOrBlank())
+
+    fun toAlluData(path: String): AlluCustomer =
+        AlluCustomer(
+            type ?: throw AlluDataException("$path.type", AlluDataError.NULL),
+            name,
+            null,
+            email,
+            phone,
+            registryKey,
+            null,
+            null,
+            DEFAULT_COUNTRY,
+            null,
+        )
+}
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@JsonView(ChangeLogView::class)
+data class InvoicingCustomer(
+    val type: CustomerType?, // Mandatory in Allu, but not in drafts.
+    val name: String,
+    val postalAddress: PostalAddress?,
     val email: String?,
     val phone: String?,
     val registryKey: String?, // y-tunnus
     val ovt: String?, // e-invoice identifier (ovt-tunnus)
     val invoicingOperator: String?, // e-invoicing operator code
-    val sapCustomerNumber: String?, // customer's sap number
 ) {
     /**
      * Check if this customer contains any actual personal information.
@@ -97,20 +134,20 @@ data class Customer(
             phone.isNullOrBlank() &&
             registryKey.isNullOrBlank() &&
             ovt.isNullOrBlank() &&
-            invoicingOperator.isNullOrBlank() &&
-            sapCustomerNumber.isNullOrBlank())
+            invoicingOperator.isNullOrBlank())
 
     fun toAlluData(path: String): AlluCustomer =
         AlluCustomer(
             type ?: throw AlluDataException("$path.type", AlluDataError.NULL),
             name,
-            country,
+            postalAddress?.toAlluData(),
             email,
             phone,
             registryKey,
             ovt,
             invoicingOperator,
-            sapCustomerNumber,
+            DEFAULT_COUNTRY,
+            null,
         )
 }
 

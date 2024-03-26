@@ -28,11 +28,12 @@ import java.util.UUID
 sealed interface HakemusUpdateRequest {
     val applicationType: ApplicationType
     val name: String
-    val postalAddress: PostalAddressRequest
+    val workDescription: String
     val startTime: ZonedDateTime?
     val endTime: ZonedDateTime?
     val areas: List<ApplicationArea>?
     val customerWithContacts: CustomerWithContactsRequest?
+    val representativeWithContacts: CustomerWithContactsRequest?
 
     /**
      * Returns true if this application update request has changes compared to the given
@@ -56,7 +57,7 @@ data class JohtoselvityshakemusUpdateRequest(
     /** Työn nimi */
     override val name: String,
     /** Katuosoite */
-    override val postalAddress: PostalAddressRequest,
+    val postalAddress: PostalAddressRequest,
     /** Työssä on kyse: Uuden rakenteen tai johdon rakentamisesta */
     val constructionWork: Boolean,
     /** Työssä on kyse: Olemassaolevan rakenteen kunnossapitotyöstä */
@@ -71,7 +72,7 @@ data class JohtoselvityshakemusUpdateRequest(
     /** Louhitaanko työn yhteydessä, esimerkiksi kallioperää? */
     val rockExcavation: Boolean,
     /** Työn kuvaus */
-    val workDescription: String,
+    override val workDescription: String,
     // 2. sivu Alueet
     /** Työn arvioitu alkupäivä */
     override val startTime: ZonedDateTime? = null,
@@ -87,7 +88,7 @@ data class JohtoselvityshakemusUpdateRequest(
     /** Rakennuttajan tiedot */
     val propertyDeveloperWithContacts: CustomerWithContactsRequest? = null,
     /** Asianhoitajan tiedot */
-    val representativeWithContacts: CustomerWithContactsRequest? = null,
+    override val representativeWithContacts: CustomerWithContactsRequest? = null,
     // 4. sivu Liitteet (separete endpoint)
     // 5. sivu Yhteenveto (no input data)
 ) : HakemusUpdateRequest {

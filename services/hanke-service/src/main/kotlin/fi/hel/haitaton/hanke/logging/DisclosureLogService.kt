@@ -6,7 +6,6 @@ import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationMetaData
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.domain.Hanke
@@ -16,7 +15,6 @@ import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusDataResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusResponse
-import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusDataResponse
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.toJsonString
@@ -51,12 +49,12 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     }
 
     /**
-     * Save disclosure logs for when we are sending a cable report application to Allu. Write
-     * disclosure log entries for the customers and contacts in the application.
+     * Save disclosure logs for when we are sending an application to Allu. Write disclosure log
+     * entries for the customers and contacts in the application.
      */
     fun saveDisclosureLogsForAllu(
         applicationId: Long,
-        applicationData: CableReportApplicationData,
+        applicationData: ApplicationData,
         status: Status,
         failureDescription: String? = null
     ) {
@@ -256,52 +254,38 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             .toSet()
 
     private fun extractContacts(applicationData: ApplicationData): List<ContactWithRole> =
-        when (applicationData) {
-            is CableReportApplicationData ->
-                applicationData
-                    .customersByRole()
-                    .flatMap { (role, customer) ->
-                        customer.contacts.map { ContactWithRole(role, it) }
-                    }
-                    .filter { it.contact.hasInformation() }
-        }
+        applicationData
+            .customersByRole()
+            .flatMap { (role, customer) -> customer.contacts.map { ContactWithRole(role, it) } }
+            .filter { it.contact.hasInformation() }
 
     private fun extractHakemusDataResponseContacts(
         hakemusDataResponse: HakemusDataResponse
     ): List<ContactResponseWithRole> =
-        when (hakemusDataResponse) {
-            is JohtoselvitysHakemusDataResponse ->
-                hakemusDataResponse
-                    .customersByRole()
-                    .flatMap { (role, customer) ->
-                        customer.contacts.map { ContactResponseWithRole(role, it) }
-                    }
-                    .filter { it.contact.hasInformation() }
-        }
+        hakemusDataResponse
+            .customersByRole()
+            .flatMap { (role, customer) ->
+                customer.contacts.map { ContactResponseWithRole(role, it) }
+            }
+            .filter { it.contact.hasInformation() }
 
     private fun extractCustomers(applicationData: ApplicationData): List<CustomerWithRole> =
-        when (applicationData) {
-            is CableReportApplicationData ->
-                applicationData
-                    .customersByRole()
-                    .map { (role, customer) -> CustomerWithRole(role, customer.customer) }
-                    // Only personal data needs to be logged, not other types of customers.
-                    .filter { it.customer.type == CustomerType.PERSON }
-                    .filter { it.customer.hasPersonalInformation() }
-        }
+        applicationData
+            .customersByRole()
+            .map { (role, customer) -> CustomerWithRole(role, customer.customer) }
+            // Only personal data needs to be logged, not other types of customers.
+            .filter { it.customer.type == CustomerType.PERSON }
+            .filter { it.customer.hasPersonalInformation() }
 
     private fun extractHakemusDataResponseCustomers(
         hakemusDataResponse: HakemusDataResponse
     ): List<CustomerResponseWithRole> =
-        when (hakemusDataResponse) {
-            is JohtoselvitysHakemusDataResponse ->
-                hakemusDataResponse
-                    .customersByRole()
-                    .map { (role, customer) -> CustomerResponseWithRole(role, customer.customer) }
-                    // Only personal data needs to be logged, not other types of customers.
-                    .filter { it.customer.type == CustomerType.PERSON }
-                    .filter { it.customer.hasPersonalInformation() }
-        }
+        hakemusDataResponse
+            .customersByRole()
+            .map { (role, customer) -> CustomerResponseWithRole(role, customer.customer) }
+            // Only personal data needs to be logged, not other types of customers.
+            .filter { it.customer.type == CustomerType.PERSON }
+            .filter { it.customer.hasPersonalInformation() }
 
     private fun auditLogEntriesForYhteystiedot(yhteystiedot: List<HankeYhteystieto>) =
         yhteystiedot.toSet().map { disclosureLogEntry(ObjectType.YHTEYSTIETO, it.id!!, it) }

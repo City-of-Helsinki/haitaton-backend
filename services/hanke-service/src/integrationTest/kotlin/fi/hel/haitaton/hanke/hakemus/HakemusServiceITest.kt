@@ -213,7 +213,7 @@ class HakemusServiceITest(
                 prop(Hakemus::applicationData).isInstanceOf(JohtoselvityshakemusData::class).all {
                     prop(HakemusData::name).isEqualTo(hakemusNimi)
                     prop(HakemusData::pendingOnClient).isTrue()
-                    prop(HakemusData::postalAddress).isNull()
+                    prop(JohtoselvityshakemusData::postalAddress).isNull()
                     prop(HakemusData::startTime).isNull()
                     prop(HakemusData::endTime).isNull()
                     prop(HakemusData::areas).isNull()

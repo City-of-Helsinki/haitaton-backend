@@ -15,6 +15,7 @@ import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.application.ExcavationNotificationApplicationData
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
@@ -152,6 +153,8 @@ class HakemusService(
         val expected =
             when (applicationEntity.applicationData) {
                 is CableReportApplicationData -> request is JohtoselvityshakemusUpdateRequest
+                is ExcavationNotificationApplicationData ->
+                    TODO("Excavation notification not implemented")
             }
         if (!expected) {
             throw IncompatibleHakemusUpdateRequestException(
@@ -379,6 +382,8 @@ class HakemusService(
                         hakemusyhteystiedot[ApplicationContactType.ASIANHOITAJA]
                     ),
                 )
+            is ExcavationNotificationApplicationData ->
+                TODO("Excavation notification not implemented")
         }
 
     private fun customerWithContactsResponseWithYhteystiedot(
