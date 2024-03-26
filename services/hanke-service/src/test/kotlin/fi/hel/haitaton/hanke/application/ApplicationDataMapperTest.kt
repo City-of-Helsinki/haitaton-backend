@@ -2,21 +2,26 @@ package fi.hel.haitaton.hanke.application
 
 import assertk.Assert
 import assertk.all
+import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
-import assertk.assertions.each
 import assertk.assertions.endsWith
 import assertk.assertions.extracting
+import assertk.assertions.hasMessage
 import assertk.assertions.hasSize
 import assertk.assertions.isEqualTo
+import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.prop
 import assertk.assertions.single
 import fi.hel.haitaton.hanke.COORDINATE_SYSTEM_URN
-import fi.hel.haitaton.hanke.allu.Contact
+import fi.hel.haitaton.hanke.allu.Contact as AlluContact
+import fi.hel.haitaton.hanke.allu.Customer as AlluCustomer
 import fi.hel.haitaton.hanke.allu.CustomerWithContacts as AlluCustomerWithContacts
+import fi.hel.haitaton.hanke.allu.PostalAddress as AlluPostalAddress
+import fi.hel.haitaton.hanke.allu.StreetAddress as AlluStreetAddress
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
@@ -24,7 +29,6 @@ import org.geojson.GeoJsonObject
 import org.geojson.Polygon
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.CsvSource
 
@@ -36,13 +40,13 @@ internal class ApplicationDataMapperTest {
     inner class ToAlluData {
 
         @Test
-        fun `toAlluData when cable report should map fields correctly`() {
+        fun `Map cable report fields correctly`() {
             val input = ApplicationFactory.createCableReportApplicationData()
 
             val result = ApplicationDataMapper.toAlluData(HANKE_TUNNUS, input)
 
             assertThat(result.name).isEqualTo(input.name)
-            assertThat(result.customerWithContacts).isValid(input.customerWithContacts!!)
+            assertThat(result.customerWithContacts).isEqualTo(input.customerWithContacts!!)
             assertThat(result.geometry).isEqualTo(ApplicationDataMapper.getGeometry(input))
             assertThat(result.startTime).isEqualTo(input.startTime)
             assertThat(result.endTime).isEqualTo(input.endTime)
@@ -50,12 +54,12 @@ internal class ApplicationDataMapperTest {
             assertThat(result.identificationNumber).isEqualTo(HANKE_TUNNUS)
             assertThat(result.clientApplicationKind).isEqualTo(toDescription(input.workDescription))
             assertThat(result.workDescription).isEqualTo(toDescription(input.workDescription))
-            assertThat(result.contractorWithContacts).isValid(input.contractorWithContacts!!)
+            assertThat(result.contractorWithContacts).isEqualTo(input.contractorWithContacts!!)
             assertThat(result.postalAddress).isEqualTo(input.postalAddress)
             assertThat(result.representativeWithContacts).isNull()
             assertThat(result.invoicingCustomer).isNull()
-            assertThat(result.customerReference).isEqualTo(input.customerReference)
-            assertThat(result.area).isEqualTo(input.area)
+            assertThat(result.customerReference).isNull()
+            assertThat(result.area).isNull()
             assertThat(result.propertyDeveloperWithContacts).isNull()
             assertThat(result.constructionWork).isEqualTo(input.constructionWork)
             assertThat(result.maintenanceWork).isEqualTo(input.maintenanceWork)
@@ -65,7 +69,7 @@ internal class ApplicationDataMapperTest {
 
         @ParameterizedTest(name = "Adds rock excavation to work description, {argumentsWithNames}")
         @CsvSource("true,Louhitaan", "false,Ei louhita")
-        fun `Adds rock excavation to work description`(
+        fun `Adds rock excavation to cable report work description`(
             rockExcavation: Boolean,
             expectedSuffix: String
         ) {
@@ -77,26 +81,81 @@ internal class ApplicationDataMapperTest {
             assertThat(alluData.workDescription).endsWith(expectedSuffix)
         }
 
-        private fun Assert<AlluCustomerWithContacts>.isValid(input: CustomerWithContacts) =
+        @Test
+        fun `Map excavation notification fields correctly`() {
+            val input = ApplicationFactory.createExcavationNotificationApplicationData()
+
+            val result = ApplicationDataMapper.toAlluData(HANKE_TUNNUS, input)
+
+            assertThat(result.name).isEqualTo(input.name)
+            assertThat(result.customerWithContacts).isEqualTo(input.customerWithContacts!!)
+            assertThat(result.geometry).isEqualTo(ApplicationDataMapper.getGeometry(input))
+            assertThat(result.startTime).isEqualTo(input.startTime)
+            assertThat(result.endTime).isEqualTo(input.endTime)
+            assertThat(result.pendingOnClient).isEqualTo(input.pendingOnClient)
+            assertThat(result.identificationNumber).isEqualTo(HANKE_TUNNUS)
+            assertThat(result.clientApplicationKind).isEqualTo(input.workDescription)
+            assertThat(result.workPurpose).isEqualTo(input.workDescription)
+            assertThat(result.contractorWithContacts).isEqualTo(input.contractorWithContacts!!)
+            assertThat(result.postalAddress).isEqualTo(PostalAddress(StreetAddress(""), "", ""))
+            assertThat(result.representativeWithContacts).isNull()
+            assertThat(result.customerReference).isEqualTo(input.customerReference)
+            assertThat(result.area).isNull()
+            assertThat(result.propertyDeveloperWithContacts).isNull()
+            assertThat(result.constructionWork).isEqualTo(input.constructionWork)
+            assertThat(result.maintenanceWork).isEqualTo(input.maintenanceWork)
+            assertThat(result.emergencyWork).isEqualTo(input.emergencyWork)
+            assertThat(result.invoicingCustomer).isEqualTo(input.invoicingCustomer)
+        }
+
+        private fun Assert<AlluCustomerWithContacts>.isEqualTo(input: CustomerWithContacts) =
             given { result ->
                 assertThat(result.customer.type).isEqualTo(input.customer.type)
-                assertThat(result.customer.country).isEqualTo(input.customer.country)
+                assertThat(result.customer.name).isEqualTo(input.customer.name)
+                assertThat(result.customer.country).isEqualTo(DEFAULT_COUNTRY)
                 assertThat(result.customer.email).isEqualTo(input.customer.email)
                 assertThat(result.customer.phone).isEqualTo(input.customer.phone)
                 assertThat(result.customer.registryKey).isEqualTo(input.customer.registryKey)
-                assertThat(result.customer.ovt).isEqualTo(input.customer.ovt)
-                assertThat(result.customer.invoicingOperator)
-                    .isEqualTo(input.customer.invoicingOperator)
-                assertThat(result.customer.sapCustomerNumber)
-                    .isEqualTo(input.customer.sapCustomerNumber)
-                assertThat(result.contacts).areValid()
+                assertThat(result.customer.ovt).isNull()
+                assertThat(result.customer.invoicingOperator).isNull()
+                assertThat(result.customer.sapCustomerNumber).isNull()
+                assertThat(result.contacts).isEqualTo(input.contacts)
             }
 
-        private fun Assert<List<Contact>>.areValid() = each { contact ->
-            contact.transform { it.name }.isNotNull()
-            contact.transform { it.email }.isNotNull()
-            contact.transform { it.phone }.isNotNull()
-            contact.transform { it.orderer }.isNotNull()
+        private fun Assert<List<AlluContact>>.isEqualTo(input: List<Contact>) = given { result ->
+            assertThat(result).hasSize(input.size)
+            result.zip(input).forEach { (alluContact, contact) ->
+                assertThat(alluContact.name).isEqualTo(contact.fullName())
+                assertThat(alluContact.email).isEqualTo(contact.email)
+                assertThat(alluContact.phone).isEqualTo(contact.phone)
+                assertThat(alluContact.orderer).isEqualTo(contact.orderer)
+            }
+        }
+
+        private fun Assert<AlluCustomer?>.isEqualTo(input: InvoicingCustomer?) = given { result ->
+            assertThat(result == null).isEqualTo(input == null)
+            assertThat(result?.type).isEqualTo(input?.type)
+            assertThat(result?.name).isEqualTo(input?.name)
+            assertThat(result?.postalAddress).isEqualTo(input?.postalAddress)
+            assertThat(result?.ovt).isEqualTo(input?.ovt)
+            assertThat(result?.invoicingOperator).isEqualTo(input?.invoicingOperator)
+            assertThat(result?.sapCustomerNumber).isNull()
+            assertThat(result?.country).isEqualTo(DEFAULT_COUNTRY)
+            assertThat(result?.email).isEqualTo(input?.email)
+            assertThat(result?.phone).isEqualTo(input?.phone)
+            assertThat(result?.registryKey).isEqualTo(input?.registryKey)
+        }
+
+        private fun Assert<AlluPostalAddress?>.isEqualTo(input: PostalAddress?) = given { result ->
+            assertThat(result == null).isEqualTo(input == null)
+            assertThat(result?.streetAddress).isEqualTo(input?.streetAddress)
+            assertThat(result?.postalCode).isEqualTo(input?.postalCode)
+            assertThat(result?.city).isEqualTo(input?.city)
+        }
+
+        private fun Assert<AlluStreetAddress?>.isEqualTo(input: StreetAddress?) = given { result ->
+            assertThat(result == null).isEqualTo(input == null)
+            assertThat(result?.streetName).isEqualTo(input?.streetName)
         }
 
         private fun toDescription(initial: String) = "$initial\nEi louhita"
@@ -131,15 +190,12 @@ internal class ApplicationDataMapperTest {
         fun `throws exception if areas are not present`() {
             val applicationData = ApplicationFactory.createCableReportApplicationData(areas = null)
 
-            val exception =
-                assertThrows<AlluDataException> {
-                    ApplicationDataMapper.getGeometry(applicationData)
-                }
+            val exception = assertFailure { ApplicationDataMapper.getGeometry(applicationData) }
 
-            assertThat(exception.message)
-                .isEqualTo(
-                    "Application data failed validation at applicationData.areas: Can't be empty or null"
-                )
+            exception.isInstanceOf(AlluDataException::class.java)
+            exception.hasMessage(
+                "Application data failed validation at applicationData.areas: Can't be empty or null"
+            )
         }
 
         @Test
@@ -202,12 +258,10 @@ internal class ApplicationDataMapperTest {
                     areas = listOf(ApplicationArea(areaName, polygon))
                 )
 
-            val exception =
-                assertThrows<UnsupportedCoordinateSystemException> {
-                    ApplicationDataMapper.getGeometry(applicationData)
-                }
+            val exception = assertFailure { ApplicationDataMapper.getGeometry(applicationData) }
 
-            assertThat(exception.message).isEqualTo("Invalid coordinate system: InvalidCode")
+            exception.isInstanceOf(UnsupportedCoordinateSystemException::class.java)
+            exception.hasMessage("Invalid coordinate system: InvalidCode")
         }
     }
 }

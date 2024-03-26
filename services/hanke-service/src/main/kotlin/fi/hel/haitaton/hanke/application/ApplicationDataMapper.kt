@@ -2,6 +2,9 @@ package fi.hel.haitaton.hanke.application
 
 import fi.hel.haitaton.hanke.COORDINATE_SYSTEM_URN
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
+import fi.hel.haitaton.hanke.allu.AlluExcavationNotificationApplicationData
+import fi.hel.haitaton.hanke.allu.PostalAddress
+import fi.hel.haitaton.hanke.allu.StreetAddress
 import fi.hel.haitaton.hanke.application.AlluDataError.EMPTY_OR_NULL
 import fi.hel.haitaton.hanke.application.AlluDataError.NULL
 import fi.hel.haitaton.hanke.geometria.UnsupportedCoordinateSystemException
@@ -15,38 +18,87 @@ object ApplicationDataMapper {
         applicationData: CableReportApplicationData
     ): AlluCableReportApplicationData =
         with(applicationData) {
-            val description = workDescription(cableReport = this)
+            val description = workDescription(this)
             AlluCableReportApplicationData(
+                postalAddress = postalAddress?.toAlluData(),
                 name = name,
                 customerWithContacts =
                     customerWithContacts
                         .orThrow(path("customerWithContacts"))
                         .toAlluData(path("customerWithContacts")),
-                geometry = getGeometry(applicationData = this),
+                representativeWithContacts =
+                    representativeWithContacts?.toAlluData(path("representativeWithContacts")),
+                invoicingCustomer = null,
+                geometry = getGeometry(this),
                 startTime = startTime.orThrow(path("startTime")),
                 endTime = endTime.orThrow(path("endTime")),
                 pendingOnClient = pendingOnClient,
                 identificationNumber = hankeTunnus,
+                customerReference = null,
+                area = null, // currently area is not given nor calculated in Haitaton
+                trafficArrangementImages = null,
                 clientApplicationKind = description, // intentional
                 workDescription = description,
-                contractorWithContacts =
-                    contractorWithContacts
-                        .orThrow(path("contractorWithContacts"))
-                        .toAlluData(path("contractorWithContacts")),
-                postalAddress = postalAddress?.toAlluData(),
-                representativeWithContacts =
-                    representativeWithContacts?.toAlluData(path("representativeWithContacts")),
-                invoicingCustomer = invoicingCustomer?.toAlluData(path("invoicingCustomer")),
-                customerReference = customerReference,
-                area = area,
                 propertyDeveloperWithContacts =
                     propertyDeveloperWithContacts?.toAlluData(
                         path("propertyDeveloperWithContacts")
                     ),
+                contractorWithContacts =
+                    contractorWithContacts
+                        .orThrow(path("contractorWithContacts"))
+                        .toAlluData(path("contractorWithContacts")),
                 constructionWork = constructionWork,
                 maintenanceWork = maintenanceWork,
                 emergencyWork = emergencyWork,
                 propertyConnectivity = propertyConnectivity
+            )
+        }
+
+    fun toAlluData(
+        hankeTunnus: String,
+        applicationData: ExcavationNotificationApplicationData
+    ): AlluExcavationNotificationApplicationData =
+        with(applicationData) {
+            AlluExcavationNotificationApplicationData(
+                postalAddress =
+                    PostalAddress(
+                        // TODO: this should be a combination of all area addresses (HAI-1542)
+                        streetAddress = StreetAddress(""),
+                        postalCode = "",
+                        city = ""
+                    ),
+                name = name,
+                customerWithContacts =
+                    customerWithContacts
+                        .orThrow(path("customerWithContacts"))
+                        .toAlluData(path("customerWithContacts")),
+                representativeWithContacts =
+                    representativeWithContacts?.toAlluData(path("representativeWithContacts")),
+                invoicingCustomer = invoicingCustomer?.toAlluData(path("invoicingCustomer")),
+                geometry = getGeometry(this),
+                startTime = startTime.orThrow(path("startTime")),
+                endTime = endTime.orThrow(path("endTime")),
+                pendingOnClient = pendingOnClient,
+                identificationNumber = hankeTunnus,
+                customerReference = customerReference,
+                area = null, // currently area is not given nor calculated in Haitaton
+                clientApplicationKind = workDescription,
+                contractorWithContacts =
+                    contractorWithContacts
+                        .orThrow(path("contractorWithContacts"))
+                        .toAlluData(path("contractorWithContacts")),
+                propertyDeveloperWithContacts =
+                    propertyDeveloperWithContacts?.toAlluData(
+                        path("propertyDeveloperWithContacts")
+                    ),
+                pksCard = null,
+                constructionWork = constructionWork,
+                maintenanceWork = maintenanceWork,
+                emergencyWork = emergencyWork,
+                propertyConnectivity = null,
+                workPurpose = workDescription,
+                placementContracts = placementContracts?.toList(),
+                cableReports = cableReports?.toList()
             )
         }
 

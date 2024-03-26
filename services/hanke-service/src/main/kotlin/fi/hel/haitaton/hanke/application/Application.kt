@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.domain.HasId
 
 enum class ApplicationType {
     CABLE_REPORT,
+    EXCAVATION_NOTIFICATION,
 }
 
 /** Interface to enable [Application] and [CableReportWithoutHanke] handling equivalently. */
