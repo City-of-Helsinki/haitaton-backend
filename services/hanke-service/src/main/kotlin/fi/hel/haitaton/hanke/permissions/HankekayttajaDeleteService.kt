@@ -2,7 +2,10 @@ package fi.hel.haitaton.hanke.permissions
 
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.email.EmailSenderService
+import fi.hel.haitaton.hanke.email.RemovalFromHankeNotificationData
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import java.util.UUID
 import org.springframework.data.repository.findByIdOrNull
@@ -14,12 +17,18 @@ import org.springframework.transaction.annotation.Transactional
 class HankekayttajaDeleteService(
     private val hankekayttajaRepository: HankekayttajaRepository,
     private val hankeService: HankeService,
+    private val hankeKayttajaService: HankeKayttajaService,
+    private val emailSenderService: EmailSenderService,
 ) {
     @Transactional(readOnly = true)
     fun checkForDelete(kayttajaId: UUID): DeleteInfo {
         val kayttaja = getKayttaja(kayttajaId)
+        val hanke =
+            hankeService.loadHankeById(kayttaja.hankeId)
+                ?: throw HankeKayttajaNotFoundException(kayttaja.id)
 
-        val isOnlyOmistajanYhteyshenkilo = onlyOmistajanYhteyshenkiloIn(kayttaja).isNotEmpty()
+        val isOnlyOmistajanYhteyshenkilo =
+            onlyOmistajanYhteyshenkiloIn(kayttaja, hanke).isNotEmpty()
 
         val (draftHakemukset, activeHakemukset) =
             getHakemuksetForKayttaja(kayttaja)
@@ -30,14 +39,18 @@ class HankekayttajaDeleteService(
     }
 
     @Transactional
-    fun delete(kayttajaId: UUID) {
+    fun delete(kayttajaId: UUID, userId: String) {
         val kayttaja = getKayttaja(kayttajaId)
+        val hanke =
+            hankeService.loadHankeById(kayttaja.hankeId)
+                ?: throw HankeKayttajaNotFoundException(kayttaja.id)
+        val currentUser = hankeKayttajaService.getKayttajaByUserId(hanke.id, userId)!!
 
         if (isTheOnlyKaikkiOikeudetKayttaja(kayttaja)) {
-            throw NoAdminRemainingException(hankeService.findIdentifier(kayttaja.hankeId)!!)
+            throw NoAdminRemainingException(hanke)
         }
 
-        val offendingOmistajat = onlyOmistajanYhteyshenkiloIn(kayttaja)
+        val offendingOmistajat = onlyOmistajanYhteyshenkiloIn(kayttaja, hanke)
         if (offendingOmistajat.isNotEmpty()) {
             throw OnlyOmistajaContactException(kayttajaId, offendingOmistajat.map { it.id!! })
         }
@@ -48,6 +61,16 @@ class HankekayttajaDeleteService(
         }
 
         hankekayttajaRepository.delete(kayttaja)
+
+        emailSenderService.sendRemovalFromHankeNotificationEmail(
+            RemovalFromHankeNotificationData(
+                kayttaja.sahkoposti,
+                hanke.hankeTunnus,
+                hanke.nimi,
+                currentUser.fullName(),
+                currentUser.sahkoposti
+            )
+        )
     }
 
     private fun isTheOnlyKaikkiOikeudetKayttaja(kayttaja: HankekayttajaEntity): Boolean {
@@ -69,10 +92,8 @@ class HankekayttajaDeleteService(
 
     private fun onlyOmistajanYhteyshenkiloIn(
         kayttaja: HankekayttajaEntity,
+        hanke: Hanke
     ): List<HankeYhteystieto> {
-        val hanke =
-            hankeService.loadHankeById(kayttaja.hankeId)
-                ?: throw HankeKayttajaNotFoundException(kayttaja.id)
         return hanke.omistajat.filter {
             it.yhteyshenkilot.size == 1 && it.yhteyshenkilot.first().id == kayttaja.id
         }
