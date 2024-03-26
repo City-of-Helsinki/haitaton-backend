@@ -9,6 +9,7 @@ import assertk.assertions.startsWith
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
+import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.justRun
@@ -336,6 +337,157 @@ class EmailSenderServiceTest {
                 "for project $HANKE_TUNNUS and submitted it for processing."
 
             override val linkPrefix = "View the application in the Haitaton system:"
+
+            override val signatureLines =
+                listOf(
+                    "This email was generated automatically – please do not reply to this message.",
+                    "Kind regards,",
+                    "Haitaton services",
+                    "City of Helsinki Urban Environment Division",
+                    "haitaton@hel.fi",
+                )
+        }
+    }
+
+    @Nested
+    inner class AccessRightsUpdateNotification {
+        private val notification =
+            AccessRightsUpdateNotificationData(
+                recipientEmail = TEST_EMAIL,
+                hankeTunnus = HANKE_TUNNUS,
+                hankeNimi = HANKE_NIMI,
+                updatedByName = INVITER_NAME,
+                updatedByEmail = INVITER_EMAIL,
+                newAccessRights = Kayttooikeustaso.HANKEMUOKKAUS,
+            )
+
+        private fun sendAndCapture(): MimeMessage {
+            val email = slot<MimeMessage>()
+            justRun { mailSender.send(capture(email)) }
+
+            emailSenderService.sendAccessRightsUpdateNotificationEmail(notification)
+
+            return email.captured
+        }
+
+        @Test
+        fun `has the correct subject`() {
+            val email = sendAndCapture()
+
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS)"
+                )
+        }
+
+        @Test
+        fun `has a header line in the body`() {
+            val (textBody, htmlBody) = sendAndCapture().bodies()
+
+            val expectedBody =
+                "Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS)"
+            assertThat(textBody).contains(expectedBody)
+            assertThat(htmlBody).contains(expectedBody)
+        }
+
+        @Nested
+        open inner class BodyInFinnish {
+            open fun updatedByInformation(name: String, email: String) =
+                "$name ($email) on muuttanut"
+
+            open val updateInformationText =
+                "käyttöoikeustasoasi hankkeella \"$HANKE_NIMI\" ($HANKE_TUNNUS). Uusi käyttöoikeutesi on \"Hankemuokkaus\"."
+
+            open val updateInformationHtml =
+                "käyttöoikeustasoasi hankkeella <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Uusi käyttöoikeutesi on <b>Hankemuokkaus</b>."
+
+            open val linkPrefix = "Tarkastele hanketta täällä:"
+
+            open val hankeLink = "https://haitaton.hel.fi/fi/hankesalkku/$HANKE_TUNNUS"
+
+            open val signatureLines =
+                listOf(
+                    "Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.",
+                    "Ystävällisin terveisin,",
+                    "Helsingin kaupungin kaupunkiympäristön toimiala",
+                    "Haitaton-asiointi",
+                    "haitaton@hel.fi",
+                )
+
+            @Test
+            fun `contains updated-by information`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(updatedByInformation(INVITER_NAME, INVITER_EMAIL))
+                assertThat(htmlBody).contains(updatedByInformation(encodedInviter, INVITER_EMAIL))
+            }
+
+            @Test
+            open fun `contains update information`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(updateInformationText)
+                assertThat(htmlBody).contains(updateInformationHtml)
+            }
+
+            @Test
+            open fun `contains a link to hanke`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains("$linkPrefix $hankeLink")
+                assertThat(htmlBody).contains("""$linkPrefix <a href="$hankeLink">$hankeLink</a>""")
+            }
+
+            @Test
+            open fun `contains the signature`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(signatureLines)
+                assertThat(htmlBody).contains(signatureLines)
+            }
+        }
+
+        // TODO needs translations
+        @Nested
+        inner class BodyInSwedish : BodyInFinnish() {
+            override fun updatedByInformation(name: String, email: String) =
+                "$name ($email) on muuttanut"
+
+            override val updateInformationText =
+                "käyttöoikeustasoasi hankkeella \"$HANKE_NIMI\" ($HANKE_TUNNUS). Uusi käyttöoikeutesi on \"Ändring i projekt\"."
+
+            override val updateInformationHtml =
+                "käyttöoikeustasoasi hankkeella <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Uusi käyttöoikeutesi on <b>${StringEscapeUtils.escapeHtml4("Ändring i projekt")}</b>."
+
+            override val linkPrefix = "Tarkastele hanketta täällä:"
+
+            override val hankeLink = "https://haitaton.hel.fi/sv/projektportfolj/$HANKE_TUNNUS"
+
+            override val signatureLines =
+                listOf(
+                    "Det här är ett automatiskt e-postmeddelande – svara inte på det.",
+                    "Med vänlig hälsning,",
+                    "Helsingfors stads stadsmiljösektor",
+                    "Haitaton-ärenden",
+                    "haitaton@hel.fi",
+                )
+        }
+
+        // TODO needs translations
+        @Nested
+        inner class BodyInEnglish : BodyInFinnish() {
+            override fun updatedByInformation(name: String, email: String) =
+                "$name ($email) on muuttanut"
+
+            override val updateInformationText =
+                "käyttöoikeustasoasi hankkeella \"$HANKE_NIMI\" ($HANKE_TUNNUS). Uusi käyttöoikeutesi on \"Project editing\"."
+
+            override val updateInformationHtml =
+                "käyttöoikeustasoasi hankkeella <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Uusi käyttöoikeutesi on <b>Project editing</b>."
+
+            override val linkPrefix = "Tarkastele hanketta täällä:"
+
+            override val hankeLink = "https://haitaton.hel.fi/en/projectportfolio/$HANKE_TUNNUS"
 
             override val signatureLines =
                 listOf(

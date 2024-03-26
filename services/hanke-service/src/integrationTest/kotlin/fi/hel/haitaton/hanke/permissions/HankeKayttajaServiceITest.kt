@@ -1183,7 +1183,7 @@ class HankeKayttajaServiceITest : IntegrationTest() {
         }
 
         @Test
-        fun `Succeeds with with admin permission if updating to KAIKKI_OIKEUDET`() {
+        fun `Succeeds with admin permission if updating to KAIKKI_OIKEUDET`() {
             val hankeIdentifier = hankeFactory.builder(USERNAME).save().identifier()
             val kayttaja = kayttajaFactory.saveUnidentifiedUser(hankeIdentifier.id)
             val updates = mapOf(kayttaja.id to Kayttooikeustaso.KAIKKI_OIKEUDET)
@@ -1244,6 +1244,27 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             assertThat(updatedKayttaja.permission).isNotNull().transform {
                 it.kayttooikeustaso == Kayttooikeustaso.HANKEMUOKKAUS
             }
+        }
+
+        @Test
+        fun `Sends an email about the changed permission`() {
+            val hanke = hankeFactory.builder(USERNAME).save()
+            val updater = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+            val kayttaja = kayttajaFactory.saveIdentifiedUser(hanke.id)
+            val updates = mapOf(kayttaja.id to Kayttooikeustaso.HANKEMUOKKAUS)
+
+            hankeKayttajaService.updatePermissions(hanke.identifier(), updates, false, USERNAME)
+
+            val capturedEmails = greenMail.receivedMessages
+            assertThat(capturedEmails).hasSize(1)
+            assertThat(capturedEmails.first())
+                .isValidPermissionUpdateNotification(
+                    hanke.hankeTunnus,
+                    hanke.nimi,
+                    updater.fullName(),
+                    updater.sahkoposti,
+                    "Hankemuokkaus"
+                )
         }
     }
 
@@ -1732,6 +1753,20 @@ class HankeKayttajaServiceITest : IntegrationTest() {
             contains("$inviterName ($inviterEmail) lisäsi sinut")
             containsMatch("kutsu\\?id=$kayttajaTunnistePattern".toRegex())
             contains("hankkeelle $hankeNimi ($hankeTunnus)")
+        }
+    }
+
+    private fun Assert<MimeMessage>.isValidPermissionUpdateNotification(
+        hankeTunnus: String,
+        hankeNimi: String,
+        updatedByName: String,
+        updatedByEmail: String,
+        newAccessRights: String,
+    ) {
+        prop(MimeMessage::textBody).all {
+            contains("$updatedByName ($updatedByEmail) on muuttanut käyttöoikeustasoasi")
+            contains("hankkeella \"$hankeNimi\" ($hankeTunnus)")
+            contains("Uusi käyttöoikeutesi on \"$newAccessRights\"")
         }
     }
 }
