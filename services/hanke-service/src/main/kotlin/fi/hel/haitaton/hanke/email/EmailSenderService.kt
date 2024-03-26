@@ -60,6 +60,14 @@ data class AccessRightsUpdateNotificationData(
     val newAccessRights: Kayttooikeustaso,
 )
 
+data class RemovalFromHankeNotificationData(
+    val recipientEmail: String,
+    val hankeTunnus: String,
+    val hankeNimi: String,
+    val deletedByName: String,
+    val deletedByEmail: String,
+)
+
 data class Translations(val fi: String, val sv: String, val en: String)
 
 enum class EmailTemplate(val value: String) {
@@ -67,6 +75,7 @@ enum class EmailTemplate(val value: String) {
     INVITATION_HANKE("kayttaja-lisatty-hanke"),
     APPLICATION_NOTIFICATION("kayttaja-lisatty-hakemus"),
     ACCESS_RIGHTS_UPDATE_NOTIFICATION("kayttooikeustason-muutos"),
+    REMOVAL_FROM_HANKE_NOTIFICATION("kayttaja-poistettu-hanke"),
 }
 
 @Service
@@ -154,6 +163,31 @@ class EmailSenderService(
         sendHybridEmail(
             data.recipientEmail,
             EmailTemplate.ACCESS_RIGHTS_UPDATE_NOTIFICATION,
+            templateData
+        )
+    }
+
+    fun sendRemovalFromHankeNotificationEmail(data: RemovalFromHankeNotificationData) {
+        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
+            return
+        }
+
+        logger.info { "Sending notification email for removal from hanke" }
+
+        val templateData =
+            mapOf(
+                "baseUrl" to emailConfig.baseUrl,
+                "recipientEmail" to data.recipientEmail,
+                "hankeTunnus" to data.hankeTunnus,
+                "hankeNimi" to data.hankeNimi,
+                "deletedByName" to data.deletedByName,
+                "deletedByEmail" to data.deletedByEmail,
+                "signatures" to signatures(),
+            )
+
+        sendHybridEmail(
+            data.recipientEmail,
+            EmailTemplate.REMOVAL_FROM_HANKE_NOTIFICATION,
             templateData
         )
     }
