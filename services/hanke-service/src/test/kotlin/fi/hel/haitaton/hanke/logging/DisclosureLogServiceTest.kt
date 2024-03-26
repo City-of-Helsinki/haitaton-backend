@@ -3,6 +3,9 @@ package fi.hel.haitaton.hanke.logging
 import assertk.assertThat
 import assertk.assertions.containsAtLeast
 import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.isEmpty
+import assertk.assertions.isEqualTo
+import assertk.assertions.single
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
@@ -43,6 +46,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import io.mockk.verifySequence
 import java.util.UUID
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -502,6 +506,65 @@ internal class DisclosureLogServiceTest {
 
             assertThat(capturedLogs.captured).hasSameElementsAs(expectedLogs)
             verify(exactly = 1) { auditLogService.createAll(any()) }
+        }
+
+        @Test
+        fun `saves logs with invoicing customer when invoicing customer is a person`() {
+            val applicationId = 41L
+            val invoicingCustomer = ApplicationFactory.createPersonInvoicingCustomer()
+            val applicationData =
+                ApplicationFactory.createExcavationNotificationApplicationData(
+                    invoicingCustomer = invoicingCustomer
+                )
+            val expectedLog =
+                AuditLogEntryFactory.createReadEntry(
+                    objectId = applicationId,
+                    objectType = ObjectType.ALLU_CUSTOMER,
+                    objectBefore =
+                        AlluMetaCustomerWithRole(
+                                MetaCustomerType.INVOICING,
+                                invoicingCustomer.toAlluData("")
+                            )
+                            .toJsonString(),
+                    userId = ALLU_AUDIT_LOG_USERID,
+                    userRole = UserRole.SERVICE,
+                )
+            val capturedLogs = slot<Collection<AuditLogEntry>>()
+            every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
+
+            disclosureLogService.saveDisclosureLogsForAllu(
+                applicationId,
+                applicationData.toAlluData(hankeTunnus),
+                Status.SUCCESS
+            )
+
+            val customerLogs =
+                capturedLogs.captured.filter { it.objectType == ObjectType.ALLU_CUSTOMER }
+            assertThat(customerLogs).single().isEqualTo(expectedLog)
+            verifySequence { auditLogService.createAll(any()) }
+        }
+
+        @Test
+        fun `saves logs without invoicing customer when invoicing customer is a company`() {
+            val applicationId = 41L
+            val invoicingCustomer = ApplicationFactory.createCompanyInvoicingCustomer()
+            val applicationData =
+                ApplicationFactory.createExcavationNotificationApplicationData(
+                    invoicingCustomer = invoicingCustomer
+                )
+            val capturedLogs = slot<Collection<AuditLogEntry>>()
+            every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
+
+            disclosureLogService.saveDisclosureLogsForAllu(
+                applicationId,
+                applicationData.toAlluData(hankeTunnus),
+                Status.SUCCESS
+            )
+
+            val customerLogs =
+                capturedLogs.captured.filter { it.objectType == ObjectType.ALLU_CUSTOMER }
+            assertThat(customerLogs).isEmpty()
+            verifySequence { auditLogService.createAll(any()) }
         }
     }
 
