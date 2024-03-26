@@ -1,6 +1,5 @@
 package fi.hel.haitaton.hanke.permissions
 
-import assertk.Assert
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
@@ -313,7 +312,7 @@ class HankekayttajaDeleteServiceITest(
         }
 
         @Test
-        fun `send email notification when user is deleted`() {
+        fun `send an email notification when the user is deleted`() {
             val hanke = hankeFactory.builder().withHankealue().saveEntity()
             val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
             hankeFactory.addYhteystiedotTo(hanke) {
@@ -325,24 +324,9 @@ class HankekayttajaDeleteServiceITest(
 
             val capturedEmails = greenMail.receivedMessages
             assertThat(capturedEmails).hasSize(1)
-            assertThat(capturedEmails.first())
-                .isValidRemovalFromHankeNotification(
-                    hanke.hankeTunnus,
-                    hanke.nimi,
-                    founder.fullName(),
-                    founder.sahkoposti,
-                )
-        }
-
-        private fun Assert<MimeMessage>.isValidRemovalFromHankeNotification(
-            hankeTunnus: String,
-            hankeNimi: String,
-            updatedByName: String,
-            updatedByEmail: String,
-        ) {
-            prop(MimeMessage::textBody).all {
-                contains("$updatedByName ($updatedByEmail) on poistanut sinut")
-                contains("hankkeelta \"$hankeNimi\" ($hankeTunnus)")
+            assertThat(capturedEmails.first()).prop(MimeMessage::textBody).all {
+                contains("${founder.fullName()} (${founder.sahkoposti}) on poistanut sinut")
+                contains("hankkeelta \"${hanke.nimi}\" (${hanke.hankeTunnus})")
             }
         }
     }
