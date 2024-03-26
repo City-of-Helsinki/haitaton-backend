@@ -351,7 +351,7 @@ class EmailSenderServiceTest {
 
     @Nested
     inner class AccessRightsUpdateNotification {
-        private val applicationNotification =
+        private val notification =
             AccessRightsUpdateNotificationData(
                 recipientEmail = TEST_EMAIL,
                 hankeTunnus = HANKE_TUNNUS,
@@ -365,7 +365,7 @@ class EmailSenderServiceTest {
             val email = slot<MimeMessage>()
             justRun { mailSender.send(capture(email)) }
 
-            emailSenderService.sendAccessRightsUpdateNotificationEmail(applicationNotification)
+            emailSenderService.sendAccessRightsUpdateNotificationEmail(notification)
 
             return email.captured
         }
@@ -393,13 +393,13 @@ class EmailSenderServiceTest {
         @Nested
         open inner class BodyInFinnish {
             open fun updatedByInformation(name: String, email: String) =
-                "$name ($email) on muuttanut "
+                "$name ($email) on muuttanut"
 
             open val updateInformationText =
-                "on muuttanut käyttöoikeustasoasi hankkeella \"$HANKE_NIMI\" ($HANKE_TUNNUS). Uusi käyttöoikeutesi on \"Hankemuokkaus\"."
+                "käyttöoikeustasoasi hankkeella \"$HANKE_NIMI\" ($HANKE_TUNNUS). Uusi käyttöoikeutesi on \"Hankemuokkaus\"."
 
             open val updateInformationHtml =
-                "on muuttanut käyttöoikeustasoasi hankkeella <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Uusi käyttöoikeutesi on <b>Hankemuokkaus</b>."
+                "käyttöoikeustasoasi hankkeella <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Uusi käyttöoikeutesi on <b>Hankemuokkaus</b>."
 
             open val linkPrefix = "Tarkastele hanketta täällä:"
 
@@ -454,10 +454,10 @@ class EmailSenderServiceTest {
                 "$name ($email) on muuttanut"
 
             override val updateInformationText =
-                "on muuttanut käyttöoikeustasoasi hankkeella \"$HANKE_NIMI\" ($HANKE_TUNNUS). Uusi käyttöoikeutesi on \"Ändring i projekt\"."
+                "käyttöoikeustasoasi hankkeella \"$HANKE_NIMI\" ($HANKE_TUNNUS). Uusi käyttöoikeutesi on \"Ändring i projekt\"."
 
             override val updateInformationHtml =
-                "on muuttanut käyttöoikeustasoasi hankkeella <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Uusi käyttöoikeutesi on <b>${StringEscapeUtils.escapeHtml4("Ändring i projekt")}</b>."
+                "käyttöoikeustasoasi hankkeella <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Uusi käyttöoikeutesi on <b>${StringEscapeUtils.escapeHtml4("Ändring i projekt")}</b>."
 
             override val linkPrefix = "Tarkastele hanketta täällä:"
 
@@ -480,10 +480,10 @@ class EmailSenderServiceTest {
                 "$name ($email) on muuttanut"
 
             override val updateInformationText =
-                "on muuttanut käyttöoikeustasoasi hankkeella \"$HANKE_NIMI\" ($HANKE_TUNNUS). Uusi käyttöoikeutesi on \"Project editing\"."
+                "käyttöoikeustasoasi hankkeella \"$HANKE_NIMI\" ($HANKE_TUNNUS). Uusi käyttöoikeutesi on \"Project editing\"."
 
             override val updateInformationHtml =
-                "on muuttanut käyttöoikeustasoasi hankkeella <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Uusi käyttöoikeutesi on <b>Project editing</b>."
+                "käyttöoikeustasoasi hankkeella <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Uusi käyttöoikeutesi on <b>Project editing</b>."
 
             override val linkPrefix = "Tarkastele hanketta täällä:"
 

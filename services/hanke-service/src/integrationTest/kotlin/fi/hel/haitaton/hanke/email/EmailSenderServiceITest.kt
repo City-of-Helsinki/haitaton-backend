@@ -112,7 +112,7 @@ class EmailSenderServiceITest : IntegrationTest() {
 
     @Nested
     inner class HankeInvitation {
-        private val hankeInvitation =
+        private val notification =
             HankeInvitationData(
                 inviterName = INVITER_NAME,
                 inviterEmail = INVITER_EMAIL,
@@ -124,7 +124,7 @@ class EmailSenderServiceITest : IntegrationTest() {
 
         @Test
         fun `sendHankeInvitationEmail sends email with correct recipient`() {
-            emailSenderService.sendHankeInvitationEmail(hankeInvitation)
+            emailSenderService.sendHankeInvitationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
@@ -133,7 +133,7 @@ class EmailSenderServiceITest : IntegrationTest() {
 
         @Test
         fun `sendHankeInvitationEmail sends email with sender from properties`() {
-            emailSenderService.sendHankeInvitationEmail(hankeInvitation)
+            emailSenderService.sendHankeInvitationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.from).hasSize(1)
@@ -142,7 +142,7 @@ class EmailSenderServiceITest : IntegrationTest() {
 
         @Test
         fun `sendHankeInvitationEmail sends email with correct subject`() {
-            emailSenderService.sendHankeInvitationEmail(hankeInvitation)
+            emailSenderService.sendHankeInvitationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
@@ -155,29 +155,31 @@ class EmailSenderServiceITest : IntegrationTest() {
 
         @Test
         fun `sendHankeInvitationEmail sends email with parametrized hybrid body`() {
-            val data = hankeInvitation
-
-            emailSenderService.sendHankeInvitationEmail(data)
+            emailSenderService.sendHankeInvitationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = email.bodies()
             assertThat(textBody).all {
-                contains("${data.inviterName} (${data.inviterEmail}) lisäsi sinut")
-                contains("hankkeelle ${data.hankeNimi} (${data.hankeTunnus}).")
-                contains("http://localhost:3001/fi/kutsu?id=${data.invitationToken}")
+                contains("${notification.inviterName} (${notification.inviterEmail}) lisäsi sinut")
+                contains("hankkeelle ${notification.hankeNimi} (${notification.hankeTunnus}).")
+                contains("http://localhost:3001/fi/kutsu?id=${notification.invitationToken}")
             }
             assertThat(htmlBody).all {
                 val htmlEscapedName = "Matti Meik&auml;l&auml;inen"
-                contains("$htmlEscapedName (${data.inviterEmail})")
-                contains("hankkeelle <b>${data.hankeNimi} (${data.hankeTunnus})</b>.")
-                contains("""<a href="http://localhost:3001/fi/kutsu?id=${data.invitationToken}">""")
+                contains("$htmlEscapedName (${notification.inviterEmail})")
+                contains(
+                    "hankkeelle <b>${notification.hankeNimi} (${notification.hankeTunnus})</b>."
+                )
+                contains(
+                    """<a href="http://localhost:3001/fi/kutsu?id=${notification.invitationToken}">"""
+                )
             }
         }
     }
 
     @Nested
     inner class ApplicationNotification {
-        private val applicationNotification =
+        private val notification =
             ApplicationNotificationData(
                 senderName = INVITER_NAME,
                 senderEmail = INVITER_EMAIL,
@@ -189,7 +191,7 @@ class EmailSenderServiceITest : IntegrationTest() {
 
         @Test
         fun `sendApplicationNotificationEmail sends email with correct recipient`() {
-            emailSenderService.sendApplicationNotificationEmail(applicationNotification)
+            emailSenderService.sendApplicationNotificationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
@@ -198,7 +200,7 @@ class EmailSenderServiceITest : IntegrationTest() {
 
         @Test
         fun `sendApplicationNotificationEmail sends email with sender from properties`() {
-            emailSenderService.sendApplicationNotificationEmail(applicationNotification)
+            emailSenderService.sendApplicationNotificationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.from).hasSize(1)
@@ -207,7 +209,7 @@ class EmailSenderServiceITest : IntegrationTest() {
 
         @Test
         fun `sendApplicationNotificationEmail sends email with correct subject`() {
-            emailSenderService.sendApplicationNotificationEmail(applicationNotification)
+            emailSenderService.sendApplicationNotificationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
@@ -220,22 +222,20 @@ class EmailSenderServiceITest : IntegrationTest() {
 
         @Test
         fun `sendApplicationNotificationEmail sends email with parametrized hybrid body`() {
-            val data = applicationNotification
-
-            emailSenderService.sendApplicationNotificationEmail(data)
+            emailSenderService.sendApplicationNotificationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = email.bodies()
             assertThat(textBody).all {
-                contains("${data.senderName} (${data.senderEmail}) on")
-                contains("tehnyt johtoselvityshakemuksen (${data.applicationIdentifier})")
-                contains("hankkeella ${data.hankeTunnus}")
+                contains("${notification.senderName} (${notification.senderEmail}) on")
+                contains("tehnyt johtoselvityshakemuksen (${notification.applicationIdentifier})")
+                contains("hankkeella ${notification.hankeTunnus}")
                 contains("Tarkastele hakemusta Haitattomassa: http://localhost:3001")
             }
             assertThat(htmlBody).all {
                 val htmlEscapedName = "Matti Meik&auml;l&auml;inen"
-                contains("$htmlEscapedName (${data.senderEmail})")
-                contains("johtoselvityshakemuksen (${data.applicationIdentifier})")
+                contains("$htmlEscapedName (${notification.senderEmail})")
+                contains("johtoselvityshakemuksen (${notification.applicationIdentifier})")
                 contains("""<a href="http://localhost:3001">""")
             }
         }
@@ -243,7 +243,7 @@ class EmailSenderServiceITest : IntegrationTest() {
 
     @Nested
     inner class AccessRightsUpdateNotification {
-        private val accessRightsUpdateNotificationData =
+        private val notification =
             AccessRightsUpdateNotificationData(
                 recipientEmail = TEST_EMAIL,
                 hankeTunnus = HANKE_TUNNUS,
@@ -255,9 +255,7 @@ class EmailSenderServiceITest : IntegrationTest() {
 
         @Test
         fun `Send email with correct recipient`() {
-            emailSenderService.sendAccessRightsUpdateNotificationEmail(
-                accessRightsUpdateNotificationData
-            )
+            emailSenderService.sendAccessRightsUpdateNotificationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
@@ -266,9 +264,7 @@ class EmailSenderServiceITest : IntegrationTest() {
 
         @Test
         fun `Send email with sender from properties`() {
-            emailSenderService.sendAccessRightsUpdateNotificationEmail(
-                accessRightsUpdateNotificationData
-            )
+            emailSenderService.sendAccessRightsUpdateNotificationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.from).hasSize(1)
@@ -277,9 +273,7 @@ class EmailSenderServiceITest : IntegrationTest() {
 
         @Test
         fun `Send email with correct subject`() {
-            emailSenderService.sendAccessRightsUpdateNotificationEmail(
-                accessRightsUpdateNotificationData
-            )
+            emailSenderService.sendAccessRightsUpdateNotificationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
             // TODO needs translations
@@ -291,32 +285,34 @@ class EmailSenderServiceITest : IntegrationTest() {
 
         @Test
         fun `Send email with parametrized hybrid body`() {
-            val data = accessRightsUpdateNotificationData
-
-            emailSenderService.sendAccessRightsUpdateNotificationEmail(data)
+            emailSenderService.sendAccessRightsUpdateNotificationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
             val (textBody, htmlBody) = email.bodies()
             assertThat(textBody).all {
-                contains("${data.updatedByName} (${data.updatedByEmail}) on")
+                contains("${notification.updatedByName} (${notification.updatedByEmail}) on")
                 contains(
-                    "muuttanut käyttöoikeustasoasi hankkeella \"${data.hankeNimi}\" (${data.hankeTunnus})"
+                    "muuttanut käyttöoikeustasoasi hankkeella \"${notification.hankeNimi}\" (${notification.hankeTunnus})"
                 )
-                contains("Uusi käyttöoikeutesi on \"${data.newAccessRights.translations().fi}\"")
                 contains(
-                    "Tarkastele hanketta täällä: http://localhost:3001/fi/hankesalkku/${data.hankeTunnus}"
+                    "Uusi käyttöoikeutesi on \"${notification.newAccessRights.translations().fi}\""
+                )
+                contains(
+                    "Tarkastele hanketta täällä: http://localhost:3001/fi/hankesalkku/${notification.hankeTunnus}"
                 )
             }
             assertThat(htmlBody).all {
                 contains(
-                    "${StringEscapeUtils.escapeHtml4(data.updatedByName)} (${data.updatedByEmail}) on"
+                    "${StringEscapeUtils.escapeHtml4(notification.updatedByName)} (${notification.updatedByEmail}) on"
                 )
                 contains(
-                    "muuttanut käyttöoikeustasoasi hankkeella <b>${data.hankeNimi} (${data.hankeTunnus})</b>"
+                    "muuttanut käyttöoikeustasoasi hankkeella <b>${notification.hankeNimi} (${notification.hankeTunnus})</b>"
                 )
-                contains("Uusi käyttöoikeutesi on <b>${data.newAccessRights.translations().fi}</b>")
                 contains(
-                    "Tarkastele hanketta täällä: <a href=\"http://localhost:3001/fi/hankesalkku/${data.hankeTunnus}\">http://localhost:3001/fi/hankesalkku/${data.hankeTunnus}</a>"
+                    "Uusi käyttöoikeutesi on <b>${notification.newAccessRights.translations().fi}</b>"
+                )
+                contains(
+                    "Tarkastele hanketta täällä: <a href=\"http://localhost:3001/fi/hankesalkku/${notification.hankeTunnus}\">http://localhost:3001/fi/hankesalkku/${notification.hankeTunnus}</a>"
                 )
             }
         }
