@@ -160,10 +160,17 @@ data class PostalAddress(
 ) {
     fun toAlluData(): AlluPostalAddress =
         AlluPostalAddress(streetAddress.toAlluData(), postalCode, city)
+
+    @JsonIgnore
+    fun isBlank(): Boolean = streetAddress.isBlank() && postalCode.isBlank() && city.isBlank()
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonView(ChangeLogView::class)
 data class StreetAddress(val streetName: String?) {
     fun toAlluData(): AlluStreetAddress = AlluStreetAddress(streetName)
+
+    @JsonIgnore fun isBlank(): Boolean = streetName.isNullOrBlank()
 }
+
+fun PostalAddress?.isNullOrBlank(): Boolean = this == null || this.isBlank()

@@ -7,7 +7,7 @@ import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
-import fi.hel.haitaton.hanke.application.ExcavationNotificationApplicationData
+import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
@@ -83,9 +83,9 @@ data class HakemusBuilder(
     }
 
     private fun onExcavationNotification(
-        f: ExcavationNotificationApplicationData.() -> ExcavationNotificationApplicationData
+        f: ExcavationNotificationData.() -> ExcavationNotificationData
     ) {
-        (applicationEntity.applicationData as ExcavationNotificationApplicationData).f()
+        (applicationEntity.applicationData as ExcavationNotificationData).f()
     }
 
     fun hakija(

@@ -15,6 +15,7 @@ import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.USERNAME
 import java.time.ZonedDateTime
@@ -32,9 +33,11 @@ class HakemusFactory(
 ) {
     fun builder(
         userId: String,
-        hankeEntity: HankeEntity = hankeFactory.builder(userId).withHankealue().saveEntity()
+        hankeEntity: HankeEntity = hankeFactory.builder(userId).withHankealue().saveEntity(),
+        applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
     ): HakemusBuilder {
-        val applicationEntity = createHakemus(userId = userId, hanke = hankeEntity)
+        val applicationEntity =
+            createHakemus(userId = userId, hanke = hankeEntity, applicationType = applicationType)
         return HakemusBuilder(
             applicationEntity,
             userId,
@@ -59,7 +62,7 @@ class HakemusFactory(
             alluStatus: ApplicationStatus? = null,
             applicationIdentifier: String? = null,
             applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
-            applicationData: HakemusData = createJohtoselvityshakemusData(),
+            applicationData: HakemusData = createHakemusData(applicationType),
             hankeTunnus: String = "HAI-1234",
             hankeId: Int = 1,
         ): Hakemus =
@@ -74,7 +77,13 @@ class HakemusFactory(
                 hankeId = hankeId,
             )
 
-        fun createJohtoselvityshakemusData(
+        private fun createHakemusData(type: ApplicationType): HakemusData =
+            when (type) {
+                ApplicationType.CABLE_REPORT -> createJohtoselvityshakemusData()
+                ApplicationType.EXCAVATION_NOTIFICATION -> createKaivuilmoitusData()
+            }
+
+        private fun createJohtoselvityshakemusData(
             name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
             postalAddress: PostalAddress? = null,
             rockExcavation: Boolean = false,
@@ -106,6 +115,31 @@ class HakemusFactory(
                 representativeWithContacts = representativeWithContacts,
                 propertyDeveloperWithContacts = propertyDeveloperWithContacts,
             )
+
+        private fun createKaivuilmoitusData(
+            pendingOnClient: Boolean = false,
+            name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
+            workDescription: String = "Work description.",
+            startTime: ZonedDateTime? = DateFactory.getStartDatetime(),
+            endTime: ZonedDateTime? = DateFactory.getEndDatetime(),
+            areas: List<ApplicationArea>? = listOf(ApplicationFactory.createApplicationArea()),
+            customerWithContacts: Hakemusyhteystieto? = null,
+            contractorWithContacts: Hakemusyhteystieto? = null,
+            representativeWithContacts: Hakemusyhteystieto? = null,
+            propertyDeveloperWithContacts: Hakemusyhteystieto? = null,
+        ): KaivuilmoitusData =
+            KaivuilmoitusData(
+                pendingOnClient = pendingOnClient,
+                name = name,
+                workDescription = workDescription,
+                startTime = startTime,
+                endTime = endTime,
+                areas = areas,
+                customerWithContacts = customerWithContacts,
+                contractorWithContacts = contractorWithContacts,
+                representativeWithContacts = representativeWithContacts,
+                propertyDeveloperWithContacts = propertyDeveloperWithContacts,
+            )
     }
 
     fun createHakemus(
@@ -115,7 +149,7 @@ class HakemusFactory(
         userId: String,
         applicationType: ApplicationType = ApplicationType.CABLE_REPORT,
         applicationData: ApplicationData =
-            ApplicationFactory.createBlankCableReportApplicationData(),
+            ApplicationFactory.createBlankApplicationData(applicationType),
         hanke: HankeEntity,
     ): ApplicationEntity =
         ApplicationEntity(

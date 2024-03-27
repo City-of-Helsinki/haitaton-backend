@@ -155,7 +155,7 @@ class ApplicationService(
                         newApplicationData::class
                     )
                 }
-            is ExcavationNotificationApplicationData ->
+            is ExcavationNotificationData ->
                 // no support for excavation notification in old service
                 throw NotImplementedError("Excavation notification not implemented")
         }
@@ -572,7 +572,7 @@ class ApplicationService(
         when (val data = entity.applicationData) {
             is CableReportApplicationData ->
                 updateCableReportInAllu(entity.id!!, alluId, entity.hanke.hankeTunnus, data)
-            is ExcavationNotificationApplicationData ->
+            is ExcavationNotificationData ->
                 TODO("Sending excavation notification to Allu not implemented.")
         }
 
@@ -586,7 +586,7 @@ class ApplicationService(
             when (val data = entity.applicationData) {
                 is CableReportApplicationData ->
                     createCableReportToAllu(entity.id!!, entity.hanke.hankeTunnus, data)
-                is ExcavationNotificationApplicationData ->
+                is ExcavationNotificationData ->
                     TODO("Sending excavation notification to Allu not implemented.")
             }
         try {

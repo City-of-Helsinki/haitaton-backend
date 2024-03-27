@@ -4,18 +4,21 @@ import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.hasClass
 import assertk.assertions.isEmpty
+import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
+import fi.hel.haitaton.hanke.application.validation.validateForErrors
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withApplicationData
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCableReportApplicationData
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomerContacts
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withPostalAddress
 import fi.hel.haitaton.hanke.isValidBusinessId
+import fi.hel.haitaton.hanke.isValidOVT
 import fi.hel.haitaton.hanke.touch
 import java.time.ZonedDateTime
 import java.util.stream.Stream
@@ -68,7 +71,7 @@ class ApplicationValidatorTest {
         fun `One orderer is allowed`() {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(
+                    .withCableReportApplicationData(
                         customerWithContacts = customerWithOneOrderer,
                     )
 
@@ -79,7 +82,7 @@ class ApplicationValidatorTest {
         fun `Zero orderers is allowed`() {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(
+                    .withCableReportApplicationData(
                         customerWithContacts = customerWithNoOrderers,
                         contractorWithContacts = customerWithNoOrderers,
                     )
@@ -91,7 +94,7 @@ class ApplicationValidatorTest {
         fun `Two orderers throws exception`() {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(
+                    .withCableReportApplicationData(
                         customerWithContacts = customerWithTwoOrderers,
                     )
 
@@ -103,7 +106,7 @@ class ApplicationValidatorTest {
         fun `Two orderers across different roles throws exception`() {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(
+                    .withCableReportApplicationData(
                         customerWithContacts = customerWithOneOrderer,
                         contractorWithContacts = customerWithOneOrderer,
                     )
@@ -116,7 +119,7 @@ class ApplicationValidatorTest {
         fun `No contacts at all is allowed`() {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(
+                    .withCableReportApplicationData(
                         customerWithContacts = customerWithNoContacts,
                         contractorWithContacts = customerWithNoContacts,
                     )
@@ -196,7 +199,7 @@ class ApplicationValidatorTest {
         fun `customerWithContacts is validated`() {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(
+                    .withCableReportApplicationData(
                         customerWithContacts =
                             ApplicationFactory.createCompanyCustomer(name = " ").withContacts()
                     )
@@ -209,7 +212,7 @@ class ApplicationValidatorTest {
         fun `contractorWithContacts is validated`() {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(
+                    .withCableReportApplicationData(
                         contractorWithContacts =
                             ApplicationFactory.createCompanyCustomer(name = " ").withContacts()
                     )
@@ -222,7 +225,7 @@ class ApplicationValidatorTest {
         fun `representativeWithContacts is validated when not null`() {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(
+                    .withCableReportApplicationData(
                         representativeWithContacts =
                             ApplicationFactory.createCompanyCustomer(name = " ").withContacts()
                     )
@@ -235,7 +238,7 @@ class ApplicationValidatorTest {
         fun `representativeWithContacts can be null`() {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(representativeWithContacts = null)
+                    .withCableReportApplicationData(representativeWithContacts = null)
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
@@ -244,7 +247,7 @@ class ApplicationValidatorTest {
         fun `propertyDeveloperWithContacts is validated when not null`() {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(
+                    .withCableReportApplicationData(
                         propertyDeveloperWithContacts =
                             ApplicationFactory.createCompanyCustomer(name = " ").withContacts()
                     )
@@ -257,7 +260,7 @@ class ApplicationValidatorTest {
         fun `propertyDeveloperWithContacts can be null`() {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(propertyDeveloperWithContacts = null)
+                    .withCableReportApplicationData(propertyDeveloperWithContacts = null)
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
@@ -275,7 +278,7 @@ class ApplicationValidatorTest {
         ) {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(
+                    .withCableReportApplicationData(
                         startTime = startTime,
                         endTime = endTime,
                     )
@@ -287,7 +290,7 @@ class ApplicationValidatorTest {
         fun `Start date before end date is allowed`() {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(
+                    .withCableReportApplicationData(
                         startTime = date,
                         endTime = date.plusDays(1),
                     )
@@ -299,7 +302,7 @@ class ApplicationValidatorTest {
         fun `Start date after end date throws exception`() {
             val application =
                 ApplicationFactory.createApplication()
-                    .withApplicationData(
+                    .withCableReportApplicationData(
                         startTime = date.plusDays(1),
                         endTime = date,
                     )
@@ -385,6 +388,39 @@ class ApplicationValidatorTest {
 
             assertFailure { applicationValidator.isValid(application, null) }
                 .hasClass(InvalidApplicationDataException::class)
+        }
+    }
+
+    @Nested
+    inner class InvoicingCustomerValidate {
+        @Test
+        fun `Valid OVT is allowed`() {
+            val businessId = "2182805-0"
+            val validOVT = "003721828050"
+            assertThat(validOVT.isValidOVT(businessId)).isTrue()
+            val invoicingCustomer =
+                ApplicationFactory.createCompanyInvoicingCustomer(
+                    registryKey = businessId,
+                    ovt = validOVT
+                )
+
+            assertThat(invoicingCustomer.validateForErrors("invoicingCustomer"))
+                .isEqualTo(ValidationResult.success())
+        }
+
+        @Test
+        fun `Invalid OVT produces failure`() {
+            val businessId = "2182805-0"
+            val invalidOVT = "003721828053"
+            assertThat(invalidOVT.isValidOVT(businessId)).isFalse()
+            val invoicingCustomer =
+                ApplicationFactory.createCompanyInvoicingCustomer(
+                    registryKey = businessId,
+                    ovt = invalidOVT
+                )
+
+            assertThat(invoicingCustomer.validateForErrors("invoicingCustomer"))
+                .isEqualTo(ValidationResult.failure("invoicingCustomer.ovt"))
         }
     }
 

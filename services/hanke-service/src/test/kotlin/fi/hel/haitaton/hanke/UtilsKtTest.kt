@@ -4,13 +4,14 @@ import assertk.assertThat
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
+import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.NullSource
 import org.junit.jupiter.params.provider.ValueSource
 
@@ -108,7 +109,7 @@ class UtilsKtTest {
                 ]
         )
         fun `isValid when valid businessId returns true`(businessId: String) {
-            assertTrue(businessId.isValidBusinessId())
+            assertThat(businessId.isValidBusinessId()).isTrue()
         }
 
         @ParameterizedTest
@@ -127,7 +128,38 @@ class UtilsKtTest {
         )
         @NullSource
         fun `isValid when not valid businessId returns false`(businessId: String?) {
-            assertFalse(businessId.isValidBusinessId())
+            assertThat(businessId.isValidBusinessId()).isFalse()
+        }
+    }
+
+    @Nested
+    inner class ValidOVT {
+
+        @ParameterizedTest
+        @CsvSource(
+            "003721828050,2182805-0",
+            "003721828050A,2182805-0",
+            "003721828050BB,2182805-0",
+            "003721828050CCC,2182805-0",
+            "003721828050D123,2182805-0",
+            "00372182805099999,2182805-0",
+            "003721828050,null",
+            nullValues = ["null"]
+        )
+        fun `returns true when is valid`(ovt: String, businessId: String?) {
+            assertThat(ovt.isValidOVT(businessId)).isTrue()
+        }
+
+        @ParameterizedTest
+        @CsvSource(
+            "null,2182805-0",
+            "113721828050,2182805-0",
+            "003721828050,7126070-7",
+            "003721828050AAAAAA,2182805-0",
+            nullValues = ["null"]
+        )
+        fun `returns false when is invalid`(ovt: String?, businessId: String?) {
+            assertThat(ovt.isValidOVT(businessId)).isFalse()
         }
     }
 }

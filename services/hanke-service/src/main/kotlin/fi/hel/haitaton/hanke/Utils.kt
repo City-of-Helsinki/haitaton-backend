@@ -13,6 +13,7 @@ private val logger = KotlinLogging.logger {}
 
 private val businessIdRegex = "^(\\d{7})-(\\d)\$".toRegex()
 private val businessIdMultipliers = listOf(7, 9, 10, 5, 8, 4, 2)
+private val ovtRegex = "^0037(\\d{8})[|\\w]{0,5}\$".toRegex()
 
 /**
  * Helper for mapping and sorting data to existing collections.
@@ -119,4 +120,33 @@ fun String?.isValidBusinessId(): Boolean {
         logger.warn { "Check digit doesn't match." }
         false
     }
+}
+
+/**
+ * Valid OVT ("verkkolaskuosoitteen vastaanottajan identifioiva osa") requirements:
+ * 1. format 0037NNNNNNNNXXXXX, where 0037 = "Suomen verohallinnon tunnus", NNNNNNNN = business id
+ *    without the dash ('-') and XXXXX is an optional reference (0-5 characters).
+ *
+ * Only verifies that the OVT is of valid form. It does not guarantee that it actually exists. Does
+ * NOT verify the given business id, only that it is included in the OVT (or is null).
+ */
+fun String?.isValidOVT(businessId: String?): Boolean {
+    logger.info { "Verifying OVT: $this" }
+
+    if (this == null) {
+        logger.warn { "OVT is null." }
+        return false
+    }
+
+    val matchResult = ovtRegex.find(this)
+    if (matchResult == null) {
+        logger.warn { "Invalid format." }
+        return false
+    }
+    if (businessId != null && matchResult.groups[1]!!.value != businessId.replace("-", "")) {
+        logger.warn { "OVT does not include business id." }
+        return false
+    }
+
+    return true
 }
