@@ -86,8 +86,12 @@ object Validators {
         fs.toList().firstOrNull { !it.isOk() } ?: ValidationResult.success()
 }
 
-class ValidationResult
-private constructor(private val errorPaths: MutableList<String> = mutableListOf()) {
+sealed class ValidationResult {
+    abstract val errorPaths: MutableList<String>
+
+    /** Using a data class here to avoid the need to implement equals and hashCode for the class. */
+    private data class Result(override val errorPaths: MutableList<String> = mutableListOf()) :
+        ValidationResult()
 
     fun errorPaths(): List<String> = errorPaths
 
@@ -131,9 +135,9 @@ private constructor(private val errorPaths: MutableList<String> = mutableListOf(
     }
 
     companion object {
-        fun success() = ValidationResult()
+        fun success(): ValidationResult = Result()
 
-        fun failure(errorPath: String) = ValidationResult(mutableListOf(errorPath))
+        fun failure(errorPath: String): ValidationResult = Result(mutableListOf(errorPath))
 
         fun <T> whenNotNull(value: T?, f: (T) -> ValidationResult): ValidationResult =
             success().whenNotNull(value, f)

@@ -19,7 +19,8 @@ class ApplicationValidator : ConstraintValidator<ValidApplication, BaseApplicati
         val result =
             when (val data = application.applicationData) {
                 is CableReportApplicationData -> validate { data.validateForErrors() }
-                is ExcavationNotificationData -> TODO("Excavation notification not implemented")
+                is ExcavationNotificationData ->
+                    throw NotImplementedError("Excavation notification not implemented")
             }
 
         return result.okOrThrow()
@@ -33,7 +34,8 @@ object ApplicationDataValidator {
             when (data) {
                 is CableReportApplicationData ->
                     validate { data.validateForErrors() }.and { data.validateForMissing() }
-                is ExcavationNotificationData -> TODO("Excavation notification not implemented")
+                is ExcavationNotificationData ->
+                    throw NotImplementedError("Excavation notification not implemented")
             }
 
         return result.okOrThrow()
