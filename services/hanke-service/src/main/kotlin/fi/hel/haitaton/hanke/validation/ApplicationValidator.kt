@@ -19,7 +19,8 @@ class ApplicationValidator : ConstraintValidator<ValidApplication, BaseApplicati
         val result =
             when (val data = application.applicationData) {
                 is CableReportApplicationData -> validate { data.validateForErrors() }
-                is ExcavationNotificationData -> validate { data.validateForErrors() }
+                is ExcavationNotificationData ->
+                    throw NotImplementedError("Excavation notification not implemented")
             }
 
         return result.okOrThrow()

@@ -10,6 +10,7 @@ import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
 import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.application.validation.validateForErrors
+import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplication
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationData
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCompanyCustomer
@@ -18,6 +19,7 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createExcavati
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCableReportApplicationData
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withExcavationNotificationData
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withInvoicingCustomer
 import fi.hel.haitaton.hanke.touch
 import fi.hel.haitaton.hanke.validation.ApplicationDataValidator.ensureValidForSend
 import java.util.stream.Stream
@@ -347,8 +349,44 @@ class ApplicationDataValidatorTest {
             val application =
                 createApplication(applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
                     .withExcavationNotificationData(propertyDeveloperWithContacts = null)
+            val applicationData = application.applicationData as ExcavationNotificationData
 
-            assertThat(applicationValidator.isValid(application, null)).isTrue()
+            assertThat(ensureValidForSend(applicationData)).isTrue()
+        }
+
+        @Test
+        fun `Valid OVT is allowed`() {
+            val businessId = "2182805-0"
+            val validOVT = "003721828050"
+            val application =
+                createApplication(applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withInvoicingCustomer(
+                        ApplicationFactory.createCompanyInvoicingCustomer(
+                            registryKey = businessId,
+                            ovt = validOVT
+                        )
+                    )
+            val applicationData = application.applicationData as ExcavationNotificationData
+
+            assertThat(ensureValidForSend(applicationData)).isTrue()
+        }
+
+        @Test
+        fun `Invalid OVT produces failure`() {
+            val businessId = "2182805-0"
+            val invalidOVT = "003721828053"
+            val application =
+                createApplication(applicationType = ApplicationType.EXCAVATION_NOTIFICATION)
+                    .withInvoicingCustomer(
+                        ApplicationFactory.createCompanyInvoicingCustomer(
+                            registryKey = businessId,
+                            ovt = invalidOVT
+                        )
+                    )
+            val applicationData = application.applicationData as ExcavationNotificationData
+
+            assertFailure { ensureValidForSend(applicationData) }
+                .hasClass(InvalidApplicationDataException::class)
         }
     }
 }

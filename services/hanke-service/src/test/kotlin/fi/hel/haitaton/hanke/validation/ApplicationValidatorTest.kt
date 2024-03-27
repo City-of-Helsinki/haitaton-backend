@@ -4,20 +4,18 @@ import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.hasClass
 import assertk.assertions.isEmpty
+import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isTrue
-import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
-import fi.hel.haitaton.hanke.application.ExcavationNotificationData
+import fi.hel.haitaton.hanke.application.validation.validateForErrors
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCableReportApplicationData
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomerContacts
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withExcavationNotificationData
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withInvoicingCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withPostalAddress
 import fi.hel.haitaton.hanke.isValidBusinessId
 import fi.hel.haitaton.hanke.isValidOVT
@@ -269,183 +267,6 @@ class ApplicationValidatorTest {
     }
 
     @Nested
-    @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-    inner class ExcavationNotificationDataValidate {
-
-        private val baseAppData = ApplicationFactory.createExcavationNotificationData()
-
-        private fun notJustWhitespaceCases(content: String): Stream<Arguments> =
-            Stream.of(
-                Arguments.of("name", baseAppData.copy(name = content)),
-                Arguments.of("workDescription", baseAppData.copy(workDescription = content)),
-                Arguments.of("customerReferences", baseAppData.copy(customerReference = content)),
-                Arguments.of("additionalInfo", baseAppData.copy(additionalInfo = content)),
-            )
-
-        private fun justWhitespaceCases(): Stream<Arguments> = notJustWhitespaceCases(" ")
-
-        private fun emptyCases(): Stream<Arguments> = notJustWhitespaceCases("")
-
-        private fun textCases(): Stream<Arguments> = notJustWhitespaceCases("Some Text")
-
-        @ParameterizedTest(name = "{0} should not be just whitespace")
-        @MethodSource("justWhitespaceCases")
-        fun `value should not be just whitespace`(
-            case: String,
-            applicationData: ExcavationNotificationData
-        ) {
-            case.touch()
-            val application =
-                ApplicationFactory.createApplication(
-                    applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                    applicationData = applicationData
-                )
-
-            assertFailure { applicationValidator.isValid(application, null) }
-                .hasClass(InvalidApplicationDataException::class)
-        }
-
-        @ParameterizedTest(name = "{0} can be empty")
-        @MethodSource("emptyCases")
-        fun `value can be empty`(case: String, applicationData: ExcavationNotificationData) {
-            case.touch()
-            val application =
-                ApplicationFactory.createApplication(
-                    applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                    applicationData = applicationData
-                )
-
-            assertThat(applicationValidator.isValid(application, null)).isTrue()
-        }
-
-        @ParameterizedTest(name = "{0} can have text with whitespaces")
-        @MethodSource("textCases")
-        fun `value can have text with whitespaces`(
-            case: String,
-            applicationData: ExcavationNotificationData
-        ) {
-            case.touch()
-            val application =
-                ApplicationFactory.createApplication(
-                    applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                    applicationData = applicationData
-                )
-
-            assertThat(applicationValidator.isValid(application, null)).isTrue()
-        }
-
-        @Test
-        fun `customerWithContacts is validated`() {
-            val application =
-                ApplicationFactory.createApplication(
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                    )
-                    .withExcavationNotificationData(
-                        customerWithContacts =
-                            ApplicationFactory.createCompanyCustomer(name = " ").withContacts()
-                    )
-
-            assertFailure { applicationValidator.isValid(application, null) }
-                .hasClass(InvalidApplicationDataException::class)
-        }
-
-        @Test
-        fun `contractorWithContacts is validated`() {
-            val application =
-                ApplicationFactory.createApplication(
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                    )
-                    .withExcavationNotificationData(
-                        contractorWithContacts =
-                            ApplicationFactory.createCompanyCustomer(name = " ").withContacts()
-                    )
-
-            assertFailure { applicationValidator.isValid(application, null) }
-                .hasClass(InvalidApplicationDataException::class)
-        }
-
-        @Test
-        fun `representativeWithContacts is validated when not null`() {
-            val application =
-                ApplicationFactory.createApplication(
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                    )
-                    .withExcavationNotificationData(
-                        representativeWithContacts =
-                            ApplicationFactory.createCompanyCustomer(name = " ").withContacts()
-                    )
-
-            assertFailure { applicationValidator.isValid(application, null) }
-                .hasClass(InvalidApplicationDataException::class)
-        }
-
-        @Test
-        fun `representativeWithContacts can be null`() {
-            val application =
-                ApplicationFactory.createApplication(
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                    )
-                    .withExcavationNotificationData(representativeWithContacts = null)
-
-            assertThat(applicationValidator.isValid(application, null)).isTrue()
-        }
-
-        @Test
-        fun `propertyDeveloperWithContacts is validated when not null`() {
-            val application =
-                ApplicationFactory.createApplication(
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                    )
-                    .withExcavationNotificationData(
-                        propertyDeveloperWithContacts =
-                            ApplicationFactory.createCompanyCustomer(name = " ").withContacts()
-                    )
-
-            assertFailure { applicationValidator.isValid(application, null) }
-                .hasClass(InvalidApplicationDataException::class)
-        }
-
-        @Test
-        fun `propertyDeveloperWithContacts can be null`() {
-            val application =
-                ApplicationFactory.createApplication(
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                    )
-                    .withExcavationNotificationData(propertyDeveloperWithContacts = null)
-
-            assertThat(applicationValidator.isValid(application, null)).isTrue()
-        }
-
-        @Test
-        fun `invoicingCustomer is validated when not null`() {
-            val application =
-                ApplicationFactory.createApplication(
-                    applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                    applicationData =
-                        ApplicationFactory.createExcavationNotificationData()
-                            .copy(
-                                invoicingCustomer =
-                                    ApplicationFactory.createCompanyInvoicingCustomer(name = " ")
-                            )
-                )
-
-            assertFailure { applicationValidator.isValid(application, null) }
-                .hasClass(InvalidApplicationDataException::class)
-        }
-
-        @Test
-        fun `invoicingCustomer can be null`() {
-            val application =
-                ApplicationFactory.createApplication(
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
-                    )
-                    .withExcavationNotificationData(invoicingCustomer = null)
-
-            assertThat(applicationValidator.isValid(application, null)).isTrue()
-        }
-    }
-
-    @Nested
     inner class StartBeforeEnd {
         private val date: ZonedDateTime = ZonedDateTime.parse("2023-01-12T14:30:41Z")
 
@@ -577,38 +398,29 @@ class ApplicationValidatorTest {
             val businessId = "2182805-0"
             val validOVT = "003721828050"
             assertThat(validOVT.isValidOVT(businessId)).isTrue()
-            val application =
-                ApplicationFactory.createApplication(
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                    )
-                    .withInvoicingCustomer(
-                        ApplicationFactory.createCompanyInvoicingCustomer(
-                            registryKey = businessId,
-                            ovt = validOVT
-                        )
-                    )
+            val invoicingCustomer =
+                ApplicationFactory.createCompanyInvoicingCustomer(
+                    registryKey = businessId,
+                    ovt = validOVT
+                )
 
-            assertThat(applicationValidator.isValid(application, null)).isTrue()
+            assertThat(invoicingCustomer.validateForErrors("invoicingCustomer"))
+                .isEqualTo(ValidationResult.success())
         }
 
         @Test
-        fun `Invalid OVT throws exception`() {
+        fun `Invalid OVT produces failure`() {
             val businessId = "2182805-0"
             val invalidOVT = "003721828053"
             assertThat(invalidOVT.isValidOVT(businessId)).isFalse()
-            val application =
-                ApplicationFactory.createApplication(
-                        applicationType = ApplicationType.EXCAVATION_NOTIFICATION
-                    )
-                    .withInvoicingCustomer(
-                        ApplicationFactory.createCompanyInvoicingCustomer(
-                            registryKey = businessId,
-                            ovt = invalidOVT
-                        )
-                    )
+            val invoicingCustomer =
+                ApplicationFactory.createCompanyInvoicingCustomer(
+                    registryKey = businessId,
+                    ovt = invalidOVT
+                )
 
-            assertFailure { applicationValidator.isValid(application, null) }
-                .hasClass(InvalidApplicationDataException::class)
+            assertThat(invoicingCustomer.validateForErrors("invoicingCustomer"))
+                .isEqualTo(ValidationResult.failure("invoicingCustomer.ovt"))
         }
     }
 
