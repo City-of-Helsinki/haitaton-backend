@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
@@ -19,9 +20,11 @@ import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaInput
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import java.time.ZonedDateTime
 
 data class HakemusBuilder(
     private var applicationEntity: ApplicationEntity,
+    private var hankeId: Int,
     private val userId: String,
     private val hakemusFactory: HakemusFactory,
     private val hakemusService: HakemusService,
@@ -47,51 +50,91 @@ data class HakemusBuilder(
     fun withStatus(
         status: ApplicationStatus = ApplicationStatus.PENDING,
         alluId: Int = 1,
-        identifier: String = "JS000$alluId"
+        identifier: String = "JS000$alluId",
     ): HakemusBuilder {
-        applicationEntity =
-            applicationEntity.copy(
-                alluid = alluId,
-                alluStatus = status,
-                applicationIdentifier = identifier
-            )
+        applicationEntity.apply {
+            alluid = alluId
+            alluStatus = status
+            applicationIdentifier = identifier
+        }
         return this
     }
 
     fun inHandling(alluId: Int = 1) = withStatus(ApplicationStatus.HANDLING, alluId)
 
-    fun withName(name: String): HakemusBuilder = apply {
-        when (applicationEntity.applicationType) {
-            ApplicationType.CABLE_REPORT -> {
-                onCableReport { copy(name = name) }
-            }
-            ApplicationType.EXCAVATION_NOTIFICATION -> {
-                onExcavationNotification { copy(name = name) }
-            }
-        }
-    }
+    fun withName(name: String): HakemusBuilder =
+        updateApplicationData(
+            { copy(name = name) },
+            { copy(name = name) },
+        )
 
-    fun withWorkDescription(workDescription: String): HakemusBuilder = apply {
-        when (applicationEntity.applicationType) {
-            ApplicationType.CABLE_REPORT -> {
-                onCableReport { copy(workDescription = workDescription) }
-            }
-            ApplicationType.EXCAVATION_NOTIFICATION -> {
-                onExcavationNotification { copy(workDescription = workDescription) }
-            }
-        }
-    }
+    fun withWorkDescription(workDescription: String): HakemusBuilder =
+        updateApplicationData(
+            { copy(workDescription = workDescription) },
+            { copy(workDescription = workDescription) },
+        )
 
-    private fun onCableReport(f: CableReportApplicationData.() -> CableReportApplicationData) {
+    fun withPendingOnClient(pendingOnClient: Boolean) =
+        updateApplicationData(
+            { copy(pendingOnClient = pendingOnClient) },
+            { copy(pendingOnClient = pendingOnClient) },
+        )
+
+    fun withArea(area: ApplicationArea = ApplicationFactory.createApplicationArea()) =
+        updateApplicationData(
+            { copy(areas = (areas ?: listOf()).plus(area)) },
+            { copy(areas = (areas ?: listOf()).plus(area)) },
+        )
+
+    fun withStartTime(time: ZonedDateTime? = DateFactory.getStartDatetime()) =
+        updateApplicationData(
+            { copy(startTime = time) },
+            { copy(startTime = time) },
+        )
+
+    fun withEndTime(time: ZonedDateTime? = DateFactory.getEndDatetime()) =
+        updateApplicationData(
+            { copy(endTime = time) },
+            { copy(endTime = time) },
+        )
+
+    fun withRockExcavation(rockExcavation: Boolean?) =
+        updateApplicationData(
+            { copy(rockExcavation = rockExcavation) },
+            { copy(rockExcavation = rockExcavation) },
+        )
+
+    private fun updateApplicationData(
+        onCableReport: CableReportApplicationData.() -> CableReportApplicationData,
+        onExcavationNotification:
+            ExcavationNotificationApplicationData.() -> ExcavationNotificationApplicationData,
+    ) = apply {
         applicationEntity.applicationData =
-            (applicationEntity.applicationData as CableReportApplicationData).f()
+            when (applicationEntity.applicationType) {
+                ApplicationType.CABLE_REPORT -> {
+                    (applicationEntity.applicationData as CableReportApplicationData)
+                        .onCableReport()
+                }
+                ApplicationType.EXCAVATION_NOTIFICATION -> {
+                    (applicationEntity.applicationData as ExcavationNotificationApplicationData)
+                        .onExcavationNotification()
+                }
+            }
     }
 
-    private fun onExcavationNotification(
-        f: ExcavationNotificationApplicationData.() -> ExcavationNotificationApplicationData
-    ) {
-        (applicationEntity.applicationData as ExcavationNotificationApplicationData).f()
-    }
+    /** Set all the fields that need to be set for the application to be valid for sending. */
+    fun withMandatoryFields() =
+        withName(ApplicationFactory.DEFAULT_APPLICATION_NAME)
+            .withWorkDescription(ApplicationFactory.DEFAULT_WORK_DESCRIPTION)
+            .withStartTime()
+            .withEndTime()
+            .withArea()
+            .withRockExcavation(false)
+            .hakija()
+            .tyonSuorittaja(founder())
+
+    private fun founder(): HankekayttajaEntity =
+        hankeKayttajaService.getKayttajaByUserId(hankeId, userId)!!
 
     fun hakija(
         yhteystieto: Hakemusyhteystieto = HakemusyhteystietoFactory.create(),

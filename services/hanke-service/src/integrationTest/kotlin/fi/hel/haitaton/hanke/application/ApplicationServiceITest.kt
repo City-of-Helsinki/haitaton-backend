@@ -2,23 +2,27 @@ package fi.hel.haitaton.hanke.application
 
 import assertk.Assert
 import assertk.all
+import assertk.assertFailure
 import assertk.assertThat
 import assertk.assertions.contains
 import assertk.assertions.containsExactly
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.each
 import assertk.assertions.extracting
+import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
 import assertk.assertions.isIn
+import assertk.assertions.isNotEmpty
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.isPresent
 import assertk.assertions.isTrue
 import assertk.assertions.matches
+import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
@@ -52,6 +56,7 @@ import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.AlluFactory.createAlluApplicationResponse
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.DEFAULT_WORK_DESCRIPTION
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_EMAIL
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TEPPO_PHONE
@@ -379,17 +384,20 @@ class ApplicationServiceITest : IntegrationTest() {
                     areas = application.applicationData.areas
                 )
 
-            val exception =
-                assertThrows<ApplicationAlreadySentException> {
-                    applicationService.updateApplicationData(
-                        application.id!!,
-                        newApplicationData,
-                        USERNAME
-                    )
-                }
+            val exception = assertFailure {
+                applicationService.updateApplicationData(
+                    application.id!!,
+                    newApplicationData,
+                    USERNAME
+                )
+            }
 
-            assertThat(exception.message)
-                .isEqualTo("Application is already sent to Allu, id=${application.id}, alluid=21")
+            exception.all {
+                hasClass(ApplicationAlreadySentException::class)
+                messageContains(application.id.toString())
+                messageContains(application.alluid.toString())
+                messageContains(application.alluStatus.toString())
+            }
         }
 
         @Test
@@ -692,9 +700,13 @@ class ApplicationServiceITest : IntegrationTest() {
         }
 
         @Test
-        fun `Skips the area inside hanke check with a generated hanke`() {
-            val (initialApplication, _) = hankeFactory.builder(USERNAME).saveAsGenerated()
-            assertFalse(initialApplication.applicationData.areas.isNullOrEmpty())
+        fun `Skips the check for application areas inside hankealueet when the hanke is generated`() {
+            val (initialApplication, hanke) = hankeFactory.builder(USERNAME).saveAsGenerated()
+            val areas = initialApplication.applicationData.areas!!
+            assertThat(areas).isNotEmpty()
+            val entity = hankeRepository.getReferenceById(hanke.id)
+            hankeRepository.save(entity.apply { alueet = mutableListOf() })
+            assertThat(geometriatDao.isInsideHankeAlueet(hanke.id, areas[0].geometry)).isFalse()
             val alluIdMock = 123
             every { cableReportServiceAllu.create(any()) } returns alluIdMock
             every { cableReportServiceAllu.getApplicationInformation(alluIdMock) } returns
@@ -1574,7 +1586,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 "startTime": "${nextYear()}-02-20T23:45:56Z",
                 "endTime": "${nextYear()}-02-21T00:12:34Z",
                 "pendingOnClient": true,
-                "workDescription": "Työn kuvaus.",
+                "workDescription": "$DEFAULT_WORK_DESCRIPTION",
                 "rockExcavation": false,
                 "contractorWithContacts": {
                   ${customerWithContactsJson(orderer = false)}

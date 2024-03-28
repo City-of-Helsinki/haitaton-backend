@@ -57,7 +57,7 @@ data class JohtoselvityshakemusUpdateRequest(
     /** Työn nimi */
     override val name: String,
     /** Katuosoite */
-    val postalAddress: PostalAddressRequest,
+    val postalAddress: PostalAddressRequest?,
     /** Työssä on kyse: Uuden rakenteen tai johdon rakentamisesta */
     val constructionWork: Boolean,
     /** Työssä on kyse: Olemassaolevan rakenteen kunnossapitotyöstä */
@@ -96,7 +96,7 @@ data class JohtoselvityshakemusUpdateRequest(
     override fun hasChanges(applicationEntity: ApplicationEntity): Boolean {
         val applicationData = applicationEntity.applicationData as CableReportApplicationData
         return name != applicationData.name ||
-            (postalAddress.streetAddress.streetName ?: "") !=
+            (postalAddress?.streetAddress?.streetName ?: "") !=
                 (applicationData.postalAddress?.streetAddress?.streetName ?: "") ||
             constructionWork != applicationData.constructionWork ||
             maintenanceWork != applicationData.maintenanceWork ||
@@ -125,7 +125,7 @@ data class JohtoselvityshakemusUpdateRequest(
         (baseData as CableReportApplicationData).copy(
             name = this.name,
             postalAddress =
-                PostalAddress(StreetAddress(this.postalAddress.streetAddress.streetName), "", ""),
+                PostalAddress(StreetAddress(this.postalAddress?.streetAddress?.streetName), "", ""),
             constructionWork = this.constructionWork,
             maintenanceWork = this.maintenanceWork,
             propertyConnectivity = this.propertyConnectivity,
