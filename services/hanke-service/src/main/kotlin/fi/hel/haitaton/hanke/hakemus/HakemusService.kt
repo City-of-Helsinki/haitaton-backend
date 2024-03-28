@@ -37,13 +37,12 @@ class HakemusService(
     private val hakemusLoggingService: HakemusLoggingService,
     private val hankeKayttajaService: HankeKayttajaService,
 ) {
+
     @Transactional(readOnly = true)
-    fun hakemusResponse(applicationId: Long): HakemusResponse {
-        val applicationEntity =
-            applicationRepository.findOneById(applicationId)
-                ?: throw ApplicationNotFoundException(applicationId)
-        return hakemusResponseWithYhteystiedot(applicationEntity)
-    }
+    fun getById(applicationId: Long): Hakemus = getEntityById(applicationId).toHakemus()
+
+    @Transactional(readOnly = true)
+    fun hakemusResponse(applicationId: Long): HakemusResponse = getById(applicationId).toResponse()
 
     @Transactional(readOnly = true)
     fun hankkeenHakemuksetResponse(hankeTunnus: String): HankkeenHakemuksetResponse {
@@ -109,7 +108,7 @@ class HakemusService(
             logger.info(
                 "Not updating unchanged application data. id=$applicationId, identifier=${applicationEntity.applicationIdentifier}"
             )
-            return hakemusResponseWithYhteystiedot(applicationEntity)
+            return hakemus.toResponse()
         }
 
         assertGeometryValidity(request.areas) { validationError ->
@@ -130,13 +129,17 @@ class HakemusService(
             updateHankealueet(hankeEntity, request)
         }
 
-        val updatedApplicationEntity = saveWithUpdate(applicationEntity, request)
+        val updatedHakemus = saveWithUpdate(applicationEntity, request).toHakemus()
 
         logger.info("Updated application id=${applicationId}")
-        hakemusLoggingService.logUpdate(hakemus, updatedApplicationEntity.toHakemus(), userId)
+        hakemusLoggingService.logUpdate(hakemus, updatedHakemus, userId)
 
-        return hakemusResponseWithYhteystiedot(updatedApplicationEntity)
+        return updatedHakemus.toResponse()
     }
+
+    /** Find the application entity or throw an exception. */
+    private fun getEntityById(id: Long): ApplicationEntity =
+        applicationRepository.findOneById(id) ?: throw ApplicationNotFoundException(id)
 
     /** Assert that the application has not been sent to Allu. */
     private fun assertNotSent(applicationEntity: ApplicationEntity) {
@@ -334,67 +337,6 @@ class HakemusService(
             hakemusyhteystietoEntity
         )
     }
-
-    private fun hakemusResponseWithYhteystiedot(applicationEntity: ApplicationEntity) =
-        HakemusResponse(
-            applicationEntity.id!!,
-            applicationEntity.alluid,
-            applicationEntity.alluStatus,
-            applicationEntity.applicationIdentifier,
-            applicationEntity.applicationType,
-            hakemusDataResponseWithYhteystiedot(
-                applicationEntity.applicationData,
-                applicationEntity.yhteystiedot
-            ),
-            applicationEntity.hanke.hankeTunnus
-        )
-
-    private fun hakemusDataResponseWithYhteystiedot(
-        applicationData: ApplicationData,
-        hakemusyhteystiedot: Map<ApplicationContactType, HakemusyhteystietoEntity>
-    ) =
-        when (applicationData) {
-            is CableReportApplicationData ->
-                JohtoselvitysHakemusDataResponse(
-                    applicationData.applicationType,
-                    applicationData.pendingOnClient,
-                    applicationData.name,
-                    applicationData.postalAddress,
-                    applicationData.constructionWork,
-                    applicationData.maintenanceWork,
-                    applicationData.propertyConnectivity,
-                    applicationData.emergencyWork,
-                    applicationData.rockExcavation,
-                    applicationData.workDescription,
-                    applicationData.startTime,
-                    applicationData.endTime,
-                    applicationData.areas ?: listOf(),
-                    customerWithContactsResponseWithYhteystiedot(
-                        hakemusyhteystiedot[ApplicationContactType.HAKIJA]
-                    ),
-                    customerWithContactsResponseWithYhteystiedot(
-                        hakemusyhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
-                    ),
-                    customerWithContactsResponseWithYhteystiedot(
-                        hakemusyhteystiedot[ApplicationContactType.RAKENNUTTAJA]
-                    ),
-                    customerWithContactsResponseWithYhteystiedot(
-                        hakemusyhteystiedot[ApplicationContactType.ASIANHOITAJA]
-                    ),
-                )
-            is ExcavationNotificationApplicationData ->
-                TODO("Excavation notification not implemented")
-        }
-
-    private fun customerWithContactsResponseWithYhteystiedot(
-        hakemusyhteystieto: HakemusyhteystietoEntity?
-    ): CustomerWithContactsResponse? =
-        hakemusyhteystieto?.let {
-            val customer = it.toCustomerResponse()
-            val contacts =
-                it.yhteyshenkilot.map { yhteyshenkilo -> yhteyshenkilo.toContactResponse() }
-            CustomerWithContactsResponse(customer, contacts)
-        }
 
     private fun CustomerWithContactsRequest.toNewHakemusyhteystietoEntity(
         rooli: ApplicationContactType,

@@ -287,7 +287,7 @@ class HankekayttajaDeleteServiceITest(
                 .single()
                 .prop(Yhteyshenkilo::id)
                 .isNotEqualTo(founder.id)
-            assertThat(hakemusService.hakemusResponse(draftHakemus.id!!))
+            assertThat(hakemusService.hakemusResponse(draftHakemus.id))
                 .isNotNull()
                 .prop(HakemusResponse::applicationData)
                 .prop(HakemusDataResponse::customerWithContacts)

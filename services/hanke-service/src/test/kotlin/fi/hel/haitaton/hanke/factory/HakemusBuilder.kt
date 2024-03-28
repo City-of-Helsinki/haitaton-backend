@@ -8,6 +8,8 @@ import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.ExcavationNotificationApplicationData
+import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloEntity
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
@@ -22,6 +24,7 @@ data class HakemusBuilder(
     private var applicationEntity: ApplicationEntity,
     private val userId: String,
     private val hakemusFactory: HakemusFactory,
+    private val hakemusService: HakemusService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val applicationRepository: ApplicationRepository,
     private val hankeRepository: HankeRepository,
@@ -29,7 +32,9 @@ data class HakemusBuilder(
     private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
     private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
 ) {
-    fun save(): ApplicationEntity {
+    fun save(): Hakemus = hakemusService.getById(saveEntity().id!!)
+
+    fun saveEntity(): ApplicationEntity {
         val savedApplication = applicationRepository.save(applicationEntity)
         savedApplication.yhteystiedot.forEach { (_, yhteystieto) ->
             yhteystieto.yhteyshenkilot.forEach { yhteyshenkilo ->

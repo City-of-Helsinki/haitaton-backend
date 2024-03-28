@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
+import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -227,6 +228,16 @@ class HakemusController(
     fun applicationGeometryException(ex: ApplicationGeometryException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2005
+    }
+
+    @ExceptionHandler(ApplicationGeometryNotInsideHankeException::class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @Hidden
+    fun applicationGeometryNotInsideHankeException(
+        ex: ApplicationGeometryNotInsideHankeException
+    ): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2007
     }
 
     @ExceptionHandler(InvalidHakemusyhteystietoException::class)
