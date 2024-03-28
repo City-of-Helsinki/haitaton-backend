@@ -11,6 +11,7 @@ import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusData
+import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteyshenkiloRepository
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoRepository
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Component
 @Component
 class HakemusFactory(
     private val hankeKayttajaService: HankeKayttajaService,
+    private val hakemusService: HakemusService,
     private val applicationRepository: ApplicationRepository,
     private val hankeRepository: HankeRepository,
     private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
@@ -39,6 +41,7 @@ class HakemusFactory(
             applicationEntity,
             userId,
             this,
+            hakemusService,
             hankeKayttajaService,
             applicationRepository,
             hankeRepository,
