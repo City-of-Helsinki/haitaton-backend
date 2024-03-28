@@ -4,6 +4,10 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
+import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
+import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
+import fi.hel.haitaton.hanke.allu.CableReportService
+import fi.hel.haitaton.hanke.application.ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType
@@ -16,7 +20,9 @@ import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.ExcavationNotificationApplicationData
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
+import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
@@ -36,6 +42,8 @@ class HakemusService(
     private val hankealueService: HankealueService,
     private val hakemusLoggingService: HakemusLoggingService,
     private val hankeKayttajaService: HankeKayttajaService,
+    private val attachmentService: ApplicationAttachmentService,
+    private val alluClient: CableReportService,
 ) {
 
     @Transactional(readOnly = true)
@@ -96,9 +104,7 @@ class HakemusService(
     ): HakemusResponse {
         logger.info("Updating application id=$applicationId")
 
-        val applicationEntity =
-            applicationRepository.findOneById(applicationId)
-                ?: throw ApplicationNotFoundException(applicationId)
+        val applicationEntity = getEntityById(applicationId)
         val hakemus = applicationEntity.toHakemus() // the original state for audit logging
 
         assertNotSent(applicationEntity)
@@ -137,15 +143,154 @@ class HakemusService(
         return updatedHakemus.toResponse()
     }
 
+    @Transactional
+    fun sendHakemus(id: Long, currentUserId: String): Hakemus {
+        val hakemus = getEntityById(id)
+
+        setOrderedOnSend(hakemus, currentUserId)
+
+        val hanke = hakemus.hanke
+        if (!hanke.generated) {
+            hakemus.applicationData.areas?.let { areas ->
+                assertGeometryCompatibility(hanke.id, areas) { applicationArea ->
+                    "Application geometry doesn't match any hankealue when sending application for user $currentUserId, " +
+                        "${hanke.logString()}, hakemusId=${hakemus.id}, " +
+                        "application geometry=${applicationArea.geometry.toJsonString()}"
+                }
+            }
+        }
+
+        assertNotSent(hakemus)
+
+        // The application should no longer be a draft
+        hakemus.applicationData = hakemus.applicationData.copy(pendingOnClient = false)
+
+        logger.info("Sending hakemus id=$id")
+        hakemus.alluid = createApplicationInAllu(hakemus.toHakemus())
+
+        logger.info {
+            "Application sent, fetching application identifier and status. id=$id, alluid=${hakemus.alluid}."
+        }
+        getApplicationInformationFromAllu(hakemus.alluid!!)?.let { response ->
+            hakemus.applicationIdentifier = response.applicationId
+            hakemus.alluStatus = response.status
+        }
+
+        logger.info(
+            "Sent application id=$id, alluid=${hakemus.alluid}, alluStatus = ${hakemus.alluStatus}"
+        )
+        // Save only if sendApplicationToAllu didn't throw an exception
+        return applicationRepository.save(hakemus).toHakemus()
+    }
+
     /** Find the application entity or throw an exception. */
     private fun getEntityById(id: Long): ApplicationEntity =
         applicationRepository.findOneById(id) ?: throw ApplicationNotFoundException(id)
 
+    private fun setOrderedOnSend(hakemus: ApplicationEntity, currentUserId: String) {
+        val yhteyshenkilo: HakemusyhteyshenkiloEntity =
+            listOf(
+                    ApplicationContactType.HAKIJA,
+                    ApplicationContactType.TYON_SUORITTAJA,
+                    ApplicationContactType.RAKENNUTTAJA,
+                    ApplicationContactType.ASIANHOITAJA
+                )
+                .asSequence()
+                .mapNotNull { hakemus.yhteystiedot[it] }
+                .flatMap { it.yhteyshenkilot }
+                .find { it.hankekayttaja.permission?.userId == currentUserId }
+                ?: throw UserNotInContactsException(hakemus.id!!, currentUserId)
+        yhteyshenkilo.tilaaja = true
+    }
+
     /** Assert that the application has not been sent to Allu. */
     private fun assertNotSent(applicationEntity: ApplicationEntity) {
         if (applicationEntity.alluid != null) {
-            throw ApplicationAlreadySentException(applicationEntity.id, applicationEntity.alluid)
+            throw ApplicationAlreadySentException(
+                applicationEntity.id,
+                applicationEntity.alluid,
+                applicationEntity.alluStatus
+            )
         }
+    }
+
+    private fun getApplicationInformationFromAllu(alluid: Int): AlluApplicationResponse? {
+        return try {
+            alluClient.getApplicationInformation(alluid)
+        } catch (e: Exception) {
+            logger.error(e) { "Exception while getting application information." }
+            null
+        }
+    }
+
+    /** Creates new application in Allu. All attachments are sent after creation. */
+    private fun createApplicationInAllu(hakemus: Hakemus): Int {
+        HakemusDataValidator.ensureValidForSend(hakemus.applicationData)
+        val alluId =
+            when (val data = hakemus.applicationData) {
+                is JohtoselvityshakemusData ->
+                    createCableReportToAllu(hakemus.id, hakemus.hankeTunnus, data)
+            }
+        try {
+            attachmentService.sendInitialAttachments(alluId, hakemus.id)
+        } catch (e: Exception) {
+            logger.error(e) {
+                "Error while sending the initial attachments. Canceling the application. " +
+                    "id=${hakemus.id}, alluid=$alluId"
+            }
+            alluClient.cancel(alluId)
+            alluClient.sendSystemComment(alluId, ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG)
+            throw e
+        }
+
+        return alluId
+    }
+
+    private fun createCableReportToAllu(
+        applicationId: Long,
+        hankeTunnus: String,
+        hakemusData: JohtoselvityshakemusData
+    ): Int {
+        val alluData = hakemusData.toAlluData(hankeTunnus)
+
+        return withFormDataPdfUploading(hakemusData) {
+            withDisclosureLogging(applicationId, alluData) { alluClient.create(alluData) }
+        }
+    }
+
+    /**
+     * Transform the data in the Haitaton application form to a PDF and send it to Allu as an
+     * attachment.
+     *
+     * Form the PDF file before running the action in allu (create or update). This way, if there's
+     * a problem with creating the PDF, the application is not added or updated.
+     *
+     * Keep going even if the PDF upload fails for some reason. The application has already been
+     * created/updated in Allu, so it's too late to stop on an exception. Failing to upload the PDF
+     * is also not reason enough to cancel the application in Allu.
+     *
+     * @param alluAction The action to perform in Allu. Must return the application's Allu ID.
+     */
+    private fun withFormDataPdfUploading(
+        cableReport: JohtoselvityshakemusData,
+        alluAction: () -> Int
+    ): Int {
+        // TODO: Update PDF sending to handle Hakemusdata
+        return alluAction()
+    }
+
+    /**
+     * Save disclosure logs for the personal information inside the application. Determine the
+     * status of the operation from whether there were exceptions or not. Don't save logging
+     * failures, since personal data was not yet disclosed.
+     */
+    private fun <T> withDisclosureLogging(
+        applicationId: Long,
+        alluApplicationData: AlluCableReportApplicationData,
+        f: () -> T,
+    ): T {
+        // TODO: Update Disclosure logs to handle Hakemusdata
+        return f()
     }
 
     /** Assert that the update request is compatible with the application data. */
@@ -417,3 +562,8 @@ class InvalidHakemusyhteystietoException(
     )
 
 class InvalidHakemusyhteyshenkiloException(message: String) : RuntimeException(message)
+
+class UserNotInContactsException(applicationId: Long, userId: String) :
+    RuntimeException(
+        "Sending user is not a contact on the application applicationId=$applicationId, userId=$userId"
+    )

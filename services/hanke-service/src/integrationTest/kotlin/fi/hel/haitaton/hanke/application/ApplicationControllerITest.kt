@@ -11,7 +11,9 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.andReturnBody
+import fi.hel.haitaton.hanke.andReturnContent
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomerContacts
@@ -393,12 +395,12 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                     )
                     .toCableReportWithoutHanke()
 
-            val result =
+            val response =
                 post("$BASE_URL/johtoselvitys", applicationInput)
                     .andExpect(status().isBadRequest)
-                    .andReturn()
+                    .andReturnContent()
 
-            assertThat(result.response.contentAsString)
+            assertThat(response)
                 .isEqualTo(
                     HankeErrorDetail(
                             HankeError.HAI2008,
@@ -441,10 +443,12 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                 )
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
 
-            val result =
-                put("$BASE_URL/$id", application).andExpect(status().isBadRequest).andReturn()
+            val response =
+                put("$BASE_URL/$id", application)
+                    .andExpect(status().isBadRequest)
+                    .andReturnContent()
 
-            assertThat(result.response.contentAsString)
+            assertThat(response)
                 .isEqualTo(HankeErrorDetail(HankeError.HAI2008, listOf("endTime")).toJsonString())
             verify {
                 authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
@@ -524,9 +528,11 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             } throws InvalidApplicationDataException(mockErrorPaths)
 
             val response =
-                put("$BASE_URL/$id", application).andExpect(status().isBadRequest).andReturn()
+                put("$BASE_URL/$id", application)
+                    .andExpect(status().isBadRequest)
+                    .andReturnContent()
 
-            assertThat(response.response.contentAsString)
+            assertThat(response)
                 .isEqualTo(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString())
             verifySequence {
                 authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
@@ -551,7 +557,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
             every {
                 applicationService.updateApplicationData(id, application.applicationData, USERNAME)
-            } throws ApplicationAlreadySentException(id, 21)
+            } throws ApplicationAlreadySentException(id, 21, ApplicationStatus.HANDLING)
 
             put("$BASE_URL/$id", application)
                 .andExpect(status().isConflict)
@@ -674,9 +680,11 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                 InvalidApplicationDataException(mockErrorPaths)
 
             val response =
-                post("$BASE_URL/$id/send-application").andExpect(status().isBadRequest).andReturn()
+                post("$BASE_URL/$id/send-application")
+                    .andExpect(status().isBadRequest)
+                    .andReturnContent()
 
-            assertThat(response.response.contentAsString)
+            assertThat(response)
                 .isEqualTo(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString())
             verifySequence {
                 authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)

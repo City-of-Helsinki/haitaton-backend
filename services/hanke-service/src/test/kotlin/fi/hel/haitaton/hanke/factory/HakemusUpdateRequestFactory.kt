@@ -7,6 +7,7 @@ import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.hakemus.ContactRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerRequest
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsRequest
+import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusUpdateRequest
 import fi.hel.haitaton.hanke.hakemus.PostalAddressRequest
@@ -154,8 +155,8 @@ object HakemusUpdateRequestFactory {
     fun JohtoselvityshakemusUpdateRequest.withWorkDescription(workDescription: String) =
         this.copy(workDescription = workDescription)
 
-    fun JohtoselvityshakemusUpdateRequest.withAreas(areas: List<ApplicationArea>) =
-        this.copy(areas = areas)
+    fun JohtoselvityshakemusUpdateRequest.withArea(area: ApplicationArea) =
+        this.copy(areas = (areas ?: listOf()) + area)
 
     fun JohtoselvityshakemusUpdateRequest.withTimes(
         startTime: ZonedDateTime?,
@@ -171,5 +172,8 @@ object HakemusUpdateRequestFactory {
         )
 
     fun HakemusResponse.toUpdateRequest(): JohtoselvityshakemusUpdateRequest =
+        this.applicationData.toJsonString().parseJson()
+
+    fun Hakemus.toUpdateRequest(): JohtoselvityshakemusUpdateRequest =
         this.applicationData.toJsonString().parseJson()
 }

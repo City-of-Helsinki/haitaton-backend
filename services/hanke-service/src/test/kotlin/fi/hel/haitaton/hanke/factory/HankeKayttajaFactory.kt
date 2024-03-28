@@ -1,6 +1,9 @@
 package fi.hel.haitaton.hanke.factory
 
 import fi.hel.haitaton.hanke.ContactType
+import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.application.ApplicationEntity
+import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.factory.KayttajaTunnisteFactory.TUNNISTE_ID
 import fi.hel.haitaton.hanke.factory.PermissionFactory.PERMISSION_ID
 import fi.hel.haitaton.hanke.permissions.HankeKayttaja
@@ -17,12 +20,14 @@ import fi.hel.haitaton.hanke.permissions.PermissionService
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 
 @Component
 class HankeKayttajaFactory(
     private val hankeKayttajaRepository: HankekayttajaRepository,
     private val permissionService: PermissionService,
-    private val kayttajakutsuRepository: KayttajakutsuRepository
+    private val kayttajakutsuRepository: KayttajakutsuRepository,
+    private val applicationRepository: ApplicationRepository,
 ) {
 
     fun saveUnidentifiedUser(
@@ -125,6 +130,20 @@ class HankeKayttajaFactory(
                 hankekayttaja = this,
             )
         )
+
+    @Transactional
+    fun getFounderFromHakemus(applicationId: Long): HankekayttajaEntity {
+        val application: ApplicationEntity = applicationRepository.getReferenceById(applicationId)
+        val permission =
+            permissionService.findPermission(application.hanke.id, application.userId!!)!!
+        return hankeKayttajaRepository.findByPermissionId(permission.id)!!
+    }
+
+    @Transactional
+    fun getFounderFromHanke(hanke: HankeEntity): HankekayttajaEntity {
+        val permission = permissionService.findPermission(hanke.id, hanke.createdByUserId!!)!!
+        return hankeKayttajaRepository.findByPermissionId(permission.id)!!
+    }
 
     companion object {
         val KAYTTAJA_ID: UUID = UUID.fromString("639870ab-533d-4172-8e97-e5b93a275514")

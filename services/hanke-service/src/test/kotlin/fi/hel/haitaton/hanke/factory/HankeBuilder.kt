@@ -92,6 +92,21 @@ data class HankeBuilder(
         return Pair(application, hanke)
     }
 
+    /**
+     * Save a hanke that has the generated field set. The hanke is created like it would be created
+     * for a stand-alone johtoselvityshakemus.
+     *
+     * This is the best way to create a hanke with generated = true, since [save] overwrites the
+     * generated tag during the update. Call through [HankeFactory.saveGenerated].
+     */
+    internal fun saveGenerated(
+        createRequest: CreateHankeRequest = HankeFactory.createRequest()
+    ): HankeEntity {
+        val hanke = hankeService.createHanke(createRequest, setUpProfiiliMocks())
+        val entity = hankeRepository.getReferenceById(hanke.id)
+        return hankeRepository.save(entity.apply { generated = true })
+    }
+
     fun saveWithYhteystiedot(f: HankeYhteystietoBuilder.() -> Unit): HankeEntity {
         val entity = saveEntity()
         val builder =
