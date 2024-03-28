@@ -12,7 +12,6 @@ import assertk.assertions.isNotNull
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
-import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.AlluStatus
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
@@ -37,6 +36,7 @@ import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
 import io.mockk.Called
@@ -351,7 +351,7 @@ class ApplicationServiceTest {
             every { applicationRepository.findOneById(3) } returns applicationEntity
             every { geometriatDao.calculateCombinedArea(any()) } returns 100f
             every { geometriatDao.calculateArea(any()) } returns 100f
-            every { cableReportService.create(any()) } throws AlluException(listOf())
+            every { cableReportService.create(any()) } throws AlluException()
             every { geometriatDao.isInsideHankeAlueet(1, any()) } returns true
 
             assertThrows<AlluException> { applicationService.sendApplication(3, USERNAME) }

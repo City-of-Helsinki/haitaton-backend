@@ -24,7 +24,6 @@ import assertk.assertions.single
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.IntegrationTest
-import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.Contact
@@ -72,6 +71,7 @@ import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectAfter
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasServiceActor
@@ -750,8 +750,7 @@ class HakemusServiceITest(
             val expectedDataAfterSend = applicationData.copy(pendingOnClient = false)
             every { cableReportService.create(any()) } returns alluId
             justRun { cableReportService.addAttachment(alluId, any()) }
-            every { cableReportService.getApplicationInformation(alluId) } throws
-                AlluException(listOf())
+            every { cableReportService.getApplicationInformation(alluId) } throws AlluException()
 
             val response = hakemusService.sendHakemus(application.id!!, USERNAME)
 
@@ -802,8 +801,7 @@ class HakemusServiceITest(
             attachmentFactory.save(application = applicationEntity).withContent()
             every { cableReportService.create(any()) } returns alluId
             justRun { cableReportService.addAttachment(alluId, any()) }
-            every { cableReportService.addAttachments(alluId, any(), any()) } throws
-                AlluException(listOf())
+            every { cableReportService.addAttachments(alluId, any(), any()) } throws AlluException()
             justRun { cableReportService.cancel(alluId) }
             every { cableReportService.sendSystemComment(alluId, any()) } returns 4141
 
@@ -826,7 +824,7 @@ class HakemusServiceITest(
         fun `saves the Allu ID and status even when sending the form data attachment fails`() {
             val hakemus = hakemusFactory.builder().withMandatoryFields().save()
             every { cableReportService.create(any()) } returns alluId
-            every { cableReportService.addAttachment(alluId, any()) } throws AlluException(listOf())
+            every { cableReportService.addAttachment(alluId, any()) } throws AlluException()
             every { cableReportService.getApplicationInformation(alluId) } returns
                 AlluFactory.createAlluApplicationResponse(alluId)
 
