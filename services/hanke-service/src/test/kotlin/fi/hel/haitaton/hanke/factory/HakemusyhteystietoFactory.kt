@@ -18,6 +18,10 @@ object HakemusyhteystietoFactory {
     private const val DEFAULT_PUHELINNUMERO = "0401234567"
     private const val DEFAULT_YTUNNUS = "1817548-2"
 
+    private const val DEFAULT_PERSON_NIMI = "Pertti Perushenkilö"
+    private const val DEFAULT_PERSON_SAHKOPOSTI = "pertti@perus.fi"
+    private const val DEFAULT_PERSON_PUHELINNUMERO = "554466546"
+
     fun createEntity(
         tyyppi: CustomerType = CustomerType.COMPANY,
         rooli: ApplicationContactType = ApplicationContactType.HAKIJA,
@@ -57,4 +61,37 @@ object HakemusyhteystietoFactory {
             ytunnus,
             yhteyshenkilot,
         )
+
+    fun createPerson(
+        id: UUID = DEFAULT_ID,
+        tyyppi: CustomerType = CustomerType.PERSON,
+        rooli: ApplicationContactType = ApplicationContactType.HAKIJA,
+        nimi: String = DEFAULT_PERSON_NIMI,
+        sahkoposti: String = DEFAULT_PERSON_SAHKOPOSTI,
+        puhelinnumero: String = DEFAULT_PERSON_PUHELINNUMERO,
+        ytunnus: String? = null,
+        yhteyshenkilot: List<Hakemusyhteyshenkilo> = listOf()
+    ) =
+        Hakemusyhteystieto(
+            id,
+            tyyppi,
+            rooli,
+            nimi,
+            sahkoposti,
+            puhelinnumero,
+            ytunnus,
+            yhteyshenkilot,
+        )
+
+    fun Hakemusyhteystieto.withYhteyshenkilo(
+        etunimi: String = HakemusyhteyshenkiloFactory.DEFAULT_ETUNIMI,
+        sukunimi: String = HakemusyhteyshenkiloFactory.DEFAULT_SUKUNIMI,
+        sahkoposti: String = HakemusyhteyshenkiloFactory.DEFAULT_SAHKOPOSTI,
+        puhelin: String = HakemusyhteyshenkiloFactory.DEFAULT_PUHELIN,
+        tilaaja: Boolean = HakemusyhteyshenkiloFactory.DEFAULT_TILAAJA,
+    ): Hakemusyhteystieto {
+        val yhteyshenkilo =
+            HakemusyhteyshenkiloFactory.create(etunimi, sukunimi, sahkoposti, puhelin, tilaaja)
+        return copy(yhteyshenkilot = yhteyshenkilot + yhteyshenkilo)
+    }
 }

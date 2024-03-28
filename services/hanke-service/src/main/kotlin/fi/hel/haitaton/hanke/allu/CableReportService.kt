@@ -407,12 +407,8 @@ data class Attachment(
     )
 }
 
-class AlluException(val errors: List<ErrorInfo>) : RuntimeException()
-
 class AlluLoginException(cause: Throwable) : RuntimeException(cause)
 
 /** Exception to use when Allu doesn't follow their API descriptions. */
 class AlluApiException(requestUri: String, message: String) :
     RuntimeException("$message, request URI: $requestUri")
-
-data class ErrorInfo(val errorMessage: String, val additionalInfo: String)
