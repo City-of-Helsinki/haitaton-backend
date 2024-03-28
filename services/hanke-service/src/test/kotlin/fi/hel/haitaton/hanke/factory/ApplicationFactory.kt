@@ -93,7 +93,7 @@ class ApplicationFactory(
             return CustomerWithContacts(customer, listOf(contact))
         }
 
-        private fun createCompanyInvoiceCustomer(): InvoicingCustomer =
+        fun createCompanyInvoicingCustomer(): InvoicingCustomer =
             InvoicingCustomer(
                 type = CustomerType.COMPANY,
                 name = "DNA",
@@ -103,6 +103,18 @@ class ApplicationFactory(
                 registryKey = "3766028-0",
                 ovt = "003737660280",
                 invoicingOperator = "003721291126",
+            )
+
+        fun createPersonInvoicingCustomer(): InvoicingCustomer =
+            InvoicingCustomer(
+                type = CustomerType.PERSON,
+                name = "Lasse Laskutettava",
+                postalAddress = createPostalAddress(),
+                email = "lasse@laskutus.info",
+                phone = "963852741",
+                registryKey = null,
+                ovt = null,
+                invoicingOperator = null,
             )
 
         fun ApplicationEntity.withCustomer(customer: CustomerWithContacts): ApplicationEntity {
@@ -282,7 +294,7 @@ class ApplicationFactory(
                 createCompanyCustomer().withContacts(createContact()),
             representativeWithContacts: CustomerWithContacts? = null,
             propertyDeveloperWithContacts: CustomerWithContacts? = null,
-            invoicingCustomer: InvoicingCustomer? = createCompanyInvoiceCustomer(),
+            invoicingCustomer: InvoicingCustomer? = createCompanyInvoicingCustomer(),
             customerReference: String? = "Asiakkaan viite",
             additionalInfo: String? = null,
         ): ExcavationNotificationApplicationData =
