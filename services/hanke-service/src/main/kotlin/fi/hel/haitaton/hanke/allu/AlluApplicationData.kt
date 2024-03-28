@@ -1,5 +1,6 @@
 package fi.hel.haitaton.hanke.allu
 
+import fi.hel.haitaton.hanke.application.ApplicationContactType
 import java.time.ZonedDateTime
 import org.geojson.GeometryCollection
 
@@ -18,6 +19,8 @@ sealed interface AlluApplicationData {
     val customerReference: String?
     val trafficArrangementImages: List<Int>?
     val clientApplicationKind: String
+
+    fun customersByRole(): Map<ApplicationContactType, CustomerWithContacts>
 }
 
 data class AlluCableReportApplicationData(
@@ -42,7 +45,16 @@ data class AlluCableReportApplicationData(
     override val invoicingCustomer: Customer? = null,
     override val customerReference: String? = null,
     override val trafficArrangementImages: List<Int>? = null,
-) : AlluApplicationData
+) : AlluApplicationData {
+    override fun customersByRole(): Map<ApplicationContactType, CustomerWithContacts> =
+        listOfNotNull(
+                customerWithContacts.let { ApplicationContactType.HAKIJA to it },
+                contractorWithContacts.let { ApplicationContactType.TYON_SUORITTAJA to it },
+                representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
+                propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
+            )
+            .toMap()
+}
 
 data class CableReportInformationRequestResponse(
     val applicationData: AlluCableReportApplicationData,
@@ -78,7 +90,16 @@ data class AlluExcavationNotificationApplicationData(
     override val trafficArrangementImages: List<Int>? = null,
     val trafficArrangements: String? = null,
     val trafficArrangementImpediment: TrafficArrangementImpediment? = null,
-) : AlluApplicationData
+) : AlluApplicationData {
+    override fun customersByRole(): Map<ApplicationContactType, CustomerWithContacts> =
+        listOfNotNull(
+                customerWithContacts.let { ApplicationContactType.HAKIJA to it },
+                contractorWithContacts.let { ApplicationContactType.TYON_SUORITTAJA to it },
+                representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
+                propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
+            )
+            .toMap()
+}
 
 enum class TrafficArrangementImpediment {
     NO_IMPEDIMENT,
