@@ -1,8 +1,11 @@
 package fi.hel.haitaton.hanke.allu
 
+import com.fasterxml.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude.Include
 import java.time.ZonedDateTime
 import org.geojson.GeometryCollection
 
+@JsonInclude(Include.NON_NULL)
 sealed interface AlluApplicationData {
     val identificationNumber: String
     val pendingOnClient: Boolean
