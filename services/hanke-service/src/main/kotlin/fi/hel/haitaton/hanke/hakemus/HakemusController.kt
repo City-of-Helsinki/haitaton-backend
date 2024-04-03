@@ -4,6 +4,7 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
+import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.currentUserId
@@ -23,7 +24,10 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import jakarta.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.CurrentSecurityContext
 import org.springframework.security.core.context.SecurityContext
@@ -141,7 +145,7 @@ class HakemusController(
                The application can be updated until it has been sent to Allu.
                If the application hasn't changed since the last update, nothing more is done.
                The pendingOnClient value can't be changed with this endpoint.
-               Use [POST /hakemukset/{id}/send-application](#/application-controller/sendApplication) for that.
+               Use [POST /hakemukset/{id}/laheta](#/application-controller/sendHakemus) for that.
             """
     )
     @ApiResponses(
@@ -232,6 +236,42 @@ class HakemusController(
     fun sendHakemus(@PathVariable(name = "id") id: Long): HakemusResponse =
         hakemusService.sendHakemus(id, currentUserId()).toResponse()
 
+    @GetMapping("/hakemukset/{id}/paatos")
+    @Operation(
+        summary = "Download a decision",
+        description = "Downloads a decision for this application from Allu."
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "The decision PDF",
+                    responseCode = "200",
+                    content = [Content(mediaType = MediaType.APPLICATION_PDF_VALUE)]
+                ),
+                ApiResponse(
+                    description =
+                        "An application was not found with the given id or the application didn't have a decision",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+            ]
+    )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'VIEW')")
+    fun downloadDecision(@PathVariable(name = "id") id: Long): ResponseEntity<ByteArray> {
+        val userId = currentUserId()
+        val (filename, pdfBytes) = hakemusService.downloadDecision(id, userId)
+        val application = hakemusService.getById(id)
+        disclosureLogService.saveDisclosureLogsForCableReport(application.toMetadata(), userId)
+
+        val headers = HttpHeaders()
+        headers.add("Content-Disposition", "inline; filename=$filename.pdf")
+        return ResponseEntity.ok()
+            .headers(headers)
+            .contentType(MediaType.APPLICATION_PDF)
+            .body(pdfBytes)
+    }
+
     @ExceptionHandler(InvalidHakemusDataException::class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     @Hidden
@@ -306,5 +346,13 @@ class HakemusController(
     fun userNotInContactsException(ex: UserNotInContactsException): HankeError {
         logger.warn { ex.message }
         return HankeError.HAI2012
+    }
+
+    @ExceptionHandler(ApplicationDecisionNotFoundException::class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    @Hidden
+    fun applicationDecisionNotFoundException(ex: ApplicationDecisionNotFoundException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2006
     }
 }

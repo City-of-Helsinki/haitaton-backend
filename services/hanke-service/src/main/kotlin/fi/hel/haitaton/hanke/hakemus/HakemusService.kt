@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationData
+import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
@@ -190,6 +191,19 @@ class HakemusService(
         )
         // Save only if sendApplicationToAllu didn't throw an exception
         return applicationRepository.save(hakemus).toHakemus()
+    }
+
+    @Transactional(readOnly = true)
+    fun downloadDecision(hakemusId: Long, userId: String): Pair<String, ByteArray> {
+        val hakemus = getById(hakemusId)
+        val alluid =
+            hakemus.alluid
+                ?: throw ApplicationDecisionNotFoundException(
+                    "Application not in Allu, so it doesn't have a decision. id=${hakemus.id}"
+                )
+        val filename = hakemus.applicationIdentifier ?: "paatos"
+        val pdfBytes = alluClient.getDecisionPdf(alluid)
+        return Pair(filename, pdfBytes)
     }
 
     /** Find the application entity or throw an exception. */
