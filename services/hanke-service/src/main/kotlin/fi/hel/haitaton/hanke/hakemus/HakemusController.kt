@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.HankeErrorDetail
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
+import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.currentUserId
@@ -32,6 +33,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.annotation.CurrentSecurityContext
 import org.springframework.security.core.context.SecurityContext
 import org.springframework.validation.annotation.Validated
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -198,6 +200,41 @@ class HakemusController(
         val response = hakemusService.updateHakemus(id, request, userId)
         disclosureLogService.saveDisclosureLogsForHakemusResponse(response, userId)
         return response
+    }
+
+    @DeleteMapping("/hakemukset/{id}")
+    @Operation(
+        summary = "Delete an application",
+        description =
+            """Deletes an application.
+               If the application hasn't been sent to Allu, delete it directly.
+               If the application is pending in Allu, cancel it in Allu before deleting it locally.
+               If the application has proceeded beyond pending in Allu, refuse to delete it.
+            """
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "Application deleted, no body", responseCode = "200"),
+                ApiResponse(
+                    description = "An application was not found with the given id",
+                    responseCode = "404",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+                ApiResponse(
+                    description =
+                        "The application is already processing in Allu and can't be deleted",
+                    responseCode = "409",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+            ]
+    )
+    @PreAuthorize("@applicationAuthorizer.authorizeApplicationId(#id, 'EDIT_APPLICATIONS')")
+    fun delete(@PathVariable(name = "id") id: Long): ApplicationDeletionResultDto {
+        val userId = currentUserId()
+        logger.info { "Received request to delete application id=$id, userId=$userId" }
+        val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(id, userId)
+        return result
     }
 
     @PostMapping("/hakemukset/{id}/laheta")

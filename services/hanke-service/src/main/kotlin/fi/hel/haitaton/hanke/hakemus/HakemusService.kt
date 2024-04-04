@@ -1,22 +1,27 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.HankeMapper
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.AlluLoginException
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ALLU_APPLICATION_ERROR_MSG
 import fi.hel.haitaton.hanke.application.ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG
+import fi.hel.haitaton.hanke.application.ALLU_USER_CANCELLATION_MSG
+import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
+import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
@@ -30,6 +35,7 @@ import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
+import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
@@ -50,6 +56,7 @@ class HakemusService(
     private val geometriatDao: GeometriatDao,
     private val hankealueService: HankealueService,
     private val hakemusLoggingService: HakemusLoggingService,
+    private val hankeLoggingService: HankeLoggingService,
     private val disclosureLogService: DisclosureLogService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val attachmentService: ApplicationAttachmentService,
@@ -191,6 +198,38 @@ class HakemusService(
         )
         // Save only if sendApplicationToAllu didn't throw an exception
         return applicationRepository.save(hakemus).toHakemus()
+    }
+
+    /**
+     * Deletes an application. Cancels the application in Allu if it's still pending. Refuses to
+     * delete, if the application is in Allu, and it's beyond the pending status.
+     *
+     * Furthermore, if the owning Hanke is generated and has no more applications, also deletes the
+     * Hanke.
+     */
+    @Transactional
+    fun deleteWithOrphanGeneratedHankeRemoval(
+        applicationId: Long,
+        userId: String,
+    ): ApplicationDeletionResultDto {
+        val application = getEntityById(applicationId)
+        val hanke = application.hanke
+
+        cancelAndDelete(application.toHakemus(), userId)
+
+        if (hanke.generated && hanke.hakemukset.size == 1) {
+            logger.info {
+                "Application ${application.id} was the only one of a generated Hanke, removing Hanke ${hanke.hankeTunnus}."
+            }
+            hankeRepository.delete(hanke)
+            val hankeDomain =
+                HankeMapper.domainFrom(hanke, hankealueService.geometryMapFrom(hanke.alueet))
+            hankeLoggingService.logDelete(hankeDomain, userId)
+
+            return ApplicationDeletionResultDto(hankeDeleted = true)
+        }
+
+        return ApplicationDeletionResultDto(hankeDeleted = false)
     }
 
     @Transactional(readOnly = true)
@@ -613,6 +652,64 @@ class HakemusService(
                 ContactRequest(it).toNewHakemusyhteyshenkiloEntity(hakemusyhteystietoEntity)
             }
         )
+    }
+
+    @Transactional
+    fun cancelAndDelete(hakemus: Hakemus, userId: String) {
+        val id = hakemus.id
+        val alluId = hakemus.alluid
+        if (alluId == null) {
+            logger.info { "Hakemus not sent to Allu yet, simply deleting it. id=$id" }
+        } else {
+            logger.info {
+                "Hakemus is sent to Allu, canceling it before deleting. id=$id alluid=$alluId"
+            }
+            cancelHakemus(id, alluId, hakemus.alluStatus)
+        }
+
+        logger.info { "Deleting hakemus, id=$id, alluid=$alluId" }
+        attachmentService.deleteAllAttachments(id)
+        applicationRepository.deleteById(hakemus.id)
+        hakemusLoggingService.logDelete(hakemus, userId)
+        logger.info { "Hakemus deleted, id=$id, alluid=$alluId" }
+    }
+
+    /** Cancel a hakemus that's been sent to Allu. */
+    private fun cancelHakemus(id: Long?, alluId: Int, alluStatus: ApplicationStatus?) {
+        if (isStillPending(alluId, alluStatus)) {
+            logger.info { "Hakemus is still pending, trying to cancel it. id=$id alluid=${alluId}" }
+            alluClient.cancel(alluId)
+            alluClient.sendSystemComment(alluId, ALLU_USER_CANCELLATION_MSG)
+            logger.info { "Hakemus canceled, proceeding to delete it. id=$id alluid=${alluId}" }
+        } else {
+            throw ApplicationAlreadyProcessingException(id, alluId)
+        }
+    }
+
+    /**
+     * An application is being processed in Allu if status it is NOT pending anymore. Pending status
+     * needs verification from Allu. A post-pending status can never go back to pending.
+     */
+    fun isStillPending(alluId: Int?, alluStatus: ApplicationStatus?): Boolean {
+        // If there's no alluid then we haven't successfully sent this to ALLU yet (at all)
+        alluId ?: return true
+
+        return when (alluStatus) {
+            null,
+            ApplicationStatus.PENDING,
+            ApplicationStatus.PENDING_CLIENT -> isStillPendingInAllu(alluId)
+            else -> false
+        }
+    }
+
+    private fun isStillPendingInAllu(alluId: Int): Boolean {
+        val currentStatus = alluClient.getApplicationInformation(alluId).status
+
+        return when (currentStatus) {
+            ApplicationStatus.PENDING,
+            ApplicationStatus.PENDING_CLIENT -> true
+            else -> false
+        }
     }
 }
 

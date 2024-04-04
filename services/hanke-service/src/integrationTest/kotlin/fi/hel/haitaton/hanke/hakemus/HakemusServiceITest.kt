@@ -30,6 +30,8 @@ import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG
+import fi.hel.haitaton.hanke.application.ALLU_USER_CANCELLATION_MSG
+import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationArea
 import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
@@ -38,6 +40,7 @@ import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
 import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
+import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
@@ -46,6 +49,10 @@ import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.asJsonResource
+import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService
+import fi.hel.haitaton.hanke.attachment.azure.Container
+import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
+import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
@@ -74,14 +81,17 @@ import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
+import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectAfter
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectBefore
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasServiceActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
+import fi.hel.haitaton.hanke.test.TestUtils
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
@@ -94,24 +104,29 @@ import io.mockk.verify
 import io.mockk.verifySequence
 import java.util.UUID
 import org.junit.jupiter.api.AfterEach
-import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.NullSource
 import org.springframework.beans.factory.annotation.Autowired
 
 class HakemusServiceITest(
     @Autowired private val hakemusService: HakemusService,
     @Autowired private val applicationRepository: ApplicationRepository,
     @Autowired private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
+    @Autowired private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
     @Autowired private val hankeRepository: HankeRepository,
+    @Autowired private val hankekayttajaRepository: HankekayttajaRepository,
     @Autowired private val auditLogRepository: AuditLogRepository,
+    @Autowired private val applicationAttachmentRepository: ApplicationAttachmentRepository,
     @Autowired private val geometriatDao: GeometriatDao,
     @Autowired private val hakemusFactory: HakemusFactory,
     @Autowired private val hankeFactory: HankeFactory,
     @Autowired private val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired private val attachmentFactory: ApplicationAttachmentFactory,
+    @Autowired private val fileClient: MockFileClient,
     @Autowired private val alluClient: CableReportService,
 ) : IntegrationTest() {
 
@@ -1127,11 +1142,11 @@ class HakemusServiceITest(
             val response = hakemusService.sendHakemus(hakemus.id, USERNAME)
 
             val responseApplicationData = response.applicationData as JohtoselvityshakemusData
-            Assertions.assertFalse(responseApplicationData.pendingOnClient)
+            assertThat(responseApplicationData.pendingOnClient).isFalse()
             val savedApplication = applicationRepository.findById(hakemus.id).get()
             val savedApplicationData =
                 savedApplication.applicationData as CableReportApplicationData
-            Assertions.assertFalse(savedApplicationData.pendingOnClient)
+            assertThat(savedApplicationData.pendingOnClient).isFalse()
             verifySequence {
                 alluClient.create(applicationData)
                 alluClient.addAttachment(alluId, any())
@@ -1177,11 +1192,12 @@ class HakemusServiceITest(
                 prop(Hakemus::applicationIdentifier).isNull()
                 prop(Hakemus::alluStatus).isNull()
             }
-            val savedApplication = applicationRepository.findById(application.id!!).get()
-            Assertions.assertEquals(alluId, savedApplication.alluid)
-            Assertions.assertEquals(expectedDataAfterSend, savedApplication.applicationData)
-            Assertions.assertNull(savedApplication.applicationIdentifier)
-            Assertions.assertNull(savedApplication.alluStatus)
+            assertThat(applicationRepository.getReferenceById(application.id!!)).all {
+                prop(ApplicationEntity::alluid).isEqualTo(alluId)
+                prop(ApplicationEntity::applicationData).isEqualTo(expectedDataAfterSend)
+                prop(ApplicationEntity::applicationIdentifier).isNull()
+                prop(ApplicationEntity::alluStatus).isNull()
+            }
 
             verifySequence {
                 alluClient.create(any())
@@ -1454,6 +1470,105 @@ class HakemusServiceITest(
     }
 
     @Nested
+    inner class DeleteWithOrphanGeneratedHankeRemoval {
+        @Test
+        fun `deletes hanke when deleted application is the only one on a generated hanke`() {
+            val hakemus = hakemusFactory.builderWithGeneratedHanke().withNoAlluFields().save()
+            auditLogRepository.deleteAll()
+
+            val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
+
+            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hankeRepository.findAll()).isEmpty()
+            val auditLogEntry = auditLogRepository.findByType(ObjectType.HANKE)
+            assertThat(auditLogEntry).single().isSuccess(Operation.DELETE) {
+                hasUserActor(USERNAME)
+            }
+        }
+
+        @Test
+        fun `deletes all attachments when deleting an application`() {
+            val hakemus = hakemusFactory.builderWithGeneratedHanke().withNoAlluFields().saveEntity()
+            attachmentFactory.save(application = hakemus).withContent()
+            attachmentFactory.save(application = hakemus).withContent()
+            assertThat(applicationAttachmentRepository.findByApplicationId(hakemus.id!!)).hasSize(2)
+            assertThat(
+                    fileClient.list(
+                        Container.HAKEMUS_LIITTEET,
+                        ApplicationAttachmentContentService.prefix(hakemus.id!!)
+                    )
+                )
+                .hasSize(2)
+
+            val result =
+                hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id!!, USERNAME)
+
+            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hankeRepository.findAll()).isEmpty()
+            assertThat(
+                    fileClient.list(
+                        Container.HAKEMUS_LIITTEET,
+                        ApplicationAttachmentContentService.prefix(hakemus.id!!)
+                    )
+                )
+                .isEmpty()
+            assertThat(applicationAttachmentRepository.findByApplicationId(hakemus.id!!)).isEmpty()
+        }
+
+        @Test
+        fun `doesn't delete hanke when hanke is not generated`() {
+            val hakemus = hakemusFactory.builder().withNoAlluFields().save()
+
+            val result = hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus.id, USERNAME)
+
+            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hankeRepository.findByHankeTunnus(hakemus.hankeTunnus)).isNotNull()
+        }
+
+        @Test
+        fun `doesn't delete hanke when a generated hanke has other applications`() {
+            val hanke = hankeFactory.saveMinimal(generated = true)
+            val hakemus1 = hakemusFactory.builder(hanke).withNoAlluFields().saveEntity()
+            val hakemus2 = hakemusFactory.builder(hanke).withNoAlluFields().saveEntity()
+            assertThat(applicationRepository.findAll()).hasSize(2)
+
+            val result =
+                hakemusService.deleteWithOrphanGeneratedHankeRemoval(hakemus1.id!!, USERNAME)
+
+            assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
+            assertThat(applicationRepository.findAll())
+                .single()
+                .prop(ApplicationEntity::id)
+                .isEqualTo(hakemus2.id)
+            assertThat(hankeRepository.findByHankeTunnus(hanke.hankeTunnus)).isNotNull()
+        }
+
+        @Test
+        fun `deletes hankekayttajat when deleting the generated hanke`() {
+            val application =
+                hakemusFactory
+                    .builderWithGeneratedHanke()
+                    .withNoAlluFields()
+                    .hakija()
+                    .tyonSuorittaja()
+                    .rakennuttaja()
+                    .asianhoitaja()
+                    .saveEntity()
+
+            hakemusService.deleteWithOrphanGeneratedHankeRemoval(application.id!!, USERNAME)
+
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hankeRepository.findAll()).isEmpty()
+            assertThat(hankekayttajaRepository.findAll()).isEmpty()
+            assertThat(hakemusyhteystietoRepository.findAll()).isEmpty()
+            assertThat(hakemusyhteyshenkiloRepository.findAll()).isEmpty()
+        }
+    }
+
+    @Nested
     inner class DownloadDecision {
         private val alluId = 134
         private val decisionPdf: ByteArray =
@@ -1461,8 +1576,11 @@ class HakemusServiceITest(
 
         @Test
         fun `when unknown ID should throw`() {
-            assertThrows<ApplicationNotFoundException> {
-                hakemusService.downloadDecision(1234, USERNAME)
+            val failure = assertFailure { hakemusService.downloadDecision(1234, USERNAME) }
+
+            failure.all {
+                hasClass(ApplicationNotFoundException::class)
+                messageContains("id 1234")
             }
         }
 
@@ -1470,10 +1588,12 @@ class HakemusServiceITest(
         fun `when no alluid should throw`() {
             val hakemus = hakemusFactory.builder().withNoAlluFields().save()
 
-            assertThrows<ApplicationDecisionNotFoundException> {
-                hakemusService.downloadDecision(hakemus.id, USERNAME)
-            }
+            val failure = assertFailure { hakemusService.downloadDecision(hakemus.id, USERNAME) }
 
+            failure.all {
+                hasClass(ApplicationDecisionNotFoundException::class)
+                messageContains("id=${hakemus.id}")
+            }
             verify { alluClient wasNot Called }
         }
 
@@ -1483,10 +1603,9 @@ class HakemusServiceITest(
             every { alluClient.getDecisionPdf(alluId) }
                 .throws(ApplicationDecisionNotFoundException(""))
 
-            assertThrows<ApplicationDecisionNotFoundException> {
-                hakemusService.downloadDecision(hakemus.id, USERNAME)
-            }
+            val failure = assertFailure { hakemusService.downloadDecision(hakemus.id, USERNAME) }
 
+            failure.hasClass(ApplicationDecisionNotFoundException::class)
             verify { alluClient.getDecisionPdf(alluId) }
         }
 
@@ -1513,6 +1632,172 @@ class HakemusServiceITest(
             assertThat(filename).isNotNull().isEqualTo("paatos")
             assertThat(bytes).isEqualTo(decisionPdf)
             verify { alluClient.getDecisionPdf(alluId) }
+        }
+    }
+
+    @Nested
+    inner class CancelAndDelete {
+        private val alluId = 73
+
+        @Test
+        fun `deletes application and all its attachments when application not in Allu`() {
+            val application = hakemusFactory.builder().withNoAlluFields().saveEntity()
+            attachmentFactory.save(application = application).withContent()
+            attachmentFactory.save(application = application).withContent()
+            val hakemus = hakemusService.getById(application.id!!)
+            assertThat(
+                    fileClient.list(
+                        Container.HAKEMUS_LIITTEET,
+                        ApplicationAttachmentContentService.prefix(application.id!!)
+                    )
+                )
+                .hasSize(2)
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
+                .hasSize(2)
+
+            hakemusService.cancelAndDelete(hakemus, USERNAME)
+
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(
+                    fileClient.list(
+                        Container.HAKEMUS_LIITTEET,
+                        ApplicationAttachmentContentService.prefix(application.id!!)
+                    )
+                )
+                .isEmpty()
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
+                .isEmpty()
+        }
+
+        @Test
+        fun `writes audit log for the deleted application`() {
+            TestUtils.addMockedRequestIp()
+            val hakemus = hakemusFactory.builder().withNoAlluFields().save()
+            auditLogRepository.deleteAll()
+
+            hakemusService.cancelAndDelete(hakemus, USERNAME)
+
+            assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.DELETE) {
+                hasUserActor(USERNAME, TestUtils.mockedIp)
+                withTarget {
+                    prop(AuditLogTarget::id).isEqualTo(hakemus.id.toString())
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.HAKEMUS)
+                    hasObjectBefore(hakemus)
+                    prop(AuditLogTarget::objectAfter).isNull()
+                }
+            }
+        }
+
+        @Test
+        fun `cancels the application in Allu before deleting when the application is pending in Allu`() {
+            val hakemus =
+                hakemusFactory.builder().withStatus(ApplicationStatus.PENDING, alluId).save()
+            every { alluClient.getApplicationInformation(alluId) } returns
+                AlluFactory.createAlluApplicationResponse(alluId, ApplicationStatus.PENDING)
+            justRun { alluClient.cancel(alluId) }
+            every { alluClient.sendSystemComment(alluId, any()) } returns 1324
+
+            hakemusService.cancelAndDelete(hakemus, USERNAME)
+
+            assertThat(applicationRepository.findAll()).isEmpty()
+            verifySequence {
+                alluClient.getApplicationInformation(alluId)
+                alluClient.cancel(alluId)
+                alluClient.sendSystemComment(alluId, ALLU_USER_CANCELLATION_MSG)
+            }
+        }
+
+        @Test
+        fun `throws an exception when the application is past pending in Allu`() {
+            val hakemus =
+                hakemusFactory.builder().withStatus(ApplicationStatus.PENDING, alluId).save()
+            every { alluClient.getApplicationInformation(alluId) } returns
+                AlluFactory.createAlluApplicationResponse(alluId, ApplicationStatus.APPROVED)
+
+            val failure = assertFailure { hakemusService.cancelAndDelete(hakemus, USERNAME) }
+
+            failure.all {
+                hasClass(ApplicationAlreadyProcessingException::class)
+                messageContains("id=${hakemus.id}")
+                messageContains("alluId=$alluId")
+            }
+            assertThat(applicationRepository.findAll()).hasSize(1)
+            verifySequence { alluClient.getApplicationInformation(alluId) }
+        }
+
+        @Test
+        fun `deletes yhteystiedot and yhteyshenkilot but no hankekayttaja`() {
+            val hakemus =
+                hakemusFactory
+                    .builder()
+                    .withNoAlluFields()
+                    .hakija()
+                    .tyonSuorittaja()
+                    .rakennuttaja()
+                    .asianhoitaja()
+                    .save()
+
+            hakemusService.cancelAndDelete(hakemus, USERNAME)
+
+            assertThat(applicationRepository.findAll()).isEmpty()
+            assertThat(hakemusyhteystietoRepository.findAll()).isEmpty()
+            assertThat(hakemusyhteyshenkiloRepository.findAll()).isEmpty()
+            assertThat(hankekayttajaRepository.count())
+                .isEqualTo(5) // Hanke founder + one kayttaja for each role
+        }
+    }
+
+    @Nested
+    inner class IsStillPending {
+        private val alluId = 123
+
+        @ParameterizedTest(name = "{displayName} ({arguments})")
+        @EnumSource(value = ApplicationStatus::class)
+        @NullSource
+        fun `returns true when alluId is null`(status: ApplicationStatus?) {
+            assertThat(hakemusService.isStillPending(null, status)).isTrue()
+
+            verify { alluClient wasNot Called }
+        }
+
+        @ParameterizedTest(name = "{displayName} ({arguments})")
+        @EnumSource(value = ApplicationStatus::class, names = ["PENDING", "PENDING_CLIENT"])
+        @NullSource
+        fun `returns true when status is pending and allu confirms it`(status: ApplicationStatus?) {
+            every { alluClient.getApplicationInformation(alluId) } returns
+                AlluFactory.createAlluApplicationResponse(
+                    status = status ?: ApplicationStatus.PENDING
+                )
+
+            assertThat(hakemusService.isStillPending(alluId, status)).isTrue()
+
+            verify { alluClient.getApplicationInformation(alluId) }
+        }
+
+        @ParameterizedTest(name = "{displayName} ({arguments})")
+        @EnumSource(value = ApplicationStatus::class, names = ["PENDING", "PENDING_CLIENT"])
+        @NullSource
+        fun `returns false when status is pending but status in Allu is handling`(
+            status: ApplicationStatus?
+        ) {
+            every { alluClient.getApplicationInformation(alluId) } returns
+                AlluFactory.createAlluApplicationResponse(status = ApplicationStatus.HANDLING)
+
+            assertThat(hakemusService.isStillPending(alluId, status)).isFalse()
+
+            verify { alluClient.getApplicationInformation(alluId) }
+        }
+
+        @ParameterizedTest(name = "{displayName} ({arguments})")
+        @EnumSource(
+            value = ApplicationStatus::class,
+            mode = EnumSource.Mode.EXCLUDE,
+            names = ["PENDING", "PENDING_CLIENT"]
+        )
+        fun `returns false when status is not pending`(status: ApplicationStatus) {
+            assertThat(hakemusService.isStillPending(alluId, status)).isFalse()
+
+            verify { alluClient wasNot Called }
         }
     }
 }

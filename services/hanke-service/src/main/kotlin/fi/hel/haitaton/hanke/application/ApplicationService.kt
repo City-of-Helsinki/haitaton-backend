@@ -23,6 +23,7 @@ import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
+import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -341,7 +342,7 @@ class ApplicationService(
 
             logger.info { "Deleting application, id=$id, alluid=$alluid userid=$userId" }
             val application = toApplication()
-            attachmentService.deleteAllAttachments(application)
+            attachmentService.deleteAllAttachments(id!!)
             applicationRepository.delete(this)
             applicationLoggingService.logDelete(application, userId)
             logger.info { "Application deleted, id=$id, alluid=$alluid userid=$userId" }
@@ -722,7 +723,7 @@ class ApplicationService(
     }
 
     /** Map by area geometry id to area geometry data. */
-    private fun geometryMapFrom(hanke: HankeEntity) =
+    private fun geometryMapFrom(hanke: HankeEntity): Map<Int, Geometriat?> =
         hanke.alueet
             .mapNotNull { it.geometriat }
             .associateWith { geometriatDao.retrieveGeometriat(it) }
