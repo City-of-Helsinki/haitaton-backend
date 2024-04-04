@@ -518,7 +518,7 @@ contact in the applicant customer role. If either is true, refuse to delete the 
     )
     fun delete(@PathVariable kayttajaId: UUID) {
         logger.info { "Deleting kayttaja $kayttajaId" }
-        hankekayttajaDeleteService.delete(kayttajaId)
+        hankekayttajaDeleteService.delete(kayttajaId, currentUserId())
         logger.info { "Deleted kayttaja $kayttajaId" }
     }
 

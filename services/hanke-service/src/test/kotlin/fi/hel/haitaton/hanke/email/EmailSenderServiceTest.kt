@@ -501,6 +501,136 @@ class EmailSenderServiceTest {
     }
 
     @Nested
+    inner class RemovalFromHanke {
+        private val notification =
+            RemovalFromHankeNotificationData(
+                recipientEmail = TEST_EMAIL,
+                hankeTunnus = HANKE_TUNNUS,
+                hankeNimi = HANKE_NIMI,
+                deletedByName = INVITER_NAME,
+                deletedByEmail = INVITER_EMAIL,
+            )
+
+        private fun sendAndCapture(): MimeMessage {
+            val email = slot<MimeMessage>()
+            justRun { mailSender.send(capture(email)) }
+
+            emailSenderService.sendRemovalFromHankeNotificationEmail(notification)
+
+            return email.captured
+        }
+
+        @Test
+        fun `has the correct subject`() {
+            val email = sendAndCapture()
+
+            assertThat(email.subject)
+                .isEqualTo(
+                    "Haitaton: Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Sinut on poistettu hankkeelta ($HANKE_TUNNUS)"
+                )
+        }
+
+        @Test
+        fun `has a header line in the body`() {
+            val (textBody, htmlBody) = sendAndCapture().bodies()
+
+            val expectedBody =
+                "Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Sinut on poistettu hankkeelta ($HANKE_TUNNUS)"
+            assertThat(textBody).contains(expectedBody)
+            assertThat(htmlBody).contains(expectedBody)
+        }
+
+        @Nested
+        open inner class BodyInFinnish {
+            open fun deletedByInformation(name: String, email: String) =
+                "$name ($email) on poistanut sinut"
+
+            open val deleteInformationText =
+                "hankkeelta \"$HANKE_NIMI\" ($HANKE_TUNNUS), eikä sinulla ole enää pääsyä hankkeelle."
+
+            open val deleteInformationHtml =
+                "hankkeelta <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>, eikä sinulla ole enää pääsyä hankkeelle."
+
+            open val signatureLines =
+                listOf(
+                    "Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.",
+                    "Ystävällisin terveisin,",
+                    "Helsingin kaupungin kaupunkiympäristön toimiala",
+                    "Haitaton-asiointi",
+                    "haitaton@hel.fi",
+                )
+
+            @Test
+            fun `contains deleted-by information`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(deletedByInformation(INVITER_NAME, INVITER_EMAIL))
+                assertThat(htmlBody).contains(deletedByInformation(encodedInviter, INVITER_EMAIL))
+            }
+
+            @Test
+            open fun `contains delete information`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(deleteInformationText)
+                assertThat(htmlBody).contains(deleteInformationHtml)
+            }
+
+            @Test
+            open fun `contains the signature`() {
+                val (textBody, htmlBody) = sendAndCapture().bodies()
+
+                assertThat(textBody).contains(signatureLines)
+                assertThat(htmlBody).contains(signatureLines)
+            }
+        }
+
+        // TODO needs translations
+        @Nested
+        inner class BodyInSwedish : BodyInFinnish() {
+            override fun deletedByInformation(name: String, email: String) =
+                "$name ($email) on poistanut sinut"
+
+            override val deleteInformationText =
+                "hankkeelta \"$HANKE_NIMI\" ($HANKE_TUNNUS), eikä sinulla ole enää pääsyä hankkeelle."
+
+            override val deleteInformationHtml =
+                "hankkeelta <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>, eikä sinulla ole enää pääsyä hankkeelle."
+
+            override val signatureLines =
+                listOf(
+                    "Det här är ett automatiskt e-postmeddelande – svara inte på det.",
+                    "Med vänlig hälsning,",
+                    "Helsingfors stads stadsmiljösektor",
+                    "Haitaton-ärenden",
+                    "haitaton@hel.fi",
+                )
+        }
+
+        // TODO needs translations
+        @Nested
+        inner class BodyInEnglish : BodyInFinnish() {
+            override fun deletedByInformation(name: String, email: String) =
+                "$name ($email) on poistanut sinut"
+
+            override val deleteInformationText =
+                "hankkeelta \"$HANKE_NIMI\" ($HANKE_TUNNUS), eikä sinulla ole enää pääsyä hankkeelle."
+
+            override val deleteInformationHtml =
+                "hankkeelta <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>, eikä sinulla ole enää pääsyä hankkeelle."
+
+            override val signatureLines =
+                listOf(
+                    "This email was generated automatically – please do not reply to this message.",
+                    "Kind regards,",
+                    "Haitaton services",
+                    "City of Helsinki Urban Environment Division",
+                    "haitaton@hel.fi",
+                )
+        }
+    }
+
+    @Nested
     inner class ExpandAsterisks {
         @ParameterizedTest
         @CsvSource(

@@ -1,8 +1,9 @@
-package fi.hel.haitaton.hanke.hakemus
+package fi.hel.haitaton.hanke.permissions
 
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.containsExactlyInAnyOrder
 import assertk.assertions.extracting
 import assertk.assertions.hasClass
@@ -17,28 +18,32 @@ import assertk.assertions.isTrue
 import assertk.assertions.messageContains
 import assertk.assertions.prop
 import assertk.assertions.single
+import com.icegreen.greenmail.configuration.GreenMailConfiguration
+import com.icegreen.greenmail.junit5.GreenMailExtension
+import com.icegreen.greenmail.util.ServerSetupTest
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Yhteyshenkilo
+import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaNotFoundException
-import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.permissions.HankekayttajaDeleteService
+import fi.hel.haitaton.hanke.hakemus.ContactResponse
+import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsResponse
+import fi.hel.haitaton.hanke.hakemus.HakemusDataResponse
+import fi.hel.haitaton.hanke.hakemus.HakemusResponse
+import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaDeleteService.DeleteInfo
-import fi.hel.haitaton.hanke.permissions.HasActiveApplicationsException
-import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
-import fi.hel.haitaton.hanke.permissions.NoAdminRemainingException
-import fi.hel.haitaton.hanke.permissions.OnlyOmistajaContactException
 import fi.hel.haitaton.hanke.test.USERNAME
+import jakarta.mail.internet.MimeMessage
 import java.util.UUID
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
+import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
 
 class HankekayttajaDeleteServiceITest(
@@ -50,6 +55,14 @@ class HankekayttajaDeleteServiceITest(
     @Autowired val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired val hakemusFactory: HakemusFactory,
 ) : IntegrationTest() {
+
+    companion object {
+        @JvmField
+        @RegisterExtension
+        val greenMail: GreenMailExtension =
+            GreenMailExtension(ServerSetupTest.SMTP)
+                .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication())
+    }
 
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
@@ -188,7 +201,7 @@ class HankekayttajaDeleteServiceITest(
         fun `throws an exception when hankekayttaja does not exist`() {
             val kayttajaId = UUID.fromString("750b4207-2c5f-49a0-9b80-4829c807abeb")
 
-            val failure = assertFailure { deleteService.delete(kayttajaId) }
+            val failure = assertFailure { deleteService.delete(kayttajaId, USERNAME) }
 
             failure.all {
                 hasClass(HankeKayttajaNotFoundException::class)
@@ -201,7 +214,7 @@ class HankekayttajaDeleteServiceITest(
             val hanke = hankeFactory.builder().save()
             val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
 
-            val failure = assertFailure { deleteService.delete(founder.id) }
+            val failure = assertFailure { deleteService.delete(founder.id, USERNAME) }
 
             failure.all {
                 hasClass(NoAdminRemainingException::class)
@@ -218,7 +231,7 @@ class HankekayttajaDeleteServiceITest(
             val offendingOmistaja = builder.omistaja(founder)
             builder.toteuttaja(Kayttooikeustaso.KAIKKI_OIKEUDET)
 
-            val failure = assertFailure { deleteService.delete(founder.id) }
+            val failure = assertFailure { deleteService.delete(founder.id, USERNAME) }
 
             failure.all {
                 hasClass(OnlyOmistajaContactException::class)
@@ -249,7 +262,7 @@ class HankekayttajaDeleteServiceITest(
                     .tyonSuorittaja(founder)
                     .save()
 
-            val failure = assertFailure { deleteService.delete(founder.id) }
+            val failure = assertFailure { deleteService.delete(founder.id, USERNAME) }
 
             failure.all {
                 hasClass(HasActiveApplicationsException::class)
@@ -276,7 +289,7 @@ class HankekayttajaDeleteServiceITest(
                     .hakija(founder, otherKayttaja)
                     .save()
 
-            deleteService.delete(founder.id)
+            deleteService.delete(founder.id, USERNAME)
 
             assertThat(hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)).isNull()
             assertThat(hankeService.loadHankeById(hanke.id))
@@ -296,6 +309,25 @@ class HankekayttajaDeleteServiceITest(
                 .single()
                 .prop(ContactResponse::hankekayttajaId)
                 .isNotEqualTo(founder.id)
+        }
+
+        @Test
+        fun `send an email notification when the user is deleted`() {
+            val hanke = hankeFactory.builder().withHankealue().saveEntity()
+            val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+            hankeFactory.addYhteystiedotTo(hanke) {
+                omistaja(founder, kayttaja())
+                toteuttaja(Kayttooikeustaso.KAIKKI_OIKEUDET)
+            }
+
+            deleteService.delete(founder.id, USERNAME)
+
+            val capturedEmails = greenMail.receivedMessages
+            assertThat(capturedEmails).hasSize(1)
+            assertThat(capturedEmails.first()).prop(MimeMessage::textBody).all {
+                contains("${founder.fullName()} (${founder.sahkoposti}) on poistanut sinut")
+                contains("hankkeelta \"${hanke.nimi}\" (${hanke.hankeTunnus})")
+            }
         }
     }
 
