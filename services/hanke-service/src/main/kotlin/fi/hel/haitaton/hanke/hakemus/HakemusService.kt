@@ -97,7 +97,7 @@ class HakemusService(
             )
         val entity =
             ApplicationEntity(
-                id = null,
+                id = 0,
                 alluid = null,
                 alluStatus = null,
                 applicationIdentifier = null,
@@ -135,7 +135,7 @@ class HakemusService(
         }
 
         assertGeometryValidity(request.areas) { validationError ->
-            "Invalid geometry received when updating application id=${applicationEntity.id}, reason=${validationError.reason}, location=${validationError.location}"
+            "Invalid geometry received when updating application ${applicationEntity.logString()}, reason=${validationError.reason}, location=${validationError.location}"
         }
 
         assertYhteystiedotValidity(applicationEntity, request)
@@ -144,8 +144,8 @@ class HakemusService(
         if (!hankeEntity.generated) {
             request.areas?.let { areas ->
                 assertGeometryCompatibility(hankeEntity.id, areas) { area ->
-                    "Application geometry doesn't match any hankealue when updating application id=${applicationEntity.id}, " +
-                        "hankeId=${hankeEntity.id}, application geometry=${area.geometry.toJsonString()}"
+                    "Application geometry doesn't match any hankealue when updating application ${applicationEntity.logString()}, " +
+                        "${hankeEntity.logString()}, application geometry=${area.geometry.toJsonString()}"
                 }
             }
         } else {
@@ -170,9 +170,9 @@ class HakemusService(
         if (!hanke.generated) {
             hakemus.applicationData.areas?.let { areas ->
                 assertGeometryCompatibility(hanke.id, areas) { applicationArea ->
-                    "Application geometry doesn't match any hankealue when sending application for user $currentUserId, " +
-                        "${hanke.logString()}, hakemusId=${hakemus.id}, " +
-                        "application geometry=${applicationArea.geometry.toJsonString()}"
+                    "Hakemus geometry doesn't match any hankealue when sending hakemus, " +
+                        "${hanke.logString()}, ${hakemus.logString()}, " +
+                        "hakemus geometry=${applicationArea.geometry.toJsonString()}"
                 }
             }
         }
@@ -209,17 +209,17 @@ class HakemusService(
      */
     @Transactional
     fun deleteWithOrphanGeneratedHankeRemoval(
-        applicationId: Long,
+        hakemusId: Long,
         userId: String,
     ): ApplicationDeletionResultDto {
-        val application = getEntityById(applicationId)
+        val application = getEntityById(hakemusId)
         val hanke = application.hanke
 
         cancelAndDelete(application.toHakemus(), userId)
 
         if (hanke.generated && hanke.hakemukset.size == 1) {
             logger.info {
-                "Application ${application.id} was the only one of a generated Hanke, removing Hanke ${hanke.hankeTunnus}."
+                "Application was the only one of a generated Hanke, removing Hanke. ${hanke.logString()}, ${application.logString()}"
             }
             hankeRepository.delete(hanke)
             val hankeDomain =
@@ -261,7 +261,7 @@ class HakemusService(
                 .mapNotNull { hakemus.yhteystiedot[it] }
                 .flatMap { it.yhteyshenkilot }
                 .find { it.hankekayttaja.permission?.userId == currentUserId }
-                ?: throw UserNotInContactsException(hakemus.id!!, currentUserId)
+                ?: throw UserNotInContactsException(hakemus.id, currentUserId)
         yhteyshenkilo.tilaaja = true
     }
 
@@ -294,8 +294,7 @@ class HakemusService(
             attachmentService.sendInitialAttachments(alluId, hakemus.id)
         } catch (e: Exception) {
             logger.error(e) {
-                "Error while sending the initial attachments. Canceling the application. " +
-                    "id=${hakemus.id}, alluid=$alluId"
+                "Error while sending the initial attachments. Canceling the application. ${hakemus.logString()}"
             }
             alluClient.cancel(alluId)
             alluClient.sendSystemComment(alluId, ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG)
@@ -419,7 +418,7 @@ class HakemusService(
             }
         if (!expected) {
             throw IncompatibleHakemusUpdateRequestException(
-                applicationEntity.id!!,
+                applicationEntity.id,
                 applicationEntity.applicationData::class,
                 request::class
             )
@@ -449,7 +448,7 @@ class HakemusService(
         val customersWithContacts = updateRequest.customersByRole()
         ApplicationContactType.entries.forEach {
             assertYhteystietoValidity(
-                applicationEntity.id!!,
+                applicationEntity.id,
                 it,
                 applicationEntity.yhteystiedot[it],
                 customersWithContacts[it]
@@ -463,7 +462,7 @@ class HakemusService(
                 .flatMap { it.contacts.map { contact -> contact.hankekayttajaId } }
                 .toSet()
         ) {
-            "Invalid hanke user/users received when updating application id=${applicationEntity.id}, invalidHankeKayttajaIds=$it"
+            "Invalid hanke user/users received when updating application ${applicationEntity.logString()}, invalidHankeKayttajaIds=$it"
         }
     }
 
@@ -656,22 +655,22 @@ class HakemusService(
 
     @Transactional
     fun cancelAndDelete(hakemus: Hakemus, userId: String) {
-        val id = hakemus.id
-        val alluId = hakemus.alluid
-        if (alluId == null) {
-            logger.info { "Hakemus not sent to Allu yet, simply deleting it. id=$id" }
+        if (hakemus.alluid == null) {
+            logger.info {
+                "Hakemus not sent to Allu yet, simply deleting it. ${hakemus.logString()}"
+            }
         } else {
             logger.info {
-                "Hakemus is sent to Allu, canceling it before deleting. id=$id alluid=$alluId"
+                "Hakemus is sent to Allu, canceling it before deleting. ${hakemus.logString()}"
             }
-            cancelHakemus(id, alluId, hakemus.alluStatus)
+            cancelHakemus(hakemus.id, hakemus.alluid, hakemus.alluStatus)
         }
 
-        logger.info { "Deleting hakemus, id=$id, alluid=$alluId" }
-        attachmentService.deleteAllAttachments(id)
+        logger.info { "Deleting hakemus, ${hakemus.logString()}" }
+        attachmentService.deleteAllAttachments(hakemus)
         applicationRepository.deleteById(hakemus.id)
         hakemusLoggingService.logDelete(hakemus, userId)
-        logger.info { "Hakemus deleted, id=$id, alluid=$alluId" }
+        logger.info { "Hakemus deleted, ${hakemus.logString()}" }
     }
 
     /** Cancel a hakemus that's been sent to Allu. */

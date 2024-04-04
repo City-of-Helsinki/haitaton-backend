@@ -244,7 +244,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     private fun auditLogEntriesForCustomers(
         applications: List<Application>,
     ): Set<AuditLogEntry> =
-        applications.flatMap { auditLogEntriesForCustomers(it.id!!, it.applicationData) }.toSet()
+        applications.flatMap { auditLogEntriesForCustomers(it.id, it.applicationData) }.toSet()
 
     private fun auditLogEntriesForHakemusResponseCustomers(
         hakemusResponses: List<HakemusResponse>,
@@ -293,7 +293,7 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         }
 
     private fun auditLogEntriesForContacts(applications: List<Application>): Set<AuditLogEntry> =
-        applications.flatMap { auditLogEntriesForContacts(it.id!!, it.applicationData) }.toSet()
+        applications.flatMap { auditLogEntriesForContacts(it.id, it.applicationData) }.toSet()
 
     private fun auditLogEntriesForHakemusDataResponseContacts(
         applicationId: Long,

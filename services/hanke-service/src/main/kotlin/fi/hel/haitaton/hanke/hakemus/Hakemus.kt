@@ -10,14 +10,14 @@ import java.time.ZonedDateTime
 
 data class Hakemus(
     override val id: Long,
-    val alluid: Int?,
+    override val alluid: Int?,
     val alluStatus: ApplicationStatus?,
-    val applicationIdentifier: String?,
+    override val applicationIdentifier: String?,
     val applicationType: ApplicationType,
     val applicationData: HakemusData,
     val hankeTunnus: String,
     val hankeId: Int,
-) : HasId<Long> {
+) : HakemusIdentifier {
     fun toResponse(): HakemusResponse =
         HakemusResponse(
             id = id,
@@ -158,4 +158,12 @@ data class KaivuilmoitusData(
             propertyDeveloperWithContacts,
             representativeWithContacts,
         )
+}
+
+interface HakemusIdentifier : HasId<Long> {
+    override val id: Long
+    val alluid: Int?
+    val applicationIdentifier: String?
+
+    fun logString() = "Hakemus: (id=$id, alluId=$alluid, identifier=$applicationIdentifier)"
 }

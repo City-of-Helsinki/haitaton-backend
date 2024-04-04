@@ -189,7 +189,7 @@ class ApplicationServiceITest : IntegrationTest() {
             val application =
                 applicationService.create(
                     createApplication(
-                        id = null,
+                        id = 0,
                         hankeTunnus = hanke.hankeTunnus,
                         applicationData = dataWithoutAreas
                     ),
@@ -202,7 +202,7 @@ class ApplicationServiceITest : IntegrationTest() {
             assertThat(applicationLogs).single().isSuccess(Operation.CREATE) {
                 hasUserActor(USERNAME, TestUtils.mockedIp)
                 withTarget {
-                    prop(AuditLogTarget::id).isEqualTo(application.id?.toString())
+                    prop(AuditLogTarget::id).isEqualTo(application.id.toString())
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.APPLICATION)
                     prop(AuditLogTarget::objectBefore).isNull()
                     prop(AuditLogTarget::objectAfter).given {
@@ -272,7 +272,7 @@ class ApplicationServiceITest : IntegrationTest() {
             val response = applicationService.create(newApplication, USERNAME)
 
             assertTrue(response.applicationData.pendingOnClient)
-            val savedApplication = applicationRepository.findById(response.id!!).get()
+            val savedApplication = applicationRepository.findById(response.id).get()
             assertTrue(savedApplication.applicationData.pendingOnClient)
             verify { cableReportServiceAllu wasNot Called }
         }
@@ -280,7 +280,7 @@ class ApplicationServiceITest : IntegrationTest() {
         @Test
         fun `when invalid geometry in areas should throw`() {
             val cableReportData = createCableReportApplicationData(areas = listOf(intersectingArea))
-            val newApplication = createApplication(id = null, applicationData = cableReportData)
+            val newApplication = createApplication(id = 0, applicationData = cableReportData)
 
             val exception =
                 assertThrows<ApplicationGeometryException> {
@@ -304,7 +304,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 createCableReportApplicationData(areas = listOf(havisAmanda))
             val newApplication =
                 createApplication(
-                    id = null,
+                    id = 0,
                     hankeTunnus = hanke.hankeTunnus,
                     applicationData = cableReportApplicationData
                 )
@@ -317,7 +317,7 @@ class ApplicationServiceITest : IntegrationTest() {
         @Test
         fun `when application without hankeTunnus should throw`() {
             assertThrows<HankeNotFoundException> {
-                applicationService.create(createApplication(id = null, hankeTunnus = ""), USERNAME)
+                applicationService.create(createApplication(id = 0, hankeTunnus = ""), USERNAME)
             }
         }
     }
@@ -332,7 +332,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 applicationService.create(
                     createApplication(
                         applicationType = ApplicationType.CABLE_REPORT,
-                        id = null,
+                        id = 0,
                         hankeTunnus = hanke.hankeTunnus,
                         applicationData = dataWithoutAreas
                     ),
@@ -342,7 +342,7 @@ class ApplicationServiceITest : IntegrationTest() {
             assertThat(auditLogRepository.findAll()).isEmpty()
 
             applicationService.updateApplicationData(
-                application.id!!,
+                application.id,
                 dataWithoutAreas.copy(name = "Modified application"),
                 USERNAME
             )
@@ -355,7 +355,7 @@ class ApplicationServiceITest : IntegrationTest() {
             assertThat(applicationLogs).single().isSuccess(Operation.UPDATE) {
                 hasUserActor(USERNAME, TestUtils.mockedIp)
                 withTarget {
-                    prop(AuditLogTarget::id).isEqualTo(application.id?.toString())
+                    prop(AuditLogTarget::id).isEqualTo(application.id.toString())
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.APPLICATION)
                     prop(AuditLogTarget::objectBefore).given {
                         JSONAssert.assertEquals(expectedBefore, it, JSONCompareMode.NON_EXTENSIBLE)
@@ -386,7 +386,7 @@ class ApplicationServiceITest : IntegrationTest() {
 
             val exception = assertFailure {
                 applicationService.updateApplicationData(
-                    application.id!!,
+                    application.id,
                     newApplicationData,
                     USERNAME
                 )
@@ -409,7 +409,7 @@ class ApplicationServiceITest : IntegrationTest() {
             assertThat(auditLogRepository.findAll()).isEmpty()
 
             applicationService.updateApplicationData(
-                application.id!!,
+                application.id,
                 application.applicationData,
                 USERNAME
             )
@@ -447,7 +447,7 @@ class ApplicationServiceITest : IntegrationTest() {
 
             val response =
                 applicationService.updateApplicationData(
-                    initialApplication.id!!,
+                    initialApplication.id,
                     newApplicationData,
                     USERNAME
                 )
@@ -469,7 +469,7 @@ class ApplicationServiceITest : IntegrationTest() {
 
             val response =
                 applicationService.updateApplicationData(
-                    initialApplication.id!!,
+                    initialApplication.id,
                     newApplicationData,
                     USERNAME
                 )
@@ -498,7 +498,7 @@ class ApplicationServiceITest : IntegrationTest() {
 
             val response =
                 applicationService.updateApplicationData(
-                    application.id!!,
+                    application.id,
                     newApplicationData,
                     USERNAME
                 )
@@ -533,13 +533,13 @@ class ApplicationServiceITest : IntegrationTest() {
 
             val response =
                 applicationService.updateApplicationData(
-                    application.id!!,
+                    application.id,
                     newApplicationData,
                     USERNAME
                 )
 
             assertFalse(response.applicationData.pendingOnClient)
-            val savedApplication = applicationRepository.findById(application.id!!).get()
+            val savedApplication = applicationRepository.findById(application.id).get()
             assertFalse(savedApplication.applicationData.pendingOnClient)
         }
 
@@ -553,7 +553,7 @@ class ApplicationServiceITest : IntegrationTest() {
             val exception =
                 assertThrows<ApplicationGeometryException> {
                     applicationService.updateApplicationData(
-                        application.id!!,
+                        application.id,
                         cableReportApplicationData,
                         USERNAME
                     )
@@ -582,7 +582,7 @@ class ApplicationServiceITest : IntegrationTest() {
             val exception =
                 assertThrows<ApplicationGeometryNotInsideHankeException> {
                     applicationService.updateApplicationData(
-                        application.id!!,
+                        application.id,
                         cableReportApplicationData,
                         USERNAME
                     )
@@ -678,7 +678,7 @@ class ApplicationServiceITest : IntegrationTest() {
             val hanke = hankeFactory.saveMinimal()
             val applications =
                 applicationFactory.saveApplicationEntities(3, USERNAME, hanke = hanke)
-            val selectedId = applications[1].id!!
+            val selectedId = applications[1].id
             assertThat(applicationRepository.findAll()).hasSize(3)
 
             val response = applicationService.getApplicationById(selectedId)
@@ -713,7 +713,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 createAlluApplicationResponse(alluIdMock)
             justRun { cableReportServiceAllu.addAttachment(any(), any()) }
 
-            applicationService.sendApplication(initialApplication.id!!, USERNAME)
+            applicationService.sendApplication(initialApplication.id, USERNAME)
 
             verify { cableReportServiceAllu.create(any()) }
             verify { cableReportServiceAllu.addAttachment(any(), any()) }
@@ -745,11 +745,11 @@ class ApplicationServiceITest : IntegrationTest() {
             every { cableReportServiceAllu.getApplicationInformation(21) } returns
                 createAlluApplicationResponse(21, PENDING)
 
-            val response = applicationService.sendApplication(application.id!!, USERNAME)
+            val response = applicationService.sendApplication(application.id, USERNAME)
 
             val responseApplicationData = response.applicationData as CableReportApplicationData
             assertFalse(responseApplicationData.pendingOnClient)
-            val savedApplication = applicationRepository.findById(application.id!!).get()
+            val savedApplication = applicationRepository.findById(application.id).get()
             val savedApplicationData =
                 savedApplication.applicationData as CableReportApplicationData
             assertFalse(savedApplicationData.pendingOnClient)
@@ -774,7 +774,7 @@ class ApplicationServiceITest : IntegrationTest() {
             every { cableReportServiceAllu.getApplicationInformation(26) } returns
                 createAlluApplicationResponse(26)
 
-            applicationService.sendApplication(application.id!!, USERNAME)
+            applicationService.sendApplication(application.id, USERNAME)
 
             val kutsut = kayttajakutsuRepository.findAll()
             assertThat(kutsut).single().all {
@@ -822,7 +822,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 createAlluApplicationResponse(26)
             justRun { cableReportServiceAllu.addAttachment(26, any()) }
 
-            applicationService.sendApplication(application.id!!, USERNAME)
+            applicationService.sendApplication(application.id, USERNAME)
 
             val capturedEmails = getApplicationNotifications()
             assertThat(capturedEmails).hasSize(3) // 4 contacts, but one is the sender
@@ -847,7 +847,7 @@ class ApplicationServiceITest : IntegrationTest() {
             every { cableReportServiceAllu.getApplicationInformation(21) } returns
                 createAlluApplicationResponse(21, PENDING)
 
-            applicationService.sendApplication(application.id!!, USERNAME)
+            applicationService.sendApplication(application.id, USERNAME)
 
             verify { cableReportServiceAllu.getApplicationInformation(21) }
             verify(exactly = 0) { cableReportServiceAllu.update(any(), any()) }
@@ -867,7 +867,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 createAlluApplicationResponse(21, DECISIONMAKING)
 
             assertThrows<ApplicationAlreadyProcessingException> {
-                applicationService.sendApplication(application.id!!, USERNAME)
+                applicationService.sendApplication(application.id, USERNAME)
             }
 
             verify { cableReportServiceAllu.getApplicationInformation(21) }
@@ -891,13 +891,13 @@ class ApplicationServiceITest : IntegrationTest() {
             justRun { cableReportServiceAllu.addAttachment(26, any()) }
             every { cableReportServiceAllu.getApplicationInformation(26) } throws AlluException()
 
-            val response = applicationService.sendApplication(application.id!!, USERNAME)
+            val response = applicationService.sendApplication(application.id, USERNAME)
 
             assertEquals(26, response.alluid)
             assertEquals(pendingApplicationData, response.applicationData)
             assertNull(response.applicationIdentifier)
             assertNull(response.alluStatus)
-            val savedApplication = applicationRepository.findById(application.id!!).get()
+            val savedApplication = applicationRepository.findById(application.id).get()
             assertEquals(26, savedApplication.alluid)
             assertEquals(pendingApplicationData, savedApplication.applicationData)
             assertNull(savedApplication.applicationIdentifier)
@@ -922,7 +922,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 )
 
             assertThrows<ApplicationGeometryNotInsideHankeException> {
-                applicationService.sendApplication(application.id!!, USERNAME)
+                applicationService.sendApplication(application.id, USERNAME)
             }
         }
 
@@ -948,7 +948,7 @@ class ApplicationServiceITest : IntegrationTest() {
             every { cableReportServiceAllu.sendSystemComment(alluId, any()) } returns 4141
 
             assertThrows<AlluException> {
-                applicationService.sendApplication(application.id!!, USERNAME)
+                applicationService.sendApplication(application.id, USERNAME)
             }
 
             verifyOrder {
@@ -981,11 +981,11 @@ class ApplicationServiceITest : IntegrationTest() {
             every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
                 createAlluApplicationResponse(alluId)
 
-            val response = applicationService.sendApplication(application.id!!, USERNAME)
+            val response = applicationService.sendApplication(application.id, USERNAME)
 
             assertThat(response.alluid).isEqualTo(alluId)
             assertThat(response.alluStatus).isEqualTo(PENDING)
-            val savedApplication = applicationRepository.findById(application.id!!).get()
+            val savedApplication = applicationRepository.findById(application.id).get()
             assertThat(savedApplication.alluid).isEqualTo(alluId)
             assertThat(savedApplication.alluStatus).isEqualTo(PENDING)
             verifyOrder {
@@ -1014,7 +1014,7 @@ class ApplicationServiceITest : IntegrationTest() {
             every { cableReportServiceAllu.getApplicationInformation(26) } returns
                 createAlluApplicationResponse(26)
 
-            val response = applicationService.sendApplication(application.id!!, USERNAME)
+            val response = applicationService.sendApplication(application.id, USERNAME)
 
             assertEquals(26, response.alluid)
             assertEquals(pendingApplicationData, response.applicationData)
@@ -1023,7 +1023,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 response.applicationIdentifier
             )
             assertEquals(PENDING, response.alluStatus)
-            val savedApplication = applicationRepository.findById(application.id!!).get()
+            val savedApplication = applicationRepository.findById(application.id).get()
             assertEquals(26, savedApplication.alluid)
             assertEquals(pendingApplicationData, savedApplication.applicationData)
             assertEquals(
@@ -1060,18 +1060,18 @@ class ApplicationServiceITest : IntegrationTest() {
             assertThat(applicationRepository.findAll()).hasSize(1)
             attachmentFactory.save(application = application).withContent()
             attachmentFactory.save(application = application).withContent()
-            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))
+            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id)))
                 .hasSize(2)
-            assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id))
                 .hasSize(2)
 
-            applicationService.delete(application.id!!, USERNAME)
+            applicationService.delete(application.id, USERNAME)
 
             assertThat(applicationRepository.findAll()).isEmpty()
             verify { cableReportServiceAllu wasNot Called }
-            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))
+            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id)))
                 .isEmpty()
-            assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id))
                 .isEmpty()
         }
 
@@ -1083,7 +1083,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 applicationService.create(
                     createApplication(
                         applicationType = ApplicationType.CABLE_REPORT,
-                        id = null,
+                        id = 0,
                         hankeTunnus = hanke.hankeTunnus,
                         applicationData = dataWithoutAreas
                     ),
@@ -1092,7 +1092,7 @@ class ApplicationServiceITest : IntegrationTest() {
             auditLogRepository.deleteAll()
             assertThat(auditLogRepository.findAll()).isEmpty()
 
-            applicationService.delete(application.id!!, USERNAME)
+            applicationService.delete(application.id, USERNAME)
 
             val applicationLogs = auditLogRepository.findByType(ObjectType.APPLICATION)
             val expectedObject =
@@ -1100,7 +1100,7 @@ class ApplicationServiceITest : IntegrationTest() {
             assertThat(applicationLogs).single().isSuccess(Operation.DELETE) {
                 hasUserActor(USERNAME, TestUtils.mockedIp)
                 withTarget {
-                    prop(AuditLogTarget::id).isEqualTo(application.id?.toString())
+                    prop(AuditLogTarget::id).isEqualTo(application.id.toString())
                     prop(AuditLogTarget::type).isEqualTo(ObjectType.APPLICATION)
                     prop(AuditLogTarget::objectBefore).given {
                         JSONAssert.assertEquals(expectedObject, it, JSONCompareMode.NON_EXTENSIBLE)
@@ -1122,7 +1122,7 @@ class ApplicationServiceITest : IntegrationTest() {
             justRun { cableReportServiceAllu.cancel(73) }
             every { cableReportServiceAllu.sendSystemComment(73, any()) } returns 1324
 
-            applicationService.delete(application.id!!, USERNAME)
+            applicationService.delete(application.id, USERNAME)
 
             assertThat(applicationRepository.findAll()).hasSize(0)
             verifyOrder {
@@ -1142,7 +1142,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 createAlluApplicationResponse(73, APPROVED)
 
             assertThrows<ApplicationAlreadyProcessingException> {
-                applicationService.delete(application.id!!, USERNAME)
+                applicationService.delete(application.id, USERNAME)
             }
 
             assertThat(applicationRepository.findAll()).hasSize(1)
@@ -1160,7 +1160,7 @@ class ApplicationServiceITest : IntegrationTest() {
             assertThat(applicationRepository.findAll()).hasSize(1)
 
             val result =
-                applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id!!, USERNAME)
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id, USERNAME)
 
             assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
             assertThat(applicationRepository.findAll()).isEmpty()
@@ -1178,20 +1178,20 @@ class ApplicationServiceITest : IntegrationTest() {
             assertThat(applicationRepository.findAll()).hasSize(1)
             attachmentFactory.save(application = application).withContent()
             attachmentFactory.save(application = application).withContent()
-            assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id))
                 .hasSize(2)
-            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))
+            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id)))
                 .hasSize(2)
 
             val result =
-                applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id!!, USERNAME)
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id, USERNAME)
 
             assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = true))
             assertThat(applicationRepository.findAll()).isEmpty()
             assertThat(hankeRepository.findAll()).isEmpty()
-            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id!!)))
+            assertThat(fileClient.list(Container.HAKEMUS_LIITTEET, prefix(application.id)))
                 .isEmpty()
-            assertThat(applicationAttachmentRepository.findByApplicationId(application.id!!))
+            assertThat(applicationAttachmentRepository.findByApplicationId(application.id))
                 .isEmpty()
         }
 
@@ -1203,7 +1203,7 @@ class ApplicationServiceITest : IntegrationTest() {
             assertThat(applicationRepository.findAll()).hasSize(1)
 
             val result =
-                applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id!!, USERNAME)
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(application.id, USERNAME)
 
             assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
             assertThat(applicationRepository.findAll()).isEmpty()
@@ -1220,14 +1220,11 @@ class ApplicationServiceITest : IntegrationTest() {
             assertThat(applicationRepository.findAll()).hasSize(2)
 
             val result =
-                applicationService.deleteWithOrphanGeneratedHankeRemoval(
-                    application1.id!!,
-                    USERNAME
-                )
+                applicationService.deleteWithOrphanGeneratedHankeRemoval(application1.id, USERNAME)
 
             assertThat(result).isEqualTo(ApplicationDeletionResultDto(hankeDeleted = false))
             assertThat(applicationRepository.findAll()).hasSize(1)
-            assertThat(applicationRepository.findById(application2.id!!)).isPresent()
+            assertThat(applicationRepository.findById(application2.id)).isPresent()
             assertThat(hankeRepository.findByHankeTunnus(hanke.hankeTunnus)).isNotNull()
             verify { cableReportServiceAllu wasNot Called }
         }
@@ -1253,7 +1250,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 applicationFactory.saveApplicationEntity(USERNAME, hanke = hanke, alluId = null)
 
             assertThrows<ApplicationDecisionNotFoundException> {
-                applicationService.downloadDecision(application.id!!, USERNAME)
+                applicationService.downloadDecision(application.id, USERNAME)
             }
 
             verify { cableReportServiceAllu wasNot Called }
@@ -1268,7 +1265,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 .throws(ApplicationDecisionNotFoundException(""))
 
             assertThrows<ApplicationDecisionNotFoundException> {
-                applicationService.downloadDecision(application.id!!, USERNAME)
+                applicationService.downloadDecision(application.id, USERNAME)
             }
 
             verify { cableReportServiceAllu.getDecisionPdf(alluId) }
@@ -1286,7 +1283,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 )
             every { cableReportServiceAllu.getDecisionPdf(alluId) }.returns(decisionPdf)
 
-            val (filename, bytes) = applicationService.downloadDecision(application.id!!, USERNAME)
+            val (filename, bytes) = applicationService.downloadDecision(application.id, USERNAME)
 
             assertThat(filename).isNotNull().isEqualTo("JS230001")
             assertThat(bytes).isEqualTo(decisionPdf)
@@ -1305,7 +1302,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 )
             every { cableReportServiceAllu.getDecisionPdf(alluId) }.returns(decisionPdf)
 
-            val (filename, bytes) = applicationService.downloadDecision(application.id!!, USERNAME)
+            val (filename, bytes) = applicationService.downloadDecision(application.id, USERNAME)
 
             assertThat(filename).isNotNull().isEqualTo("paatos")
             assertThat(bytes).isEqualTo(decisionPdf)
@@ -1439,7 +1436,7 @@ class ApplicationServiceITest : IntegrationTest() {
 
             assertThat(result).hasSize(3)
             val userids =
-                result.map { applicationRepository.getReferenceById(it.id!!) }.map { it.userId }
+                result.map { applicationRepository.getReferenceById(it.id) }.map { it.userId }
             assertThat(userids).containsExactly(USERNAME, USERNAME, USERNAME)
         }
     }

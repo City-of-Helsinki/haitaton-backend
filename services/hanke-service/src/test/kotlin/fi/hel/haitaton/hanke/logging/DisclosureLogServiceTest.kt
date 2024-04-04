@@ -312,7 +312,7 @@ internal class DisclosureLogServiceTest {
         val expectedLogs =
             listOf(HAKIJA, TYON_SUORITTAJA).map {
                 AuditLogEntryFactory.createReadEntryForCustomer(
-                    application.id!!,
+                    application.id,
                     customerWithoutContacts.customer,
                     it
                 )
@@ -726,7 +726,7 @@ internal class DisclosureLogServiceTest {
                 AuditLogEntryFactory.createReadEntry(
                     userId,
                     objectType = ObjectType.CABLE_REPORT,
-                    objectId = application.id!!,
+                    objectId = application.id,
                     objectBefore = expectedObject
                 )
 

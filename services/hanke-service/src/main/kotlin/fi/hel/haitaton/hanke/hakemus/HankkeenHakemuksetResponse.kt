@@ -20,7 +20,7 @@ data class HankkeenHakemusResponse(
     constructor(
         application: ApplicationEntity
     ) : this(
-        application.id!!,
+        application.id,
         application.alluid,
         application.alluStatus,
         application.applicationIdentifier,
