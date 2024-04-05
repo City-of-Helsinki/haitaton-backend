@@ -34,7 +34,6 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
-import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.APPROVED
@@ -94,6 +93,7 @@ import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso.HAKEMUSASIOINTI
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso.KATSELUOIKEUS
 import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.permissions.kayttajaTunnistePattern
+import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.Asserts.hasSingleGeometryWithCoordinates
 import fi.hel.haitaton.hanke.test.Asserts.isRecent
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
@@ -889,8 +889,7 @@ class ApplicationServiceITest : IntegrationTest() {
                 cableReportServiceAllu.create(pendingApplicationData.toAlluData(HANKE_TUNNUS))
             } returns 26
             justRun { cableReportServiceAllu.addAttachment(26, any()) }
-            every { cableReportServiceAllu.getApplicationInformation(26) } throws
-                AlluException(listOf())
+            every { cableReportServiceAllu.getApplicationInformation(26) } throws AlluException()
 
             val response = applicationService.sendApplication(application.id!!, USERNAME)
 
@@ -944,7 +943,7 @@ class ApplicationServiceITest : IntegrationTest() {
             every { cableReportServiceAllu.create(expectedAlluRequest) } returns alluId
             justRun { cableReportServiceAllu.addAttachment(alluId, any()) }
             every { cableReportServiceAllu.addAttachments(alluId, any(), any()) } throws
-                AlluException(listOf())
+                AlluException()
             justRun { cableReportServiceAllu.cancel(alluId) }
             every { cableReportServiceAllu.sendSystemComment(alluId, any()) } returns 4141
 
@@ -978,8 +977,7 @@ class ApplicationServiceITest : IntegrationTest() {
             val expectedAlluRequest = pendingApplicationData.toAlluData(HANKE_TUNNUS)
             val alluId = 467
             every { cableReportServiceAllu.create(expectedAlluRequest) } returns alluId
-            every { cableReportServiceAllu.addAttachment(alluId, any()) } throws
-                AlluException(listOf())
+            every { cableReportServiceAllu.addAttachment(alluId, any()) } throws AlluException()
             every { cableReportServiceAllu.getApplicationInformation(alluId) } returns
                 createAlluApplicationResponse(alluId)
 

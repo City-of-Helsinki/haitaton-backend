@@ -114,10 +114,9 @@ class CableReportService(
 
     fun create(application: AlluApplicationData): Int =
         when (application) {
-            is AlluCableReportApplicationData ->
-                create(application, "/cablereports", "cable report")
+            is AlluCableReportApplicationData -> create(application, "cablereports", "cable report")
             is AlluExcavationNotificationData ->
-                create(application, "/excavationannouncements", "excavation announcement")
+                create(application, "excavationannouncements", "excavation announcement")
         }
 
     fun create(cableReport: AlluApplicationData, path: String, name: String): Int {
@@ -143,12 +142,12 @@ class CableReportService(
     fun update(alluApplicationId: Int, application: AlluApplicationData) {
         when (application) {
             is AlluCableReportApplicationData ->
-                update(alluApplicationId, application, "/cablereports", "cable report")
+                update(alluApplicationId, application, "cablereports", "cable report")
             is AlluExcavationNotificationData ->
                 update(
                     alluApplicationId,
                     application,
-                    "/excavationannouncements",
+                    "excavationannouncements",
                     "excavation announcement"
                 )
         }
@@ -434,12 +433,8 @@ data class Attachment(
     )
 }
 
-class AlluException(val errors: List<ErrorInfo>) : RuntimeException()
-
 class AlluLoginException(cause: Throwable) : RuntimeException(cause)
 
 /** Exception to use when Allu doesn't follow their API descriptions. */
 class AlluApiException(requestUri: String, message: String) :
     RuntimeException("$message, request URI: $requestUri")
-
-data class ErrorInfo(val errorMessage: String, val additionalInfo: String)

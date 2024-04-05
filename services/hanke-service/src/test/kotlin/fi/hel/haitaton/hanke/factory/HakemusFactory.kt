@@ -108,7 +108,7 @@ class HakemusFactory(
                 ApplicationType.EXCAVATION_NOTIFICATION -> createKaivuilmoitusData()
             }
 
-        private fun createJohtoselvityshakemusData(
+        fun createJohtoselvityshakemusData(
             name: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
             postalAddress: PostalAddress? = null,
             rockExcavation: Boolean = false,
@@ -121,14 +121,18 @@ class HakemusFactory(
             contractorWithContacts: Hakemusyhteystieto? = null,
             representativeWithContacts: Hakemusyhteystieto? = null,
             propertyDeveloperWithContacts: Hakemusyhteystieto? = null,
+            constructionWork: Boolean = false,
+            maintenanceWork: Boolean = false,
+            propertyConnectivity: Boolean = false,
+            emergencyWork: Boolean = false,
         ): JohtoselvityshakemusData =
             JohtoselvityshakemusData(
                 name = name,
                 postalAddress = postalAddress,
-                constructionWork = false,
-                maintenanceWork = false,
-                propertyConnectivity = false,
-                emergencyWork = false,
+                constructionWork = constructionWork,
+                maintenanceWork = maintenanceWork,
+                propertyConnectivity = propertyConnectivity,
+                emergencyWork = emergencyWork,
                 rockExcavation = rockExcavation,
                 workDescription = workDescription,
                 startTime = startTime,
