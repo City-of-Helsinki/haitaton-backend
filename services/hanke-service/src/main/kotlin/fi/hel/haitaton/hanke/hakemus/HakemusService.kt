@@ -7,6 +7,8 @@ import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.AlluLoginException
+import fi.hel.haitaton.hanke.allu.Attachment
+import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.application.ALLU_APPLICATION_ERROR_MSG
 import fi.hel.haitaton.hanke.application.ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG
@@ -30,9 +32,11 @@ import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
+import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.reflect.KClass
 import mu.KotlinLogging
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -274,8 +278,45 @@ class HakemusService(
      * @param alluAction The action to perform in Allu. Must return the application's Allu ID.
      */
     private fun withFormDataPdfUploading(cableReport: HakemusData, alluAction: () -> Int): Int {
-        // TODO: Update PDF sending to handle Hakemusdata
-        return alluAction()
+        val formAttachment =
+            when (cableReport) {
+                is JohtoselvityshakemusData -> getApplicationDataAsPdf(cableReport)
+                else -> {
+                    logger.warn(
+                        "No PDF created for application with type ${cableReport.applicationType}."
+                    )
+                    return alluAction()
+                }
+            }
+
+        val alluId = alluAction()
+
+        try {
+            alluClient.addAttachment(alluId, formAttachment)
+        } catch (e: Exception) {
+            logger.error(e) {
+                "Error while uploading form data PDF attachment. Continuing anyway. alluid=$alluId"
+            }
+        }
+
+        return alluId
+    }
+
+    private fun getApplicationDataAsPdf(data: JohtoselvityshakemusData): Attachment {
+        logger.info { "Creating a PDF from the application data for data attachment." }
+        val totalArea =
+            geometriatDao.calculateCombinedArea(data.areas?.map { it.geometry } ?: listOf())
+        val areas = data.areas?.map { geometriatDao.calculateArea(it.geometry) } ?: listOf()
+        val attachmentMetadata =
+            AttachmentMetadata(
+                id = null,
+                mimeType = MediaType.APPLICATION_PDF_VALUE,
+                name = "haitaton-form-data.pdf",
+                description = "Original form data from Haitaton, dated ${LocalDateTime.now()}.",
+            )
+        val pdfData = HakemusPdfService.createPdf(data, totalArea, areas)
+        logger.info { "Created the PDF for data attachment." }
+        return Attachment(attachmentMetadata, pdfData)
     }
 
     /**
