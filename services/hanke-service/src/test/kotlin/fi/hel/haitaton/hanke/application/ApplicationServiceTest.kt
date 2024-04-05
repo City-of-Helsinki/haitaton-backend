@@ -313,7 +313,8 @@ class ApplicationServiceTest {
 
             applicationService.sendApplication(3, USERNAME)
 
-            val expectedApplication = applicationData.copy(pendingOnClient = false)
+            val expectedApplication =
+                applicationData.copy(pendingOnClient = false).toAlluData(hankeEntity.hankeTunnus)
             verifySequence {
                 applicationRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
@@ -355,7 +356,8 @@ class ApplicationServiceTest {
 
             assertThrows<AlluException> { applicationService.sendApplication(3, USERNAME) }
 
-            val expectedApplication = applicationData.copy(pendingOnClient = false)
+            val expectedApplication =
+                applicationData.copy(pendingOnClient = false).toAlluData(hankeEntity.hankeTunnus)
             verifySequence {
                 applicationRepository.findOneById(3)
                 geometriatDao.isInsideHankeAlueet(1, any())
@@ -435,11 +437,7 @@ class ApplicationServiceTest {
                 geometriatDao.calculateCombinedArea(any())
                 geometriatDao.calculateArea(any())
                 cableReportService.create(expectedAlluData)
-                disclosureLogService.saveDisclosureLogsForAllu(
-                    3,
-                    expectedApplicationData,
-                    Status.SUCCESS
-                )
+                disclosureLogService.saveDisclosureLogsForAllu(3, any(), Status.SUCCESS)
                 cableReportService.addAttachment(852, any())
                 cableReportService.getApplicationInformation(852)
                 hankeKayttajaService.getKayttajaByUserId(1, USERNAME)
@@ -457,7 +455,7 @@ class ApplicationServiceTest {
             }
         }
 
-        @ParameterizedTest(name = "{1} {2}")
+        @ParameterizedTest(name = "{1}")
         @MethodSource("fi.hel.haitaton.hanke.application.ApplicationServiceTest#invalidData")
         fun `when invalid data should not send application`(
             applicationData: ApplicationData,

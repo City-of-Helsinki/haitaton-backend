@@ -1,8 +1,13 @@
 package fi.hel.haitaton.hanke.logging
 
+import assertk.all
 import assertk.assertThat
 import assertk.assertions.containsAtLeast
 import assertk.assertions.containsExactlyInAnyOrder
+import assertk.assertions.isEqualTo
+import assertk.assertions.isNull
+import assertk.assertions.prop
+import assertk.assertions.single
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
@@ -35,6 +40,8 @@ import fi.hel.haitaton.hanke.hakemus.CustomerResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsResponse
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.reformatJson
+import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.hasAlluActor
+import fi.hel.haitaton.hanke.test.AuditLogEntryAsserts.isSuccess
 import fi.hel.haitaton.hanke.toJsonString
 import io.mockk.Called
 import io.mockk.checkUnnecessaryStub
@@ -341,37 +348,6 @@ internal class DisclosureLogServiceTest {
         verify(exactly = 1) { auditLogService.createAll(any()) }
     }
 
-    @ParameterizedTest(name = "{displayName}({arguments})")
-    @EnumSource(Status::class)
-    fun `saveDisclosureLogsForAllu saves logs with the given status`(expectedStatus: Status) {
-        val applicationId = 41L
-        val cableReportApplication = ApplicationFactory.createCableReportApplicationData()
-        val firstContact = cableReportApplication.customerWithContacts!!.contacts[0]
-        val secondContact = cableReportApplication.contractorWithContacts!!.contacts[0]
-        val expectedLogs =
-            listOf(HAKIJA to firstContact, TYON_SUORITTAJA to secondContact).map { (role, contact)
-                ->
-                AuditLogEntryFactory.createReadEntryForContact(applicationId, contact, role)
-                    .copy(
-                        objectType = ObjectType.ALLU_CONTACT,
-                        status = expectedStatus,
-                        userId = ALLU_AUDIT_LOG_USERID,
-                        userRole = UserRole.SERVICE,
-                    )
-            }
-        val capturedLogs = slot<Collection<AuditLogEntry>>()
-        every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
-
-        disclosureLogService.saveDisclosureLogsForAllu(
-            applicationId,
-            cableReportApplication,
-            expectedStatus
-        )
-
-        assertThat(capturedLogs.captured).hasSameElementsAs(expectedLogs)
-        verify(exactly = 1) { auditLogService.createAll(any()) }
-    }
-
     @Nested
     inner class SaveDisclosureLogsForHakemusResponse {
         @Test
@@ -510,15 +486,14 @@ internal class DisclosureLogServiceTest {
         @EnumSource(Status::class)
         fun `saves logs with the given status`(expectedStatus: Status) {
             val applicationId = 41L
-            val cableReportApplication = ApplicationFactory.createCableReportApplicationData()
-            val firstContact = cableReportApplication.customerWithContacts!!.contacts[0]
-            val secondContact = cableReportApplication.contractorWithContacts!!.contacts[0]
+            val application = ApplicationFactory.createCableReportApplicationData()
+            val firstContact = application.customerWithContacts!!.contacts[0].toAlluData()
+            val secondContact = application.contractorWithContacts!!.contacts[0].toAlluData()
             val expectedLogs =
                 listOf(HAKIJA to firstContact, TYON_SUORITTAJA to secondContact).map {
                     (role, contact) ->
                     AuditLogEntryFactory.createReadEntryForContact(applicationId, contact, role)
                         .copy(
-                            objectType = ObjectType.ALLU_CONTACT,
                             status = expectedStatus,
                             userId = ALLU_AUDIT_LOG_USERID,
                             userRole = UserRole.SERVICE,
@@ -529,12 +504,71 @@ internal class DisclosureLogServiceTest {
 
             disclosureLogService.saveDisclosureLogsForAllu(
                 applicationId,
-                cableReportApplication,
+                application.toAlluData(hankeTunnus),
                 expectedStatus
             )
 
             assertThat(capturedLogs.captured).hasSameElementsAs(expectedLogs)
             verify(exactly = 1) { auditLogService.createAll(any()) }
+        }
+
+        @Test
+        fun `saves logs for person customers`() {
+            val applicationId = 41L
+            val personCustomer = ApplicationFactory.createPersonCustomer().withContacts()
+            val companyCustomer = ApplicationFactory.createCompanyCustomer().withContacts()
+            val application =
+                ApplicationFactory.createCableReportApplicationData(
+                    customerWithContacts = personCustomer,
+                    contractorWithContacts = companyCustomer
+                )
+            val capturedLogs = slot<Collection<AuditLogEntry>>()
+            every { auditLogService.createAll(capture(capturedLogs)) } returns mutableListOf()
+
+            disclosureLogService.saveDisclosureLogsForAllu(
+                applicationId,
+                application.toAlluData(hankeTunnus),
+                Status.SUCCESS
+            )
+
+            assertThat(capturedLogs.captured).single().all {
+                isSuccess()
+                hasAlluActor()
+                prop(AuditLogEntry::objectAfter).isNull()
+                prop(AuditLogEntry::objectBefore)
+                    .isEqualTo(
+                        AlluCustomerWithRole(HAKIJA, personCustomer.customer.toAlluData(""))
+                            .toJsonString()
+                    )
+            }
+            verify(exactly = 1) { auditLogService.createAll(any()) }
+        }
+
+        @Test
+        fun `skips person customers when they have no personal data`() {
+            val applicationId = 41L
+            val personCustomer =
+                ApplicationFactory.createPersonCustomer(
+                        name = "",
+                        phone = "",
+                        email = "",
+                        registryKey = ""
+                    )
+                    .withContacts()
+            val companyCustomer = ApplicationFactory.createCompanyCustomer().withContacts()
+            val application =
+                ApplicationFactory.createCableReportApplicationData(
+                    customerWithContacts = personCustomer,
+                    contractorWithContacts = companyCustomer,
+                )
+
+            disclosureLogService.saveDisclosureLogsForAllu(
+                applicationId,
+                application.toAlluData(hankeTunnus),
+                Status.SUCCESS
+            )
+
+            verify { auditLogService wasNot Called }
         }
     }
 
