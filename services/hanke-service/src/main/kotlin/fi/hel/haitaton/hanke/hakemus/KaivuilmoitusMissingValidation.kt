@@ -13,6 +13,8 @@ import fi.hel.haitaton.hanke.validation.Validators.validateTrue
  * Validate required field are set. When application is a draft, it is ok to have fields that are
  * not yet defined. But e.g. when sending, they must be present.
  */
+// TODO when implementing sending of excavation announcement (HAI-1373), these rules should be
+// checked against the actual requirements
 fun KaivuilmoitusData.validateForMissing(): ValidationResult =
     validate { notBlank(name, "name") }
         .and { notNullOrBlank(workDescription, "workDescription") }
