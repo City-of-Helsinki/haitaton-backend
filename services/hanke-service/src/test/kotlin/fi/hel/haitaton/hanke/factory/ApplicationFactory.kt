@@ -110,14 +110,14 @@ class ApplicationFactory(
             )
 
         fun createPersonInvoicingCustomer(
-            name: String = "Liisa Laskuttaja",
+            name: String = "Liisa Laskutettava",
         ): InvoicingCustomer =
             InvoicingCustomer(
                 type = CustomerType.PERSON,
                 name = name,
                 postalAddress = createPostalAddress(),
-                email = "info@dna.test",
-                phone = "+3581012345678",
+                email = "liisa@laskutus.info",
+                phone = "963852741",
                 registryKey = null,
                 ovt = null,
                 invoicingOperator = null,
