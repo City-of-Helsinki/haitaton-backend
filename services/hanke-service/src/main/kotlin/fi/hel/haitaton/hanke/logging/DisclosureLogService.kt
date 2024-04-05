@@ -64,19 +64,19 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
         status: Status,
         failureDescription: String? = null
     ) {
-        val entries =
-            auditLogEntriesForCustomers(
+        val customerEntries =
+            auditLogEntriesForCustomers(applicationId, applicationData, status, failureDescription)
+        val contactEntries =
+            auditLogEntriesForContacts(applicationId, applicationData, status, failureDescription)
+        val invoicingEntry =
+            auditLogEntryForInvoicingCustomer(
                 applicationId,
                 applicationData,
                 status,
                 failureDescription
-            ) +
-                auditLogEntriesForContacts(
-                    applicationId,
-                    applicationData,
-                    status,
-                    failureDescription
-                )
+            )
+        val entries = (customerEntries + contactEntries + invoicingEntry).filterNotNull()
+
         saveDisclosureLogs(ALLU_AUDIT_LOG_USERID, UserRole.SERVICE, entries)
     }
 
@@ -204,6 +204,26 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
                 failureDescription
             )
         }
+
+    private fun auditLogEntryForInvoicingCustomer(
+        applicationId: Long,
+        applicationData: AlluApplicationData,
+        status: Status = Status.SUCCESS,
+        failureDescription: String? = null,
+    ): AuditLogEntry? {
+        val invoicingCustomer = applicationData.invoicingCustomer ?: return null
+        if (invoicingCustomer.type != CustomerType.PERSON) return null
+
+        val customer = AlluMetaCustomerWithRole(MetaCustomerType.INVOICING, invoicingCustomer)
+
+        return disclosureLogEntry(
+            ObjectType.ALLU_CUSTOMER,
+            applicationId,
+            customer,
+            status,
+            failureDescription
+        )
+    }
 
     private fun auditLogEntriesForHakemusDataResponseCustomers(
         applicationId: Long,
@@ -403,6 +423,11 @@ data class AlluCustomerWithRole(
     @JsonUnwrapped val customer: AlluCustomer,
 )
 
+data class AlluMetaCustomerWithRole(
+    val role: MetaCustomerType,
+    @JsonUnwrapped val customer: AlluCustomer,
+)
+
 data class CustomerResponseWithRole(
     val role: ApplicationContactType,
     @JsonUnwrapped val customer: CustomerResponse,
@@ -422,3 +447,7 @@ data class ContactResponseWithRole(
     val role: ApplicationContactType,
     @JsonUnwrapped val contact: ContactResponse,
 )
+
+enum class MetaCustomerType {
+    INVOICING
+}
