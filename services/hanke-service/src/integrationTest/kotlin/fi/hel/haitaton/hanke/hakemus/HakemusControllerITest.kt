@@ -16,6 +16,7 @@ import fi.hel.haitaton.hanke.andReturnContent
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationContactType
+import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
@@ -31,7 +32,9 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withRegistryKey
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withTimes
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
 import fi.hel.haitaton.hanke.factory.HankeFactory
+import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.hankeError
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
@@ -40,6 +43,7 @@ import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
 import io.mockk.every
+import io.mockk.verify
 import io.mockk.verifySequence
 import java.time.ZonedDateTime
 import java.util.UUID
@@ -54,11 +58,13 @@ import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.context.annotation.Import
+import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithAnonymousUser
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
@@ -76,6 +82,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
     @Autowired private lateinit var hakemusService: HakemusService
     @Autowired private lateinit var hankeService: HankeService
     @Autowired private lateinit var authorizer: ApplicationAuthorizer
+    @Autowired private lateinit var disclosureLogService: DisclosureLogService
 
     private val id = 1234L
 
@@ -670,6 +677,104 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.sendHakemus(id, USERNAME)
             }
+        }
+    }
+
+    @Nested
+    inner class DownloadDecision {
+        private val url = "/hakemukset/$id/paatos"
+
+        @Test
+        @WithAnonymousUser
+        fun `when unknown user should return 401`() {
+            get(url).andExpect(status().isUnauthorized)
+
+            verify { hakemusService wasNot Called }
+        }
+
+        @Test
+        fun `when no application should return 404`() {
+            every { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) } throws
+                ApplicationNotFoundException(id)
+
+            get(url)
+                .andExpect(status().isNotFound)
+                .andExpect(jsonPath("errorCode").value("HAI2001"))
+                .andExpect(jsonPath("errorMessage").value("Application not found"))
+
+            verify { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) }
+        }
+
+        @Test
+        fun `when application has no decision should return 404`() {
+            every { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) } returns true
+            every { hakemusService.downloadDecision(id, USERNAME) } throws
+                ApplicationDecisionNotFoundException("Decision not found in Allu. alluid=23")
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2006))
+
+            verifySequence {
+                authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name)
+                hakemusService.downloadDecision(id, USERNAME)
+            }
+        }
+
+        @Test
+        fun `when decision exists should return bytes and correct headers`() {
+            val applicationIdentifier = "JS230001"
+            val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
+            every { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) } returns true
+            every { hakemusService.downloadDecision(id, USERNAME) } returns
+                Pair(applicationIdentifier, pdfBytes)
+            every { hakemusService.getById(id) } returns
+                HakemusFactory.create(applicationIdentifier = applicationIdentifier)
+
+            get(url, resultType = MediaType.APPLICATION_PDF)
+                .andExpect(status().isOk)
+                .andExpect(
+                    MockMvcResultMatchers.header()
+                        .string("Content-Disposition", "inline; filename=JS230001.pdf")
+                )
+                .andExpect(MockMvcResultMatchers.content().bytes(pdfBytes))
+
+            verifySequence {
+                authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name)
+                hakemusService.downloadDecision(id, USERNAME)
+                hakemusService.getById(id)
+            }
+        }
+
+        @Test
+        fun `when decision exists should write access to audit log`() {
+            val applicationIdentifier = "JS230001"
+            val hakemus = HakemusFactory.create(applicationIdentifier = applicationIdentifier)
+            val pdfBytes = "/fi/hel/haitaton/hanke/decision/fake-decision.pdf".getResourceAsBytes()
+            every { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) } returns true
+            every { hakemusService.downloadDecision(id, USERNAME) } returns
+                Pair(applicationIdentifier, pdfBytes)
+            every { hakemusService.getById(id) } returns hakemus
+
+            get(url, resultType = MediaType.APPLICATION_PDF).andExpect(status().isOk)
+
+            verifySequence {
+                authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name)
+                hakemusService.downloadDecision(id, USERNAME)
+                hakemusService.getById(id)
+                disclosureLogService.saveDisclosureLogsForCableReport(
+                    hakemus.toMetadata(),
+                    USERNAME
+                )
+            }
+        }
+
+        @Test
+        fun `when no hanke permission should return 404`() {
+            every { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) } throws
+                ApplicationNotFoundException(id)
+
+            get(url).andExpect(status().isNotFound)
+
+            verify { authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name) }
         }
     }
 }
