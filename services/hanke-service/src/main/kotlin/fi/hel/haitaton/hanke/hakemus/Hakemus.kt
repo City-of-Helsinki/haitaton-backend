@@ -91,3 +91,60 @@ data class JohtoselvityshakemusData(
             representativeWithContacts,
         )
 }
+
+data class KaivuilmoitusData(
+    override val applicationType: ApplicationType = ApplicationType.EXCAVATION_NOTIFICATION,
+    override val pendingOnClient: Boolean,
+    override val name: String,
+    val workDescription: String? = null,
+    val constructionWork: Boolean = false,
+    val maintenanceWork: Boolean = false,
+    val emergencyWork: Boolean = false,
+    val cableReportDone: Boolean = true,
+    val rockExcavation: Boolean? = null,
+    val cableReports: List<String>? = null,
+    val placementContracts: List<String>? = null,
+    val requiredCompetence: Boolean = false,
+    override val startTime: ZonedDateTime? = null,
+    override val endTime: ZonedDateTime? = null,
+    override val areas: List<ApplicationArea>? = null,
+    override val customerWithContacts: Hakemusyhteystieto? = null,
+    val contractorWithContacts: Hakemusyhteystieto? = null,
+    val propertyDeveloperWithContacts: Hakemusyhteystieto? = null,
+    val representativeWithContacts: Hakemusyhteystieto? = null,
+    val invoicingCustomer: Laskutusyhteystieto? = null,
+    val additionalInfo: String? = null,
+) : HakemusData {
+    override fun toResponse(): KaivuilmoitusDataResponse =
+        KaivuilmoitusDataResponse(
+            applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
+            pendingOnClient = pendingOnClient,
+            name = name,
+            workDescription = workDescription ?: "",
+            constructionWork = constructionWork,
+            maintenanceWork = maintenanceWork,
+            emergencyWork = emergencyWork,
+            cableReportDone = cableReportDone,
+            rockExcavation = rockExcavation,
+            cableReports = cableReports,
+            placementContracts = placementContracts,
+            requiredCompetence = requiredCompetence,
+            startTime = startTime,
+            endTime = endTime,
+            areas = areas ?: listOf(),
+            customerWithContacts = customerWithContacts?.toResponse(),
+            contractorWithContacts = contractorWithContacts?.toResponse(),
+            propertyDeveloperWithContacts = propertyDeveloperWithContacts?.toResponse(),
+            representativeWithContacts = representativeWithContacts?.toResponse(),
+            invoicingCustomer = invoicingCustomer?.toResponse(),
+            additionalInfo = additionalInfo,
+        )
+
+    override fun yhteystiedot(): List<Hakemusyhteystieto> =
+        listOfNotNull(
+            customerWithContacts,
+            contractorWithContacts,
+            propertyDeveloperWithContacts,
+            representativeWithContacts,
+        )
+}

@@ -1,6 +1,7 @@
 package fi.hel.haitaton.hanke.hakemus
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import fi.hel.haitaton.hanke.allu.CustomerType
@@ -10,6 +11,8 @@ import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
+import fi.hel.haitaton.hanke.application.ExcavationNotificationData
+import fi.hel.haitaton.hanke.application.InvoicingCustomer
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import java.time.ZonedDateTime
@@ -24,7 +27,9 @@ import java.util.UUID
 )
 @JsonSubTypes(
     JsonSubTypes.Type(value = JohtoselvityshakemusUpdateRequest::class, name = "CABLE_REPORT"),
+    JsonSubTypes.Type(value = KaivuilmoitusUpdateRequest::class, name = "EXCAVATION_NOTIFICATION")
 )
+@JsonInclude(JsonInclude.Include.NON_NULL)
 sealed interface HakemusUpdateRequest {
     val applicationType: ApplicationType
     val name: String
@@ -146,6 +151,121 @@ data class JohtoselvityshakemusUpdateRequest(
         )
 }
 
+data class KaivuilmoitusUpdateRequest(
+    override val applicationType: ApplicationType = ApplicationType.EXCAVATION_NOTIFICATION,
+    // 1. sivu Perustiedot (first filled in Create)
+    /** Työn nimi */
+    override val name: String,
+    /** Työn kuvaus */
+    override val workDescription: String,
+    /** Työssä on kyse: Uuden rakenteen tai johdon rakentamisesta */
+    val constructionWork: Boolean,
+    /** Työssä on kyse: Olemassaolevan rakenteen kunnossapitotyöstä */
+    val maintenanceWork: Boolean,
+    /**
+     * Työssä on kyse: Kaivutyö on aloitettu ennen johtoselvityksen tilaamista merkittävien
+     * vahinkojen välttämiseksi
+     */
+    val emergencyWork: Boolean,
+    /** Hae uusi johtoselvitys? false = kyllä, true = ei */
+    val cableReportDone: Boolean,
+    /**
+     * Uusi johtoselvitys - Louhitaanko työn yhteydessä, esimerkiksi kallioperää? Täytyy olla
+     * annettu, jos [cableReportDone] == false
+     */
+    val rockExcavation: Boolean? = null,
+    /** Tehtyjen johtoselvitysten tunnukset */
+    val cableReports: List<String>? = emptyList(),
+    /** Sijoitussopimukset */
+    val placementContracts: List<String>? = emptyList(),
+    /** Työhön vaadittava pätevyys */
+    val requiredCompetence: Boolean = false,
+    // 2. sivu Alueet
+    /** Työn arvioitu alkupäivä */
+    override val startTime: ZonedDateTime? = null,
+    /** Työn arvioitu loppupäivä */
+    override val endTime: ZonedDateTime? = null,
+    /** Työalueet */
+    override val areas: List<ApplicationArea>? = null,
+    // 3. sivu Yhteystiedot
+    /** Hakijan tiedot */
+    override val customerWithContacts: CustomerWithContactsRequest? = null,
+    /** Työn suorittajan tiedot */
+    val contractorWithContacts: CustomerWithContactsRequest? = null,
+    /** Rakennuttajan tiedot */
+    val propertyDeveloperWithContacts: CustomerWithContactsRequest? = null,
+    /** Asianhoitajan tiedot */
+    override val representativeWithContacts: CustomerWithContactsRequest? = null,
+    /** Laskutustiedot */
+    val invoicingCustomer: InvoicingCustomerRequest? = null,
+    // 4. sivu Liitteet
+    val additionalInfo: String? = null,
+    // 5. sivu Yhteenveto (no input data)
+) : HakemusUpdateRequest {
+
+    override fun hasChanges(applicationEntity: ApplicationEntity): Boolean {
+        val applicationData = applicationEntity.applicationData as ExcavationNotificationData
+        return name != applicationData.name ||
+            workDescription != applicationData.workDescription ||
+            constructionWork != applicationData.constructionWork ||
+            maintenanceWork != applicationData.maintenanceWork ||
+            emergencyWork != applicationData.emergencyWork ||
+            cableReportDone != applicationData.cableReportDone ||
+            rockExcavation != applicationData.rockExcavation ||
+            cableReports != applicationData.cableReports ||
+            placementContracts != applicationData.placementContracts ||
+            requiredCompetence != applicationData.requiredCompetence ||
+            startTime != applicationData.startTime ||
+            endTime != applicationData.endTime ||
+            areas != applicationData.areas ||
+            customerWithContacts.hasChanges(
+                applicationEntity.yhteystiedot[ApplicationContactType.HAKIJA]
+            ) ||
+            contractorWithContacts.hasChanges(
+                applicationEntity.yhteystiedot[ApplicationContactType.TYON_SUORITTAJA]
+            ) ||
+            propertyDeveloperWithContacts.hasChanges(
+                applicationEntity.yhteystiedot[ApplicationContactType.RAKENNUTTAJA]
+            ) ||
+            representativeWithContacts.hasChanges(
+                applicationEntity.yhteystiedot[ApplicationContactType.ASIANHOITAJA]
+            ) ||
+            invoicingCustomer.hasChanges(
+                applicationData.invoicingCustomer,
+                applicationData.customerReference
+            ) ||
+            additionalInfo != applicationData.additionalInfo
+    }
+
+    override fun toApplicationData(baseData: ApplicationData) =
+        (baseData as ExcavationNotificationData).copy(
+            name = this.name,
+            workDescription = this.workDescription,
+            constructionWork = this.constructionWork,
+            maintenanceWork = this.maintenanceWork,
+            emergencyWork = this.emergencyWork,
+            cableReportDone = this.cableReportDone,
+            rockExcavation = this.rockExcavation,
+            cableReports = this.cableReports,
+            placementContracts = this.placementContracts,
+            requiredCompetence = requiredCompetence,
+            startTime = this.startTime,
+            endTime = this.endTime,
+            areas = this.areas,
+            invoicingCustomer = this.invoicingCustomer.toCustomer(),
+            customerReference = this.invoicingCustomer?.customerReference,
+            additionalInfo = this.additionalInfo,
+        )
+
+    override fun customersByRole(): Map<ApplicationContactType, CustomerWithContactsRequest?> =
+        mapOf(
+            ApplicationContactType.HAKIJA to customerWithContacts,
+            ApplicationContactType.TYON_SUORITTAJA to contractorWithContacts,
+            ApplicationContactType.RAKENNUTTAJA to propertyDeveloperWithContacts,
+            ApplicationContactType.ASIANHOITAJA to representativeWithContacts,
+        )
+}
+
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class PostalAddressRequest(val streetAddress: StreetAddress)
 
@@ -184,6 +304,24 @@ data class ContactRequest(
     val hankekayttajaId: UUID,
 )
 
+data class InvoicingCustomerRequest(
+    val type: CustomerType?,
+    val name: String?,
+    val registryKey: String?,
+    val ovt: String?,
+    val invoicingOperator: String?,
+    val customerReference: String?,
+    val postalAddress: InvoicingPostalAddressRequest?,
+    val email: String?,
+    val phone: String?,
+)
+
+data class InvoicingPostalAddressRequest(
+    val streetAddress: StreetAddress?,
+    val postalCode: String?,
+    val city: String?,
+)
+
 fun CustomerWithContactsRequest?.hasChanges(
     hakemusyhteystietoEntity: HakemusyhteystietoEntity?
 ): Boolean {
@@ -207,3 +345,59 @@ fun List<ContactRequest>?.hasChanges(
     val existingIds = hakemusyhteyshenkilot.map { it.hankekayttaja.id }.toSet()
     return requestIds != existingIds
 }
+
+fun InvoicingCustomerRequest?.hasChanges(
+    invoicingCustomer: InvoicingCustomer?,
+    customerReference: String?
+): Boolean {
+    if (this == null) {
+        return invoicingCustomer != null
+    }
+    if (invoicingCustomer == null) {
+        return true
+    }
+    return type != invoicingCustomer.type ||
+        name != invoicingCustomer.name ||
+        registryKey != invoicingCustomer.registryKey ||
+        ovt != invoicingCustomer.ovt ||
+        invoicingOperator != invoicingCustomer.invoicingOperator ||
+        this.customerReference != customerReference ||
+        postalAddress.hasChanges(invoicingCustomer.postalAddress) ||
+        email != invoicingCustomer.email ||
+        phone != invoicingCustomer.phone
+}
+
+fun InvoicingPostalAddressRequest?.hasChanges(postalAddress: PostalAddress?): Boolean {
+    if (this == null) {
+        return postalAddress != null
+    }
+    if (postalAddress == null) {
+        return true
+    }
+    return streetAddress != postalAddress.streetAddress ||
+        postalCode != postalAddress.postalCode ||
+        city != postalAddress.city
+}
+
+fun InvoicingCustomerRequest?.toCustomer(): InvoicingCustomer? =
+    this?.let {
+        InvoicingCustomer(
+            type = it.type,
+            name = it.name ?: "",
+            postalAddress = it.postalAddress?.toPostalAddress(),
+            email = it.email,
+            phone = it.phone,
+            registryKey = it.registryKey,
+            ovt = it.ovt,
+            invoicingOperator = it.invoicingOperator,
+        )
+    }
+
+fun InvoicingPostalAddressRequest?.toPostalAddress(): PostalAddress? =
+    this?.let {
+        PostalAddress(
+            streetAddress = StreetAddress(it.streetAddress?.streetName),
+            postalCode = it.postalCode ?: "",
+            city = it.city ?: "",
+        )
+    }

@@ -8,9 +8,12 @@ import fi.hel.haitaton.hanke.ChangeLogView
 import fi.hel.haitaton.hanke.NotInChangeLogView
 import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
-import fi.hel.haitaton.hanke.allu.AlluExcavationNotificationApplicationData
+import fi.hel.haitaton.hanke.allu.AlluExcavationNotificationData
+import fi.hel.haitaton.hanke.hakemus.HakemusData
 import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
 import fi.hel.haitaton.hanke.hakemus.JohtoselvityshakemusData
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusData
+import fi.hel.haitaton.hanke.hakemus.Laskutusyhteystieto
 import java.time.ZonedDateTime
 
 enum class ApplicationContactType {
@@ -29,10 +32,7 @@ enum class ApplicationContactType {
 )
 @JsonSubTypes(
     JsonSubTypes.Type(value = CableReportApplicationData::class, name = "CABLE_REPORT"),
-    JsonSubTypes.Type(
-        value = ExcavationNotificationApplicationData::class,
-        name = "EXCAVATION_NOTIFICATION"
-    ),
+    JsonSubTypes.Type(value = ExcavationNotificationData::class, name = "EXCAVATION_NOTIFICATION"),
 )
 sealed interface ApplicationData {
     val applicationType: ApplicationType
@@ -136,7 +136,7 @@ data class CableReportApplicationData(
 }
 
 @JsonView(ChangeLogView::class)
-data class ExcavationNotificationApplicationData(
+data class ExcavationNotificationData(
     @JsonView(NotInChangeLogView::class) override val applicationType: ApplicationType,
     override val pendingOnClient: Boolean,
     override val name: String,
@@ -160,10 +160,10 @@ data class ExcavationNotificationApplicationData(
     val customerReference: String? = null,
     val additionalInfo: String? = null,
 ) : ApplicationData {
-    override fun copy(pendingOnClient: Boolean): ExcavationNotificationApplicationData =
+    override fun copy(pendingOnClient: Boolean): ExcavationNotificationData =
         copy(applicationType = applicationType, pendingOnClient = pendingOnClient)
 
-    override fun toAlluData(hankeTunnus: String): AlluExcavationNotificationApplicationData =
+    override fun toAlluData(hankeTunnus: String): AlluExcavationNotificationData =
         ApplicationDataMapper.toAlluData(hankeTunnus, this)
 
     /** Returns CustomerWithContacts fields that are not null. */
@@ -182,9 +182,52 @@ data class ExcavationNotificationApplicationData(
             representativeWithContacts?.let { ApplicationContactType.ASIANHOITAJA to it },
             propertyDeveloperWithContacts?.let { ApplicationContactType.RAKENNUTTAJA to it },
         )
+
+    fun findOrderer(): Contact? =
+        customersWithContacts().flatMap { it.contacts }.find { it.orderer }
+
+    fun toHakemusData(yhteystiedot: Map<ApplicationContactType, Hakemusyhteystieto>): HakemusData =
+        KaivuilmoitusData(
+            pendingOnClient = pendingOnClient,
+            name = name,
+            workDescription = workDescription,
+            constructionWork = constructionWork,
+            maintenanceWork = maintenanceWork,
+            emergencyWork = emergencyWork,
+            cableReportDone = cableReportDone,
+            rockExcavation = rockExcavation,
+            cableReports = cableReports,
+            placementContracts = placementContracts,
+            startTime = startTime,
+            endTime = endTime,
+            areas = areas,
+            customerWithContacts = yhteystiedot[ApplicationContactType.HAKIJA],
+            contractorWithContacts = yhteystiedot[ApplicationContactType.TYON_SUORITTAJA],
+            propertyDeveloperWithContacts = yhteystiedot[ApplicationContactType.RAKENNUTTAJA],
+            representativeWithContacts = yhteystiedot[ApplicationContactType.ASIANHOITAJA],
+            invoicingCustomer = invoicingCustomer.toLaskutusyhteystieto(customerReference),
+            additionalInfo = additionalInfo,
+        )
 }
 
 fun List<CustomerWithContacts>.ordererCount() = flatMap { it.contacts }.count { it.orderer }
+
+fun InvoicingCustomer?.toLaskutusyhteystieto(customerReference: String?): Laskutusyhteystieto? =
+    this?.let {
+        Laskutusyhteystieto(
+            it.type!!,
+            it.name,
+            it.registryKey,
+            it.ovt,
+            it.invoicingOperator,
+            customerReference,
+            it.postalAddress?.streetAddress?.streetName,
+            it.postalAddress?.postalCode,
+            it.postalAddress?.city,
+            it.email,
+            it.phone
+        )
+    }
 
 class AlluDataException(path: String, error: AlluDataError) :
     RuntimeException("Application data failed validation at $path: $error")

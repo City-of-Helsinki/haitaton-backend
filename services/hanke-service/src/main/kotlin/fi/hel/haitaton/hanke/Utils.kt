@@ -120,3 +120,18 @@ fun String?.isValidBusinessId(): Boolean {
         false
     }
 }
+
+/**
+ * OVT field can contain either an OVT code or an account number. It is only required to be at least
+ * 12 characters long.
+ */
+fun String?.isValidOVT(): Boolean {
+    logger.info { "Verifying OVT: $this" }
+
+    if (this == null) {
+        logger.warn { "OVT is null." }
+        return false
+    }
+
+    return this.length >= 12
+}

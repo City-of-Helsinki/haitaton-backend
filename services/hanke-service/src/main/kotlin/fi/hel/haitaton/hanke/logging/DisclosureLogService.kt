@@ -15,6 +15,9 @@ import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusDataResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusResponse
+import fi.hel.haitaton.hanke.hakemus.InvoicingCustomerResponse
+import fi.hel.haitaton.hanke.hakemus.JohtoselvitysHakemusDataResponse
+import fi.hel.haitaton.hanke.hakemus.KaivuilmoitusDataResponse
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaDto
 import fi.hel.haitaton.hanke.profiili.Names
 import fi.hel.haitaton.hanke.toJsonString
@@ -189,7 +192,12 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
     ): List<AuditLogEntry> =
         extractHakemusDataResponseCustomers(hakemusDataResponse).toSet().map { customer ->
             disclosureLogEntry(objectType, applicationId, customer, status, failureDescription)
-        }
+        } +
+            (extractHakemusDataResponseInvoivingCustomer(hakemusDataResponse)?.let {
+                listOf(
+                    disclosureLogEntry(objectType, applicationId, it, status, failureDescription)
+                )
+            } ?: emptyList())
 
     private fun auditLogEntriesForCustomers(
         applications: List<Application>,
@@ -286,6 +294,17 @@ class DisclosureLogService(private val auditLogService: AuditLogService) {
             // Only personal data needs to be logged, not other types of customers.
             .filter { it.customer.type == CustomerType.PERSON }
             .filter { it.customer.hasPersonalInformation() }
+
+    private fun extractHakemusDataResponseInvoivingCustomer(
+        hakemusDataResponse: HakemusDataResponse
+    ): InvoicingCustomerResponse? =
+        when (hakemusDataResponse) {
+            is JohtoselvitysHakemusDataResponse -> null
+            is KaivuilmoitusDataResponse ->
+                hakemusDataResponse.invoicingCustomer?.takeIf {
+                    it.type == CustomerType.PERSON && it.hasPersonalInformation()
+                }
+        }
 
     private fun auditLogEntriesForYhteystiedot(yhteystiedot: List<HankeYhteystieto>) =
         yhteystiedot.toSet().map { disclosureLogEntry(ObjectType.YHTEYSTIETO, it.id!!, it) }

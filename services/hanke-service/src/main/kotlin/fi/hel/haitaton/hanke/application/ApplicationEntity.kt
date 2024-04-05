@@ -54,24 +54,22 @@ data class ApplicationEntity(
 
     fun toHakemus(): Hakemus {
         val yhteystiedot = yhteystiedot.mapValues { it.value.toDomain() }
-
-        return when (applicationData) {
-            is CableReportApplicationData -> {
-                val applicationData =
+        val applicationData =
+            when (applicationData) {
+                is CableReportApplicationData ->
                     (this.applicationData as CableReportApplicationData).toHakemusData(yhteystiedot)
-                Hakemus(
-                    id = id!!,
-                    alluid = alluid,
-                    alluStatus = alluStatus,
-                    applicationIdentifier = applicationIdentifier,
-                    applicationType = applicationType,
-                    applicationData = applicationData,
-                    hankeTunnus = hanke.hankeTunnus,
-                    hankeId = hanke.id,
-                )
+                is ExcavationNotificationData ->
+                    (this.applicationData as ExcavationNotificationData).toHakemusData(yhteystiedot)
             }
-            is ExcavationNotificationApplicationData ->
-                TODO("Excavation notification not implemented")
-        }
+        return Hakemus(
+            id = id!!,
+            alluid = alluid,
+            alluStatus = alluStatus,
+            applicationIdentifier = applicationIdentifier,
+            applicationType = applicationType,
+            applicationData = applicationData,
+            hankeTunnus = hanke.hankeTunnus,
+            hankeId = hanke.id,
+        )
     }
 }
