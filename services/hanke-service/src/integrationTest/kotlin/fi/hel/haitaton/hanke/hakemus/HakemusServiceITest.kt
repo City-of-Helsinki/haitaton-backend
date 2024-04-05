@@ -27,11 +27,16 @@ import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluException
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
+import fi.hel.haitaton.hanke.allu.Contact
+import fi.hel.haitaton.hanke.allu.Customer
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationArea
-import fi.hel.haitaton.hanke.application.ApplicationContactType
+import fi.hel.haitaton.hanke.application.ApplicationContactType.ASIANHOITAJA
+import fi.hel.haitaton.hanke.application.ApplicationContactType.HAKIJA
+import fi.hel.haitaton.hanke.application.ApplicationContactType.RAKENNUTTAJA
+import fi.hel.haitaton.hanke.application.ApplicationContactType.TYON_SUORITTAJA
 import fi.hel.haitaton.hanke.application.ApplicationData
 import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
@@ -54,18 +59,24 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withContractor
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomer
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomerWithContactsRequest
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
+import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
+import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_ASIANHOITAJA
 import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.hasSameElementsAs
+import fi.hel.haitaton.hanke.logging.AlluContactWithRole
+import fi.hel.haitaton.hanke.logging.AlluCustomerWithRole
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
 import fi.hel.haitaton.hanke.logging.AuditLogTarget
 import fi.hel.haitaton.hanke.logging.ObjectType
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectAfter
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasServiceActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
@@ -141,10 +152,10 @@ class HakemusServiceITest(
                 .all {
                     extracting { it.rooli to it.yhteyshenkilot.single().tilaaja }
                         .containsExactlyInAnyOrder(
-                            ApplicationContactType.HAKIJA to true,
-                            ApplicationContactType.TYON_SUORITTAJA to false,
-                            ApplicationContactType.RAKENNUTTAJA to false,
-                            ApplicationContactType.ASIANHOITAJA to false,
+                            HAKIJA to true,
+                            TYON_SUORITTAJA to false,
+                            RAKENNUTTAJA to false,
+                            ASIANHOITAJA to false,
                         )
                     each { it.prop(Hakemusyhteystieto::tyyppi).isEqualTo(CustomerType.COMPANY) }
                 }
@@ -480,7 +491,7 @@ class HakemusServiceITest(
                 exception.all {
                     hasClass(InvalidHakemusyhteystietoException::class)
                     messageContains("id=${hakemus.id}")
-                    messageContains("role=${ApplicationContactType.HAKIJA}")
+                    messageContains("role=$HAKIJA")
                     messageContains("yhteystietoId=null")
                     messageContains("newId=$requestYhteystietoId")
                 }
@@ -504,7 +515,7 @@ class HakemusServiceITest(
                 exception.all {
                     hasClass(InvalidHakemusyhteystietoException::class)
                     messageContains("id=${hakemus.id}")
-                    messageContains("role=${ApplicationContactType.HAKIJA}")
+                    messageContains("role=$HAKIJA")
                     messageContains("yhteystietoId=$originalYhteystietoId")
                     messageContains("newId=$requestYhteystietoId")
                 }
@@ -619,9 +630,7 @@ class HakemusServiceITest(
                         .save()
                 val hakemus = hakemusService.hakemusResponse(entity.id)
                 val tyonSuorittaja =
-                    hakemusyhteystietoRepository.findAll().single {
-                        it.rooli == ApplicationContactType.TYON_SUORITTAJA
-                    }
+                    hakemusyhteystietoRepository.findAll().single { it.rooli == TYON_SUORITTAJA }
                 val request =
                     hakemus
                         .toUpdateRequest()
@@ -801,7 +810,7 @@ class HakemusServiceITest(
                 exception.all {
                     hasClass(InvalidHakemusyhteystietoException::class)
                     messageContains("id=${hakemus.id}")
-                    messageContains("role=${ApplicationContactType.HAKIJA}")
+                    messageContains("role=${HAKIJA}")
                     messageContains("yhteystietoId=null")
                     messageContains("newId=$requestYhteystietoId")
                 }
@@ -832,7 +841,7 @@ class HakemusServiceITest(
                 exception.all {
                     hasClass(InvalidHakemusyhteystietoException::class)
                     messageContains("id=${hakemus.id}")
-                    messageContains("role=${ApplicationContactType.HAKIJA}")
+                    messageContains("role=${HAKIJA}")
                     messageContains("yhteystietoId=$originalYhteystietoId")
                     messageContains("newId=$requestYhteystietoId")
                 }
@@ -962,9 +971,7 @@ class HakemusServiceITest(
                         .saveEntity()
                 val hakemus = hakemusService.hakemusResponse(entity.id!!)
                 val tyonSuorittaja =
-                    hakemusyhteystietoRepository.findAll().single {
-                        it.rooli == ApplicationContactType.TYON_SUORITTAJA
-                    }
+                    hakemusyhteystietoRepository.findAll().single { it.rooli == TYON_SUORITTAJA }
                 val request =
                     hakemus
                         .toUpdateRequest()
@@ -1306,6 +1313,106 @@ class HakemusServiceITest(
                 hasClass(UserNotInContactsException::class)
                 messageContains("applicationId=${hakemus.id}")
                 messageContains("userId=$USERNAME")
+            }
+        }
+
+        @Test
+        fun `saves disclosure logs for the sent personal info`() {
+            val hanke = hankeFactory.saveWithAlue()
+            val founder = hankeKayttajaFactory.getFounderFromHanke(hanke)
+            val hakijaYhteystieto =
+                HakemusyhteystietoFactory.create(
+                    tyyppi = CustomerType.PERSON,
+                    nimi = "Ylevi Yhteyshenkilö",
+                    sahkoposti = "ylevi@hakemus.info",
+                    puhelinnumero = "111222333",
+                    ytunnus = null,
+                )
+            val asianhoitajaYhteystieto =
+                hakijaYhteystieto.copy(
+                    nimi = "Tytti Työläinen",
+                    sahkoposti = "tytti@hakeus.info",
+                    puhelinnumero = "999888777"
+                )
+            val hakemus =
+                hakemusFactory
+                    .builder(userId = "Other user")
+                    .withMandatoryFields()
+                    .hakija(hakijaYhteystieto, founder)
+                    .tyonSuorittaja(asianhoitajaYhteystieto, founder)
+                    .asianhoitaja()
+                    .save()
+            auditLogRepository.deleteAll()
+            every { cableReportService.create(any()) } returns alluId
+            every { cableReportService.getApplicationInformation(alluId) } returns
+                AlluFactory.createAlluApplicationResponse(alluId)
+
+            hakemusService.sendHakemus(hakemus.id, USERNAME)
+
+            val yhteystietoEntries = auditLogRepository.findAll()
+            assertThat(yhteystietoEntries).hasSize(5)
+            assertThat(auditLogRepository.findByType(ObjectType.ALLU_CUSTOMER)).hasSize(2)
+            assertThat(auditLogRepository.findByType(ObjectType.ALLU_CONTACT)).hasSize(3)
+            assertThat(yhteystietoEntries).each {
+                it.isSuccess(Operation.READ) {
+                    hasServiceActor("Allu")
+                    withTarget {
+                        hasId(hakemus.id)
+                        prop(AuditLogTarget::objectBefore).isNotNull()
+                        prop(AuditLogTarget::objectAfter).isNull()
+                    }
+                }
+            }
+            val expectedHakijaCustomer =
+                Customer(
+                    type = CustomerType.PERSON,
+                    name = "Ylevi Yhteyshenkilö",
+                    postalAddress = null,
+                    email = "ylevi@hakemus.info",
+                    phone = "111222333",
+                    registryKey = null,
+                    ovt = null,
+                    invoicingOperator = null,
+                    country = "FI",
+                    sapCustomerNumber = null,
+                )
+            val expectedAsianhoitajaCustomer =
+                expectedHakijaCustomer.copy(
+                    name = "Tytti Työläinen",
+                    email = "tytti@hakeus.info",
+                    phone = "999888777",
+                )
+            val expectedPerustajaContact =
+                Contact(
+                    name = founder.fullName(),
+                    email = founder.sahkoposti,
+                    phone = founder.puhelin,
+                    orderer = true,
+                )
+            val expectedAsianhoitajaContact =
+                Contact(
+                    name =
+                        "${KAYTTAJA_INPUT_ASIANHOITAJA.etunimi} ${KAYTTAJA_INPUT_ASIANHOITAJA.sukunimi}",
+                    email = KAYTTAJA_INPUT_ASIANHOITAJA.email,
+                    phone = KAYTTAJA_INPUT_ASIANHOITAJA.puhelin,
+                    orderer = false,
+                )
+            val expectedObjects =
+                listOf(
+                    AlluCustomerWithRole(HAKIJA, expectedHakijaCustomer),
+                    AlluCustomerWithRole(TYON_SUORITTAJA, expectedAsianhoitajaCustomer),
+                    AlluContactWithRole(HAKIJA, expectedPerustajaContact),
+                    AlluContactWithRole(
+                        TYON_SUORITTAJA,
+                        expectedPerustajaContact.copy(orderer = false)
+                    ),
+                    AlluContactWithRole(ASIANHOITAJA, expectedAsianhoitajaContact),
+                )
+            assertThat(yhteystietoEntries.map { it.message.auditEvent.target.objectBefore })
+                .hasSameElementsAs(expectedObjects.map { it.toJsonString() })
+            verifySequence {
+                cableReportService.create(any())
+                cableReportService.getApplicationInformation(alluId)
             }
         }
     }

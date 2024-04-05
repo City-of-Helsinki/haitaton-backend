@@ -6,7 +6,9 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
+import fi.hel.haitaton.hanke.allu.AlluLoginException
 import fi.hel.haitaton.hanke.allu.CableReportService
+import fi.hel.haitaton.hanke.application.ALLU_APPLICATION_ERROR_MSG
 import fi.hel.haitaton.hanke.application.ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationArea
@@ -23,7 +25,9 @@ import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
+import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
+import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
 import java.util.UUID
@@ -41,6 +45,7 @@ class HakemusService(
     private val geometriatDao: GeometriatDao,
     private val hankealueService: HankealueService,
     private val hakemusLoggingService: HakemusLoggingService,
+    private val disclosureLogService: DisclosureLogService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val attachmentService: ApplicationAttachmentService,
     private val alluClient: CableReportService,
@@ -283,8 +288,29 @@ class HakemusService(
         alluApplicationData: AlluApplicationData,
         f: () -> T,
     ): T {
-        // TODO: Update Disclosure logs to handle Hakemusdata
-        return f()
+        try {
+            val result = f()
+            disclosureLogService.saveDisclosureLogsForAllu(
+                applicationId,
+                alluApplicationData,
+                Status.SUCCESS
+            )
+            return result
+        } catch (e: AlluLoginException) {
+            // Since the login failed we didn't send the application itself, so logging not needed.
+            throw e
+        } catch (e: Throwable) {
+            // There was an exception outside login, so there was at least an attempt to send the
+            // application to Allu. Allu might have read it and rejected it, so we should log this
+            // as a disclosure event.
+            disclosureLogService.saveDisclosureLogsForAllu(
+                applicationId,
+                alluApplicationData,
+                Status.FAILED,
+                ALLU_APPLICATION_ERROR_MSG
+            )
+            throw e
+        }
     }
 
     /** Assert that the update request is compatible with the application data. */

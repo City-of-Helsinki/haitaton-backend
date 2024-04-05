@@ -52,4 +52,11 @@ object HakemusyhteyshenkiloFactory {
             hankekayttaja = hankekayttaja,
             tilaaja = tilaaja
         )
+
+    fun HakemusyhteystietoEntity.withYhteyshenkilo(
+        permission: PermissionEntity = PermissionFactory.createEntity()
+    ): HakemusyhteystietoEntity {
+        yhteyshenkilot.add(createEntity(permission = permission, hakemusyhteystieto = this))
+        return this
+    }
 }

@@ -1,11 +1,13 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.allu.Contact as AlluContact
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerResponse
+import fi.hel.haitaton.hanke.logging.AlluContactWithRole
 import fi.hel.haitaton.hanke.logging.AuditLogEntry
 import fi.hel.haitaton.hanke.logging.ContactResponseWithRole
 import fi.hel.haitaton.hanke.logging.ContactWithRole
@@ -53,6 +55,17 @@ object AuditLogEntryFactory {
             objectId = applicationId,
             objectType = ObjectType.APPLICATION_CONTACT,
             objectBefore = ContactWithRole(role, contact).toJsonString()
+        )
+
+    fun createReadEntryForContact(
+        applicationId: Long,
+        contact: AlluContact,
+        role: ApplicationContactType = ApplicationContactType.HAKIJA,
+    ): AuditLogEntry =
+        createReadEntry(
+            objectId = applicationId,
+            objectType = ObjectType.ALLU_CONTACT,
+            objectBefore = AlluContactWithRole(role, contact).toJsonString()
         )
 
     fun createReadEntryForContactResponse(
