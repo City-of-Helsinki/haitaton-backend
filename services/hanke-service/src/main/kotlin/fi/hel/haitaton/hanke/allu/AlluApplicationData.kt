@@ -52,7 +52,7 @@ data class CableReportInformationRequestResponse(
     val updatedFields: List<InformationRequestFieldKey>
 )
 
-data class AlluExcavationNotificationApplicationData(
+data class AlluExcavationNotificationData(
     override val identificationNumber: String,
     override val pendingOnClient: Boolean,
     override val name: String,

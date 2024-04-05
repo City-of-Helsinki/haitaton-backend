@@ -4,13 +4,14 @@ import assertk.assertThat
 import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
+import assertk.assertions.isFalse
+import assertk.assertions.isTrue
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
+import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.NullSource
 import org.junit.jupiter.params.provider.ValueSource
 
@@ -108,7 +109,7 @@ class UtilsKtTest {
                 ]
         )
         fun `isValid when valid businessId returns true`(businessId: String) {
-            assertTrue(businessId.isValidBusinessId())
+            assertThat(businessId.isValidBusinessId()).isTrue()
         }
 
         @ParameterizedTest
@@ -127,7 +128,33 @@ class UtilsKtTest {
         )
         @NullSource
         fun `isValid when not valid businessId returns false`(businessId: String?) {
-            assertFalse(businessId.isValidBusinessId())
+            assertThat(businessId.isValidBusinessId()).isFalse()
+        }
+    }
+
+    @Nested
+    inner class ValidOVT {
+
+        @ParameterizedTest
+        @ValueSource(
+            strings =
+                [
+                    "003721828050",
+                    "003721828050A",
+                    "003721828050BB",
+                    "003721828050CCC",
+                    "003721828050D123",
+                    "00372182805099999",
+                ],
+        )
+        fun `returns true when is valid`(ovt: String) {
+            assertThat(ovt.isValidOVT()).isTrue()
+        }
+
+        @ParameterizedTest
+        @CsvSource("null", "11372182805", nullValues = ["null"])
+        fun `returns false when is invalid`(ovt: String?) {
+            assertThat(ovt.isValidOVT()).isFalse()
         }
     }
 }

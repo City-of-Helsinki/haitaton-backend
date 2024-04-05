@@ -2,10 +2,13 @@ package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.isValidBusinessId
+import fi.hel.haitaton.hanke.isValidOVT
 import fi.hel.haitaton.hanke.validation.ValidationResult
 import fi.hel.haitaton.hanke.validation.ValidationResult.Companion.whenNotNull
+import fi.hel.haitaton.hanke.validation.Validators.given
 import fi.hel.haitaton.hanke.validation.Validators.isBeforeOrEqual
 import fi.hel.haitaton.hanke.validation.Validators.notJustWhitespace
+import fi.hel.haitaton.hanke.validation.Validators.notNull
 import fi.hel.haitaton.hanke.validation.Validators.validate
 import fi.hel.haitaton.hanke.validation.Validators.validateTrue
 import jakarta.validation.ConstraintValidator
@@ -35,6 +38,7 @@ fun HakemusUpdateRequest.validateForErrors(): ValidationResult =
     validateCommonFieldsForErrors().and {
         when (this) {
             is JohtoselvityshakemusUpdateRequest -> validateForErrors()
+            is KaivuilmoitusUpdateRequest -> validateForErrors()
         }
     }
 
@@ -73,6 +77,36 @@ fun JohtoselvityshakemusUpdateRequest.validateForErrors(): ValidationResult =
 fun PostalAddressRequest.validateForErrors(path: String) = validate {
     notJustWhitespace(streetAddress.streetName, "$path.streetAddress.streetName")
 }
+
+fun KaivuilmoitusUpdateRequest.validateForErrors(): ValidationResult =
+    given(!cableReportDone) { notNull(rockExcavation, "rockExcavation") }
+        .whenNotNull(contractorWithContacts) { it.validateForErrors("contractorWithContacts") }
+        .whenNotNull(propertyDeveloperWithContacts) {
+            it.validateForErrors("propertyDeveloperWithContacts")
+        }
+        .whenNotNull(invoicingCustomer) { it.validateForErrors("invoicingCustomer") }
+        .and { notJustWhitespace(additionalInfo, "additionalInfo") }
+
+fun InvoicingCustomerRequest.validateForErrors(path: String): ValidationResult =
+    validate { notJustWhitespace(name, "$path.name") }
+        .andWhen(
+            registryKey != null &&
+                (type == CustomerType.COMPANY || type == CustomerType.ASSOCIATION)
+        ) {
+            validateTrue(registryKey.isValidBusinessId(), "$path.registryKey")
+        }
+        .andWhen(!ovt.isNullOrBlank()) { validateTrue(ovt.isValidOVT(), "$path.ovt") }
+        .and { notJustWhitespace(ovt, "$path.ovt") }
+        .and { notJustWhitespace(invoicingOperator, "$path.invoicingOperator") }
+        .andWhen(ovt.isNullOrBlank()) { notNull(postalAddress, "$path.postalAddress") }
+        .whenNotNull(postalAddress) { it.validateForErrors("$path.postalAddress") }
+        .and { notJustWhitespace(email, "$path.email") }
+        .and { notJustWhitespace(phone, "$path.phone") }
+
+fun InvoicingPostalAddressRequest.validateForErrors(path: String): ValidationResult =
+    validate { notJustWhitespace(streetAddress?.streetName, "$path.streetAddress.streetName") }
+        .and { notJustWhitespace(postalCode, "$path.postalCode") }
+        .and { notJustWhitespace(city, "$path.city") }
 
 class InvalidHakemusDataException(val errorPaths: List<String>) :
     RuntimeException(
