@@ -48,9 +48,9 @@ data class HakemusBuilder(
     }
 
     fun withStatus(
-        status: ApplicationStatus = ApplicationStatus.PENDING,
-        alluId: Int = 1,
-        identifier: String = "JS000$alluId",
+        status: ApplicationStatus? = ApplicationStatus.PENDING,
+        alluId: Int? = 1,
+        identifier: String? = "JS000$alluId",
     ): HakemusBuilder {
         applicationEntity.apply {
             alluid = alluId
@@ -59,6 +59,9 @@ data class HakemusBuilder(
         }
         return this
     }
+
+    fun withNoAlluFields(): HakemusBuilder =
+        withStatus(status = null, alluId = null, identifier = null)
 
     fun inHandling(alluId: Int = 1) = withStatus(ApplicationStatus.HANDLING, alluId)
 

@@ -2,6 +2,7 @@ package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.application.ApplicationArea
+import fi.hel.haitaton.hanke.application.ApplicationMetaData
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.domain.HasId
@@ -26,6 +27,16 @@ data class Hakemus(
             applicationType = applicationType,
             applicationData = applicationData.toResponse(),
             hankeTunnus = hankeTunnus,
+        )
+
+    fun toMetadata(): ApplicationMetaData =
+        ApplicationMetaData(
+            id = id,
+            alluid = alluid,
+            alluStatus = alluStatus,
+            applicationIdentifier = applicationIdentifier,
+            applicationType = applicationType,
+            hankeTunnus = hankeTunnus
         )
 }
 
