@@ -13,10 +13,12 @@ import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.andReturnBody
 import fi.hel.haitaton.hanke.andReturnContent
+import fi.hel.haitaton.hanke.application.ApplicationAlreadyProcessingException
 import fi.hel.haitaton.hanke.application.ApplicationAlreadySentException
 import fi.hel.haitaton.hanke.application.ApplicationAuthorizer
 import fi.hel.haitaton.hanke.application.ApplicationContactType
 import fi.hel.haitaton.hanke.application.ApplicationDecisionNotFoundException
+import fi.hel.haitaton.hanke.application.ApplicationDeletionResultDto
 import fi.hel.haitaton.hanke.application.ApplicationGeometryException
 import fi.hel.haitaton.hanke.application.ApplicationGeometryNotInsideHankeException
 import fi.hel.haitaton.hanke.application.ApplicationNotFoundException
@@ -53,6 +55,7 @@ import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.EnumSource
+import org.junit.jupiter.params.provider.ValueSource
 import org.skyscreamer.jsonassert.JSONAssert
 import org.skyscreamer.jsonassert.JSONCompareMode
 import org.springframework.beans.factory.annotation.Autowired
@@ -676,6 +679,70 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             verifySequence {
                 authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
                 hakemusService.sendHakemus(id, USERNAME)
+            }
+        }
+    }
+
+    @Nested
+    inner class DeleteApplication {
+        val url = "/hakemukset/$id"
+
+        @Test
+        @WithAnonymousUser
+        fun `returns 401 when user is unknown`() {
+            delete(url).andExpect(status().isUnauthorized).andExpect(hankeError(HankeError.HAI0001))
+
+            verify { hakemusService wasNot Called }
+        }
+
+        @Test
+        fun `returns 404 when no application or no permission`() {
+            every {
+                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } throws ApplicationNotFoundException(id)
+
+            delete(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI2001))
+
+            verify { authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name) }
+        }
+
+        @ParameterizedTest
+        @ValueSource(booleans = [true, false])
+        fun `deletes application and returns deletion result when the application is pending`(
+            hankeDeleted: Boolean
+        ) {
+            val expectedResponseBody = ApplicationDeletionResultDto(hankeDeleted)
+            every {
+                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { hakemusService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME) } returns
+                expectedResponseBody
+
+            delete(url)
+                .andExpect(status().isOk)
+                .andExpect(
+                    MockMvcResultMatchers.content().json(expectedResponseBody.toJsonString())
+                )
+
+            verifySequence {
+                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                hakemusService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns 409 when application is no longer pending in Allu`() {
+            every {
+                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+            } returns true
+            every { hakemusService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME) } throws
+                ApplicationAlreadyProcessingException(id, 41)
+
+            delete(url).andExpect(status().isConflict).andExpect(hankeError(HankeError.HAI2003))
+
+            verify {
+                authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
+                hakemusService.deleteWithOrphanGeneratedHankeRemoval(id, USERNAME)
             }
         }
     }
