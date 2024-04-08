@@ -35,6 +35,7 @@ import fi.hel.haitaton.hanke.factory.PermissionFactory
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
+import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.AlluException
@@ -67,6 +68,7 @@ class HakemusServiceTest {
     private val geometriatDao: GeometriatDao = mockk()
     private val hankealueService: HankealueService = mockk()
     private val loggingService: HakemusLoggingService = mockk(relaxUnitFun = true)
+    private val hankeLoggingService: HankeLoggingService = mockk(relaxUnitFun = true)
     private val disclosureLogService: DisclosureLogService = mockk(relaxUnitFun = true)
     private val hankeKayttajaService: HankeKayttajaService = mockk(relaxUnitFun = true)
     private val attachmentService: ApplicationAttachmentService = mockk()
@@ -79,6 +81,7 @@ class HakemusServiceTest {
             geometriatDao,
             hankealueService,
             loggingService,
+            hankeLoggingService,
             disclosureLogService,
             hankeKayttajaService,
             attachmentService,

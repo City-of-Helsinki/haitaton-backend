@@ -115,11 +115,11 @@ class ApplicationAttachmentService(
         logger.info { "Deleted attachment $attachmentId from application ${application.id}" }
     }
 
-    fun deleteAllAttachments(application: Application) {
-        logger.info { "Deleting all attachments from application ${application.id}" }
-        metadataService.deleteAllAttachments(application.id!!)
-        attachmentContentService.deleteAllForApplication(application.id)
-        logger.info { "Deleted all attachments from application ${application.id}" }
+    fun deleteAllAttachments(applicationId: Long) {
+        logger.info { "Deleting all attachments from application $applicationId" }
+        metadataService.deleteAllAttachments(applicationId)
+        attachmentContentService.deleteAllForApplication(applicationId)
+        logger.info { "Deleted all attachments from application $applicationId" }
     }
 
     fun sendInitialAttachments(alluId: Int, applicationId: Long) {
