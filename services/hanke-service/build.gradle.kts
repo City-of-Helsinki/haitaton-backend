@@ -81,7 +81,7 @@ dependencies {
     implementation("com.github.blagerweij:liquibase-sessionlock:1.6.9")
     implementation("io.hypersistence:hypersistence-utils-hibernate-63:3.7.3")
     implementation("commons-io:commons-io:2.15.1")
-    implementation("com.github.librepdf:openpdf:2.0.1")
+    implementation("com.github.librepdf:openpdf:2.0.2")
     implementation("net.pwall.mustache:kotlin-mustache:0.12")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.0")
 
