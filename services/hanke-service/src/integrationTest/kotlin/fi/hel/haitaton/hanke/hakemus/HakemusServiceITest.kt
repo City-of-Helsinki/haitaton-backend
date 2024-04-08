@@ -1361,8 +1361,9 @@ class HakemusServiceITest(
 
             failure.all {
                 hasClass(UserNotInContactsException::class)
-                messageContains("applicationId=${hakemus.id}")
-                messageContains("userId=$USERNAME")
+                messageContains("id=${hakemus.id}")
+                messageContains("alluId=null")
+                messageContains("identifier=null")
             }
         }
 
