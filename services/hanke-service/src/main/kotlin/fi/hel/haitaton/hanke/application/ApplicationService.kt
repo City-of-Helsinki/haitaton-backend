@@ -108,7 +108,7 @@ class ApplicationService(
 
         val applicationEntity =
             ApplicationEntity(
-                id = null,
+                id = 0,
                 alluid = null,
                 alluStatus = null,
                 applicationIdentifier = null,
@@ -342,7 +342,7 @@ class ApplicationService(
 
             logger.info { "Deleting application, id=$id, alluid=$alluid userid=$userId" }
             val application = toApplication()
-            attachmentService.deleteAllAttachments(id!!)
+            attachmentService.deleteAllAttachments(applicationEntity)
             applicationRepository.delete(this)
             applicationLoggingService.logDelete(application, userId)
             logger.info { "Application deleted, id=$id, alluid=$alluid userid=$userId" }
@@ -516,8 +516,7 @@ class ApplicationService(
 
         if (receivers.isEmpty()) {
             logger.error {
-                "No receivers found for decision ready email, not sending any." +
-                    "applicationId=${application.id}, applicationIdentifier=${applicationIdentifier}"
+                "No receivers found for decision ready email, not sending any. ${application.logString()}"
             }
             return
         }
@@ -577,7 +576,7 @@ class ApplicationService(
 
         when (val data = entity.applicationData) {
             is CableReportApplicationData ->
-                updateCableReportInAllu(entity.id!!, alluId, entity.hanke.hankeTunnus, data)
+                updateCableReportInAllu(entity.id, alluId, entity.hanke.hankeTunnus, data)
             is ExcavationNotificationData ->
                 TODO("Sending excavation notification to Allu not implemented.")
         }
@@ -591,7 +590,7 @@ class ApplicationService(
         val alluId =
             when (val data = entity.applicationData) {
                 is CableReportApplicationData ->
-                    createCableReportToAllu(entity.id!!, entity.hanke.hankeTunnus, data)
+                    createCableReportToAllu(entity.id, entity.hanke.hankeTunnus, data)
                 is ExcavationNotificationData ->
                     TODO("Sending excavation notification to Allu not implemented.")
             }

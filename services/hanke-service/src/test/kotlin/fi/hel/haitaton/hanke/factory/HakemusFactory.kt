@@ -181,7 +181,7 @@ class HakemusFactory(
             hanke: HankeEntity,
         ): ApplicationEntity =
             ApplicationEntity(
-                id = null,
+                id = 0,
                 alluid = alluid,
                 alluStatus = alluStatus,
                 applicationIdentifier = applicationIdentifier,

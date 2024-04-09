@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.application
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.CascadeType
@@ -24,10 +25,10 @@ import org.hibernate.annotations.Type
 @Entity
 @Table(name = "applications")
 data class ApplicationEntity(
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) val id: Long?,
-    var alluid: Int?,
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY) override val id: Long,
+    override var alluid: Int?,
     @Enumerated(EnumType.STRING) var alluStatus: ApplicationStatus?,
-    var applicationIdentifier: String?,
+    override var applicationIdentifier: String?,
     var userId: String?,
     @Enumerated(EnumType.STRING) val applicationType: ApplicationType,
     @Type(JsonType::class) @Column(columnDefinition = "jsonb") var applicationData: ApplicationData,
@@ -40,7 +41,7 @@ data class ApplicationEntity(
     )
     @MapKey(name = "rooli")
     var yhteystiedot: MutableMap<ApplicationContactType, HakemusyhteystietoEntity> = mutableMapOf(),
-) {
+) : HakemusIdentifier {
     fun toApplication() =
         Application(
             id,
@@ -62,7 +63,7 @@ data class ApplicationEntity(
                     (this.applicationData as ExcavationNotificationData).toHakemusData(yhteystiedot)
             }
         return Hakemus(
-            id = id!!,
+            id = id,
             alluid = alluid,
             alluStatus = alluStatus,
             applicationIdentifier = applicationIdentifier,

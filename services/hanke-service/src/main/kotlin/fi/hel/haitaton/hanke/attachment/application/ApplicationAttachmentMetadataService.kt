@@ -9,9 +9,11 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentType
 import fi.hel.haitaton.hanke.attachment.common.AttachmentLimitReachedException
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.currentUserId
+import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import java.time.OffsetDateTime
 import java.util.UUID
 import mu.KotlinLogging
+import org.springframework.data.jpa.domain.AbstractPersistable_.id
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -67,9 +69,9 @@ class ApplicationAttachmentMetadataService(
     }
 
     @Transactional
-    fun deleteAllAttachments(id: Long) {
-        attachmentRepository.deleteByApplicationId(id)
-        logger.info { "Deleted all attachment metadata for application $id" }
+    fun deleteAllAttachments(hakemus: HakemusIdentifier) {
+        attachmentRepository.deleteByApplicationId(hakemus.id)
+        logger.info { "Deleted all attachment metadata for application ${hakemus.logString()}" }
     }
 
     @Transactional(readOnly = true)

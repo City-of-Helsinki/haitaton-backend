@@ -88,7 +88,7 @@ class ApplicationControllerTest {
     fun `create saves disclosure logs`() {
         val hankeTunnus = "HAI-1234"
         val requestApplication =
-            ApplicationFactory.createApplication(id = null, hankeTunnus = hankeTunnus)
+            ApplicationFactory.createApplication(id = 0, hankeTunnus = hankeTunnus)
         val createdApplication = requestApplication.copy(id = 1)
         every { applicationService.create(requestApplication, USERNAME) } returns createdApplication
 

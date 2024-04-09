@@ -12,6 +12,7 @@ import fi.hel.haitaton.hanke.attachment.common.AttachmentValidator
 import fi.hel.haitaton.hanke.attachment.common.FileScanClient
 import fi.hel.haitaton.hanke.attachment.common.FileScanInput
 import fi.hel.haitaton.hanke.attachment.common.hasInfected
+import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
@@ -115,11 +116,11 @@ class ApplicationAttachmentService(
         logger.info { "Deleted attachment $attachmentId from application ${application.id}" }
     }
 
-    fun deleteAllAttachments(applicationId: Long) {
-        logger.info { "Deleting all attachments from application $applicationId" }
-        metadataService.deleteAllAttachments(applicationId)
-        attachmentContentService.deleteAllForApplication(applicationId)
-        logger.info { "Deleted all attachments from application $applicationId" }
+    fun deleteAllAttachments(hakemus: HakemusIdentifier) {
+        logger.info { "Deleting all attachments from application. ${hakemus.logString()}" }
+        metadataService.deleteAllAttachments(hakemus)
+        attachmentContentService.deleteAllForApplication(hakemus)
+        logger.info { "Deleted all attachments from application. ${hakemus.logString()}" }
     }
 
     fun sendInitialAttachments(alluId: Int, applicationId: Long) {

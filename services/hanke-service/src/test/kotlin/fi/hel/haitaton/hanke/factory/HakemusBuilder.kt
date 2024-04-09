@@ -35,7 +35,7 @@ data class HakemusBuilder(
     private val hakemusyhteystietoRepository: HakemusyhteystietoRepository,
     private val hakemusyhteyshenkiloRepository: HakemusyhteyshenkiloRepository,
 ) {
-    fun save(): Hakemus = hakemusService.getById(saveEntity().id!!)
+    fun save(): Hakemus = hakemusService.getById(saveEntity().id)
 
     fun saveEntity(): ApplicationEntity {
         val savedApplication = applicationRepository.save(applicationEntity)

@@ -421,7 +421,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
                 IncompatibleHakemusUpdateRequestException(
-                    id,
+                    HakemusFactory.create(id = id),
                     CableReportApplicationData::class,
                     JohtoselvityshakemusUpdateRequest::class
                 ) // these types are actually compatible but since there are no other application
@@ -486,7 +486,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             } returns true
             every { hakemusService.updateHakemus(id, request, USERNAME) } throws
                 InvalidHakemusyhteystietoException(
-                    id,
+                    HakemusFactory.create(id = id),
                     ApplicationContactType.HAKIJA,
                     null,
                     UUID.randomUUID()
@@ -594,7 +594,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 authorizer.authorizeApplicationId(id, PermissionCode.EDIT_APPLICATIONS.name)
             } returns true
             every { hakemusService.sendHakemus(id, USERNAME) } throws
-                UserNotInContactsException(id, USERNAME)
+                UserNotInContactsException(HakemusFactory.create(id = id))
 
             post(url).andExpect(status().isForbidden).andExpect(hankeError(HankeError.HAI2012))
 
