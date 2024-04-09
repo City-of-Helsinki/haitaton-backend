@@ -104,7 +104,7 @@ class ApplicationAttachmentServiceITest(
         fun `Returns empty when application doesn't have attachments`() {
             val application = applicationFactory.saveApplicationEntity(USERNAME)
 
-            val result = attachmentService.getMetadataList(application.id!!)
+            val result = attachmentService.getMetadataList(application.id)
 
             assertThat(result).isEmpty()
         }
@@ -115,7 +115,7 @@ class ApplicationAttachmentServiceITest(
             attachmentFactory.save(application = application).withContent()
             attachmentFactory.save(application = application).withContent()
 
-            val result = attachmentService.getMetadataList(application.id!!)
+            val result = attachmentService.getMetadataList(application.id)
 
             assertThat(result).hasSize(2)
             assertThat(result).each {
@@ -188,7 +188,7 @@ class ApplicationAttachmentServiceITest(
 
             val result =
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = typeInput,
                     attachment = testFile(),
                 )
@@ -214,7 +214,7 @@ class ApplicationAttachmentServiceITest(
                 prop(ApplicationAttachmentEntity::attachmentType).isEqualTo(typeInput)
                 prop(ApplicationAttachmentEntity::blobLocation)
                     .isNotNull()
-                    .startsWith("${application.id!!}/")
+                    .startsWith("${application.id}/")
             }
 
             val content = fileClient.download(HAKEMUS_LIITTEET, attachments.first().blobLocation)
@@ -235,7 +235,7 @@ class ApplicationAttachmentServiceITest(
 
             val result =
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = MUU,
                     attachment = testFile(fileName = "exa*mple.pdf"),
                 )
@@ -250,14 +250,14 @@ class ApplicationAttachmentServiceITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME)
             val attachments =
                 (1..ALLOWED_ATTACHMENT_COUNT).map {
-                    ApplicationAttachmentFactory.createEntity(applicationId = application.id!!)
+                    ApplicationAttachmentFactory.createEntity(applicationId = application.id)
                 }
             attachmentRepository.saveAll(attachments)
             mockClamAv.enqueue(response(body(results = successResult())))
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = VALTAKIRJA,
                     attachment = testFile()
                 )
@@ -277,7 +277,7 @@ class ApplicationAttachmentServiceITest(
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = VALTAKIRJA,
                     attachment = testFile(contentType = null)
                 )
@@ -296,7 +296,7 @@ class ApplicationAttachmentServiceITest(
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = MUU,
                     attachment = testFile(),
                 )
@@ -308,7 +308,7 @@ class ApplicationAttachmentServiceITest(
                     "Application is already sent to Allu, applicationId=${application.id}, alluId=${application.alluid}"
                 )
             }
-            assertThat(attachmentRepository.countByApplicationId(application.id!!)).isEqualTo(0)
+            assertThat(attachmentRepository.countByApplicationId(application.id)).isEqualTo(0)
         }
 
         @Test
@@ -332,7 +332,7 @@ class ApplicationAttachmentServiceITest(
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = VALTAKIRJA,
                     attachment = testFile(fileName = invalidFilename)
                 )
@@ -352,7 +352,7 @@ class ApplicationAttachmentServiceITest(
 
             val failure = assertFailure {
                 attachmentService.addAttachment(
-                    applicationId = application.id!!,
+                    applicationId = application.id,
                     attachmentType = VALTAKIRJA,
                     attachment = testFile()
                 )

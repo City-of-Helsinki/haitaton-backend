@@ -169,9 +169,7 @@ class HankeService(
             )
         }
 
-        hakemukset.forEach { hakemus ->
-            hakemus.id?.let { id -> applicationService.delete(id, userId) }
-        }
+        hakemukset.forEach { hakemus -> applicationService.delete(hakemus.id, userId) }
 
         hankeAttachmentService.deleteAllAttachments(hanke)
 

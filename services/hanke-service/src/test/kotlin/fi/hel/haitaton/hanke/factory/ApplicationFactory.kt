@@ -416,7 +416,7 @@ class ApplicationFactory(
             )
 
         fun createApplication(
-            id: Long? = 1,
+            id: Long = 1,
             alluid: Int? = null,
             alluStatus: ApplicationStatus? = null,
             applicationIdentifier: String? = null,
@@ -503,10 +503,10 @@ class ApplicationFactory(
                             )
                     )
                 }
-                .map { application -> mapper(application.id!!, application) }
+                .map { application -> mapper(application.id, application) }
 
         fun createApplicationEntity(
-            id: Long? = 3,
+            id: Long = 3,
             alluid: Int? = null,
             alluStatus: ApplicationStatus? = null,
             applicationIdentifier: String? = null,
@@ -600,7 +600,7 @@ class ApplicationFactory(
     ): ApplicationEntity {
         val applicationEntity =
             ApplicationEntity(
-                id = null,
+                id = 0,
                 alluid = alluId,
                 alluStatus = alluStatus,
                 applicationIdentifier = applicationIdentifier,
@@ -625,7 +625,7 @@ class ApplicationFactory(
         val entities =
             createApplications(n).map { application ->
                 ApplicationEntity(
-                    id = null,
+                    id = 0,
                     alluid = application.alluid,
                     alluStatus = null,
                     applicationIdentifier = null,

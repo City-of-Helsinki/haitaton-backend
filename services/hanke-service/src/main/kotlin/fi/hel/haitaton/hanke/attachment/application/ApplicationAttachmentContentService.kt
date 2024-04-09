@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentMetadata
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.DownloadNotFoundException
 import fi.hel.haitaton.hanke.attachment.common.FileClient
+import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.http.MediaType
@@ -37,9 +38,9 @@ class ApplicationAttachmentContentService(
             }
         }
 
-    fun deleteAllForApplication(applicationId: Long) {
-        fileClient.deleteAllByPrefix(Container.HAKEMUS_LIITTEET, prefix(applicationId))
-        logger.info { "Deleted all attachment content from application $applicationId" }
+    fun deleteAllForApplication(hakemus: HakemusIdentifier) {
+        fileClient.deleteAllByPrefix(Container.HAKEMUS_LIITTEET, prefix(hakemus.id))
+        logger.info { "Deleted all attachment content from application. ${hakemus.logString()}" }
     }
 
     fun find(attachment: ApplicationAttachmentMetadata): ByteArray =

@@ -661,7 +661,7 @@ class ApplicationServiceTest {
             )
     }
 
-    private fun application(id: Long? = null) =
+    private fun application(id: Long = 0) =
         ApplicationFactory.createApplication(
             id = id,
             applicationData = applicationData,
@@ -669,7 +669,7 @@ class ApplicationServiceTest {
         )
 
     private fun applicationEntity(
-        id: Long? = 3,
+        id: Long = 3,
         alluId: Int? = null,
         data: ApplicationData = applicationData,
         hanke: HankeEntity

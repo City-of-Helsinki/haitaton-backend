@@ -110,9 +110,7 @@ class HankeKayttajaService(
         currentUserId: String,
         currentKayttaja: HankekayttajaEntity? = null,
     ) {
-        logger.info {
-            "Creating users and user tokens for application ${application.id}, alluid=${application.alluid}}"
-        }
+        logger.info { "Creating users and user tokens for application. ${application.logString()}" }
 
         val kayttajaInput =
             application.applicationData

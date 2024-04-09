@@ -49,7 +49,7 @@ class ApplicationAuthorizerITest(
             val hanke = hankeFactory.saveMinimal()
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
-            assertFailure { authorizer.authorizeApplicationId(application.id!!, VIEW.name) }
+            assertFailure { authorizer.authorizeApplicationId(application.id, VIEW.name) }
                 .all {
                     hasClass(ApplicationNotFoundException::class)
                     messageContains(application.id.toString())
@@ -63,7 +63,7 @@ class ApplicationAuthorizerITest(
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
 
             assertFailure {
-                    authorizer.authorizeApplicationId(application.id!!, PermissionCode.DELETE.name)
+                    authorizer.authorizeApplicationId(application.id, PermissionCode.DELETE.name)
                 }
                 .all {
                     hasClass(ApplicationNotFoundException::class)
@@ -77,7 +77,7 @@ class ApplicationAuthorizerITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
 
-            assertThat(authorizer.authorizeApplicationId(application.id!!, VIEW.name)).isTrue()
+            assertThat(authorizer.authorizeApplicationId(application.id, VIEW.name)).isTrue()
         }
     }
 
@@ -138,11 +138,11 @@ class ApplicationAuthorizerITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
             assertFailure {
-                    authorizer.authorizeAttachment(application.id!!, attachmentId, VIEW.name)
+                    authorizer.authorizeAttachment(application.id, attachmentId, VIEW.name)
                 }
                 .all {
                     hasClass(ApplicationNotFoundException::class)
-                    messageContains(application.id!!.toString())
+                    messageContains(application.id.toString())
                 }
         }
 
@@ -153,11 +153,11 @@ class ApplicationAuthorizerITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
             assertFailure {
-                    authorizer.authorizeAttachment(application.id!!, attachmentId, EDIT.name)
+                    authorizer.authorizeAttachment(application.id, attachmentId, EDIT.name)
                 }
                 .all {
                     hasClass(ApplicationNotFoundException::class)
-                    messageContains(application.id!!.toString())
+                    messageContains(application.id.toString())
                 }
         }
 
@@ -168,7 +168,7 @@ class ApplicationAuthorizerITest(
             val application = applicationFactory.saveApplicationEntity(USERNAME, hanke)
 
             assertFailure {
-                    authorizer.authorizeAttachment(application.id!!, attachmentId, VIEW.name)
+                    authorizer.authorizeAttachment(application.id, attachmentId, VIEW.name)
                 }
                 .all {
                     hasClass(AttachmentNotFoundException::class)
@@ -187,7 +187,7 @@ class ApplicationAuthorizerITest(
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
             assertFailure {
-                    authorizer.authorizeAttachment(application.id!!, attachment.id!!, VIEW.name)
+                    authorizer.authorizeAttachment(application.id, attachment.id!!, VIEW.name)
                 }
                 .all {
                     hasClass(AttachmentNotFoundException::class)
@@ -203,7 +203,7 @@ class ApplicationAuthorizerITest(
                 applicationAttachmentFactory.save(application = application).withContent().value
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.KATSELUOIKEUS)
 
-            assertThat(authorizer.authorizeAttachment(application.id!!, attachment.id!!, VIEW.name))
+            assertThat(authorizer.authorizeAttachment(application.id, attachment.id!!, VIEW.name))
                 .isTrue()
         }
 

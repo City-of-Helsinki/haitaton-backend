@@ -48,7 +48,7 @@ class ApplicationAttachmentFactory(
                     createdByUser,
                     createdAt,
                     attachmentType,
-                    application.id!!,
+                    application.id,
                 )
             )
         return ApplicationAttachmentBuilder(entity, attachmentRepository, this)
