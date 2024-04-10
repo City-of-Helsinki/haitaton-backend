@@ -229,6 +229,16 @@ data class HakemusBuilder(
         vararg yhteyshenkilot: HankekayttajaEntity
     ): HakemusBuilder = asianhoitaja(yhteyshenkilot = arrayOf(first) + yhteyshenkilot)
 
+    /** Creates each customer and saves the given hankekayttaja as contacts to all of them. */
+    fun withEachCustomer(
+        first: HankekayttajaEntity,
+        vararg yhteyshenkilot: HankekayttajaEntity
+    ): HakemusBuilder =
+        hakija(first, *yhteyshenkilot)
+            .tyonSuorittaja(first, *yhteyshenkilot)
+            .rakennuttaja(first, *yhteyshenkilot)
+            .asianhoitaja(first, *yhteyshenkilot)
+
     private fun yhteystieto(
         rooli: ApplicationContactType,
         yhteystieto: Hakemusyhteystieto = HakemusyhteystietoFactory.create(),
