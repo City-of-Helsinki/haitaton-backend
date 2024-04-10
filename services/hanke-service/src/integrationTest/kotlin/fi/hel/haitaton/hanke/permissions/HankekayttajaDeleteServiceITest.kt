@@ -192,6 +192,28 @@ class HankekayttajaDeleteServiceITest(
             }
             assertThat(response).prop(DeleteInfo::onlyOmistajanYhteyshenkilo).isFalse()
         }
+
+        @Test
+        fun `returns each hakemus only once when the user is a contact is different roles`() {
+            val hanke = hankeFactory.saveWithAlue()
+            val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+            hakemusFactory
+                .builder(hankeEntity = hanke)
+                .withName("Draft")
+                .withEachCustomer(founder)
+                .save()
+            hakemusFactory
+                .builder(hankeEntity = hanke)
+                .withName("Pending")
+                .inHandling()
+                .withEachCustomer(founder)
+                .save()
+
+            val response: DeleteInfo = deleteService.checkForDelete(founder.id)
+
+            assertThat(response).prop(DeleteInfo::draftHakemukset).single()
+            assertThat(response).prop(DeleteInfo::activeHakemukset).single()
+        }
     }
 
     @Nested

@@ -103,6 +103,7 @@ class HankekayttajaDeleteService(
         kayttaja.hakemusyhteyshenkilot
             .map { it.hakemusyhteystieto }
             .map { it.application }
+            .distinctBy { it.id }
             .map { it.toHakemus() }
 
     data class DeleteInfo(
