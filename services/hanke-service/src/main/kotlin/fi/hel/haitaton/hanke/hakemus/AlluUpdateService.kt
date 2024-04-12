@@ -1,7 +1,8 @@
-package fi.hel.haitaton.hanke.application
+package fi.hel.haitaton.hanke.hakemus
 
 import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.CableReportService
+import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.configuration.LockService
 import java.time.OffsetDateTime
 import mu.KotlinLogging
@@ -15,7 +16,7 @@ class AlluUpdateService(
     private val applicationRepository: ApplicationRepository,
     private val alluStatusRepository: AlluStatusRepository,
     private val cableReportService: CableReportService,
-    private val applicationService: ApplicationService,
+    private val hakemusService: HakemusService,
     private val lockService: LockService,
 ) {
 
@@ -46,6 +47,6 @@ class AlluUpdateService(
         val applicationHistories =
             cableReportService.getApplicationStatusHistories(ids, lastUpdate.toZonedDateTime())
 
-        applicationService.handleApplicationUpdates(applicationHistories, currentUpdate)
+        hakemusService.handleHakemusUpdates(applicationHistories, currentUpdate)
     }
 }
