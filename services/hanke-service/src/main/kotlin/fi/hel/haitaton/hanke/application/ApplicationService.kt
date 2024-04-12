@@ -8,13 +8,10 @@ import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluLoginException
-import fi.hel.haitaton.hanke.allu.AlluStatusRepository
-import fi.hel.haitaton.hanke.allu.ApplicationHistory
 import fi.hel.haitaton.hanke.allu.ApplicationPdfService
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
-import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
@@ -36,7 +33,6 @@ import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
 import fi.hel.haitaton.hanke.validation.ApplicationDataValidator.ensureValidForSend
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
 import kotlin.reflect.KClass
 import mu.KotlinLogging
 import org.springframework.http.MediaType
@@ -53,7 +49,6 @@ const val ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG =
 @Service
 class ApplicationService(
     private val applicationRepository: ApplicationRepository,
-    private val alluStatusRepository: AlluStatusRepository,
     private val cableReportService: CableReportService,
     private val disclosureLogService: DisclosureLogService,
     private val applicationLoggingService: ApplicationLoggingService,
@@ -242,17 +237,6 @@ class ApplicationService(
         logger.info("Sent application id=$id, alluid=${application.alluid}")
         // Save only if sendApplicationToAllu didn't throw an exception
         return applicationRepository.save(application).toApplication()
-    }
-
-    @Transactional
-    fun handleApplicationUpdates(
-        applicationHistories: List<ApplicationHistory>,
-        updateTime: OffsetDateTime
-    ) {
-        applicationHistories.forEach { handleApplicationUpdate(it) }
-        val status = alluStatusRepository.getReferenceById(1)
-        status.historyLastUpdated = updateTime
-        alluStatusRepository.save(status)
     }
 
     /**
@@ -469,82 +453,6 @@ class ApplicationService(
         val hankealueet = HankealueService.createHankealueetFromCableReport(newApplicationData)
         hanke.alueet.clear()
         hanke.alueet.addAll(hankealueService.createAlueetFromCreateRequest(hankealueet, hanke))
-    }
-
-    private fun handleApplicationUpdate(applicationHistory: ApplicationHistory) {
-        val application = applicationRepository.getOneByAlluid(applicationHistory.applicationId)
-        if (application == null) {
-            logger.error {
-                "Allu had events for an application we don't have anymore. alluid=${applicationHistory.applicationId}"
-            }
-            return
-        }
-        applicationHistory.events
-            .sortedBy { it.eventTime }
-            .forEach { handleApplicationEvent(application, it) }
-        applicationRepository.save(application)
-    }
-
-    private fun handleApplicationEvent(
-        application: ApplicationEntity,
-        event: ApplicationStatusEvent
-    ) {
-        application.alluStatus = event.newStatus
-        application.applicationIdentifier = event.applicationIdentifier
-        logger.info {
-            "Updating application with new status, " +
-                "id=${application.id}, " +
-                "alluid=${application.alluid}, " +
-                "application identifier=${application.applicationIdentifier}, " +
-                "new status=${application.alluStatus}, " +
-                "event time=${event.eventTime}"
-        }
-        if (event.newStatus == ApplicationStatus.DECISION) {
-            sendDecisionReadyEmails(application, event.applicationIdentifier)
-        }
-    }
-
-    private fun sendDecisionReadyEmails(
-        application: ApplicationEntity,
-        applicationIdentifier: String
-    ) {
-        val receivers =
-            application.applicationData
-                .customersWithContacts()
-                .flatMap { it.contacts }
-                .filter { it.orderer }
-
-        if (receivers.isEmpty()) {
-            logger.error {
-                "No receivers found for decision ready email, not sending any. ${application.logString()}"
-            }
-            return
-        }
-        logger.info { "Sending application ready emails to ${receivers.size} receivers" }
-
-        receivers.forEach {
-            sendDecisionReadyEmail(it.email, applicationIdentifier, application.id)
-        }
-    }
-
-    private fun sendDecisionReadyEmail(
-        email: String?,
-        applicationIdentifier: String,
-        applicationId: Long?,
-    ) {
-        if (email == null) {
-            logger.error {
-                "Can't send decision ready email, because contact email is null. " +
-                    "applicationId=$applicationId, applicationIdentifier=${applicationIdentifier}"
-            }
-            return
-        }
-
-        emailSenderService.sendJohtoselvitysCompleteEmail(
-            email,
-            applicationId,
-            applicationIdentifier
-        )
     }
 
     private fun getById(id: Long): ApplicationEntity {

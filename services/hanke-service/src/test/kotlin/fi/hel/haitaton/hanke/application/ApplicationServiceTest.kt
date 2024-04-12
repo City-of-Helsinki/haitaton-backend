@@ -3,7 +3,6 @@ package fi.hel.haitaton.hanke.application
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
-import assertk.assertions.contains
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
@@ -13,9 +12,6 @@ import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluLoginException
-import fi.hel.haitaton.hanke.allu.AlluStatus
-import fi.hel.haitaton.hanke.allu.AlluStatusRepository
-import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asJsonResource
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
@@ -24,9 +20,6 @@ import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomer
-import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -50,27 +43,22 @@ import io.mockk.mockk
 import io.mockk.verify
 import io.mockk.verifyAll
 import io.mockk.verifySequence
-import java.time.OffsetDateTime
 import java.util.stream.Stream
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
-import org.springframework.boot.test.system.CapturedOutput
-import org.springframework.boot.test.system.OutputCaptureExtension
 
 private const val HANKE_TUNNUS = HankeFactory.defaultHankeTunnus
 
 class ApplicationServiceTest {
     private val applicationRepository: ApplicationRepository = mockk()
     private val hankeRepository: HankeRepository = mockk()
-    private val statusRepository: AlluStatusRepository = mockk()
     private val geometriatDao: GeometriatDao = mockk()
 
     private val cableReportService: CableReportService = mockk()
@@ -89,7 +77,6 @@ class ApplicationServiceTest {
     private val applicationService: ApplicationService =
         ApplicationService(
             applicationRepository,
-            statusRepository,
             cableReportService,
             disclosureLogService,
             loggingService,
@@ -148,7 +135,6 @@ class ApplicationServiceTest {
         checkUnnecessaryStub()
         confirmVerified(
             applicationRepository,
-            statusRepository,
             cableReportService,
             disclosureLogService,
             loggingService,
@@ -516,149 +502,6 @@ class ApplicationServiceTest {
                 emailSenderService wasNot Called
             }
         }
-    }
-
-    @Nested
-    @ExtendWith(OutputCaptureExtension::class)
-    inner class HandleApplicationUpdates {
-        private val alluid = 42
-        private val applicationId = 13L
-        private val hankeTunnus = "HAI23-1"
-        private val receiver = ApplicationFactory.TEPPO_EMAIL
-        private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
-        private val identifier = ApplicationHistoryFactory.defaultApplicationIdentifier
-
-        @Test
-        fun `sends email to the orderer when application gets a decision`() {
-            every { applicationRepository.getOneByAlluid(42) } returns
-                applicationEntityWithCustomer()
-            justRun {
-                emailSenderService.sendJohtoselvitysCompleteEmail(
-                    receiver,
-                    applicationId,
-                    identifier
-                )
-            }
-            every { applicationRepository.save(any()) } answers { firstArg() }
-            every { statusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
-            every { statusRepository.save(any()) } answers { firstArg() }
-
-            applicationService.handleApplicationUpdates(historiesWithDecision(), updateTime)
-
-            verifySequence {
-                applicationRepository.getOneByAlluid(42)
-                emailSenderService.sendJohtoselvitysCompleteEmail(
-                    receiver,
-                    applicationId,
-                    identifier
-                )
-                applicationRepository.save(any())
-                statusRepository.getReferenceById(1)
-                statusRepository.save(any())
-            }
-        }
-
-        @Test
-        fun `doesn't send email when status is not decision`() {
-            every { applicationRepository.getOneByAlluid(42) } returns
-                applicationEntityWithCustomer()
-            every { applicationRepository.save(any()) } answers { firstArg() }
-            every { statusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
-            every { statusRepository.save(any()) } answers { firstArg() }
-            val histories =
-                listOf(
-                    ApplicationHistoryFactory.create(
-                        alluid,
-                        ApplicationHistoryFactory.createEvent(
-                            applicationIdentifier = identifier,
-                            newStatus = ApplicationStatus.HANDLING
-                        )
-                    ),
-                )
-
-            applicationService.handleApplicationUpdates(histories, updateTime)
-
-            verifySequence {
-                applicationRepository.getOneByAlluid(42)
-                applicationRepository.save(any())
-                statusRepository.getReferenceById(1)
-                statusRepository.save(any())
-            }
-            verify { emailSenderService wasNot Called }
-        }
-
-        @Test
-        fun `logs error when there are no receivers`(output: CapturedOutput) {
-            every { applicationRepository.getOneByAlluid(42) } returns
-                applicationEntityWithCustomer()
-                    .withCustomer(
-                        ApplicationFactory.createCompanyCustomer()
-                            .withContacts(ApplicationFactory.createContact(orderer = false))
-                    )
-            every { applicationRepository.save(any()) } answers { firstArg() }
-            every { statusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
-            every { statusRepository.save(any()) } answers { firstArg() }
-
-            applicationService.handleApplicationUpdates(historiesWithDecision(), updateTime)
-
-            assertThat(output)
-                .contains("No receivers found for decision ready email, not sending any.")
-            verifySequence {
-                applicationRepository.getOneByAlluid(42)
-                applicationRepository.save(any())
-                statusRepository.getReferenceById(1)
-                statusRepository.save(any())
-            }
-            verify { emailSenderService wasNot Called }
-        }
-
-        @Test
-        fun `logs error if receiver email is null`(output: CapturedOutput) {
-            every { applicationRepository.getOneByAlluid(42) } returns
-                applicationEntityWithCustomer()
-                    .withCustomer(
-                        ApplicationFactory.createCompanyCustomer()
-                            .withContacts(
-                                ApplicationFactory.createContact(orderer = true, email = null)
-                            )
-                    )
-            every { applicationRepository.save(any()) } answers { firstArg() }
-            every { statusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
-            every { statusRepository.save(any()) } answers { firstArg() }
-
-            applicationService.handleApplicationUpdates(historiesWithDecision(), updateTime)
-
-            assertThat(output)
-                .contains("Can't send decision ready email, because contact email is null.")
-            verifySequence {
-                applicationRepository.getOneByAlluid(42)
-                applicationRepository.save(any())
-                statusRepository.getReferenceById(1)
-                statusRepository.save(any())
-            }
-            verify { emailSenderService wasNot Called }
-        }
-
-        private fun applicationEntityWithCustomer() =
-            ApplicationFactory.createApplicationEntity(
-                    id = applicationId,
-                    alluid = alluid,
-                    applicationIdentifier = identifier,
-                    userId = "user",
-                    hanke = HankeFactory.createMinimalEntity(id = 1, hankeTunnus = hankeTunnus),
-                )
-                .withCustomer(ApplicationFactory.createCompanyCustomerWithOrderer())
-
-        private fun historiesWithDecision() =
-            listOf(
-                ApplicationHistoryFactory.create(
-                    alluid,
-                    ApplicationHistoryFactory.createEvent(
-                        applicationIdentifier = identifier,
-                        newStatus = ApplicationStatus.DECISION
-                    )
-                ),
-            )
     }
 
     private fun application(id: Long = 0) =

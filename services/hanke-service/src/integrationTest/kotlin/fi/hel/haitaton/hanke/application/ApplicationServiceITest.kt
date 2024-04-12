@@ -34,17 +34,13 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
-import fi.hel.haitaton.hanke.allu.AlluStatusRepository
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.APPROVED
-import fi.hel.haitaton.hanke.allu.ApplicationStatus.DECISION
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.DECISIONMAKING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.HANDLING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
-import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.asJsonResource
-import fi.hel.haitaton.hanke.asUtc
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContentService.Companion.prefix
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
@@ -63,22 +59,17 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.asianHoitajaCustomerContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplication
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplicationArea
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createApplicationEntity
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCableReportApplicationData
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.createCompanyCustomerWithOrderer
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.expectedRecipients
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.hakijaCustomerContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.rakennuttajaCustomerContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.suorittajaCustomerContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withArea
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomer
-import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory.Companion.KAYTTAJA_INPUT_HAKIJA
 import fi.hel.haitaton.hanke.factory.TEPPO_TESTI
 import fi.hel.haitaton.hanke.findByType
-import fi.hel.haitaton.hanke.firstReceivedMessage
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.getResourceAsBytes
 import fi.hel.haitaton.hanke.logging.AuditLogRepository
@@ -113,8 +104,6 @@ import io.mockk.verify
 import io.mockk.verifyOrder
 import io.mockk.verifySequence
 import jakarta.mail.internet.MimeMessage
-import java.time.OffsetDateTime
-import java.time.ZonedDateTime
 import org.geojson.Polygon
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -148,7 +137,6 @@ class ApplicationServiceITest : IntegrationTest() {
     @Autowired private lateinit var applicationRepository: ApplicationRepository
     @Autowired private lateinit var applicationAttachmentRepository: ApplicationAttachmentRepository
     @Autowired private lateinit var hankeRepository: HankeRepository
-    @Autowired private lateinit var alluStatusRepository: AlluStatusRepository
     @Autowired private lateinit var auditLogRepository: AuditLogRepository
     @Autowired private lateinit var kayttajakutsuRepository: KayttajakutsuRepository
     @Autowired private lateinit var hankeKayttajaRepository: HankekayttajaRepository
@@ -1307,112 +1295,6 @@ class ApplicationServiceITest : IntegrationTest() {
             assertThat(filename).isNotNull().isEqualTo("paatos")
             assertThat(bytes).isEqualTo(decisionPdf)
             verify { cableReportServiceAllu.getDecisionPdf(alluId) }
-        }
-    }
-
-    @Nested
-    inner class HandleApplicationUpdates {
-
-        /** The timestamp used in the initial DB migration. */
-        private val placeholderUpdateTime = OffsetDateTime.parse("2017-01-01T00:00:00Z")
-        private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
-        private val alluid = 42
-        private val identifier = ApplicationHistoryFactory.defaultApplicationIdentifier
-
-        @Test
-        fun `updates the last updated time with empty histories`() {
-            assertThat(applicationRepository.findAll()).isEmpty()
-            assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
-
-            applicationService.handleApplicationUpdates(listOf(), updateTime)
-
-            assertEquals(updateTime, alluStatusRepository.getLastUpdateTime().asUtc())
-        }
-
-        @Test
-        fun `updates the application statuses in the correct order`() {
-            assertThat(applicationRepository.findAll()).isEmpty()
-            assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
-            val hanke = hankeFactory.saveMinimal()
-            applicationFactory.saveApplicationEntity(USERNAME, hanke = hanke, alluId = alluid)
-            val firstEventTime = ZonedDateTime.parse("2022-09-05T14:15:16Z")
-            val history =
-                ApplicationHistoryFactory.create(
-                    alluid,
-                    ApplicationHistoryFactory.createEvent(firstEventTime.plusDays(5), PENDING),
-                    ApplicationHistoryFactory.createEvent(firstEventTime.plusDays(10), HANDLING),
-                    ApplicationHistoryFactory.createEvent(firstEventTime, PENDING),
-                )
-
-            applicationService.handleApplicationUpdates(listOf(history), updateTime)
-
-            assertThat(alluStatusRepository.getLastUpdateTime().asUtc()).isEqualTo(updateTime)
-            val application = applicationRepository.getOneByAlluid(alluid)
-            assertThat(application)
-                .isNotNull()
-                .prop("alluStatus", ApplicationEntity::alluStatus)
-                .isEqualTo(HANDLING)
-            assertThat(application!!.applicationIdentifier).isEqualTo(identifier)
-        }
-
-        @Test
-        fun `ignores missing application`() {
-            assertThat(applicationRepository.findAll()).isEmpty()
-            assertEquals(placeholderUpdateTime, alluStatusRepository.getLastUpdateTime().asUtc())
-            val hanke = hankeFactory.saveMinimal()
-            applicationFactory.saveApplicationEntity(USERNAME, hanke = hanke, alluId = alluid)
-            applicationFactory.saveApplicationEntity(USERNAME, hanke = hanke, alluId = alluid + 2)
-            val histories =
-                listOf(
-                    ApplicationHistoryFactory.create(alluid, "JS2300082"),
-                    ApplicationHistoryFactory.create(alluid + 1, "JS2300083"),
-                    ApplicationHistoryFactory.create(alluid + 2, "JS2300084"),
-                )
-
-            applicationService.handleApplicationUpdates(histories, updateTime)
-
-            assertEquals(updateTime, alluStatusRepository.getLastUpdateTime().asUtc())
-            val applications = applicationRepository.findAll()
-            assertThat(applications).hasSize(2)
-            assertThat(applications.map { it.alluid }).containsExactlyInAnyOrder(alluid, alluid + 2)
-            assertThat(applications.map { it.alluStatus })
-                .containsExactlyInAnyOrder(PENDING_CLIENT, PENDING_CLIENT)
-            assertThat(applications.map { it.applicationIdentifier })
-                .containsExactlyInAnyOrder("JS2300082", "JS2300084")
-        }
-
-        @Test
-        fun `sends email to the orderer when application gets a decision`() {
-            val hanke = hankeFactory.saveMinimal()
-            applicationRepository.save(
-                createApplicationEntity(
-                        alluid = alluid,
-                        applicationIdentifier = identifier,
-                        userId = "user",
-                        hanke = hanke,
-                    )
-                    .withCustomer(createCompanyCustomerWithOrderer())
-            )
-            val histories =
-                listOf(
-                    ApplicationHistoryFactory.create(
-                        alluid,
-                        ApplicationHistoryFactory.createEvent(
-                            applicationIdentifier = identifier,
-                            newStatus = DECISION
-                        )
-                    ),
-                )
-
-            applicationService.handleApplicationUpdates(histories, updateTime)
-
-            val email = greenMail.firstReceivedMessage()
-            assertThat(email.allRecipients).hasSize(1)
-            assertThat(email.allRecipients[0].toString()).isEqualTo(TEPPO_EMAIL)
-            assertThat(email.subject)
-                .isEqualTo(
-                    "Haitaton: Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier"
-                )
         }
     }
 
