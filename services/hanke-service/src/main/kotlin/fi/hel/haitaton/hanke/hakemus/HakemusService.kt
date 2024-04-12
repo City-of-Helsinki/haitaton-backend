@@ -8,7 +8,10 @@ import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluApplicationData
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
 import fi.hel.haitaton.hanke.allu.AlluLoginException
+import fi.hel.haitaton.hanke.allu.AlluStatusRepository
+import fi.hel.haitaton.hanke.allu.ApplicationHistory
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
+import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
@@ -31,6 +34,7 @@ import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -40,6 +44,7 @@ import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.reflect.KClass
 import mu.KotlinLogging
@@ -61,6 +66,8 @@ class HakemusService(
     private val hankeKayttajaService: HankeKayttajaService,
     private val attachmentService: ApplicationAttachmentService,
     private val alluClient: CableReportService,
+    private val alluStatusRepository: AlluStatusRepository,
+    private val emailSenderService: EmailSenderService,
 ) {
 
     @Transactional(readOnly = true)
@@ -238,6 +245,93 @@ class HakemusService(
         val filename = hakemus.applicationIdentifier ?: "paatos"
         val pdfBytes = alluClient.getDecisionPdf(alluid)
         return Pair(filename, pdfBytes)
+    }
+
+    @Transactional
+    fun handleHakemusUpdates(
+        applicationHistories: List<ApplicationHistory>,
+        updateTime: OffsetDateTime
+    ) {
+        applicationHistories.forEach { handleHakemusUpdate(it) }
+        val status = alluStatusRepository.getReferenceById(1)
+        status.historyLastUpdated = updateTime
+        alluStatusRepository.save(status)
+    }
+
+    private fun handleHakemusUpdate(applicationHistory: ApplicationHistory) {
+        val application = applicationRepository.getOneByAlluid(applicationHistory.applicationId)
+        if (application == null) {
+            logger.error {
+                "Allu had events for a hakemus we don't have anymore. alluId=${applicationHistory.applicationId}"
+            }
+            return
+        }
+        applicationHistory.events
+            .sortedBy { it.eventTime }
+            .forEach { handleApplicationEvent(application, it) }
+        applicationRepository.save(application)
+    }
+
+    private fun handleApplicationEvent(
+        application: ApplicationEntity,
+        event: ApplicationStatusEvent
+    ) {
+        application.alluStatus = event.newStatus
+        application.applicationIdentifier = event.applicationIdentifier
+        logger.info {
+            "Updating hakemus with new status, " +
+                "id=${application.id}, " +
+                "alluId=${application.alluid}, " +
+                "application identifier=${application.applicationIdentifier}, " +
+                "new status=${application.alluStatus}, " +
+                "event time=${event.eventTime}"
+        }
+        if (event.newStatus == ApplicationStatus.DECISION) {
+            sendDecisionReadyEmails(application, event.applicationIdentifier)
+        }
+    }
+
+    private fun sendDecisionReadyEmails(
+        application: ApplicationEntity,
+        applicationIdentifier: String
+    ) {
+        val receivers =
+            application.applicationData
+                .customersWithContacts()
+                .flatMap { it.contacts }
+                .filter { it.orderer }
+
+        if (receivers.isEmpty()) {
+            logger.error {
+                "No receivers found for decision ready email, not sending any. ${application.logString()}"
+            }
+            return
+        }
+        logger.info { "Sending hakemus ready emails to ${receivers.size} receivers" }
+
+        receivers.forEach {
+            sendDecisionReadyEmail(it.email, applicationIdentifier, application.id)
+        }
+    }
+
+    private fun sendDecisionReadyEmail(
+        email: String?,
+        applicationIdentifier: String,
+        applicationId: Long?,
+    ) {
+        if (email == null) {
+            logger.error {
+                "Can't send decision ready email, because contact email is null. " +
+                    "applicationId=$applicationId, applicationIdentifier=${applicationIdentifier}"
+            }
+            return
+        }
+
+        emailSenderService.sendJohtoselvitysCompleteEmail(
+            email,
+            applicationId,
+            applicationIdentifier
+        )
     }
 
     /** Find the application entity or throw an exception. */

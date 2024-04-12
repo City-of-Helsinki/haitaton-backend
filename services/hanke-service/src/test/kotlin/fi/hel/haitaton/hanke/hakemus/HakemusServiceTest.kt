@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.hakemus
 import assertk.all
 import assertk.assertFailure
 import assertk.assertThat
+import assertk.assertions.contains
 import assertk.assertions.hasClass
 import assertk.assertions.hasMessage
 import assertk.assertions.isEqualTo
@@ -15,6 +16,9 @@ import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluLoginException
+import fi.hel.haitaton.hanke.allu.AlluStatus
+import fi.hel.haitaton.hanke.allu.AlluStatusRepository
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.CableReportService
 import fi.hel.haitaton.hanke.allu.Contact
 import fi.hel.haitaton.hanke.allu.Customer
@@ -26,8 +30,12 @@ import fi.hel.haitaton.hanke.application.ApplicationEntity
 import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
+import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomer
+import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory.withYhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -40,6 +48,7 @@ import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.USERNAME
+import io.mockk.Called
 import io.mockk.called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -50,6 +59,7 @@ import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
 import io.mockk.verifySequence
+import java.time.OffsetDateTime
 import java.util.stream.Stream
 import org.geojson.Polygon
 import org.junit.jupiter.api.AfterEach
@@ -57,10 +67,13 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.junit.jupiter.api.extension.ExtendWith
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.CsvSource
 import org.junit.jupiter.params.provider.MethodSource
+import org.springframework.boot.test.system.CapturedOutput
+import org.springframework.boot.test.system.OutputCaptureExtension
 
 class HakemusServiceTest {
     private val applicationRepository: ApplicationRepository = mockk()
@@ -73,6 +86,8 @@ class HakemusServiceTest {
     private val hankeKayttajaService: HankeKayttajaService = mockk(relaxUnitFun = true)
     private val attachmentService: ApplicationAttachmentService = mockk()
     private val alluClient: CableReportService = mockk()
+    private val alluStatusRepository: AlluStatusRepository = mockk()
+    private val emailSenderService: EmailSenderService = mockk()
 
     private val hakemusService =
         HakemusService(
@@ -86,6 +101,8 @@ class HakemusServiceTest {
             hankeKayttajaService,
             attachmentService,
             alluClient,
+            alluStatusRepository,
+            emailSenderService,
         )
 
     @BeforeEach
@@ -462,6 +479,149 @@ class HakemusServiceTest {
                     )
             return applicationEntity
         }
+    }
+
+    @Nested
+    @ExtendWith(OutputCaptureExtension::class)
+    inner class HandleApplicationUpdates {
+        private val alluid = 42
+        private val applicationId = 13L
+        private val hankeTunnus = "HAI23-1"
+        private val receiver = ApplicationFactory.TEPPO_EMAIL
+        private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
+        private val identifier = ApplicationHistoryFactory.defaultApplicationIdentifier
+
+        @Test
+        fun `sends email to the orderer when hakemus gets a decision`() {
+            every { applicationRepository.getOneByAlluid(42) } returns
+                applicationEntityWithCustomer()
+            justRun {
+                emailSenderService.sendJohtoselvitysCompleteEmail(
+                    receiver,
+                    applicationId,
+                    identifier
+                )
+            }
+            every { applicationRepository.save(any()) } answers { firstArg() }
+            every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
+            every { alluStatusRepository.save(any()) } answers { firstArg() }
+
+            hakemusService.handleHakemusUpdates(historiesWithDecision(), updateTime)
+
+            verifySequence {
+                applicationRepository.getOneByAlluid(42)
+                emailSenderService.sendJohtoselvitysCompleteEmail(
+                    receiver,
+                    applicationId,
+                    identifier
+                )
+                applicationRepository.save(any())
+                alluStatusRepository.getReferenceById(1)
+                alluStatusRepository.save(any())
+            }
+        }
+
+        @Test
+        fun `doesn't send email when status is not decision`() {
+            every { applicationRepository.getOneByAlluid(42) } returns
+                applicationEntityWithCustomer()
+            every { applicationRepository.save(any()) } answers { firstArg() }
+            every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
+            every { alluStatusRepository.save(any()) } answers { firstArg() }
+            val histories =
+                listOf(
+                    ApplicationHistoryFactory.create(
+                        alluid,
+                        ApplicationHistoryFactory.createEvent(
+                            applicationIdentifier = identifier,
+                            newStatus = ApplicationStatus.HANDLING
+                        )
+                    ),
+                )
+
+            hakemusService.handleHakemusUpdates(histories, updateTime)
+
+            verifySequence {
+                applicationRepository.getOneByAlluid(42)
+                applicationRepository.save(any())
+                alluStatusRepository.getReferenceById(1)
+                alluStatusRepository.save(any())
+            }
+            verify { emailSenderService wasNot Called }
+        }
+
+        @Test
+        fun `logs error when there are no receivers`(output: CapturedOutput) {
+            every { applicationRepository.getOneByAlluid(42) } returns
+                applicationEntityWithCustomer()
+                    .withCustomer(
+                        ApplicationFactory.createCompanyCustomer()
+                            .withContacts(ApplicationFactory.createContact(orderer = false))
+                    )
+            every { applicationRepository.save(any()) } answers { firstArg() }
+            every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
+            every { alluStatusRepository.save(any()) } answers { firstArg() }
+
+            hakemusService.handleHakemusUpdates(historiesWithDecision(), updateTime)
+
+            assertThat(output)
+                .contains("No receivers found for decision ready email, not sending any.")
+            verifySequence {
+                applicationRepository.getOneByAlluid(42)
+                applicationRepository.save(any())
+                alluStatusRepository.getReferenceById(1)
+                alluStatusRepository.save(any())
+            }
+            verify { emailSenderService wasNot Called }
+        }
+
+        @Test
+        fun `logs error if receiver email is null`(output: CapturedOutput) {
+            every { applicationRepository.getOneByAlluid(42) } returns
+                applicationEntityWithCustomer()
+                    .withCustomer(
+                        ApplicationFactory.createCompanyCustomer()
+                            .withContacts(
+                                ApplicationFactory.createContact(orderer = true, email = null)
+                            )
+                    )
+            every { applicationRepository.save(any()) } answers { firstArg() }
+            every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
+            every { alluStatusRepository.save(any()) } answers { firstArg() }
+
+            hakemusService.handleHakemusUpdates(historiesWithDecision(), updateTime)
+
+            assertThat(output)
+                .contains("Can't send decision ready email, because contact email is null.")
+            verifySequence {
+                applicationRepository.getOneByAlluid(42)
+                applicationRepository.save(any())
+                alluStatusRepository.getReferenceById(1)
+                alluStatusRepository.save(any())
+            }
+            verify { emailSenderService wasNot Called }
+        }
+
+        private fun applicationEntityWithCustomer() =
+            ApplicationFactory.createApplicationEntity(
+                    id = applicationId,
+                    alluid = alluid,
+                    applicationIdentifier = identifier,
+                    userId = "user",
+                    hanke = HankeFactory.createMinimalEntity(id = 1, hankeTunnus = hankeTunnus),
+                )
+                .withCustomer(ApplicationFactory.createCompanyCustomerWithOrderer())
+
+        private fun historiesWithDecision() =
+            listOf(
+                ApplicationHistoryFactory.create(
+                    alluid,
+                    ApplicationHistoryFactory.createEvent(
+                        applicationIdentifier = identifier,
+                        newStatus = ApplicationStatus.DECISION
+                    )
+                ),
+            )
     }
 
     companion object {
