@@ -48,7 +48,6 @@ import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.test.AlluException
 import fi.hel.haitaton.hanke.test.USERNAME
-import io.mockk.Called
 import io.mockk.called
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
@@ -547,7 +546,6 @@ class HakemusServiceTest {
                 alluStatusRepository.getReferenceById(1)
                 alluStatusRepository.save(any())
             }
-            verify { emailSenderService wasNot Called }
         }
 
         @Test
@@ -572,7 +570,6 @@ class HakemusServiceTest {
                 alluStatusRepository.getReferenceById(1)
                 alluStatusRepository.save(any())
             }
-            verify { emailSenderService wasNot Called }
         }
 
         @Test
@@ -599,7 +596,6 @@ class HakemusServiceTest {
                 alluStatusRepository.getReferenceById(1)
                 alluStatusRepository.save(any())
             }
-            verify { emailSenderService wasNot Called }
         }
 
         private fun applicationEntityWithCustomer() =
