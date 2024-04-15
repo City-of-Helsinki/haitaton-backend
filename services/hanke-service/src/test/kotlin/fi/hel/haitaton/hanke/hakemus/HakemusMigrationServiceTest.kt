@@ -100,21 +100,19 @@ class HakemusMigrationServiceTest {
 
         @Test
         fun `returns the element with the least missing values`() {
-            val contacts =
-                listOf(
-                    ApplicationFactory.createContact(firstName = null, lastName = "", phone = " "),
-                    ApplicationFactory.createContact(firstName = "Pekka", lastName = " "),
-                    ApplicationFactory.createContact(firstName = "Matti", email = "", phone = null),
-                    ApplicationFactory.createContact(
-                        firstName = "Hannu",
-                        lastName = null,
-                        email = " "
-                    )
-                )
+            val missingThree =
+                Contact(firstName = null, lastName = "", email = "some@email", phone = " ")
+            val missingOne =
+                Contact(firstName = "Pekka", lastName = " ", email = "pekka@email", phone = "123")
+            val firstMissingTwo =
+                Contact(firstName = "Matti", lastName = "Mattila", email = "", phone = null)
+            val secondMissingTwo =
+                Contact(firstName = "Hannu", lastName = null, email = " ", phone = "321")
+            val contacts = listOf(missingThree, missingOne, firstMissingTwo, secondMissingTwo)
 
             val response = contacts.contactWithLeastMissingFields()
 
-            assertThat(response).isNotNull().isSameInstanceAs(contacts[1])
+            assertThat(response).isNotNull().isSameInstanceAs(missingOne)
         }
     }
 
@@ -150,23 +148,37 @@ class HakemusMigrationServiceTest {
         @Test
         fun `returns the orderer with the least missing fields if there are several`() {
             val nonOrderer =
-                ApplicationFactory.createContact(
-                    orderer = false,
-                    firstName = null,
-                    lastName = "",
-                    phone = " "
+                Contact(
+                    firstName = ApplicationFactory.TEPPO,
+                    lastName = ApplicationFactory.TESTIHENKILO,
+                    email = ApplicationFactory.TEPPO_EMAIL,
+                    phone = ApplicationFactory.TEPPO_PHONE,
+                    orderer = false
                 )
             val missingTwo =
-                ApplicationFactory.createContact(
-                    orderer = true,
+                Contact(
                     firstName = "Pekka",
                     lastName = " ",
-                    email = ""
+                    email = "",
+                    phone = "123",
+                    orderer = true
                 )
             val firstMissingOne =
-                ApplicationFactory.createContact(orderer = true, firstName = "Matti", phone = null)
+                Contact(
+                    firstName = "Matti",
+                    lastName = "Mattila",
+                    email = "matti@email",
+                    phone = null,
+                    orderer = true
+                )
             val secondMissingOne =
-                ApplicationFactory.createContact(orderer = true, firstName = "Hannu", email = " ")
+                Contact(
+                    firstName = "Hannu",
+                    lastName = "Hannula",
+                    email = " ",
+                    phone = "321",
+                    orderer = true
+                )
             val contacts = arrayOf(nonOrderer, missingTwo, firstMissingOne, secondMissingOne)
             val data =
                 ApplicationFactory.createCableReportApplicationData(
