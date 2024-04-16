@@ -271,8 +271,7 @@ class ApplicationAttachmentControllerITest(@Autowired override val mockMvc: Mock
         applicationId: Long = APPLICATION_ID,
         attachmentId: UUID = UUID.fromString("df37fe12-fb36-4f61-8b07-2fb4ae8233f8"),
         resultType: MediaType = APPLICATION_PDF,
-    ): ResultActions =
-        get("/hakemukset/$applicationId/liitteet/$attachmentId/content", resultType = resultType)
+    ): ResultActions = get("/hakemukset/$applicationId/liitteet/$attachmentId/content", resultType)
 
     private fun postAttachment(
         applicationId: Long = APPLICATION_ID,
