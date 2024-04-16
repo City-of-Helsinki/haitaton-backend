@@ -10,10 +10,14 @@ import org.springframework.core.annotation.Order
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.web.SecurityFilterChain
 
+/**
+ * In order to do maintenance tasks, we need to be able to block calls to the API and return 503
+ * Service Unavailable.
+ */
 @Configuration
 @ConditionalOnProperty(
-    name = ["haitaton.api.enabled"],
-    havingValue = "false",
+    name = ["haitaton.api.disabled"],
+    havingValue = "true",
     matchIfMissing = false
 )
 class ApiDisabledConfiguration {
@@ -33,7 +37,7 @@ class ApiDisabledConfiguration {
 
     /**
      * In order to be able to block calls to the API and return 503 Service Unavailable, we need to
-     * allow the traffic first.
+     * allow the traffic without authorization first.
      */
     @Bean
     @Order(1)

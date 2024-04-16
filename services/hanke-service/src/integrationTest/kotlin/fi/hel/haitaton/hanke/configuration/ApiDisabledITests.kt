@@ -16,7 +16,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers
 
 @WebMvcTest(
     value = [ApiDisabledConfiguration::class, HankeController::class, HakemusController::class],
-    properties = ["haitaton.api.enabled=false"]
+    properties = ["haitaton.api.disabled=true"]
 )
 @Import(IntegrationTestConfiguration::class)
 @WithMockUser(USERNAME)

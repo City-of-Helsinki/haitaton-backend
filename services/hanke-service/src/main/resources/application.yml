@@ -8,7 +8,7 @@ haitaton:
     updateIntervalMilliSeconds: ${ALLU_UPDATE_INTERVAL:60000}
     username: ${ALLU_USERNAME:fake_user}
   api:
-    enabled: ${HAITATON_API_ENABLED:true}
+    disabled: ${HAITATON_API_DISABLED:false}
   azure:
     blob:
       connection-string: ${HAITATON_BLOB_CONNECTION_STRING:#{null}}
