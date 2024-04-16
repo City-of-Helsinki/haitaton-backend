@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusIdentifier
 import fi.hel.haitaton.hanke.hakemus.HakemusyhteystietoEntity
+import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
@@ -73,4 +74,10 @@ data class ApplicationEntity(
             hankeId = hanke.id,
         )
     }
+
+    fun allContacts(): List<HankekayttajaEntity> =
+        yhteystiedot.values
+            .flatMap { it.yhteyshenkilot }
+            .map { it.hankekayttaja }
+            .distinctBy { it.sahkoposti }
 }

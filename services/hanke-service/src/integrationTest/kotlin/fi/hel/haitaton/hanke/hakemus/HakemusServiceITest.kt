@@ -61,7 +61,6 @@ import fi.hel.haitaton.hanke.attachment.common.MockFileClient
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
@@ -1907,17 +1906,14 @@ class HakemusServiceITest(
         }
 
         @Test
-        fun `sends email to the orderer when hakemus gets a decision`() {
+        fun `sends email to the contacts when hakemus gets a decision`() {
             val hanke = hankeFactory.saveMinimal()
-            applicationRepository.save(
-                ApplicationFactory.createApplicationEntity(
-                        alluid = alluId,
-                        applicationIdentifier = identifier,
-                        userId = "user",
-                        hanke = hanke,
-                    )
-                    .withCustomer(ApplicationFactory.createCompanyCustomerWithOrderer())
-            )
+            val hakija = hankeKayttajaFactory.saveUser(hankeId = hanke.id)
+            hakemusFactory
+                .builder(USERNAME, hanke)
+                .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
+                .hakija(yhteyshenkilot = arrayOf(hakija))
+                .saveEntity()
             val histories =
                 listOf(
                     ApplicationHistoryFactory.create(
@@ -1933,7 +1929,7 @@ class HakemusServiceITest(
 
             val email = greenMail.firstReceivedMessage()
             assertThat(email.allRecipients).hasSize(1)
-            assertThat(email.allRecipients[0].toString()).isEqualTo(ApplicationFactory.TEPPO_EMAIL)
+            assertThat(email.allRecipients[0].toString()).isEqualTo(hakija.sahkoposti)
             assertThat(email.subject)
                 .isEqualTo(
                     "Haitaton: Johtoselvitys $identifier / Ledningsutredning $identifier / Cable report $identifier"
