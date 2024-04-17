@@ -301,12 +301,12 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                             endTime = ZonedDateTime.now().minusDays(1)
                         )
                 )
-            every { authorizer.authorizeCreate(any()) } returns true
+            every { authorizer.authorizeCreate(any<Application>()) } returns true
 
             post(BASE_URL, application).andExpect(status().isBadRequest)
 
             verify {
-                authorizer.authorizeCreate(any())
+                authorizer.authorizeCreate(any<Application>())
                 applicationService wasNot Called
             }
         }

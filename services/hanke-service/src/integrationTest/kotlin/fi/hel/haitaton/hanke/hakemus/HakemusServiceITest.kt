@@ -14,6 +14,7 @@ import assertk.assertions.hasSize
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isFalse
+import assertk.assertions.isGreaterThan
 import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.isNull
@@ -62,6 +63,7 @@ import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
+import fi.hel.haitaton.hanke.factory.CreateHakemusRequestFactory
 import fi.hel.haitaton.hanke.factory.GeometriaFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
@@ -91,6 +93,7 @@ import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.test.AlluException
+import fi.hel.haitaton.hanke.test.Asserts.hasStreetName
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectAfter
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectBefore
@@ -350,6 +353,144 @@ class HakemusServiceITest(
                 val expectedHakemus =
                     HankkeenHakemusResponse(applicationRepository.findAll().single())
                 assertThat(result.applications).hasSameElementsAs(listOf(expectedHakemus))
+            }
+        }
+    }
+
+    @Nested
+    inner class Create {
+        abstract inner class CreateTest {
+            abstract val request: CreateHakemusRequest
+
+            abstract fun Assert<Hakemus>.matchesRequest(hankeTunnus: String)
+
+            fun CreateHakemusRequest.withHanketunnus(hanketunnus: String) =
+                when (this) {
+                    is CreateJohtoselvityshakemusRequest -> copy(hankeTunnus = hanketunnus)
+                    is CreateKaivuilmoitusRequest -> copy(hankeTunnus = hanketunnus)
+                }
+
+            @Test
+            fun `throws exception when hanke does not exist`() {
+                val failure = assertFailure { hakemusService.create(request, USERNAME) }
+
+                failure.all {
+                    hasClass(HankeNotFoundException::class)
+                    messageContains("hankeTunnus ${request.hankeTunnus}")
+                }
+            }
+
+            @Test
+            fun `creates the hakemus`() {
+                val hanke = hankeFactory.saveMinimal()
+                val request = request.withHanketunnus(hanke.hankeTunnus)
+
+                val result = hakemusService.create(request, USERNAME)
+
+                val hakemus = hakemusService.getById(result.id)
+                assertThat(hakemus).matchesRequest(hanke.hankeTunnus)
+            }
+
+            @Test
+            fun `returns the created hakemus`() {
+                val hanke = hankeFactory.saveMinimal()
+                val request = request.withHanketunnus(hanke.hankeTunnus)
+
+                val result = hakemusService.create(request, USERNAME)
+
+                assertThat(result).matchesRequest(hanke.hankeTunnus)
+            }
+
+            @Test
+            fun `writes the created hakemus to the audit log`() {
+                val hanke = hankeFactory.saveMinimal()
+                val request = request.withHanketunnus(hanke.hankeTunnus)
+                auditLogRepository.deleteAll()
+
+                val result = hakemusService.create(request, USERNAME)
+
+                assertThat(auditLogRepository.findAll()).single().isSuccess(Operation.CREATE) {
+                    hasUserActor(USERNAME)
+                    withTarget {
+                        hasId(result.id)
+                        prop(AuditLogTarget::type).isEqualTo(ObjectType.HAKEMUS)
+                        prop(AuditLogTarget::objectBefore).isNull()
+                        hasObjectAfter(result)
+                    }
+                }
+            }
+        }
+
+        @Nested
+        inner class WithJohtoselvityshakemus : CreateTest() {
+            override val request: CreateJohtoselvityshakemusRequest =
+                CreateHakemusRequestFactory.johtoselvitysRequest()
+
+            override fun Assert<Hakemus>.matchesRequest(hankeTunnus: String) = all {
+                prop(Hakemus::id).isGreaterThan(0)
+                prop(Hakemus::hankeTunnus).isEqualTo(hankeTunnus)
+                prop(Hakemus::alluid).isNull()
+                prop(Hakemus::alluStatus).isNull()
+                prop(Hakemus::applicationIdentifier).isNull()
+                prop(Hakemus::applicationType).isEqualTo(ApplicationType.CABLE_REPORT)
+                prop(Hakemus::applicationData)
+                    .isInstanceOf(JohtoselvityshakemusData::class)
+                    .matchesRequest()
+            }
+
+            private fun Assert<JohtoselvityshakemusData>.matchesRequest() = all {
+                prop(JohtoselvityshakemusData::name).isEqualTo(request.name)
+                prop(JohtoselvityshakemusData::postalAddress)
+                    .hasStreetName(request.postalAddress!!.streetAddress.streetName!!)
+                prop(JohtoselvityshakemusData::constructionWork).isNotNull().isFalse()
+                prop(JohtoselvityshakemusData::maintenanceWork).isNotNull().isFalse()
+                prop(JohtoselvityshakemusData::propertyConnectivity).isNotNull().isFalse()
+                prop(JohtoselvityshakemusData::emergencyWork).isNotNull().isFalse()
+                prop(JohtoselvityshakemusData::rockExcavation).isNotNull().isFalse()
+                prop(JohtoselvityshakemusData::workDescription).isEqualTo(request.workDescription)
+                prop(JohtoselvityshakemusData::startTime).isNull()
+                prop(JohtoselvityshakemusData::endTime).isNull()
+                prop(JohtoselvityshakemusData::pendingOnClient).isTrue()
+                prop(JohtoselvityshakemusData::areas).isNull()
+                prop(JohtoselvityshakemusData::yhteystiedot).isEmpty()
+            }
+        }
+
+        @Nested
+        inner class WithKaivuilmoitus : CreateTest() {
+            override val request: CreateKaivuilmoitusRequest =
+                CreateHakemusRequestFactory.kaivuilmoitusRequest()
+
+            override fun Assert<Hakemus>.matchesRequest(hankeTunnus: String) = all {
+                prop(Hakemus::id).isGreaterThan(0)
+                prop(Hakemus::hankeTunnus).isEqualTo(hankeTunnus)
+                prop(Hakemus::alluid).isNull()
+                prop(Hakemus::alluStatus).isNull()
+                prop(Hakemus::applicationIdentifier).isNull()
+                prop(Hakemus::applicationType).isEqualTo(ApplicationType.EXCAVATION_NOTIFICATION)
+                prop(Hakemus::applicationData)
+                    .isInstanceOf(KaivuilmoitusData::class)
+                    .matchesRequest()
+            }
+
+            private fun Assert<KaivuilmoitusData>.matchesRequest() = all {
+                prop(KaivuilmoitusData::pendingOnClient).isTrue()
+                prop(KaivuilmoitusData::name).isEqualTo(request.name)
+                prop(KaivuilmoitusData::workDescription).isEqualTo(request.workDescription)
+                prop(KaivuilmoitusData::constructionWork).isEqualTo(request.constructionWork)
+                prop(KaivuilmoitusData::maintenanceWork).isEqualTo(request.maintenanceWork)
+                prop(KaivuilmoitusData::emergencyWork).isEqualTo(request.emergencyWork)
+                prop(KaivuilmoitusData::cableReportDone).isEqualTo(request.cableReportDone)
+                prop(KaivuilmoitusData::rockExcavation).isEqualTo(request.rockExcavation)
+                prop(KaivuilmoitusData::cableReports).isEqualTo(request.cableReports)
+                prop(KaivuilmoitusData::placementContracts).isEqualTo(request.placementContracts)
+                prop(KaivuilmoitusData::requiredCompetence).isEqualTo(request.requiredCompetence)
+                prop(KaivuilmoitusData::startTime).isNull()
+                prop(KaivuilmoitusData::endTime).isNull()
+                prop(KaivuilmoitusData::areas).isNull()
+                prop(KaivuilmoitusData::yhteystiedot).isEmpty()
+                prop(KaivuilmoitusData::invoicingCustomer).isNull()
+                prop(KaivuilmoitusData::additionalInfo).isNull()
             }
         }
     }

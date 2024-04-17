@@ -11,6 +11,7 @@ import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.CreateHakemusRequestFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.permissions.Kayttooikeustaso
 import fi.hel.haitaton.hanke.permissions.PermissionCode
@@ -116,6 +117,47 @@ class ApplicationAuthorizerITest(
             permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
 
             assertThat(authorizer.authorizeCreate(application)).isTrue()
+        }
+    }
+
+    @Nested
+    inner class AuthorizeCreateHakemus {
+        private val hankeTunnus = "HAI23-1414"
+
+        @Test
+        fun `throws exception if hanketunnus not found`() {
+            val request =
+                CreateHakemusRequestFactory.johtoselvitysRequest(hankeTunnus = hankeTunnus)
+
+            assertFailure { authorizer.authorizeCreate(request) }
+                .all {
+                    hasClass(HankeNotFoundException::class)
+                    messageContains("hankeTunnus $hankeTunnus")
+                }
+        }
+
+        @Test
+        fun `throws exception if user doesn't have EDIT_APPLICATIONS permission`() {
+            val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
+            val request =
+                CreateHakemusRequestFactory.johtoselvitysRequest(hankeTunnus = hankeTunnus)
+            permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HANKEMUOKKAUS)
+
+            assertFailure { authorizer.authorizeCreate(request) }
+                .all {
+                    hasClass(HankeNotFoundException::class)
+                    messageContains("hankeTunnus $hankeTunnus")
+                }
+        }
+
+        @Test
+        fun `returns true if user has EDIT_APPLICATIONS permission`() {
+            val hanke = hankeFactory.saveMinimal(hankeTunnus = hankeTunnus)
+            val request =
+                CreateHakemusRequestFactory.johtoselvitysRequest(hankeTunnus = hankeTunnus)
+            permissionService.create(hanke.id, USERNAME, Kayttooikeustaso.HAKEMUSASIOINTI)
+
+            assertThat(authorizer.authorizeCreate(request)).isTrue()
         }
     }
 

@@ -1,9 +1,11 @@
 package fi.hel.haitaton.hanke.hakemus
 
+import assertk.all
 import assertk.assertThat
 import assertk.assertions.isEmpty
 import assertk.assertions.isEqualTo
 import assertk.assertions.isNotEmpty
+import assertk.assertions.prop
 import fi.hel.haitaton.hanke.ControllerTest
 import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeErrorDetail
@@ -26,6 +28,7 @@ import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
+import fi.hel.haitaton.hanke.factory.CreateHakemusRequestFactory
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HakemusResponseFactory
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory
@@ -242,6 +245,85 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             verifySequence {
                 authorizer.authorizeHankeTunnus(HANKE_TUNNUS, PermissionCode.VIEW.name)
                 hakemusService.hankkeenHakemuksetResponse(HANKE_TUNNUS)
+            }
+        }
+    }
+
+    @Nested
+    inner class Create {
+        private val url = "/hakemukset"
+        private val hankeTunnus = "HAI24-94"
+
+        val request = CreateHakemusRequestFactory.johtoselvitysRequest(hankeTunnus = hankeTunnus)
+
+        @Test
+        @WithAnonymousUser
+        fun `returns 401 when unknown user`() {
+            post(url, request)
+                .andExpect(status().isUnauthorized)
+                .andExpect(hankeError(HankeError.HAI0001))
+        }
+
+        @Test
+        fun `returns 400 when no request body`() {
+            post(url).andExpect(status().isBadRequest).andExpect(hankeError(HankeError.HAI0003))
+        }
+
+        @Test
+        fun `returns 404 when lacking permissions`() {
+            every { authorizer.authorizeCreate(request) } throws HankeNotFoundException(hankeTunnus)
+
+            post(url, request)
+                .andExpect(status().isNotFound)
+                .andExpect(hankeError(HankeError.HAI1001))
+
+            verifySequence { authorizer.authorizeCreate(request) }
+        }
+
+        @Test
+        fun `returns 400 when request doesn't pass validation`() {
+            val request = request.copy(name = " ")
+            every { authorizer.authorizeCreate(request) } returns true
+
+            post(url, request)
+                .andExpect(status().isBadRequest)
+                .andExpect(hankeError(HankeError.HAI2008))
+
+            verifySequence { authorizer.authorizeCreate(request) }
+        }
+
+        @Test
+        fun `returns 404 when hanke not found`() {
+            every { authorizer.authorizeCreate(request) } returns true
+            every { hakemusService.create(request, USERNAME) } throws
+                HankeNotFoundException(hankeTunnus)
+
+            post(url, request)
+                .andExpect(status().isNotFound)
+                .andExpect(hankeError(HankeError.HAI1001))
+
+            verifySequence {
+                authorizer.authorizeCreate(request)
+                hakemusService.create(request, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns 200 and created hakemus`() {
+            every { authorizer.authorizeCreate(request) } returns true
+            val hakemus = HakemusFactory.create(hankeTunnus = hankeTunnus)
+            every { hakemusService.create(request, USERNAME) } returns hakemus
+
+            val response: HakemusResponse =
+                post(url, request).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).all {
+                prop(HakemusResponse::id).isEqualTo(hakemus.id)
+                prop(HakemusResponse::hankeTunnus).isEqualTo(hankeTunnus)
+            }
+            verifySequence {
+                authorizer.authorizeCreate(request)
+                hakemusService.create(request, USERNAME)
             }
         }
     }
