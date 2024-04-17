@@ -84,7 +84,7 @@ class HankekayttajaEntity(
     @OneToOne(mappedBy = "hankekayttaja") var kayttajakutsu: KayttajakutsuEntity? = null,
 
     /** Identifier of the inviter. */
-    @Column(name = "kutsuja_id") val kutsujaId: UUID? = null,
+    @Column(name = "kutsuja_id") var kutsujaId: UUID? = null,
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hankeKayttaja",
@@ -189,4 +189,6 @@ interface HankekayttajaRepository : JpaRepository<HankekayttajaEntity, UUID> {
     fun findByPermissionId(permissionId: Int): HankekayttajaEntity?
 
     fun findByPermissionIdIn(permissionIds: Collection<Int>): List<HankekayttajaEntity>
+
+    fun findByKutsujaId(kutsujaId: UUID): List<HankekayttajaEntity>
 }
