@@ -309,7 +309,7 @@ class HakemusMigrationServiceITest(
                     representativeWithContacts = null,
                 )
 
-            hakemusMigrationService.createOtherKayttajat(data, setOf(), hanke.id)
+            hakemusMigrationService.createOtherKayttajat(hanke.id, data, setOf())
 
             assertThat(hankekayttajaRepository.findAll()).isEmpty()
             assertThat(kayttajakutsuRepository.findAll()).isEmpty()
@@ -326,7 +326,7 @@ class HakemusMigrationServiceITest(
                     representativeWithContacts = null,
                 )
 
-            hakemusMigrationService.createOtherKayttajat(data, setOf(), hanke.id)
+            hakemusMigrationService.createOtherKayttajat(hanke.id, data, setOf())
 
             val kayttajat = hankekayttajaRepository.findAll()
             assertThat(kayttajat).hasSize(2)
@@ -358,7 +358,7 @@ class HakemusMigrationServiceITest(
                     representativeWithContacts = null,
                 )
 
-            hakemusMigrationService.createOtherKayttajat(data, setOf(founder), hanke.id)
+            hakemusMigrationService.createOtherKayttajat(hanke.id, data, setOf(founder))
 
             assertThat(hankekayttajaRepository.findAll())
                 .single()
@@ -384,7 +384,7 @@ class HakemusMigrationServiceITest(
                     representativeWithContacts = null,
                 )
 
-            hakemusMigrationService.createOtherKayttajat(data, setOf(), hanke.id)
+            hakemusMigrationService.createOtherKayttajat(hanke.id, data, setOf())
 
             val kayttajat = hankekayttajaRepository.findAll()
             assertThat(kayttajat).hasSize(3)
@@ -418,7 +418,7 @@ class HakemusMigrationServiceITest(
                     representativeWithContacts = null,
                 )
 
-            hakemusMigrationService.createOtherKayttajat(data, setOf(), hanke.id)
+            hakemusMigrationService.createOtherKayttajat(hanke.id, data, setOf())
 
             assertThat(hankekayttajaRepository.findAll()).isEmpty()
             assertThat(kayttajakutsuRepository.findAll()).isEmpty()
