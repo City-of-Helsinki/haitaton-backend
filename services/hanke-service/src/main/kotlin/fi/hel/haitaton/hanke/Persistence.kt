@@ -130,6 +130,8 @@ class HankeEntity(
 }
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
+    @Query("select h.id from HankeEntity h") fun getAllIds(): List<Int>
+
     fun findOneById(id: Int): HankeIdentifier?
 
     fun findOneByHankeTunnus(hankeTunnus: String): HankeIdentifier?
@@ -156,7 +158,7 @@ enum class CounterType {
 @Table(name = "idcounter")
 class IdCounter(
     @Id @Enumerated(EnumType.STRING) var counterType: CounterType? = null,
-    var value: Long? = null
+    var value: Long? = null,
 )
 
 interface IdCounterRepository : JpaRepository<IdCounter, CounterType> {

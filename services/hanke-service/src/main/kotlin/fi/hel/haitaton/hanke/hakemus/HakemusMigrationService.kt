@@ -11,8 +11,11 @@ import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
 import fi.hel.haitaton.hanke.permissions.KayttajakutsuEntity
 import fi.hel.haitaton.hanke.permissions.KayttajakutsuRepository
 import fi.hel.haitaton.hanke.permissions.PermissionService
+import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+
+private val logger = KotlinLogging.logger {}
 
 @Service
 class HakemusMigrationService(
@@ -28,19 +31,48 @@ class HakemusMigrationService(
     fun migrateOneHanke(hankeId: Int) {
         val hanke = hankeRepository.getReferenceById(hankeId)
 
-        hanke.hakemukset.singleOrNull()?.let {
-            val founder = createFounderKayttaja(hanke.id, it.applicationData)
-            val otherKayttajat = createOtherKayttajat(it.applicationData, founder, hanke.id)
-            createYhteystiedot(it, (otherKayttajat + founder).filterNotNull())
-            it.applicationData = clearCustomers(it.applicationData)
-        }
+        hanke.hakemukset.singleOrNull()?.let { hakemus: ApplicationEntity ->
+            logger.info { "Migrating hakemus. ${hakemus.logString()}, ${hanke.logString()}" }
+
+            val existingKayttajat = hankekayttajaRepository.findByHankeId(hanke.id)
+            logger.info {
+                if (existingKayttajat.isNotEmpty()) {
+                    "Hanke already has users. ${existingKayttajat.size} users with IDs: " +
+                        existingKayttajat.map { it.id }.joinToString()
+                } else {
+                    "Hanke does not have users."
+                }
+            }
+            val existingKayttajaEmails = existingKayttajat.map { it.sahkoposti }.toMutableSet()
+
+            val founder =
+                createFounderKayttaja(hanke.id, hakemus.applicationData, existingKayttajaEmails)
+            if (founder != null) {
+                logger.info { "Created founder with id ${founder.id}" }
+                existingKayttajaEmails.add(founder.sahkoposti)
+            } else {
+                logger.info { "No founder found in hakemus data." }
+            }
+            val otherKayttajat =
+                createOtherKayttajat(hakemus.applicationData, existingKayttajaEmails, hanke.id)
+            logger.info {
+                "Created hankekayttajat for other contacts. ${otherKayttajat.size} users with IDs: " +
+                    otherKayttajat.map { it.id }.joinToString()
+            }
+            createYhteystiedot(
+                hakemus,
+                (otherKayttajat + founder + existingKayttajat).filterNotNull()
+            )
+            hakemus.applicationData = clearCustomers(hakemus.applicationData)
+        } ?: logger.info { "No hakemus for hanke. ${hanke.logString()}" }
     }
 
     private fun createYhteystiedot(
         applicationEntity: ApplicationEntity,
         kayttajat: List<HankekayttajaEntity>
     ) {
-        for ((rooli, customerWithContacts) in applicationEntity.applicationData.customersByRole()) {
+        val customersByRoles = applicationEntity.applicationData.customersByRole()
+        for ((rooli, customerWithContacts) in customersByRoles) {
             val customer = customerWithContacts.customer
 
             val yhteystieto =
@@ -56,6 +88,10 @@ class HakemusMigrationService(
                     )
                 )
 
+            logger.info {
+                "Created an yhteystieto for the hakemus. yhteystietoId=${yhteystieto.id}, ${applicationEntity.logString()}"
+            }
+
             val yhteyshenkilot =
                 customerWithContacts.contacts
                     .groupBy { it.email }
@@ -69,17 +105,32 @@ class HakemusMigrationService(
                             )
                         }
                     }
-            hakemusyhteyshenkiloRepository.saveAll(yhteyshenkilot)
+            val saved = hakemusyhteyshenkiloRepository.saveAll(yhteyshenkilot)
+            if (customerWithContacts.contacts.size != saved.size) {
+                logger.info {
+                    "From ${customerWithContacts.contacts.size} contacts we got ${saved.size} yhteystiedot."
+                }
+            }
+            logger.info { "Created yhteystiedot. IDs: ${saved.map { it.id }.joinToString()}" }
         }
     }
 
     /** Until now, the founder has been marked as the orderer. */
     fun createFounderKayttaja(
         hankeId: Int,
-        applicationData: ApplicationData
+        applicationData: ApplicationData,
+        existingKayttajaEmails: Set<String>
     ): HankekayttajaEntity? {
-        val orderer: Contact = findOrderer(applicationData) ?: return null
-        if (orderer.email.isNullOrBlank()) return null
+        val orderer: Contact =
+            findOrderer(applicationData) ?: return null.also { logger.warn { "No founder found." } }
+        if (orderer.email.isNullOrBlank()) {
+            logger.warn { "Founder has no email, skipping creating kayttaja." }
+            return null
+        }
+        if (orderer.email in existingKayttajaEmails) {
+            logger.info { "Founder already has a hankekayttaja." }
+            return null
+        }
         val permission = permissionService.findByHankeId(hankeId).singleOrNull()
 
         val kayttaja =
@@ -98,7 +149,7 @@ class HakemusMigrationService(
     @Transactional
     fun createOtherKayttajat(
         applicationData: ApplicationData,
-        founder: HankekayttajaEntity?,
+        existingKayttajaEmails: Set<String>,
         hankeId: Int,
     ): List<HankekayttajaEntity> {
         val byEmail: Map<String, List<Contact>> =
@@ -106,8 +157,10 @@ class HakemusMigrationService(
                 .customersWithContacts()
                 .flatMap { it.contacts }
                 .filter { !it.email.isNullOrBlank() }
-                .filter { it.email != founder?.sahkoposti }
+                .filter { it.email !in existingKayttajaEmails }
                 .groupBy { it.email!! }
+
+        logger.info { "Found ${byEmail.size} other contacts to migrate." }
 
         val entities =
             byEmail.map { (email, contacts) ->
