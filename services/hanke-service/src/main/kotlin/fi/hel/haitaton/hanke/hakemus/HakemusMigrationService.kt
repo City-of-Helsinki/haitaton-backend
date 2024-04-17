@@ -54,7 +54,7 @@ class HakemusMigrationService(
                 logger.info { "No founder found in hakemus data." }
             }
             val otherKayttajat =
-                createOtherKayttajat(hakemus.applicationData, existingKayttajaEmails, hanke.id)
+                createOtherKayttajat(hanke.id, hakemus.applicationData, existingKayttajaEmails)
             logger.info {
                 "Created hankekayttajat for other contacts. ${otherKayttajat.size} users with IDs: " +
                     otherKayttajat.map { it.id }.joinToString()
@@ -148,9 +148,9 @@ class HakemusMigrationService(
 
     @Transactional
     fun createOtherKayttajat(
+        hankeId: Int,
         applicationData: ApplicationData,
         existingKayttajaEmails: Set<String>,
-        hankeId: Int,
     ): List<HankekayttajaEntity> {
         val byEmail: Map<String, List<Contact>> =
             applicationData
