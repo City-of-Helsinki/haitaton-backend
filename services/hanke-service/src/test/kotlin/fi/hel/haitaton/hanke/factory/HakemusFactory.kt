@@ -171,6 +171,7 @@ class HakemusFactory(
             )
 
         fun createEntity(
+            id: Long = 0,
             alluid: Int? = null,
             alluStatus: ApplicationStatus? = null,
             applicationIdentifier: String? = null,
@@ -181,7 +182,7 @@ class HakemusFactory(
             hanke: HankeEntity,
         ): ApplicationEntity =
             ApplicationEntity(
-                id = 0,
+                id = id,
                 alluid = alluid,
                 alluStatus = alluStatus,
                 applicationIdentifier = applicationIdentifier,

@@ -295,11 +295,7 @@ class HakemusService(
         application: ApplicationEntity,
         applicationIdentifier: String
     ) {
-        val receivers =
-            application.applicationData
-                .customersWithContacts()
-                .flatMap { it.contacts }
-                .filter { it.orderer }
+        val receivers = application.allContactUsers()
 
         if (receivers.isEmpty()) {
             logger.error {
@@ -310,23 +306,15 @@ class HakemusService(
         logger.info { "Sending hakemus ready emails to ${receivers.size} receivers" }
 
         receivers.forEach {
-            sendDecisionReadyEmail(it.email, applicationIdentifier, application.id)
+            sendDecisionReadyEmail(it.sahkoposti, applicationIdentifier, application.id)
         }
     }
 
     private fun sendDecisionReadyEmail(
-        email: String?,
+        email: String,
         applicationIdentifier: String,
         applicationId: Long?,
     ) {
-        if (email == null) {
-            logger.error {
-                "Can't send decision ready email, because contact email is null. " +
-                    "applicationId=$applicationId, applicationIdentifier=${applicationIdentifier}"
-            }
-            return
-        }
-
         emailSenderService.sendJohtoselvitysCompleteEmail(
             email,
             applicationId,

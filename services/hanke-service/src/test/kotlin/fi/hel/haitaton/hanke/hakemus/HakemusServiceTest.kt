@@ -33,9 +33,9 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
-import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomer
 import fi.hel.haitaton.hanke.factory.ApplicationHistoryFactory
+import fi.hel.haitaton.hanke.factory.HakemusFactory
+import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory
 import fi.hel.haitaton.hanke.factory.HakemusyhteyshenkiloFactory.withYhteyshenkilo
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -486,12 +486,12 @@ class HakemusServiceTest {
         private val alluid = 42
         private val applicationId = 13L
         private val hankeTunnus = "HAI23-1"
-        private val receiver = ApplicationFactory.TEPPO_EMAIL
+        private val receiver = HakemusyhteyshenkiloFactory.DEFAULT_SAHKOPOSTI
         private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
         private val identifier = ApplicationHistoryFactory.defaultApplicationIdentifier
 
         @Test
-        fun `sends email to the orderer when hakemus gets a decision`() {
+        fun `sends email to the contacts when hakemus gets a decision`() {
             every { applicationRepository.getOneByAlluid(42) } returns
                 applicationEntityWithCustomer()
             justRun {
@@ -551,11 +551,7 @@ class HakemusServiceTest {
         @Test
         fun `logs error when there are no receivers`(output: CapturedOutput) {
             every { applicationRepository.getOneByAlluid(42) } returns
-                applicationEntityWithCustomer()
-                    .withCustomer(
-                        ApplicationFactory.createCompanyCustomer()
-                            .withContacts(ApplicationFactory.createContact(orderer = false))
-                    )
+                applicationEntityWithoutCustomer()
             every { applicationRepository.save(any()) } answers { firstArg() }
             every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
             every { alluStatusRepository.save(any()) } answers { firstArg() }
@@ -572,41 +568,27 @@ class HakemusServiceTest {
             }
         }
 
-        @Test
-        fun `logs error if receiver email is null`(output: CapturedOutput) {
-            every { applicationRepository.getOneByAlluid(42) } returns
-                applicationEntityWithCustomer()
-                    .withCustomer(
-                        ApplicationFactory.createCompanyCustomer()
-                            .withContacts(
-                                ApplicationFactory.createContact(orderer = true, email = null)
-                            )
-                    )
-            every { applicationRepository.save(any()) } answers { firstArg() }
-            every { alluStatusRepository.getReferenceById(1) } returns AlluStatus(1, updateTime)
-            every { alluStatusRepository.save(any()) } answers { firstArg() }
-
-            hakemusService.handleHakemusUpdates(historiesWithDecision(), updateTime)
-
-            assertThat(output)
-                .contains("Can't send decision ready email, because contact email is null.")
-            verifySequence {
-                applicationRepository.getOneByAlluid(42)
-                applicationRepository.save(any())
-                alluStatusRepository.getReferenceById(1)
-                alluStatusRepository.save(any())
-            }
-        }
-
-        private fun applicationEntityWithCustomer() =
-            ApplicationFactory.createApplicationEntity(
-                    id = applicationId,
+        private fun applicationEntityWithoutCustomer(id: Long = applicationId): ApplicationEntity {
+            val entity =
+                HakemusFactory.createEntity(
+                    id = id,
                     alluid = alluid,
                     applicationIdentifier = identifier,
-                    userId = "user",
+                    userId = USERNAME,
                     hanke = HankeFactory.createMinimalEntity(id = 1, hankeTunnus = hankeTunnus),
                 )
-                .withCustomer(ApplicationFactory.createCompanyCustomerWithOrderer())
+            return entity
+        }
+
+        private fun applicationEntityWithCustomer(id: Long = applicationId): ApplicationEntity {
+            val entity = applicationEntityWithoutCustomer(id)
+            entity.yhteystiedot[ApplicationContactType.HAKIJA] =
+                HakemusyhteystietoFactory.createEntity(application = entity, sahkoposti = receiver)
+                    .withYhteyshenkilo(
+                        permission = PermissionFactory.createEntity(userId = USERNAME)
+                    )
+            return entity
+        }
 
         private fun historiesWithDecision() =
             listOf(
