@@ -484,7 +484,7 @@ class HakemusServiceTest {
     @ExtendWith(OutputCaptureExtension::class)
     inner class HandleApplicationUpdates {
         private val alluid = 42
-        private val applicationId = 0L
+        private val applicationId = 13L
         private val hankeTunnus = "HAI23-1"
         private val receiver = HakemusyhteyshenkiloFactory.DEFAULT_SAHKOPOSTI
         private val updateTime = OffsetDateTime.parse("2022-10-09T06:36:51Z")
@@ -568,9 +568,10 @@ class HakemusServiceTest {
             }
         }
 
-        private fun applicationEntityWithoutCustomer(): ApplicationEntity {
+        private fun applicationEntityWithoutCustomer(id: Long = applicationId): ApplicationEntity {
             val entity =
                 HakemusFactory.createEntity(
+                    id = id,
                     alluid = alluid,
                     applicationIdentifier = identifier,
                     userId = USERNAME,
@@ -579,8 +580,8 @@ class HakemusServiceTest {
             return entity
         }
 
-        private fun applicationEntityWithCustomer(): ApplicationEntity {
-            val entity = applicationEntityWithoutCustomer()
+        private fun applicationEntityWithCustomer(id: Long = applicationId): ApplicationEntity {
+            val entity = applicationEntityWithoutCustomer(id)
             entity.yhteystiedot[ApplicationContactType.HAKIJA] =
                 HakemusyhteystietoFactory.createEntity(application = entity, sahkoposti = receiver)
                     .withYhteyshenkilo(

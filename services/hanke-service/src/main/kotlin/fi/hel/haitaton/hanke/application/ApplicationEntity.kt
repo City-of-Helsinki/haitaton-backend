@@ -75,7 +75,7 @@ data class ApplicationEntity(
         )
     }
 
-    fun allContacts(): List<HankekayttajaEntity> =
+    fun allContactUsers(): List<HankekayttajaEntity> =
         yhteystiedot.values
             .flatMap { it.yhteyshenkilot }
             .map { it.hankekayttaja }

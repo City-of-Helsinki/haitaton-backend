@@ -1912,7 +1912,7 @@ class HakemusServiceITest(
             hakemusFactory
                 .builder(USERNAME, hanke)
                 .withStatus(ApplicationStatus.HANDLING, alluId, identifier)
-                .hakija(yhteyshenkilot = arrayOf(hakija))
+                .hakija(hakija)
                 .saveEntity()
             val histories =
                 listOf(

@@ -295,7 +295,7 @@ class HakemusService(
         application: ApplicationEntity,
         applicationIdentifier: String
     ) {
-        val receivers = application.allContacts()
+        val receivers = application.allContactUsers()
 
         if (receivers.isEmpty()) {
             logger.error {
