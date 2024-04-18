@@ -78,7 +78,7 @@ class HakemusMigrationServiceITest(
                             .withContact(email = "asianhoitaja@email", orderer = false),
                     representativeWithContacts =
                         ApplicationFactory.createCompanyCustomer(name = "Asianhoitaja Oy")
-                            .withContacts(),
+                            .withContact(firstName = "", lastName = "", email = "", phone = ""),
                 )
             applicationFactory.saveApplicationEntity(USERNAME, hanke, applicationData = data)
 
@@ -167,7 +167,7 @@ class HakemusMigrationServiceITest(
         }
 
         @Test
-        fun `removes customer and contacts from the application data`() {
+        fun `removes customers and contacts from the application data`() {
             val (hanke, _) = setup()
 
             hakemusMigrationService.migrateOneHanke(hanke.id)

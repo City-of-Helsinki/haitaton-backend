@@ -94,6 +94,7 @@ class HakemusMigrationService(
 
             val yhteyshenkilot =
                 customerWithContacts.contacts
+                    .filter { !it.email.isNullOrBlank() }
                     .groupBy { it.email }
                     .mapNotNull { (email, contacts) ->
                         val contact = contacts.contactWithLeastMissingFields()
