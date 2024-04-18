@@ -60,6 +60,7 @@ class HankeKayttajaFactory(
         sahkoposti: String = KAKE_EMAIL,
         puhelin: String = KAKE_PUHELIN,
         kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
+        kutsujaId: UUID? = null,
         userId: String = FAKE_USERID,
     ): HankekayttajaEntity =
         saveUser(
@@ -68,6 +69,7 @@ class HankeKayttajaFactory(
             sukunimi = sukunimi,
             sahkoposti = sahkoposti,
             puhelin = puhelin,
+            kutsujaId = kutsujaId,
             permissionEntity = permissionService.create(hankeId, userId, kayttooikeustaso),
         )
 
@@ -96,6 +98,7 @@ class HankeKayttajaFactory(
         puhelin: String = KAKE_PUHELIN,
         permissionEntity: PermissionEntity? = null,
         kayttajakutsuEntity: KayttajakutsuEntity? = null,
+        kutsujaId: UUID? = null,
     ): HankekayttajaEntity =
         hankeKayttajaRepository.save(
             HankekayttajaEntity(
@@ -106,6 +109,7 @@ class HankeKayttajaFactory(
                 puhelin = puhelin,
                 permission = permissionEntity,
                 kayttajakutsu = kayttajakutsuEntity,
+                kutsujaId = kutsujaId,
             )
         )
 

@@ -60,6 +60,10 @@ class HankekayttajaDeleteService(
             throw HasActiveApplicationsException(kayttajaId, activeHakemukset.map { it.id })
         }
 
+        val kutsutut = hankekayttajaRepository.findByKutsujaId(kayttaja.id)
+        kutsutut.forEach { it.kutsujaId = null }
+        hankekayttajaRepository.saveAll(kutsutut)
+
         hankekayttajaRepository.delete(kayttaja)
 
         emailSenderService.sendRemovalFromHankeNotificationEmail(
