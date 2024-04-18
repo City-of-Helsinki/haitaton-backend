@@ -7,10 +7,15 @@ import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.email.RemovalFromHankeNotificationData
 import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.logging.HankeKayttajaLoggingService
+import fi.hel.haitaton.hanke.logging.PermissionLoggingService
 import java.util.UUID
+import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+
+private val logger = KotlinLogging.logger {}
 
 /** Split from [HankeKayttajaService] to avoid cyclic dependencies. */
 @Service
@@ -19,6 +24,9 @@ class HankekayttajaDeleteService(
     private val hankeService: HankeService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val emailSenderService: EmailSenderService,
+    private val permissionRepository: PermissionRepository,
+    private val hankeKayttajaLoggingService: HankeKayttajaLoggingService,
+    private val permissionLoggingService: PermissionLoggingService,
 ) {
     @Transactional(readOnly = true)
     fun checkForDelete(kayttajaId: UUID): DeleteInfo {
@@ -60,11 +68,22 @@ class HankekayttajaDeleteService(
             throw HasActiveApplicationsException(kayttajaId, activeHakemukset.map { it.id })
         }
 
+        kayttaja.permission?.also {
+            logger.info {
+                "Deleting permission for hankekayttaja ${kayttaja.id}. " +
+                    "Permission: id=${it.id}, userId=${it.userId}, " +
+                    "hankeId=${hanke.id}, kayttooikeustaso=${it.kayttooikeustaso}"
+            }
+            permissionRepository.delete(it)
+            permissionLoggingService.logDelete(it.toDomain(), userId)
+        }
+
         val kutsutut = hankekayttajaRepository.findByKutsujaId(kayttaja.id)
         kutsutut.forEach { it.kutsujaId = null }
         hankekayttajaRepository.saveAll(kutsutut)
 
         hankekayttajaRepository.delete(kayttaja)
+        hankeKayttajaLoggingService.logDelete(kayttaja.toDomain(), userId)
 
         emailSenderService.sendRemovalFromHankeNotificationEmail(
             RemovalFromHankeNotificationData(
