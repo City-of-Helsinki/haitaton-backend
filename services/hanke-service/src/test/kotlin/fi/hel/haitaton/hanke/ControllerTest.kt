@@ -17,18 +17,18 @@ interface ControllerTest {
     /** Send a GET request to the given URL. */
     fun get(
         url: String,
-    ): ResultActions {
-        return mockMvc.perform(MockMvcRequestBuilders.get(url).accept(MediaType.APPLICATION_JSON))
-    }
-
-    /** Send a GET request to the given URL expecting result content type. */
-    fun get(
-        url: String,
-        resultType: MediaType,
+        resultType: MediaType = MediaType.APPLICATION_JSON,
     ): ResultActions {
         return mockMvc
             .perform(MockMvcRequestBuilders.get(url).accept(MediaType.APPLICATION_JSON))
             .andExpect(content().contentType(resultType))
+    }
+
+    /** Send a GET request to the given URL without expecting content of certain type. */
+    fun getRaw(
+        url: String,
+    ): ResultActions {
+        return mockMvc.perform(MockMvcRequestBuilders.get(url).accept(MediaType.APPLICATION_JSON))
     }
 
     /**

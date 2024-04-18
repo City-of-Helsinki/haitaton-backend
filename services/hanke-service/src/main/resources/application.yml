@@ -62,6 +62,9 @@ info:
 logging:
   level:
     liquibase: INFO
+    org:
+      springframework:
+        security: DEBUG
 
 # Actuator Management for Kubernetes. Separate HTTP port for probes.
 management:
