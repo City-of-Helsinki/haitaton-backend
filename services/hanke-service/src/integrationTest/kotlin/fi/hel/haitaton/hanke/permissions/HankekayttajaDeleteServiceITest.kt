@@ -54,6 +54,7 @@ class HankekayttajaDeleteServiceITest(
     @Autowired val hankeFactory: HankeFactory,
     @Autowired val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired val hakemusFactory: HakemusFactory,
+    @Autowired val hankekayttajaRepository: HankekayttajaRepository,
 ) : IntegrationTest() {
 
     companion object {
@@ -331,6 +332,52 @@ class HankekayttajaDeleteServiceITest(
                 .single()
                 .prop(ContactResponse::hankekayttajaId)
                 .isNotEqualTo(founder.id)
+        }
+
+        @Test
+        fun `removes kutsujaId from kayttajat invited by the kayttaja to be deleted`() {
+            val hanke = hankeFactory.builder().withHankealue().saveEntity()
+            val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+            val invited1 =
+                hankeKayttajaFactory.saveIdentifiedUser(
+                    hankeId = hanke.id,
+                    kutsujaId = founder.id,
+                    sahkoposti = "invited1",
+                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
+                )
+            val invited2 =
+                hankeKayttajaFactory.saveIdentifiedUser(
+                    hankeId = hanke.id,
+                    kutsujaId = founder.id,
+                    sahkoposti = "invited2",
+                    kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
+                )
+            val invitedBySomeoneElse =
+                hankeKayttajaFactory.saveIdentifiedUser(
+                    hankeId = hanke.id,
+                    kutsujaId = invited1.id,
+                    sahkoposti = "invitedBySomeoneElse",
+                )
+            hankeFactory.addYhteystiedotTo(hanke) {
+                omistaja(founder, invited1)
+                toteuttaja(invitedBySomeoneElse)
+            }
+            assertThat(hankekayttajaRepository.getReferenceById(invitedBySomeoneElse.id))
+                .prop(HankekayttajaEntity::kutsujaId)
+                .isEqualTo(invited1.id)
+
+            deleteService.delete(founder.id, USERNAME)
+
+            assertThat(hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)).isNull()
+            assertThat(hankekayttajaRepository.getReferenceById(invited1.id))
+                .prop(HankekayttajaEntity::kutsujaId)
+                .isNull()
+            assertThat(hankekayttajaRepository.getReferenceById(invited2.id))
+                .prop(HankekayttajaEntity::kutsujaId)
+                .isNull()
+            assertThat(hankekayttajaRepository.getReferenceById(invitedBySomeoneElse.id))
+                .prop(HankekayttajaEntity::kutsujaId)
+                .isEqualTo(invited1.id)
         }
 
         @Test
