@@ -28,7 +28,6 @@ import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.TESTIHENKILO
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContact
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.HankeFactory
-import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.permissions.HankekayttajaRepository
@@ -79,7 +78,7 @@ class HakemusMigrationServiceITest(
                             .withContact(email = "asianhoitaja@email", orderer = false),
                     representativeWithContacts =
                         ApplicationFactory.createCompanyCustomer(name = "Asianhoitaja Oy")
-                            .withContacts(),
+                            .withContact(firstName = "", lastName = "", email = "", phone = ""),
                 )
             applicationFactory.saveApplicationEntity(USERNAME, hanke, applicationData = data)
 
@@ -153,7 +152,7 @@ class HakemusMigrationServiceITest(
             hakemusMigrationService.migrateOneHanke(hanke.id)
 
             assertThat(hakemusyhteyshenkiloRepository.findAll()).hasSize(3)
-            val applicationId = hakemusRepository.findAll().first().id!!
+            val applicationId = hakemusRepository.findAll().single().id
             val yhteyshenkilot =
                 hakemusService.getById(applicationId).applicationData.yhteystiedot().flatMap {
                     it.yhteyshenkilot
@@ -168,7 +167,7 @@ class HakemusMigrationServiceITest(
         }
 
         @Test
-        fun `removes customer and contacts from the application data`() {
+        fun `removes customers and contacts from the application data`() {
             val (hanke, _) = setup()
 
             hakemusMigrationService.migrateOneHanke(hanke.id)
@@ -180,6 +179,22 @@ class HakemusMigrationServiceITest(
                 prop(CableReportApplicationData::propertyDeveloperWithContacts).isNull()
                 prop(CableReportApplicationData::representativeWithContacts).isNull()
             }
+        }
+
+        @Test
+        fun `doesn't change anything when called a second time on the same hanke`() {
+            val (hanke, _) = setup()
+            hakemusMigrationService.migrateOneHanke(hanke.id)
+            val kayttajatAfterFirst = hankeKayttajaService.getKayttajatByHankeId(hanke.id)
+            val applicationId = hakemusRepository.findAll().single().id
+            // Hakemus contains yhteystiedot and yhteyshenkilot
+            val hakemusAfterFirst = hakemusService.getById(applicationId)
+
+            hakemusMigrationService.migrateOneHanke(hanke.id)
+
+            assertThat(hankeKayttajaService.getKayttajatByHankeId(hanke.id))
+                .isEqualTo(kayttajatAfterFirst)
+            assertThat(hakemusService.getById(applicationId)).isEqualTo(hakemusAfterFirst)
         }
     }
 
@@ -193,7 +208,7 @@ class HakemusMigrationServiceITest(
                     customerWithContacts = ApplicationFactory.createCompanyCustomer().withContact()
                 )
 
-            val response = hakemusMigrationService.createFounderKayttaja(hanke.id, data)
+            val response = hakemusMigrationService.createFounderKayttaja(hanke.id, data, setOf())
 
             assertThat(response).isNull()
             assertThat(hankekayttajaRepository.findAll()).isEmpty()
@@ -211,7 +226,24 @@ class HakemusMigrationServiceITest(
                             .withContact(orderer = true, email = email)
                 )
 
-            val response = hakemusMigrationService.createFounderKayttaja(hanke.id, data)
+            val response = hakemusMigrationService.createFounderKayttaja(hanke.id, data, setOf())
+
+            assertThat(response).isNull()
+            assertThat(hankekayttajaRepository.findAll()).isEmpty()
+        }
+
+        @Test
+        fun `returns null and saves nothing if a hankekayttaja already exists for the orderer`() {
+            val hanke = hankeFactory.saveMinimal()
+            val data =
+                ApplicationFactory.createCableReportApplicationData(
+                    customerWithContacts =
+                        ApplicationFactory.createCompanyCustomer()
+                            .withContact(email = "hakija@email")
+                )
+            val emails = setOf("hakija@email")
+
+            val response = hakemusMigrationService.createFounderKayttaja(hanke.id, data, emails)
 
             assertThat(response).isNull()
             assertThat(hankekayttajaRepository.findAll()).isEmpty()
@@ -222,7 +254,7 @@ class HakemusMigrationServiceITest(
             val hanke = hankeFactory.saveMinimal()
             val data = ApplicationFactory.createCableReportApplicationData()
 
-            val response = hakemusMigrationService.createFounderKayttaja(hanke.id, data)
+            val response = hakemusMigrationService.createFounderKayttaja(hanke.id, data, setOf())
 
             fun Assert<HankekayttajaEntity>.hasCorrectFields() = all {
                 prop(HankekayttajaEntity::etunimi).isEqualTo(TEPPO)
@@ -250,7 +282,7 @@ class HakemusMigrationServiceITest(
                             )
                 )
 
-            val response = hakemusMigrationService.createFounderKayttaja(hanke.id, data)
+            val response = hakemusMigrationService.createFounderKayttaja(hanke.id, data, setOf())
 
             fun Assert<HankekayttajaEntity>.hasCorrectFields() = all {
                 prop(HankekayttajaEntity::etunimi).isEqualTo("-")
@@ -277,7 +309,7 @@ class HakemusMigrationServiceITest(
                     representativeWithContacts = null,
                 )
 
-            hakemusMigrationService.createOtherKayttajat(data, null, hanke.id)
+            hakemusMigrationService.createOtherKayttajat(hanke.id, data, setOf())
 
             assertThat(hankekayttajaRepository.findAll()).isEmpty()
             assertThat(kayttajakutsuRepository.findAll()).isEmpty()
@@ -294,7 +326,7 @@ class HakemusMigrationServiceITest(
                     representativeWithContacts = null,
                 )
 
-            hakemusMigrationService.createOtherKayttajat(data, null, hanke.id)
+            hakemusMigrationService.createOtherKayttajat(hanke.id, data, setOf())
 
             val kayttajat = hankekayttajaRepository.findAll()
             assertThat(kayttajat).hasSize(2)
@@ -315,9 +347,9 @@ class HakemusMigrationServiceITest(
         }
 
         @Test
-        fun `skips contacts with the founder's email`() {
+        fun `skips a contact when there already is a hanke kayttaja for them`() {
             val hanke = hankeFactory.saveMinimal()
-            val founder = HankeKayttajaFactory.createEntity(sahkoposti = "pekka@pelko")
+            val founder = "pekka@pelko"
             val data =
                 ApplicationFactory.createCableReportApplicationData(
                     customerWithContacts = customerWithContacts("1"),
@@ -326,7 +358,7 @@ class HakemusMigrationServiceITest(
                     representativeWithContacts = null,
                 )
 
-            hakemusMigrationService.createOtherKayttajat(data, founder, hanke.id)
+            hakemusMigrationService.createOtherKayttajat(hanke.id, data, setOf(founder))
 
             assertThat(hankekayttajaRepository.findAll())
                 .single()
@@ -352,7 +384,7 @@ class HakemusMigrationServiceITest(
                     representativeWithContacts = null,
                 )
 
-            hakemusMigrationService.createOtherKayttajat(data, null, hanke.id)
+            hakemusMigrationService.createOtherKayttajat(hanke.id, data, setOf())
 
             val kayttajat = hankekayttajaRepository.findAll()
             assertThat(kayttajat).hasSize(3)
@@ -386,7 +418,7 @@ class HakemusMigrationServiceITest(
                     representativeWithContacts = null,
                 )
 
-            hakemusMigrationService.createOtherKayttajat(data, null, hanke.id)
+            hakemusMigrationService.createOtherKayttajat(hanke.id, data, setOf())
 
             assertThat(hankekayttajaRepository.findAll()).isEmpty()
             assertThat(kayttajakutsuRepository.findAll()).isEmpty()
