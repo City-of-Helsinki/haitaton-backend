@@ -44,4 +44,11 @@ class HankeKayttajaLoggingService(private val auditLogService: AuditLogService) 
             AuditLogService.createEntry(currentUser, ObjectType.HANKE_KAYTTAJA, hankeKayttaja)
         )
     }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    fun logDelete(hankeKayttaja: HankeKayttaja, currentUserId: String) {
+        auditLogService.create(
+            AuditLogService.deleteEntry(currentUserId, ObjectType.HANKE_KAYTTAJA, hankeKayttaja)
+        )
+    }
 }

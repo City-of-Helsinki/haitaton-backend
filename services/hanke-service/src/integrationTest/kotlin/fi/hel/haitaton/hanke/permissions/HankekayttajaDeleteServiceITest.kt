@@ -31,12 +31,22 @@ import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.HakemusFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.factory.HankeKayttajaFactory
+import fi.hel.haitaton.hanke.findByType
 import fi.hel.haitaton.hanke.hakemus.ContactResponse
 import fi.hel.haitaton.hanke.hakemus.CustomerWithContactsResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusDataResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusResponse
 import fi.hel.haitaton.hanke.hakemus.HakemusService
+import fi.hel.haitaton.hanke.logging.AuditLogRepository
+import fi.hel.haitaton.hanke.logging.AuditLogTarget
+import fi.hel.haitaton.hanke.logging.ObjectType
+import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.permissions.HankekayttajaDeleteService.DeleteInfo
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasId
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectBefore
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
+import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
 import fi.hel.haitaton.hanke.test.USERNAME
 import jakarta.mail.internet.MimeMessage
 import java.util.UUID
@@ -45,6 +55,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.junit.jupiter.api.extension.RegisterExtension
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.repository.findByIdOrNull
 
 class HankekayttajaDeleteServiceITest(
     @Autowired val deleteService: HankekayttajaDeleteService,
@@ -55,6 +66,9 @@ class HankekayttajaDeleteServiceITest(
     @Autowired val hankeKayttajaFactory: HankeKayttajaFactory,
     @Autowired val hakemusFactory: HakemusFactory,
     @Autowired val hankekayttajaRepository: HankekayttajaRepository,
+    @Autowired val permissionRepository: PermissionRepository,
+    @Autowired val auditLogRepository: AuditLogRepository,
+    @Autowired val kayttajakutsuRepository: KayttajakutsuRepository,
 ) : IntegrationTest() {
 
     companion object {
@@ -332,6 +346,7 @@ class HankekayttajaDeleteServiceITest(
                 .single()
                 .prop(ContactResponse::hankekayttajaId)
                 .isNotEqualTo(founder.id)
+            assertThat(permissionRepository.findOneByHankeIdAndUserId(hanke.id, USERNAME)).isNull()
         }
 
         @Test
@@ -378,6 +393,69 @@ class HankekayttajaDeleteServiceITest(
             assertThat(hankekayttajaRepository.getReferenceById(invitedBySomeoneElse.id))
                 .prop(HankekayttajaEntity::kutsujaId)
                 .isEqualTo(invited1.id)
+        }
+
+        @Test
+        fun `removes kayttajakutsu when user is not identified`() {
+            val hanke = hankeFactory.builder().withHankealue().saveEntity()
+            val invited = hankeKayttajaFactory.saveUnidentifiedUser(hanke.id)
+
+            deleteService.delete(invited.id, USERNAME)
+
+            assertThat(hankekayttajaRepository.findByIdOrNull(invited.id)).isNull()
+            assertThat(kayttajakutsuRepository.findAll()).isEmpty()
+        }
+
+        @Test
+        fun `logs hankekayttaja delete to audit logs`() {
+            val hanke = hankeFactory.builder().withHankealue().saveEntity()
+            val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+            hankeKayttajaFactory.saveIdentifiedUser(
+                hanke.id,
+                sahkoposti = "Something else",
+                kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
+            )
+            val kayttaja = hankeKayttajaService.getKayttaja(founder.id)
+            auditLogRepository.deleteAll()
+
+            deleteService.delete(founder.id, USERNAME)
+
+            val logs = auditLogRepository.findByType(ObjectType.HANKE_KAYTTAJA)
+            assertThat(logs).single().isSuccess(Operation.DELETE) {
+                hasUserActor(USERNAME)
+                withTarget {
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.HANKE_KAYTTAJA)
+                    hasId(founder.id)
+                    hasObjectBefore(kayttaja)
+                    prop(AuditLogTarget::objectAfter).isNull()
+                }
+            }
+        }
+
+        @Test
+        fun `logs permission delete to audit logs`() {
+            val hanke = hankeFactory.builder().withHankealue().saveEntity()
+            val founder = hankeKayttajaService.getKayttajaByUserId(hanke.id, USERNAME)!!
+            hankeKayttajaFactory.saveIdentifiedUser(
+                hanke.id,
+                sahkoposti = "Something else",
+                kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET
+            )
+            val permission = permissionRepository.findOneByHankeIdAndUserId(hanke.id, USERNAME)!!
+            auditLogRepository.deleteAll()
+
+            deleteService.delete(founder.id, USERNAME)
+
+            val logs = auditLogRepository.findByType(ObjectType.PERMISSION)
+            assertThat(logs).single().isSuccess(Operation.DELETE) {
+                hasUserActor(USERNAME)
+                withTarget {
+                    prop(AuditLogTarget::type).isEqualTo(ObjectType.PERMISSION)
+                    hasId(permission.id)
+                    hasObjectBefore(permission.toDomain())
+                    prop(AuditLogTarget::objectAfter).isNull()
+                }
+            }
         }
 
         @Test
