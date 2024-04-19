@@ -14,7 +14,7 @@ class SpringdocITest(@Autowired override val mockMvc: MockMvc) : ControllerTest,
 
     @Test
     fun `Should display Swagger UI page`() {
-        get("/swagger-ui/index.html", resultType = MediaType.TEXT_HTML)
+        get("/swagger-ui/index.html", MediaType.TEXT_HTML)
             .andExpect(status().isOk())
             .andExpect(content().string(containsString("Swagger UI")))
     }

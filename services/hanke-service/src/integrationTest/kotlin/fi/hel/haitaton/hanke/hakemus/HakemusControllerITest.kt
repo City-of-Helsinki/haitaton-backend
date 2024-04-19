@@ -898,7 +898,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
             every { hakemusService.getById(id) } returns
                 HakemusFactory.create(applicationIdentifier = applicationIdentifier)
 
-            get(url, resultType = MediaType.APPLICATION_PDF)
+            get(url, MediaType.APPLICATION_PDF)
                 .andExpect(status().isOk)
                 .andExpect(
                     MockMvcResultMatchers.header()
@@ -923,7 +923,7 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
                 Pair(applicationIdentifier, pdfBytes)
             every { hakemusService.getById(id) } returns hakemus
 
-            get(url, resultType = MediaType.APPLICATION_PDF).andExpect(status().isOk)
+            get(url, MediaType.APPLICATION_PDF).andExpect(status().isOk)
 
             verifySequence {
                 authorizer.authorizeApplicationId(id, PermissionCode.VIEW.name)

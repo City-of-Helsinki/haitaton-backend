@@ -7,6 +7,8 @@ haitaton:
     updateInitialDelayMilliSeconds: ${ALLU_UPDATE_INITIAL_DELAY:60000}
     updateIntervalMilliSeconds: ${ALLU_UPDATE_INTERVAL:60000}
     username: ${ALLU_USERNAME:fake_user}
+  api:
+    disabled: ${HAITATON_API_DISABLED:false}
   azure:
     blob:
       connection-string: ${HAITATON_BLOB_CONNECTION_STRING:#{null}}
@@ -130,6 +132,9 @@ spring:
     format:
       # REST API request parameter parsing to work for date values
       date: yyyy-MM-dd
+  security:
+    filter:
+      order: -100
   servlet:
     multipart:
       max-file-size: 100MB
