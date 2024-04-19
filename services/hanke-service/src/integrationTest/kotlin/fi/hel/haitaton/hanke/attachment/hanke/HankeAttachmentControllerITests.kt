@@ -174,8 +174,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
         hankeTunnus: String = HANKE_TUNNUS,
         attachmentId: UUID = UUID.fromString("919a765f-3ef0-46f0-a52b-9b47024ac33c"),
         resultType: MediaType = APPLICATION_PDF,
-    ): ResultActions =
-        get("/hankkeet/$hankeTunnus/liitteet/$attachmentId/content", resultType = resultType)
+    ): ResultActions = get("/hankkeet/$hankeTunnus/liitteet/$attachmentId/content", resultType)
 
     private fun postAttachment(
         hankeTunnus: String = HANKE_TUNNUS,

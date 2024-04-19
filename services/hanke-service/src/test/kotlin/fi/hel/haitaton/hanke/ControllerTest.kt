@@ -9,6 +9,7 @@ import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 
 @ExtendWith(JacksonTestExtension::class)
 interface ControllerTest {
@@ -17,11 +18,15 @@ interface ControllerTest {
     /** Send a GET request to the given URL. */
     fun get(
         url: String,
-        resultType: MediaType = MediaType.APPLICATION_JSON,
+        resultType: MediaType? = MediaType.APPLICATION_JSON,
     ): ResultActions {
-        return mockMvc
-            .perform(MockMvcRequestBuilders.get(url).accept(MediaType.APPLICATION_JSON))
-            .andExpect(content().contentType(resultType))
+        val actions =
+            mockMvc.perform(MockMvcRequestBuilders.get(url).accept(MediaType.APPLICATION_JSON))
+        return if (resultType != null) {
+            actions.andExpect(content().contentType(resultType))
+        } else {
+            actions.andExpect(header().doesNotExist("content-type"))
+        }
     }
 
     /**

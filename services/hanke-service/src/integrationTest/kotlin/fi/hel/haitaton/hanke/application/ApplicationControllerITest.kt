@@ -798,7 +798,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             every { applicationService.getApplicationById(id) } returns
                 ApplicationFactory.createApplication(applicationIdentifier = applicationIdentifier)
 
-            get("$BASE_URL/$id/paatos", resultType = APPLICATION_PDF)
+            get("$BASE_URL/$id/paatos", APPLICATION_PDF)
                 .andExpect(status().isOk)
                 .andExpect(header().string("Content-Disposition", "inline; filename=JS230001.pdf"))
                 .andExpect(content().bytes(pdfBytes))
@@ -821,7 +821,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                 Pair(applicationIdentifier, pdfBytes)
             every { applicationService.getApplicationById(id) } returns application
 
-            get("$BASE_URL/$id/paatos", resultType = APPLICATION_PDF)
+            get("$BASE_URL/$id/paatos", APPLICATION_PDF)
                 .andExpect(status().isOk)
                 .andExpect(header().string("Content-Disposition", "inline; filename=JS230001.pdf"))
                 .andExpect(content().bytes(pdfBytes))
