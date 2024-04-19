@@ -1,27 +1,31 @@
 package fi.hel.haitaton.hanke
 
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.ValueSource
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.web.server.LocalServerPort
-import org.springframework.http.HttpStatus
-import org.springframework.web.client.RestTemplate
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @SpringBootTest(
     properties = ["haitaton.api.disabled=true", "management.server.port="],
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
 )
-class ApiBlockingFilterAllowedEndpointsITests : IntegrationTest() {
+@AutoConfigureMockMvc
+class ApiBlockingFilterAllowedEndpointsITests(@Autowired override val mockMvc: MockMvc) :
+    ControllerTest, IntegrationTest() {
 
-    @LocalServerPort private var port: Int = 0
+    @Test
+    fun `should return 200 'OK' for actuator liveness path`() {
+        get("/actuator/health/liveness").andExpect(status().isOk)
+    }
 
-    private val restTemplate = RestTemplate()
+    @Test
+    fun `should return 200 'OK' for actuator readiness path`() {
+        get("/actuator/health/readiness").andExpect(status().isOk)
+    }
 
-    @ParameterizedTest
-    @ValueSource(strings = ["/actuator/health/liveness", "/actuator/health/readiness", "/status"])
-    fun `should return 200 'OK' for actuator paths`(path: String) {
-        val response = restTemplate.getForEntity("http://localhost:$port$path", String::class.java)
-        assertThat(response.statusCode).isEqualTo(HttpStatus.OK)
+    @Test
+    fun `should return 200 'OK' for status path`() {
+        get("/status", null).andExpect(status().isOk)
     }
 }
