@@ -10,6 +10,8 @@ import assertk.assertions.isInstanceOf
 import assertk.assertions.isNotNull
 import assertk.assertions.prop
 import assertk.assertions.single
+import fi.hel.haitaton.hanke.application.PostalAddress
+import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.domain.Hankealue
 import fi.hel.haitaton.hanke.domain.HasFeatures
 import fi.hel.haitaton.hanke.zonedDateTime
@@ -75,4 +77,10 @@ object Asserts {
         assertThat(idPart.toLongOrNull()).isEqualTo(id.toLong())
         assertThat(UUID.fromString(uuidPart)).isNotNull()
     }
+
+    fun Assert<PostalAddress?>.hasStreetName(street: String) =
+        isNotNull()
+            .prop(PostalAddress::streetAddress)
+            .prop(StreetAddress::streetName)
+            .isEqualTo(street)
 }

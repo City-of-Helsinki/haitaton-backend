@@ -108,6 +108,33 @@ class HakemusController(
         return response
     }
 
+    @PostMapping("/hakemukset")
+    @Operation(
+        summary = "Create a new application",
+        description =
+            "Returns the created application. The new application is created as a draft, " +
+                "i.e. with true in pendingOnClient. The draft is not sent to Allu."
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(description = "The created application", responseCode = "200"),
+                ApiResponse(
+                    description = "The request body was invalid",
+                    responseCode = "400",
+                    content = [Content(schema = Schema(implementation = HankeError::class))]
+                ),
+            ]
+    )
+    @PreAuthorize("@applicationAuthorizer.authorizeCreate(#createHakemusRequest)")
+    fun create(
+        @ValidCreateHakemusRequest @RequestBody createHakemusRequest: CreateHakemusRequest
+    ): HakemusResponse {
+        val userId = currentUserId()
+        val createdHakemus = hakemusService.create(createHakemusRequest, userId)
+        return createdHakemus.toResponse()
+    }
+
     @PostMapping("/johtoselvityshakemus")
     @Operation(
         summary =

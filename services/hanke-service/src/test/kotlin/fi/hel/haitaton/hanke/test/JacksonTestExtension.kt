@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.module.SimpleModule
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
 import fi.hel.haitaton.hanke.hakemus.Hakemus
 import fi.hel.haitaton.hanke.hakemus.HakemusDeserializer
+import fi.hel.haitaton.hanke.hakemus.HakemusResponse
+import fi.hel.haitaton.hanke.hakemus.HakemusResponseDeserializer
 import org.junit.jupiter.api.extension.BeforeAllCallback
 import org.junit.jupiter.api.extension.ExtensionContext
 
@@ -25,6 +27,7 @@ class JacksonTestExtension : BeforeAllCallback {
 
         val module = SimpleModule()
         module.addDeserializer(Hakemus::class.java, HakemusDeserializer())
+        module.addDeserializer(HakemusResponse::class.java, HakemusResponseDeserializer())
         OBJECT_MAPPER.registerModule(module)
     }
 

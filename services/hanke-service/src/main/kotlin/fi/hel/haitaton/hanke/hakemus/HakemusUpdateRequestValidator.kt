@@ -67,7 +67,7 @@ fun CustomerRequest.validateForErrors(path: String): ValidationResult =
             validateTrue(registryKey.isValidBusinessId(), "$path.registryKey")
         }
 
-fun JohtoselvityshakemusUpdateRequest.validateForErrors(): ValidationResult =
+private fun JohtoselvityshakemusUpdateRequest.validateForErrors(): ValidationResult =
     whenNotNull(postalAddress) { it.validateForErrors("postalAddress") }
         .whenNotNull(contractorWithContacts) { it.validateForErrors("contractorWithContacts") }
         .whenNotNull(propertyDeveloperWithContacts) {
@@ -78,7 +78,7 @@ fun PostalAddressRequest.validateForErrors(path: String) = validate {
     notJustWhitespace(streetAddress.streetName, "$path.streetAddress.streetName")
 }
 
-fun KaivuilmoitusUpdateRequest.validateForErrors(): ValidationResult =
+private fun KaivuilmoitusUpdateRequest.validateForErrors(): ValidationResult =
     given(!cableReportDone) { notNull(rockExcavation, "rockExcavation") }
         .whenNotNull(contractorWithContacts) { it.validateForErrors("contractorWithContacts") }
         .whenNotNull(propertyDeveloperWithContacts) {
