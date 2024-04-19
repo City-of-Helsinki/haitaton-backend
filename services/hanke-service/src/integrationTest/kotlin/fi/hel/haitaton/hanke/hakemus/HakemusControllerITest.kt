@@ -309,7 +309,27 @@ class HakemusControllerITest(@Autowired override val mockMvc: MockMvc) : Control
         }
 
         @Test
-        fun `returns 200 and created hakemus`() {
+        fun `returns 200 and the created hakemus`() {
+            every { authorizer.authorizeCreate(request) } returns true
+            val hakemus = HakemusFactory.create(hankeTunnus = hankeTunnus)
+            every { hakemusService.create(request, USERNAME) } returns hakemus
+
+            val response: HakemusResponse =
+                post(url, request).andExpect(status().isOk).andReturnBody()
+
+            assertThat(response).all {
+                prop(HakemusResponse::id).isEqualTo(hakemus.id)
+                prop(HakemusResponse::hankeTunnus).isEqualTo(hankeTunnus)
+            }
+            verifySequence {
+                authorizer.authorizeCreate(request)
+                hakemusService.create(request, USERNAME)
+            }
+        }
+
+        @Test
+        fun `returns 200 and the created hakemus when the hakemus is a kaivuilmoitus`() {
+            val request = CreateHakemusRequestFactory.kaivuilmoitusRequest()
             every { authorizer.authorizeCreate(request) } returns true
             val hakemus = HakemusFactory.create(hankeTunnus = hankeTunnus)
             every { hakemusService.create(request, USERNAME) } returns hakemus
