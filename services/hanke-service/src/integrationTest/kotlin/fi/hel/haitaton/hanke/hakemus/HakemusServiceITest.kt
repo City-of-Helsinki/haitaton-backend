@@ -877,6 +877,29 @@ class HakemusServiceITest(
                     .extracting { it.hankekayttajaId }
                     .containsExactly(newKayttaja.id)
             }
+
+            @Test
+            fun `sends email for new contacts`() {
+                val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+                val entity = hakemusFactory.builder(USERNAME, hanke).hakija().saveEntity()
+                val hakemus = hakemusService.hakemusResponse(entity.id)
+                val yhteystieto = hakemusyhteystietoRepository.findAll().first()
+                val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
+                val request =
+                    hakemus
+                        .toUpdateRequest()
+                        .withCustomer(CustomerType.COMPANY, yhteystieto.id, newKayttaja.id)
+
+                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+                val email = greenMail.firstReceivedMessage()
+                assertThat(email.allRecipients).hasSize(1)
+                assertThat(email.allRecipients[0].toString()).isEqualTo(newKayttaja.sahkoposti)
+                assertThat(email.subject)
+                    .isEqualTo(
+                        "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application"
+                    )
+            }
         }
 
         @Nested

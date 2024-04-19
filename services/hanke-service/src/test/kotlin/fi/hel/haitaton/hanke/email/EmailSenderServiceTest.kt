@@ -31,7 +31,6 @@ private const val INVITER_EMAIL = "matti.meikalainen@test.fi"
 private const val TEST_EMAIL = "test@test.test"
 private const val HANKE_TUNNUS = "HAI24-1"
 private const val HANKE_NIMI = "Mannerheimintien liikenneuudistus"
-private const val APPLICATION_IDENTIFIER = "JS2300001"
 
 class EmailSenderServiceTest {
 
@@ -201,8 +200,8 @@ class EmailSenderServiceTest {
                 senderEmail = "matti.meikalainen@test.fi",
                 recipientEmail = TEST_EMAIL,
                 applicationType = ApplicationType.CABLE_REPORT,
-                applicationIdentifier = APPLICATION_IDENTIFIER,
-                hankeTunnus = "HAI24-1",
+                hankeTunnus = HANKE_TUNNUS,
+                hankeNimi = HANKE_NIMI,
             )
 
         private fun sendAndCapture(): MimeMessage {
@@ -220,9 +219,9 @@ class EmailSenderServiceTest {
 
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Sinut on lisätty hakemukselle $APPLICATION_IDENTIFIER " +
-                        "/ Du har lagts till i ansökan $APPLICATION_IDENTIFIER " +
-                        "/ You have been added to application $APPLICATION_IDENTIFIER"
+                    "Haitaton: Sinut on lisätty hakemukselle " +
+                        "/ Du har lagts till i en ansökan " +
+                        "/ You have been added to an application"
                 )
         }
 
@@ -231,24 +230,24 @@ class EmailSenderServiceTest {
             val (textBody, htmlBody) = sendAndCapture().bodies()
 
             val expectedBody =
-                "Sinut on lisätty hakemukselle $APPLICATION_IDENTIFIER " +
-                    "/ Du har lagts till i ansökan $APPLICATION_IDENTIFIER " +
-                    "/ You have been added to application $APPLICATION_IDENTIFIER"
+                "Sinut on lisätty hakemukselle " +
+                    "/ Du har lagts till i en ansökan " +
+                    "/ You have been added to an application"
             assertThat(textBody).contains(expectedBody)
             assertThat(htmlBody).contains(expectedBody)
         }
 
         @Nested
         open inner class BodyInFinnish {
-            open fun inviterInformation(name: String, email: String) = "$name ($email) on tehnyt "
+            open fun inviterInformation(name: String, email: String) =
+                "$name ($email) on laatimassa "
 
-            open val applicationInformation =
-                "on tehnyt johtoselvityshakemuksen ($APPLICATION_IDENTIFIER) hankkeella"
-
-            open val hankeInformation = "hankkeella $HANKE_TUNNUS, ja lähettänyt sen käsittelyyn."
-
+            open val applicationInformation = "on laatimassa johtoselvityshakemusta hankkeelle"
+            open val hankeInformationText =
+                "hankkeelle \"$HANKE_NIMI\" ($HANKE_TUNNUS). Sinut on lisätty hakemukselle."
+            open val hankeInformationHtml =
+                "hankkeelle <b>$HANKE_NIMI $HANKE_TUNNUS</b>. Sinut on lisätty hakemukselle."
             open val linkPrefix = "Tarkastele hakemusta Haitattomassa:"
-
             open val signatureLines =
                 listOf(
                     "Tämä on automaattinen sähköposti – älä vastaa tähän viestiin.",
@@ -278,8 +277,8 @@ class EmailSenderServiceTest {
             open fun `contains hanke information`() {
                 val (textBody, htmlBody) = sendAndCapture().bodies()
 
-                assertThat(textBody).contains(hankeInformation)
-                assertThat(htmlBody).contains(hankeInformation)
+                assertThat(textBody).contains(hankeInformationText)
+                assertThat(htmlBody).contains(hankeInformationHtml)
             }
 
             @Test
@@ -302,19 +301,18 @@ class EmailSenderServiceTest {
             }
         }
 
+        // TODO needs translations
         @Nested
         inner class BodyInSwedish : BodyInFinnish() {
             override fun inviterInformation(name: String, email: String) =
-                "$name ($email) har gjort en ansökan"
+                "$name ($email) on laatimassa"
 
-            override val applicationInformation =
-                "har gjort en ansökan om ledningsutredning ($APPLICATION_IDENTIFIER) i projektet"
-
-            override val hankeInformation =
-                "i projektet $HANKE_TUNNUS och skickat in den för behandling."
-
+            override val applicationInformation = "on laatimassa johtoselvityshakemusta hankkeelle"
+            override val hankeInformationText =
+                "hankkeelle \"$HANKE_NIMI\" ($HANKE_TUNNUS). Sinut on lisätty hakemukselle."
+            override val hankeInformationHtml =
+                "hankkeelle <b>$HANKE_NIMI $HANKE_TUNNUS</b>. Sinut on lisätty hakemukselle."
             override val linkPrefix = "Kontrollera ansökan i Haitaton:"
-
             override val signatureLines =
                 listOf(
                     "Det här är ett automatiskt e-postmeddelande – svara inte på det.",
@@ -325,19 +323,18 @@ class EmailSenderServiceTest {
                 )
         }
 
+        // TODO needs translations
         @Nested
         inner class BodyInEnglish : BodyInFinnish() {
             override fun inviterInformation(name: String, email: String) =
-                "$name ($email) has created"
+                "$name ($email) on laatimassa"
 
-            override val applicationInformation =
-                "has created a cable report application ($APPLICATION_IDENTIFIER) for project"
-
-            override val hankeInformation =
-                "for project $HANKE_TUNNUS and submitted it for processing."
-
+            override val applicationInformation = "on laatimassa johtoselvityshakemusta hankkeelle"
+            override val hankeInformationText =
+                "hankkeelle \"$HANKE_NIMI\" ($HANKE_TUNNUS). Sinut on lisätty hakemukselle."
+            override val hankeInformationHtml =
+                "hankkeelle <b>$HANKE_NIMI $HANKE_TUNNUS</b>. Sinut on lisätty hakemukselle."
             override val linkPrefix = "View the application in the Haitaton system:"
-
             override val signatureLines =
                 listOf(
                     "This email was generated automatically – please do not reply to this message.",
