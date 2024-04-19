@@ -46,11 +46,10 @@ import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
 import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
-import fi.hel.haitaton.hanke.permissions.HankekayttajaEntity
 import fi.hel.haitaton.hanke.toJsonString
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
-import java.util.UUID
+import java.util.*
 import kotlin.reflect.KClass
 import mu.KotlinLogging
 import org.springframework.http.MediaType
@@ -695,7 +694,7 @@ class HakemusService(
         request: HakemusUpdateRequest,
         userId: String,
     ): ApplicationEntity {
-        val originalContactUsers = applicationEntity.allContactUsers()
+        val originalContactUserIds = applicationEntity.allContactUsers().map { it.id }.toSet()
         val updatedApplicationEntity =
             applicationEntity.copy(
                 applicationData = request.toApplicationData(applicationEntity.applicationData),
@@ -706,14 +705,7 @@ class HakemusService(
                         request.customersByRole()
                     )
             )
-        val updatedContactUsers = updatedApplicationEntity.allContactUsers()
-        val newContactUsers = updatedContactUsers.minus(originalContactUsers)
-        if (newContactUsers.isNotEmpty()) {
-            val inviter =
-                hankeKayttajaService.getKayttajaByUserId(applicationEntity.hanke.id, userId)
-                    ?: throw CurrentUserWithoutKayttajaException(userId)
-            sendApplicationNotifications(newContactUsers, updatedApplicationEntity, inviter)
-        }
+        sendApplicationNotifications(updatedApplicationEntity, originalContactUserIds, userId)
         return applicationRepository.save(updatedApplicationEntity)
     }
 
@@ -817,21 +809,29 @@ class HakemusService(
     }
 
     private fun sendApplicationNotifications(
-        newContactUsers: Set<HankekayttajaEntity>,
         applicationEntity: ApplicationEntity,
-        inviter: HankekayttajaEntity,
+        excludedUserIds: Set<UUID>,
+        userId: String,
     ) {
-        newContactUsers.forEach {
-            emailSenderService.sendApplicationNotificationEmail(
-                ApplicationNotificationData(
-                    inviter.fullName(),
-                    inviter.sahkoposti,
-                    it.sahkoposti,
-                    applicationEntity.applicationType,
-                    applicationEntity.hanke.hankeTunnus,
-                    applicationEntity.hanke.nimi,
-                )
-            )
+        applicationEntity.allContactUsers().toMutableList().apply {
+            removeIf { excludedUserIds.contains(it.id) }
+            if (isNotEmpty()) {
+                val inviter =
+                    hankeKayttajaService.getKayttajaByUserId(applicationEntity.hanke.id, userId)
+                        ?: throw CurrentUserWithoutKayttajaException(userId)
+                forEach {
+                    emailSenderService.sendApplicationNotificationEmail(
+                        ApplicationNotificationData(
+                            inviter.fullName(),
+                            inviter.sahkoposti,
+                            it.sahkoposti,
+                            applicationEntity.applicationType,
+                            applicationEntity.hanke.hankeTunnus,
+                            applicationEntity.hanke.nimi,
+                        )
+                    )
+                }
+            }
         }
     }
 
