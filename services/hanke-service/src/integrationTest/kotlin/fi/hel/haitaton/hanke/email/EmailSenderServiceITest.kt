@@ -185,8 +185,8 @@ class EmailSenderServiceITest : IntegrationTest() {
                 senderEmail = INVITER_EMAIL,
                 recipientEmail = TEST_EMAIL,
                 applicationType = ApplicationType.CABLE_REPORT,
-                applicationIdentifier = APPLICATION_IDENTIFIER,
                 hankeTunnus = HANKE_TUNNUS,
+                hankeNimi = HANKE_NIMI,
             )
 
         @Test
@@ -214,9 +214,9 @@ class EmailSenderServiceITest : IntegrationTest() {
             val email = greenMail.firstReceivedMessage()
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Sinut on lisätty hakemukselle JS2300001 " +
-                        "/ Du har lagts till i ansökan JS2300001 " +
-                        "/ You have been added to application JS2300001"
+                    "Haitaton: Sinut on lisätty hakemukselle " +
+                        "/ Du har lagts till i en ansökan " +
+                        "/ You have been added to an application"
                 )
         }
 
@@ -228,14 +228,17 @@ class EmailSenderServiceITest : IntegrationTest() {
             val (textBody, htmlBody) = email.bodies()
             assertThat(textBody).all {
                 contains("${notification.senderName} (${notification.senderEmail}) on")
-                contains("tehnyt johtoselvityshakemuksen (${notification.applicationIdentifier})")
-                contains("hankkeella ${notification.hankeTunnus}")
+                contains(
+                    "laatimassa johtoselvityshakemusta hankkeelle \"${notification.hankeNimi}\" (${notification.hankeTunnus})"
+                )
                 contains("Tarkastele hakemusta Haitattomassa: http://localhost:3001")
             }
             assertThat(htmlBody).all {
                 val htmlEscapedName = "Matti Meik&auml;l&auml;inen"
                 contains("$htmlEscapedName (${notification.senderEmail})")
-                contains("johtoselvityshakemuksen (${notification.applicationIdentifier})")
+                contains(
+                    "laatimassa johtoselvityshakemusta hankkeelle <b>${notification.hankeNimi} (${notification.hankeTunnus})</b>"
+                )
                 contains("""<a href="http://localhost:3001">""")
             }
         }

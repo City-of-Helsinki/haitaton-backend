@@ -375,7 +375,7 @@ class ApplicationService(
         emailRecipients.forEach { email ->
             notifyOnApplication(
                 hanke.hankeTunnus,
-                application.applicationIdentifier!!,
+                hanke.nimi,
                 application.applicationType,
                 currentKayttaja,
                 email,
@@ -385,7 +385,7 @@ class ApplicationService(
 
     private fun notifyOnApplication(
         hankeTunnus: String,
-        applicationIdentifier: String,
+        hankeNimi: String,
         applicationType: ApplicationType,
         currentKayttaja: HankekayttajaEntity?,
         recipientEmail: String,
@@ -402,9 +402,9 @@ class ApplicationService(
                 senderName = currentKayttaja.fullName(),
                 senderEmail = currentKayttaja.sahkoposti,
                 recipientEmail = recipientEmail,
-                hankeTunnus = hankeTunnus,
-                applicationIdentifier = applicationIdentifier,
                 applicationType = applicationType,
+                hankeTunnus = hankeTunnus,
+                hankeNimi = hankeNimi,
             )
         )
     }

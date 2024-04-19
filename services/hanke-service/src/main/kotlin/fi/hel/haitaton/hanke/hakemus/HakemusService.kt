@@ -36,6 +36,7 @@ import fi.hel.haitaton.hanke.application.ExcavationNotificationData
 import fi.hel.haitaton.hanke.application.PostalAddress
 import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
+import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.hakemus.HakemusDataMapper.toAlluData
@@ -43,11 +44,12 @@ import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.logging.HakemusLoggingService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Status
+import fi.hel.haitaton.hanke.permissions.CurrentUserWithoutKayttajaException
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.toJsonString
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
-import java.util.UUID
+import java.util.*
 import kotlin.reflect.KClass
 import mu.KotlinLogging
 import org.springframework.http.MediaType
@@ -183,7 +185,7 @@ class HakemusService(
             updateHankealueet(hankeEntity, request)
         }
 
-        val updatedHakemus = saveWithUpdate(applicationEntity, request).toHakemus()
+        val updatedHakemus = saveWithUpdate(applicationEntity, request, userId).toHakemus()
 
         logger.info("Updated hakemus. ${updatedHakemus.logString()}")
         hakemusLoggingService.logUpdate(hakemus, updatedHakemus, userId)
@@ -689,8 +691,10 @@ class HakemusService(
     /** Creates a new [ApplicationEntity] based on the given [request] and saves it. */
     private fun saveWithUpdate(
         applicationEntity: ApplicationEntity,
-        request: HakemusUpdateRequest
+        request: HakemusUpdateRequest,
+        userId: String,
     ): ApplicationEntity {
+        val originalContactUserIds = applicationEntity.allContactUsers().map { it.id }.toSet()
         val updatedApplicationEntity =
             applicationEntity.copy(
                 applicationData = request.toApplicationData(applicationEntity.applicationData),
@@ -701,6 +705,7 @@ class HakemusService(
                         request.customersByRole()
                     )
             )
+        sendApplicationNotifications(updatedApplicationEntity, originalContactUserIds, userId)
         return applicationRepository.save(updatedApplicationEntity)
     }
 
@@ -801,6 +806,33 @@ class HakemusService(
                 ContactRequest(it).toNewHakemusyhteyshenkiloEntity(hakemusyhteystietoEntity)
             }
         )
+    }
+
+    private fun sendApplicationNotifications(
+        applicationEntity: ApplicationEntity,
+        excludedUserIds: Set<UUID>,
+        userId: String,
+    ) {
+        applicationEntity.allContactUsers().toMutableList().apply {
+            removeIf { excludedUserIds.contains(it.id) }
+            if (isNotEmpty()) {
+                val inviter =
+                    hankeKayttajaService.getKayttajaByUserId(applicationEntity.hanke.id, userId)
+                        ?: throw CurrentUserWithoutKayttajaException(userId)
+                forEach {
+                    emailSenderService.sendApplicationNotificationEmail(
+                        ApplicationNotificationData(
+                            inviter.fullName(),
+                            inviter.sahkoposti,
+                            it.sahkoposti,
+                            applicationEntity.applicationType,
+                            applicationEntity.hanke.hankeTunnus,
+                            applicationEntity.hanke.nimi,
+                        )
+                    )
+                }
+            }
+        }
     }
 
     @Transactional

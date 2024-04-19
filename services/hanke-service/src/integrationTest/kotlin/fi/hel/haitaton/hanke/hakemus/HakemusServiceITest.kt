@@ -59,6 +59,7 @@ import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentContent
 import fi.hel.haitaton.hanke.attachment.azure.Container
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.MockFileClient
+import fi.hel.haitaton.hanke.email.textBody
 import fi.hel.haitaton.hanke.factory.AlluFactory
 import fi.hel.haitaton.hanke.factory.ApplicationAttachmentFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
@@ -877,6 +878,33 @@ class HakemusServiceITest(
                     .extracting { it.hankekayttajaId }
                     .containsExactly(newKayttaja.id)
             }
+
+            @Test
+            fun `sends email for new contacts`() {
+                val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+                val entity = hakemusFactory.builder(USERNAME, hanke).hakija().saveEntity()
+                val hakemus = hakemusService.hakemusResponse(entity.id)
+                val yhteystieto = hakemusyhteystietoRepository.findAll().first()
+                val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
+                val request =
+                    hakemus
+                        .toUpdateRequest()
+                        .withCustomer(CustomerType.COMPANY, yhteystieto.id, newKayttaja.id)
+
+                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+                val email = greenMail.firstReceivedMessage()
+                assertThat(email.allRecipients).hasSize(1)
+                assertThat(email.allRecipients[0].toString()).isEqualTo(newKayttaja.sahkoposti)
+                assertThat(email.subject)
+                    .isEqualTo(
+                        "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application"
+                    )
+                assertThat(email.textBody())
+                    .contains(
+                        "laatimassa johtoselvityshakemusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})"
+                    )
+            }
         }
 
         @Nested
@@ -1209,6 +1237,37 @@ class HakemusServiceITest(
                     .prop(CustomerWithContactsResponse::contacts)
                     .extracting { it.hankekayttajaId }
                     .containsExactly(newKayttaja.id)
+            }
+
+            @Test
+            fun `sends email for new contacts`() {
+                val hanke = hankeFactory.builder(USERNAME).withHankealue().saveEntity()
+                val entity =
+                    hakemusFactory
+                        .builder(USERNAME, hanke, ApplicationType.EXCAVATION_NOTIFICATION)
+                        .hakija()
+                        .saveEntity()
+                val hakemus = hakemusService.hakemusResponse(entity.id)
+                val yhteystieto = hakemusyhteystietoRepository.findAll().first()
+                val newKayttaja = hankeKayttajaFactory.saveUser(hanke.id)
+                val request =
+                    hakemus
+                        .toUpdateRequest()
+                        .withCustomer(CustomerType.COMPANY, yhteystieto.id, newKayttaja.id)
+
+                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+                val email = greenMail.firstReceivedMessage()
+                assertThat(email.allRecipients).hasSize(1)
+                assertThat(email.allRecipients[0].toString()).isEqualTo(newKayttaja.sahkoposti)
+                assertThat(email.subject)
+                    .isEqualTo(
+                        "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application"
+                    )
+                assertThat(email.textBody())
+                    .contains(
+                        "laatimassa kaivuilmoitusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})"
+                    )
             }
         }
     }

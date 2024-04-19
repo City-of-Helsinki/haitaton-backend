@@ -814,7 +814,8 @@ class ApplicationServiceITest : IntegrationTest() {
 
             val capturedEmails = getApplicationNotifications()
             assertThat(capturedEmails).hasSize(3) // 4 contacts, but one is the sender
-            assertThat(capturedEmails).areValid(application.applicationType, hanke.hankeTunnus)
+            assertThat(capturedEmails)
+                .areValid(application.applicationType, hanke.hankeTunnus, hanke.nimi)
             verifySequence {
                 cableReportServiceAllu.create(any())
                 cableReportServiceAllu.addAttachment(any(), any())
@@ -1381,18 +1382,24 @@ class ApplicationServiceITest : IntegrationTest() {
             it.subject.startsWith("Haitaton: Sinut on lisätty hakemukselle")
         }
 
-    private fun Assert<List<MimeMessage>>.areValid(type: ApplicationType, hankeTunnus: String?) {
-        each { it.isValid(type, hankeTunnus) }
+    private fun Assert<List<MimeMessage>>.areValid(
+        type: ApplicationType,
+        hankeTunnus: String,
+        hankeNimi: String
+    ) {
+        each { it.isValid(type, hankeTunnus, hankeNimi) }
     }
 
-    private fun Assert<MimeMessage>.isValid(type: ApplicationType, hankeTunnus: String?) {
+    private fun Assert<MimeMessage>.isValid(
+        type: ApplicationType,
+        hankeTunnus: String,
+        hankeNimi: String
+    ) {
         val name = "${KAYTTAJA_INPUT_HAKIJA.etunimi} ${KAYTTAJA_INPUT_HAKIJA.sukunimi}"
         val email = KAYTTAJA_INPUT_HAKIJA.email
         prop(MimeMessage::textBody).all {
-            contains("$name ($email) on tehnyt")
-            contains("hakemukselle ${ApplicationFactory.DEFAULT_APPLICATION_IDENTIFIER}")
-            contains("on tehnyt ${type.translations().fi}")
-            contains("hankkeella $hankeTunnus")
+            contains("$name ($email) on laatimassa ${type.translations().fi}")
+            contains("hankkeelle \"$hankeNimi\" ($hankeTunnus)")
         }
 
         transform { it.allRecipients.first().toString() }.isIn(*expectedRecipients)
