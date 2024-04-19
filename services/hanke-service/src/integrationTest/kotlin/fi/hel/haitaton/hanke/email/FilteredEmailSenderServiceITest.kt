@@ -94,8 +94,8 @@ class FilteredEmailSenderServiceITest : IntegrationTest() {
                 senderEmail = "kalle.kutsuja@mail.com",
                 recipientEmail = "test@test.test",
                 applicationType = CABLE_REPORT,
-                applicationIdentifier = "JS002",
                 hankeTunnus = "HAI24-1",
+                hankeNimi = "Testihanke",
             )
         )
 

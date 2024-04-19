@@ -38,8 +38,8 @@ data class ApplicationNotificationData(
     val senderEmail: String,
     val recipientEmail: String,
     val applicationType: ApplicationType,
-    val applicationIdentifier: String,
     val hankeTunnus: String,
+    val hankeNimi: String,
 )
 
 data class HankeInvitationData(
@@ -133,8 +133,8 @@ class EmailSenderService(
                 "senderName" to data.senderName,
                 "senderEmail" to data.senderEmail,
                 "applicationType" to data.applicationType.translations(),
-                "applicationIdentifier" to data.applicationIdentifier,
                 "hankeTunnus" to data.hankeTunnus,
+                "hankeNimi" to data.hankeNimi,
                 "signatures" to signatures(),
             )
 
@@ -230,11 +230,16 @@ class EmailSenderService(
             when (this) {
                 ApplicationType.CABLE_REPORT ->
                     Translations(
-                        fi = "johtoselvityshakemuksen",
+                        fi = "johtoselvityshakemusta",
                         sv = "ledningsutredning",
                         en = "a cable report application",
                     )
-                ApplicationType.EXCAVATION_NOTIFICATION -> TODO("Not yet implemented")
+                ApplicationType.EXCAVATION_NOTIFICATION ->
+                    Translations(
+                        fi = "kaivuilmoitusta",
+                        sv = "kaivuilmoitusta", // TODO translate
+                        en = "kaivuilmoitusta", // TODO translate
+                    )
             }
 
         fun Kayttooikeustaso.translations() =
