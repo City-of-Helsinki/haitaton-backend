@@ -33,6 +33,8 @@ import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.application.ApplicationType
 import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.ExcavationNotificationData
+import fi.hel.haitaton.hanke.application.PostalAddress
+import fi.hel.haitaton.hanke.application.StreetAddress
 import fi.hel.haitaton.hanke.attachment.application.ApplicationAttachmentService
 import fi.hel.haitaton.hanke.email.EmailSenderService
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
@@ -84,6 +86,29 @@ class HakemusService(
         return HankkeenHakemuksetResponse(
             hanke.hakemukset.map { hakemus -> HankkeenHakemusResponse(hakemus) }
         )
+    }
+
+    @Transactional
+    fun create(createHakemusRequest: CreateHakemusRequest, userId: String): Hakemus {
+        val hanke =
+            hankeRepository.findByHankeTunnus(createHakemusRequest.hankeTunnus)
+                ?: throw HankeNotFoundException(createHakemusRequest.hankeTunnus)
+        val entity =
+            applicationRepository.save(
+                ApplicationEntity(
+                    id = 0,
+                    alluid = null,
+                    alluStatus = null,
+                    applicationIdentifier = null,
+                    userId = userId,
+                    applicationType = createHakemusRequest.applicationType,
+                    applicationData = newApplicationData(createHakemusRequest),
+                    hanke = hanke
+                )
+            )
+        val hakemus = entity.toHakemus()
+        hakemusLoggingService.logCreate(hakemus, userId)
+        return hakemus
     }
 
     /** Create a johtoselvitys from a hanke that was just created. */
@@ -257,6 +282,54 @@ class HakemusService(
         status.historyLastUpdated = updateTime
         alluStatusRepository.save(status)
     }
+
+    private fun newApplicationData(createHakemusRequest: CreateHakemusRequest): ApplicationData =
+        when (createHakemusRequest) {
+            is CreateJohtoselvityshakemusRequest ->
+                createHakemusRequest.newCableReportApplicationData()
+            is CreateKaivuilmoitusRequest -> createHakemusRequest.newExcavationNotificationData()
+        }
+
+    private fun CreateJohtoselvityshakemusRequest.newCableReportApplicationData() =
+        CableReportApplicationData(
+            applicationType = ApplicationType.CABLE_REPORT,
+            pendingOnClient = true,
+            name = name,
+            postalAddress =
+                PostalAddress(StreetAddress(postalAddress?.streetAddress?.streetName), "", ""),
+            constructionWork = constructionWork,
+            maintenanceWork = maintenanceWork,
+            propertyConnectivity = propertyConnectivity,
+            emergencyWork = emergencyWork,
+            rockExcavation = rockExcavation,
+            workDescription = workDescription,
+            startTime = null,
+            endTime = null,
+            areas = null,
+            customerWithContacts = null,
+            contractorWithContacts = null,
+        )
+
+    private fun CreateKaivuilmoitusRequest.newExcavationNotificationData() =
+        ExcavationNotificationData(
+            applicationType = ApplicationType.EXCAVATION_NOTIFICATION,
+            pendingOnClient = true,
+            name = name,
+            workDescription = workDescription,
+            constructionWork = constructionWork,
+            maintenanceWork = maintenanceWork,
+            emergencyWork = emergencyWork,
+            cableReportDone = cableReportDone,
+            rockExcavation = rockExcavation,
+            cableReports = cableReports,
+            placementContracts = placementContracts,
+            requiredCompetence = requiredCompetence,
+            startTime = null,
+            endTime = null,
+            areas = null,
+            customerWithContacts = null,
+            contractorWithContacts = null,
+        )
 
     private fun handleHakemusUpdate(applicationHistory: ApplicationHistory) {
         val application = applicationRepository.getOneByAlluid(applicationHistory.applicationId)

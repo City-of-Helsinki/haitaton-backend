@@ -3,6 +3,7 @@ package fi.hel.haitaton.hanke.application
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.attachment.common.ApplicationAttachmentRepository
 import fi.hel.haitaton.hanke.attachment.common.AttachmentNotFoundException
+import fi.hel.haitaton.hanke.hakemus.CreateHakemusRequest
 import fi.hel.haitaton.hanke.permissions.Authorizer
 import fi.hel.haitaton.hanke.permissions.PermissionCode
 import fi.hel.haitaton.hanke.permissions.PermissionService
@@ -36,6 +37,10 @@ class ApplicationAuthorizer(
     @Transactional(readOnly = true)
     fun authorizeCreate(application: Application): Boolean =
         authorizeHankeTunnus(application.hankeTunnus, PermissionCode.EDIT_APPLICATIONS)
+
+    @Transactional(readOnly = true)
+    fun authorizeCreate(hakemus: CreateHakemusRequest): Boolean =
+        authorizeHankeTunnus(hakemus.hankeTunnus, PermissionCode.EDIT_APPLICATIONS)
 
     @Transactional(readOnly = true)
     fun authorizeAttachment(
