@@ -246,7 +246,7 @@ class EmailSenderServiceTest {
             open val hankeInformationText =
                 "hankkeelle \"$HANKE_NIMI\" ($HANKE_TUNNUS). Sinut on lisätty hakemukselle."
             open val hankeInformationHtml =
-                "hankkeelle <b>$HANKE_NIMI $HANKE_TUNNUS</b>. Sinut on lisätty hakemukselle."
+                "hankkeelle <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Sinut on lisätty hakemukselle."
             open val linkPrefix = "Tarkastele hakemusta Haitattomassa:"
             open val signatureLines =
                 listOf(
@@ -311,7 +311,7 @@ class EmailSenderServiceTest {
             override val hankeInformationText =
                 "hankkeelle \"$HANKE_NIMI\" ($HANKE_TUNNUS). Sinut on lisätty hakemukselle."
             override val hankeInformationHtml =
-                "hankkeelle <b>$HANKE_NIMI $HANKE_TUNNUS</b>. Sinut on lisätty hakemukselle."
+                "hankkeelle <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Sinut on lisätty hakemukselle."
             override val linkPrefix = "Kontrollera ansökan i Haitaton:"
             override val signatureLines =
                 listOf(
@@ -333,7 +333,7 @@ class EmailSenderServiceTest {
             override val hankeInformationText =
                 "hankkeelle \"$HANKE_NIMI\" ($HANKE_TUNNUS). Sinut on lisätty hakemukselle."
             override val hankeInformationHtml =
-                "hankkeelle <b>$HANKE_NIMI $HANKE_TUNNUS</b>. Sinut on lisätty hakemukselle."
+                "hankkeelle <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Sinut on lisätty hakemukselle."
             override val linkPrefix = "View the application in the Haitaton system:"
             override val signatureLines =
                 listOf(

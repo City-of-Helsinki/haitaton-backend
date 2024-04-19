@@ -828,8 +828,8 @@ class HakemusService(
                     inviter.sahkoposti,
                     it.sahkoposti,
                     applicationEntity.applicationType,
-                    applicationEntity.applicationIdentifier ?: "",
-                    applicationEntity.hanke.hankeTunnus
+                    applicationEntity.hanke.hankeTunnus,
+                    applicationEntity.hanke.nimi,
                 )
             )
         }

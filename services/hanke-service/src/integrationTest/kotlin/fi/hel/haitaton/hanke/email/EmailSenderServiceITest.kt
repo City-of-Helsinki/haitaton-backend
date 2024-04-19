@@ -237,7 +237,7 @@ class EmailSenderServiceITest : IntegrationTest() {
                 val htmlEscapedName = "Matti Meik&auml;l&auml;inen"
                 contains("$htmlEscapedName (${notification.senderEmail})")
                 contains(
-                    "laatimassa johtoselvityshakemusta hankkeelle <b>${notification.hankeNimi} ${notification.hankeTunnus}</b>"
+                    "laatimassa johtoselvityshakemusta hankkeelle <b>${notification.hankeNimi} (${notification.hankeTunnus})</b>"
                 )
                 contains("""<a href="http://localhost:3001">""")
             }
