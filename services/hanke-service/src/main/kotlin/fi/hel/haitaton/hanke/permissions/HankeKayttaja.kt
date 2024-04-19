@@ -146,19 +146,6 @@ class HankekayttajaEntity(
         yhteyshenkilot.map { it.hankeYhteystieto.contactType }
 
     fun fullName() = listOf(etunimi, sukunimi).filter { it.isNotBlank() }.joinToString(" ")
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as HankekayttajaEntity
-
-        return sahkoposti == other.sahkoposti
-    }
-
-    override fun hashCode(): Int {
-        return sahkoposti.hashCode()
-    }
 }
 
 data class HankeKayttaja(
