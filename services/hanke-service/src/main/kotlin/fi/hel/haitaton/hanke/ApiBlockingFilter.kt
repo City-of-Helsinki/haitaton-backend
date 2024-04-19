@@ -9,13 +9,17 @@ import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Component
 import org.springframework.web.filter.OncePerRequestFilter
 
-private val log = KotlinLogging.logger {}
+private val log =
+    KotlinLogging
+        .logger {} // named 'log' since 'logger' is already in super-class (and is not compatible)
 
 /**
  * In order to do maintenance tasks, we need to be able to block calls to the API and return 503
  * Service Unavailable.
  */
-@Order(1)
+@Order(
+    -101
+) // comes before Spring Security Filter (see spring.security.filter.order in application.yml)
 @Component
 @ConditionalOnProperty("haitaton.api.disabled")
 class ApiBlockingFilter : OncePerRequestFilter() {
@@ -30,7 +34,7 @@ class ApiBlockingFilter : OncePerRequestFilter() {
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        log.info { "API is offline, request blocked: ${request.method} ${request.requestURI}" }
+        log.info { "API is offline. Request blocked: ${request.method} ${request.requestURI}" }
         response.status = HttpServletResponse.SC_SERVICE_UNAVAILABLE
     }
 
@@ -40,12 +44,8 @@ class ApiBlockingFilter : OncePerRequestFilter() {
     companion object {
         val ALLOWED_PATHS =
             setOf(
-                "/actuator/.*",
+                "/actuator/health/.*",
                 "/status",
-                "/swagger-ui.html",
-                "/swagger-ui/.*",
-                "/v3/api-docs.*",
-                "/profiili/.*",
             )
     }
 }

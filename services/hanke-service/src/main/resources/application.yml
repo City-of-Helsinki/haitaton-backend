@@ -132,6 +132,9 @@ spring:
     format:
       # REST API request parameter parsing to work for date values
       date: yyyy-MM-dd
+  security:
+    filter:
+      order: -100
   servlet:
     multipart:
       max-file-size: 100MB
