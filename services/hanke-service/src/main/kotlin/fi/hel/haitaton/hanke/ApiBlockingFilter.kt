@@ -21,7 +21,7 @@ private val log =
     -101
 ) // comes before Spring Security Filter (see spring.security.filter.order in application.yml)
 @Component
-@ConditionalOnProperty("haitaton.api.disabled")
+@ConditionalOnProperty(name = ["haitaton.api.disabled"], havingValue = "true")
 class ApiBlockingFilter : OncePerRequestFilter() {
 
     override fun initFilterBean() {
