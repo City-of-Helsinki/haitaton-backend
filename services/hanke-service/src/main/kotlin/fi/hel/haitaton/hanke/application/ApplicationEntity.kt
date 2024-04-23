@@ -75,6 +75,10 @@ data class ApplicationEntity(
         )
     }
 
+    /** Returns all distinct contact users for this application. */
     fun allContactUsers(): List<HankekayttajaEntity> =
-        yhteystiedot.values.flatMap { it.yhteyshenkilot }.map { it.hankekayttaja }
+        yhteystiedot.values
+            .flatMap { it.yhteyshenkilot }
+            .map { it.hankekayttaja }
+            .distinctBy { it.id }
 }
