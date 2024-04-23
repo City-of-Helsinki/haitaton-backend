@@ -237,8 +237,8 @@ class EmailSenderService(
                 ApplicationType.EXCAVATION_NOTIFICATION ->
                     Translations(
                         fi = "kaivuilmoitusta",
-                        sv = "kaivuilmoitusta", // TODO translate
-                        en = "kaivuilmoitusta", // TODO translate
+                        sv = "grävningsanmälan",
+                        en = "excavating declaration",
                     )
             }
 

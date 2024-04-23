@@ -25,8 +25,8 @@
                 <mj-divider mj-class="language-separator" />
 
                 <mj-text mj-class="basic-txt">
-                    {{senderName}} ({{senderEmail}}) on laatimassa {{applicationType.fi}}
-                    hankkeelle <b>{{hankeNimi}} ({{hankeTunnus}})</b>. Du har lagts till i ansökan.
+                    {{senderName}} ({{senderEmail}}) gör {{applicationType.sv}}
+                    till projektet <b>{{hankeNimi}} ({{hankeTunnus}})</b>. Du har lagts till i ansökan.
                     Kontrollera ansökan i Haitaton:
                     <a href="{{baseUrl}}">{{baseUrl}}</a>
                 </mj-text>
@@ -39,8 +39,8 @@
                 <mj-divider mj-class="language-separator" />
 
                 <mj-text mj-class="basic-txt">
-                    {{senderName}} ({{senderEmail}}) on laatimassa {{applicationType.fi}}
-                    hankkeelle <b>{{hankeNimi}} ({{hankeTunnus}})</b>. You have been added to the application.
+                    {{senderName}} ({{senderEmail}}) is preparing {{applicationType.en}}
+                    for project <b>{{hankeNimi}} ({{hankeTunnus}})</b>. You have been added to the application.
                     View the application in the Haitaton system:
                     <a href="{{baseUrl}}">{{baseUrl}}</a>
                 </mj-text>
