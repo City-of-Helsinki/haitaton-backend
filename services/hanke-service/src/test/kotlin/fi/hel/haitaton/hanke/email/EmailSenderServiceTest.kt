@@ -301,17 +301,15 @@ class EmailSenderServiceTest {
             }
         }
 
-        // TODO needs translations
         @Nested
         inner class BodyInSwedish : BodyInFinnish() {
-            override fun inviterInformation(name: String, email: String) =
-                "$name ($email) on laatimassa"
+            override fun inviterInformation(name: String, email: String) = "$name ($email) gör"
 
-            override val applicationInformation = "on laatimassa johtoselvityshakemusta hankkeelle"
+            override val applicationInformation = "gör ledningsutredning till projektet"
             override val hankeInformationText =
-                "hankkeelle \"$HANKE_NIMI\" ($HANKE_TUNNUS). Du har lagts till i ansökan."
+                "till projektet \"$HANKE_NIMI\" ($HANKE_TUNNUS). Du har lagts till i ansökan."
             override val hankeInformationHtml =
-                "hankkeelle <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Du har lagts till i ansökan."
+                "till projektet <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Du har lagts till i ansökan."
             override val linkPrefix = "Kontrollera ansökan i Haitaton:"
             override val signatureLines =
                 listOf(
@@ -323,17 +321,17 @@ class EmailSenderServiceTest {
                 )
         }
 
-        // TODO needs translations
         @Nested
         inner class BodyInEnglish : BodyInFinnish() {
             override fun inviterInformation(name: String, email: String) =
-                "$name ($email) on laatimassa"
+                "$name ($email) is preparing"
 
-            override val applicationInformation = "on laatimassa johtoselvityshakemusta hankkeelle"
+            override val applicationInformation =
+                "is preparing a cable report application for project"
             override val hankeInformationText =
-                "hankkeelle \"$HANKE_NIMI\" ($HANKE_TUNNUS). You have been added to the application."
+                "for project \"$HANKE_NIMI\" ($HANKE_TUNNUS). You have been added to the application."
             override val hankeInformationHtml =
-                "hankkeelle <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. You have been added to the application."
+                "for project <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. You have been added to the application."
             override val linkPrefix = "View the application in the Haitaton system:"
             override val signatureLines =
                 listOf(
