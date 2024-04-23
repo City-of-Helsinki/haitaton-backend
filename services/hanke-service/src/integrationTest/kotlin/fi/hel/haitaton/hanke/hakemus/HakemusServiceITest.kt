@@ -890,12 +890,13 @@ class HakemusServiceITest(
                     hakemus
                         .toUpdateRequest()
                         .withCustomer(CustomerType.COMPANY, yhteystieto.id, newKayttaja.id)
+                        .withContractor(CustomerType.COMPANY, null, newKayttaja.id)
 
                 hakemusService.updateHakemus(hakemus.id, request, USERNAME)
 
                 val email = greenMail.firstReceivedMessage()
-                assertThat(email.allRecipients).hasSize(1)
-                assertThat(email.allRecipients[0].toString()).isEqualTo(newKayttaja.sahkoposti)
+                assertThat(email.allRecipients.single().toString())
+                    .isEqualTo(newKayttaja.sahkoposti)
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application"
@@ -1254,12 +1255,13 @@ class HakemusServiceITest(
                     hakemus
                         .toUpdateRequest()
                         .withCustomer(CustomerType.COMPANY, yhteystieto.id, newKayttaja.id)
+                        .withContractor(CustomerType.COMPANY, null, newKayttaja.id)
 
                 hakemusService.updateHakemus(hakemus.id, request, USERNAME)
 
                 val email = greenMail.firstReceivedMessage()
-                assertThat(email.allRecipients).hasSize(1)
-                assertThat(email.allRecipients[0].toString()).isEqualTo(newKayttaja.sahkoposti)
+                assertThat(email.allRecipients.single().toString())
+                    .isEqualTo(newKayttaja.sahkoposti)
                 assertThat(email.subject)
                     .isEqualTo(
                         "Haitaton: Sinut on lisätty hakemukselle / Du har lagts till i en ansökan / You have been added to an application"
