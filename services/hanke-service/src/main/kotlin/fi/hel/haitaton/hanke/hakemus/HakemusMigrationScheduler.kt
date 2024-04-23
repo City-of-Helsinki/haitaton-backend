@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service
 private val logger = KotlinLogging.logger {}
 
 @Service
-@ConditionalOnProperty("haitaton.migration.enabled")
+@ConditionalOnProperty(name = ["haitaton.migration.enabled"], havingValue = "true")
 class HakemusMigrationScheduler(
     private val hakemusMigrationService: HakemusMigrationService,
     private val hankeRepository: HankeRepository,
