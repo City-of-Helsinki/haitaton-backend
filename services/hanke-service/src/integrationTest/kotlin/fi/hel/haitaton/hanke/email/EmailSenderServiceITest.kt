@@ -279,10 +279,9 @@ class EmailSenderServiceITest : IntegrationTest() {
             emailSenderService.sendAccessRightsUpdateNotificationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
-            // TODO needs translations
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Käyttöoikeustasoasi on muutettu (HAI24-1) / Käyttöoikeustasoasi on muutettu (HAI24-1) / Käyttöoikeustasoasi on muutettu (HAI24-1)"
+                    "Haitaton: Käyttöoikeustasoasi on muutettu (HAI24-1) / Dina användarrättigheter har förändrats (HAI24-1) / Your access right level has been changed (HAI24-1)"
                 )
         }
 
@@ -355,10 +354,9 @@ class EmailSenderServiceITest : IntegrationTest() {
             emailSenderService.sendRemovalFromHankeNotificationEmail(notification)
 
             val email = greenMail.firstReceivedMessage()
-            // TODO needs translations
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Sinut on poistettu hankkeelta (HAI24-1) / Sinut on poistettu hankkeelta (HAI24-1) / Sinut on poistettu hankkeelta (HAI24-1)"
+                    "Haitaton: Sinut on poistettu hankkeelta (HAI24-1) / Du har tagits bort från projektet (HAI24-1) / You have been removed from the project (HAI24-1)"
                 )
         }
 

@@ -309,9 +309,9 @@ class EmailSenderServiceTest {
 
             override val applicationInformation = "on laatimassa johtoselvityshakemusta hankkeelle"
             override val hankeInformationText =
-                "hankkeelle \"$HANKE_NIMI\" ($HANKE_TUNNUS). Sinut on lisätty hakemukselle."
+                "hankkeelle \"$HANKE_NIMI\" ($HANKE_TUNNUS). Du har lagts till i ansökan."
             override val hankeInformationHtml =
-                "hankkeelle <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Sinut on lisätty hakemukselle."
+                "hankkeelle <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Du har lagts till i ansökan."
             override val linkPrefix = "Kontrollera ansökan i Haitaton:"
             override val signatureLines =
                 listOf(
@@ -331,9 +331,9 @@ class EmailSenderServiceTest {
 
             override val applicationInformation = "on laatimassa johtoselvityshakemusta hankkeelle"
             override val hankeInformationText =
-                "hankkeelle \"$HANKE_NIMI\" ($HANKE_TUNNUS). Sinut on lisätty hakemukselle."
+                "hankkeelle \"$HANKE_NIMI\" ($HANKE_TUNNUS). You have been added to the application."
             override val hankeInformationHtml =
-                "hankkeelle <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Sinut on lisätty hakemukselle."
+                "hankkeelle <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. You have been added to the application."
             override val linkPrefix = "View the application in the Haitaton system:"
             override val signatureLines =
                 listOf(
@@ -373,7 +373,7 @@ class EmailSenderServiceTest {
 
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS)"
+                    "Haitaton: Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Dina användarrättigheter har förändrats ($HANKE_TUNNUS) / Your access right level has been changed ($HANKE_TUNNUS)"
                 )
         }
 
@@ -382,7 +382,7 @@ class EmailSenderServiceTest {
             val (textBody, htmlBody) = sendAndCapture().bodies()
 
             val expectedBody =
-                "Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS)"
+                "Käyttöoikeustasoasi on muutettu ($HANKE_TUNNUS) / Dina användarrättigheter har förändrats ($HANKE_TUNNUS) / Your access right level has been changed ($HANKE_TUNNUS)"
             assertThat(textBody).contains(expectedBody)
             assertThat(htmlBody).contains(expectedBody)
         }
@@ -444,19 +444,18 @@ class EmailSenderServiceTest {
             }
         }
 
-        // TODO needs translations
         @Nested
         inner class BodyInSwedish : BodyInFinnish() {
             override fun updatedByInformation(name: String, email: String) =
-                "$name ($email) on muuttanut"
+                "$name ($email) har ändrat"
 
             override val updateInformationText =
-                "käyttöoikeustasoasi hankkeella \"$HANKE_NIMI\" ($HANKE_TUNNUS). Uusi käyttöoikeutesi on \"Ändring i projekt\"."
+                "dina användarrättigheter på projektet \"$HANKE_NIMI\" ($HANKE_TUNNUS). Din nya användarrättighet är \"Ändring i projekt\"."
 
             override val updateInformationHtml =
-                "käyttöoikeustasoasi hankkeella <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Uusi käyttöoikeutesi on <b>${StringEscapeUtils.escapeHtml4("Ändring i projekt")}</b>."
+                "dina användarrättigheter på projektet <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Din nya användarrättighet är <b>${StringEscapeUtils.escapeHtml4("Ändring i projekt")}</b>."
 
-            override val linkPrefix = "Tarkastele hanketta täällä:"
+            override val linkPrefix = "Granska projektet här:"
 
             override val hankeLink = "https://haitaton.hel.fi/sv/projektportfolj/$HANKE_TUNNUS"
 
@@ -470,19 +469,18 @@ class EmailSenderServiceTest {
                 )
         }
 
-        // TODO needs translations
         @Nested
         inner class BodyInEnglish : BodyInFinnish() {
             override fun updatedByInformation(name: String, email: String) =
-                "$name ($email) on muuttanut"
+                "$name ($email) has changed"
 
             override val updateInformationText =
-                "käyttöoikeustasoasi hankkeella \"$HANKE_NIMI\" ($HANKE_TUNNUS). Uusi käyttöoikeutesi on \"Project editing\"."
+                "your access right level for the project \"$HANKE_NIMI\" ($HANKE_TUNNUS). Your new access right level is \"Project editing\"."
 
             override val updateInformationHtml =
-                "käyttöoikeustasoasi hankkeella <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Uusi käyttöoikeutesi on <b>Project editing</b>."
+                "your access right level for the project <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>. Your new access right level is <b>Project editing</b>."
 
-            override val linkPrefix = "Tarkastele hanketta täällä:"
+            override val linkPrefix = "View the project here:"
 
             override val hankeLink = "https://haitaton.hel.fi/en/projectportfolio/$HANKE_TUNNUS"
 
@@ -523,7 +521,7 @@ class EmailSenderServiceTest {
 
             assertThat(email.subject)
                 .isEqualTo(
-                    "Haitaton: Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Sinut on poistettu hankkeelta ($HANKE_TUNNUS)"
+                    "Haitaton: Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Du har tagits bort från projektet ($HANKE_TUNNUS) / You have been removed from the project ($HANKE_TUNNUS)"
                 )
         }
 
@@ -532,7 +530,7 @@ class EmailSenderServiceTest {
             val (textBody, htmlBody) = sendAndCapture().bodies()
 
             val expectedBody =
-                "Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Sinut on poistettu hankkeelta ($HANKE_TUNNUS)"
+                "Sinut on poistettu hankkeelta ($HANKE_TUNNUS) / Du har tagits bort från projektet ($HANKE_TUNNUS) / You have been removed from the project ($HANKE_TUNNUS)"
             assertThat(textBody).contains(expectedBody)
             assertThat(htmlBody).contains(expectedBody)
         }
@@ -582,17 +580,16 @@ class EmailSenderServiceTest {
             }
         }
 
-        // TODO needs translations
         @Nested
         inner class BodyInSwedish : BodyInFinnish() {
             override fun deletedByInformation(name: String, email: String) =
-                "$name ($email) on poistanut sinut"
+                "$name ($email) har tagit bort dig"
 
             override val deleteInformationText =
-                "hankkeelta \"$HANKE_NIMI\" ($HANKE_TUNNUS), eikä sinulla ole enää pääsyä hankkeelle."
+                "från projektet \"$HANKE_NIMI\" ($HANKE_TUNNUS) och du har tagit bort dig från projektet."
 
             override val deleteInformationHtml =
-                "hankkeelta <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>, eikä sinulla ole enää pääsyä hankkeelle."
+                "från projektet <b>$HANKE_NIMI ($HANKE_TUNNUS)</b> och du har tagit bort dig från projektet."
 
             override val signatureLines =
                 listOf(
@@ -604,17 +601,16 @@ class EmailSenderServiceTest {
                 )
         }
 
-        // TODO needs translations
         @Nested
         inner class BodyInEnglish : BodyInFinnish() {
             override fun deletedByInformation(name: String, email: String) =
-                "$name ($email) on poistanut sinut"
+                "$name ($email) has removed you"
 
             override val deleteInformationText =
-                "hankkeelta \"$HANKE_NIMI\" ($HANKE_TUNNUS), eikä sinulla ole enää pääsyä hankkeelle."
+                "from the project \"$HANKE_NIMI\" ($HANKE_TUNNUS), and you no longer have access to the project."
 
             override val deleteInformationHtml =
-                "hankkeelta <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>, eikä sinulla ole enää pääsyä hankkeelle."
+                "from the project <b>$HANKE_NIMI ($HANKE_TUNNUS)</b>, and you no longer have access to the project."
 
             override val signatureLines =
                 listOf(
