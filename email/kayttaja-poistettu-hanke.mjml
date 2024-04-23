@@ -7,7 +7,7 @@
         <mj-section>
             <mj-column>
                 <mj-text mj-class="header-txt">
-                    Sinut on poistettu hankkeelta ({{hankeTunnus}}) / Sinut on poistettu hankkeelta ({{hankeTunnus}}) / Sinut on poistettu hankkeelta ({{hankeTunnus}})
+                    Sinut on poistettu hankkeelta ({{hankeTunnus}}) / Du har tagits bort från projektet ({{hankeTunnus}}) / You have been removed from the project ({{hankeTunnus}})
                 </mj-text>
                 <mj-text mj-class="basic-txt">
                     {{deletedByName}} ({{deletedByEmail}}) on poistanut sinut hankkeelta <b>{{hankeNimi}} ({{hankeTunnus}})</b>,
@@ -18,16 +18,16 @@
                 <mj-divider mj-class="language-separator" />
 
                 <mj-text mj-class="basic-txt">
-                    {{deletedByName}} ({{deletedByEmail}}) on poistanut sinut hankkeelta <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
-                    eikä sinulla ole enää pääsyä hankkeelle.
+                    {{deletedByName}} ({{deletedByEmail}}) har tagit bort dig från projektet <b>{{hankeNimi}} ({{hankeTunnus}})</b>
+                    och du har tagit bort dig från projektet.
                 </mj-text>
                 <mj-include path="common/signature-sv.partial"/>
 
                 <mj-divider mj-class="language-separator" />
 
                 <mj-text mj-class="basic-txt">
-                    {{deletedByName}} ({{deletedByEmail}}) on poistanut sinut hankkeelta <b>{{hankeNimi}} ({{hankeTunnus}})</b>.
-                    eikä sinulla ole enää pääsyä hankkeelle.
+                    {{deletedByName}} ({{deletedByEmail}}) has removed you from the project <b>{{hankeNimi}} ({{hankeTunnus}})</b>,
+                    and you no longer have access to the project.
                 </mj-text>
                 <mj-include path="common/signature-en.partial"/>
             </mj-column>
