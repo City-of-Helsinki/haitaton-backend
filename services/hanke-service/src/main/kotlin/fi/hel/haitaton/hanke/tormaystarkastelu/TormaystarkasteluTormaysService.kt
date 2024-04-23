@@ -151,10 +151,10 @@ enum class TormaystarkasteluKatuluokka(val value: Int, val katuluokka: String) {
      *   updates to the material processing.
      */
     OLD_TONTTIKATU_TAI_AJOYHTEYS(1, "Tonttikatu tai ajoyhteys"),
-    TONTTIKATU_TAI_AJOYHTEYS(1, "Asuntokatu, huoltoväylä tai vähäliikenteinen katu"),
+    TONTTIKATU_TAI_AJOYHTEYS(1, "Asuntokatu, huoltoväylä tai muu vähäliikenteinen katu"),
     KANTAKAUPUNGIN_ASUNTOKATU_HUOLTAVAYLA_TAI_VAHALIIKENTEINEN_KATU(
         2,
-        "Kantakaupungin asuntokatu, huoltoväylä tai vähäliikenteinen katu"
+        "Kantakaupungin asuntokatu, huoltoväylä tai muu vähäliikenteinen katu"
     ),
     PAIKALLINEN_KOKOOJAKATU(3, "Paikallinen kokoojakatu"),
     ALUEELLINEN_KOKOOJAKATU(4, "Alueellinen kokoojakatu"),
