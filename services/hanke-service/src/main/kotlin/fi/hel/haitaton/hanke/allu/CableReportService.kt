@@ -112,12 +112,19 @@ class CableReportService(
             .block()!!
     }
 
-    fun create(cableReport: AlluCableReportApplicationData): Int {
-        logger.info { "Creating cable report." }
+    fun create(application: AlluApplicationData): Int =
+        when (application) {
+            is AlluCableReportApplicationData -> create(application, "cablereports", "cable report")
+            is AlluExcavationNotificationData ->
+                create(application, "excavationannouncements", "excavation announcement")
+        }
+
+    fun create(cableReport: AlluApplicationData, path: String, name: String): Int {
+        logger.info { "Creating $name." }
         val token = login()
         return webClient
             .post()
-            .uri("$baseUrl/v2/cablereports")
+            .uri("$baseUrl/v2/$path")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
@@ -126,27 +133,46 @@ class CableReportService(
             .bodyToMono(Int::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
-                logError("Error creating cable report to Allu", it)
+                logError("Error creating $name to Allu", it)
             }
             .blockOptional()
             .orElseThrow()
     }
 
-    fun update(alluApplicationId: Int, cableReport: AlluCableReportApplicationData) {
-        logger.info { "Updating application $alluApplicationId." }
+    fun update(alluApplicationId: Int, application: AlluApplicationData) {
+        when (application) {
+            is AlluCableReportApplicationData ->
+                update(alluApplicationId, application, "cablereports", "cable report")
+            is AlluExcavationNotificationData ->
+                update(
+                    alluApplicationId,
+                    application,
+                    "excavationannouncements",
+                    "excavation announcement"
+                )
+        }
+    }
+
+    fun update(
+        alluApplicationId: Int,
+        application: AlluApplicationData,
+        path: String,
+        name: String
+    ) {
+        logger.info { "Updating $name $alluApplicationId." }
         val token = login()
         webClient
             .put()
-            .uri("$baseUrl/v2/cablereports/$alluApplicationId")
+            .uri("$baseUrl/v2/$path/$alluApplicationId")
             .contentType(MediaType.APPLICATION_JSON)
             .accept(MediaType.APPLICATION_JSON)
             .headers { it.setBearerAuth(token) }
-            .body(Mono.just(cableReport))
+            .body(Mono.just(application))
             .retrieve()
             .bodyToMono(Int::class.java)
             .timeout(defaultTimeout)
             .doOnError(WebClientResponseException::class.java) {
-                logError("Error updating cable report in Allu", it)
+                logError("Error updating $name in Allu", it)
             }
             .blockOptional()
             .orElseThrow()
@@ -407,12 +433,8 @@ data class Attachment(
     )
 }
 
-class AlluException(val errors: List<ErrorInfo>) : RuntimeException()
-
 class AlluLoginException(cause: Throwable) : RuntimeException(cause)
 
 /** Exception to use when Allu doesn't follow their API descriptions. */
 class AlluApiException(requestUri: String, message: String) :
     RuntimeException("$message, request URI: $requestUri")
-
-data class ErrorInfo(val errorMessage: String, val additionalInfo: String)

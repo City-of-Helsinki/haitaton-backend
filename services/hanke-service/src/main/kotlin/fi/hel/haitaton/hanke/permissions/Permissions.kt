@@ -38,6 +38,7 @@ enum class PermissionCode(val code: Long) {
     RESEND_INVITATION(256),
     CREATE_USER(512),
     MODIFY_USER(1024),
+    DELETE_USER(2048),
 }
 
 @Repository
@@ -45,6 +46,8 @@ interface PermissionRepository : JpaRepository<PermissionEntity, Int> {
     fun findOneByHankeIdAndUserId(hankeId: Int, userId: String): PermissionEntity?
 
     fun findAllByHankeId(hankeId: Int): List<PermissionEntity>
+
+    fun findAllByUserId(userId: String): List<PermissionEntity>
 
     /**
      * Search for permissions with the given user and a single permission code. JPQL doesn't have

@@ -114,8 +114,10 @@ services:
       HAITATON_EMAIL_FILTER_USE: false
       CLAMAV_BASE_URL: http://clamav-api:3030
       HAITATON_TESTDATA_ENABLED: true
-      HAITATON_FEATURE_HANKE_EDITING: true
-      HAITATON_FEATURE_USER_MANAGEMENT: true
+      HAITATON_FEATURE_HANKE_EDITING: ${HAITATON_FEATURE_HANKE_EDITING:-true}
+      HAITATON_FEATURE_USER_MANAGEMENT: ${HAITATON_FEATURE_USER_MANAGEMENT:-true}
+      HAITATON_MIGRATION_ENABLED: ${HAITATON_MIGRATION_ENABLED:-false}
+      HAITATON_API_DISABLED: ${HAITATON_API_DISABLED:-false}
     depends_on:
       - db
       - clamav-api
@@ -139,6 +141,8 @@ services:
       # - haitaton-admin-ui-dev for Helsinki AD authentication
       REACT_APP_OIDC_CLIENT_ID: haitaton-ui-dev
       LOGIN_SERVER: https://tunnistamo.test.hel.ninja
+      REACT_APP_FEATURE_HANKE: 1
+      REACT_APP_FEATURE_ACCESS_RIGHTS: 1
     ports:
       - 8000:8000
     volumes:

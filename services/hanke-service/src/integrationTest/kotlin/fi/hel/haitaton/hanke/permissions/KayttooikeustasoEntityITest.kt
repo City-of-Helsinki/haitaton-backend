@@ -3,18 +3,14 @@ package fi.hel.haitaton.hanke.permissions
 import assertk.assertThat
 import assertk.assertions.isEqualTo
 import assertk.assertions.key
-import fi.hel.haitaton.hanke.DatabaseTest
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.Arguments
 import org.junit.jupiter.params.provider.MethodSource
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.test.context.ActiveProfiles
 
-@SpringBootTest
-@ActiveProfiles("test")
-class KayttooikeustasoEntityITest : DatabaseTest() {
+class KayttooikeustasoEntityITest : IntegrationTest() {
 
     @Autowired lateinit var kayttooikeustasoRepository: KayttooikeustasoRepository
 
@@ -35,6 +31,7 @@ class KayttooikeustasoEntityITest : DatabaseTest() {
                         PermissionCode.RESEND_INVITATION,
                         PermissionCode.CREATE_USER,
                         PermissionCode.MODIFY_USER,
+                        PermissionCode.DELETE_USER,
                     )
                 ),
                 Arguments.of(

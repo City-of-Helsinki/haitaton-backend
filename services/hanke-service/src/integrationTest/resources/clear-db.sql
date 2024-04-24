@@ -3,6 +3,8 @@ TRUNCATE TABLE
     applications,
     audit_logs,
     geometriat,
+    hakemusyhteyshenkilo,
+    hakemusyhteystieto,
     hanke,
     hanke_attachment,
     hankekayttaja,

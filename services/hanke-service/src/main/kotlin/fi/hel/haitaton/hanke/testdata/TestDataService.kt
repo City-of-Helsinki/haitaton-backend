@@ -17,10 +17,7 @@ class TestDataService(
     fun unlinkApplicationsFromAllu() {
         logger.warn { "Unlinking all applications from Allu." }
         applicationRepository.findAll().forEach {
-            logger.warn {
-                "Unlinking application from Allu id=${it.id} alluid=${it.alluid} " +
-                    "applicationIdentifier=${it.applicationIdentifier}."
-            }
+            logger.warn { "Unlinking application from Allu. ${it.logString()}" }
             it.alluid = null
             it.alluStatus = null
             it.applicationIdentifier = null

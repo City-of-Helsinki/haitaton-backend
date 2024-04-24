@@ -1,5 +1,9 @@
 package fi.hel.haitaton.hanke.factory
 
+import fi.hel.haitaton.hanke.ContactType
+import fi.hel.haitaton.hanke.HankeEntity
+import fi.hel.haitaton.hanke.application.ApplicationEntity
+import fi.hel.haitaton.hanke.application.ApplicationRepository
 import fi.hel.haitaton.hanke.factory.KayttajaTunnisteFactory.TUNNISTE_ID
 import fi.hel.haitaton.hanke.factory.PermissionFactory.PERMISSION_ID
 import fi.hel.haitaton.hanke.permissions.HankeKayttaja
@@ -16,12 +20,14 @@ import fi.hel.haitaton.hanke.permissions.PermissionService
 import java.time.OffsetDateTime
 import java.util.UUID
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 
 @Component
 class HankeKayttajaFactory(
     private val hankeKayttajaRepository: HankekayttajaRepository,
     private val permissionService: PermissionService,
-    private val kayttajakutsuRepository: KayttajakutsuRepository
+    private val kayttajakutsuRepository: KayttajakutsuRepository,
+    private val applicationRepository: ApplicationRepository,
 ) {
 
     fun saveUnidentifiedUser(
@@ -54,7 +60,8 @@ class HankeKayttajaFactory(
         sahkoposti: String = KAKE_EMAIL,
         puhelin: String = KAKE_PUHELIN,
         kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
-        userId: String = "fake id",
+        kutsujaId: UUID? = null,
+        userId: String = FAKE_USERID,
     ): HankekayttajaEntity =
         saveUser(
             hankeId = hankeId,
@@ -62,22 +69,26 @@ class HankeKayttajaFactory(
             sukunimi = sukunimi,
             sahkoposti = sahkoposti,
             puhelin = puhelin,
+            kutsujaId = kutsujaId,
             permissionEntity = permissionService.create(hankeId, userId, kayttooikeustaso),
         )
 
-    fun saveIdentifiedUser(
+    fun findOrSaveIdentifiedUser(
         hankeId: Int,
         input: HankekayttajaInput,
         kayttooikeustaso: Kayttooikeustaso,
     ): HankekayttajaEntity =
-        saveIdentifiedUser(
-            hankeId = hankeId,
-            etunimi = input.etunimi,
-            sukunimi = input.sukunimi,
-            sahkoposti = input.email,
-            puhelin = input.puhelin,
-            kayttooikeustaso = kayttooikeustaso
-        )
+        hankeKayttajaRepository
+            .findByHankeIdAndSahkopostiIn(hankeId, listOf(input.email))
+            .firstOrNull()
+            ?: saveIdentifiedUser(
+                hankeId = hankeId,
+                etunimi = input.etunimi,
+                sukunimi = input.sukunimi,
+                sahkoposti = input.email,
+                puhelin = input.puhelin,
+                kayttooikeustaso = kayttooikeustaso
+            )
 
     fun saveUser(
         hankeId: Int,
@@ -87,6 +98,7 @@ class HankeKayttajaFactory(
         puhelin: String = KAKE_PUHELIN,
         permissionEntity: PermissionEntity? = null,
         kayttajakutsuEntity: KayttajakutsuEntity? = null,
+        kutsujaId: UUID? = null,
     ): HankekayttajaEntity =
         hankeKayttajaRepository.save(
             HankekayttajaEntity(
@@ -97,6 +109,7 @@ class HankeKayttajaFactory(
                 puhelin = puhelin,
                 permission = permissionEntity,
                 kayttajakutsu = kayttajakutsuEntity,
+                kutsujaId = kutsujaId,
             )
         )
 
@@ -116,22 +129,37 @@ class HankeKayttajaFactory(
         kayttajakutsuRepository.save(
             KayttajakutsuEntity(
                 tunniste = tunniste,
-                createdAt = OffsetDateTime.parse("2023-03-31T15:41:21Z"),
+                createdAt = INVITATION_DATE,
                 kayttooikeustaso = kayttooikeustaso,
                 hankekayttaja = this,
             )
         )
 
+    @Transactional
+    fun getFounderFromHakemus(applicationId: Long): HankekayttajaEntity {
+        val application: ApplicationEntity = applicationRepository.getReferenceById(applicationId)
+        val permission =
+            permissionService.findPermission(application.hanke.id, application.userId!!)!!
+        return hankeKayttajaRepository.findByPermissionId(permission.id)!!
+    }
+
+    @Transactional
+    fun getFounderFromHanke(hanke: HankeEntity): HankekayttajaEntity {
+        val permission = permissionService.findPermission(hanke.id, hanke.createdByUserId!!)!!
+        return hankeKayttajaRepository.findByPermissionId(permission.id)!!
+    }
+
     companion object {
-        val KAYTTAJA_ID = UUID.fromString("639870ab-533d-4172-8e97-e5b93a275514")
+        val KAYTTAJA_ID: UUID = UUID.fromString("639870ab-533d-4172-8e97-e5b93a275514")
 
         const val KAKE = "Kake"
         const val KATSELIJA = "Katselija"
         const val KAKE_EMAIL = "kake@katselu.test"
         const val KAKE_PUHELIN = "0501234567"
 
-        private const val PEKKA = "Pekka Peruskäyttäjä"
-        private const val PEKKA_EMAIL = "pekka@peruskäyttäjä.test"
+        const val FAKE_USERID = "fake id"
+
+        val INVITATION_DATE: OffsetDateTime = OffsetDateTime.parse("2024-02-29T15:43:12Z")
 
         val KAYTTAJA_INPUT_HAKIJA =
             HankekayttajaInput(
@@ -141,12 +169,28 @@ class HankeKayttajaFactory(
                 "0401234567",
             )
 
+        val KAYTTAJA_INPUT_PERUSTAJA =
+            HankekayttajaInput(
+                "Piia",
+                "Perustaja",
+                "piia.perustaja@mail.com",
+                "0401234566",
+            )
+
+        val KAYTTAJA_INPUT_OMISTAJA =
+            HankekayttajaInput(
+                "Olivia",
+                "Omistaja",
+                "olivia.omistaja@mail.com",
+                "0401234565",
+            )
+
         val KAYTTAJA_INPUT_RAKENNUTTAJA =
             HankekayttajaInput(
                 "Rane",
                 "Rakennuttaja",
                 "rane.rakennuttaja@mail.com",
-                "0401234566",
+                "0401234564",
             )
 
         val KAYTTAJA_INPUT_ASIANHOITAJA =
@@ -154,7 +198,7 @@ class HankeKayttajaFactory(
                 "Anssi",
                 "Asianhoitaja",
                 "anssi.asianhoitaja@mail.com",
-                "0401234565",
+                "0401234563",
             )
 
         val KAYTTAJA_INPUT_SUORITTAJA =
@@ -162,17 +206,42 @@ class HankeKayttajaFactory(
                 "Timo",
                 "Työnsuorittaja",
                 "timo.tyonsuorittaja@mail.com",
-                "0401234564",
+                "0401234562",
+            )
+
+        val KAYTTAJA_INPUT_MUU =
+            HankekayttajaInput(
+                "Meeri",
+                "Muukäyttäjä",
+                "meeri.muukayttaja@mail.com",
+                "0401234561",
             )
 
         fun create(
             id: UUID = KAYTTAJA_ID,
             hankeId: Int = HankeFactory.defaultId,
-            nimi: String = PEKKA,
-            sahkoposti: String = PEKKA_EMAIL,
+            etunimi: String = KAKE,
+            sukunimi: String = KATSELIJA,
+            sahkoposti: String = KAKE_EMAIL,
+            puhelinnumero: String = KAKE_PUHELIN,
+            kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
+            roolit: List<ContactType> = emptyList(),
             permissionId: Int? = PERMISSION_ID,
-            kutsuId: UUID? = TUNNISTE_ID,
-        ): HankeKayttaja = HankeKayttaja(id, hankeId, nimi, sahkoposti, permissionId, kutsuId)
+            kayttajaTunnisteId: UUID? = TUNNISTE_ID,
+        ): HankeKayttaja =
+            HankeKayttaja(
+                id = id,
+                hankeId = hankeId,
+                etunimi = etunimi,
+                sukunimi = sukunimi,
+                sahkoposti = sahkoposti,
+                puhelinnumero = puhelinnumero,
+                kayttooikeustaso = kayttooikeustaso,
+                roolit = roolit,
+                permissionId = permissionId,
+                kayttajaTunnisteId = kayttajaTunnisteId,
+                kutsuttu = if (permissionId != null) INVITATION_DATE else null,
+            )
 
         fun createEntity(
             id: UUID = KAYTTAJA_ID,
@@ -195,19 +264,51 @@ class HankeKayttajaFactory(
                 kayttajakutsu = kutsu
             )
 
-        fun createDto(i: Int = 1, tunnistautunut: Boolean = false, id: UUID = UUID.randomUUID()) =
+        fun createDto(
+            id: UUID = KAYTTAJA_ID,
+            etunimi: String = KAKE,
+            sukunimi: String = KATSELIJA,
+            sahkoposti: String = KAKE_EMAIL,
+            puhelinnumero: String = KAKE_PUHELIN,
+            kayttooikeustaso: Kayttooikeustaso = KATSELUOIKEUS,
+            roolit: List<ContactType> = emptyList(),
+            tunnistautunut: Boolean = true,
+        ) =
             HankeKayttajaDto(
+                id = id,
+                etunimi = etunimi,
+                sukunimi = sukunimi,
+                sahkoposti = sahkoposti,
+                puhelinnumero = puhelinnumero,
+                kayttooikeustaso = kayttooikeustaso,
+                roolit = roolit,
+                tunnistautunut = tunnistautunut,
+                kutsuttu = if (tunnistautunut) null else INVITATION_DATE,
+            )
+
+        fun createHankeKayttaja(i: Int = 1, vararg roolit: ContactType): HankeKayttajaDto =
+            createDto(i, roolit = roolit.toList(), tunnistautunut = (i % 2 == 0))
+
+        fun createHankeKayttajat(
+            amount: Int = 3,
+            roolit: List<ContactType> = emptyList()
+        ): List<HankeKayttajaDto> =
+            (1..amount).map { createDto(it, roolit = roolit, tunnistautunut = (it % 2 == 0)) }
+
+        private fun createDto(
+            i: Int,
+            id: UUID = UUID.randomUUID(),
+            roolit: List<ContactType> = emptyList(),
+            tunnistautunut: Boolean = false
+        ) =
+            createDto(
                 id = id,
                 sahkoposti = "email.$i.address.com",
                 etunimi = "test$i",
                 sukunimi = "name$i",
-                nimi = "test$i name$i",
                 puhelinnumero = "040555$i$i$i$i",
-                kayttooikeustaso = KATSELUOIKEUS,
-                tunnistautunut = tunnistautunut
+                roolit = roolit,
+                tunnistautunut = tunnistautunut,
             )
-
-        fun generateHankeKayttajat(amount: Int = 3): List<HankeKayttajaDto> =
-            (1..amount).map { createDto(it, it % 2 == 0) }
     }
 }

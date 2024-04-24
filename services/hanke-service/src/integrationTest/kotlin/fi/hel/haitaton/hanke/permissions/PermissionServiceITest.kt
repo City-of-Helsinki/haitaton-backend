@@ -10,9 +10,9 @@ import assertk.assertions.isNotNull
 import assertk.assertions.isNull
 import assertk.assertions.prop
 import assertk.assertions.single
-import fi.hel.haitaton.hanke.DatabaseTest
 import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeService
+import fi.hel.haitaton.hanke.IntegrationTest
 import fi.hel.haitaton.hanke.factory.HankeFactory
 import fi.hel.haitaton.hanke.hasSameElementsAs
 import fi.hel.haitaton.hanke.logging.AuditLogEvent
@@ -27,22 +27,15 @@ import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasObjectBefore
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.hasUserActor
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.isSuccess
 import fi.hel.haitaton.hanke.test.AuditLogEntryEntityAsserts.withTarget
+import fi.hel.haitaton.hanke.test.USERNAME
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.security.test.context.support.WithMockUser
-import org.springframework.test.context.ActiveProfiles
 
-private const val CURRENT_USER: String = "test7358"
-
-@SpringBootTest
-@ActiveProfiles("test")
-@WithMockUser(username = CURRENT_USER)
-class PermissionServiceITest : DatabaseTest() {
+class PermissionServiceITest : IntegrationTest() {
 
     val username = "user"
 
@@ -102,19 +95,19 @@ class PermissionServiceITest : DatabaseTest() {
     inner class PermissionsByHanke {
         @Test
         fun `Should return empty if no permissions`() {
-            val result = permissionService.permissionsByHanke(CURRENT_USER)
+            val result = permissionService.permissionsByHanke(USERNAME)
 
             assertThat(result).isEmpty()
         }
 
         @Test
         fun `Should find all users permissions`() {
-            val firstHanke = hankeFactory.builder(CURRENT_USER).save()
+            val firstHanke = hankeFactory.builder(USERNAME).save()
             val secondHanke =
                 hankeFactory.saveMinimal().permit(privilege = Kayttooikeustaso.KATSELUOIKEUS)
             hankeFactory.saveMinimal().permit(username) // someone else
 
-            val result = permissionService.permissionsByHanke(CURRENT_USER)
+            val result = permissionService.permissionsByHanke(USERNAME)
 
             assertThat(result).hasSize(2)
             assertThat(result.find { it.hankeTunnus == firstHanke.hankeTunnus }).isNotNull().all {
@@ -132,7 +125,7 @@ class PermissionServiceITest : DatabaseTest() {
         }
 
         private fun HankeEntity.permit(
-            userId: String = CURRENT_USER,
+            userId: String = USERNAME,
             privilege: Kayttooikeustaso = Kayttooikeustaso.KAIKKI_OIKEUDET,
         ) = also { permissionService.create(id, userId, privilege) }
     }
@@ -201,7 +194,7 @@ class PermissionServiceITest : DatabaseTest() {
                     hasObjectAfter(expectedObject)
                 }
                 prop(AuditLogEvent::operation).isEqualTo(Operation.CREATE)
-                hasUserActor(CURRENT_USER)
+                hasUserActor(USERNAME)
             }
         }
     }
@@ -239,7 +232,7 @@ class PermissionServiceITest : DatabaseTest() {
             permissionService.updateKayttooikeustaso(
                 permission,
                 Kayttooikeustaso.HAKEMUSASIOINTI,
-                CURRENT_USER,
+                USERNAME,
             )
 
             val expectedObject =
@@ -258,7 +251,7 @@ class PermissionServiceITest : DatabaseTest() {
                         expectedObject.copy(kayttooikeustaso = Kayttooikeustaso.HAKEMUSASIOINTI)
                     )
                 }
-                hasUserActor(CURRENT_USER)
+                hasUserActor(USERNAME)
             }
         }
     }

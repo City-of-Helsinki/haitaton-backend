@@ -6,14 +6,12 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.HankealueService
 import fi.hel.haitaton.hanke.allu.AlluApplicationResponse
+import fi.hel.haitaton.hanke.allu.AlluCableReportApplicationData
 import fi.hel.haitaton.hanke.allu.AlluLoginException
-import fi.hel.haitaton.hanke.allu.AlluStatusRepository
-import fi.hel.haitaton.hanke.allu.ApplicationHistory
 import fi.hel.haitaton.hanke.allu.ApplicationPdfService
 import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING
 import fi.hel.haitaton.hanke.allu.ApplicationStatus.PENDING_CLIENT
-import fi.hel.haitaton.hanke.allu.ApplicationStatusEvent
 import fi.hel.haitaton.hanke.allu.Attachment
 import fi.hel.haitaton.hanke.allu.AttachmentMetadata
 import fi.hel.haitaton.hanke.allu.CableReportService
@@ -22,6 +20,7 @@ import fi.hel.haitaton.hanke.configuration.Feature
 import fi.hel.haitaton.hanke.configuration.FeatureFlags
 import fi.hel.haitaton.hanke.email.ApplicationNotificationData
 import fi.hel.haitaton.hanke.email.EmailSenderService
+import fi.hel.haitaton.hanke.geometria.Geometriat
 import fi.hel.haitaton.hanke.geometria.GeometriatDao
 import fi.hel.haitaton.hanke.logging.ApplicationLoggingService
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
@@ -34,7 +33,6 @@ import fi.hel.haitaton.hanke.permissions.PermissionService
 import fi.hel.haitaton.hanke.toJsonString
 import fi.hel.haitaton.hanke.validation.ApplicationDataValidator.ensureValidForSend
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
 import kotlin.reflect.KClass
 import mu.KotlinLogging
 import org.springframework.http.MediaType
@@ -51,7 +49,6 @@ const val ALLU_INITIAL_ATTACHMENT_CANCELLATION_MSG =
 @Service
 class ApplicationService(
     private val applicationRepository: ApplicationRepository,
-    private val alluStatusRepository: AlluStatusRepository,
     private val cableReportService: CableReportService,
     private val disclosureLogService: DisclosureLogService,
     private val applicationLoggingService: ApplicationLoggingService,
@@ -106,7 +103,7 @@ class ApplicationService(
 
         val applicationEntity =
             ApplicationEntity(
-                id = null,
+                id = 0,
                 alluid = null,
                 alluStatus = null,
                 applicationIdentifier = null,
@@ -134,12 +131,18 @@ class ApplicationService(
     ): Application {
         val application = getById(id)
         val previousApplication = application.toApplication()
-        logger.info("Updating application id=$id, alluid=${application.alluid}")
+
+        application.alluid?.let {
+            throw ApplicationAlreadySentException(
+                application.id,
+                application.alluid,
+                application.alluStatus
+            )
+        } ?: logger.info("Updating application id=$id")
 
         if (previousApplication.applicationData == newApplicationData) {
             logger.info {
-                "Not updating unchanged application data. id=$id, " +
-                    "alluid=${application.alluid}, identifier=${application.applicationIdentifier}"
+                "Not updating unchanged application data. id=$id, identifier=${application.applicationIdentifier}"
             }
             return previousApplication
         }
@@ -153,14 +156,13 @@ class ApplicationService(
                         newApplicationData::class
                     )
                 }
+            is ExcavationNotificationData ->
+                // no support for excavation notification in old service
+                throw NotImplementedError("Excavation notification not implemented")
         }
 
         validateGeometry(newApplicationData) { validationError ->
-            "Invalid geometry received when updating application for user $userId, id=${application.id}, alluid=${application.alluid}, reason = ${validationError.reason}, location = ${validationError.location}"
-        }
-
-        if (!isStillPending(application.alluid, application.alluStatus)) {
-            throw ApplicationAlreadyProcessingException(application.id, application.alluid)
+            "Invalid geometry received when updating application for user $userId, id=${application.id}, reason = ${validationError.reason}, location = ${validationError.location}"
         }
 
         val hanke = application.hanke
@@ -182,14 +184,8 @@ class ApplicationService(
 
         val saved = applicationRepository.save(application)
 
-        // Update the application in Allu, if it's been already uploaded
-        if (saved.alluid != null) {
-            updateApplicationInAllu(saved)
-            provideAccessOnAlluUpdate(saved, previousApplication.applicationData, userId, hanke)
-        }
-
         return saved.toApplication().also {
-            logger.info("Updated application id=${it.id}, alluid=${it.alluid}")
+            logger.info("Updated application id=${it.id}")
             applicationLoggingService.logUpdate(previousApplication, it, userId)
         }
     }
@@ -241,17 +237,6 @@ class ApplicationService(
         logger.info("Sent application id=$id, alluid=${application.alluid}")
         // Save only if sendApplicationToAllu didn't throw an exception
         return applicationRepository.save(application).toApplication()
-    }
-
-    @Transactional
-    fun handleApplicationUpdates(
-        applicationHistories: List<ApplicationHistory>,
-        updateTime: OffsetDateTime
-    ) {
-        applicationHistories.forEach { handleApplicationUpdate(it) }
-        val status = alluStatusRepository.getReferenceById(1)
-        status.historyLastUpdated = updateTime
-        alluStatusRepository.save(status)
     }
 
     /**
@@ -341,7 +326,7 @@ class ApplicationService(
 
             logger.info { "Deleting application, id=$id, alluid=$alluid userid=$userId" }
             val application = toApplication()
-            attachmentService.deleteAllAttachments(application)
+            attachmentService.deleteAllAttachments(applicationEntity)
             applicationRepository.delete(this)
             applicationLoggingService.logDelete(application, userId)
             logger.info { "Application deleted, id=$id, alluid=$alluid userid=$userId" }
@@ -371,33 +356,6 @@ class ApplicationService(
         )
     }
 
-    /** Creates access for new application contacts. Email address used for comparison. */
-    private fun provideAccessOnAlluUpdate(
-        application: ApplicationEntity,
-        previousData: ApplicationData,
-        currentUserId: String,
-        hanke: HankeEntity
-    ) {
-        if (featureFlags.isDisabled(Feature.USER_MANAGEMENT)) {
-            logger.info { "Feature ${Feature.USER_MANAGEMENT} disabled. No tokens created." }
-            return
-        }
-
-        val kayttaja = hankeKayttajaService.getKayttajaByUserId(hanke.id, currentUserId)
-
-        val previous = previousData.contactPersonEmails()
-        val updated = application.applicationData.contactPersonEmails(omit = kayttaja?.sahkoposti)
-        val newEmails = updated.subtract(previous)
-
-        provideAccess(
-            application = application,
-            hanke = hanke,
-            currentKayttaja = kayttaja,
-            currentUserId = currentUserId,
-            emailRecipients = newEmails
-        )
-    }
-
     private fun provideAccess(
         application: ApplicationEntity,
         hanke: HankeEntity,
@@ -417,7 +375,7 @@ class ApplicationService(
         emailRecipients.forEach { email ->
             notifyOnApplication(
                 hanke.hankeTunnus,
-                application.applicationIdentifier!!,
+                hanke.nimi,
                 application.applicationType,
                 currentKayttaja,
                 email,
@@ -427,7 +385,7 @@ class ApplicationService(
 
     private fun notifyOnApplication(
         hankeTunnus: String,
-        applicationIdentifier: String,
+        hankeNimi: String,
         applicationType: ApplicationType,
         currentKayttaja: HankekayttajaEntity?,
         recipientEmail: String,
@@ -444,9 +402,9 @@ class ApplicationService(
                 senderName = currentKayttaja.fullName(),
                 senderEmail = currentKayttaja.sahkoposti,
                 recipientEmail = recipientEmail,
-                hankeTunnus = hankeTunnus,
-                applicationIdentifier = applicationIdentifier,
                 applicationType = applicationType,
+                hankeTunnus = hankeTunnus,
+                hankeNimi = hankeNimi,
             )
         )
     }
@@ -477,7 +435,7 @@ class ApplicationService(
         }
     }
 
-    private fun checkApplicationAreasInsideHankealue(
+    fun checkApplicationAreasInsideHankealue(
         hankeId: Int,
         areas: List<ApplicationArea>,
         customMessageOnFailure: (ApplicationArea) -> String
@@ -495,83 +453,6 @@ class ApplicationService(
         val hankealueet = HankealueService.createHankealueetFromCableReport(newApplicationData)
         hanke.alueet.clear()
         hanke.alueet.addAll(hankealueService.createAlueetFromCreateRequest(hankealueet, hanke))
-    }
-
-    private fun handleApplicationUpdate(applicationHistory: ApplicationHistory) {
-        val application = applicationRepository.getOneByAlluid(applicationHistory.applicationId)
-        if (application == null) {
-            logger.error {
-                "Allu had events for an application we don't have anymore. alluid=${applicationHistory.applicationId}"
-            }
-            return
-        }
-        applicationHistory.events
-            .sortedBy { it.eventTime }
-            .forEach { handleApplicationEvent(application, it) }
-        applicationRepository.save(application)
-    }
-
-    private fun handleApplicationEvent(
-        application: ApplicationEntity,
-        event: ApplicationStatusEvent
-    ) {
-        application.alluStatus = event.newStatus
-        application.applicationIdentifier = event.applicationIdentifier
-        logger.info {
-            "Updating application with new status, " +
-                "id=${application.id}, " +
-                "alluid=${application.alluid}, " +
-                "application identifier=${application.applicationIdentifier}, " +
-                "new status=${application.alluStatus}, " +
-                "event time=${event.eventTime}"
-        }
-        if (event.newStatus == ApplicationStatus.DECISION) {
-            sendDecisionReadyEmails(application, event.applicationIdentifier)
-        }
-    }
-
-    private fun sendDecisionReadyEmails(
-        application: ApplicationEntity,
-        applicationIdentifier: String
-    ) {
-        val receivers =
-            application.applicationData
-                .customersWithContacts()
-                .flatMap { it.contacts }
-                .filter { it.orderer }
-
-        if (receivers.isEmpty()) {
-            logger.error {
-                "No receivers found for decision ready email, not sending any." +
-                    "applicationId=${application.id}, applicationIdentifier=${applicationIdentifier}"
-            }
-            return
-        }
-        logger.info { "Sending application ready emails to ${receivers.size} receivers" }
-
-        receivers.forEach {
-            sendDecisionReadyEmail(it.email, applicationIdentifier, application.id)
-        }
-    }
-
-    private fun sendDecisionReadyEmail(
-        email: String?,
-        applicationIdentifier: String,
-        applicationId: Long?,
-    ) {
-        if (email == null) {
-            logger.error {
-                "Can't send decision ready email, because contact email is null. " +
-                    "applicationId=$applicationId, applicationIdentifier=${applicationIdentifier}"
-            }
-            return
-        }
-
-        emailSenderService.sendJohtoselvitysCompleteEmail(
-            email,
-            applicationId,
-            applicationIdentifier
-        )
     }
 
     private fun getById(id: Long): ApplicationEntity {
@@ -603,7 +484,9 @@ class ApplicationService(
 
         when (val data = entity.applicationData) {
             is CableReportApplicationData ->
-                updateCableReportInAllu(entity.id!!, alluId, entity.hanke.hankeTunnus, data)
+                updateCableReportInAllu(entity.id, alluId, entity.hanke.hankeTunnus, data)
+            is ExcavationNotificationData ->
+                TODO("Sending excavation notification to Allu not implemented.")
         }
 
         return alluId
@@ -615,7 +498,9 @@ class ApplicationService(
         val alluId =
             when (val data = entity.applicationData) {
                 is CableReportApplicationData ->
-                    createCableReportToAllu(entity.id!!, entity.hanke.hankeTunnus, data)
+                    createCableReportToAllu(entity.id, entity.hanke.hankeTunnus, data)
+                is ExcavationNotificationData ->
+                    TODO("Sending excavation notification to Allu not implemented.")
             }
         try {
             attachmentService.sendInitialAttachments(alluId, entity.id)
@@ -640,9 +525,7 @@ class ApplicationService(
         val alluData = cableReport.toAlluData(hankeTunnus)
 
         return withFormDataPdfUploading(cableReport) {
-            withDisclosureLogging(applicationId, cableReport) {
-                cableReportService.create(alluData)
-            }
+            withDisclosureLogging(applicationId, alluData) { cableReportService.create(alluData) }
         }
     }
 
@@ -655,7 +538,7 @@ class ApplicationService(
         val alluData = cableReport.toAlluData(hankeTunnus)
 
         withFormDataPdfUploading(cableReport) {
-            withDisclosureLogging(applicationId, cableReport) {
+            withDisclosureLogging(applicationId, alluData) {
                 cableReportService.update(alluId, alluData)
             }
             alluId
@@ -718,7 +601,7 @@ class ApplicationService(
      */
     private fun <T> withDisclosureLogging(
         applicationId: Long,
-        cableReportApplicationData: CableReportApplicationData,
+        cableReportApplicationData: AlluCableReportApplicationData,
         f: () -> T,
     ): T {
         try {
@@ -733,7 +616,7 @@ class ApplicationService(
             // Since the login failed we didn't send the application itself, so logging not needed.
             throw e
         } catch (e: Throwable) {
-            // There was an exception outside logging, so there was at least an attempt to send the
+            // There was an exception outside login, so there was at least an attempt to send the
             // application to Allu. Allu might have read it and rejected it, so we should log this
             // as a disclosure event.
             disclosureLogService.saveDisclosureLogsForAllu(
@@ -747,7 +630,7 @@ class ApplicationService(
     }
 
     /** Map by area geometry id to area geometry data. */
-    private fun geometryMapFrom(hanke: HankeEntity) =
+    private fun geometryMapFrom(hanke: HankeEntity): Map<Int, Geometriat?> =
         hanke.alueet
             .mapNotNull { it.geometriat }
             .associateWith { geometriatDao.retrieveGeometriat(it) }
@@ -765,8 +648,11 @@ class IncompatibleApplicationException(
 class ApplicationNotFoundException(id: Long) :
     RuntimeException("Application not found with id $id")
 
+class ApplicationAlreadySentException(id: Long?, alluid: Int?, status: ApplicationStatus?) :
+    RuntimeException("Application is already sent to Allu, id=$id, alluId=$alluid, status=$status")
+
 class ApplicationAlreadyProcessingException(id: Long?, alluid: Int?) :
-    RuntimeException("Application is no longer pending in Allu, id=$id, alluid=$alluid")
+    RuntimeException("Application is no longer pending in Allu, id=$id, alluId=$alluid")
 
 class ApplicationGeometryException(message: String) : RuntimeException(message)
 

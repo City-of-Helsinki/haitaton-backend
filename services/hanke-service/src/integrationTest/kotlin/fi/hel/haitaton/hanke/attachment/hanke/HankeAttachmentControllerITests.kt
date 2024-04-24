@@ -8,7 +8,6 @@ import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.attachment.DUMMY_DATA
 import fi.hel.haitaton.hanke.attachment.FILE_NAME_PDF
 import fi.hel.haitaton.hanke.attachment.HANKE_TUNNUS
-import fi.hel.haitaton.hanke.attachment.USERNAME
 import fi.hel.haitaton.hanke.attachment.andExpectError
 import fi.hel.haitaton.hanke.attachment.common.AttachmentContent
 import fi.hel.haitaton.hanke.attachment.common.AttachmentInvalidException
@@ -18,6 +17,7 @@ import fi.hel.haitaton.hanke.factory.TestHankeIdentifier
 import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
+import fi.hel.haitaton.hanke.test.USERNAME
 import io.mockk.checkUnnecessaryStub
 import io.mockk.clearAllMocks
 import io.mockk.confirmVerified
@@ -174,8 +174,7 @@ class HankeAttachmentControllerITests(@Autowired override val mockMvc: MockMvc) 
         hankeTunnus: String = HANKE_TUNNUS,
         attachmentId: UUID = UUID.fromString("919a765f-3ef0-46f0-a52b-9b47024ac33c"),
         resultType: MediaType = APPLICATION_PDF,
-    ): ResultActions =
-        get("/hankkeet/$hankeTunnus/liitteet/$attachmentId/content", resultType = resultType)
+    ): ResultActions = get("/hankkeet/$hankeTunnus/liitteet/$attachmentId/content", resultType)
 
     private fun postAttachment(
         hankeTunnus: String = HANKE_TUNNUS,

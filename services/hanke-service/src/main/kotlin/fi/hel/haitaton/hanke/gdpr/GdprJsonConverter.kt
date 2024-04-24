@@ -3,10 +3,12 @@ package fi.hel.haitaton.hanke.gdpr
 import fi.hel.haitaton.hanke.allu.CustomerType
 import fi.hel.haitaton.hanke.application.Application
 import fi.hel.haitaton.hanke.application.ApplicationData
-import fi.hel.haitaton.hanke.application.CableReportApplicationData
 import fi.hel.haitaton.hanke.application.Contact
 import fi.hel.haitaton.hanke.application.Customer
 import fi.hel.haitaton.hanke.application.CustomerWithContacts
+import fi.hel.haitaton.hanke.domain.HankeYhteystieto
+import fi.hel.haitaton.hanke.hakemus.Hakemusyhteystieto
+import fi.hel.haitaton.hanke.permissions.HankeKayttaja
 
 object GdprJsonConverter {
 
@@ -21,25 +23,52 @@ object GdprJsonConverter {
         return CollectionNode("user", combinedNodes)
     }
 
+    fun createGdprJson(
+        kayttajat: List<HankeKayttaja>,
+        hankeYhteystiedot: List<HankeYhteystieto>,
+        hakemusyhteystiedot: List<Hakemusyhteystieto>,
+        userId: String
+    ): CollectionNode? {
+        val basicInfos = kayttajat.map { getGdprInfosFromHankekayttaja(it) }
+        val hankeOrganisaatiot =
+            hankeYhteystiedot
+                .map { getOrganisationFromHankeyhteystieto(it) }
+                .map { GdprInfo(organisation = it) }
+        val hakemusOrganisaatiot =
+            hakemusyhteystiedot
+                .map { getOrganisationFromHakemusyhteystieto(it) }
+                .map { GdprInfo(organisation = it) }
+
+        val combinedNodes =
+            combineGdprInfos(basicInfos + hankeOrganisaatiot + hakemusOrganisaatiot, userId)
+        if (combinedNodes.isEmpty()) {
+            return null
+        }
+        return CollectionNode("user", combinedNodes)
+    }
+
     internal fun combineGdprInfos(infos: Collection<GdprInfo>, userId: String): List<Node> {
         if (infos.isEmpty()) {
             return listOf()
         }
-        val names = infos.mapNotNull { it.name }.toSet()
+        val firstNames = infos.mapNotNull { it.firstName }.toSet()
+        val lastNames = infos.mapNotNull { it.lastName }.toSet()
         val phones = infos.mapNotNull { it.phone }.toSet()
         val emails = infos.mapNotNull { it.email }.toSet()
         val ipAddresses = infos.mapNotNull { it.ipAddress }.toSet()
         val organisations = infos.mapNotNull { it.organisation }.toSet()
 
         val idNode = StringNode("id", userId)
-        val namesNode = combineStrings(names, "nimi", "nimet")
+        val firstNamesNode = combineStrings(firstNames, "etunimi", "etunimet")
+        val lastNamesNode = combineStrings(lastNames, "sukunimi", "sukunimet")
         val phonesNode = combineStrings(phones, "puhelinnumero", "puhelinnumerot")
         val emailsNode = combineStrings(emails, "sahkoposti", "sahkopostit")
         val ipAddressesNode = combineStrings(ipAddresses, "ipOsoite", "ipOsoitteet")
         val organisationsNode = combineOrganisations(organisations)
         return listOfNotNull(
             idNode,
-            namesNode,
+            firstNamesNode,
+            lastNamesNode,
             phonesNode,
             emailsNode,
             ipAddressesNode,
@@ -82,13 +111,10 @@ object GdprJsonConverter {
     private fun getIntNode(key: String, value: Int?): IntNode? = value?.let { IntNode(key, value) }
 
     internal fun getCreatorInfoFromApplication(applicationData: ApplicationData): List<GdprInfo> {
-        return when (applicationData) {
-            is CableReportApplicationData ->
-                applicationData
-                    .customersWithContacts()
-                    .filter { it.contacts.any { contact -> contact.orderer } }
-                    .flatMap { getCreatorInfoFromCustomerWithContacts(it) }
-        }
+        return applicationData
+            .customersWithContacts()
+            .filter { it.contacts.any { contact -> contact.orderer } }
+            .flatMap { getCreatorInfoFromCustomerWithContacts(it) }
     }
 
     internal fun getCreatorInfoFromCustomerWithContacts(
@@ -125,10 +151,32 @@ object GdprJsonConverter {
         organisation: GdprOrganisation?,
     ): GdprInfo {
         return GdprInfo(
-            name = contact.fullName(),
+            firstName = contact.firstName,
+            lastName = contact.lastName,
             phone = contact.phone,
             email = contact.email,
             organisation = organisation,
         )
     }
+
+    private fun getGdprInfosFromHankekayttaja(kayttaja: HankeKayttaja) =
+        GdprInfo(
+            firstName = kayttaja.etunimi,
+            lastName = kayttaja.sukunimi,
+            phone = kayttaja.puhelinnumero,
+            email = kayttaja.sahkoposti
+        )
+
+    private fun getOrganisationFromHankeyhteystieto(yhteystieto: HankeYhteystieto) =
+        GdprOrganisation(
+            name = yhteystieto.nimi,
+            registryKey = yhteystieto.ytunnus,
+            department = yhteystieto.osasto
+        )
+
+    private fun getOrganisationFromHakemusyhteystieto(yhteystieto: Hakemusyhteystieto) =
+        GdprOrganisation(
+            name = yhteystieto.nimi,
+            registryKey = yhteystieto.ytunnus,
+        )
 }

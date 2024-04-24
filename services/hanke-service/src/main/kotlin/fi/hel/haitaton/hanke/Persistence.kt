@@ -58,7 +58,7 @@ class HankeEntity(
         cascade = [CascadeType.ALL],
         orphanRemoval = true
     )
-    var listOfHankeYhteystieto: MutableList<HankeYhteystietoEntity> = mutableListOf(),
+    var yhteystiedot: MutableList<HankeYhteystietoEntity> = mutableListOf(),
     @OneToMany(
         fetch = FetchType.LAZY,
         mappedBy = "hanke",
@@ -99,14 +99,13 @@ class HankeEntity(
     fun addYhteystieto(yhteystieto: HankeYhteystietoEntity) {
         // TODO: should check that the given entity is not yet connected to another Hanke, or
         // if already connected to this hanke (see addTormaystarkasteluTulos())
-        listOfHankeYhteystieto.add(yhteystieto)
+        yhteystiedot.add(yhteystieto)
         yhteystieto.hanke = this
     }
 
     fun removeYhteystieto(yhteystieto: HankeYhteystietoEntity) {
-        // NOTE: this relies on equals() to match yhteystietos almost fully.
-        if (listOfHankeYhteystieto.contains(yhteystieto)) {
-            listOfHankeYhteystieto.remove(yhteystieto)
+        yhteystieto.id?.let { id ->
+            yhteystiedot.removeAll { it.id == id }
             yhteystieto.hanke = null
         }
     }
@@ -131,6 +130,10 @@ class HankeEntity(
 }
 
 interface HankeRepository : JpaRepository<HankeEntity, Int> {
+    @Query("select h.id from HankeEntity h") fun getAllIds(): List<Int>
+
+    fun findOneById(id: Int): HankeIdentifier?
+
     fun findOneByHankeTunnus(hankeTunnus: String): HankeIdentifier?
 
     fun findByHankeTunnus(hankeTunnus: String): HankeEntity?
@@ -155,7 +158,7 @@ enum class CounterType {
 @Table(name = "idcounter")
 class IdCounter(
     @Id @Enumerated(EnumType.STRING) var counterType: CounterType? = null,
-    var value: Long? = null
+    var value: Long? = null,
 )
 
 interface IdCounterRepository : JpaRepository<IdCounter, CounterType> {

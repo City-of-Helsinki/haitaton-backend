@@ -22,7 +22,10 @@ inline fun <reified T : Any> String.asJsonResource(): T =
 
 /** Read the response body from a MockMvc result and deserialize from JSON. */
 inline fun <reified T> ResultActions.andReturnBody(): T =
-    OBJECT_MAPPER.readValue(andReturn().response.getContentAsString(StandardCharsets.UTF_8))
+    OBJECT_MAPPER.readValue(andReturnContent())
+
+fun ResultActions.andReturnContent(): String =
+    andReturn().response.getContentAsString(StandardCharsets.UTF_8)
 
 fun String.getResourceAsBytes(): ByteArray = this.getResource().readBytes()
 

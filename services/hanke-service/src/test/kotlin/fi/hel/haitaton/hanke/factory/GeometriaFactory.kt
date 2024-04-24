@@ -13,8 +13,14 @@ object GeometriaFactory {
     val thirdPolygon: Polygon =
         "/fi/hel/haitaton/hanke/geometria/kolmas_polygoni.json".asJsonResource()
 
-    fun create(): Geometriat =
-        "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json".asJsonResource()
+    /**
+     * Same geometry as [secondPolygon], that's used as default in Application factory for
+     * application areas.
+     */
+    fun create(id: Int = 1): Geometriat =
+        "/fi/hel/haitaton/hanke/geometria/hankeGeometriat.json"
+            .asJsonResource<Geometriat>()
+            .copy(id = id)
 
     fun createNew(): NewGeometriat = NewGeometriat(create().featureCollection)
 }

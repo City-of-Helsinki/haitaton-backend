@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import mu.KotlinLogging
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType.APPLICATION_PDF
@@ -33,7 +34,6 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
-import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -41,14 +41,37 @@ private val logger = KotlinLogging.logger {}
 
 @Validated
 @RestController
-@RequestMapping("/hakemukset")
 @SecurityRequirement(name = "bearerAuth")
+@ConditionalOnProperty(
+    name = ["haitaton.features.user-management"],
+    havingValue = "false",
+    matchIfMissing = true
+)
 class ApplicationController(
     private val applicationService: ApplicationService,
     private val hankeService: HankeService,
     private val disclosureLogService: DisclosureLogService,
 ) {
-    @GetMapping
+    @GetMapping("/hankkeet/{hankeTunnus}/hakemukset")
+    @Operation(
+        summary = "Get hanke applications",
+        description = "Returns list of applications belonging to a given hanke."
+    )
+    @PreAuthorize("@applicationAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
+    fun getHankeHakemukset(@PathVariable hankeTunnus: String): ApplicationsResponse {
+        logger.info { "Finding applications for hanke $hankeTunnus" }
+        val userId = currentUserId()
+        hankeService.getHankeApplications(hankeTunnus).let { hakemukset ->
+            if (hakemukset.isNotEmpty()) {
+                disclosureLogService.saveDisclosureLogsForApplications(hakemukset, userId)
+            }
+            return ApplicationsResponse(hakemukset).also {
+                logger.info { "Found ${it.applications.size} applications for hanke $hankeTunnus" }
+            }
+        }
+    }
+
+    @GetMapping("/hakemukset")
     @Operation(
         summary = "Get all applications",
         description =
@@ -61,7 +84,7 @@ class ApplicationController(
         return applications
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/hakemukset/{id}")
     @Operation(
         summary = "Get one application",
         description = "Returns one application if it exists and the user can access it."
@@ -84,7 +107,7 @@ class ApplicationController(
         return application
     }
 
-    @PostMapping
+    @PostMapping("/hakemukset")
     @Operation(
         summary = "Create a new application",
         description =
@@ -110,7 +133,7 @@ class ApplicationController(
         return createdApplication
     }
 
-    @PostMapping("/johtoselvitys")
+    @PostMapping("/hakemukset/johtoselvitys")
     @Operation(
         summary = "Generates new hanke from cable report application and saves application to it.",
         description =
@@ -137,15 +160,13 @@ class ApplicationController(
         }
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/hakemukset/{id}")
     @Operation(
         summary = "Update an application",
         description =
             """Returns the updated application.
-               The application can be updated until it has started processing in Allu, i.e. it's still pending.
+               The application can be updated until it has been sent to Allu.
                If the application hasn't changed since the last update, nothing more is done.
-               If the application has been sent to Allu, it will be updated there as well.
-               If an Allu-update is required, but it fails, the local version will not be updated.
                The pendingOnClient value can't be changed with this endpoint.
                Use [POST /hakemukset/{id}/send-application](#/application-controller/sendApplication) for that.
             """
@@ -166,7 +187,7 @@ class ApplicationController(
                 ),
                 ApiResponse(
                     description =
-                        "The application can't be updated because it has started processing in Allu",
+                        "The application can't be updated because it has been sent to Allu",
                     responseCode = "409",
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
@@ -184,7 +205,7 @@ class ApplicationController(
         return updatedApplication
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/hakemukset/{id}")
     @Operation(
         summary = "Delete an application",
         description =
@@ -219,7 +240,7 @@ class ApplicationController(
         return result
     }
 
-    @PostMapping("/{id}/send-application")
+    @PostMapping("/hakemukset/{id}/send-application")
     @Operation(
         summary = "Send an application to Allu",
         description =
@@ -256,7 +277,7 @@ class ApplicationController(
     fun sendApplication(@PathVariable(name = "id") id: Long): Application =
         applicationService.sendApplication(id, currentUserId())
 
-    @GetMapping("/{id}/paatos")
+    @GetMapping("/hakemukset/{id}/paatos")
     @Operation(
         summary = "Download a decision",
         description = "Downloads a decision for this application from Allu."
@@ -303,6 +324,14 @@ class ApplicationController(
     fun alluDataError(ex: AlluDataException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI2004
+    }
+
+    @ExceptionHandler(ApplicationAlreadySentException::class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun applicationAlreadySentException(ex: ApplicationAlreadySentException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI2009
     }
 
     @ExceptionHandler(ApplicationGeometryException::class)

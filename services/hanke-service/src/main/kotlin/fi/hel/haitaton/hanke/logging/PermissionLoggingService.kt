@@ -31,4 +31,11 @@ class PermissionLoggingService(private val auditLogService: AuditLogService) {
             AuditLogService.createEntry(userId, ObjectType.PERMISSION, permission)
         )
     }
+
+    @Transactional(propagation = Propagation.MANDATORY)
+    fun logDelete(permission: Permission, currentUserId: String) {
+        auditLogService.create(
+            AuditLogService.deleteEntry(currentUserId, ObjectType.PERMISSION, permission)
+        )
+    }
 }

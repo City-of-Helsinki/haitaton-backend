@@ -1,7 +1,8 @@
 package fi.hel.haitaton.hanke.gdpr
 
 data class GdprInfo(
-    val name: String? = null,
+    val firstName: String? = null,
+    val lastName: String? = null,
     val phone: String? = null,
     val email: String? = null,
     val ipAddress: String? = null,

@@ -49,7 +49,7 @@ object HankeMapper {
             }
 
     private fun contacts(entity: HankeEntity): Map<ContactType, List<HankeYhteystieto>> =
-        entity.listOfHankeYhteystieto.groupBy({ it.contactType }, { it.toDomain() })
+        entity.yhteystiedot.groupBy({ it.contactType }, { it.toDomain() })
 
     private fun alueList(
         hankeTunnus: String?,

@@ -11,14 +11,18 @@ import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.IntegrationTestConfiguration
 import fi.hel.haitaton.hanke.OBJECT_MAPPER
+import fi.hel.haitaton.hanke.allu.ApplicationStatus
 import fi.hel.haitaton.hanke.andReturnBody
+import fi.hel.haitaton.hanke.andReturnContent
 import fi.hel.haitaton.hanke.factory.ApplicationFactory
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withContacts
 import fi.hel.haitaton.hanke.factory.ApplicationFactory.Companion.withCustomerContacts
 import fi.hel.haitaton.hanke.getResourceAsBytes
+import fi.hel.haitaton.hanke.hankeError
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
 import fi.hel.haitaton.hanke.permissions.PermissionCode.EDIT_APPLICATIONS
 import fi.hel.haitaton.hanke.permissions.PermissionCode.VIEW
+import fi.hel.haitaton.hanke.test.USERNAME
 import fi.hel.haitaton.hanke.toJsonString
 import fi.hel.haitaton.hanke.validation.InvalidApplicationDataException
 import io.mockk.Called
@@ -30,6 +34,7 @@ import io.mockk.verify
 import io.mockk.verifySequence
 import java.time.ZonedDateTime
 import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Nested
@@ -42,6 +47,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.MediaType.APPLICATION_PDF
 import org.springframework.security.test.context.support.WithAnonymousUser
 import org.springframework.security.test.context.support.WithMockUser
+import org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
@@ -49,11 +55,14 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-private const val USERNAME = "testUser"
 private const val HANKE_TUNNUS = "HAI-1234"
 private const val BASE_URL = "/hakemukset"
+private const val HANKKEET_BASE_URL = "/hankkeet"
 
-@WebMvcTest(ApplicationController::class)
+@WebMvcTest(
+    controllers = [ApplicationController::class],
+    properties = ["haitaton.features.user-management=false"]
+)
 @Import(IntegrationTestConfiguration::class)
 @ActiveProfiles("test")
 @WithMockUser(USERNAME)
@@ -76,6 +85,75 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
     fun checkMocks() {
         checkUnnecessaryStub()
         confirmVerified(applicationService, hankeService, authorizer)
+    }
+
+    @Nested
+    inner class GetHankeHakemukset {
+        private val url = "$HANKKEET_BASE_URL/$HANKE_TUNNUS/hakemukset"
+
+        @Test
+        @WithAnonymousUser
+        fun `Without authenticated user return unauthorized (401) `() {
+            get(url)
+                .andExpect(SecurityMockMvcResultMatchers.unauthenticated())
+                .andExpect(status().isUnauthorized)
+                .andExpect(hankeError(HankeError.HAI0001))
+        }
+
+        @Test
+        fun `With unknown hanke tunnus return 404`() {
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
+            every { hankeService.getHankeApplications(HANKE_TUNNUS) } throws
+                HankeNotFoundException(HANKE_TUNNUS)
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
+
+            verifySequence {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name)
+                hankeService.getHankeApplications(HANKE_TUNNUS)
+            }
+        }
+
+        @Test
+        fun `When user does not have permission return 404`() {
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } throws
+                HankeNotFoundException(HANKE_TUNNUS)
+
+            get(url).andExpect(status().isNotFound).andExpect(hankeError(HankeError.HAI1001))
+
+            verifySequence { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) }
+        }
+
+        @Test
+        fun `With no applications return empty list`() {
+            every { hankeService.getHankeApplications(HANKE_TUNNUS) } returns listOf()
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
+
+            val response: ApplicationsResponse = get(url).andExpect(status().isOk).andReturnBody()
+
+            Assertions.assertTrue(response.applications.isEmpty())
+            verifySequence {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name)
+                hankeService.getHankeApplications(HANKE_TUNNUS)
+            }
+        }
+
+        @Test
+        fun `With known hanketunnus return applications`() {
+            val applications = ApplicationFactory.createApplications(5)
+            every { hankeService.getHankeApplications(HANKE_TUNNUS) } returns applications
+            every { authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name) } returns true
+
+            val response: ApplicationsResponse = get(url).andExpect(status().isOk).andReturnBody()
+
+            Assertions.assertTrue(response.applications.isNotEmpty())
+            assertEquals(ApplicationsResponse(applications), response)
+            verifySequence {
+                authorizer.authorizeHankeTunnus(HANKE_TUNNUS, VIEW.name)
+                hankeService.getHankeApplications(HANKE_TUNNUS)
+                disclosureLogService.saveDisclosureLogsForApplications(applications, USERNAME)
+            }
+        }
     }
 
     @Nested
@@ -170,7 +248,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         @WithAnonymousUser
         fun `when unknown user should return 401`() {
-            post(BASE_URL, ApplicationFactory.createApplication(id = null))
+            post(BASE_URL, ApplicationFactory.createApplication(id = 0))
                 .andExpect(status().isUnauthorized)
 
             verify { applicationService wasNot Called }
@@ -186,7 +264,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when valid application should create application`() {
             val newApplication =
-                ApplicationFactory.createApplication(id = null, hankeTunnus = HANKE_TUNNUS)
+                ApplicationFactory.createApplication(id = 0, hankeTunnus = HANKE_TUNNUS)
             val createdApplication = newApplication.copy(id = 1234)
             every { authorizer.authorizeCreate(newApplication) } returns true
             every { applicationService.create(newApplication, USERNAME) } returns createdApplication
@@ -203,7 +281,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
 
         @Test
         fun `when missing application data type should return 400`() {
-            val application = ApplicationFactory.createApplication(id = null)
+            val application = ApplicationFactory.createApplication(id = 0)
             val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
             (content.get("applicationData") as ObjectNode).remove("applicationType")
 
@@ -216,26 +294,26 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         fun `when end before start should return 400`() {
             val application =
                 ApplicationFactory.createApplication(
-                    id = null,
+                    id = 0,
                     applicationData =
                         ApplicationFactory.createCableReportApplicationData(
                             startTime = ZonedDateTime.now(),
                             endTime = ZonedDateTime.now().minusDays(1)
                         )
                 )
-            every { authorizer.authorizeCreate(any()) } returns true
+            every { authorizer.authorizeCreate(any<Application>()) } returns true
 
             post(BASE_URL, application).andExpect(status().isBadRequest)
 
             verify {
-                authorizer.authorizeCreate(any())
+                authorizer.authorizeCreate(any<Application>())
                 applicationService wasNot Called
             }
         }
 
         @Test
         fun `when missing application type should return 400`() {
-            val application = ApplicationFactory.createApplication(id = null)
+            val application = ApplicationFactory.createApplication(id = 0)
             val content: ObjectNode = OBJECT_MAPPER.valueToTree(application)
             content.remove("applicationType")
 
@@ -255,7 +333,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                             .withContacts()
                 )
             val application =
-                ApplicationFactory.createApplication(id = null, applicationData = applicationData)
+                ApplicationFactory.createApplication(id = 0, applicationData = applicationData)
             every { authorizer.authorizeCreate(application) } returns true
 
             post(BASE_URL, application).andExpect(status().isBadRequest)
@@ -269,7 +347,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when application without hankeTunnus should return 400`() {
             val newApplication =
-                ApplicationFactory.createApplication(id = null, hankeTunnus = HANKE_TUNNUS)
+                ApplicationFactory.createApplication(id = 0, hankeTunnus = HANKE_TUNNUS)
             val json = objectMapper.valueToTree<ObjectNode>(newApplication)
             json.remove("hankeTunnus")
             val text = json.asText()
@@ -279,7 +357,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         @Test
         fun `when no hanke permission should return hanke not found 404`() {
             val newApplication =
-                ApplicationFactory.createApplication(id = null, hankeTunnus = HANKE_TUNNUS)
+                ApplicationFactory.createApplication(id = 0, hankeTunnus = HANKE_TUNNUS)
             every { authorizer.authorizeCreate(newApplication) } throws
                 HankeNotFoundException(HANKE_TUNNUS)
 
@@ -299,7 +377,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                 mockCreatedApplication
 
             val response: Application =
-                post("/hakemukset/johtoselvitys", applicationInput)
+                post("$BASE_URL/johtoselvitys", applicationInput)
                     .andExpect(status().isOk)
                     .andReturnBody()
 
@@ -317,12 +395,12 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                     )
                     .toCableReportWithoutHanke()
 
-            val result =
-                post("/hakemukset/johtoselvitys", applicationInput)
+            val response =
+                post("$BASE_URL/johtoselvitys", applicationInput)
                     .andExpect(status().isBadRequest)
-                    .andReturn()
+                    .andReturnContent()
 
-            assertThat(result.response.contentAsString)
+            assertThat(response)
                 .isEqualTo(
                     HankeErrorDetail(
                             HankeError.HAI2008,
@@ -356,7 +434,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         fun `when end before start should return 400`() {
             val application =
                 ApplicationFactory.createApplication(
-                    id = null,
+                    id = 0,
                     applicationData =
                         ApplicationFactory.createCableReportApplicationData(
                             startTime = ZonedDateTime.now(),
@@ -365,10 +443,12 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                 )
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
 
-            val result =
-                put("$BASE_URL/$id", application).andExpect(status().isBadRequest).andReturn()
+            val response =
+                put("$BASE_URL/$id", application)
+                    .andExpect(status().isBadRequest)
+                    .andReturnContent()
 
-            assertThat(result.response.contentAsString)
+            assertThat(response)
                 .isEqualTo(HankeErrorDetail(HankeError.HAI2008, listOf("endTime")).toJsonString())
             verify {
                 authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
@@ -385,7 +465,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                             .withContacts()
                 )
             val application =
-                ApplicationFactory.createApplication(id = null, applicationData = applicationData)
+                ApplicationFactory.createApplication(id = 0, applicationData = applicationData)
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
 
             put("$BASE_URL/$id", application).andExpect(status().isBadRequest)
@@ -448,9 +528,11 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             } throws InvalidApplicationDataException(mockErrorPaths)
 
             val response =
-                put("$BASE_URL/$id", application).andExpect(status().isBadRequest).andReturn()
+                put("$BASE_URL/$id", application)
+                    .andExpect(status().isBadRequest)
+                    .andReturnContent()
 
-            assertThat(response.response.contentAsString)
+            assertThat(response)
                 .isEqualTo(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString())
             verifySequence {
                 authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
@@ -470,14 +552,16 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
         }
 
         @Test
-        fun `when application no longer pending should return 409`() {
+        fun `when application sent to Allu should return 409`() {
             val application = ApplicationFactory.createApplication(hankeTunnus = HANKE_TUNNUS)
             every { authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name) } returns true
             every {
                 applicationService.updateApplicationData(id, application.applicationData, USERNAME)
-            } throws ApplicationAlreadyProcessingException(id, 21)
+            } throws ApplicationAlreadySentException(id, 21, ApplicationStatus.HANDLING)
 
-            put("$BASE_URL/$id", application).andExpect(status().isConflict)
+            put("$BASE_URL/$id", application)
+                .andExpect(status().isConflict)
+                .andExpect(jsonPath("errorCode").value("HAI2009"))
 
             verify {
                 authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
@@ -596,9 +680,11 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                 InvalidApplicationDataException(mockErrorPaths)
 
             val response =
-                post("$BASE_URL/$id/send-application").andExpect(status().isBadRequest).andReturn()
+                post("$BASE_URL/$id/send-application")
+                    .andExpect(status().isBadRequest)
+                    .andReturnContent()
 
-            assertThat(response.response.contentAsString)
+            assertThat(response)
                 .isEqualTo(HankeErrorDetail(HankeError.HAI2008, mockErrorPaths).toJsonString())
             verifySequence {
                 authorizer.authorizeApplicationId(id, EDIT_APPLICATIONS.name)
@@ -712,7 +798,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
             every { applicationService.getApplicationById(id) } returns
                 ApplicationFactory.createApplication(applicationIdentifier = applicationIdentifier)
 
-            get("$BASE_URL/$id/paatos", resultType = APPLICATION_PDF)
+            get("$BASE_URL/$id/paatos", APPLICATION_PDF)
                 .andExpect(status().isOk)
                 .andExpect(header().string("Content-Disposition", "inline; filename=JS230001.pdf"))
                 .andExpect(content().bytes(pdfBytes))
@@ -735,7 +821,7 @@ class ApplicationControllerITest(@Autowired override val mockMvc: MockMvc) : Con
                 Pair(applicationIdentifier, pdfBytes)
             every { applicationService.getApplicationById(id) } returns application
 
-            get("$BASE_URL/$id/paatos", resultType = APPLICATION_PDF)
+            get("$BASE_URL/$id/paatos", APPLICATION_PDF)
                 .andExpect(status().isOk)
                 .andExpect(header().string("Content-Disposition", "inline; filename=JS230001.pdf"))
                 .andExpect(content().bytes(pdfBytes))

@@ -5,6 +5,7 @@ import fi.hel.haitaton.hanke.domain.HasId
 
 enum class ApplicationType {
     CABLE_REPORT,
+    EXCAVATION_NOTIFICATION,
 }
 
 /** Interface to enable [Application] and [CableReportWithoutHanke] handling equivalently. */
@@ -14,17 +15,17 @@ sealed interface BaseApplication {
 }
 
 data class Application(
-    override val id: Long?,
+    override val id: Long,
     val alluid: Int?,
     val alluStatus: ApplicationStatus?,
     val applicationIdentifier: String?,
     override val applicationType: ApplicationType,
     override val applicationData: ApplicationData,
     val hankeTunnus: String,
-) : HasId<Long?>, BaseApplication {
+) : HasId<Long>, BaseApplication {
     fun toMetadata() =
         ApplicationMetaData(
-            id!!,
+            id,
             alluid,
             alluStatus,
             applicationIdentifier,
@@ -40,7 +41,7 @@ data class CableReportWithoutHanke(
 ) : BaseApplication {
     fun toNewApplication(hankeTunnus: String) =
         Application(
-            id = null,
+            id = 0,
             alluid = null,
             alluStatus = null,
             applicationIdentifier = null,

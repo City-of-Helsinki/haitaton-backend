@@ -138,7 +138,6 @@ class ApplicationValidatorTest {
             Stream.of(
                 Arguments.of("name", baseAppData.copy(name = content)),
                 Arguments.of("workDescription", baseAppData.copy(workDescription = content)),
-                Arguments.of("customerReference", baseAppData.copy(customerReference = content)),
                 Arguments.of(
                     "postalAddress.postalCode",
                     baseAppData.withPostalAddress(postalCode = content)
@@ -262,34 +261,6 @@ class ApplicationValidatorTest {
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
         }
-
-        @Test
-        fun `invoicingCustomer is validated when not null`() {
-            val application =
-                ApplicationFactory.createApplication(
-                    applicationData =
-                        ApplicationFactory.createCableReportApplicationData()
-                            .copy(
-                                invoicingCustomer =
-                                    ApplicationFactory.createCompanyCustomer(name = " ")
-                            )
-                )
-
-            assertFailure { applicationValidator.isValid(application, null) }
-                .hasClass(InvalidApplicationDataException::class)
-        }
-
-        @Test
-        fun `invoicingCustomer can be null`() {
-            val application =
-                ApplicationFactory.createApplication(
-                    applicationData =
-                        ApplicationFactory.createCableReportApplicationData()
-                            .copy(invoicingCustomer = null)
-                )
-
-            assertThat(applicationValidator.isValid(application, null)).isTrue()
-        }
     }
 
     @Nested
@@ -348,9 +319,6 @@ class ApplicationValidatorTest {
                 Arguments.of("name", baseCustomer.copy(name = content)),
                 Arguments.of("email", baseCustomer.copy(email = content)),
                 Arguments.of("phone", baseCustomer.copy(phone = content)),
-                Arguments.of("ovt", baseCustomer.copy(ovt = content)),
-                Arguments.of("invoicingOperator", baseCustomer.copy(invoicingOperator = content)),
-                Arguments.of("sapCustomerNumber", baseCustomer.copy(sapCustomerNumber = content)),
             )
 
         private fun justWhitespaceCases(): Stream<Arguments> = notJustWhitespaceCases(" ")
@@ -388,45 +356,6 @@ class ApplicationValidatorTest {
                 ApplicationFactory.createApplication().withCustomer(customer.withContacts())
 
             assertThat(applicationValidator.isValid(application, null)).isTrue()
-        }
-
-        @Test
-        fun `country can't be free text`() {
-            val application =
-                ApplicationFactory.createApplication()
-                    .withCustomer(baseCustomer.copy(country = "Some country").withContacts())
-
-            assertFailure { applicationValidator.isValid(application, null) }
-                .hasClass(InvalidApplicationDataException::class)
-        }
-
-        @Test
-        fun `country can be two-letter country code`() {
-            val application =
-                ApplicationFactory.createApplication()
-                    .withCustomer(baseCustomer.copy(country = "FI").withContacts())
-
-            assertThat(applicationValidator.isValid(application, null)).isTrue()
-        }
-
-        @Test
-        fun `country is case-sensitive`() {
-            val application =
-                ApplicationFactory.createApplication()
-                    .withCustomer(baseCustomer.copy(country = "fi").withContacts())
-
-            assertFailure { applicationValidator.isValid(application, null) }
-                .hasClass(InvalidApplicationDataException::class)
-        }
-
-        @Test
-        fun `country can't be three-letter country code`() {
-            val application =
-                ApplicationFactory.createApplication()
-                    .withCustomer(baseCustomer.copy(country = "FIN").withContacts())
-
-            assertFailure { applicationValidator.isValid(application, null) }
-                .hasClass(InvalidApplicationDataException::class)
         }
 
         @Test

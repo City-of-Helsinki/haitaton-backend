@@ -8,16 +8,20 @@ import fi.hel.haitaton.hanke.attachment.hanke.HankeAttachmentService
 import fi.hel.haitaton.hanke.domain.CreateHankeRequest
 import fi.hel.haitaton.hanke.domain.Hanke
 import fi.hel.haitaton.hanke.domain.HankePerustaja
+import fi.hel.haitaton.hanke.domain.HankeRequest
 import fi.hel.haitaton.hanke.domain.HankeStatus
-import fi.hel.haitaton.hanke.domain.HankeYhteystieto
 import fi.hel.haitaton.hanke.domain.Hankealue
-import fi.hel.haitaton.hanke.domain.HasYhteystiedot
+import fi.hel.haitaton.hanke.domain.ModifyHankeRequest
+import fi.hel.haitaton.hanke.domain.ModifyHankeYhteystietoRequest
 import fi.hel.haitaton.hanke.domain.Yhteystieto
+import fi.hel.haitaton.hanke.hakemus.Hakemus
+import fi.hel.haitaton.hanke.hakemus.HakemusService
 import fi.hel.haitaton.hanke.logging.HankeLoggingService
 import fi.hel.haitaton.hanke.logging.Operation
 import fi.hel.haitaton.hanke.logging.YhteystietoLoggingEntryHolder
 import fi.hel.haitaton.hanke.permissions.HankeKayttajaService
 import fi.hel.haitaton.hanke.validation.HankePublicValidator
+import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.security.core.context.SecurityContext
@@ -33,6 +37,7 @@ class HankeService(
     private val hankealueService: HankealueService,
     private val hankeLoggingService: HankeLoggingService,
     private val applicationService: ApplicationService,
+    private val hakemusService: HakemusService,
     private val hankeKayttajaService: HankeKayttajaService,
     private val hankeAttachmentService: HankeAttachmentService,
 ) {
@@ -40,6 +45,9 @@ class HankeService(
     @Transactional(readOnly = true)
     fun findIdentifier(hankeTunnus: String): HankeIdentifier? =
         hankeRepository.findOneByHankeTunnus(hankeTunnus)
+
+    @Transactional(readOnly = true)
+    fun findIdentifier(hankeId: Int): HankeIdentifier? = hankeRepository.findOneById(hankeId)
 
     @Transactional(readOnly = true)
     fun getHankeApplications(hankeTunnus: String): List<Application> =
@@ -93,14 +101,29 @@ class HankeService(
         )
     }
 
+    /**
+     * Create application when no existing hanke. Autogenerates hanke and applies application to it.
+     */
     @Transactional
-    fun updateHanke(hanke: Hanke): Hanke {
+    fun generateHankeWithJohtoselvityshakemus(
+        request: CreateHankeRequest,
+        securityContext: SecurityContext,
+    ): Hakemus {
+        logger.info { "Creating a Hanke for a stand-alone cable report." }
+        val hanke = createNewEntity(limitHankeName(request.nimi), true, securityContext.userId())
+        saveCreatedHanke(hanke, request.perustaja, securityContext)
+        logger.info { "Creating the stand-alone johtoselvityshakemus." }
+        return hakemusService.createJohtoselvitys(hanke, securityContext.userId())
+    }
+
+    @Transactional
+    fun updateHanke(hankeTunnus: String, hanke: ModifyHankeRequest): Hanke {
         val userId = currentUserId()
 
         // Both checks that the hanke already exists, and get its old fields to transfer data into
         val entity =
-            hankeRepository.findByHankeTunnus(hanke.hankeTunnus)
-                ?: throw HankeNotFoundException(hanke.hankeTunnus)
+            hankeRepository.findByHankeTunnus(hankeTunnus)
+                ?: throw HankeNotFoundException(hankeTunnus)
 
         val hankeBeforeUpdate = createHankeDomainObjectFromEntity(entity)
 
@@ -108,10 +131,11 @@ class HankeService(
         checkAndHandleDataProcessingRestrictions(hanke, entity, existingYTs, userId)
 
         val loggingEntryHolder = prepareLogging(entity)
-        // Transfer field values from domain object to entity object, and set relevant audit fields:
-        copyNonNullHankeFieldsToEntity(hanke, entity)
+        // Transfer field values from request object to entity object
+        updateEntityFieldsFromRequest(hanke, entity)
         copyYhteystietosToEntity(hanke, entity, userId, loggingEntryHolder, existingYTs)
 
+        // Set relevant audit fields:
         // NOTE: flags are NOT copied from incoming data, as they are set by internal logic.
         // Special fields; handled "manually"..
         entity.version = entity.version?.inc() ?: 1
@@ -123,10 +147,9 @@ class HankeService(
         calculateTormaystarkastelu(hanke.alueet, entity.alueet.geometriaIds(), entity)
         entity.status = decideNewHankeStatus(entity)
 
-        // Save changes:
-        logger.debug { "Saving Hanke ${hanke.hankeTunnus}: ${hanke.toLogString()}" }
+        logger.debug { "Saving Hanke ${entity.logString()}." }
         val savedHankeEntity = hankeRepository.save(entity)
-        logger.debug { "Saved Hanke ${hanke.hankeTunnus}." }
+        logger.debug { "Saved Hanke ${entity.logString()}." }
 
         postProcessAndSaveLogging(loggingEntryHolder, savedHankeEntity, userId)
 
@@ -146,9 +169,7 @@ class HankeService(
             )
         }
 
-        hakemukset.forEach { hakemus ->
-            hakemus.id?.let { id -> applicationService.delete(id, userId) }
-        }
+        hakemukset.forEach { hakemus -> applicationService.delete(hakemus.id, userId) }
 
         hankeAttachmentService.deleteAllAttachments(hanke)
 
@@ -226,7 +247,7 @@ class HankeService(
      * entry info could be misleading for other uses.
      */
     private fun checkAndHandleDataProcessingRestrictions(
-        incomingHanke: Hanke,
+        incomingHanke: HankeRequest,
         persistedEntity: HankeEntity,
         existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
         userid: String
@@ -257,20 +278,12 @@ class HankeService(
         // A temporary copy, so that we can remove handled entries from it, leaving
         // certain deleted entries as remainder:
         val tempLockedExistingYts = lockedExistingYTs.toMutableMap()
-        listOf(
-                incomingHanke.omistajat,
-                incomingHanke.rakennuttajat,
-                incomingHanke.toteuttajat,
-                incomingHanke.muut
-            )
-            .forEach { yhteystiedot ->
-                findAndLogAffectedBlockedYhteystietos(
-                    yhteystiedot,
-                    tempLockedExistingYts,
-                    loggingEntryHolderForRestrictedActions,
-                    userid
-                )
-            }
+        findAndLogAffectedBlockedYhteystietos(
+            incomingHanke.extractYhteystiedot(),
+            tempLockedExistingYts,
+            loggingEntryHolderForRestrictedActions,
+            userid
+        )
 
         // If no entries were blocked, and there is nothing left in the tempLockedExistingYts, all
         // clear to proceed:
@@ -298,7 +311,9 @@ class HankeService(
             )
         }
         logger.warn {
-            "Hanke update with actions on processing restricted data, saving details to audit and change logs. Hanke id ${incomingHanke.id} will be left unchanged"
+            "Hanke update with actions on processing restricted data, " +
+                "saving details to audit and change logs. " +
+                "Hanke will be left unchanged. ${persistedEntity.logString()}"
         }
         // This will throw exception (after saving the entries) and prevents
         // the Hanke update from continuing to actual changes to it.
@@ -306,7 +321,7 @@ class HankeService(
     }
 
     private fun findAndLogAffectedBlockedYhteystietos(
-        incomingYts: List<HankeYhteystieto>,
+        incomingYts: List<Yhteystieto>,
         tempLockedExistingYts: MutableMap<Int, HankeYhteystietoEntity>,
         loggingEntryHolderForRestrictedActions: YhteystietoLoggingEntryHolder,
         userid: String
@@ -349,21 +364,16 @@ class HankeService(
         }
     }
 
-    /**
-     * Does NOT copy the id and hankeTunnus fields because one is supposed to find the HankeEntity
-     * instance from the database with those values, and after that, the values are filled by the
-     * database and should not be changed. Also, version, createdByUserId, createdAt,
-     * modifiedByUserId, modifiedAt, version are not set here, as they are to be set internally, and
-     * depends on which operation is being done.
-     */
-    private fun copyNonNullHankeFieldsToEntity(hanke: Hanke, entity: HankeEntity) {
-        hanke.onYKTHanke?.let { entity.onYKTHanke = hanke.onYKTHanke }
+    private fun updateEntityFieldsFromRequest(hanke: ModifyHankeRequest, entity: HankeEntity) {
+        entity.onYKTHanke = hanke.onYKTHanke
         entity.nimi = hanke.nimi
-        hanke.kuvaus?.let { entity.kuvaus = hanke.kuvaus }
-        entity.generated = hanke.generated
-        hanke.vaihe?.let { entity.vaihe = hanke.vaihe }
-        hanke.tyomaaKatuosoite?.let { entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite }
-        entity.tyomaaTyyppi = hanke.tyomaaTyyppi
+        entity.kuvaus = hanke.kuvaus
+        entity.vaihe = hanke.vaihe
+        entity.tyomaaKatuosoite = hanke.tyomaaKatuosoite
+        val newTyyppi = hanke.tyomaaTyyppi.minus(entity.tyomaaTyyppi)
+        val removedTyyppi = entity.tyomaaTyyppi.minus(hanke.tyomaaTyyppi)
+        entity.tyomaaTyyppi.removeAll(removedTyyppi)
+        entity.tyomaaTyyppi.addAll(newTyyppi)
 
         hankealueService.mergeAlueetToHanke(hanke.alueet, entity)
     }
@@ -378,21 +388,12 @@ class HankeService(
     private fun prepareMapOfExistingYhteystietos(
         hankeEntity: HankeEntity
     ): MutableMap<Int, HankeYhteystietoEntity> {
-        // Create temporary id-to-existingyhteystieto -map, used to find quickly whether an incoming
-        // Yhteystieto is new or exists already.
-        // YT = Yhteystieto
-        val existingYTs: MutableMap<Int, HankeYhteystietoEntity> = mutableMapOf()
-        for (existingYT in hankeEntity.listOfHankeYhteystieto) {
-            val ytid = existingYT.id
-            if (ytid == null) {
-                throw DatabaseStateException(
-                    "A persisted HankeYhteystietoEntity somehow missing id, Hanke id ${hankeEntity.id}"
-                )
-            } else {
-                existingYTs[ytid] = existingYT
-            }
+        if (hankeEntity.yhteystiedot.any { it.id == null }) {
+            throw DatabaseStateException(
+                "A persisted HankeYhteystietoEntity somehow missing id, Hanke id ${hankeEntity.id}"
+            )
         }
-        return existingYTs
+        return hankeEntity.yhteystiedot.associateBy { it.id!! }.toMutableMap()
     }
 
     /**
@@ -400,7 +401,7 @@ class HankeService(
      * three lists into one list, and sets the audit fields as relevant.
      */
     private fun copyYhteystietosToEntity(
-        hanke: HasYhteystiedot,
+        hanke: ModifyHankeRequest,
         entity: HankeEntity,
         userid: String,
         loggingEntryHolder: YhteystietoLoggingEntryHolder,
@@ -412,8 +413,6 @@ class HankeService(
         // having to rely on the client-side to hold the values for us (bad design), which would
         // also require checks on those (to prevent tampering).
 
-        // Check each incoming yhteystieto (from three lists) for being new or an update to existing
-        // one, and add to the main entity's single list if necessary:
         hanke.yhteystiedotByType().forEach { (type, yhteystiedot) ->
             processIncomingHankeYhteystietosOfSpecificTypeToEntity(
                 yhteystiedot,
@@ -425,19 +424,6 @@ class HankeService(
             )
         }
 
-        // TODO: this method of removing entries if they are missing in the incoming data is
-        //  different to behavior of the other simpler fields, where missing or null field is
-        //  considered "keep the existing value, and return it back in response". However, those
-        //  simpler fields can not be removed as a whole, so they _can_ behave so. For clarity,
-        //  yhteystieto-entries should have separate operation for removal (but then they should
-        //  also have separate operation for addition, i.e. own API endpoint in controller). So,
-        //  consider the code below as "for now".
-        //
-        // TODO: Yhteystietos should not be in a list, but a "bag", or ensure it is e.g. linked list
-        //  instead of arraylist (or similar). The order of Yhteystietos does not matter(?), and
-        //  removing things from e.g. array list gets inefficient. Since there are so few entries,
-        //  this crude solution works, for now.
-        //
         // If there is anything left in the existingYTs map, they have been removed in the incoming
         // data, so remove them from the entity's list and make the back-reference null (and thus
         // delete from the database).
@@ -453,31 +439,14 @@ class HankeService(
     }
 
     private fun processIncomingHankeYhteystietosOfSpecificTypeToEntity(
-        listOfHankeYhteystiedot: List<Yhteystieto>,
+        yhteystiedot: List<ModifyHankeYhteystietoRequest>,
         hankeEntity: HankeEntity,
         contactType: ContactType,
         userid: String,
         existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
         loggingEntryHolder: YhteystietoLoggingEntryHolder
     ) {
-        for (hankeYht in listOfHankeYhteystiedot) {
-            val someFieldsSet = hankeYht.isAnyFieldSet()
-            var validYhteystieto = false
-            // TODO: yhteystieto validation is as of now a mess, due to multiple reasons.
-            //   Just rethink it all everywhere before trying to implement something..
-            //
-            // The UI has currently bigger problems implementing it so that Yhteystieto entries that
-            // haven't even been touched would not be sent to backend as a group of ""-fields, so
-            // the condition here is to make such fully-empty entry considered as non-existent (i.e.
-            // skip it).
-            //
-            // If any field is given (not empty and not only whitespace)...
-            if (someFieldsSet) {
-                validYhteystieto = hankeYht.isAnyFieldSet()
-                // Check if at least the 4 mandatory fields are given
-                // validYhteystieto = hankeYht.isValid()
-            }
-
+        for (hankeYht in yhteystiedot) {
             // Is the incoming Yhteystieto new (does not have id, create new) or old (has id, update
             // existing)?
             if (hankeYht.id == null) {
@@ -485,20 +454,12 @@ class HankeService(
                 // Note: don't need to (and can not) create audit-log entries during this create
                 // processing; they are done later, after the whole hanke has been saved and new
                 // yhteystietos got their db-ids.
-                processCreateYhteystieto(
-                    hankeYht,
-                    validYhteystieto,
-                    contactType,
-                    userid,
-                    hankeEntity
-                )
+                processCreateYhteystieto(hankeYht, contactType, userid, hankeEntity)
             } else {
                 // Should be an existing Yhteystieto
                 processUpdateYhteystieto(
                     hankeYht,
                     existingYTs,
-                    someFieldsSet,
-                    validYhteystieto,
                     userid,
                     hankeEntity,
                     loggingEntryHolder
@@ -508,91 +469,97 @@ class HankeService(
     }
 
     private fun processCreateYhteystieto(
-        hankeYht: Yhteystieto,
-        validYhteystieto: Boolean,
+        hankeYht: ModifyHankeYhteystietoRequest,
         contactType: ContactType,
         userid: String,
         hankeEntity: HankeEntity
     ) {
-        if (validYhteystieto) {
-            // ... it is valid, so create a new Yhteystieto
-            val hankeYhtEntity =
-                HankeYhteystietoEntity.fromDomain(hankeYht, contactType, userid, hankeEntity)
-            hankeEntity.addYhteystieto(hankeYhtEntity)
-            // Logging of creating new yhteystietos is done after the hanke gets saved.
-        } else {
-            // ... missing some mandatory fields, should not have gotten here. Log it and skip it.
-            logger.error {
-                "Got a new Yhteystieto object with one or more empty mandatory fields, skipping it. HankeId ${hankeEntity.id}"
-            }
+        val hankeYhtEntity =
+            HankeYhteystietoEntity.fromDomain(hankeYht, contactType, userid, hankeEntity)
+        hankeYht.yhteyshenkilot.forEach { kayttajaId ->
+            addYhteyshenkilo(kayttajaId, hankeEntity.id, hankeYhtEntity)
         }
+        hankeEntity.addYhteystieto(hankeYhtEntity)
+        // Logging of creating new yhteystietos is done after the hanke gets saved.
     }
 
     /** Incoming contact update must exist in previously saved contacts. */
     private fun processUpdateYhteystieto(
-        hankeYht: Yhteystieto,
+        request: ModifyHankeYhteystietoRequest,
         existingYTs: MutableMap<Int, HankeYhteystietoEntity>,
-        someFieldsSet: Boolean,
-        validYhteystieto: Boolean,
         userid: String,
-        hankeEntity: HankeEntity,
+        hanke: HankeIdentifier,
         loggingEntryHolder: YhteystietoLoggingEntryHolder
     ) {
-        val incomingId: Int = hankeYht.id!!
+        val incomingId: Int = request.id!!
         val existingYT: HankeYhteystietoEntity =
-            existingYTs[incomingId]
-                ?: throw HankeYhteystietoNotFoundException(hankeEntity.id, incomingId)
+            existingYTs[incomingId] ?: throw HankeYhteystietoNotFoundException(hanke, incomingId)
 
-        if (validYhteystieto) {
-            // Check if anything actually changed (UI can send all data as is on every request)
-            if (!areEqualIncomingVsExistingYhteystietos(hankeYht, existingYT)) {
-                // Record old data as JSON for change logging (and id for other purposes)
-                val previousEntityData = existingYT.cloneWithMainFields()
-                previousEntityData.id = existingYT.id
+        // Check if anything actually changed (UI can send all data as is on every request)
+        if (!areEqualIncomingVsExistingYhteystietos(request, existingYT)) {
+            // Record old data as JSON for change logging (and id for other purposes)
+            val previousEntityData = existingYT.cloneWithMainFields()
+            previousEntityData.id = existingYT.id
 
-                existingYT.nimi = hankeYht.nimi
-                existingYT.email = hankeYht.email
-                existingYT.ytunnus = hankeYht.ytunnus
-                existingYT.puhelinnumero = hankeYht.puhelinnumero
-                hankeYht.organisaatioNimi?.let {
-                    existingYT.organisaatioNimi = hankeYht.organisaatioNimi
-                }
-                hankeYht.osasto?.let { existingYT.osasto = hankeYht.osasto }
+            existingYT.nimi = request.nimi
+            existingYT.email = request.email
+            existingYT.ytunnus = request.ytunnus
+            existingYT.puhelinnumero = request.puhelinnumero
+            request.organisaatioNimi?.let { existingYT.organisaatioNimi = request.organisaatioNimi }
+            request.osasto?.let { existingYT.osasto = request.osasto }
 
-                // (Not changing createdBy/At fields)
-                existingYT.modifiedByUserId = userid
-                existingYT.modifiedAt = getCurrentTimeUTCAsLocalTime()
-                // (Not touching the id or hanke fields)
+            // (Not changing createdBy/At fields)
+            existingYT.modifiedByUserId = userid
+            existingYT.modifiedAt = getCurrentTimeUTCAsLocalTime()
+            // (Not touching the id or hanke fields)
 
-                loggingEntryHolder.addLogEntriesForEvent(
-                    operation = Operation.UPDATE,
-                    oldEntity = previousEntityData,
-                    newEntity = existingYT,
-                    userId = userid,
-                )
-            }
-
-            // No need to add the existing Yhteystieto entity to the hanke's list; it is already in
-            // it.
-            //
-            // Remove the corresponding entry from the map. (Afterwards, the entries remaining in
-            // the map were not in the incoming data, so should be removed from the database.)
-            existingYTs.remove(incomingId)
-        } else {
-            // Trying to update an Yhteystieto with one or more empty mandatory data fields. If we
-            // do not change anything, the response will send back to previous stored values.
-            // However, checking one special case; all fields being empty. This corresponds to
-            // initial state, where the corresponding Yhteystieto is not set. Therefore, for now,
-            // considering it as "please delete". (Handling it by reversed logic using the
-            // existingYTs map, see the comment above in the do-update -case.)
-            if (someFieldsSet) {
-                logger.error {
-                    "Got a new Yhteystieto object with one or more empty mandatory fields, skipping it. HankeId ${hankeEntity.id}"
-                }
-                existingYTs.remove(incomingId)
-            }
-            // If the entry was left in the existingYTs, it will get deleted.
+            loggingEntryHolder.addLogEntriesForEvent(
+                operation = Operation.UPDATE,
+                oldEntity = previousEntityData,
+                newEntity = existingYT,
+                userId = userid,
+            )
         }
+
+        val existingKayttajaIds = existingYT.yhteyshenkilot.map { it.hankeKayttaja.id }
+        val kayttajatToAdd = request.yhteyshenkilot.filterNot { existingKayttajaIds.contains(it) }
+        val kayttajatToRemove =
+            existingYT.yhteyshenkilot.filterNot {
+                request.yhteyshenkilot.contains(it.hankeKayttaja.id)
+            }
+
+        logger.info {
+            "Add new yhteyshenkilot to yhteystieto ${existingYT.id} for hankekayttajat $kayttajatToAdd"
+        }
+        kayttajatToAdd.forEach { addYhteyshenkilo(it, hanke.id, existingYT) }
+        logger.info {
+            "Remove yhteyshenkilot from yhteystieto ${existingYT.id} for hankekayttajat $kayttajatToRemove"
+        }
+        kayttajatToRemove.forEach { removeYhteyshenkilo(it, existingYT) }
+
+        // Remove the corresponding entry from the map. (Afterward, the entries remaining in
+        // the map were not in the incoming data, so should be removed from the database.)
+        existingYTs.remove(incomingId)
+    }
+
+    private fun addYhteyshenkilo(
+        kayttajaId: UUID,
+        hankeId: Int,
+        hankeYhtEntity: HankeYhteystietoEntity,
+    ) {
+        val kayttaja = hankeKayttajaService.getKayttajaForHanke(kayttajaId, hankeId)
+        val yhteyshenkilo =
+            HankeYhteyshenkiloEntity(hankeKayttaja = kayttaja, hankeYhteystieto = hankeYhtEntity)
+        hankeYhtEntity.yhteyshenkilot.add(yhteyshenkilo)
+    }
+
+    private fun removeYhteyshenkilo(
+        yhteyshenkilo: HankeYhteyshenkiloEntity,
+        existingYT: HankeYhteystietoEntity,
+    ) {
+        val kayttaja = yhteyshenkilo.hankeKayttaja
+        kayttaja.yhteyshenkilot.remove(yhteyshenkilo)
+        existingYT.yhteyshenkilot.remove(yhteyshenkilo)
     }
 
     private fun areEqualIncomingVsExistingYhteystietos(
@@ -613,7 +580,7 @@ class HankeService(
      */
     private fun prepareLogging(entity: HankeEntity): YhteystietoLoggingEntryHolder {
         val loggingEntryHolder = YhteystietoLoggingEntryHolder()
-        loggingEntryHolder.initWithOldYhteystietos(entity.listOfHankeYhteystieto)
+        loggingEntryHolder.initWithOldYhteystietos(entity.yhteystiedot)
         return loggingEntryHolder
     }
 
@@ -644,15 +611,12 @@ class HankeService(
         savedHankeEntity: HankeEntity,
         userid: String
     ) {
-        // It would be possible to process all operation types the same way afterwards like for
+        // It would be possible to process all operation types the same way afterward like for
         // creating new yhteystietos, but that would cause some (relatively) minor extra work, and,
         // the proper solution would be to handle personal data access in its own separate service
         // and do the logging there independently... So, the current way of doing things should be
         // good enough for now.
-        loggingEntryHolder.addLogEntriesForNewYhteystietos(
-            savedHankeEntity.listOfHankeYhteystieto,
-            userid
-        )
+        loggingEntryHolder.addLogEntriesForNewYhteystietos(savedHankeEntity.yhteystiedot, userid)
         loggingEntryHolder.saveLogEntries(hankeLoggingService)
     }
 

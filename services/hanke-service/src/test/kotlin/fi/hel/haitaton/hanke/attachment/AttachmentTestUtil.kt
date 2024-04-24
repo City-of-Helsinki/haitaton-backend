@@ -15,7 +15,6 @@ import org.springframework.security.test.web.servlet.response.SecurityMockMvcRes
 import org.springframework.test.web.servlet.ResultActions
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-const val USERNAME = "username"
 const val FILE_NAME_PDF = "file.pdf"
 const val FILE_PARAM = "liite"
 const val HANKE_TUNNUS = "HAI-1234"

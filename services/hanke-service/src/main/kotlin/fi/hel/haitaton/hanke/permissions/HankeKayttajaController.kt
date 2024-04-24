@@ -4,18 +4,23 @@ import fi.hel.haitaton.hanke.HankeError
 import fi.hel.haitaton.hanke.HankeService
 import fi.hel.haitaton.hanke.currentUserId
 import fi.hel.haitaton.hanke.logging.DisclosureLogService
-import fi.hel.haitaton.hanke.validation.ValidHanke
+import fi.hel.haitaton.hanke.profiili.VerifiedNameNotFound
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import jakarta.validation.Valid
 import java.util.UUID
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.annotation.CurrentSecurityContext
+import org.springframework.security.core.context.SecurityContext
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -32,6 +37,7 @@ private val logger = KotlinLogging.logger {}
 class HankeKayttajaController(
     private val hankeService: HankeService,
     private val hankeKayttajaService: HankeKayttajaService,
+    private val hankekayttajaDeleteService: HankekayttajaDeleteService,
     private val permissionService: PermissionService,
     private val disclosureLogService: DisclosureLogService,
 ) {
@@ -107,7 +113,7 @@ class HankeKayttajaController(
     )
     @PreAuthorize("@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'VIEW')")
     fun getHankeKayttaja(@PathVariable kayttajaId: UUID): HankeKayttajaDto =
-        hankeKayttajaService.getKayttaja(kayttajaId).also {
+        hankeKayttajaService.getKayttaja(kayttajaId).toDto().also {
             disclosureLogService.saveDisclosureLogsForHankeKayttaja(it, currentUserId())
         }
 
@@ -171,7 +177,7 @@ class HankeKayttajaController(
             "@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'CREATE_USER')"
     )
     fun createNewUser(
-        @ValidHanke @RequestBody request: NewUserRequest,
+        @RequestBody request: NewUserRequest,
         @PathVariable hankeTunnus: String
     ): HankeKayttajaDto {
         val hanke = hankeService.loadHanke(hankeTunnus)!!
@@ -233,7 +239,7 @@ have those same permissions.
             "@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'MODIFY_EDIT_PERMISSIONS')"
     )
     fun updatePermissions(
-        @ValidHanke @RequestBody permissions: PermissionUpdate,
+        @RequestBody permissions: PermissionUpdate,
         @PathVariable hankeTunnus: String
     ) {
         val hankeIdentifier = hankeService.findIdentifier(hankeTunnus)!!
@@ -282,7 +288,8 @@ Responds with information about the activated user and the hanke associated with
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
                 ApiResponse(
-                    description = "Token doesn't have a user associated with it",
+                    description =
+                        "Token doesn't have a user associated with it or the verified name cannot be retrieved from Profiili",
                     responseCode = "500",
                     content = [Content(schema = Schema(implementation = HankeError::class))]
                 ),
@@ -293,11 +300,15 @@ Responds with information about the activated user and the hanke associated with
                 ),
             ]
     )
-    fun identifyUser(@RequestBody tunnistautuminen: Tunnistautuminen): TunnistautuminenResponse {
+    fun identifyUser(
+        @RequestBody tunnistautuminen: Tunnistautuminen,
+        @Parameter(hidden = true) @CurrentSecurityContext securityContext: SecurityContext
+    ): TunnistautuminenResponse {
         val kayttaja =
             hankeKayttajaService.createPermissionFromToken(
                 currentUserId(),
-                tunnistautuminen.tunniste
+                tunnistautuminen.tunniste,
+                securityContext
             )
 
         val hanke = hankeService.loadHankeById(kayttaja.hankeId)!!
@@ -343,6 +354,172 @@ of the token and link will be reset.
     )
     fun resendInvitations(@PathVariable kayttajaId: UUID) {
         hankeKayttajaService.resendInvitation(kayttajaId, currentUserId())
+    }
+
+    @PutMapping("/hankkeet/{hankeTunnus}/kayttajat/self")
+    @Operation(
+        summary = "Update the user's own contact information",
+        description =
+            """
+Updates the contact information of the hankekayttaja the user has in the hanke.
+
+The sahkoposti and puhelinnumero are mandatory and can't be empty or blank.
+
+Returns the updated hankekayttaja.
+"""
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Information updated",
+                    responseCode = "200",
+                ),
+                ApiResponse(
+                    description = "Email or telephone number is missing",
+                    responseCode = "400",
+                ),
+                ApiResponse(
+                    description = "Hanke not found or not authorized",
+                    responseCode = "404",
+                ),
+            ]
+    )
+    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'VIEW')")
+    fun updateOwnContactInfo(
+        @Valid @RequestBody update: ContactUpdate,
+        @PathVariable hankeTunnus: String
+    ): HankeKayttajaDto {
+        return hankeKayttajaService
+            .updateOwnContactInfo(hankeTunnus, update, currentUserId())
+            .toDto()
+    }
+
+    @PutMapping("/hankkeet/{hankeTunnus}/kayttajat/{kayttajaId}")
+    @Operation(
+        summary = "Update the contact information of a user",
+        description =
+            """
+Updates the contact and (optionally) name information of the hankekayttaja.
+
+Returns the updated hankekayttaja.
+"""
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Information updated",
+                    responseCode = "200",
+                ),
+                ApiResponse(
+                    description = "Email or telephone number is missing",
+                    responseCode = "400",
+                ),
+                ApiResponse(
+                    description = "Hanke not found or not authorized or user is not in hanke",
+                    responseCode = "404",
+                ),
+                ApiResponse(
+                    description =
+                        "User has already been activated and therefore cannot update name",
+                    responseCode = "409",
+                ),
+            ]
+    )
+    @PreAuthorize("@hankeKayttajaAuthorizer.authorizeHankeTunnus(#hankeTunnus, 'MODIFY_USER')")
+    fun updateKayttajaInfo(
+        @RequestBody @Valid update: KayttajaUpdate,
+        @PathVariable hankeTunnus: String,
+        @PathVariable kayttajaId: UUID
+    ): HankeKayttajaDto {
+        return hankeKayttajaService.updateKayttajaInfo(hankeTunnus, update, kayttajaId).toDto()
+    }
+
+    @GetMapping("/kayttajat/{kayttajaId}/deleteInfo")
+    @Operation(
+        summary = "Check if user can be deleted",
+        description =
+            """
+Check if there are active applications the user is a contact in that would
+prevent their deletion. Deleting would also be prevented if the user is the only
+contact in the applicant customer role, so check that as well.
+
+Also, collect draft applications the user is a contact in, since the frontend
+needs to show them when asking for confirmation.
+
+Does not check if the caller needs KAIKKI_OIKEUDET to delete this particular
+user.
+"""
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "Return the results",
+                    responseCode = "200",
+                ),
+                ApiResponse(
+                    description = "kayttajaId is not a proper UUID",
+                    responseCode = "400",
+                ),
+                ApiResponse(
+                    description = "Hankekayttaja not found or not authorized",
+                    responseCode = "404",
+                ),
+            ]
+    )
+    @PreAuthorize(
+        "@featureService.isEnabled('USER_MANAGEMENT') && " +
+            "@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'DELETE_USER')"
+    )
+    fun checkForDelete(@PathVariable kayttajaId: UUID): HankekayttajaDeleteService.DeleteInfo =
+        hankekayttajaDeleteService.checkForDelete(kayttajaId)
+
+    @Operation(
+        summary = "Delete the user",
+        description =
+            """
+Deletes the given hankekayttaja (user) from the hanke.
+
+Check if there are active applications the user is a contact in or if the user is the only
+contact in the applicant customer role. If either is true, refuse to delete the kayttaja.
+"""
+    )
+    @ApiResponses(
+        value =
+            [
+                ApiResponse(
+                    description = "User deleted. No body.",
+                    responseCode = "204",
+                ),
+                ApiResponse(
+                    description = "kayttajaId is not a proper UUID.",
+                    responseCode = "400",
+                ),
+                ApiResponse(
+                    description = "Hankekayttaja not found or not authorized.",
+                    responseCode = "404",
+                ),
+                ApiResponse(
+                    description =
+                        "Hankekayttaja is a contact on an active application or " +
+                            "the only contact in the applicant customer role or " +
+                            "there would be no admin users left.",
+                    responseCode = "409",
+                ),
+            ]
+    )
+    @DeleteMapping("/kayttajat/{kayttajaId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize(
+        "@featureService.isEnabled('USER_MANAGEMENT') && " +
+            "@hankeKayttajaAuthorizer.authorizeKayttajaId(#kayttajaId, 'DELETE_USER')"
+    )
+    fun delete(@PathVariable kayttajaId: UUID) {
+        logger.info { "Deleting kayttaja $kayttajaId" }
+        hankekayttajaDeleteService.delete(kayttajaId, currentUserId())
+        logger.info { "Deleted kayttaja $kayttajaId" }
     }
 
     data class Tunnistautuminen(val tunniste: String)
@@ -412,6 +589,14 @@ of the token and link will be reset.
     }
 
     @ExceptionHandler
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @Hidden
+    fun verifiedNameNotFoundException(ex: VerifiedNameNotFound): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4007
+    }
+
+    @ExceptionHandler
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden
     fun userAlreadyHasPermissionException(ex: UserAlreadyHasPermissionException): HankeError {
@@ -439,6 +624,22 @@ of the token and link will be reset.
     @ResponseStatus(HttpStatus.CONFLICT)
     @Hidden
     fun currentUserWithoutKayttajaException(ex: CurrentUserWithoutKayttajaException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4003
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun onlyOmistajaContactException(ex: OnlyOmistajaContactException): HankeError {
+        logger.warn(ex) { ex.message }
+        return HankeError.HAI4003
+    }
+
+    @ExceptionHandler
+    @ResponseStatus(HttpStatus.CONFLICT)
+    @Hidden
+    fun hasActiveApplicationsException(ex: HasActiveApplicationsException): HankeError {
         logger.warn(ex) { ex.message }
         return HankeError.HAI4003
     }
