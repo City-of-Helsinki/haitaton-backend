@@ -72,10 +72,12 @@ class HakemusFactory(
         userId: String = USERNAME,
         nimi: String = ApplicationFactory.DEFAULT_APPLICATION_NAME,
         perustaja: HankePerustaja = HankeFactory.DEFAULT_HANKE_PERUSTAJA,
+        tyyppi: ApplicationType = ApplicationType.CABLE_REPORT,
     ): HakemusBuilder {
         val request = CreateHankeRequest(nimi, perustaja)
         val hankeEntity = hankeFactory.saveGenerated(request, userId)
-        val applicationEntity = createEntity(userId = userId, hanke = hankeEntity)
+        val applicationEntity =
+            createEntity(userId = userId, hanke = hankeEntity, applicationType = tyyppi)
 
         return builder(userId, applicationEntity, hankeEntity.id)
     }

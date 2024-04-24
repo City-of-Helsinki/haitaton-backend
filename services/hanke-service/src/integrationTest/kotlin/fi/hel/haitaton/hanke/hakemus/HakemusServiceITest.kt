@@ -25,6 +25,7 @@ import assertk.assertions.single
 import com.icegreen.greenmail.configuration.GreenMailConfiguration
 import com.icegreen.greenmail.junit5.GreenMailExtension
 import com.icegreen.greenmail.util.ServerSetupTest
+import fi.hel.haitaton.hanke.HankeEntity
 import fi.hel.haitaton.hanke.HankeNotFoundException
 import fi.hel.haitaton.hanke.HankeRepository
 import fi.hel.haitaton.hanke.IntegrationTest
@@ -74,6 +75,7 @@ import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withAreas
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withContractor
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomer
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withCustomerWithContactsRequest
+import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withName
 import fi.hel.haitaton.hanke.factory.HakemusUpdateRequestFactory.withWorkDescription
 import fi.hel.haitaton.hanke.factory.HakemusyhteystietoFactory
 import fi.hel.haitaton.hanke.factory.HankeFactory
@@ -365,7 +367,7 @@ class HakemusServiceITest(
 
             abstract fun Assert<Hakemus>.matchesRequest(hankeTunnus: String)
 
-            fun CreateHakemusRequest.withHanketunnus(hanketunnus: String) =
+            private fun CreateHakemusRequest.withHanketunnus(hanketunnus: String) =
                 when (this) {
                     is CreateJohtoselvityshakemusRequest -> copy(hankeTunnus = hanketunnus)
                     is CreateKaivuilmoitusRequest -> copy(hankeTunnus = hanketunnus)
@@ -906,6 +908,19 @@ class HakemusServiceITest(
                         "laatimassa johtoselvityshakemusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})"
                     )
             }
+
+            @Test
+            fun `updates project name when application name is changed`() {
+                val entity = hakemusFactory.builderWithGeneratedHanke().saveEntity()
+                val hakemus = hakemusService.hakemusResponse(entity.id)
+                val request = hakemus.toUpdateRequest().withName("New name")
+
+                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+                assertThat(hankeRepository.findAll().single()).all {
+                    prop(HankeEntity::nimi).isEqualTo("New name")
+                }
+            }
         }
 
         @Nested
@@ -1270,6 +1285,22 @@ class HakemusServiceITest(
                     .contains(
                         "laatimassa kaivuilmoitusta hankkeelle \"${hanke.nimi}\" (${hanke.hankeTunnus})"
                     )
+            }
+
+            @Test
+            fun `updates project name when application name is changed`() {
+                val entity =
+                    hakemusFactory
+                        .builderWithGeneratedHanke(tyyppi = ApplicationType.EXCAVATION_NOTIFICATION)
+                        .saveEntity()
+                val hakemus = hakemusService.hakemusResponse(entity.id)
+                val request = hakemus.toUpdateRequest().withName("New name")
+
+                hakemusService.updateHakemus(hakemus.id, request, USERNAME)
+
+                assertThat(hankeRepository.findAll().single()).all {
+                    prop(HankeEntity::nimi).isEqualTo("New name")
+                }
             }
         }
     }
