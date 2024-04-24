@@ -705,6 +705,9 @@ class HakemusService(
                         request.customersByRole()
                     )
             )
+        if (updatedApplicationEntity.hanke.generated) {
+            updatedApplicationEntity.hanke.nimi = request.name
+        }
         sendApplicationNotifications(updatedApplicationEntity, originalContactUserIds, userId)
         return applicationRepository.save(updatedApplicationEntity)
     }

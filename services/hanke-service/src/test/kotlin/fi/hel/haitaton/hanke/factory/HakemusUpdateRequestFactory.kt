@@ -242,6 +242,12 @@ object HakemusUpdateRequestFactory {
                 )
         }
 
+    fun HakemusUpdateRequest.withName(name: String) =
+        when (this) {
+            is JohtoselvityshakemusUpdateRequest -> this.copy(name = name)
+            is KaivuilmoitusUpdateRequest -> this.copy(name = name)
+        }
+
     fun HakemusUpdateRequest.withWorkDescription(workDescription: String) =
         when (this) {
             is JohtoselvityshakemusUpdateRequest -> this.copy(workDescription = workDescription)
